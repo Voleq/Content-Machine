@@ -1,335 +1,426 @@
-// dennis-v2 / engine / series.js
-//
-// The DATA renderers. Every plate in this library draws furniture and reserves a
-// region — plot-area, spark-N — and knows nothing about numbers. This is the
-// other half: given values and a box, it draws the series in the same hand.
-//
-// Why it is not part of plates.js: a plate is reproducible from its key alone,
-// which is what makes the contact sheets and the audit trustworthy. A series is
-// reproducible only from its data, which arrives at render time (Yahoo, a filing,
-// the episode file). Keeping them apart is what stops a plate from pretending to
-// know something it cannot.
-//
-// Both renderers return the geometry they used — points, ticks, the zero line —
-// so the caller can put labels and marks on REAL coordinates instead of guessing
-// where the series ended up. That is what a region slot could never tell you.
-(function (g) {
-  const H = g.HAND;
+/* Dennis v2 — series.js
+ *
+ * THE MISSING RENDERER. Every data plate in the kit publishes a `region` slot
+ * with a `renderer` name and a note saying, in the plate's own words, "the
+ * plate draws nothing here — engine/series.js draws it from the data". Six
+ * renderer names are referenced across four families:
+ *
+ *     series.cycleArc      cycles/       the intervening periods, as a path
+ *     series.rowBars       peers/        one horizontal bar per row
+ *     series.sparkBars     tables/       a row's six values as a shape
+ *     series.axisMark      peers/, structure/   one position on an axis
+ *     series.historyBand   structure/    an extent on an axis, not a bar
+ *     series.rangeMark     tables/       a position between a low and a high
+ *
+ * **`engine/series.js` was never in the handoff.** That is why every chart,
+ * table and peer strip renders as an empty frame: the furniture is there and
+ * the data layer does not exist. The kit's own `proof/pipeline-plates.html`
+ * says as much — "Region fills below stand in for engine/series.js" — so the
+ * gap was known and was never closed.
+ *
+ * This is that file, written against the contracts the plates already publish.
+ *
+ * THE RULE EVERY RENDERER HERE OBEYS: **read the geometry the plate published,
+ * re-derive nothing.** A renderer that recomputes a column position from its
+ * own idea of the layout will drift the moment the plate changes, and the
+ * drift is invisible — a line half a tick off the axis looks like a line.
+ * Every x comes from `anchorX`, every box from the slot.
+ *
+ *   const S = require('./series');
+ *   S.rowBars({ box: slots.bars, rows: rowSlots, values, accent: 0, ink });
+ *   // -> [{ tag:'rect'|'path'|'circle', attrs:{...} }]   plus, sometimes, a
+ *   //    `returns` object the caller positions a text slot from.
+ *
+ * Renderers return PLAIN NODE DESCRIPTIONS, not SVG strings and not DOM. The
+ * emitter turns them into paths, the review surface turns them into elements,
+ * and neither has to agree about anything but the shape of this array.
+ */
 
-  // Axis steps a person would choose: 1, 2, 2.5, 5, 10 and their decades.
-  function niceStep(span, target) {
-    const raw = span / Math.max(1, target);
-    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
-    const n = raw / mag;
-    return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+'use strict';
+
+/* ── helpers ────────────────────────────────────────────────────────────── */
+
+const num = v => (typeof v === 'number' && isFinite(v) ? v : null);
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const rect = (x, y, w, h, fill) => ({ tag: 'rect', attrs: { x: r1(x), y: r1(y), width: r1(Math.max(0, w)), height: r1(Math.max(0, h)), fill } });
+const circle = (cx, cy, r, fill) => ({ tag: 'circle', attrs: { cx: r1(cx), cy: r1(cy), r: r1(r), fill } });
+const path = (d, attrs) => ({ tag: 'path', attrs: Object.assign({ d, fill: 'none' }, attrs || {}) });
+const r1 = n => Math.round(n * 10) / 10;
+
+/* A scale that always includes zero when the data crosses it, because a bar
+ * chart whose baseline is not zero is a lie the audit cannot catch. */
+function extent(values, opts) {
+  const o = opts || {};
+  const vs = values.filter(v => num(v) !== null);
+  let lo = o.min != null ? o.min : Math.min.apply(null, vs);
+  let hi = o.max != null ? o.max : Math.max.apply(null, vs);
+  if (o.zero !== false && lo > 0) lo = 0;
+  if (o.zero !== false && hi < 0) hi = 0;
+  if (hi === lo) { hi = lo + 1; }
+  return { lo, hi, span: hi - lo };
+}
+
+/* ── series.cycleArc ────────────────────────────────────────────────────────
+ *
+ * cycles/: "every period between the two moments… draws it from the data and
+ * RETURNS THE TROUGH'S COORDINATES". The return value is part of the contract —
+ * the plate reserves a `trough` box but only the data knows where the minimum
+ * sits, so the caller positions that slot from what comes back here. */
+function cycleArc(o) {
+  const box = o.box, values = o.values || [], ink = o.ink || {};
+  if (!box || values.length < 2) return { nodes: [], returns: null };
+  const e = extent(values, { zero: false });
+  const x = i => box.x + (i / (values.length - 1)) * box.w;
+  const y = v => box.y + box.h - ((v - e.lo) / e.span) * box.h;
+  const pts = values.map((v, i) => [x(i), y(v)]);
+
+  /* A band, not an arrow (the manifest is explicit). Drawn as a filled ribbon
+   * so it needs no stroke width of its own — the flat families have one
+   * contour weight and a series may not spend it. */
+  const t = (o.weight || 10) / 2;
+  const up = pts.map(p => [p[0], p[1] - t]);
+  const dn = pts.slice().reverse().map(p => [p[0], p[1] + t]);
+  const d = 'M' + up.concat(dn).map(p => r1(p[0]) + ',' + r1(p[1])).join('L') + 'Z';
+
+  const nodes = [{ tag: 'path', attrs: { d, fill: ink.subject || '#7FD4E8' } }];
+  values.forEach((v, i) => nodes.push(circle(x(i), y(v), o.dot || 7, ink.subject || '#7FD4E8')));
+
+  let mi = 0;
+  values.forEach((v, i) => { if (num(v) !== null && v < values[mi]) mi = i; });
+  nodes.push(circle(x(mi), y(values[mi]), (o.dot || 7) + 5, ink.attention || '#F07A5A'));
+
+  /* The trough box, centred on the minimum and lifted clear of the band. */
+  const tb = o.troughBox;
+  return {
+    nodes,
+    returns: {
+      minIndex: mi, minValue: values[mi],
+      x: r1(x(mi)), y: r1(y(values[mi])),
+      troughBox: tb ? { x: r1(x(mi) - tb.w / 2), y: r1(y(values[mi]) - tb.h - 18), w: tb.w, h: tb.h } : null,
+    },
+  };
+}
+
+/* ── series.rowBars ─────────────────────────────────────────────────────────
+ *
+ * peers/: "one horizontal bar per row, ON A SCALE SHARED ACROSS THE ROWS, from
+ * a zero rule the renderer places." The shared scale is the whole point — five
+ * bars each normalised to themselves is five plates, not one. */
+function rowBars(o) {
+  const box = o.box, rows = o.rows || [], values = o.values || [], ink = o.ink || {};
+  if (!box || !rows.length) return { nodes: [], returns: null };
+  const e = extent(values, o);
+  const zeroX = box.x + ((0 - e.lo) / e.span) * box.w;
+  const nodes = [];
+  /* The zero rule is the renderer's, per the note — the plate does not draw it
+   * because the plate does not know where zero falls. */
+  if (e.lo < 0) nodes.push(rect(zeroX - 1, box.y, 2, box.h, ink.axis || '#4A566A'));
+  values.forEach((v, i) => {
+    const row = rows[i]; if (!row || num(v) === null) return;
+    const h = Math.round(row.h * (o.thickness || 0.42));
+    const vx = box.x + ((v - e.lo) / e.span) * box.w;
+    nodes.push(rect(Math.min(zeroX, vx), row.y + (row.h - h) / 2, Math.abs(vx - zeroX), h,
+      i === o.accent ? (ink.attention || '#F07A5A') : (ink.subject || '#7FD4E8')));
+  });
+  return { nodes, returns: { zeroX: r1(zeroX), lo: e.lo, hi: e.hi } };
+}
+
+/* ── series.sparkBars ───────────────────────────────────────────────────────
+ *
+ * tables/: "the row's own six values as a shape." Own — each spark is scaled
+ * to its own row, which is correct here and wrong in rowBars, and the two
+ * notes say so. Reading them as the same problem is how a sparkline column
+ * ends up lying about magnitude. */
+function sparkBars(o) {
+  const box = o.box, values = o.values || [], ink = o.ink || {};
+  if (!box || !values.length) return { nodes: [], returns: null };
+  const e = extent(values, { zero: true });
+  const gap = o.gap == null ? 0.22 : o.gap;
+  const bw = box.w / values.length;
+  const zeroY = box.y + box.h - ((0 - e.lo) / e.span) * box.h;
+  const nodes = values.map((v, i) => {
+    if (num(v) === null) return null;
+    const vy = box.y + box.h - ((v - e.lo) / e.span) * box.h;
+    return rect(box.x + i * bw + bw * gap / 2, Math.min(zeroY, vy), bw * (1 - gap), Math.abs(vy - zeroY),
+      v < 0 ? (ink.attention || '#F07A5A') : (ink.quiet || '#8592A6'));
+  }).filter(Boolean);
+  return { nodes, returns: { zeroY: r1(zeroY) } };
+}
+
+/* ── series.axisMark ────────────────────────────────────────────────────────
+ *
+ * peers/, structure/: "a value outside 0-1 means the market is asking for
+ * something outside the company's own history IN THE DIRECTION OF THE
+ * OVERSHOOT — clamp the mark and report it." Clamping silently would draw a
+ * mark sitting exactly on the end of the range, which is a different claim
+ * from "off the end of it", so the overshoot comes back in `returns`. */
+function axisMark(o) {
+  const box = o.box, ink = o.ink || {};
+  const raw = num(o.value);
+  if (!box || raw === null) return { nodes: [], returns: null };
+  const v = clamp01(raw);
+  const vertical = o.axis === 'vertical';
+  const t = o.weight || 8;
+  const nodes = [];
+  if (vertical) {
+    const y = box.y + box.h - v * box.h;
+    nodes.push(rect(box.x, y - t / 2, box.w, t, ink.attention || '#F07A5A'));
+  } else {
+    const x = box.x + v * box.w;
+    nodes.push(rect(x - t / 2, box.y, t, box.h, ink.attention || '#F07A5A'));
   }
+  return { nodes, returns: { clamped: raw !== v, raw, value: v, overshoot: raw > 1 ? raw - 1 : raw < 0 ? raw : 0 } };
+}
 
-  // The domain is padded to whole steps, and ALWAYS includes zero when the data
-  // crosses it — a free-cash-flow series that goes negative is a different claim
-  // from one that does not, and an axis that hides the crossing tells the wrong
-  // one. Never pad a domain that is entirely one side of zero into the other.
-  function domain(values, ticks) {
-    const vals = values.filter((v) => typeof v === "number");
-    let lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
-    if (lo > 0 && hi > 0) lo = 0;
-    else if (lo < 0 && hi < 0) hi = 0;
-    if (lo === hi) { hi = lo + Math.abs(lo || 1); }
-    const step = niceStep(hi - lo, (ticks || 5) - 1);
-    return { lo: Math.floor(lo / step) * step, hi: Math.ceil(hi / step) * step, step: step };
+/* ── series.historyBand ─────────────────────────────────────────────────────
+ *
+ * structure/: "drawn as a band on the axis, NOT as a bar from zero: it is an
+ * extent, and a bar would claim a baseline the data does not have." */
+function historyBand(o) {
+  const box = o.box, ink = o.ink || {};
+  const lo = num(o.low), hi = num(o.high);
+  if (!box || lo === null || hi === null) return { nodes: [], returns: null };
+  const a = clamp01(Math.min(lo, hi)), b = clamp01(Math.max(lo, hi));
+  /* `tone` lets one plate lay several extents on one day scale in different
+   * inks (structure/cash-conversion-cycle). Default unchanged. */
+  const fill = (o.tone && ink[o.tone]) || ink.band || '#1F2634';
+  const nodes = o.axis === 'vertical'
+    ? [rect(box.x, box.y + box.h - b * box.h, box.w, (b - a) * box.h, fill)]
+    : [rect(box.x + a * box.w, box.y, (b - a) * box.w, box.h, fill)];
+  return { nodes, returns: { low: a, high: b } };
+}
+
+/* ── series.rangeMark ───────────────────────────────────────────────────────
+ *
+ * tables/: "the subject's position between the peer low and the peer high, 0
+ * to 1… the rail under it is the plate's." So this draws the mark only — a
+ * renderer that also drew the rail would double it. */
+function rangeMark(o) {
+  const box = o.box, ink = o.ink || {};
+  const raw = num(o.value);
+  if (!box || raw === null) return { nodes: [], returns: null };
+  const v = clamp01(raw);
+  const x = box.x + v * box.w;
+  const w = o.weight || 10;
+  return {
+    nodes: [rect(x - w / 2, box.y, w, box.h, ink.attention || '#F07A5A')],
+    returns: { clamped: raw !== v, raw, value: v },
+  };
+}
+
+/* ── the line series the chart frame reserves ───────────────────────────────
+ *
+ * charts/: `plot-area` carries the note "code draws the data path in here
+ * only", and each `point-N` publishes an `anchorX`. The x positions are READ,
+ * never derived — that is what keeps the line on the ticks. */
+function linePath(o) {
+  const box = o.box, values = o.values || [], ink = o.ink || {};
+  /* COLUMNS ARE OPTIONAL. Where a plate publishes per-point columns the x
+   * positions are READ from their anchorX — that is what keeps a line on its
+   * ticks. Where it publishes only a plot region (line-dense, macro-series,
+   * each cell of a small-multiples grid), the points are evenly spaced across
+   * that region instead. Requiring columns made nine charts in the kit draw
+   * nothing at all: the renderer was right to refuse, and the caller was
+   * wrong to have nothing else to offer. */
+  let cols = o.columns || [];
+  if (!box || !values.length) return { nodes: [], returns: null };
+  if (cols.length !== values.length) {
+    if (cols.length) return { nodes: [], returns: null };
+    cols = values.map((_, i) => ({ anchorX: box.x + (values.length === 1 ? box.w / 2 : (i / (values.length - 1)) * box.w) }));
   }
+  const e = extent(values, o);
+  const y = v => box.y + box.h - ((v - e.lo) / e.span) * box.h;
+  const pts = values.map((v, i) => [cols[i].anchorX, y(v)]);
+  /* `tone` names the ink role for a SECOND series on the same plot (price
+   * against cost). It is a role name, never a colour, so both hours hold. */
+  const col = ink[o.tone || 'subject'] || ink.subject || '#7FD4E8';
+  const nodes = [];
+  /* Zero is drawn by the renderer when the data crosses it, because only the
+   * data knows where zero falls — the rowBars convention. */
+  if (o.zeroRule && e.lo < 0 && e.hi > 0) nodes.push(rect(box.x, y(0) - 1, box.w, 2, ink.axis || '#4A566A'));
+  nodes.push(path('M' + pts.map(p => r1(p[0]) + ',' + r1(p[1])).join('L'),
+    { stroke: col, 'stroke-width': o.weight || 6, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+  pts.forEach((p, i) => {
+    const last = i === pts.length - 1;
+    nodes.push(circle(p[0], p[1], last && o.accentLast ? 13 : 9,
+      last && o.accentLast ? (ink.attention || '#F07A5A') : col));
+  });
+  return { nodes, returns: { lo: e.lo, hi: e.hi, points: pts.map(p => [r1(p[0]), r1(p[1])]) } };
+}
 
-  function ticksOf(d) {
-    const out = [];
-    // count from zero outward so zero is always ON a tick, never between two
-    for (let v = Math.ceil(d.lo / d.step) * d.step; v <= d.hi + d.step * 1e-6; v += d.step) {
-      out.push(Math.abs(v) < d.step * 1e-6 ? 0 : Number(v.toFixed(10)));
-    }
-    return out;
-  }
+/* ── series.marks ──────────────────────────────────────────────────────────
+ *
+ * One mark per period, each in its own published region — insider-flow draws
+ * a dot per window rather than a connected line, because the periods are
+ * discrete events and a line between them would claim a trend. */
+function marks(o) {
+  const cols = o.columns || [], values = o.values || [], ink = o.ink || {};
+  if (!cols.length) return { nodes: [], returns: null };
+  const vs = values.length ? values : cols.map(() => 1);
+  const e = extent(vs, o);
+  const nodes = cols.map((c, i) => {
+    const v = num(vs[i % vs.length]); if (v === null) return null;
+    const cy = c.y + c.h - ((v - e.lo) / e.span) * c.h;
+    return circle(c.x + c.w / 2, cy, Math.max(4, Math.min(c.w, c.h) * 0.16),
+      v < 0 ? (ink.attention || '#F07A5A') : (ink.subject || '#7FD4E8'));
+  }).filter(Boolean);
+  return { nodes, returns: { lo: e.lo, hi: e.hi } };
+}
 
-  // ---- the line ----------------------------------------------------------
-  // o: { box, values, pal, seed, subject, ticks, unitFmt }
-  // subject false draws the other party (a peer, consensus) in its own colour.
-  function line(o) {
-    const b = o.box, v = o.values, p = o.pal;
-    const seed = o.seed || 900;
-    const d = domain(v, o.ticks || 5), tk = ticksOf(d);
-    const yOf = (val) => b.y + b.h - ((val - d.lo) / (d.hi - d.lo)) * b.h;
-    const xOf = (i) => b.x + (v.length === 1 ? b.w / 2 : (i / (v.length - 1)) * b.w);
-    const colour = o.subject === false ? p.otherParty : p.structure;
-    const k = Math.min(b.w, b.h) / 700;                 // weights scale with the box
-    const out = [];
+/* ── series.columnBars ─────────────────────────────────────────────────────
+ *
+ * A bar chart publishes one `bar-N` region per column, each carrying
+ * `growth: "up-from-baseline"` and its own `baselineY` — the plate draws the
+ * frame and the axis and leaves the bars to the data, exactly as the line
+ * chart does. There was no renderer for them, so every bar chart in the kit
+ * rendered as an empty grid: axes, year labels, value labels, no bars.
+ *
+ * The baseline is READ from the slot, never assumed to be the bottom of the
+ * plot area — that is what `baselineY` is for, and a chart that crosses zero
+ * needs it. */
+function columnBars(o) {
+  const cols = o.columns || [], values = o.values || [], ink = o.ink || {};
+  if (!cols.length || cols.length !== values.length) return { nodes: [], returns: null };
+  const e = extent(values, o);
+  const nodes = [];
+  values.forEach((v, i) => {
+    const c = cols[i];
+    if (!c || num(v) === null) return;
+    const base = c.baselineY != null ? c.baselineY : c.y + c.h;
+    const top = c.y + c.h - ((v - e.lo) / e.span) * c.h;
+    const y0 = Math.min(base, top), hgt = Math.max(3, Math.abs(base - top));
+    nodes.push(rect(c.x, y0, c.w, hgt,
+      i === o.accent ? (ink.attention || '#F07A5A') : (ink[o.tone || 'subject'] || ink.subject || '#7FD4E8')));
+  });
+  return { nodes, returns: { lo: e.lo, hi: e.hi } };
+}
 
-    // gridlines first, and the zero line heavier than the rest: it is the only
-    // gridline that means something.
-    tk.forEach((t, i) => {
-      const zero = t === 0 && d.lo < 0;
-      out.push(H.line(b.x, yOf(t), b.x + b.w, yOf(t), {
-        stroke: p.structure, width: zero ? 3.4 : 1.8, opacity: zero ? 0.5 : 0.18,
-        amp: 3, over: 9, seed: seed + 40 + i * 7,
-      }));
-    });
+/* ── series.splitBar ────────────────────────────────────────────────────────
+ *
+ * figures/where-the-cash-went: ONE bar and its parts, end to end, in the
+ * order the label columns read. rowBars was named here first and it cannot
+ * do this — it draws one bar per row from a shared zero, so four parts came
+ * out as two overlapping bars. The parts are shares of their own sum; the
+ * accent part takes attention and the others alternate two quiet inks so a
+ * boundary is visible without a stroke. Segment extents come back so a
+ * caller can check a label column against its part. */
+function splitBar(o) {
+  const box = o.box, values = (o.values || []).map(v => (num(v) === null ? 0 : Math.max(0, v))), ink = o.ink || {};
+  const sum = values.reduce((a, b) => a + b, 0);
+  if (!box || !sum) return { nodes: [], returns: null };
+  const gap = o.gap == null ? 6 : o.gap, h = box.h * (o.thickness || 0.5), y = box.y + (box.h - h) / 2;
+  const usable = box.w - gap * (values.length - 1);
+  const nodes = [], parts = [];
+  let x = box.x;
+  values.forEach((v, i) => {
+    const w = usable * v / sum;
+    const fill = i === o.accent ? (ink.attention || '#F07A5A') : (i % 2 ? (ink.quiet || '#8592A6') : (ink.subject || '#7FD4E8'));
+    nodes.push(rect(x, y, w, h, fill));
+    parts.push([r1(x), r1(x + w)]);
+    x += w + gap;
+  });
+  return { nodes, returns: { parts, sum } };
+}
 
-    const pts = v.map((val, i) => ({ x: xOf(i), y: yOf(val), value: val }));
-    out.push(H.stroke(pts, {
-      stroke: colour, width: Math.max(3.4, 5.2 * k * 1.4), opacity: 0.95,
-      amp: 2.6, over: 7, seed: seed,
-    }));
-    // the last observation gets a mark; the rest do not. A dot on every point is
-    // a table with extra steps.
-    const last = pts[pts.length - 1];
-    out.push(dot(last.x, last.y, Math.max(9, 13 * k * 1.4), colour, seed + 3));
-    return { svg: out.join(""), points: pts, ticks: tk, domain: d, yOf: yOf, xOf: xOf };
-  }
+/* ── series.scatter ─────────────────────────────────────────────────────────
+ *
+ * One mark per company inside `plot-area`. Where the plate publishes a FIXED
+ * scale on the slot (`scale: {x:[lo,hi], y:[lo,hi]}`) the marks are placed
+ * on it, because the plate has drawn furniture that is only true on that
+ * scale — peers/rule-of-40's diagonal IS growth + margin = 40 only there.
+ * Without one, points arrive 0-1. Off-scale values are clamped and reported,
+ * the axisMark convention. */
+function scatter(o) {
+  const box = o.box, pts = o.points || [], ink = o.ink || {};
+  if (!box || !pts.length) return { nodes: [], returns: null };
+  const sc = box.scale || { x: [0, 1], y: [0, 1] };
+  const clamped = [];
+  const nodes = [];
+  pts.forEach((p, i) => {
+    if (!p || num(p[0]) === null || num(p[1]) === null) return;
+    const fx = (p[0] - sc.x[0]) / (sc.x[1] - sc.x[0]), fy = (p[1] - sc.y[0]) / (sc.y[1] - sc.y[0]);
+    if (fx !== clamp01(fx) || fy !== clamp01(fy)) clamped.push(i);
+    const acc = i === o.accent;
+    nodes.push(circle(box.x + clamp01(fx) * box.w, box.y + box.h - clamp01(fy) * box.h, acc ? 22 : 14,
+      acc ? (ink.attention || '#F07A5A') : (ink.subject || '#7FD4E8')));
+  });
+  /* The accent paints last, so a crowded cluster cannot bury the subject. */
+  if (o.accent != null && nodes[o.accent]) nodes.push(nodes.splice(o.accent, 1)[0]);
+  return { nodes, returns: { clamped } };
+}
 
-  function ring(cx, cy, r, seed, n, jit) {
-    const N = n || 14, J = jit == null ? 0.16 : jit;
-    const rng = H.rng(seed), pts = [];
-    for (let i = 0; i < N; i++) {
-      const a = (i / N) * Math.PI * 2, k = 1 + (rng() - 0.5) * J;
-      pts.push({ x: cx + Math.cos(a) * r * k, y: cy + Math.sin(a) * r * k });
-    }
-    return pts;
-  }
+/* ── series.spreadFill ──────────────────────────────────────────────────────
+ *
+ * The area between two series on one plot, in the band ink — price against
+ * cost, where the gap IS the margin. Drawn under both lines; the caller paints
+ * the lines after it. */
+function spreadFill(o) {
+  const box = o.box, a = o.a || [], b = o.b || [], ink = o.ink || {};
+  const cols = o.columns || [];
+  if (!box || !a.length || a.length !== b.length || (cols.length && cols.length !== a.length)) return { nodes: [], returns: null };
+  const xs = cols.length ? cols.map(c => c.anchorX) : a.map((_, i) => box.x + (i / (a.length - 1)) * box.w);
+  const e = extent(a.concat(b), o);
+  const y = v => box.y + box.h - ((v - e.lo) / e.span) * box.h;
+  const up = a.map((v, i) => [xs[i], y(v)]), dn = b.map((v, i) => [xs[i], y(v)]).reverse();
+  const d = 'M' + up.concat(dn).map(p => r1(p[0]) + ',' + r1(p[1])).join('L') + 'Z';
+  return { nodes: [{ tag: 'path', attrs: { d, fill: ink.band || '#1F2634' } }], returns: { lo: e.lo, hi: e.hi } };
+}
 
-  // A drawn dot has to read as a POINT. The old mark hatched a 14-gon jittered
-  // +/-8% and filled it with width-9 strokes on a 3.4 gap — nearly three deep,
-  // so the centre went solid and the jitter showed as a lumpy edge: an ink clot
-  // where the plate promised a moment. Round the polygon, tile the hatch instead
-  // of piling it (width just over gap), and let one outline pass carry the edge.
-  // Weights are fractions of r, so a mark scales without changing character.
-  function dot(cx, cy, r, colour, seed, opacity) {
-    const op = opacity == null ? 0.95 : opacity;
-    // FILLED, not hatched. Hatching a mark-sized polygon can only ever knot: the
-    // strokes are a meaningful fraction of the diameter, so they read as scribble
-    // rather than as ink. A closed wobbly polygon filled flat is what a pen
-    // actually leaves — solid centre, slightly irregular edge — and it holds that
-    // character at any radius. One soft outline pass sits the edge on the paper.
-    const poly = ring(cx, cy, r, seed, 30, 0.07);
-    return `<path d="${H.toPath(poly.concat([poly[0]]))}" fill="${colour}" fill-opacity="${op}"/>`
-      + H.outline(poly, {
-        stroke: colour, width: Math.max(1.6, r * 0.13), opacity: op * 0.85,
-        amp: Math.max(0.4, r * 0.035), over: 2, seed: seed + 2,
-      });
-  }
+/* ── the waterfall bridge ───────────────────────────────────────────────────
+ *
+ * figures/: the `bridge` region plus one `step-N` column each. Each step is a
+ * delta and the bar spans from the running total to the new one, which is the
+ * only reading under which the steps add up to the ends. */
+function bridge(o) {
+  const box = o.box, cols = o.columns || [], steps = o.steps || [], ink = o.ink || {};
+  if (!box || cols.length !== steps.length) return { nodes: [], returns: null };
+  const open = num(o.open) || 0, close = num(o.close) || 0;
+  /* THE SCALE HOLDS THE RUNNING TOTAL, not just the ends. An ARR bridge that
+   * adds new and expansion before it takes churn peaks above its own close,
+   * and a scale built from open and close alone drew that bar off the top of
+   * the box. */
+  const levels = [open, close];
+  let run = open;
+  steps.forEach(dv => { if (num(dv) !== null) { run += dv; levels.push(run); } });
+  let hi = Math.max.apply(null, levels), lo = Math.min.apply(null, levels);
+  /* FLOAT — a walk between two RATES (a margin, 15.2% to 13.4%) has no
+   * meaningful zero, and on a zero-based scale its steps are a few pixels
+   * tall. Floating is honest only because no bar then claims a baseline: the
+   * ends are drawn as LEVELS, not as bars from zero. */
+  if (o.float) { const pad = (hi - lo) * 0.14 || 1; hi += pad; lo -= pad; }
+  else { hi = Math.max(hi, 0); lo = Math.min(lo, 0); }
+  if (o.min != null) lo = o.min;
+  if (o.max != null) hi = o.max;
+  const span = (hi - lo) || 1;
+  const y = v => box.y + box.h - ((v - lo) / span) * box.h;
+  const nodes = [];
+  const end = (c, v, fill) => {
+    if (!c) return;
+    if (o.float) { nodes.push(rect(c.x, y(v) - 7, c.w, 14, fill)); return; }
+    const base = c.baselineY != null ? c.baselineY : y(0);
+    nodes.push(rect(c.x, Math.min(base, y(v)), c.w, Math.max(3, Math.abs(base - y(v))), fill));
+  };
+  /* A thin connector at each running level, so a step reads as leaving from
+   * where the last one ended rather than floating free. */
+  const joins = [];
+  end(o.openColumn, open, ink.quiet || '#8592A6');
+  let prev = o.openColumn || null;
+  run = open;
+  steps.forEach((dv, i) => {
+    const c = cols[i]; if (!c || num(dv) === null) return;
+    if (prev && o.openColumn) joins.push(rect(prev.x + prev.w, y(run) - 1, c.x - (prev.x + prev.w), 2, ink.axis || '#4A566A'));
+    const y0 = y(run); run += dv; const y1 = y(run);
+    nodes.push(rect(c.x, Math.min(y0, y1), c.w, Math.max(3, Math.abs(y1 - y0)),
+      dv < 0 ? (ink.attention || '#F07A5A') : (ink.subject || '#7FD4E8')));
+    prev = c;
+  });
+  if (prev && o.closeColumn) joins.push(rect(prev.x + prev.w, y(run) - 1, o.closeColumn.x - (prev.x + prev.w), 2, ink.axis || '#4A566A'));
+  end(o.closeColumn, close, ink.structure || '#C6D2E0');
+  return { nodes: joins.concat(nodes), returns: { closes: r1(run), expected: close, reconciles: Math.abs(run - close) < 1e-6, lo, hi } };
+}
 
-  // ---- the sparkline -----------------------------------------------------
-  // Bars, not a line: at spark size a line is three pixels of slope and reads as
-  // noise, while bars keep a per-period silhouette you can actually compare.
-  //
-  // Each bar is one thick STROKE, never a hatched rect: hatch gap and overshoot
-  // are canvas-unit quantities, so a hatched 14-unit bar degenerates into a
-  // hollow outline with spikes. This is the same law that governs the contact
-  // sheets and the boil.
-  function sparkBars(o) {
-    const b = o.box, v = o.values, p = o.pal;
-    const seed = o.seed || 1200;
-    const d = domain(v, 3);
-    const yOf = (val) => b.y + b.h - ((val - d.lo) / (d.hi - d.lo)) * b.h;
-    const zeroY = yOf(0);
-    const n = v.length;
-    const pitch = b.w / n;
-    const bw = Math.max(4, pitch * 0.62);
-    const out = [];
+const SERIES = { cycleArc, rowBars, sparkBars, axisMark, historyBand, rangeMark, linePath, columnBars, marks, bridge,
+  splitBar, scatter, spreadFill, extent };
 
-    if (d.lo < 0) {
-      out.push(H.line(b.x - 4, zeroY, b.x + b.w + 4, zeroY, {
-        stroke: p.structure, width: 2, opacity: 0.42, amp: 2, over: 6, seed: seed + 1,
-      }));
-    }
-    const bars = [];
-    // A real value must never render as nothing: in this library an empty cell
-    // means NO DATA, so a 7% bar against a 56% peak — or a -$120M against a
-    // +$4.5B — has to stay visible or the sparkline lies about the period. The
-    // floor is a legible stub rather than a hairline: "present but small" is a
-    // reading a viewer can have, "absent" is not, and the cell beside it carries
-    // the exact figure anyway.
-    const minLen = Math.max(6, b.h * 0.14);
-    v.forEach((val, i) => {
-      const cx = b.x + pitch * (i + 0.5);
-      let y = yOf(val);
-      if (typeof val === "number" && Math.abs(y - zeroY) < minLen) {
-        y = zeroY + (val < 0 ? minLen : -minLen);
-      }
-      const top = Math.min(y, zeroY), bot = Math.max(y, zeroY);
-      // the latest period is the subject of the sentence, so it carries weight;
-      // the rest are neutral data. No direction colour — a sparkline is a shape,
-      // and the cells beside it already carry the sign.
-      const latest = i === n - 1;
-      // Opacity is legibility, not emphasis. The numbers sheet zebra-stripes its
-      // even rows in ground2, and neutral data at 0.62 on that stripe is simply
-      // gone — the same defect that made the row band invisible. The earlier
-      // periods read at 0.88; the latest still separates by colour and weight.
-      out.push(H.line(cx, bot, cx, top, {
-        stroke: latest ? p.structure : p.neutralData,
-        width: bw, opacity: latest ? 0.95 : 0.88,
-        // step is the wobble's sampling interval and it defaults to 26 units —
-        // longer than a short bar, so a 27-unit bar got ONE sample and its path
-        // collapsed to nothing. Every bar under ~35u silently vanished. Sample
-        // fine enough that the shortest possible bar is still a line.
-        step: 5,
-        cap: "butt",
-        amp: Math.max(0.7, bw * 0.06), over: 0,
-        seed: seed + 10 + i * 13,
-      }));
-      bars.push({ x: cx, y: y, w: bw, value: val, latest: latest });
-    });
-    return { svg: out.join(""), bars: bars, zeroY: zeroY, domain: d };
-  }
-
-  // ---- the cycle path ----------------------------------------------------
-  // then → now is not a trajectory. The reason cycles/cycle-frame exists is that
-  // the line between two moments went somewhere else first, so this renderer
-  // draws every intervening period and returns the MINIMUM — the trough is the
-  // claim, and the operator labels it on real coordinates rather than guessing
-  // where the low point landed.
-  //
-  // One colour, structure, for the whole path: the segment before the trough is
-  // not a different series, and colouring the fall in `down` and the recovery in
-  // `up` would make the frame argue for the recovery. The ends are ringed
-  // because they are the two figures in type; the trough is ringed hollow in
-  // `down` because it is the one that has no figure beside it.
-  function cycleArc(o) {
-    const b = o.box, v = o.values, p = o.pal;
-    const seed = o.seed || 1500;
-    const d = domain(v, 3);
-    const yOf = (val) => b.y + b.h - ((val - d.lo) / (d.hi - d.lo)) * b.h;
-    const xOf = (i) => b.x + (v.length === 1 ? b.w / 2 : (i / (v.length - 1)) * b.w);
-    const k = Math.min(b.w, b.h) / 700;
-    const out = [];
-
-    if (d.lo < 0) {
-      out.push(H.line(b.x - 6, yOf(0), b.x + b.w + 6, yOf(0), {
-        stroke: p.structure, width: 3, opacity: 0.45, amp: 2.4, over: 8, seed: seed + 2,
-      }));
-    }
-    const pts = v.map((val, i) => ({ x: xOf(i), y: yOf(val), value: val }));
-    out.push(H.stroke(pts, {
-      stroke: p.structure, width: Math.max(4.6, 6 * k * 1.4), opacity: 0.95,
-      amp: 2.4, over: 8, seed: seed,
-    }));
-
-    let lo = 0;
-    v.forEach((val, i) => { if (typeof val === "number" && val < v[lo]) lo = i; });
-    // The two moments get a filled dot, not a hatched blob: `over` overshoots
-    // every hatch stroke past the outline, and 8 units of overshoot on a 30-unit
-    // circle is a capsule. Small over, tight gap — it has to read as a point.
-    [0, v.length - 1].forEach((i, n) => {
-      out.push(dot(pts[i].x, pts[i].y, Math.max(9, 13 * k * 1.4), p.structure, seed + 7 + n));
-    });
-    if (lo !== 0 && lo !== v.length - 1) {
-      out.push(H.outline(ring(pts[lo].x, pts[lo].y, Math.max(13, 20 * k * 1.4), seed + 21), {
-        stroke: p.down, width: Math.max(3.4, 4.6 * k * 1.4), opacity: 0.95, amp: 2, over: 6, seed: seed + 23,
-      }));
-    }
-    return { svg: out.join(""), points: pts, trough: Object.assign({ i: lo }, pts[lo]), domain: d, yOf: yOf, xOf: xOf };
-  }
-
-  // ---- the row bars -------------------------------------------------------
-  // The peer strip's move as a shape as well as a figure. One horizontal bar per
-  // row on a scale SHARED across the rows — that shared scale is the whole point:
-  // per-row scaling would draw four bars of the same length and say nothing.
-  //
-  // The zero rule is placed by the domain, not by the plate: when every move is
-  // red, zero is the right-hand edge and every bar runs left from it, which is
-  // the shape the beat has. The plate cannot know that, so it reserves the column
-  // and this draws the rule.
-  function rowBars(o) {
-    const b = o.box, v = o.values, p = o.pal;
-    const n = o.rows || v.length;
-    const seed = o.seed || 1400;
-    const nums = v.filter((x) => typeof x === "number");
-    if (!nums.length) return { svg: "", bars: [] };
-    const d = domain(v, 3);
-    const xOf = (val) => b.x + ((val - d.lo) / (d.hi - d.lo)) * b.w;
-    const zeroX = xOf(0);
-    const pitch = b.h / n;
-    const bh = Math.max(7, pitch * 0.3);
-    const out = [];
-    out.push(H.line(zeroX, b.y - 6, zeroX, b.y + b.h + 6, {
-      stroke: p.structure, width: 2.2, opacity: 0.45, amp: 2, over: 7, seed: seed + 1,
-    }));
-    const bars = [];
-    // Same law as the sparkline: a real value never renders as nothing, because
-    // an empty cell in this library means NO DATA. A -1% against a -12% is a stub,
-    // not an absence — and the figure beside it carries the exact number anyway.
-    const minLen = Math.max(7, b.w * 0.05);
-    v.forEach((val, i) => {
-      if (typeof val !== "number") return;
-      const cy = b.y + pitch * (i + 0.5);
-      let x = xOf(val);
-      if (Math.abs(x - zeroX) < minLen) x = zeroX + (val < 0 ? -minLen : minLen);
-      out.push(H.line(zeroX, cy, x, cy, {
-        stroke: val < 0 ? p.down : p.up, width: bh, opacity: i === 0 ? 0.95 : 0.82,
-        step: 5, cap: "butt", amp: Math.max(0.7, bh * 0.05), over: 0, seed: seed + 10 + i * 13,
-      }));
-      bars.push({ x: x, y: cy, value: val, subject: i === 0 });
-    });
-    return { svg: out.join(""), bars: bars, zeroX: zeroX, domain: d };
-  }
-
-  // ---- the range mark ----------------------------------------------------
-  // tables/multiples-strip reserves marker-N and draws the rail under it. This
-  // is what sits on the rail, and it arrives here rather than in the plate for
-  // the usual reason: a percentile is data, and a plate that drew a position
-  // would be inventing one.
-  //
-  // t is a POSITION, not a value: 0 at the low end of the peer range, 1 at the
-  // high end. The caller does that division, because only the caller knows
-  // whether the range is the peer min/max, the interquartile band or five years
-  // of the subject's own history — three different claims that all land on the
-  // same rail.
-  //
-  // NO DIRECTION COLOUR. The subject is structure and the median is otherParty,
-  // the same two roles the strip's figures use. A marker in `down` because it
-  // sits high would argue the short before the script does.
-  //
-  // OFF THE RANGE IS A READING, NOT AN ERROR. A subject priced above every peer
-  // is the most interesting case this plate has, so t > 1 clamps the dot to the
-  // end tick and adds a chevron past it. Dropping the mark, or letting it draw
-  // outside the region, would both lose the one row worth talking about.
-  function rangeMark(o) {
-    const b = o.box, p = o.pal, seed = o.seed || 1600;
-    const cy = b.y + b.h / 2;
-    const r = Math.max(9, b.h * 0.3);
-    const clamp = (v) => Math.max(0, Math.min(1, v));
-    // The scale is INSET BY THE MARK'S OWN RADIUS, which is the difference
-    // between a position and a dot at a position. Mapped edge to edge, a subject
-    // level with the top peer draws a dot centred on the high end tick: it hides
-    // the tick it is being measured against and half of it lands outside the
-    // region the plate reserved. Inset, t = 1 sits tangent to that tick, nothing
-    // paints past the box, and the two ends stay readable as ends.
-    const xAt = (t) => b.x + r + clamp(t) * (b.w - r * 2);
-    const out = [];
-
-    // The median as a TICK, not a second dot: two dots on one rail read as two
-    // subjects, and the peer set is not a subject.
-    if (typeof o.median === "number") {
-      out.push(H.line(xAt(o.median), cy - b.h * 0.4, xAt(o.median), cy + b.h * 0.4, {
-        stroke: p.otherParty, width: Math.max(3.4, r * 0.42), opacity: 0.9,
-        step: 5, cap: "butt", amp: 1.2, over: 2, seed: seed + 3,
-      }));
-    }
-
-    const t = typeof o.t === "number" ? o.t : 0.5;
-    const off = t > 1 ? 1 : t < 0 ? -1 : 0;
-    // Off the range: the dot is pushed against its end tick from the INSIDE and
-    // a chevron points out past it, both still inside the region. The first
-    // version drew the chevron beyond the end, which put ink outside the box the
-    // plate reserved and stuck the arrow onto the side of the dot.
-    const x = xAt(t) - off * r * 1.9;
-    out.push(dot(x, cy, r, p.structure, seed));
-    if (off) {
-      const tip = xAt(t) + off * r * 0.85;
-      out.push(H.stroke([
-        { x: tip - off * r * 0.8, y: cy - r * 0.6 },
-        { x: tip, y: cy },
-        { x: tip - off * r * 0.8, y: cy + r * 0.6 },
-      ], { stroke: p.structure, width: Math.max(2.6, r * 0.2), opacity: 0.9, amp: 1.1, over: 3, seed: seed + 9 }));
-    }
-    return { svg: out.join(""), x: x, cy: cy, r: r, t: t, offRange: off !== 0 };
-  }
-
-  g.SERIES = { line: line, sparkBars: sparkBars, cycleArc: cycleArc, rowBars: rowBars, rangeMark: rangeMark, domain: domain, ticksOf: ticksOf, niceStep: niceStep };
-  if (typeof module !== "undefined") module.exports = g.SERIES;
-})(typeof window !== "undefined" ? window : globalThis);
+if (typeof module !== 'undefined' && module.exports) module.exports = SERIES;
+if (typeof window !== 'undefined') window.SERIES = SERIES;

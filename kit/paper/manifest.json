@@ -1,27 +1,14 @@
 {
  "family": "paper",
- "pack": "delta-15",
- "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
+ "pack": "rebuild-17",
+ "generated": "engine/emit.js. Deterministic — regenerate from the engine you are holding: node engine/emit.js (node engine/emit.js --check diffs without writing).",
  "exportScale": 2,
- "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
- "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
- "assetCount": 16,
- "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
- "coordinateOrigin": "top-left of canvas",
- "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8",
+ "frameNaming": "<name>-<hour>_f01.._fNN before the extension. The BASE file carries no frame tag and is byte-identical to _f01.",
+ "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
+ "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
- "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
- "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
- "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
- "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
- "boilPolicy": "Boil amplitude is declared per asset in engine/build.js BOIL_AMP, default 2.0 canvas units. Solve scale multiplies it: an asset stretched onto a target boils at amp x solve in the frame, which is the same property the inkWeight check already enforces for line weight. Do not compare a plate-side boil figure with a frame-side one.",
- "coveragePolicy": "Two boil metrics, and an asset must pass BOTH. AUDIT.amplitude() gives displacement per moved point (spec ~2 canvas units, band 0.4-2.0). AUDIT.coverage() gives the fraction of PIXELS that change between frames (pack band 1-6%, frozen below 0.5%). They fail independently: a one-rule plate can post a perfect amplitude and still read as a still with one element twitching, which is what happened to headline-band-t1 and hook-card-t3.",
- "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
- "slotTotal": 176,
- "frameTotal": 80,
+ "assetCount": 21,
  "plates": {
   "paper/headline-band-t1-16x9": {
    "key": "paper/headline-band-t1-16x9",
@@ -37,61 +24,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "headline-band-t1-16x9.png",
+    "base": "headline-band-t1-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "headline-band-t1-16x9_f01.png",
+      "file": "headline-band-t1-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "280d81a8"
+      "hash": "99c3eaa8"
      },
      {
-      "file": "headline-band-t1-16x9_f02.png",
+      "file": "headline-band-t1-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "9cecb3b7"
+      "hash": "15f374c0"
      },
      {
-      "file": "headline-band-t1-16x9_f03.png",
+      "file": "headline-band-t1-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "594489d9"
-     },
-     {
-      "file": "headline-band-t1-16x9_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "696ef08f"
-     },
-     {
-      "file": "headline-band-t1-16x9_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "2ed9ab10"
+      "hash": "99c3eaa8"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "headline-band-t1-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t1-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "99c3eaa8"
+      },
+      {
+       "file": "headline-band-t1-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "15f374c0"
+      },
+      {
+       "file": "headline-band-t1-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "99c3eaa8"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "headline-band-t1-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t1-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ed21511e"
+      },
+      {
+       "file": "headline-band-t1-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "696f2278"
+      },
+      {
+       "file": "headline-band-t1-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ed21511e"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -157,37 +182,7 @@
      "maxCharsPerLine": 95,
      "maxLines": 2
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "headline-band-t1-16x9.svg",
-      "png": "headline-band-t1-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "headline-band-t1-16x9.png",
-     "svg": "headline-band-t1-16x9.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "16x9",
-    "family": "paper",
-    "type": "headline-band",
-    "treatment": 1
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/headline-band-t1-9x16": {
    "key": "paper/headline-band-t1-9x16",
@@ -203,61 +198,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "headline-band-t1-9x16.png",
+    "base": "headline-band-t1-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "headline-band-t1-9x16_f01.png",
+      "file": "headline-band-t1-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "1ce4d751"
+      "hash": "ced39821"
      },
      {
-      "file": "headline-band-t1-9x16_f02.png",
+      "file": "headline-band-t1-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "ac67a3c1"
+      "hash": "4affd61a"
      },
      {
-      "file": "headline-band-t1-9x16_f03.png",
+      "file": "headline-band-t1-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "661a6ae3"
-     },
-     {
-      "file": "headline-band-t1-9x16_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "5fd18be5"
-     },
-     {
-      "file": "headline-band-t1-9x16_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "688c3667"
+      "hash": "ced39821"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "headline-band-t1-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t1-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ced39821"
+      },
+      {
+       "file": "headline-band-t1-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "4affd61a"
+      },
+      {
+       "file": "headline-band-t1-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ced39821"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "headline-band-t1-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t1-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "977ce948"
+      },
+      {
+       "file": "headline-band-t1-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "67a0f3c0"
+      },
+      {
+       "file": "headline-band-t1-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "977ce948"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -323,37 +356,7 @@
      "maxCharsPerLine": 57,
      "maxLines": 2
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "headline-band-t1-9x16.svg",
-      "png": "headline-band-t1-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "headline-band-t1-9x16.png",
-     "svg": "headline-band-t1-9x16.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "9x16",
-    "family": "paper",
-    "type": "headline-band",
-    "treatment": 1
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/headline-band-t2-16x9": {
    "key": "paper/headline-band-t2-16x9",
@@ -369,61 +372,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "headline-band-t2-16x9.png",
+    "base": "headline-band-t2-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "headline-band-t2-16x9_f01.png",
+      "file": "headline-band-t2-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "2221d275"
+      "hash": "df7fd868"
      },
      {
-      "file": "headline-band-t2-16x9_f02.png",
+      "file": "headline-band-t2-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "3ebf08f4"
+      "hash": "7c57aa60"
      },
      {
-      "file": "headline-band-t2-16x9_f03.png",
+      "file": "headline-band-t2-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "44bc5910"
-     },
-     {
-      "file": "headline-band-t2-16x9_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "8528e42a"
-     },
-     {
-      "file": "headline-band-t2-16x9_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "ef2be3a7"
+      "hash": "df7fd868"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "headline-band-t2-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t2-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "df7fd868"
+      },
+      {
+       "file": "headline-band-t2-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "7c57aa60"
+      },
+      {
+       "file": "headline-band-t2-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "df7fd868"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "headline-band-t2-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t2-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "11d23e14"
+      },
+      {
+       "file": "headline-band-t2-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "fb1c3cc8"
+      },
+      {
+       "file": "headline-band-t2-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "11d23e14"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -489,37 +530,7 @@
      "maxCharsPerLine": 102,
      "maxLines": 2
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "headline-band-t2-16x9.svg",
-      "png": "headline-band-t2-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "headline-band-t2-16x9.png",
-     "svg": "headline-band-t2-16x9.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "16x9",
-    "family": "paper",
-    "type": "headline-band",
-    "treatment": 2
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/headline-band-t2-9x16": {
    "key": "paper/headline-band-t2-9x16",
@@ -535,61 +546,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "headline-band-t2-9x16.png",
+    "base": "headline-band-t2-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "headline-band-t2-9x16_f01.png",
+      "file": "headline-band-t2-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "70fc953c"
+      "hash": "ec1e5448"
      },
      {
-      "file": "headline-band-t2-9x16_f02.png",
+      "file": "headline-band-t2-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "d3489edd"
+      "hash": "925c7578"
      },
      {
-      "file": "headline-band-t2-9x16_f03.png",
+      "file": "headline-band-t2-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "ed021c1c"
-     },
-     {
-      "file": "headline-band-t2-9x16_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "298d87da"
-     },
-     {
-      "file": "headline-band-t2-9x16_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "9f954a7c"
+      "hash": "ec1e5448"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "headline-band-t2-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t2-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ec1e5448"
+      },
+      {
+       "file": "headline-band-t2-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "925c7578"
+      },
+      {
+       "file": "headline-band-t2-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ec1e5448"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "headline-band-t2-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t2-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "b9e86440"
+      },
+      {
+       "file": "headline-band-t2-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "467ada40"
+      },
+      {
+       "file": "headline-band-t2-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "b9e86440"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -655,37 +704,7 @@
      "maxCharsPerLine": 62,
      "maxLines": 2
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "headline-band-t2-9x16.svg",
-      "png": "headline-band-t2-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "headline-band-t2-9x16.png",
-     "svg": "headline-band-t2-9x16.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "9x16",
-    "family": "paper",
-    "type": "headline-band",
-    "treatment": 2
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/headline-band-t3-16x9": {
    "key": "paper/headline-band-t3-16x9",
@@ -701,61 +720,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "headline-band-t3-16x9.png",
+    "base": "headline-band-t3-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "headline-band-t3-16x9_f01.png",
+      "file": "headline-band-t3-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "0db18c8a"
+      "hash": "73fe0df6"
      },
      {
-      "file": "headline-band-t3-16x9_f02.png",
+      "file": "headline-band-t3-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "fde84a89"
+      "hash": "8cd140b8"
      },
      {
-      "file": "headline-band-t3-16x9_f03.png",
+      "file": "headline-band-t3-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "a3b5dc79"
-     },
-     {
-      "file": "headline-band-t3-16x9_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "e271b6ef"
-     },
-     {
-      "file": "headline-band-t3-16x9_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "9c56dda5"
+      "hash": "73fe0df6"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "headline-band-t3-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t3-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "73fe0df6"
+      },
+      {
+       "file": "headline-band-t3-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "8cd140b8"
+      },
+      {
+       "file": "headline-band-t3-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "73fe0df6"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "headline-band-t3-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t3-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d677a660"
+      },
+      {
+       "file": "headline-band-t3-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "ef37b196"
+      },
+      {
+       "file": "headline-band-t3-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d677a660"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -821,53 +878,7 @@
      "maxCharsPerLine": 107,
      "maxLines": 2
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "headline-band-t3-16x9.svg",
-      "png": "headline-band-t3-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "headline-band-t3-16x9.png",
-     "svg": "headline-band-t3-16x9.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "decorBoxes": [
-     {
-      "label": "tape-1",
-      "x": -32,
-      "y": 193,
-      "w": 184,
-      "h": 106
-     },
-     {
-      "label": "tape-2",
-      "x": 1718,
-      "y": 755,
-      "w": 184,
-      "h": 106
-     }
-    ],
-    "aspect": "16x9",
-    "family": "paper",
-    "type": "headline-band",
-    "treatment": 3
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/headline-band-t3-9x16": {
    "key": "paper/headline-band-t3-9x16",
@@ -883,61 +894,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "headline-band-t3-9x16.png",
+    "base": "headline-band-t3-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "headline-band-t3-9x16_f01.png",
+      "file": "headline-band-t3-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "44092212"
+      "hash": "577df070"
      },
      {
-      "file": "headline-band-t3-9x16_f02.png",
+      "file": "headline-band-t3-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "5ff1c7e7"
+      "hash": "1c5b1e70"
      },
      {
-      "file": "headline-band-t3-9x16_f03.png",
+      "file": "headline-band-t3-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "9a8def70"
-     },
-     {
-      "file": "headline-band-t3-9x16_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "938ce411"
-     },
-     {
-      "file": "headline-band-t3-9x16_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "0ffc9cf9"
+      "hash": "577df070"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "headline-band-t3-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t3-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "577df070"
+      },
+      {
+       "file": "headline-band-t3-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "1c5b1e70"
+      },
+      {
+       "file": "headline-band-t3-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "577df070"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "headline-band-t3-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-band-t3-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "03b78428"
+      },
+      {
+       "file": "headline-band-t3-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "c249ffb0"
+      },
+      {
+       "file": "headline-band-t3-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "03b78428"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -1003,53 +1052,7 @@
      "maxCharsPerLine": 64,
      "maxLines": 2
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "headline-band-t3-9x16.svg",
-      "png": "headline-band-t3-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "headline-band-t3-9x16.png",
-     "svg": "headline-band-t3-9x16.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "decorBoxes": [
-     {
-      "label": "tape-1",
-      "x": -102,
-      "y": 551,
-      "w": 184,
-      "h": 106
-     },
-     {
-      "label": "tape-2",
-      "x": 948,
-      "y": 1233,
-      "w": 184,
-      "h": 106
-     }
-    ],
-    "aspect": "9x16",
-    "family": "paper",
-    "type": "headline-band",
-    "treatment": 3
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/receipt-4-16x9": {
    "key": "paper/receipt-4-16x9",
@@ -1065,61 +1068,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "receipt-4-16x9.png",
+    "base": "receipt-4-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "receipt-4-16x9_f01.png",
+      "file": "receipt-4-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "b81a8f10"
+      "hash": "6c6bc7d0"
      },
      {
-      "file": "receipt-4-16x9_f02.png",
+      "file": "receipt-4-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "4c2b40ba"
+      "hash": "3edd065e"
      },
      {
-      "file": "receipt-4-16x9_f03.png",
+      "file": "receipt-4-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "1a7e875f"
-     },
-     {
-      "file": "receipt-4-16x9_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "71b242b7"
-     },
-     {
-      "file": "receipt-4-16x9_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "5d0dba8f"
+      "hash": "6c6bc7d0"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "receipt-4-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-4-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "6c6bc7d0"
+      },
+      {
+       "file": "receipt-4-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "3edd065e"
+      },
+      {
+       "file": "receipt-4-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "6c6bc7d0"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "receipt-4-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-4-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "69f06a52"
+      },
+      {
+       "file": "receipt-4-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "62d185c6"
+      },
+      {
+       "file": "receipt-4-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "69f06a52"
+      }
+     ]
+    }
    },
    "slotCount": 14,
    "typeRoles": {
@@ -1311,45 +1352,7 @@
      "w": 0,
      "h": 0
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "receipt-4-16x9.svg",
-      "png": "receipt-4-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "receipt-4-16x9.png",
-     "svg": "receipt-4-16x9.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "16x9",
-    "family": "paper",
-    "type": "receipt-4",
-    "lines": 4,
-    "highlight": {
-     "slot": "highlight-index",
-     "note": "1-based index of the line that is the point, or 0 for none. The bot sets it and the renderer sets THAT line in the itemBold role — one plate, not a second plate per highlightable line. A highlight is a weight change, never a colour: the receipt has no direction in it.",
-     "roles": [
-      "item",
-      "itemBold"
-     ]
-    }
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/receipt-4-9x16": {
    "key": "paper/receipt-4-9x16",
@@ -1365,61 +1368,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "receipt-4-9x16.png",
+    "base": "receipt-4-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "receipt-4-9x16_f01.png",
+      "file": "receipt-4-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "77861e33"
+      "hash": "ab1d2b28"
      },
      {
-      "file": "receipt-4-9x16_f02.png",
+      "file": "receipt-4-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "087b6124"
+      "hash": "d331c50a"
      },
      {
-      "file": "receipt-4-9x16_f03.png",
+      "file": "receipt-4-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "d55713d9"
-     },
-     {
-      "file": "receipt-4-9x16_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "10feb448"
-     },
-     {
-      "file": "receipt-4-9x16_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "7acd4e16"
+      "hash": "ab1d2b28"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "receipt-4-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-4-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ab1d2b28"
+      },
+      {
+       "file": "receipt-4-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "d331c50a"
+      },
+      {
+       "file": "receipt-4-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ab1d2b28"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "receipt-4-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-4-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "05c19d75"
+      },
+      {
+       "file": "receipt-4-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "b8c571b8"
+      },
+      {
+       "file": "receipt-4-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "05c19d75"
+      }
+     ]
+    }
    },
    "slotCount": 14,
    "typeRoles": {
@@ -1611,45 +1652,7 @@
      "w": 0,
      "h": 0
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "receipt-4-9x16.svg",
-      "png": "receipt-4-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "receipt-4-9x16.png",
-     "svg": "receipt-4-9x16.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "9x16",
-    "family": "paper",
-    "type": "receipt-4",
-    "lines": 4,
-    "highlight": {
-     "slot": "highlight-index",
-     "note": "1-based index of the line that is the point, or 0 for none. The bot sets it and the renderer sets THAT line in the itemBold role — one plate, not a second plate per highlightable line. A highlight is a weight change, never a colour: the receipt has no direction in it.",
-     "roles": [
-      "item",
-      "itemBold"
-     ]
-    }
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/receipt-6-16x9": {
    "key": "paper/receipt-6-16x9",
@@ -1665,61 +1668,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "receipt-6-16x9.png",
+    "base": "receipt-6-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "receipt-6-16x9_f01.png",
+      "file": "receipt-6-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "3749bc28"
+      "hash": "632ad6e6"
      },
      {
-      "file": "receipt-6-16x9_f02.png",
+      "file": "receipt-6-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "dd1cbb85"
+      "hash": "11a661a6"
      },
      {
-      "file": "receipt-6-16x9_f03.png",
+      "file": "receipt-6-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "cc2cbe34"
-     },
-     {
-      "file": "receipt-6-16x9_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "4937f6ca"
-     },
-     {
-      "file": "receipt-6-16x9_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "8cc0b05e"
+      "hash": "632ad6e6"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "receipt-6-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-6-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "632ad6e6"
+      },
+      {
+       "file": "receipt-6-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "11a661a6"
+      },
+      {
+       "file": "receipt-6-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "632ad6e6"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "receipt-6-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-6-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3dd019d8"
+      },
+      {
+       "file": "receipt-6-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "33970dc8"
+      },
+      {
+       "file": "receipt-6-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3dd019d8"
+      }
+     ]
+    }
    },
    "slotCount": 18,
    "typeRoles": {
@@ -1947,45 +1988,7 @@
      "w": 0,
      "h": 0
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "receipt-6-16x9.svg",
-      "png": "receipt-6-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "receipt-6-16x9.png",
-     "svg": "receipt-6-16x9.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "16x9",
-    "family": "paper",
-    "type": "receipt-6",
-    "lines": 6,
-    "highlight": {
-     "slot": "highlight-index",
-     "note": "1-based index of the line that is the point, or 0 for none. The bot sets it and the renderer sets THAT line in the itemBold role — one plate, not a second plate per highlightable line. A highlight is a weight change, never a colour: the receipt has no direction in it.",
-     "roles": [
-      "item",
-      "itemBold"
-     ]
-    }
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/receipt-6-9x16": {
    "key": "paper/receipt-6-9x16",
@@ -2001,61 +2004,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "receipt-6-9x16.png",
+    "base": "receipt-6-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "receipt-6-9x16_f01.png",
+      "file": "receipt-6-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "45a007bc"
+      "hash": "a837a17e"
      },
      {
-      "file": "receipt-6-9x16_f02.png",
+      "file": "receipt-6-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "ef5d7860"
+      "hash": "e5771948"
      },
      {
-      "file": "receipt-6-9x16_f03.png",
+      "file": "receipt-6-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "9ae19c1e"
-     },
-     {
-      "file": "receipt-6-9x16_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "05582f34"
-     },
-     {
-      "file": "receipt-6-9x16_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "0af8fc28"
+      "hash": "a837a17e"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "receipt-6-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-6-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a837a17e"
+      },
+      {
+       "file": "receipt-6-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "e5771948"
+      },
+      {
+       "file": "receipt-6-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a837a17e"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "receipt-6-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-6-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "123ef360"
+      },
+      {
+       "file": "receipt-6-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "30005c88"
+      },
+      {
+       "file": "receipt-6-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "123ef360"
+      }
+     ]
+    }
    },
    "slotCount": 18,
    "typeRoles": {
@@ -2283,45 +2324,7 @@
      "w": 0,
      "h": 0
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "receipt-6-9x16.svg",
-      "png": "receipt-6-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "receipt-6-9x16.png",
-     "svg": "receipt-6-9x16.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "9x16",
-    "family": "paper",
-    "type": "receipt-6",
-    "lines": 6,
-    "highlight": {
-     "slot": "highlight-index",
-     "note": "1-based index of the line that is the point, or 0 for none. The bot sets it and the renderer sets THAT line in the itemBold role — one plate, not a second plate per highlightable line. A highlight is a weight change, never a colour: the receipt has no direction in it.",
-     "roles": [
-      "item",
-      "itemBold"
-     ]
-    }
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/receipt-8-16x9": {
    "key": "paper/receipt-8-16x9",
@@ -2337,61 +2340,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "receipt-8-16x9.png",
+    "base": "receipt-8-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "receipt-8-16x9_f01.png",
+      "file": "receipt-8-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "b59d4d83"
+      "hash": "3ad690a0"
      },
      {
-      "file": "receipt-8-16x9_f02.png",
+      "file": "receipt-8-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "d3c268ff"
+      "hash": "ea103630"
      },
      {
-      "file": "receipt-8-16x9_f03.png",
+      "file": "receipt-8-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "a20e9848"
-     },
-     {
-      "file": "receipt-8-16x9_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "821483ba"
-     },
-     {
-      "file": "receipt-8-16x9_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "3b7bf1d1"
+      "hash": "3ad690a0"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "receipt-8-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-8-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3ad690a0"
+      },
+      {
+       "file": "receipt-8-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "ea103630"
+      },
+      {
+       "file": "receipt-8-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3ad690a0"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "receipt-8-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-8-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e95cf568"
+      },
+      {
+       "file": "receipt-8-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "6b5e4568"
+      },
+      {
+       "file": "receipt-8-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e95cf568"
+      }
+     ]
+    }
    },
    "slotCount": 22,
    "typeRoles": {
@@ -2655,45 +2696,7 @@
      "w": 0,
      "h": 0
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "receipt-8-16x9.svg",
-      "png": "receipt-8-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "receipt-8-16x9.png",
-     "svg": "receipt-8-16x9.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "16x9",
-    "family": "paper",
-    "type": "receipt-8",
-    "lines": 8,
-    "highlight": {
-     "slot": "highlight-index",
-     "note": "1-based index of the line that is the point, or 0 for none. The bot sets it and the renderer sets THAT line in the itemBold role — one plate, not a second plate per highlightable line. A highlight is a weight change, never a colour: the receipt has no direction in it.",
-     "roles": [
-      "item",
-      "itemBold"
-     ]
-    }
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/receipt-8-9x16": {
    "key": "paper/receipt-8-9x16",
@@ -2709,61 +2712,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "receipt-8-9x16.png",
+    "base": "receipt-8-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "receipt-8-9x16_f01.png",
+      "file": "receipt-8-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "bd43a77b"
+      "hash": "723d0820"
      },
      {
-      "file": "receipt-8-9x16_f02.png",
+      "file": "receipt-8-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "0bbc9413"
+      "hash": "f9e60da5"
      },
      {
-      "file": "receipt-8-9x16_f03.png",
+      "file": "receipt-8-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "4a8a314b"
-     },
-     {
-      "file": "receipt-8-9x16_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "7ad92c03"
-     },
-     {
-      "file": "receipt-8-9x16_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "c3cece8a"
+      "hash": "723d0820"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "receipt-8-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-8-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "723d0820"
+      },
+      {
+       "file": "receipt-8-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "f9e60da5"
+      },
+      {
+       "file": "receipt-8-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "723d0820"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "receipt-8-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "receipt-8-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a900c126"
+      },
+      {
+       "file": "receipt-8-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "aa368ce0"
+      },
+      {
+       "file": "receipt-8-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a900c126"
+      }
+     ]
+    }
    },
    "slotCount": 22,
    "typeRoles": {
@@ -3027,45 +3068,7 @@
      "w": 0,
      "h": 0
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "receipt-8-9x16.svg",
-      "png": "receipt-8-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "receipt-8-9x16.png",
-     "svg": "receipt-8-9x16.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "9x16",
-    "family": "paper",
-    "type": "receipt-8",
-    "lines": 8,
-    "highlight": {
-     "slot": "highlight-index",
-     "note": "1-based index of the line that is the point, or 0 for none. The bot sets it and the renderer sets THAT line in the itemBold role — one plate, not a second plate per highlightable line. A highlight is a weight change, never a colour: the receipt has no direction in it.",
-     "roles": [
-      "item",
-      "itemBold"
-     ]
-    }
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/headline-stack-3-16x9": {
    "key": "paper/headline-stack-3-16x9",
@@ -3081,61 +3084,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "headline-stack-3-16x9.png",
+    "base": "headline-stack-3-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "headline-stack-3-16x9_f01.png",
+      "file": "headline-stack-3-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "a84952b3"
+      "hash": "adfc1568"
      },
      {
-      "file": "headline-stack-3-16x9_f02.png",
+      "file": "headline-stack-3-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "f831c61e"
+      "hash": "bc00b720"
      },
      {
-      "file": "headline-stack-3-16x9_f03.png",
+      "file": "headline-stack-3-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "0c3591f3"
-     },
-     {
-      "file": "headline-stack-3-16x9_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "5b18c1fc"
-     },
-     {
-      "file": "headline-stack-3-16x9_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "f7f5b300"
+      "hash": "adfc1568"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "headline-stack-3-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-stack-3-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "adfc1568"
+      },
+      {
+       "file": "headline-stack-3-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "bc00b720"
+      },
+      {
+       "file": "headline-stack-3-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "adfc1568"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "headline-stack-3-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-stack-3-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a4259708"
+      },
+      {
+       "file": "headline-stack-3-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "1f202886"
+      },
+      {
+       "file": "headline-stack-3-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a4259708"
+      }
+     ]
+    }
    },
    "slotCount": 11,
    "typeRoles": {
@@ -3292,75 +3333,7 @@
      "h": 30,
      "maxChars": 102
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "headline-stack-3-16x9.svg",
-      "png": "headline-stack-3-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "headline-stack-3-16x9.png",
-     "svg": "headline-stack-3-16x9.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "16x9",
-    "family": "paper",
-    "type": "headline-stack-3",
-    "items": 3,
-    "fit": {
-     "top": 173,
-     "stripH": 178,
-     "gap": 20,
-     "fourItemBottom": 945,
-     "captionY": 990,
-     "clears": true
-    },
-    "strips": [
-     {
-      "item": 1,
-      "x": 141,
-      "y": 173,
-      "w": 1638,
-      "h": 178
-     },
-     {
-      "item": 2,
-      "x": 141,
-      "y": 371,
-      "w": 1638,
-      "h": 178
-     },
-     {
-      "item": 3,
-      "x": 141,
-      "y": 569,
-      "w": 1638,
-      "h": 178
-     }
-    ],
-    "congruent": true,
-    "order": "OLDEST AT THE TOP, NEWEST AT THE BOTTOM. date-1 is the oldest. Reading down is time passing; filled the other way the plate says the opposite with the same ink, and nothing would report it.",
-    "argument": "3 headlines, dated, stacked. paper/headline-band carries one story; this carries the fact that there have been 3 of them. That accumulation is the whole difference — it is the picture of 'this has been building for a while'.",
-    "notATimeline": "this is not structure/said-happened and not structure/timeline. There is no rail, no interval and no gap: the strips are evenly spaced whatever the dates say, because the argument is HOW MANY, not how far apart. If the spacing matters, the script wants the timeline.",
-    "seriesNote": "every item is one type role at one size, and no strip is emphasised. The headline the script is about gets an annotation over it from the compositor — a stack with one item pre-lifted has chosen the story for the voice.",
-    "sourceContract": "date-N and source-N are separate slots and both are required: a headline without a publication is a claim with no author, on a channel whose premise is real numbers. The source box is budgeted for 30 characters, which holds a masthead, not a URL.",
-    "headlineBudgetNote": "the headline box is CAPACITY, not a target. At ~48 characters a line it will hold a long one — but a headline that runs to both full lines on every strip is a script that wants paper/headline-band and one story, not a stack whose argument is how many there have been."
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/headline-stack-3-9x16": {
    "key": "paper/headline-stack-3-9x16",
@@ -3376,61 +3349,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "headline-stack-3-9x16.png",
+    "base": "headline-stack-3-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "headline-stack-3-9x16_f01.png",
+      "file": "headline-stack-3-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "3da044e7"
+      "hash": "bfc80b51"
      },
      {
-      "file": "headline-stack-3-9x16_f02.png",
+      "file": "headline-stack-3-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "6ccdd92a"
+      "hash": "55c34010"
      },
      {
-      "file": "headline-stack-3-9x16_f03.png",
+      "file": "headline-stack-3-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "9242f233"
-     },
-     {
-      "file": "headline-stack-3-9x16_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "d7c24114"
-     },
-     {
-      "file": "headline-stack-3-9x16_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "fcbb40c3"
+      "hash": "bfc80b51"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "headline-stack-3-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-stack-3-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bfc80b51"
+      },
+      {
+       "file": "headline-stack-3-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "55c34010"
+      },
+      {
+       "file": "headline-stack-3-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bfc80b51"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "headline-stack-3-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-stack-3-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "fc042f68"
+      },
+      {
+       "file": "headline-stack-3-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "e0e480c0"
+      },
+      {
+       "file": "headline-stack-3-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "fc042f68"
+      }
+     ]
+    }
    },
    "slotCount": 11,
    "typeRoles": {
@@ -3587,75 +3598,7 @@
      "h": 30,
      "maxChars": 59
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "headline-stack-3-9x16.svg",
-      "png": "headline-stack-3-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "headline-stack-3-9x16.png",
-     "svg": "headline-stack-3-9x16.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "9x16",
-    "family": "paper",
-    "type": "headline-stack-3",
-    "items": 3,
-    "fit": {
-     "top": 346,
-     "stripH": 242,
-     "gap": 36,
-     "fourItemBottom": 1422,
-     "captionY": 1730,
-     "clears": true
-    },
-    "strips": [
-     {
-      "item": 1,
-      "x": 43,
-      "y": 346,
-      "w": 994,
-      "h": 242
-     },
-     {
-      "item": 2,
-      "x": 43,
-      "y": 624,
-      "w": 994,
-      "h": 242
-     },
-     {
-      "item": 3,
-      "x": 43,
-      "y": 902,
-      "w": 994,
-      "h": 242
-     }
-    ],
-    "congruent": true,
-    "order": "OLDEST AT THE TOP, NEWEST AT THE BOTTOM. date-1 is the oldest. Reading down is time passing; filled the other way the plate says the opposite with the same ink, and nothing would report it.",
-    "argument": "3 headlines, dated, stacked. paper/headline-band carries one story; this carries the fact that there have been 3 of them. That accumulation is the whole difference — it is the picture of 'this has been building for a while'.",
-    "notATimeline": "this is not structure/said-happened and not structure/timeline. There is no rail, no interval and no gap: the strips are evenly spaced whatever the dates say, because the argument is HOW MANY, not how far apart. If the spacing matters, the script wants the timeline.",
-    "seriesNote": "every item is one type role at one size, and no strip is emphasised. The headline the script is about gets an annotation over it from the compositor — a stack with one item pre-lifted has chosen the story for the voice.",
-    "sourceContract": "date-N and source-N are separate slots and both are required: a headline without a publication is a claim with no author, on a channel whose premise is real numbers. The source box is budgeted for 30 characters, which holds a masthead, not a URL.",
-    "headlineBudgetNote": "the headline box is CAPACITY, not a target. At ~48 characters a line it will hold a long one — but a headline that runs to both full lines on every strip is a script that wants paper/headline-band and one story, not a stack whose argument is how many there have been."
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/headline-stack-4-16x9": {
    "key": "paper/headline-stack-4-16x9",
@@ -3671,61 +3614,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "headline-stack-4-16x9.png",
+    "base": "headline-stack-4-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "headline-stack-4-16x9_f01.png",
+      "file": "headline-stack-4-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "8b36767e"
+      "hash": "7da4d736"
      },
      {
-      "file": "headline-stack-4-16x9_f02.png",
+      "file": "headline-stack-4-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "a100917f"
+      "hash": "bbf4bba8"
      },
      {
-      "file": "headline-stack-4-16x9_f03.png",
+      "file": "headline-stack-4-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "210ada4a"
-     },
-     {
-      "file": "headline-stack-4-16x9_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "d49c8dde"
-     },
-     {
-      "file": "headline-stack-4-16x9_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "04cd2e40"
+      "hash": "7da4d736"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "headline-stack-4-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-stack-4-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7da4d736"
+      },
+      {
+       "file": "headline-stack-4-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "bbf4bba8"
+      },
+      {
+       "file": "headline-stack-4-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7da4d736"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "headline-stack-4-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-stack-4-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "60c4767a"
+      },
+      {
+       "file": "headline-stack-4-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "2840772b"
+      },
+      {
+       "file": "headline-stack-4-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "60c4767a"
+      }
+     ]
+    }
    },
    "slotCount": 14,
    "typeRoles": {
@@ -3910,82 +3891,7 @@
      "h": 30,
      "maxChars": 102
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "headline-stack-4-16x9.svg",
-      "png": "headline-stack-4-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "headline-stack-4-16x9.png",
-     "svg": "headline-stack-4-16x9.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "16x9",
-    "family": "paper",
-    "type": "headline-stack-4",
-    "items": 4,
-    "fit": {
-     "top": 173,
-     "stripH": 178,
-     "gap": 20,
-     "fourItemBottom": 945,
-     "captionY": 990,
-     "clears": true
-    },
-    "strips": [
-     {
-      "item": 1,
-      "x": 141,
-      "y": 173,
-      "w": 1638,
-      "h": 178
-     },
-     {
-      "item": 2,
-      "x": 141,
-      "y": 371,
-      "w": 1638,
-      "h": 178
-     },
-     {
-      "item": 3,
-      "x": 141,
-      "y": 569,
-      "w": 1638,
-      "h": 178
-     },
-     {
-      "item": 4,
-      "x": 141,
-      "y": 767,
-      "w": 1638,
-      "h": 178
-     }
-    ],
-    "congruent": true,
-    "order": "OLDEST AT THE TOP, NEWEST AT THE BOTTOM. date-1 is the oldest. Reading down is time passing; filled the other way the plate says the opposite with the same ink, and nothing would report it.",
-    "argument": "4 headlines, dated, stacked. paper/headline-band carries one story; this carries the fact that there have been 4 of them. That accumulation is the whole difference — it is the picture of 'this has been building for a while'.",
-    "notATimeline": "this is not structure/said-happened and not structure/timeline. There is no rail, no interval and no gap: the strips are evenly spaced whatever the dates say, because the argument is HOW MANY, not how far apart. If the spacing matters, the script wants the timeline.",
-    "seriesNote": "every item is one type role at one size, and no strip is emphasised. The headline the script is about gets an annotation over it from the compositor — a stack with one item pre-lifted has chosen the story for the voice.",
-    "sourceContract": "date-N and source-N are separate slots and both are required: a headline without a publication is a claim with no author, on a channel whose premise is real numbers. The source box is budgeted for 30 characters, which holds a masthead, not a URL.",
-    "headlineBudgetNote": "the headline box is CAPACITY, not a target. At ~48 characters a line it will hold a long one — but a headline that runs to both full lines on every strip is a script that wants paper/headline-band and one story, not a stack whose argument is how many there have been."
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "paper/headline-stack-4-9x16": {
    "key": "paper/headline-stack-4-9x16",
@@ -4001,61 +3907,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "headline-stack-4-9x16.png",
+    "base": "headline-stack-4-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "headline-stack-4-9x16_f01.png",
+      "file": "headline-stack-4-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "96c8fddb"
+      "hash": "63853246"
      },
      {
-      "file": "headline-stack-4-9x16_f02.png",
+      "file": "headline-stack-4-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "37f32630"
+      "hash": "2df9e5d8"
      },
      {
-      "file": "headline-stack-4-9x16_f03.png",
+      "file": "headline-stack-4-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "0b2077f5"
-     },
-     {
-      "file": "headline-stack-4-9x16_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "589f0f53"
-     },
-     {
-      "file": "headline-stack-4-9x16_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "67135e84"
+      "hash": "63853246"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "headline-stack-4-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-stack-4-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "63853246"
+      },
+      {
+       "file": "headline-stack-4-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "2df9e5d8"
+      },
+      {
+       "file": "headline-stack-4-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "63853246"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "headline-stack-4-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "headline-stack-4-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "5e9fc4a2"
+      },
+      {
+       "file": "headline-stack-4-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "711c84c8"
+      },
+      {
+       "file": "headline-stack-4-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "5e9fc4a2"
+      }
+     ]
+    }
    },
    "slotCount": 14,
    "typeRoles": {
@@ -4240,82 +4184,1272 @@
      "h": 30,
      "maxChars": 59
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
+   }
+  },
+  "paper/press-release-9x16": {
+   "key": "paper/press-release-9x16",
+   "dir": "paper",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "press-release-9x16-night.png",
+    "baseIsFrame": true,
     "frames": [
      {
-      "tag": "",
-      "svg": "headline-stack-4-9x16.svg",
-      "png": "headline-stack-4-9x16.png"
+      "file": "press-release-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "fc7f4358"
+     },
+     {
+      "file": "press-release-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "7d4b29c8"
+     },
+     {
+      "file": "press-release-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "fc7f4358"
      }
-    ],
-    "files": {
-     "png": "headline-stack-4-9x16.png",
-     "svg": "headline-stack-4-9x16.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "9x16",
-    "family": "paper",
-    "type": "headline-stack-4",
-    "items": 4,
-    "fit": {
-     "top": 346,
-     "stripH": 242,
-     "gap": 36,
-     "fourItemBottom": 1422,
-     "captionY": 1730,
-     "clears": true
-    },
-    "strips": [
-     {
-      "item": 1,
-      "x": 43,
-      "y": 346,
-      "w": 994,
-      "h": 242
-     },
-     {
-      "item": 2,
-      "x": 43,
-      "y": 624,
-      "w": 994,
-      "h": 242
-     },
-     {
-      "item": 3,
-      "x": 43,
-      "y": 902,
-      "w": 994,
-      "h": 242
-     },
-     {
-      "item": 4,
-      "x": 43,
-      "y": 1180,
-      "w": 994,
-      "h": 242
-     }
-    ],
-    "congruent": true,
-    "order": "OLDEST AT THE TOP, NEWEST AT THE BOTTOM. date-1 is the oldest. Reading down is time passing; filled the other way the plate says the opposite with the same ink, and nothing would report it.",
-    "argument": "4 headlines, dated, stacked. paper/headline-band carries one story; this carries the fact that there have been 4 of them. That accumulation is the whole difference — it is the picture of 'this has been building for a while'.",
-    "notATimeline": "this is not structure/said-happened and not structure/timeline. There is no rail, no interval and no gap: the strips are evenly spaced whatever the dates say, because the argument is HOW MANY, not how far apart. If the spacing matters, the script wants the timeline.",
-    "seriesNote": "every item is one type role at one size, and no strip is emphasised. The headline the script is about gets an annotation over it from the compositor — a stack with one item pre-lifted has chosen the story for the voice.",
-    "sourceContract": "date-N and source-N are separate slots and both are required: a headline without a publication is a claim with no author, on a channel whose premise is real numbers. The source box is budgeted for 30 characters, which holds a masthead, not a URL.",
-    "headlineBudgetNote": "the headline box is CAPACITY, not a target. At ~48 characters a line it will hold a long one — but a headline that runs to both full lines on every strip is a script that wants paper/headline-band and one story, not a stack whose argument is how many there have been."
+    ]
    },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   "filesByHour": {
+    "night": {
+     "base": "press-release-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "press-release-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "fc7f4358"
+      },
+      {
+       "file": "press-release-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "7d4b29c8"
+      },
+      {
+       "file": "press-release-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "fc7f4358"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "press-release-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "press-release-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8f5c3190"
+      },
+      {
+       "file": "press-release-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "a4d8399e"
+      },
+      {
+       "file": "press-release-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8f5c3190"
+      }
+     ]
+    }
+   },
+   "slotCount": 6,
+   "typeRoles": {
+    "source": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 23,
+     "budget": "derived from the slot boxes that set this role; 23 is the floor (narrowest of 1), was 29"
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 21,
+     "budget": "derived from the slot boxes that set this role; 21 is the floor (narrowest of 1), was 20"
+    },
+    "headline": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 22"
+    },
+    "body": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 74,
+     "budget": "derived from the slot boxes that set this role; 74 is the floor (narrowest of 1), was 40"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    }
+   },
+   "slots": {
+    "source": {
+     "align": "left",
+     "role": "source",
+     "x": 96,
+     "y": 306,
+     "w": 533,
+     "h": 35,
+     "maxChars": 23
+    },
+    "date": {
+     "align": "right",
+     "role": "date",
+     "x": 647,
+     "y": 310,
+     "w": 337,
+     "h": 30,
+     "maxChars": 21
+    },
+    "headline": {
+     "align": "left",
+     "role": "headline",
+     "x": 96,
+     "y": 430,
+     "w": 888,
+     "h": 330,
+     "maxChars": 106,
+     "wraps": 4,
+     "maxCharsPerLine": 36,
+     "maxLines": 3
+    },
+    "body": {
+     "align": "left",
+     "role": "body",
+     "x": 96,
+     "y": 850,
+     "w": 888,
+     "h": 330,
+     "maxChars": 438,
+     "wraps": 8,
+     "maxCharsPerLine": 74,
+     "maxLines": 2
+    },
+    "mark-area": {
+     "overlay": true,
+     "role": "mark-area",
+     "note": "a [SCRIBBLE:] composites here, over the first sentence of body",
+     "x": 80,
+     "y": 860,
+     "w": 920,
+     "h": 130
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1470,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "paper/wire-strip-3-9x16": {
+   "key": "paper/wire-strip-3-9x16",
+   "dir": "paper",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "wire-strip-3-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "wire-strip-3-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "ac8a26bc"
+     },
+     {
+      "file": "wire-strip-3-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "d68e54f0"
+     },
+     {
+      "file": "wire-strip-3-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "ac8a26bc"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "wire-strip-3-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wire-strip-3-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ac8a26bc"
+      },
+      {
+       "file": "wire-strip-3-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "d68e54f0"
+      },
+      {
+       "file": "wire-strip-3-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ac8a26bc"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "wire-strip-3-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wire-strip-3-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "83984338"
+      },
+      {
+       "file": "wire-strip-3-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "6c8eeb50"
+      },
+      {
+       "file": "wire-strip-3-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "83984338"
+      }
+     ]
+    }
+   },
+   "slotCount": 11,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "time": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 3), was 7"
+    },
+    "headline": {
+     "font": "Archivo Narrow",
+     "size": 54,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 34,
+     "budget": "derived from the slot boxes that set this role; 34 is the floor (narrowest of 3), was 22"
+    },
+    "source": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 51,
+     "budget": "derived from the slot boxes that set this role; 51 is the floor (narrowest of 3), was 51"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 260,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "time-1": {
+     "align": "left",
+     "role": "time",
+     "x": 96,
+     "y": 346,
+     "w": 130,
+     "h": 35,
+     "maxChars": 7
+    },
+    "headline-1": {
+     "align": "left",
+     "role": "headline",
+     "x": 246,
+     "y": 340,
+     "w": 738,
+     "h": 363,
+     "maxChars": 126,
+     "wraps": 5,
+     "maxCharsPerLine": 34,
+     "maxLines": 3
+    },
+    "source-1": {
+     "align": "left",
+     "role": "source",
+     "x": 246,
+     "y": 479,
+     "w": 738,
+     "h": 28,
+     "maxChars": 51
+    },
+    "time-2": {
+     "align": "left",
+     "role": "time",
+     "x": 96,
+     "y": 799,
+     "w": 130,
+     "h": 35,
+     "maxChars": 7
+    },
+    "headline-2": {
+     "align": "left",
+     "role": "headline",
+     "x": 246,
+     "y": 793,
+     "w": 738,
+     "h": 363,
+     "maxChars": 126,
+     "wraps": 5,
+     "maxCharsPerLine": 34,
+     "maxLines": 3
+    },
+    "source-2": {
+     "align": "left",
+     "role": "source",
+     "x": 246,
+     "y": 932,
+     "w": 738,
+     "h": 28,
+     "maxChars": 51
+    },
+    "time-3": {
+     "align": "left",
+     "role": "time",
+     "x": 96,
+     "y": 1252,
+     "w": 130,
+     "h": 35,
+     "maxChars": 7
+    },
+    "headline-3": {
+     "align": "left",
+     "role": "headline",
+     "x": 246,
+     "y": 1246,
+     "w": 738,
+     "h": 363,
+     "maxChars": 126,
+     "wraps": 5,
+     "maxCharsPerLine": 34,
+     "maxLines": 3
+    },
+    "source-3": {
+     "align": "left",
+     "role": "source",
+     "x": 246,
+     "y": 1385,
+     "w": 738,
+     "h": 28,
+     "maxChars": 51
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "paper/wire-strip-5-9x16": {
+   "key": "paper/wire-strip-5-9x16",
+   "dir": "paper",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "wire-strip-5-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "wire-strip-5-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "a2c6bed8"
+     },
+     {
+      "file": "wire-strip-5-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "36aac21a"
+     },
+     {
+      "file": "wire-strip-5-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "a2c6bed8"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "wire-strip-5-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wire-strip-5-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a2c6bed8"
+      },
+      {
+       "file": "wire-strip-5-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "36aac21a"
+      },
+      {
+       "file": "wire-strip-5-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a2c6bed8"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "wire-strip-5-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wire-strip-5-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bf3a04aa"
+      },
+      {
+       "file": "wire-strip-5-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "63c593de"
+      },
+      {
+       "file": "wire-strip-5-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bf3a04aa"
+      }
+     ]
+    }
+   },
+   "slotCount": 17,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "time": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), was 7"
+    },
+    "headline": {
+     "font": "Archivo Narrow",
+     "size": 42,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 44,
+     "budget": "derived from the slot boxes that set this role; 44 is the floor (narrowest of 5), was 22"
+    },
+    "source": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 51,
+     "budget": "derived from the slot boxes that set this role; 51 is the floor (narrowest of 5), was 51"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 260,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "time-1": {
+     "align": "left",
+     "role": "time",
+     "x": 96,
+     "y": 346,
+     "w": 130,
+     "h": 35,
+     "maxChars": 7
+    },
+    "headline-1": {
+     "align": "left",
+     "role": "headline",
+     "x": 246,
+     "y": 340,
+     "w": 738,
+     "h": 202,
+     "maxChars": 97,
+     "wraps": 3,
+     "maxCharsPerLine": 44,
+     "maxLines": 3
+    },
+    "source-1": {
+     "align": "left",
+     "role": "source",
+     "x": 246,
+     "y": 451,
+     "w": 738,
+     "h": 28,
+     "maxChars": 51
+    },
+    "time-2": {
+     "align": "left",
+     "role": "time",
+     "x": 96,
+     "y": 618,
+     "w": 130,
+     "h": 35,
+     "maxChars": 7
+    },
+    "headline-2": {
+     "align": "left",
+     "role": "headline",
+     "x": 246,
+     "y": 612,
+     "w": 738,
+     "h": 202,
+     "maxChars": 97,
+     "wraps": 3,
+     "maxCharsPerLine": 44,
+     "maxLines": 3
+    },
+    "source-2": {
+     "align": "left",
+     "role": "source",
+     "x": 246,
+     "y": 723,
+     "w": 738,
+     "h": 28,
+     "maxChars": 51
+    },
+    "time-3": {
+     "align": "left",
+     "role": "time",
+     "x": 96,
+     "y": 890,
+     "w": 130,
+     "h": 35,
+     "maxChars": 7
+    },
+    "headline-3": {
+     "align": "left",
+     "role": "headline",
+     "x": 246,
+     "y": 884,
+     "w": 738,
+     "h": 202,
+     "maxChars": 97,
+     "wraps": 3,
+     "maxCharsPerLine": 44,
+     "maxLines": 3
+    },
+    "source-3": {
+     "align": "left",
+     "role": "source",
+     "x": 246,
+     "y": 995,
+     "w": 738,
+     "h": 28,
+     "maxChars": 51
+    },
+    "time-4": {
+     "align": "left",
+     "role": "time",
+     "x": 96,
+     "y": 1162,
+     "w": 130,
+     "h": 35,
+     "maxChars": 7
+    },
+    "headline-4": {
+     "align": "left",
+     "role": "headline",
+     "x": 246,
+     "y": 1156,
+     "w": 738,
+     "h": 202,
+     "maxChars": 97,
+     "wraps": 3,
+     "maxCharsPerLine": 44,
+     "maxLines": 3
+    },
+    "source-4": {
+     "align": "left",
+     "role": "source",
+     "x": 246,
+     "y": 1267,
+     "w": 738,
+     "h": 28,
+     "maxChars": 51
+    },
+    "time-5": {
+     "align": "left",
+     "role": "time",
+     "x": 96,
+     "y": 1434,
+     "w": 130,
+     "h": 35,
+     "maxChars": 7
+    },
+    "headline-5": {
+     "align": "left",
+     "role": "headline",
+     "x": 246,
+     "y": 1428,
+     "w": 738,
+     "h": 202,
+     "maxChars": 97,
+     "wraps": 3,
+     "maxCharsPerLine": 44,
+     "maxLines": 3
+    },
+    "source-5": {
+     "align": "left",
+     "role": "source",
+     "x": 246,
+     "y": 1539,
+     "w": 738,
+     "h": 28,
+     "maxChars": 51
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "paper/filing-page-16x9": {
+   "key": "paper/filing-page-16x9",
+   "dir": "paper",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "filing-page-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "filing-page-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0446f4d0"
+     },
+     {
+      "file": "filing-page-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "41401ac6"
+     },
+     {
+      "file": "filing-page-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0446f4d0"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "filing-page-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "filing-page-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0446f4d0"
+      },
+      {
+       "file": "filing-page-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "41401ac6"
+      },
+      {
+       "file": "filing-page-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0446f4d0"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "filing-page-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "filing-page-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3db8a196"
+      },
+      {
+       "file": "filing-page-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "10e64a14"
+      },
+      {
+       "file": "filing-page-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3db8a196"
+      }
+     ]
+    }
+   },
+   "slotCount": 5,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 96"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 103,
+     "budget": "derived from the slot boxes that set this role; 103 is the floor (narrowest of 1), was 103"
+    },
+    "docref": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 38,
+     "budget": "derived from the slot boxes that set this role; 38 is the floor (narrowest of 1), was 38"
+    },
+    "passage": {
+     "font": "Archivo Narrow",
+     "size": 46,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 37,
+     "budget": "derived from the slot boxes that set this role; 37 is the floor (narrowest of 1), was 22"
+    },
+    "note": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 57,
+     "budget": "derived from the slot boxes that set this role; 57 is the floor (narrowest of 1), was 40"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 150,
+     "y": 110,
+     "w": 891,
+     "h": 32,
+     "maxChars": 41
+    },
+    "docref": {
+     "align": "right",
+     "role": "docref",
+     "x": 1122,
+     "y": 110,
+     "w": 648,
+     "h": 32,
+     "maxChars": 38
+    },
+    "passage": {
+     "align": "left",
+     "role": "passage",
+     "x": 1082,
+     "y": 466,
+     "w": 688,
+     "h": 260,
+     "maxChars": 110,
+     "wraps": 4,
+     "maxCharsPerLine": 37,
+     "maxLines": 3
+    },
+    "note": {
+     "align": "left",
+     "role": "note",
+     "x": 1082,
+     "y": 746,
+     "w": 688,
+     "h": 150,
+     "maxChars": 169,
+     "wraps": 4,
+     "maxCharsPerLine": 57,
+     "maxLines": 2
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 150,
+     "y": 950,
+     "w": 1620,
+     "h": 30,
+     "maxChars": 103
+    }
+   }
+  },
+  "paper/footnote-pull-16x9": {
+   "key": "paper/footnote-pull-16x9",
+   "dir": "paper",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "footnote-pull-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "footnote-pull-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "6debd9a0"
+     },
+     {
+      "file": "footnote-pull-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "bb2b0f4e"
+     },
+     {
+      "file": "footnote-pull-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "6debd9a0"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "footnote-pull-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "footnote-pull-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "6debd9a0"
+      },
+      {
+       "file": "footnote-pull-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "bb2b0f4e"
+      },
+      {
+       "file": "footnote-pull-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "6debd9a0"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "footnote-pull-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "footnote-pull-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "c853ce80"
+      },
+      {
+       "file": "footnote-pull-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "49338fb8"
+      },
+      {
+       "file": "footnote-pull-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "c853ce80"
+      }
+     ]
+    }
+   },
+   "slotCount": 6,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 71,
+     "budget": "derived from the slot boxes that set this role; 71 is the floor (narrowest of 1), was 90"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 97,
+     "budget": "derived from the slot boxes that set this role; 97 is the floor (narrowest of 1), was 97"
+    },
+    "parent": {
+     "font": "Archivo Narrow",
+     "size": 38,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 1,
+     "maxCharsPerLine": 100,
+     "budget": "derived from the slot boxes that set this role; 100 is the floor (narrowest of 1), was 40"
+    },
+    "fnMarker": {
+     "font": "Courier Prime",
+     "size": 40,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 3,
+     "budget": "derived from the slot boxes that set this role; 3 is the floor (narrowest of 1), was 3"
+    },
+    "footnote": {
+     "font": "Archivo Narrow",
+     "size": 54,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 65,
+     "budget": "derived from the slot boxes that set this role; 65 is the floor (narrowest of 1), was 22"
+    },
+    "docref": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 45"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 200,
+     "y": 120,
+     "w": 1520,
+     "h": 32,
+     "maxChars": 71
+    },
+    "parent": {
+     "align": "left",
+     "role": "parent",
+     "x": 200,
+     "y": 210,
+     "w": 1520,
+     "h": 88,
+     "maxChars": 74,
+     "maxCharsPerLine": 100,
+     "maxLines": 1
+    },
+    "fn-marker": {
+     "align": "left",
+     "role": "fnMarker",
+     "x": 200,
+     "y": 470,
+     "w": 90,
+     "h": 46,
+     "maxChars": 3
+    },
+    "footnote": {
+     "align": "left",
+     "role": "footnote",
+     "x": 320,
+     "y": 460,
+     "w": 1400,
+     "h": 330,
+     "maxChars": 192,
+     "wraps": 4,
+     "maxCharsPerLine": 65,
+     "maxLines": 3
+    },
+    "docref": {
+     "align": "left",
+     "role": "docref",
+     "x": 200,
+     "y": 880,
+     "w": 760,
+     "h": 32,
+     "maxChars": 45
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 200,
+     "y": 950,
+     "w": 1520,
+     "h": 30,
+     "maxChars": 97
+    }
+   }
   }
  }
 }

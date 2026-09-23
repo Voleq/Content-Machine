@@ -1,25 +1,14 @@
 {
  "family": "cards",
- "pack": "delta-15",
- "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
+ "pack": "rebuild-17",
+ "generated": "engine/emit.js. Deterministic — regenerate from the engine you are holding: node engine/emit.js (node engine/emit.js --check diffs without writing).",
  "exportScale": 2,
- "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
- "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
- "assetCount": 6,
- "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
- "coordinateOrigin": "top-left of canvas",
- "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8",
+ "frameNaming": "<name>-<hour>_f01.._fNN before the extension. The BASE file carries no frame tag and is byte-identical to _f01.",
+ "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
+ "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
- "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
- "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
- "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
- "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
- "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
- "slotTotal": 30,
- "frameTotal": 30,
+ "assetCount": 6,
  "plates": {
   "cards/definition-16x9": {
    "key": "cards/definition-16x9",
@@ -35,61 +24,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "definition-16x9.png",
+    "base": "definition-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "definition-16x9_f01.png",
+      "file": "definition-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "8f15c615"
+      "hash": "10ec5820"
      },
      {
-      "file": "definition-16x9_f02.png",
+      "file": "definition-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "9909c624"
+      "hash": "972dcb08"
      },
      {
-      "file": "definition-16x9_f03.png",
+      "file": "definition-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "a7348c0b"
-     },
-     {
-      "file": "definition-16x9_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "8f504644"
-     },
-     {
-      "file": "definition-16x9_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "ff8107f7"
+      "hash": "10ec5820"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "definition-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "definition-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "10ec5820"
+      },
+      {
+       "file": "definition-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "972dcb08"
+      },
+      {
+       "file": "definition-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "10ec5820"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "definition-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "definition-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "9944e6aa"
+      },
+      {
+       "file": "definition-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "ca0798b2"
+      },
+      {
+       "file": "definition-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "9944e6aa"
+      }
+     ]
+    }
    },
    "slotCount": 4,
    "typeRoles": {
@@ -170,36 +197,7 @@
      "h": 30,
      "maxChars": 89
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "definition-16x9.svg",
-      "png": "definition-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "definition-16x9.png",
-     "svg": "definition-16x9.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "16x9",
-    "family": "structure",
-    "type": "definition-card"
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "cards/definition-9x16": {
    "key": "cards/definition-9x16",
@@ -215,61 +213,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "definition-9x16.png",
+    "base": "definition-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "definition-9x16_f01.png",
+      "file": "definition-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "c53a4f5a"
+      "hash": "48068a38"
      },
      {
-      "file": "definition-9x16_f02.png",
+      "file": "definition-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "5c8d4f67"
+      "hash": "3fd2d778"
      },
      {
-      "file": "definition-9x16_f03.png",
+      "file": "definition-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "bd8cdb4b"
-     },
-     {
-      "file": "definition-9x16_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "e0cc3b7d"
-     },
-     {
-      "file": "definition-9x16_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "522e40df"
+      "hash": "48068a38"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "definition-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "definition-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "48068a38"
+      },
+      {
+       "file": "definition-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "3fd2d778"
+      },
+      {
+       "file": "definition-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "48068a38"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "definition-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "definition-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1d50c490"
+      },
+      {
+       "file": "definition-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "8fe772b8"
+      },
+      {
+       "file": "definition-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1d50c490"
+      }
+     ]
+    }
    },
    "slotCount": 4,
    "typeRoles": {
@@ -350,36 +386,7 @@
      "h": 30,
      "maxChars": 57
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "definition-9x16.svg",
-      "png": "definition-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "definition-9x16.png",
-     "svg": "definition-9x16.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "9x16",
-    "family": "structure",
-    "type": "definition-card"
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "cards/quote-pull-16x9": {
    "key": "cards/quote-pull-16x9",
@@ -395,61 +402,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "quote-pull-16x9.png",
+    "base": "quote-pull-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "quote-pull-16x9_f01.png",
+      "file": "quote-pull-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "c284cd5b"
+      "hash": "b0990b9c"
      },
      {
-      "file": "quote-pull-16x9_f02.png",
+      "file": "quote-pull-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "089649aa"
+      "hash": "932ac650"
      },
      {
-      "file": "quote-pull-16x9_f03.png",
+      "file": "quote-pull-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "ba66d70b"
-     },
-     {
-      "file": "quote-pull-16x9_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "8856ccb8"
-     },
-     {
-      "file": "quote-pull-16x9_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "52dc937b"
+      "hash": "b0990b9c"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "quote-pull-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "quote-pull-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "b0990b9c"
+      },
+      {
+       "file": "quote-pull-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "932ac650"
+      },
+      {
+       "file": "quote-pull-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "b0990b9c"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "quote-pull-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "quote-pull-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bf594178"
+      },
+      {
+       "file": "quote-pull-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "8dd80f46"
+      },
+      {
+       "file": "quote-pull-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bf594178"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -509,52 +554,7 @@
      "h": 60,
      "maxChars": 89
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "quote-pull-16x9.svg",
-      "png": "quote-pull-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "quote-pull-16x9.png",
-     "svg": "quote-pull-16x9.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "decorBoxes": [
-     {
-      "label": "quote-mark-1",
-      "x": 142,
-      "y": 276,
-      "w": 66,
-      "h": 136
-     },
-     {
-      "label": "quote-mark-2",
-      "x": 204,
-      "y": 276,
-      "w": 66,
-      "h": 136
-     }
-    ],
-    "aspect": "16x9",
-    "family": "structure",
-    "type": "quote-pull"
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "cards/quote-pull-9x16": {
    "key": "cards/quote-pull-9x16",
@@ -570,61 +570,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "quote-pull-9x16.png",
+    "base": "quote-pull-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "quote-pull-9x16_f01.png",
+      "file": "quote-pull-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "d907a27f"
+      "hash": "7b976e90"
      },
      {
-      "file": "quote-pull-9x16_f02.png",
+      "file": "quote-pull-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "a2a96a13"
+      "hash": "7652e268"
      },
      {
-      "file": "quote-pull-9x16_f03.png",
+      "file": "quote-pull-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "147fc4c2"
-     },
-     {
-      "file": "quote-pull-9x16_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "a2e0b40e"
-     },
-     {
-      "file": "quote-pull-9x16_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "e307b099"
+      "hash": "7b976e90"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "quote-pull-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "quote-pull-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7b976e90"
+      },
+      {
+       "file": "quote-pull-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "7652e268"
+      },
+      {
+       "file": "quote-pull-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7b976e90"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "quote-pull-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "quote-pull-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "033588ba"
+      },
+      {
+       "file": "quote-pull-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "b1debd4c"
+      },
+      {
+       "file": "quote-pull-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "033588ba"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -684,52 +722,7 @@
      "h": 60,
      "maxChars": 55
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "quote-pull-9x16.svg",
-      "png": "quote-pull-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "quote-pull-9x16.png",
-     "svg": "quote-pull-9x16.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "decorBoxes": [
-     {
-      "label": "quote-mark-1",
-      "x": 12,
-      "y": 536,
-      "w": 66,
-      "h": 136
-     },
-     {
-      "label": "quote-mark-2",
-      "x": 56,
-      "y": 536,
-      "w": 66,
-      "h": 136
-     }
-    ],
-    "aspect": "9x16",
-    "family": "structure",
-    "type": "quote-pull"
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "cards/criteria-16x9": {
    "key": "cards/criteria-16x9",
@@ -745,61 +738,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "criteria-16x9.png",
+    "base": "criteria-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "criteria-16x9_f01.png",
+      "file": "criteria-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "3a63e089"
+      "hash": "d02ce1ee"
      },
      {
-      "file": "criteria-16x9_f02.png",
+      "file": "criteria-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "a4af759d"
+      "hash": "f48a803e"
      },
      {
-      "file": "criteria-16x9_f03.png",
+      "file": "criteria-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "55e6932c"
-     },
-     {
-      "file": "criteria-16x9_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "331bc70f"
-     },
-     {
-      "file": "criteria-16x9_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "ba5d6050"
+      "hash": "d02ce1ee"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "criteria-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "criteria-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d02ce1ee"
+      },
+      {
+       "file": "criteria-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "f48a803e"
+      },
+      {
+       "file": "criteria-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d02ce1ee"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "criteria-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "criteria-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ee18a904"
+      },
+      {
+       "file": "criteria-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "38fe8d78"
+      },
+      {
+       "file": "criteria-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ee18a904"
+      }
+     ]
+    }
    },
    "slotCount": 8,
    "typeRoles": {
@@ -906,36 +937,7 @@
      "h": 64,
      "maxChars": 92
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "criteria-16x9.svg",
-      "png": "criteria-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "criteria-16x9.png",
-     "svg": "criteria-16x9.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "16x9",
-    "family": "structure",
-    "type": "criteria-card"
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   },
   "cards/criteria-9x16": {
    "key": "cards/criteria-9x16",
@@ -951,61 +953,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
-   "frameCount": 5,
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "criteria-9x16.png",
+    "base": "criteria-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "criteria-9x16_f01.png",
+      "file": "criteria-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 7,
-       "settle": [
-        7,
-        9
-       ]
+       "ruleOffset": 0
       },
-      "hash": "3a440ad4"
+      "hash": "d51ed39e"
      },
      {
-      "file": "criteria-9x16_f02.png",
+      "file": "criteria-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 8,
-       "settle": [
-        -2.5,
-        -3
-       ]
+       "ruleOffset": 1
       },
-      "hash": "910ac0fc"
+      "hash": "f193da68"
      },
      {
-      "file": "criteria-9x16_f03.png",
+      "file": "criteria-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "31740538"
-     },
-     {
-      "file": "criteria-9x16_f04.png",
-      "tag": "_f04",
-      "args": {
-       "boil": 2
-      },
-      "hash": "9eb924e9"
-     },
-     {
-      "file": "criteria-9x16_f05.png",
-      "tag": "_f05",
-      "args": {
-       "boil": 5
-      },
-      "hash": "90db9fe0"
+      "hash": "d51ed39e"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "criteria-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "criteria-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d51ed39e"
+      },
+      {
+       "file": "criteria-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "f193da68"
+      },
+      {
+       "file": "criteria-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d51ed39e"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "criteria-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "criteria-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "78ae9ae0"
+      },
+      {
+       "file": "criteria-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "2be9ce50"
+      },
+      {
+       "file": "criteria-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "78ae9ae0"
+      }
+     ]
+    }
    },
    "slotCount": 8,
    "typeRoles": {
@@ -1112,36 +1152,7 @@
      "h": 64,
      "maxChars": 57
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "criteria-9x16.svg",
-      "png": "criteria-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "criteria-9x16.png",
-     "svg": "criteria-9x16.svg"
-    },
-    "settleOffset": {
-     "dx": 7,
-     "dy": 9
-    },
-    "aspect": "9x16",
-    "family": "structure",
-    "type": "criteria-card"
-   },
-   "loopStart": 2,
-   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
+   }
   }
  }
 }

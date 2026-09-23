@@ -1,0 +1,1398 @@
+{
+ "_spec": "Old asset name -> new. null means DROPPED, with the reason. Generated from audit/baseline-14.json and the rebuilt inventory; do not hand-edit (§8.1).",
+ "_annotations": "OPEN: annotations/ are the ten hand-drawn scrawl marks. They are the only stroke-based assets in the kit and §6 removes the stroke boil they depended on. Rebuilding them as closed flat shapes in the contour colour satisfies rules 1-4 but is a real change in character. Carried by name, not rebuilt; the operator has not been asked.",
+ "_rebuiltCheck": "built/remaining are measured against emit/manifest.json at generation time, never typed.",
+ "generated": "rebuild-07",
+ "stats": {
+  "oldNames": 270,
+  "dropped": 45,
+  "newNames": 193,
+  "built": 193,
+  "remaining": 0,
+  "remainingByDir": {
+   "annotations": 10,
+   "cards": 3,
+   "charts": 15,
+   "figures": 19,
+   "frames": 4,
+   "overlays": 2,
+   "paper": 8,
+   "structure": 18,
+   "tables": 8,
+   "peers": 2,
+   "cycles": 1
+  },
+  "relinked": 28,
+  "note": "Targets are ASSET ids (no aspect suffix). roles.fragment.json keys on the SHOT-LIST id, which does carry one. The two differ on purpose and the difference is §4.4a."
+ },
+ "map": {
+  "annotations/scrawl-oval-wide": {
+   "to": "annotations/scrawl-oval-wide",
+   "why": "NEEDS A DECISION — the only stroke-based assets, and §6 removed the boil they used. See _annotations."
+  },
+  "annotations/scrawl-oval-tight": {
+   "to": "annotations/scrawl-oval-tight",
+   "why": "NEEDS A DECISION — the only stroke-based assets, and §6 removed the boil they used. See _annotations."
+  },
+  "annotations/underline-swipe": {
+   "to": "annotations/underline-swipe",
+   "why": "NEEDS A DECISION — the only stroke-based assets, and §6 removed the boil they used. See _annotations."
+  },
+  "annotations/underline-tight": {
+   "to": "annotations/underline-tight",
+   "why": "NEEDS A DECISION — the only stroke-based assets, and §6 removed the boil they used. See _annotations."
+  },
+  "annotations/strike-out": {
+   "to": "annotations/strike-out",
+   "why": "NEEDS A DECISION — the only stroke-based assets, and §6 removed the boil they used. See _annotations."
+  },
+  "annotations/box-scrawl": {
+   "to": "annotations/box-scrawl",
+   "why": "NEEDS A DECISION — the only stroke-based assets, and §6 removed the boil they used. See _annotations."
+  },
+  "annotations/bracket-rows": {
+   "to": "annotations/bracket-rows",
+   "why": "NEEDS A DECISION — the only stroke-based assets, and §6 removed the boil they used. See _annotations."
+  },
+  "annotations/arrow-elbow": {
+   "to": "annotations/arrow-elbow",
+   "why": "NEEDS A DECISION — the only stroke-based assets, and §6 removed the boil they used. See _annotations."
+  },
+  "annotations/caret-note": {
+   "to": "annotations/caret-note",
+   "why": "NEEDS A DECISION — the only stroke-based assets, and §6 removed the boil they used. See _annotations."
+  },
+  "annotations/tick-marks": {
+   "to": "annotations/tick-marks",
+   "why": "NEEDS A DECISION — the only stroke-based assets, and §6 removed the boil they used. See _annotations."
+  },
+  "cards/definition-16x9": {
+   "to": "cards/definition",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "cards/definition-9x16": {
+   "to": "cards/definition",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "cards/quote-pull-16x9": {
+   "to": "cards/quote-pull",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "cards/quote-pull-9x16": {
+   "to": "cards/quote-pull",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "cards/criteria-16x9": {
+   "to": "cards/criteria",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "cards/criteria-9x16": {
+   "to": "cards/criteria",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/line-6y-16x9": {
+   "to": "charts/line-6y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/line-6y-9x16": {
+   "to": "charts/line-6y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/line-dense-16x9": {
+   "to": "charts/line-dense",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/line-dense-9x16": {
+   "to": "charts/line-dense",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/bars-6y-16x9": {
+   "to": "charts/bars-6y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/bars-6y-9x16": {
+   "to": "charts/bars-6y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/big-number-l1-16x9": {
+   "to": "figures/big-number-l1",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/big-number-l1-9x16": {
+   "to": "figures/big-number-l1",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/big-number-l2-16x9": {
+   "to": "figures/big-number-l2",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/big-number-l2-9x16": {
+   "to": "figures/big-number-l2",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/big-fraction-16x9": {
+   "to": "figures/big-fraction",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/big-fraction-9x16": {
+   "to": "figures/big-fraction",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/compare-side-16x9": {
+   "to": "figures/compare-side",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/compare-side-9x16": {
+   "to": "figures/compare-side",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/compare-stacked-16x9": {
+   "to": "figures/compare-stacked",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/compare-stacked-9x16": {
+   "to": "figures/compare-stacked",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "frames/media-frame-t1-16x9": {
+   "to": "frames/media-frame-t1",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "frames/media-frame-t1-9x16": {
+   "to": "frames/media-frame-t1",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "frames/media-frame-t2-16x9": {
+   "to": "frames/media-frame-t2",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "frames/media-frame-t2-9x16": {
+   "to": "frames/media-frame-t2",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "frames/media-frame-t3-16x9": {
+   "to": "frames/media-frame-t3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "frames/media-frame-t3-9x16": {
+   "to": "frames/media-frame-t3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "frames/capture-frame-16x9": {
+   "to": "frames/capture-frame",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "frames/capture-frame-9x16": {
+   "to": "frames/capture-frame",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "host/leaning-on-desk": {
+   "to": "host/leaning-on-desk",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/leaning-on-desk-talk": {
+   "to": "host/leaning-on-desk-talk",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/leaning-on-desk-idle": {
+   "to": "host/leaning-on-desk-idle",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/hands-in-pockets": {
+   "to": "host/hands-in-pockets",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/hands-in-pockets-talk": {
+   "to": "host/hands-in-pockets-talk",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/hands-in-pockets-idle": {
+   "to": "host/hands-in-pockets-idle",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/holding-a-page": {
+   "to": "host/holding-a-page",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/holding-a-page-talk": {
+   "to": "host/holding-a-page-talk",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/holding-a-page-idle": {
+   "to": "host/holding-a-page-idle",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/pointing-down-at-desk": {
+   "to": "host/pointing-down-at-desk",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/pointing-down-at-desk-talk": {
+   "to": "host/pointing-down-at-desk-talk",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/pointing-down-at-desk-idle": {
+   "to": "host/pointing-down-at-desk-idle",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/head-in-hands": {
+   "to": "host/head-in-hands",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/head-in-hands-talk": {
+   "to": "host/head-in-hands-talk",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/head-in-hands-idle": {
+   "to": "host/head-in-hands-idle",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/walking-out-of-frame": {
+   "to": "host/walking-out-of-frame",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/walking-out-of-frame-talk": {
+   "to": "host/walking-out-of-frame-talk",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/walking-out-of-frame-idle": {
+   "to": "host/walking-out-of-frame-idle",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/sitting-at-desk": {
+   "to": "host/sitting-at-desk",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/sitting-at-desk-talk": {
+   "to": "host/sitting-at-desk-talk",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/sitting-at-desk-idle": {
+   "to": "host/sitting-at-desk-idle",
+   "why": "Carried — 725 paths per frame became 14."
+  },
+  "host/close-up": {
+   "to": null,
+   "why": "A framing, not a plate. The close-up is a crop of to-camera and the solve scales one figure into any framing (§S2.2)."
+  },
+  "host/close-up-talk": {
+   "to": null,
+   "why": "A framing, not a plate. The close-up is a crop of to-camera and the solve scales one figure into any framing (§S2.2)."
+  },
+  "host/close-up-idle": {
+   "to": null,
+   "why": "A framing, not a plate. The close-up is a crop of to-camera and the solve scales one figure into any framing (§S2.2)."
+  },
+  "host/medium": {
+   "to": null,
+   "why": "A framing, not a plate. The close-up is a crop of to-camera and the solve scales one figure into any framing (§S2.2)."
+  },
+  "host/medium-talk": {
+   "to": null,
+   "why": "A framing, not a plate. The close-up is a crop of to-camera and the solve scales one figure into any framing (§S2.2)."
+  },
+  "host/medium-idle": {
+   "to": null,
+   "why": "A framing, not a plate. The close-up is a crop of to-camera and the solve scales one figure into any framing (§S2.2)."
+  },
+  "host/close-up-glance-left": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/close-up-glance-left-talk": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/close-up-glance-left-idle": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/close-up-glance-right": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/close-up-glance-right-talk": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/close-up-glance-right-idle": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/medium-glance-left": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/medium-glance-left-talk": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/medium-glance-left-idle": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/medium-glance-right": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/medium-glance-right-talk": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/medium-glance-right-idle": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/medium-robe": {
+   "to": null,
+   "why": "Wardrobe variant. The character sheet specifies one costume (§2)."
+  },
+  "host/medium-robe-talk": {
+   "to": null,
+   "why": "Wardrobe variant. The character sheet specifies one costume (§2)."
+  },
+  "host/medium-robe-idle": {
+   "to": null,
+   "why": "Wardrobe variant. The character sheet specifies one costume (§2)."
+  },
+  "overlays/row-band": {
+   "to": "overlays/row-band",
+   "why": "Re-authored per hour against the wall it sits on — never inverted (§5)."
+  },
+  "overlays/lower-third-16x9": {
+   "to": "overlays/lower-third",
+   "why": "Re-authored per hour against the wall it sits on — never inverted (§5). Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "overlays/lower-third-9x16": {
+   "to": "overlays/lower-third",
+   "why": "Re-authored per hour against the wall it sits on — never inverted (§5). Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/headline-band-t1-16x9": {
+   "to": "paper/headline-band-t1",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/headline-band-t1-9x16": {
+   "to": "paper/headline-band-t1",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/headline-band-t2-16x9": {
+   "to": "paper/headline-band-t2",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/headline-band-t2-9x16": {
+   "to": "paper/headline-band-t2",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/headline-band-t3-16x9": {
+   "to": "paper/headline-band-t3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/headline-band-t3-9x16": {
+   "to": "paper/headline-band-t3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "room/wide-16x9": {
+   "to": "room/desk-wide",
+   "why": "Renamed. The chapter opener and scene change; it carries the title ground (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/wide-9x16": {
+   "to": "room/desk-wide",
+   "why": "Renamed. The chapter opener and scene change; it carries the title ground (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/wide-tight-16x9": {
+   "to": "room/desk-side",
+   "why": "Renamed. The shallow second angle inside one chapter (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/wide-tight-9x16": {
+   "to": "room/desk-side",
+   "why": "Renamed. The shallow second angle inside one chapter (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/desk-front-16x9": {
+   "to": "room/desk-front",
+   "why": "Carried to the rebuilt angle. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "room/desk-front-9x16": {
+   "to": "room/desk-front",
+   "why": "Carried to the rebuilt angle. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "room/desk-corner-16x9": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/desk-corner-9x16": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/from-behind-the-monitor-16x9": {
+   "to": "room/turn-to-screen",
+   "why": "Renamed and re-staged. Over-the-shoulder is replaced by the viewer being behind the DECISION, not behind his head (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/from-behind-the-monitor-9x16": {
+   "to": "room/turn-to-screen",
+   "why": "Renamed and re-staged. Over-the-shoulder is replaced by the viewer being behind the DECISION, not behind his head (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/whiteboard-wall-16x9": {
+   "to": "room/board",
+   "why": "Renamed. The wall of index cards; full-frame data plate, no host anchor (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/whiteboard-wall-9x16": {
+   "to": "room/board",
+   "why": "Renamed. The wall of index cards; full-frame data plate, no host anchor (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/printer-corner-16x9": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/printer-corner-9x16": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/doorway-16x9": {
+   "to": "room/doorway",
+   "why": "Carried to the rebuilt angle. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "room/doorway-9x16": {
+   "to": "room/doorway",
+   "why": "Carried to the rebuilt angle. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "room/corner-perspective-16x9": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/corner-perspective-9x16": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/low-desk-height-16x9": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/low-desk-height-9x16": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/high-desk-down-16x9": {
+   "to": "room/desk-top-down",
+   "why": "Renamed. The detail cut-away: page, keyboard, mug, no figure (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/high-desk-down-9x16": {
+   "to": "room/desk-top-down",
+   "why": "Renamed. The detail cut-away: page, keyboard, mug, no figure (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/over-the-shoulder-16x9": {
+   "to": "room/turn-to-screen",
+   "why": "Folded into turn-to-screen — the same beat, staged so the screen is legible (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/over-the-shoulder-9x16": {
+   "to": "room/turn-to-screen",
+   "why": "Folded into turn-to-screen — the same beat, staged so the screen is legible (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/wide-dusk-16x9": {
+   "to": "room/desk-wide",
+   "why": "Renamed. The chapter opener and scene change; it carries the title ground (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/wide-dusk-9x16": {
+   "to": "room/desk-wide",
+   "why": "Renamed. The chapter opener and scene change; it carries the title ground (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/wide-tight-dusk-16x9": {
+   "to": "room/desk-side",
+   "why": "Renamed. The shallow second angle inside one chapter (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/wide-tight-dusk-9x16": {
+   "to": "room/desk-side",
+   "why": "Renamed. The shallow second angle inside one chapter (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/desk-front-dusk-16x9": {
+   "to": "room/desk-front",
+   "why": "Carried to the rebuilt angle. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "room/desk-front-dusk-9x16": {
+   "to": "room/desk-front",
+   "why": "Carried to the rebuilt angle. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "room/desk-corner-dusk-16x9": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/desk-corner-dusk-9x16": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/from-behind-the-monitor-dusk-16x9": {
+   "to": "room/turn-to-screen",
+   "why": "Renamed and re-staged. Over-the-shoulder is replaced by the viewer being behind the DECISION, not behind his head (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/from-behind-the-monitor-dusk-9x16": {
+   "to": "room/turn-to-screen",
+   "why": "Renamed and re-staged. Over-the-shoulder is replaced by the viewer being behind the DECISION, not behind his head (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/whiteboard-wall-dusk-16x9": {
+   "to": "room/board",
+   "why": "Renamed. The wall of index cards; full-frame data plate, no host anchor (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/whiteboard-wall-dusk-9x16": {
+   "to": "room/board",
+   "why": "Renamed. The wall of index cards; full-frame data plate, no host anchor (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/printer-corner-dusk-16x9": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/printer-corner-dusk-9x16": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/doorway-dusk-16x9": {
+   "to": "room/doorway",
+   "why": "Carried to the rebuilt angle. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "room/doorway-dusk-9x16": {
+   "to": "room/doorway",
+   "why": "Carried to the rebuilt angle. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "room/corner-perspective-dusk-16x9": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/corner-perspective-dusk-9x16": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/low-desk-height-dusk-16x9": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/low-desk-height-dusk-9x16": {
+   "to": null,
+   "why": "One of twelve angles cut to eight (§4.4). Most existed because the generator could make them, not because a shot needed one."
+  },
+  "room/high-desk-down-dusk-16x9": {
+   "to": "room/desk-top-down",
+   "why": "Renamed. The detail cut-away: page, keyboard, mug, no figure (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/high-desk-down-dusk-9x16": {
+   "to": "room/desk-top-down",
+   "why": "Renamed. The detail cut-away: page, keyboard, mug, no figure (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/over-the-shoulder-dusk-16x9": {
+   "to": "room/turn-to-screen",
+   "why": "Folded into turn-to-screen — the same beat, staged so the screen is legible (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/over-the-shoulder-dusk-9x16": {
+   "to": "room/turn-to-screen",
+   "why": "Folded into turn-to-screen — the same beat, staged so the screen is legible (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/wall-of-calls-16x9": {
+   "to": "room/board",
+   "why": "Folded into board — one pinned-wall angle, not two (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/wall-of-calls-9x16": {
+   "to": "room/board",
+   "why": "Folded into board — one pinned-wall angle, not two (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/wall-of-calls-pinned-16x9": {
+   "to": "room/board",
+   "why": "Folded into board (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "room/wall-of-calls-pinned-9x16": {
+   "to": "room/board",
+   "why": "Folded into board (§4.4). Aspect and hour are variants now (§4.4a)."
+  },
+  "shorts/hook-card-t1": {
+   "to": "shorts/hook-card-t1",
+   "why": "Kept. The first pass dropped these as portrait duplicates of cards/, which was wrong: hook-card t1/t2/t3 are three distinct treatments from hookCard(), and the port renders all three."
+  },
+  "shorts/hook-card-t2": {
+   "to": "shorts/hook-card-t2",
+   "why": "Kept. The first pass dropped these as portrait duplicates of cards/, which was wrong: hook-card t1/t2/t3 are three distinct treatments from hookCard(), and the port renders all three."
+  },
+  "shorts/hook-card-t3": {
+   "to": "shorts/hook-card-t3",
+   "why": "Kept. The first pass dropped these as portrait duplicates of cards/, which was wrong: hook-card t1/t2/t3 are three distinct treatments from hookCard(), and the port renders all three."
+  },
+  "structure/both-true-16x9": {
+   "to": "structure/both-true",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/both-true-9x16": {
+   "to": "structure/both-true",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/unit-ladder-16x9": {
+   "to": "structure/unit-ladder",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/unit-ladder-9x16": {
+   "to": "structure/unit-ladder",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/closing-16x9": {
+   "to": "structure/closing",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/closing-9x16": {
+   "to": "structure/closing",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/row-spotlight-16x9": {
+   "to": "structure/row-spotlight",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/row-spotlight-9x16": {
+   "to": "structure/row-spotlight",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/flow-16x9": {
+   "to": "structure/flow",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/timeline-16x9": {
+   "to": "structure/timeline",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/timeline-9x16": {
+   "to": "structure/timeline",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/numbers-sheet-3r-16x9": {
+   "to": "tables/numbers-sheet-3r",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/numbers-sheet-3r-9x16": {
+   "to": "tables/numbers-sheet-3r",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/numbers-sheet-4r-16x9": {
+   "to": "tables/numbers-sheet-4r",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/numbers-sheet-4r-9x16": {
+   "to": "tables/numbers-sheet-4r",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/numbers-sheet-5r-16x9": {
+   "to": "tables/numbers-sheet-5r",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/numbers-sheet-5r-9x16": {
+   "to": "tables/numbers-sheet-5r",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/numbers-sheet-6r-16x9": {
+   "to": "tables/numbers-sheet-6r",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/numbers-sheet-6r-9x16": {
+   "to": "tables/numbers-sheet-6r",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/numbers-sheet-6r-spark-16x9": {
+   "to": "tables/numbers-sheet-6r-spark",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/numbers-sheet-4r-spark-9x16": {
+   "to": "tables/numbers-sheet-4r-spark",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/cash-flow-16x9": {
+   "to": "tables/cash-flow",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/cash-flow-9x16": {
+   "to": "tables/cash-flow",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/multiples-strip-16x9": {
+   "to": "tables/multiples-strip",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "tables/multiples-strip-9x16": {
+   "to": "tables/multiples-strip",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/multiple-bridge-16x9": {
+   "to": "structure/multiple-bridge",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "peers/peer-strip-16x9": {
+   "to": "peers/peer-strip",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "peers/peer-strip-9x16": {
+   "to": "peers/peer-strip",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "cycles/cycle-frame-16x9": {
+   "to": "cycles/cycle-frame",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "cycles/cycle-frame-9x16": {
+   "to": "cycles/cycle-frame",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/waterfall-3s-16x9": {
+   "to": "figures/waterfall-3s",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/waterfall-3s-9x16": {
+   "to": "figures/waterfall-3s",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/waterfall-4s-16x9": {
+   "to": "figures/waterfall-4s",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/waterfall-4s-9x16": {
+   "to": "figures/waterfall-4s",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/waterfall-5s-16x9": {
+   "to": "figures/waterfall-5s",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/waterfall-5s-9x16": {
+   "to": "figures/waterfall-5s",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/implied-16x9": {
+   "to": "structure/implied",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/implied-9x16": {
+   "to": "structure/implied",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/dilution-6y-16x9": {
+   "to": "charts/dilution-6y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/dilution-6y-9x16": {
+   "to": "charts/dilution-6y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/maturities-16x9": {
+   "to": "charts/maturities",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/maturities-9x16": {
+   "to": "charts/maturities",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/guided-vs-actual-6y-16x9": {
+   "to": "charts/guided-vs-actual-6y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/guided-vs-actual-6y-9x16": {
+   "to": "charts/guided-vs-actual-6y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/share-of-2-16x9": {
+   "to": "figures/share-of-2",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/share-of-2-9x16": {
+   "to": "figures/share-of-2",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/share-of-3-16x9": {
+   "to": "figures/share-of-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/share-of-3-9x16": {
+   "to": "figures/share-of-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/share-of-4-16x9": {
+   "to": "figures/share-of-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/share-of-4-9x16": {
+   "to": "figures/share-of-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/by-region-3-16x9": {
+   "to": "figures/by-region-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/by-region-3-9x16": {
+   "to": "figures/by-region-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/by-region-4-16x9": {
+   "to": "figures/by-region-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/by-region-4-9x16": {
+   "to": "figures/by-region-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/by-region-5-16x9": {
+   "to": "figures/by-region-5",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/by-region-5-9x16": {
+   "to": "figures/by-region-5",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/ownership-16x9": {
+   "to": "figures/ownership",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/ownership-9x16": {
+   "to": "figures/ownership",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "peers/distribution-16x9": {
+   "to": "peers/distribution",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "peers/distribution-9x16": {
+   "to": "peers/distribution",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/scale-2-16x9": {
+   "to": "figures/scale-2",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/scale-2-9x16": {
+   "to": "figures/scale-2",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/scale-3-16x9": {
+   "to": "figures/scale-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/scale-3-9x16": {
+   "to": "figures/scale-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/receipt-4-16x9": {
+   "to": "paper/receipt-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/receipt-4-9x16": {
+   "to": "paper/receipt-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/receipt-6-16x9": {
+   "to": "paper/receipt-6",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/receipt-6-9x16": {
+   "to": "paper/receipt-6",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/receipt-8-16x9": {
+   "to": "paper/receipt-8",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/receipt-8-9x16": {
+   "to": "paper/receipt-8",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/said-happened-3-16x9": {
+   "to": "structure/said-happened-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/said-happened-3-9x16": {
+   "to": "structure/said-happened-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/said-happened-4-16x9": {
+   "to": "structure/said-happened-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/said-happened-4-9x16": {
+   "to": "structure/said-happened-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/said-happened-5-16x9": {
+   "to": "structure/said-happened-5",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/said-happened-5-9x16": {
+   "to": "structure/said-happened-5",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/sensitivity-16x9": {
+   "to": "structure/sensitivity",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/sensitivity-9x16": {
+   "to": "structure/sensitivity",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/whiteboard-3-16x9": {
+   "to": "structure/whiteboard-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/whiteboard-3-9x16": {
+   "to": "structure/whiteboard-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/whiteboard-4-16x9": {
+   "to": "structure/whiteboard-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/whiteboard-4-9x16": {
+   "to": "structure/whiteboard-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/multiples-grid-4-16x9": {
+   "to": "charts/multiples-grid-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/multiples-grid-4-9x16": {
+   "to": "charts/multiples-grid-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/multiples-grid-6-16x9": {
+   "to": "charts/multiples-grid-6",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/multiples-grid-6-9x16": {
+   "to": "charts/multiples-grid-6",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/bars-8q-16x9": {
+   "to": "charts/bars-8q",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/bars-8q-9x16": {
+   "to": "charts/bars-8q",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/line-8q-16x9": {
+   "to": "charts/line-8q",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/line-8q-9x16": {
+   "to": "charts/line-8q",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/qoq-yoy-16x9": {
+   "to": "figures/qoq-yoy",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/qoq-yoy-9x16": {
+   "to": "figures/qoq-yoy",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/seasonality-4y-16x9": {
+   "to": "charts/seasonality-4y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/seasonality-4y-9x16": {
+   "to": "charts/seasonality-4y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/seasonality-6y-16x9": {
+   "to": "charts/seasonality-6y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/seasonality-6y-9x16": {
+   "to": "charts/seasonality-6y",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/confession-statement-16x9": {
+   "to": "structure/confession-statement",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/confession-statement-9x16": {
+   "to": "structure/confession-statement",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/confession-ledger-16x9": {
+   "to": "structure/confession-ledger",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/confession-ledger-9x16": {
+   "to": "structure/confession-ledger",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/short-interest-16x9": {
+   "to": "figures/short-interest",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "figures/short-interest-9x16": {
+   "to": "figures/short-interest",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/insider-flow-6-16x9": {
+   "to": "charts/insider-flow-6",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/insider-flow-6-9x16": {
+   "to": "charts/insider-flow-6",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/insider-flow-12-16x9": {
+   "to": "charts/insider-flow-12",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/insider-flow-12-9x16": {
+   "to": "charts/insider-flow-12",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/macro-series-16x9": {
+   "to": "charts/macro-series",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "charts/macro-series-9x16": {
+   "to": "charts/macro-series",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/end-card-16x9": {
+   "to": "structure/end-card",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/end-card-9x16": {
+   "to": "structure/end-card",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/language-shift-16x9": {
+   "to": "structure/language-shift",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "structure/language-shift-9x16": {
+   "to": "structure/language-shift",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/headline-stack-3-16x9": {
+   "to": "paper/headline-stack-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/headline-stack-3-9x16": {
+   "to": "paper/headline-stack-3",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/headline-stack-4-16x9": {
+   "to": "paper/headline-stack-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "paper/headline-stack-4-9x16": {
+   "to": "paper/headline-stack-4",
+   "why": "Re-authored against both grounds (§5.3). Geometry carried, ink replaced. Aspect and hour are variants of one asset now (§4.4a, §3), not separate names."
+  },
+  "host/close-up-blink": {
+   "to": null,
+   "why": "A framing, not a plate. The close-up is a crop of to-camera and the solve scales one figure into any framing (§S2.2)."
+  },
+  "host/close-up-glance-left-blink": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/close-up-glance-right-blink": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/medium-blink": {
+   "to": null,
+   "why": "A framing, not a plate. The close-up is a crop of to-camera and the solve scales one figure into any framing (§S2.2)."
+  },
+  "host/medium-glance-left-blink": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/medium-glance-right-blink": {
+   "to": null,
+   "why": "An eye-dash offset on a static head. turn-to-screen carries the off-axis look as a pose, with a body attached (§3)."
+  },
+  "host/medium-robe-blink": {
+   "to": null,
+   "why": "Wardrobe variant. The character sheet specifies one costume (§2)."
+  },
+  "host/empty-chair": {
+   "to": null,
+   "why": "A room prop, not a host plate — the chair is sitting-at-desk's pose prop (§3.5)."
+  },
+  "(new) host/to-camera": {
+   "to": "host/to-camera",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/to-camera-talk": {
+   "to": "host/to-camera-talk",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/to-camera-idle": {
+   "to": "host/to-camera-idle",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/to-camera-blink": {
+   "to": "host/to-camera-blink",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/leaning-on-desk-blink": {
+   "to": "host/leaning-on-desk-blink",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/hands-in-pockets-blink": {
+   "to": "host/hands-in-pockets-blink",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/holding-a-page-blink": {
+   "to": "host/holding-a-page-blink",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/pointing-down-at-desk-blink": {
+   "to": "host/pointing-down-at-desk-blink",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/head-in-hands-blink": {
+   "to": "host/head-in-hands-blink",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/sitting-at-desk-blink": {
+   "to": "host/sitting-at-desk-blink",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/turn-to-screen": {
+   "to": "host/turn-to-screen",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/turn-to-screen-talk": {
+   "to": "host/turn-to-screen-talk",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/turn-to-screen-idle": {
+   "to": "host/turn-to-screen-idle",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/turn-to-screen-blink": {
+   "to": "host/turn-to-screen-blink",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/walking-out-of-frame-blink": {
+   "to": "host/walking-out-of-frame-blink",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/arms-crossed": {
+   "to": "host/arms-crossed",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/arms-crossed-talk": {
+   "to": "host/arms-crossed-talk",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/arms-crossed-idle": {
+   "to": "host/arms-crossed-idle",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) host/arms-crossed-blink": {
+   "to": "host/arms-crossed-blink",
+   "why": "New: to-camera, turn-to-screen and arms-crossed are new poses; -blink now exists for every pose (§3.5)."
+  },
+  "(new) room/window-wall": {
+   "to": "room/window-wall",
+   "why": "New angle: the only one with the key source in frame, so it is the one that makes the hour itself legible (§4.4)."
+  },
+  "(new) room/desk-front-b": {
+   "to": "room/desk-front-b",
+   "why": "New at rebuild-13. Restores ROTATION in a room role that the twelve-to-eight cut had reduced to one member; a room is picked by code that rotates against recent videos, so a one-member role repeats every video."
+  },
+  "(new) room/desk-front-low": {
+   "to": "room/desk-front-low",
+   "why": "New at rebuild-13. Restores ROTATION in a room role that the twelve-to-eight cut had reduced to one member; a room is picked by code that rotates against recent videos, so a one-member role repeats every video."
+  },
+  "(new) room/read-close": {
+   "to": "room/read-close",
+   "why": "New at rebuild-13. Restores ROTATION in a room role that the twelve-to-eight cut had reduced to one member; a room is picked by code that rotates against recent videos, so a one-member role repeats every video."
+  },
+  "(new) room/board-side": {
+   "to": "room/board-side",
+   "why": "New at rebuild-13. Restores ROTATION in a room role that the twelve-to-eight cut had reduced to one member; a room is picked by code that rotates against recent videos, so a one-member role repeats every video."
+  },
+  "(new) room/doorway-wide": {
+   "to": "room/doorway-wide",
+   "why": "New at rebuild-13. Restores ROTATION in a room role that the twelve-to-eight cut had reduced to one member; a room is picked by code that rotates against recent videos, so a one-member role repeats every video."
+  },
+  "(new) room/panel-left": {
+   "to": "room/panel-left",
+   "why": "New at rebuild-13. Restores ROTATION in a room role that the twelve-to-eight cut had reduced to one member; a room is picked by code that rotates against recent videos, so a one-member role repeats every video."
+  },
+  "(new) host/considering": {
+   "to": "host/considering",
+   "why": "New at rebuild-14. Restores a host role the twelve-to-ten pose cut had emptied — considering replaces what empty-chair carried, checking-a-figure replaces the glance keys folded into turn-to-screen. Joint positions, not a redraw."
+  },
+  "(new) host/considering-talk": {
+   "to": "host/considering-talk",
+   "why": "New at rebuild-14. Restores a host role the twelve-to-ten pose cut had emptied — considering replaces what empty-chair carried, checking-a-figure replaces the glance keys folded into turn-to-screen. Joint positions, not a redraw."
+  },
+  "(new) host/considering-idle": {
+   "to": "host/considering-idle",
+   "why": "New at rebuild-14. Restores a host role the twelve-to-ten pose cut had emptied — considering replaces what empty-chair carried, checking-a-figure replaces the glance keys folded into turn-to-screen. Joint positions, not a redraw."
+  },
+  "(new) host/considering-blink": {
+   "to": "host/considering-blink",
+   "why": "New at rebuild-14. Restores a host role the twelve-to-ten pose cut had emptied — considering replaces what empty-chair carried, checking-a-figure replaces the glance keys folded into turn-to-screen. Joint positions, not a redraw."
+  },
+  "(new) host/checking-a-figure": {
+   "to": "host/checking-a-figure",
+   "why": "New at rebuild-14. Restores a host role the twelve-to-ten pose cut had emptied — considering replaces what empty-chair carried, checking-a-figure replaces the glance keys folded into turn-to-screen. Joint positions, not a redraw."
+  },
+  "(new) host/checking-a-figure-talk": {
+   "to": "host/checking-a-figure-talk",
+   "why": "New at rebuild-14. Restores a host role the twelve-to-ten pose cut had emptied — considering replaces what empty-chair carried, checking-a-figure replaces the glance keys folded into turn-to-screen. Joint positions, not a redraw."
+  },
+  "(new) host/checking-a-figure-idle": {
+   "to": "host/checking-a-figure-idle",
+   "why": "New at rebuild-14. Restores a host role the twelve-to-ten pose cut had emptied — considering replaces what empty-chair carried, checking-a-figure replaces the glance keys folded into turn-to-screen. Joint positions, not a redraw."
+  },
+  "(new) host/checking-a-figure-blink": {
+   "to": "host/checking-a-figure-blink",
+   "why": "New at rebuild-14. Restores a host role the twelve-to-ten pose cut had emptied — considering replaces what empty-chair carried, checking-a-figure replaces the glance keys folded into turn-to-screen. Joint positions, not a redraw."
+  },
+  "(new) paper/press-release-9x16": {
+   "to": "paper/press-release",
+   "why": "New at rebuild-15. The news format had one news beat (a headline in a band) and a news short is about a document. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) paper/wire-strip-3-9x16": {
+   "to": "paper/wire-strip-3",
+   "why": "New at rebuild-15. Wire coverage as a ticker; fills from a feed rather than a hand-built stack. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) paper/wire-strip-5-9x16": {
+   "to": "paper/wire-strip-5",
+   "why": "New at rebuild-15. Row-count variant of wire-strip-3 — the kit’s own convention for variety at a fraction of a drawing. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) structure/before-after-9x16": {
+   "to": "structure/before-after",
+   "why": "New at rebuild-15. Expected against announced, with the delta carried on the divider. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) figures/move-on-the-day-9x16": {
+   "to": "figures/move-on-the-day",
+   "why": "New at rebuild-15. The price reaction beat, which had no plate. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) figures/print-vs-consensus-9x16": {
+   "to": "figures/print-vs-consensus",
+   "why": "New at rebuild-15. The earnings beat/miss as one paired figure rather than two big numbers. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) charts/quarter-bars-8q-9x16": {
+   "to": "charts/quarter-bars-8q",
+   "why": "New at rebuild-15. Portrait authoring of the 8-quarter bars; the 16:9 twin’s columns are narrower than their labels at 9:16, which is why this is a separate authoring and not a crop (§4.4a). PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) tables/three-lines-9x16": {
+   "to": "tables/three-lines",
+   "why": "New at rebuild-15. Three rows for a phone; the six-period sheets are unreadable at arm’s length. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) figures/guidance-raise-cut-9x16": {
+   "to": "figures/guidance-raise-cut",
+   "why": "New at rebuild-15. Guidance as an extent plus a mark, using the band/marker regions series.js already draws. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) charts/intraday-9x16": {
+   "to": "charts/intraday",
+   "why": "New at rebuild-15. One session; the format was using a multi-year line for this beat. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) figures/52-week-position-9x16": {
+   "to": "figures/52-week-position",
+   "why": "New at rebuild-15. The range position as a vertical rail. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) shorts/hook-card-t4": {
+   "to": "shorts/hook-card-t4",
+   "why": "New at rebuild-15. Fourth hook treatment — five halves how often two consecutive uploads open the same way."
+  },
+  "(new) shorts/hook-card-t5": {
+   "to": "shorts/hook-card-t5",
+   "why": "New at rebuild-15. Fifth hook treatment."
+  },
+  "(new) structure/closing-t2-9x16": {
+   "to": "structure/closing-t2",
+   "why": "New at rebuild-15. One drawing closed every short in all three formats; this is the single-point close. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) structure/closing-t3-9x16": {
+   "to": "structure/closing-t3",
+   "why": "New at rebuild-15. The checklist close. PORTRAIT ONLY — the asset id carries no aspect suffix (§4.4a: aspect is a field on the asset, not part of its name); the -9x16 form is the SHOT-LIST name and is what roles.fragment.json keys on."
+  },
+  "(new) paper/filing-page": {
+   "to": "paper/filing-page",
+   "why": "New at rebuild-16, long side. a filing page with a reading window over one passage, the rest legible but recessed. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) paper/footnote-pull": {
+   "to": "paper/footnote-pull",
+   "why": "New at rebuild-16, long side. a footnote at display size with its parent line above it. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) structure/year-on-year-diff": {
+   "to": "structure/year-on-year-diff",
+   "why": "New at rebuild-16, long side. the same filing paragraph from two years with the changed language marked. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) tables/numbers-sheet-7r": {
+   "to": "tables/numbers-sheet-7r",
+   "why": "New at rebuild-16, long side. seven metric rows across six periods. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) tables/numbers-sheet-8r": {
+   "to": "tables/numbers-sheet-8r",
+   "why": "New at rebuild-16, long side. eight metric rows across six periods — the densest sheet in the kit. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) tables/growth-and-margin": {
+   "to": "tables/growth-and-margin",
+   "why": "New at rebuild-16, long side. one sheet with a growth column and a margin column side by side, the rate columns formatted in POINTS rather than per cent. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) tables/percentile-rail": {
+   "to": "tables/percentile-rail",
+   "why": "New at rebuild-16, long side. four to six metrics, each a rail with the sector median marked and the subject’s position on it. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) structure/said-happened-6": {
+   "to": "structure/said-happened-6",
+   "why": "New at rebuild-16, long side. six rows of what was said against what happened. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) structure/where-this-goes": {
+   "to": "structure/where-this-goes",
+   "why": "New at rebuild-16, long side. the chapter list as a contents card, four to six rows. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) structure/timeline-dense": {
+   "to": "structure/timeline-dense",
+   "why": "New at rebuild-16, long side. eight to twelve dated events on one rail, alternating above and below so a dense run does not collide. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) structure/flow-4": {
+   "to": "structure/flow-4",
+   "why": "New at rebuild-16, long side. a four-stage flow with a figure and a note per stage, connected by drawn wedges that say which way the money moves. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) structure/flow-5": {
+   "to": "structure/flow-5",
+   "why": "New at rebuild-16, long side. the five-stage flow. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) figures/unit-economics": {
+   "to": "figures/unit-economics",
+   "why": "New at rebuild-16, long side. one unit: price, cost, contribution and margin, with the last two DERIVED on the plate. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) structure/scorecard": {
+   "to": "structure/scorecard",
+   "why": "New at rebuild-16, long side. four to six criteria, each with a pass, a fail or a partial mark. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) structure/moat-sources-4": {
+   "to": "structure/moat-sources-4",
+   "why": "New at rebuild-16, long side. four named sources of advantage with a strength rail each, on one shared scale so they can be read against each other. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) peers/scatter": {
+   "to": "peers/scatter",
+   "why": "New at rebuild-16, long side. growth against multiple with the subject picked out — the one comps shape nothing in the kit draws. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) figures/where-the-cash-went": {
+   "to": "figures/where-the-cash-went",
+   "why": "New at rebuild-16, long side. operating cash flow split across capex, buybacks, dividends and debt. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) figures/roic-vs-wacc": {
+   "to": "figures/roic-vs-wacc",
+   "why": "New at rebuild-16, long side. the two rates on one axis with the spread called. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) structure/revision-trail": {
+   "to": "structure/revision-trail",
+   "why": "New at rebuild-16, long side. how the estimate moved across four to six dates, with the move called at each step. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) figures/scenario-fan": {
+   "to": "figures/scenario-fan",
+   "why": "New at rebuild-16, long side. bear, base and bull as three endpoints from one starting price. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) structure/risk-register-4": {
+   "to": "structure/risk-register-4",
+   "why": "New at rebuild-16, long side. four risks, each with a likelihood and a severity mark on shared scales. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) structure/where-they-agree": {
+   "to": "structure/where-they-agree",
+   "why": "New at rebuild-16, long side. the shared facts on top, the divergence beneath — the chapter’s honest shape. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  },
+  "(new) charts/buyback-dollars": {
+   "to": "charts/buyback-dollars",
+   "why": "New at rebuild-16, long side. buyback spend per year with the diluted share count beneath it. 16:9 ONLY — the asset id carries no aspect suffix (§4.4a); the -16x9 form is the writer-facing name roles.fragment.json keys on."
+  }
+ }
+}

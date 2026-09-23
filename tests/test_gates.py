@@ -567,7 +567,7 @@ def test_the_doctor_reports_what_no_template_can_reach(settings):
 def test_a_plate_named_only_through_a_room_role_is_reachable(settings):
     """A template writes `room/talk`, not `room/desk-front-16x9`.
 
-    A walk that only read plate keys would report all nine angles as
+    A walk that only read plate keys would report every angle as
     unreachable and bury the one that actually is.
     """
     from pipeline.gates import reachable_plates
@@ -575,8 +575,8 @@ def test_a_plate_named_only_through_a_room_role_is_reachable(settings):
 
     reg = load_plates(settings.assets_dir)
     routes = reachable_plates(reg)
-    for key in ("room/desk-front-16x9", "room/low-desk-height-16x9",
-                "room/high-desk-down-16x9", "room/desk-front-9x16"):
+    for key in ("room/desk-front-16x9", "room/doorway-wide-16x9",
+                "room/desk-top-down-16x9", "room/desk-front-9x16"):
         assert key in routes["template"], f"{key} has no route through a role"
 
 
@@ -724,6 +724,21 @@ def test_a_wrong_growth_rate_is_caught(settings, data):
     assert not fact_check("Revenue grew one percent.", data)
     out = fact_check("Revenue grew forty percent.", data)
     assert out and "revenue growth" in out[0].message
+
+
+def test_the_day_s_move_is_not_a_growth_claim(settings, data):
+    """A short opens on the move and its reason in one breath. The percentage
+    belongs to the stock; the earnings named after it are why."""
+    for line in ("EXMPL is up twelve percent because the boring machine beat revenue again.",
+                 "The stock fell eight percent on a revenue miss.",
+                 "Shares are down four percent after revenue stalled."):
+        assert not fact_check(line, data, ticker="EXMPL"), line
+    # A metric that is itself the subject is still checked, and so is one
+    # whose name happens to be in capitals.
+    out = fact_check("Revenue is up forty percent because the stores got busier.", data,
+                     ticker="EXMPL")
+    assert out and "revenue growth" in out[0].message
+    assert fact_check("ABCD is up forty percent on revenue.", data, ticker="EXMPL")
 
 
 def test_a_real_figure_under_the_wrong_year_is_caught_in_speech(settings, data):

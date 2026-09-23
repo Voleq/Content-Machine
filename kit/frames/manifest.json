@@ -1,25 +1,14 @@
 {
  "family": "frames",
- "pack": "delta-15",
- "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
+ "pack": "rebuild-17",
+ "generated": "engine/emit.js. Deterministic — regenerate from the engine you are holding: node engine/emit.js (node engine/emit.js --check diffs without writing).",
  "exportScale": 2,
- "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
- "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
- "assetCount": 8,
- "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
- "coordinateOrigin": "top-left of canvas",
- "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8",
+ "frameNaming": "<name>-<hour>_f01.._fNN before the extension. The BASE file carries no frame tag and is byte-identical to _f01.",
+ "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
+ "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
- "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
- "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
- "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
- "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
- "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
- "slotTotal": 28,
- "frameTotal": 24,
+ "assetCount": 8,
  "plates": {
   "frames/media-frame-t1-16x9": {
    "key": "frames/media-frame-t1-16x9",
@@ -35,37 +24,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "media-frame-t1-16x9.png",
+    "base": "media-frame-t1-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "media-frame-t1-16x9_f01.png",
+      "file": "media-frame-t1-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "804820ed"
+      "hash": "563fc449"
      },
      {
-      "file": "media-frame-t1-16x9_f02.png",
+      "file": "media-frame-t1-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "6bc165b7"
+      "hash": "1cc94ba8"
      },
      {
-      "file": "media-frame-t1-16x9_f03.png",
+      "file": "media-frame-t1-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "8cce6031"
+      "hash": "563fc449"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "media-frame-t1-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t1-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "563fc449"
+      },
+      {
+       "file": "media-frame-t1-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "1cc94ba8"
+      },
+      {
+       "file": "media-frame-t1-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "563fc449"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "media-frame-t1-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t1-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8ed68550"
+      },
+      {
+       "file": "media-frame-t1-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "d17629e4"
+      },
+      {
+       "file": "media-frame-t1-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8ed68550"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -116,60 +167,6 @@
      "h": 56,
      "maxChars": 83
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "media-frame-t1-16x9.svg",
-      "png": "media-frame-t1-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "media-frame-t1-16x9.png",
-     "svg": "media-frame-t1-16x9.svg"
-    },
-    "decorBoxes": [
-     {
-      "label": "tape-1",
-      "x": 257,
-      "y": 58,
-      "w": 170,
-      "h": 100
-     },
-     {
-      "label": "tape-2",
-      "x": 1503,
-      "y": 64,
-      "w": 170,
-      "h": 100
-     },
-     {
-      "label": "tape-3",
-      "x": 263,
-      "y": 728,
-      "w": 170,
-      "h": 100
-     },
-     {
-      "label": "tape-4",
-      "x": 1497,
-      "y": 734,
-      "w": 170,
-      "h": 100
-     }
-    ],
-    "aspect": "16x9",
-    "family": "structure",
-    "type": "media-frame-t1",
-    "treatment": 1
    }
   },
   "frames/media-frame-t1-9x16": {
@@ -186,37 +183,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "media-frame-t1-9x16.png",
+    "base": "media-frame-t1-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "media-frame-t1-9x16_f01.png",
+      "file": "media-frame-t1-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "67ba5600"
+      "hash": "e89faf90"
      },
      {
-      "file": "media-frame-t1-9x16_f02.png",
+      "file": "media-frame-t1-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "d7387744"
+      "hash": "999f54aa"
      },
      {
-      "file": "media-frame-t1-9x16_f03.png",
+      "file": "media-frame-t1-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "2ddf5b1e"
+      "hash": "e89faf90"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "media-frame-t1-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t1-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e89faf90"
+      },
+      {
+       "file": "media-frame-t1-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "999f54aa"
+      },
+      {
+       "file": "media-frame-t1-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e89faf90"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "media-frame-t1-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t1-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "96933180"
+      },
+      {
+       "file": "media-frame-t1-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "80763eb0"
+      },
+      {
+       "file": "media-frame-t1-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "96933180"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -267,60 +326,6 @@
      "h": 56,
      "maxChars": 56
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "media-frame-t1-9x16.svg",
-      "png": "media-frame-t1-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "media-frame-t1-9x16.png",
-     "svg": "media-frame-t1-9x16.svg"
-    },
-    "decorBoxes": [
-     {
-      "label": "tape-1",
-      "x": 47,
-      "y": 427,
-      "w": 170,
-      "h": 100
-     },
-     {
-      "label": "tape-2",
-      "x": 873,
-      "y": 433,
-      "w": 170,
-      "h": 100
-     },
-     {
-      "label": "tape-3",
-      "x": 53,
-      "y": 1294,
-      "w": 170,
-      "h": 100
-     },
-     {
-      "label": "tape-4",
-      "x": 867,
-      "y": 1300,
-      "w": 170,
-      "h": 100
-     }
-    ],
-    "aspect": "9x16",
-    "family": "structure",
-    "type": "media-frame-t1",
-    "treatment": 1
    }
   },
   "frames/media-frame-t2-16x9": {
@@ -337,37 +342,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "media-frame-t2-16x9.png",
+    "base": "media-frame-t2-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "media-frame-t2-16x9_f01.png",
+      "file": "media-frame-t2-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "0eca6dc1"
+      "hash": "073bd648"
      },
      {
-      "file": "media-frame-t2-16x9_f02.png",
+      "file": "media-frame-t2-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "f9baf4ff"
+      "hash": "86f69238"
      },
      {
-      "file": "media-frame-t2-16x9_f03.png",
+      "file": "media-frame-t2-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "93a77e7a"
+      "hash": "073bd648"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "media-frame-t2-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t2-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "073bd648"
+      },
+      {
+       "file": "media-frame-t2-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "86f69238"
+      },
+      {
+       "file": "media-frame-t2-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "073bd648"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "media-frame-t2-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t2-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "da12c450"
+      },
+      {
+       "file": "media-frame-t2-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "61d85640"
+      },
+      {
+       "file": "media-frame-t2-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "da12c450"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -398,13 +465,13 @@
      "x": 307,
      "y": 130,
      "w": 1306,
-     "h": 648
+     "h": 605
     },
     "caption": {
      "align": "left",
      "role": "label",
      "x": 307,
-     "y": 928,
+     "y": 884,
      "w": 1306,
      "h": 70,
      "maxChars": 95
@@ -413,44 +480,11 @@
      "align": "left",
      "role": "caption",
      "x": 307,
-     "y": 1012,
+     "y": 968,
      "w": 1306,
      "h": 56,
      "maxChars": 83
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "media-frame-t2-16x9.svg",
-      "png": "media-frame-t2-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "media-frame-t2-16x9.png",
-     "svg": "media-frame-t2-16x9.svg"
-    },
-    "decorBoxes": [
-     {
-      "label": "stand",
-      "x": 830,
-      "y": 816,
-      "w": 260,
-      "h": 92
-     }
-    ],
-    "aspect": "16x9",
-    "family": "structure",
-    "type": "media-frame-t2",
-    "treatment": 2
    }
   },
   "frames/media-frame-t2-9x16": {
@@ -467,37 +501,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "media-frame-t2-9x16.png",
+    "base": "media-frame-t2-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "media-frame-t2-9x16_f01.png",
+      "file": "media-frame-t2-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "cf7e040f"
+      "hash": "c49c9394"
      },
      {
-      "file": "media-frame-t2-9x16_f02.png",
+      "file": "media-frame-t2-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "f31e89d5"
+      "hash": "4b27f016"
      },
      {
-      "file": "media-frame-t2-9x16_f03.png",
+      "file": "media-frame-t2-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "d47a5e05"
+      "hash": "c49c9394"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "media-frame-t2-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t2-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "c49c9394"
+      },
+      {
+       "file": "media-frame-t2-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "4b27f016"
+      },
+      {
+       "file": "media-frame-t2-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "c49c9394"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "media-frame-t2-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t2-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a73b8470"
+      },
+      {
+       "file": "media-frame-t2-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "30dd9101"
+      },
+      {
+       "file": "media-frame-t2-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a73b8470"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -548,39 +644,6 @@
      "h": 56,
      "maxChars": 56
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "media-frame-t2-9x16.svg",
-      "png": "media-frame-t2-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "media-frame-t2-9x16.png",
-     "svg": "media-frame-t2-9x16.svg"
-    },
-    "decorBoxes": [
-     {
-      "label": "stand",
-      "x": 410,
-      "y": 1382,
-      "w": 260,
-      "h": 92
-     }
-    ],
-    "aspect": "9x16",
-    "family": "structure",
-    "type": "media-frame-t2",
-    "treatment": 2
    }
   },
   "frames/media-frame-t3-16x9": {
@@ -597,37 +660,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "media-frame-t3-16x9.png",
+    "base": "media-frame-t3-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "media-frame-t3-16x9_f01.png",
+      "file": "media-frame-t3-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "e6a1656e"
+      "hash": "1be443c6"
      },
      {
-      "file": "media-frame-t3-16x9_f02.png",
+      "file": "media-frame-t3-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "6fce56f9"
+      "hash": "eaf5f308"
      },
      {
-      "file": "media-frame-t3-16x9_f03.png",
+      "file": "media-frame-t3-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "6909043b"
+      "hash": "1be443c6"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "media-frame-t3-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t3-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1be443c6"
+      },
+      {
+       "file": "media-frame-t3-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "eaf5f308"
+      },
+      {
+       "file": "media-frame-t3-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1be443c6"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "media-frame-t3-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t3-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d7daea5e"
+      },
+      {
+       "file": "media-frame-t3-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "bcca7954"
+      },
+      {
+       "file": "media-frame-t3-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d7daea5e"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -678,39 +803,6 @@
      "h": 56,
      "maxChars": 83
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "media-frame-t3-16x9.svg",
-      "png": "media-frame-t3-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "media-frame-t3-16x9.png",
-     "svg": "media-frame-t3-16x9.svg"
-    },
-    "decorBoxes": [
-     {
-      "label": "pin",
-      "x": 926,
-      "y": 66,
-      "w": 68,
-      "h": 68
-     }
-    ],
-    "aspect": "16x9",
-    "family": "structure",
-    "type": "media-frame-t3",
-    "treatment": 3
    }
   },
   "frames/media-frame-t3-9x16": {
@@ -727,37 +819,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "media-frame-t3-9x16.png",
+    "base": "media-frame-t3-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "media-frame-t3-9x16_f01.png",
+      "file": "media-frame-t3-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "c15b2da4"
+      "hash": "d184ee12"
      },
      {
-      "file": "media-frame-t3-9x16_f02.png",
+      "file": "media-frame-t3-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "4cf67fcd"
+      "hash": "31101e7a"
      },
      {
-      "file": "media-frame-t3-9x16_f03.png",
+      "file": "media-frame-t3-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "389e873f"
+      "hash": "d184ee12"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "media-frame-t3-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t3-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d184ee12"
+      },
+      {
+       "file": "media-frame-t3-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "31101e7a"
+      },
+      {
+       "file": "media-frame-t3-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d184ee12"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "media-frame-t3-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "media-frame-t3-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "2bc2bdd4"
+      },
+      {
+       "file": "media-frame-t3-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "7eeb6cc3"
+      },
+      {
+       "file": "media-frame-t3-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "2bc2bdd4"
+      }
+     ]
+    }
    },
    "slotCount": 3,
    "typeRoles": {
@@ -808,39 +962,6 @@
      "h": 56,
      "maxChars": 56
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "media-frame-t3-9x16.svg",
-      "png": "media-frame-t3-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "media-frame-t3-9x16.png",
-     "svg": "media-frame-t3-9x16.svg"
-    },
-    "decorBoxes": [
-     {
-      "label": "pin",
-      "x": 506,
-      "y": 435,
-      "w": 68,
-      "h": 68
-     }
-    ],
-    "aspect": "9x16",
-    "family": "structure",
-    "type": "media-frame-t3",
-    "treatment": 3
    }
   },
   "frames/capture-frame-16x9": {
@@ -857,37 +978,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "capture-frame-16x9.png",
+    "base": "capture-frame-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "capture-frame-16x9_f01.png",
+      "file": "capture-frame-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "8ad5abff"
+      "hash": "d8c8e250"
      },
      {
-      "file": "capture-frame-16x9_f02.png",
+      "file": "capture-frame-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "3759f72c"
+      "hash": "67ad2630"
      },
      {
-      "file": "capture-frame-16x9_f03.png",
+      "file": "capture-frame-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "d6fbb600"
+      "hash": "d8c8e250"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "capture-frame-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "capture-frame-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d8c8e250"
+      },
+      {
+       "file": "capture-frame-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "67ad2630"
+      },
+      {
+       "file": "capture-frame-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d8c8e250"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "capture-frame-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "capture-frame-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0611a4e0"
+      },
+      {
+       "file": "capture-frame-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "44c97876"
+      },
+      {
+       "file": "capture-frame-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0611a4e0"
+      }
+     ]
+    }
    },
    "slotCount": 5,
    "typeRoles": {
@@ -976,38 +1159,6 @@
      "h": 56,
      "maxChars": 76
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "capture-frame-16x9.svg",
-      "png": "capture-frame-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "capture-frame-16x9.png",
-     "svg": "capture-frame-16x9.svg"
-    },
-    "decorBoxes": [
-     {
-      "label": "staple",
-      "x": 383,
-      "y": 148,
-      "w": 68,
-      "h": 44
-     }
-    ],
-    "aspect": "16x9",
-    "family": "structure",
-    "type": "capture-frame"
    }
   },
   "frames/capture-frame-9x16": {
@@ -1024,37 +1175,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "capture-frame-9x16.png",
+    "base": "capture-frame-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "capture-frame-9x16_f01.png",
+      "file": "capture-frame-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "f3d9fd41"
+      "hash": "3667fea0"
      },
      {
-      "file": "capture-frame-9x16_f02.png",
+      "file": "capture-frame-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "f4a04b4e"
+      "hash": "01d2b846"
      },
      {
-      "file": "capture-frame-9x16_f03.png",
+      "file": "capture-frame-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "3d872684"
+      "hash": "3667fea0"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "capture-frame-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "capture-frame-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3667fea0"
+      },
+      {
+       "file": "capture-frame-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "01d2b846"
+      },
+      {
+       "file": "capture-frame-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3667fea0"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "capture-frame-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "capture-frame-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3bc5cbd0"
+      },
+      {
+       "file": "capture-frame-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "81ab0348"
+      },
+      {
+       "file": "capture-frame-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3bc5cbd0"
+      }
+     ]
+    }
    },
    "slotCount": 5,
    "typeRoles": {
@@ -1143,38 +1356,6 @@
      "h": 56,
      "maxChars": 59
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "capture-frame-9x16.svg",
-      "png": "capture-frame-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "capture-frame-9x16.png",
-     "svg": "capture-frame-9x16.svg"
-    },
-    "decorBoxes": [
-     {
-      "label": "staple",
-      "x": 94,
-      "y": 402,
-      "w": 68,
-      "h": 44
-     }
-    ],
-    "aspect": "9x16",
-    "family": "structure",
-    "type": "capture-frame"
    }
   }
  }

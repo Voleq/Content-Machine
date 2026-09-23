@@ -71,6 +71,18 @@ scripts/emit_manifests.mjs
                   and diffs against the tree, exit 1 if any manifest no longer
                   matches the engine beside it. Run --check before shipping a
                   pack: it is the invariant delta-14 broke and nothing enforced.
+scripts/check_roles.mjs
+                  HOST ROLE MEMBERSHIP, against what the plates publish — drop
+                  fifteen's two test failures as one command.
+                  `node scripts/check_roles.mjs ../roles.json`, or --census to
+                  just print the framings/poses/cut-outs split.
+                  RULE 1: a substitution role (the one the renderer swaps to for
+                  a room declaring hostAnchor: false — `to-camera` by default,
+                  --floorless to name others) may contain only plates with
+                  floorLineY: false. RULE 2: every member of any host role must
+                  publish cutout: true. Both are checkable because every host
+                  plate declares both fields. Nothing here reads the renderer's
+                  substitution code — that guard is theirs, and both are needed.
 
 <family>/manifest.json
                   §0 · THE FOURTEEN PER-FAMILY MANIFESTS. Generated from the

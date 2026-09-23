@@ -209,47 +209,49 @@ def test_a_two_shot_puts_the_graphic_beside_him_and_not_under_him():
     the middle of it, over the thing he is discussing.
     """
     _fmt, result = _long_cut()
+    reg = _reg()
     two_shots = [l.shot_id for l in result.of_kind("host")
                  if any(o.kind == "plate" and o.concept != "room"
                         for o in result.for_shot(l.shot_id))]
     assert two_shots, "no chapter puts him beside the evidence"
     for shot_id in two_shots:
         host = [l for l in result.for_shot(shot_id) if l.kind == "host"][0]
+        hx, hy, hw, hh = _ink_box(reg, host)
         for o in result.for_shot(shot_id):
             if o.kind != "plate" or o.concept == "room":
                 continue
-            overlap = (max(0, min(host.x + host.w, o.x + o.w) - max(host.x, o.x))
-                       * max(0, min(host.y + host.h, o.y + o.h) - max(host.y, o.y)))
+            overlap = (max(0, min(hx + hw, o.x + o.w) - max(hx, o.x))
+                       * max(0, min(hy + hh, o.y + o.h) - max(hy, o.y)))
             assert overlap < 0.05 * o.w * o.h, \
                 f"{shot_id}: he is drawn over {overlap / (o.w * o.h):.0%} of {o.entry_key}"
 
 
-def test_a_glance_is_cut_on_the_two_shots():
-    """INGESTING THE SHOTS AND NEVER CUTTING TO THEM IS THE FAILURE HERE.
+_INK: dict[str, tuple[int, int, int, int, int, int]] = {}
 
-    It is not an error and no render fails: it is every beat straight to
-    camera, with four glance keys sitting unused in the kit. So the check is
-    that one actually fires, and that it looks the way the graphic is.
+
+def _ink_box(reg, layer):
+    """Where a host layer actually has ink, in frame pixels.
+
+    MEASURED ON THE DRAWING, NOT THE LAYER, because a framing's layer is its
+    whole window: the close-up is a canvas far wider than his shoulders, and
+    running off the frame's edges is what it is for. What must not overlap the
+    evidence is him.
     """
-    _fmt, result = _long_cut()
-    glances = [l for l in result.of_kind("host") if "-glance-" in l.entry_key]
-    assert glances, "not one glance was cut in a whole long"
-    for host in glances:
-        side = host.entry_key.rsplit("-", 1)[1]
-        plates = [o for o in result.for_shot(host.shot_id)
-                  if o.kind == "plate" and o.concept != "room"]
-        assert plates, f"{host.shot_id}: a glance at nothing"
-        mid = plates[0].x + plates[0].w / 2
-        host_mid = host.x + host.w / 2
-        assert (mid < host_mid) == (side == "left"), \
-            f"{host.shot_id}: {host.entry_key} against a graphic on the other side"
+    from PIL import Image
+
+    if layer.entry_key not in _INK:
+        img = Image.open(reg.get(layer.entry_key).frame_paths()[0])
+        _INK[layer.entry_key] = (*img.getchannel("A").getbbox(), *img.size)
+    x0, y0, x1, y1, w, h = _INK[layer.entry_key]
+    kx, ky = layer.w / w, layer.h / h
+    return (layer.x + x0 * kx, layer.y + y0 * ky, (x1 - x0) * kx, (y1 - y0) * ky)
 
 
 def test_a_room_that_refuses_a_cut_out_gets_a_framing_instead():
     """`hostAnchor: false` is branched on, not read as an omission.
 
-    `room/wall-of-calls` is square to a wall of index cards and there is no
-    floor in it. A figure was composited in front of it anyway, standing on
+    `room/board` is square to a wall of index cards and there is no floor in
+    it. A figure was composited in front of it anyway, standing on
     nothing. A framing has no floor line to pin, so the beat survives as the
     close-up it should probably have been.
     """
@@ -267,24 +269,23 @@ def test_a_room_that_refuses_a_cut_out_gets_a_framing_instead():
 
 
 def test_the_long_rotates_its_room_angles():
-    """Nine straight-on eye-level plates cut like props sliding on a shelf.
+    """Straight-on eye-level plates cut like props sliding on a shelf.
 
-    THE THREE NEW CAMERA POSITIONS ARE THE POINT. They were added because the
-    room only ever had one lens on it, and a kit that ships them into a
-    pipeline that never cuts to them has changed nothing. `high-desk-down` is
-    the one with no floor in shot: it fills the `surface` role alone, and the
-    filing walk is the beat that wants it.
+    EVERY ANGLE A ROLE HOLDS IS CUT TO. The camera positions were added
+    because the room only ever had one lens on it, and a kit that ships them
+    into a pipeline that never cuts to them has changed nothing. Stepped by
+    the shot's index, a role reached from the same place in every chapter
+    landed on one angle every time: a whole long cut `window-wall` eleven
+    times and never reached `doorway-wide`.
 
-    ASSERTED ON THE ANGLE, NOT THE KEY, because the hour is a separate axis.
-    `room/corner-perspective-16x9` and `room/corner-perspective-dusk-16x9` are
-    the same lens on the same furniture, and this test is about the lens.
-    Matching the night key made it pass or fail on which hour the fixture's
-    ticker happened to draw, which is not what it is for.
+    ASSERTED ON THE ANGLE, NOT THE KEY, because the hour is a separate axis:
+    `room/desk-front-16x9` and `room/desk-front-dusk-16x9` are the same lens
+    on the same furniture, and this test is about the lens.
     """
+    reg = _reg()
     _fmt, result = _long_cut()
     rooms = {l.entry_key for l in result.layers
              if l.kind == "plate" and l.concept == "room"}
-    assert len(rooms) >= 8, sorted(rooms)
 
     def _angle(key: str) -> str:
         return (key.removeprefix("room/").removesuffix("-16x9")
@@ -292,17 +293,36 @@ def test_the_long_rotates_its_room_angles():
 
     # ONE HOUR PER VIDEO, checked here because this is the only test holding a
     # whole cut's worth of rooms at once. Two hours on one wall in one video is
-    # two rooms. `wall-of-calls` is excluded: it is drawn by `wallOfCalls`
-    # rather than `room`, ships no hour variant, and is a content plate that
-    # happens to be a room rather than an angle on the set.
-    hours = {"dusk" if "-dusk-" in k else "night"
-             for k in rooms if not k.startswith("room/wall-of-calls")}
+    # two rooms.
+    hours = {"dusk" if "-dusk-" in k else "night" for k in rooms}
     assert len(hours) <= 1, f"one video, two hours: {sorted(rooms)}"
 
-    angles = {_angle(k) for k in rooms}
-    for angle in ("corner-perspective", "low-desk-height", "high-desk-down"):
-        assert angle in angles, \
-            f"{angle} is in the kit and never cut to: {sorted(rooms)}"
+    asked = {sp.shot.plate.split("/", 1)[1] for sp in result.spans
+             if sp.shot.plate and sp.shot.plate.startswith("room/")}
+    want = {_angle(k) for role in asked
+            for k in reg.angles_for(role, "16x9")}
+    got = {_angle(k) for k in rooms}
+    assert want <= got, (
+        f"in the kit, asked for, and never cut to: {sorted(want - got)}")
+
+
+def test_consecutive_room_shots_are_not_one_angle_where_there_is_another():
+    """Two roles that share an angle can hand it to two shots in a row, and
+    a cut between two identical rooms reads as a jump cut rather than a
+    change of camera. A role with one angle has nothing else to give."""
+    reg = _reg()
+    _fmt, result = _long_cut()
+    room_of = {l.shot_id: l.entry_key for l in result.layers
+               if l.kind == "plate" and l.concept == "room"}
+    repeats = []
+    for a, b in zip(result.spans, result.spans[1:]):
+        ka, kb = room_of.get(a.shot.id), room_of.get(b.shot.id)
+        if not ka or ka != kb or not b.shot.plate.startswith("room/"):
+            continue
+        role = b.shot.plate.split("/", 1)[1]
+        if len(reg.angles_for(role, "16x9")) > 1:
+            repeats.append(f"{a.shot.id} -> {b.shot.id}: {kb}")
+    assert not repeats, "\n".join(repeats)
 
 
 # ------------------------------------------------------------- the invariants

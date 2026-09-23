@@ -155,18 +155,40 @@ def _mean_luminance(img) -> float:
     return sum((r * 299 + g * 587 + b * 114) // 1000 for r, g, b in px) / len(px)
 
 
-def test_the_cover_is_paper_not_a_dark_photo(settings, workspace, long_valid_text):
-    """The one measurement that says which product this is selling."""
-    from PIL import Image
+def test_the_cover_is_the_set_not_a_dark_photo(settings, workspace, long_valid_text):
+    """The one measurement that says which product this is selling.
+
+    MEASURED AGAINST THE ROOM, NOT AGAINST A BRIGHTNESS. This used to say the
+    cover must read light, because the kit it was written for was ink on
+    paper. The rebuild's set is lit by a desk lamp at night, so a correct
+    cover is dark — and "dark" alone cannot tell the room from the near-black
+    photo the cover used to be painted on. What can is the room itself: the
+    cover is the room the video is shot in with type and a figure over it,
+    so most of it IS the room, pixel for pixel, and a photo is not.
+    """
+    from PIL import Image, ImageChops, ImageStat
 
     from pipeline.parser_long import parse_long_script
+    from pipeline.plates import at_episode_hour
+    from pipeline.thumbnail import WIDE, _room
     from pipeline.workspace import Workspace
 
     script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
-    out = make_thumbnail(script, Workspace(settings, "EXMPL", "2026-07-01"), settings)
+    ws = Workspace(settings, "EXMPL", "2026-07-01")
+    out = make_thumbnail(script, ws, settings)
     assert out is not None
-    lum = _mean_luminance(Image.open(out))
-    assert lum > 150, f"the cover reads dark ({lum:.0f}) in a light-kit channel"
+    with at_episode_hour(settings, ws.path, "EXMPL"):
+        room, plate = _room(settings, "wide", WIDE, episode="EXMPL")
+    assert plate is not None, "the cover found no room to be shot in"
+
+    small = (160, 90)
+    cover = Image.open(out).convert("RGB").resize(small)
+    diff = ImageStat.Stat(ImageChops.difference(cover, room.resize(small))).mean
+    photo = ImageStat.Stat(ImageChops.difference(
+        Image.new("RGB", small, (17, 17, 17)), room.resize(small))).mean
+    assert sum(diff) / 3 < 0.6 * sum(photo) / 3, (
+        f"the cover differs from its own room by {sum(diff) / 3:.0f} a channel "
+        f"— about as much as a near-black photo would ({sum(photo) / 3:.0f})")
 
 
 def test_no_gold_anywhere_on_the_cover(settings, workspace, long_valid_text):

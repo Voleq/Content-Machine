@@ -34,6 +34,10 @@
         },
         {
           "plate": "shorts/hook-card-t3"
+        },
+        {
+          "plate": "shorts/hook-card-t5",
+          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same three slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
         }
       ]
     },
@@ -80,6 +84,18 @@
         {
           "plate": "figures/compare-side-9x16",
           "notes": "Print and consensus side by side rather than stacked. Same slot names, so the binds carry; `detail-1` and `detail-2` go unfilled."
+        },
+        {
+          "plate": "structure/before-after-9x16",
+          "bind": {
+            "kicker": "?script.ticker",
+            "label-1": "?compare.expected_label",
+            "body-1": "compare.expected",
+            "label-2": "?compare.reported_label",
+            "body-2": "compare.reported",
+            "caption": "?script.cheap_or_trap"
+          },
+          "notes": "What was expected over what came out, as two stacked panels. `body-1` is bound REQUIRED on purpose: the plate's caution is that without a real prior expectation it reads as a comparison against a number it invented, so the rotation only reaches for it when the script carries the consensus. The gap on the divider stays empty — it is a figure nobody wrote, and the pipeline does not compute one."
         }
       ]
     },
@@ -187,6 +203,14 @@
             "source": "?script.ticker"
           },
           "notes": "THE OTHER WAY TO END. All three vertical formats closed on `structure/closing` every time, so every short in the channel signed off on the same drawing. The conclusion is a line worth pulling out by definition, and `quote-pull`'s body is the only other 9:16 plate wide enough to hold one without narrowing what the writer may write — `structure/end-card` holds 58 characters against closing's 136, so rotating onto it would have shrunk every conclusion in the channel to suit the alternate."
+        },
+        {
+          "plate": "structure/closing-t2-9x16",
+          "bind": {
+            "kicker": "?channel.handle",
+            "statement": "script.conclusion"
+          },
+          "notes": "ONE THING AT STATEMENT SIZE. The original close has three lines and a script has one conclusion, so two of them were always empty. The handle moves up to the kicker: this plate's date label sits inside the caption band, where the last spoken words would run over it. Its detail line stays empty — the plate's own caution is not to pad it."
         }
       ]
     }

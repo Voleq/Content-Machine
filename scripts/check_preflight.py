@@ -79,7 +79,7 @@ def _kit(settings, report: Report) -> None:
         "_ingest_for_preflight", Path(__file__).with_name("ingest_kit.py"))
     ingest = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ingest)
-    shipped = set(ingest._shipped_manifests(ROOT / "kit"))
+    shipped = ingest._shipped_keys(ROOT / "kit")
     missing = shipped - keys
     if missing:
         report.add(FAIL, "design kit",

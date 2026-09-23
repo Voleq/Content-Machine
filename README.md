@@ -159,6 +159,12 @@ pipeline/
   chart.py               the data path for a declared chart region, and the
                          range marks on a multiples strip — nothing else; the
                          plate draws the furniture
+  series.py              THE KIT'S DATA LAYER, ported: design's series.js
+                         renderers and export.js dataLayer, so a plate's bars,
+                         lines, walks and rails draw as design's proof sheet
+                         does. Where a plate prints its figures, the printed
+                         figures are what it draws; the writer's `data:` line
+                         in the plate catalogue comes from here
   rasters.py             what the kit does not draw: captions, alpha clips,
                          figure animation, and solving a mark onto its target
 
@@ -230,12 +236,15 @@ bot/
                          from the registry (never a hand-kept list)
   keyboards.py           Approve / Swap clip / Cancel, candidate buttons
 kit/                     THE DESIGN DELIVERY, as shipped: engine/ (the
-                         generator), per-family manifest.json, roles.json,
-                         fonts/, INGEST.md. The PNGs under assets/plates/ are
-                         built from this and are not edited by hand
+                         generator), per-family manifest.json, emit/,
+                         roles.fragment.json (design's note on every plate),
+                         design-tokens.json, and roles.json (ours: who stands
+                         where, what is held back). Every PNG the bot draws
+                         with is drawn from this and never edited by hand
 assets/
-  plates/                the materialised kit: 270 plates in fourteen families
-                         plus plates-registry.json, written by the ingest
+  plates/                the materialised kit: every plate in fourteen
+                         families at every hour the set is lit at, plus
+                         plates-registry.json, written by the ingest
   voice_bible.md         the voice, and what the linter checks against
   fonts, brand, channel, backgrounds, overlays, sfx, broll_library,
   meme_library, custom/ ([SCREENGRAB] drops)
@@ -1047,7 +1056,7 @@ python scripts/check_preflight.py --live   # also the production-only settings
 
 | # | step | why |
 |---|---|---|
-| 1 | `npm install`, then `python scripts/ingest_kit.py kit` | `assets/plates/` is a gitignored ~400MB build product. Without it `Registry` raises, `kit doctor` blocks, and **nothing renders on either lane**. 270 plates, 924 frames. **The build is memory-bound**: if it is OOM-killed part way, use `--batched` (one process per family) — see `kit/INGEST.md`. The cause is retention, not any one plate, so a bigger machine and `--batched` fix the same thing. |
+| 1 | `npm install`, then `python scripts/ingest_kit.py kit` | `assets/plates/` is a gitignored ~300MB build product. Without it `Registry` raises, `kit doctor` blocks, and **nothing renders on either lane**. The ingest runs the kit's own audit and `emit.js --check` on a staged copy, draws every plate blank at night and at dusk, proves each one is design's exported file byte for byte, draws the host's close-up, and stands him in every room to measure what paints over him. `--only FAMILY` draws and checks one family without installing anything. |
 | 2 | `/kit doctor` | Immediately after the ingest, while the host/room change is fresh — a stale plate found three fixes later looks like a regression in something else. |
 | 3 | `export FREESOUND_API_KEY=…`, then `scripts/fetch_sfx.py` | `assets/sfx/` ships fifteen ffmpeg oscillators and no `SOURCES.json`, so `check_audio` blocks **every** final render. The gate is per file: room tone alone leaves fourteen. |
 | 4 | `python scripts/check_sfx.py` | Must report zero placeholders. Anything listed still blocks. |
@@ -1139,12 +1148,12 @@ gritted teeth rather than a stamp.
 **Run the ingest. Every time, on anything that touches `kit/`.**
 
 ```bash
-node kit/scripts/emit_manifests.mjs --check   # manifests still match the engine
-python scripts/ingest_kit.py kit              # build the artwork and verify it
+python scripts/ingest_kit.py kit              # prove the kit, draw it, verify it
 ```
 
-Two commands, and the second is the one that matters: it runs the engine,
-writes every frame, and reconciles what the engine draws against the manifests
+It runs the kit's own checks first — its audit, and `node engine/emit.js
+--check`, which says the shipped manifests are what the engine writes — then
+draws every frame and reconciles what the engine draws against the slot tables
 the delivery shipped. Nothing else in the suite does — the tests read
 `assets/plates/`, which is a build product, so a kit whose engine and manifests
 disagree passes every test right up until somebody tries to render.
@@ -1155,18 +1164,10 @@ run against it. The disagreement was in slot METADATA rather than geometry —
 zero differences in x, y, w or h — so nothing looked wrong until both lanes
 stopped rendering. One command before the merge would have caught it.
 
-`--check` is the cheap half and needs only node: it emits the manifests into
-memory from the engine in the tree and diffs them against the ones on disk. A
-clean `--check` means the two came from the same drop.
-
 **If the ingest is killed with exit `-9`, that is the OOM killer, not a bug.**
-270 plates at `exportScale: 2` in one process is memory-bound; on a 16 GB
-container node reaches about 14 GB before the kernel takes it. Use the
-supported fallback, which is one process per family:
-
-```bash
-python scripts/ingest_kit.py kit --batched
-```
+The driver draws one family at a time and releases each before the next, so
+a normal container has room; if it happens anyway, `--only FAMILY` checks one
+family at a time and says which one the memory went on.
 
 **The suite needs the kit built and the LFS media fetched.** Both are the
 Setup section above: without `assets/plates/` about 180 tests fail on

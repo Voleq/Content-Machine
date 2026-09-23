@@ -767,7 +767,7 @@ def test_a_data_region_nobody_filled_is_reported(settings):
     assert "bars" in unfilled_slots(plate, {"ticker-1": "EV/S"})
     assert "bars" not in unfilled_slots(plate, {"bars": "90,55,10,5,95"})
     # A reserved AREA is not something a script fills.
-    room = reg.get("room/wide-16x9")
+    room = reg.get("room/desk-front-16x9")
     assert "host-anchor" not in unfilled_slots(room, {})
 
 
@@ -1050,7 +1050,8 @@ def test_a_short_proof_does_not_overwrite_the_paid_final(settings, workspace):
     assert sig.parameters["out_name"].default is None, \
         "the name must follow `proof`, not default to the final's"
 
-    src = inspect.getsource(rs.render_short)
+    # The work is `_render_short`, behind the wrapper that fixes the hour.
+    src = inspect.getsource(rs._render_short)
     assert 'out_name = "short_proof.mp4" if proof else "short_final.mp4"' in src
 
 

@@ -1,5 +1,103 @@
 # Dennis v2 — delta pack 15
 
+## Drop fifteen — the two failing host plates
+
+`1353 passing, 2 failed` on `394c1be`. Both are role-membership on the surface and only
+one of them actually is.
+
+### §1 · `sitting-at-desk` in `to-camera` — the fragment's instruction caused it
+
+**Your (a).** Take it out; it stays in the pose roles, where a floor exists. Do not make it
+a framing — it is a full figure at 0.739 of a standing height and `meta.seated.heights`
+exists so the compositor can scale it against that ratio, so a `-close` variant would break
+the scaling contract to fix a membership error.
+
+`to-camera` lives in the renderer's `roles.json`, not in the kit — but the kit is where the
+bad membership came from. `roles.fragment.json` `_hostSeated.hostPoses_fragment` read:
+
+> *"add `sitting-at-desk` to the seated role **and to any role a LONG chapter opener
+> uses**"*
+
+A long chapter opener does use `to-camera`. **The instruction was followed exactly and
+produced the defect** — which is the more useful finding than the membership, because the
+next pose added to the kit would have gone the same way. It now says *a POSE role*, with
+the invariant stated as a rule a check can run:
+
+> A role the renderer swaps to for a floorless room may contain only plates with
+> `floorLineY: false`.
+
+Measured against the emitted manifest: **28 host plates qualify, 22 do not.** The field is
+published on every host plate precisely so this is checkable rather than remembered.
+`host/sitting-at-desk` now carries a `host_roles` line saying which roles it may not enter.
+
+### §2 · `empty-chair` "is not a cut-out" — it is one, and two fields were missing
+
+**Your (a), and cheaper than the write-up assumes: no alpha to publish, nothing to
+re-draw.** The plate has been an alpha cut-out since drop four — `ground: "none"`,
+`grain: null`, composites onto a host-anchor, and its own `dataPolicy` string has said
+*"alpha cut-out, no ground"* in prose the whole time.
+
+What it never published is the two fields a gate can read. `engine/plates.js emptyChair()`
+was written apart from `hostFigure()` and `hostHead()`, both of which set
+`cutout: true, alpha: true` in that same meta object. This author didn't. So the test read
+absence as denial, and the prose that contradicted it was in a field nothing parses.
+
+Fixed in `plates.js` — two fields, `host/manifest.json` re-emitted. **50 host plates, 0
+geometry diffs, 0 frame-hash diffs, exactly one plate's meta changed.** The role membership
+needs no change: it stays in `beat`.
+
+It is furniture rather than a pose, and your (b) is coherent, but furniture that goes
+*where he would have been* is what a host role is for — and (b) costs it a route it
+already has.
+
+### §3 · Found while checking: the fragment held the pre-drop-eight scaling contract
+
+`roles.fragment.json` `host/empty-chair.renderer_contract` still read *"scales like a
+figure: (floorLineY - figure.y) to the anchor height directly. The seated ratio does NOT
+apply."* Drop eight overturned that — it is the §14 finding, the chair rendering **64%
+larger with nobody in it, taller than the man who sits in it**, on the one cut the plate
+exists for. The engine and the manifest have carried `meta.chair.heights.ratio` (0.608)
+since; this entry was the last copy of the old reasoning, sitting in the file the renderer
+merges from. Marked superseded rather than deleted.
+
+Same shape as the `_titleGround` stale note in drop twelve, and the same lesson: a stale
+note someone trusts is worse than an absent one.
+
+### §4 · The invariant is now a command, not a sentence
+
+`scripts/check_roles.mjs` takes the renderer's `roles.json` and checks host role
+membership against what the plates publish. Both failures as two rules:
+
+```
+node kit/scripts/check_roles.mjs ../roles.json
+```
+
+**Rule 1** — a substitution role may contain only plates with `floorLineY: false`.
+**Rule 2** — every member of any host role must publish `cutout: true`.
+
+Run against main's current `roles.json` it reports **one violation**:
+`[rule 1] to-camera -> host/sitting-at-desk : floorLineY 1728`. Rule 2 is silent because
+§2's fix is already in the engine — before it, rule 2 named `host/empty-chair`. With
+`sitting-at-desk` out of `to-camera` it is clean. `--census` needs no `roles.json` at all:
+**50 host plates, 28 framings, 22 poses, 0 not publishing a cut-out.**
+
+This is the kit's half and it constrains the set the renderer picks from. It does not make
+the substitution site verify its pick — that guard is yours, and both are needed.
+
+### §5 · Your §3 and §4, acknowledged
+
+The unguarded substitution is theirs and I have not touched it. Worth saying that the guard
+and the invariant in §1 are the same check from two sides — they verify the plate they
+picked, the kit constrains the set they pick from — and either alone would have stopped
+this render defect.
+
+Urgency read as you set it: shorts unaffected, and the first long that picks
+`short-interest` ships wrong. Neither fix needs a re-render.
+
+---
+
+# Dennis v2 — delta pack 15 · drop fourteen
+
 ## Drop fourteen — the fourteen manifests re-emitted from the engine in main
 
 **270 plates, 3,033 slots, 924 frames. No plate changed, no geometry moved, nothing

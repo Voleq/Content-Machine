@@ -1,9 +1,17 @@
 """The plate registry — the read side of the materialised design kit.
 
-``assets/plates/plates-registry.json`` is the single source of truth: 270
-addressable plates under ``family/name`` keys, each declaring its frames,
-playback, canvas, ``exportScale`` and its slots. ``scripts/ingest_kit.py``
-writes it by running the kit's own engine; this module reads it and *only* it.
+``assets/plates/plates-registry.json`` is the single source of truth: every
+addressable plate under a ``family/name`` key, each declaring its frames,
+playback, canvas, ``exportScale`` and its slots, and each drawn once per hour
+the kit lights the set at. ``scripts/ingest_kit.py`` writes it by running the
+kit's own engine; this module reads it and *only* it.
+
+THE HOUR IS THE EPISODE'S, NOT THE PLATE'S. The library a template, a director
+or the curation names is the base hour's; every other hour is the same drawing
+in another colour table, reached by viewing the registry at that hour
+(:meth:`Registry.at`). A render picks its hour once and every registry loaded
+while it runs is that view (:func:`at_episode_hour`), so no plate in a dusk
+video can come out at night because the code that chose it forgot to ask.
 
 Nothing is discovered from the filesystem. A PNG that the registry does not
 name does not exist, and ingest fails the build when one turns up in a family
@@ -37,9 +45,12 @@ from __future__ import annotations
 import json
 import logging
 import random
+import re as _re
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Collection, Any
+from typing import Collection, Any, Iterator
 
 log = logging.getLogger(__name__)
 
@@ -68,6 +79,49 @@ CHAPTER_TYPES = (
     "capital-allocation", "guidance-estimates", "short-interest", "valuation",
     "risk", "filing-walk", "bull-vs-bear", "resigned-close",
 )
+
+
+# The eleven GICS sectors, in the kit's spelling. A sector plate names the ONE
+# kind of issuer its structure presumes — an ARR bridge is for a subscription
+# business, a reserve-life plate is for a producer — and a plate that names no
+# sector is for any company. Fixed, because GICS is: a value outside it is a
+# typo, and a typo here hides a plate from every company it was drawn for.
+GICS_SECTORS = (
+    "energy", "materials", "industrials", "consumer-discretionary",
+    "consumer-staples", "health-care", "financials", "information-technology",
+    "communication-services", "utilities", "real-estate",
+)
+
+
+# The workbook's `sector` is typed by whoever filled it, in whichever data
+# vendor's words: "Technology", "Information Technology", "Financial Services".
+# Each folds to the GICS slug its sector plates carry. Industry-level words are
+# not guessed at: a sector the table does not know is "", and the writer is
+# then shown every sector plate, each labelled with the industry it is for.
+_SECTOR_WORDS = {
+    "energy": "energy", "oil-and-gas": "energy",
+    "materials": "materials", "basic-materials": "materials",
+    "industrials": "industrials", "industrial": "industrials",
+    "consumer-discretionary": "consumer-discretionary",
+    "consumer-cyclical": "consumer-discretionary",
+    "consumer-staples": "consumer-staples", "consumer-defensive": "consumer-staples",
+    "health-care": "health-care", "healthcare": "health-care",
+    "financials": "financials", "financial-services": "financials",
+    "financial": "financials",
+    "information-technology": "information-technology",
+    "technology": "information-technology", "it": "information-technology",
+    "communication-services": "communication-services",
+    "communications": "communication-services",
+    "telecommunication-services": "communication-services",
+    "utilities": "utilities",
+    "real-estate": "real-estate", "realestate": "real-estate",
+}
+
+
+def fold_sector(raw: str | None) -> str:
+    """A workbook's sector as the GICS slug the sector plates carry, or ""."""
+    key = _re.sub(r"[^a-z]+", "-", str(raw or "").lower().replace("&", " and ")).strip("-")
+    return _SECTOR_WORDS.get(key, key if key in GICS_SECTORS else "")
 
 
 def fold_chapter_type(raw: str) -> str:
@@ -164,6 +218,17 @@ class Slot:
     # anything: a title that overhangs its card is back to being set on the
     # wall, which is the whole thing the card exists to prevent.
     ground_box: dict = field(default_factory=dict)
+    # THE GEOMETRY A DATA LAYER READS, in canvas units, published per slot and
+    # never re-derived here — kit/engine/series.js's one rule, "every x comes
+    # from anchorX, every box from the slot". A column's centre and the line its
+    # bar grows from; which way a rail runs; a scale the plate has drawn its
+    # furniture to (`[lo, hi]` on a band, `{"x": […], "y": […]}` on a plot); and
+    # whether a bridge floats between two rates rather than standing on zero.
+    anchor_x: float | None = None
+    baseline_y: float | None = None
+    axis: str = ""
+    scale: object = None
+    floats: bool = False
 
     def scaled(self) -> tuple[int, int, int, int]:
         """The box in delivered pixels."""
@@ -220,9 +285,27 @@ class Slot:
             max_lines=int(raw.get("maxLines") or 0),
             colour=str(raw.get("colour") or ""),
             ground=str(raw.get("ground") or ""),
-            ground_box=(raw.get("groundBox")
-                        if isinstance(raw.get("groundBox"), dict) else {}),
+            ground_box=_box_dict(raw.get("groundBox")),
+            anchor_x=_opt_float(raw.get("anchorX")),
+            baseline_y=_opt_float(raw.get("baselineY")),
+            axis=str(raw.get("axis") or ""),
+            scale=raw.get("scale") if isinstance(raw.get("scale"), (list, dict)) else None,
+            floats=raw.get("float") is True,
         )
+
+
+def _opt_float(raw) -> float | None:
+    return float(raw) if isinstance(raw, (int, float)) and not isinstance(raw, bool) else None
+
+
+def _box_dict(raw) -> dict:
+    """A box as {x, y, w, h}. The rebuild's emitter publishes a room title's
+    ground as [x, y, w, h]; the drawn kit published the dict."""
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, (list, tuple)) and len(raw) == 4:
+        return dict(zip("xywh", raw))
+    return {}
 
 
 @dataclass(frozen=True)
@@ -242,6 +325,10 @@ class Frame:
     boil: int = 0
     mouth_open: bool = False
     bob: int = 0
+    # `open` or `closed`: the blink strip's second frame is the shut one, and a
+    # face that looked for it by position would blink on whichever frame a
+    # future strip happened to put first.
+    eyes: str = "open"
 
 
 @dataclass(frozen=True)
@@ -313,6 +400,51 @@ class Plate:
     framing: str = ""
     glance: str = ""              # "camera-left" | "camera-right" | "to camera"
     fit: dict = field(default_factory=dict)
+    # THE HOUR THIS ART IS DRAWN AT, and the key of the same plate at the base
+    # hour. Every plate exists at every hour the kit draws — same author, same
+    # seed, same slots, another colour table — so an hour is a variant of a
+    # plate, never a plate of its own. Empty on a registry that draws one hour.
+    hour: str = ""
+    at_base_hour: str = ""
+    # A ROOM IN TWO LAYERS, split where he stands: `back` is everything behind
+    # him and `front` the desk and whatever is on it. The base file is both at
+    # once, for a shot with nobody in it. Empty on every other plate.
+    layers: dict = field(default_factory=dict)
+    # Whether the angle may be shot at an hour other than the one its light was
+    # drawn for. The kit marks its wide angles False: their cast shadows still
+    # fall where the night lamp puts them. None when the plate does not say.
+    dusk_safe: bool | None = None
+    # DESIGN'S NOTE ON THE PLATE, off `roles.fragment.json`: when NOT to use it
+    # (or which sibling to prefer), the chapter types it is filed under, and —
+    # for the sector rounds — the one GICS sector its structure presumes. Empty
+    # `sectors` means any company. The writer is shown all of it.
+    caution: str = ""
+    sectors: tuple[str, ...] = ()
+    chapter_types: tuple[str, ...] = ()
+    formats: tuple[str, ...] = ()
+    beats: tuple[str, ...] = ()
+    # How much of his head the room's front layer covers with him standing on
+    # its anchor, as the engine driver measured it. None off a room, or on a
+    # room nobody stands in.
+    head_covered: float | None = None
+    # A ROOM A CHAPTER MAY OPEN IN: it publishes a `title` slot and the card
+    # under it is drawn into its back layer (rebuild-21). Only `desk-wide`.
+    opener: bool = False
+    # THE INK EACH LEGEND KEYS ITS SERIES IN, as {label slot: palette role} —
+    # `{"legend-1": "up", "legend-2": "neutral-data"}`. The kit draws the key
+    # swatch and publishes only the label's box, so the engine driver reads the
+    # ink off the drawing. Empty on a plate with no keyed legend.
+    keys: dict = field(default_factory=dict)
+
+    @property
+    def base_key(self) -> str:
+        """The key this plate has at the base hour — the drawing, not the hour."""
+        return self.at_base_hour or self.key
+
+    def layer_path(self, name: str) -> Path | None:
+        """``back`` or ``front`` of a layered room, or None on a flat plate."""
+        f = self.layers.get(name)
+        return self.root / self.family / f if f else None
 
     @property
     def host_anchor(self) -> dict:
@@ -419,32 +551,15 @@ class Registry:
         self.outfit: str = raw.get("outfit", "")
         self.export_scale: int = int(raw.get("exportScale", 2))
 
-        pal = (raw.get("palette") or {}).get("roles") or {}
-        missing = [r for r in PALETTE_ROLES if r not in pal]
-        if missing:
-            raise PlateError(
-                f"the registry palette is missing {', '.join(missing)} — it "
-                f"must declare all eight roles, because code asks for a role "
-                f"and never for a hex")
-        self.palette: dict[str, str] = {k: str(v) for k, v in pal.items()}
-        self.surface: str = (raw.get("palette") or {}).get("surface", "")
-
-        purposes: dict[str, str] = raw.get("purposes") or {}
-        self.assets: dict[str, Plate] = {}
-        for key, entry in (raw.get("assets") or {}).items():
-            self.assets[key] = self._build(key, entry, purposes)
-
-        self.host_roles: dict[str, tuple[str, ...]] = {
-            k: tuple(v) for k, v in (raw.get("hostRoles") or {}).items()}
-        self.host_poses: dict[str, dict] = raw.get("hostPoses") or {}
-        self.room_roles: dict[str, tuple[str, ...]] = {
-            k: tuple(v) for k, v in (raw.get("roomRoles") or {}).items()}
         # THE HOURS THE SET IS DRAWN AT: an hour name to the suffix its keys
-        # carry. `night` is the empty suffix.
-        _hours = raw.get("roomHours") or {}
-        self.room_hours: dict[str, str] = {
-            str(k): str(v) for k, v in (_hours.get("hours") or {}).items()
+        # carry, and the base hour is the one with none. Every plate in the
+        # kit is drawn at every one of them.
+        _hours = raw.get("hours") or {}
+        self.hour_suffixes: dict[str, str] = {
+            str(k): str(v) for k, v in (_hours.get("suffixes") or {}).items()
             if not str(k).startswith("_")}
+        self.base_hour: str = next(
+            (h for h, suffix in self.hour_suffixes.items() if not suffix), "")
         # WHICH OF THEM AN EPISODE MAY BE DRAWN AT, picked from uniformly. A
         # separate field from the one above because "the kit draws dusk" and
         # "half the channel is at dusk" are two different decisions, and only
@@ -452,7 +567,71 @@ class Registry:
         # and this list omits is unreachable, and `reachable_plates` says so.
         self.hour_rotation: tuple[str, ...] = tuple(
             str(h) for h in (_hours.get("episodes") or ())
-            if str(h) in self.room_hours) or tuple(self.room_hours)[:1]
+            if str(h) in self.hour_suffixes) or tuple(self.hour_suffixes)[:1]
+
+        # ONE PALETTE PER HOUR, because the plates are. Dusk plates are light
+        # ground and violet ink: a caption coloured off the night table sets
+        # pale type on a pale card, and nothing about the frame says why.
+        raw_palettes = raw.get("palettes") or {}
+        if not raw_palettes:
+            raw_palettes = {self.base_hour: (raw.get("palette") or {}).get("roles") or {}}
+        self.palettes: dict[str, dict[str, str]] = {}
+        for hour, pal in raw_palettes.items():
+            missing = [r for r in PALETTE_ROLES if r not in (pal or {})]
+            if missing:
+                raise PlateError(
+                    f"the registry's {hour or 'base'} palette is missing "
+                    f"{', '.join(missing)} — it must declare all eight roles, "
+                    f"because code asks for a role and never for a hex")
+            self.palettes[hour] = {k: str(v) for k, v in pal.items()}
+        self.palette: dict[str, str] = self.palettes.get(
+            self.base_hour, next(iter(self.palettes.values())))
+        self.surface: str = (raw.get("palette") or {}).get("surface", "")
+
+        # THE LIBRARY IS THE BASE HOUR. `assets` is every plate once, under the
+        # key a template, a director or the curation names it by; its other
+        # hours are variants of it, found through `plate_at` and through a
+        # registry viewed at an hour. Listing them beside it would put every
+        # plate into every chapter's options twice, and rotate a video between
+        # a drawing and itself.
+        purposes: dict[str, str] = raw.get("purposes") or {}
+        # Design's note per plate, by its base-hour key. Absent on a registry
+        # an older ingest wrote, which is every plate with no caution.
+        self._notes: dict[str, dict] = {
+            str(k): v for k, v in (raw.get("plateNotes") or {}).items()
+            if isinstance(v, dict)}
+        # What the curation holds back, stem -> why. Held-back plates are off
+        # every chapter's menu already (the ingest leaves them out); this is
+        # kept so a report can say why a drawn plate is unreachable.
+        _held = raw.get("heldBack") or {}
+        self.held_back: dict[str, dict[str, str]] = {
+            "plates": dict(_held.get("plates") or {}),
+            "rooms": dict(_held.get("rooms") or {})}
+        self._everything: dict[str, Plate] = {}
+        for key, entry in (raw.get("assets") or {}).items():
+            self._everything[key] = self._build(key, entry, purposes)
+        self._library: dict[str, Plate] = {
+            k: p for k, p in self._everything.items()
+            if not p.hour or p.hour == self.base_hour}
+        self._variants: dict[str, dict[str, Plate]] = {}
+        for p in self._everything.values():
+            if p.hour and p.hour != self.base_hour:
+                self._variants.setdefault(p.hour, {})[p.base_key] = p
+        # Keyed by the base-hour key always; the VALUES are the art at the hour
+        # this registry is viewed at. So a caller holding `reg.assets[key]`
+        # gets the episode's hour exactly as one calling `reg.get(key)` does,
+        # and no route to a plate is left drawing night into a dusk video.
+        self.assets: dict[str, Plate] = self._library
+        # The hour this registry is VIEWED at, set only by `at`. Empty is the
+        # base library, with the base palette.
+        self._hour: str = ""
+        self._views: dict[str, "Registry"] = {}
+
+        self.host_roles: dict[str, tuple[str, ...]] = {
+            k: tuple(v) for k, v in (raw.get("hostRoles") or {}).items()}
+        self.host_poses: dict[str, dict] = raw.get("hostPoses") or {}
+        self.room_roles: dict[str, tuple[str, ...]] = {
+            k: tuple(v) for k, v in (raw.get("roomRoles") or {}).items()}
         # Which keys are the same shot in other clothes. `figure` is settled at
         # ingest (the outfit is baked into the pose art); `medium` is a pair of
         # keys, so the choice is the pipeline's and has to be made once per
@@ -491,6 +670,7 @@ class Registry:
                 boil=int(f.get("boil") or 0),
                 mouth_open=bool(f.get("mouthOpen", False)),
                 bob=int(f.get("bob") or 0),
+                eyes=str(f.get("eyes") or "open"),
             )
             for f in e.get("frames", [])
         )
@@ -510,6 +690,12 @@ class Registry:
             if stem.endswith(suffix):
                 stem = stem[: -len(suffix)]
         purpose = purposes.get(key) or purposes.get(stem, "")
+        # Design's note is filed under the BASE-hour key, since every hour is
+        # the same plate; a dusk entry finds it through `atBaseHour`.
+        note = self._notes.get(str(e.get("atBaseHour") or key)) or {}
+        if not purpose:
+            purpose = str(note.get("purpose") or "")
+        occlusion = e.get("occlusion") if isinstance(e.get("occlusion"), dict) else {}
 
         # `columns` ARRIVES IN TWO SHAPES, because two different plate authors
         # spell two different things with one word and the registry flattens
@@ -549,7 +735,9 @@ class Registry:
             root=self.root,
             purpose=purpose,
             author=str(e.get("author", "")),
-            seed=int(e.get("seed", 1)),
+            # A room is drawn from the set model, not by a seeded author, and
+            # says so with a null.
+            seed=int(e["seed"]) if e.get("seed") is not None else 1,
             outfit=str(e.get("outfit") or ""),
             floor_line_y=e.get("floorLineY"),
             host_anchor_declared=e.get("hostAnchor", None),
@@ -563,6 +751,20 @@ class Registry:
             framing=str(e.get("framing") or ""),
             glance=str(e.get("glance") or ""),
             fit=dict(e.get("fit") or {}),
+            hour=str(e.get("hour") or ""),
+            at_base_hour=str(e.get("atBaseHour") or ""),
+            layers={k: str(v) for k, v in (e.get("layers") or {}).items()
+                    if k in ("back", "front") and v},
+            dusk_safe=(None if e.get("duskSafe") is None else bool(e["duskSafe"])),
+            caution=str(note.get("caution") or ""),
+            sectors=tuple(str(s) for s in note.get("sectors") or ()),
+            chapter_types=tuple(str(c) for c in note.get("chapterTypes") or ()),
+            formats=tuple(str(f) for f in note.get("formats") or ()),
+            beats=tuple(str(b) for b in note.get("beats") or ()),
+            head_covered=(float(occlusion["headCovered"])
+                          if occlusion.get("headCovered") is not None else None),
+            opener=bool(e.get("opener", False)),
+            keys={str(k): str(v) for k, v in (e.get("keys") or {}).items()},
         )
 
     # ---------------------------------------------------------------- basics
@@ -571,16 +773,26 @@ class Registry:
         return len(self.assets)
 
     def __contains__(self, key: str) -> bool:
-        return key in self.assets
+        return key in self._everything
 
     def keys(self) -> tuple[str, ...]:
         return tuple(sorted(self.assets))
 
     def get(self, key: str) -> Plate | None:
-        return self.assets.get(key)
+        """A plate by key, AT THE HOUR THIS REGISTRY IS VIEWED AT.
+
+        Any hour's key finds its plate; a base key on a registry viewed at dusk
+        finds the dusk art. So a template or a director names a plate once,
+        and the episode's hour is applied here, to every plate at once, rather
+        than at each of the places a plate is chosen.
+        """
+        p = self._everything.get(key)
+        if p is None or not self._hour:
+            return p
+        return self.assets.get(p.base_key, p)
 
     def require(self, key: str, *, why: str = "") -> Plate:
-        p = self.assets.get(key)
+        p = self.get(key)
         if p is not None:
             return p
         near = self.nearest(key)
@@ -600,6 +812,79 @@ class Registry:
 
     def families(self) -> tuple[str, ...]:
         return tuple(sorted({p.family for p in self.assets.values()}))
+
+    def all_plates(self) -> dict[str, Plate]:
+        """Every plate at every hour, by its own key. For checking, not choosing."""
+        return dict(self._everything)
+
+    # ----------------------------------------------------------------- hours
+
+    @property
+    def hour(self) -> str:
+        """The hour this registry is viewed at; the base hour when it is not."""
+        return self._hour or self.base_hour
+
+    def at(self, hour: str) -> "Registry":
+        """This registry viewed at one hour: its plates, its palette, its rooms.
+
+        THE HOUR IS A PROPERTY OF THE EPISODE, applied once. A view returns the
+        hour's art for every key and the hour's palette for every colour, and
+        answers `hour_for` with its own hour whatever it is asked, so nothing
+        downstream can choose a second one and cut dusk against night.
+        """
+        if hour not in self.hour_suffixes:
+            raise PlateError(
+                f"the kit draws no {hour!r} hour — it draws "
+                f"{', '.join(self.hour_suffixes) or '(none)'}")
+        view = self._views.get(hour)
+        if view is not None:
+            return view
+        import copy
+
+        view = copy.copy(self)
+        view._hour = hour
+        view.palette = self.palettes.get(hour, self.palette)
+        view.hour_rotation = (hour,)
+        swap = self._variants.get(hour, {})
+        view.assets = {k: swap.get(k, p) for k, p in self._library.items()}
+        self._views[hour] = view
+        return view
+
+    def plate_at(self, key: str, hour: str) -> Plate | None:
+        """The plate `key` names, drawn at `hour`. None when the key is unknown.
+
+        Falls back to the base-hour plate when the kit draws no variant at that
+        hour, which is a single-hour registry or a plate that has no hour.
+        """
+        p = self._everything.get(key)
+        if p is None:
+            return None
+        base = self._library.get(p.base_key, p)
+        if not hour or hour == self.base_hour:
+            return base
+        return self._variants.get(hour, {}).get(p.base_key) or base
+
+    def base_key(self, key: str) -> str:
+        """The base-hour key of any plate key, including one this kit retired.
+
+        Recent videos are recorded by the keys they actually used, and a dusk
+        video used dusk keys. Rotation asks whether a DRAWING was used
+        recently, so it compares base keys; `hour_for` reads the hours off the
+        same records and needs the keys as they were.
+        """
+        p = self._everything.get(key)
+        if p is not None:
+            return p.base_key
+        for hour, suffix in self.hour_suffixes.items():
+            if suffix:
+                m = _re.match(rf"^(.*){_re.escape(suffix)}(-16x9|-9x16)?$", key)
+                if m:
+                    return m.group(1) + (m.group(2) or "")
+        return key
+
+    def base_keys(self, keys: "Collection[str]") -> set[str]:
+        """`base_key` over a collection: which DRAWINGS a set of keys names."""
+        return {self.base_key(k) for k in keys}
 
     # ---------------------------------------------------------------- colour
 
@@ -696,7 +981,7 @@ class Registry:
         return tuple(sorted(out))
 
     def chapter_allows(self, ctype: str, key: str) -> bool:
-        return key in self.plates_for_chapter(ctype)
+        return self.base_key(key) in self.plates_for_chapter(ctype)
 
     # ----------------------------------------------------------------- host
 
@@ -715,9 +1000,9 @@ class Registry:
         options = [k for k in self.host_roles.get(role, ()) if k in self.assets]
         if not options:
             return None
-        options = _prefer_unused(options, avoid)
+        options = _prefer_unused(options, self.base_keys(avoid))
         rng = random.Random(f"{role}|{seed}")
-        return self.assets[rng.choice(options)]
+        return self.get(rng.choice(options))
 
     def framing_for(self, role: str, seed: str = "",
                     avoid: "Collection[str]" = ()) -> Plate | None:
@@ -738,9 +1023,9 @@ class Registry:
                    if k in self.assets and not self.assets[k].floor_line_y]
         if not options:
             return None
-        options = _prefer_unused(options, avoid)
+        options = _prefer_unused(options, self.base_keys(avoid))
         rng = random.Random(f"{role}|{seed}")
-        return self.assets[rng.choice(options)]
+        return self.get(rng.choice(options))
 
     def host_roles_available(self) -> tuple[str, ...]:
         return tuple(sorted(self.host_roles))
@@ -752,12 +1037,15 @@ class Registry:
         continuity of the file set and declare ``talks: false``, because using
         them looks like a mistake. Honour the declaration, not the file list.
         """
+        pose_key = self.base_key(pose_key)
         if kind == "talk" and not self.host_poses.get(pose_key, {}).get("talks", True):
             return None
-        return self.assets.get(f"{pose_key}-{kind}" if kind else pose_key)
+        return self.get(f"{pose_key}-{kind}" if kind else pose_key)
 
     def host_limit(self, pose_key: str) -> int | None:
-        v = self.host_poses.get(pose_key, {}).get("limit")
+        # By the base key: the curation names each pose once, and a dusk
+        # episode holding `host/head-in-hands-dusk` is still capped at one.
+        v = self.host_poses.get(self.base_key(pose_key), {}).get("limit")
         return int(v) if v is not None else None
 
     def hour_for(self, episode: str,
@@ -772,7 +1060,12 @@ class Registry:
 
         An episode with no identity gets the first hour in the rotation, which
         is `night` — the set the kit was built at, and the empty suffix.
+
+        A registry VIEWED at an hour answers with that hour, whatever it is
+        asked: the render chose it once for the whole episode (`episode_hour`).
         """
+        if self._hour:
+            return self._hour
         hours = list(self.hour_rotation)
         if not hours:
             return ""
@@ -782,11 +1075,11 @@ class Registry:
         # to move off, on the same terms as a plate: the set changing hour
         # between videos is most of what makes two of them look different.
         #
-        # Every room key belongs to exactly one hour — the one whose suffix
-        # it carries, or the BASE hour when it carries none. Deriving it that
-        # way rather than testing each suffix in turn is what keeps the base
-        # hour avoidable: it has no suffix, so a suffix test can never match
-        # it and `night` would have been unavoidable for ever.
+        # Every key belongs to exactly one hour — the one its plate is drawn
+        # at, or the one whose suffix it carries, or the BASE hour when it
+        # carries none. Deriving it that way rather than testing each suffix in
+        # turn is what keeps the base hour avoidable: it has no suffix, so a
+        # suffix test can never match it and `night` would be unavoidable.
         used = {self._hour_of_key(k) for k in avoid if k.startswith("room/")}
         fresh = [h for h in hours if h not in used]
         if fresh and len(fresh) < len(hours):
@@ -794,27 +1087,15 @@ class Registry:
         return random.Random(f"hour|{episode}").choice(hours)
 
     def _hour_of_key(self, key: str) -> str:
-        """Which hour a room key is shot at. The base hour carries no suffix."""
-        for hour, suffix in self.room_hours.items():
-            if suffix and key.endswith(suffix):
-                return hour
-        return self.hour_rotation[0] if self.hour_rotation else ""
-
-    def at_hour(self, stem: str, hour: str) -> str:
-        """A room stem at `hour` — ``room/desk-front`` -> ``room/desk-front-dusk``.
-
-        Falls back to the stem itself when the angle has no plate at that hour,
-        DERIVED rather than read off a list of exceptions, so an angle that
-        gains a variant is covered the day it ships. `room/wall-of-calls` is
-        the only stem that takes the fallback today, and correctly: the
-        receipts wall is a content plate that happens to be a room rather than
-        an angle on the set, so it has no hour to be at.
-        """
-        suffix = self.room_hours.get(hour, "")
-        if not suffix:
-            return stem
-        at = f"{stem}{suffix}"
-        return at if any(self.aspect_key(at, a) for a in ("16x9", "9x16")) else stem
+        """Which hour a key is shot at. The base hour carries no suffix."""
+        p = self._everything.get(key)
+        if p is not None:
+            return p.hour or self.base_hour
+        if self.base_key(key) != key:
+            for hour, suffix in self.hour_suffixes.items():
+                if suffix and suffix in key:
+                    return hour
+        return self.base_hour or (self.hour_rotation[0] if self.hour_rotation else "")
 
     def room_for(self, role: str, aspect: str, seed: str = "",
                  episode: str = "", avoid: "Collection[str]" = ()) -> Plate:
@@ -832,10 +1113,9 @@ class Registry:
         for the whole video. Passing no episode keeps the night set.
         """
         hour = self.hour_for(episode, avoid=avoid)
-        options = [k for stem in self.room_roles.get(role, ())
-                   if (k := self.aspect_key(self.at_hour(stem, hour), aspect))]
+        options = self.angles_for(role, aspect, hour)
         if options:
-            options = _prefer_unused(options, avoid)
+            options = _prefer_unused(options, self.base_keys(avoid))
         if not options:
             known = ", ".join(sorted(self.room_roles)) or "(none)"
             raise PlateError(
@@ -843,7 +1123,28 @@ class Registry:
                 f"declares {known} — either `roles.json` is missing this role "
                 f"or none of its angles ships in this aspect")
         rng = random.Random(f"{role}|{aspect}|{seed}")
-        return self.assets[rng.choice(options)]
+        return self.plate_at(rng.choice(options), hour)
+
+    def angles_for(self, role: str, aspect: str, hour: str = "") -> list[str]:
+        """The base keys of every angle that can shoot a room ROLE at `hour`.
+
+        An angle the kit marks unsafe away from its own light (`duskSafe:
+        false`) is left out at any hour but the base one — its cast shadows
+        fall where the night lamp puts them, and a long cast across a wall
+        that dusk lights from the other side reads as a mistake. Unless that
+        leaves the role with nothing: then every angle is back, and the log
+        says so, because a room with a wrong shadow is a smaller fault than a
+        render that cannot find a room.
+        """
+        options = [k for stem in self.room_roles.get(role, ())
+                   if (k := self.aspect_key(stem, aspect))]
+        if hour and hour != self.base_hour:
+            safe = [k for k in options if self.assets[k].dusk_safe is not False]
+            if options and not safe:
+                log.warning("every %s angle at %s is marked unsafe at %s; "
+                            "shooting one anyway", role, aspect, hour)
+            options = safe or options
+        return options
 
     # --------------------------------------------------------------- verify
 
@@ -853,7 +1154,10 @@ class Registry:
         Returns problems, never raises.
         """
         problems: list[str] = []
-        for key, p in sorted(self.assets.items()):
+        for key, p in sorted(self._everything.items()):
+            for name in p.layers:
+                if not p.layer_path(name).exists():
+                    problems.append(f"{key}: missing {name} layer {p.layer_path(name)}")
             if not p.path.exists():
                 problems.append(f"{key}: missing base file {p.path}")
             for fr, fp in zip(p.frames, p.frame_paths()):
@@ -989,12 +1293,101 @@ def wall_of_calls(settings, *, limit: int = 7) -> dict[str, str]:
     return values
 
 
+# THE HOUR OF THE EPISODE BEING RENDERED, for every registry loaded inside it.
+#
+# A context variable rather than an argument because a video's plates are
+# chosen in a dozen modules and each of them loads the registry itself — the
+# frames, the marks, the host, the charts, the colour a caption is set in — and
+# an hour threaded through all of them is an hour one of them drops. The rooms
+# were the only plates with an hour in the last kit, so asking at the one place
+# a room was chosen was enough; in this one every plate has one. Set by
+# `at_episode_hour`; empty outside a render, where `load_plates` is the base
+# library it always was.
+_EPISODE_HOUR: ContextVar[str] = ContextVar("episode_hour", default="")
+
+
+def current_episode_hour() -> str:
+    """The hour the render in progress is drawn at, or "" outside one."""
+    return _EPISODE_HOUR.get()
+
+
+@contextmanager
+def episode_hour(hour: str) -> Iterator[str]:
+    """Every registry loaded inside this block is viewed at `hour`."""
+    token = _EPISODE_HOUR.set(hour or "")
+    try:
+        yield hour
+    finally:
+        _EPISODE_HOUR.reset(token)
+
+
+def recorded_hour(workspace) -> str:
+    """The hour an earlier pass of this video recorded, newest first, or ""."""
+    try:
+        found = sorted(Path(workspace).glob("*manifest*.json"),
+                       key=lambda m: m.stat().st_mtime, reverse=True)
+    except OSError:
+        return ""
+    for manifest in found:
+        try:
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        hour = payload.get("hour") if isinstance(payload, dict) else None
+        if isinstance(hour, str) and hour:
+            return hour
+    return ""
+
+
+def hour_of_episode(settings, workspace, episode: str) -> str:
+    """Which hour this video is drawn at. Chosen once, then kept.
+
+    AN EARLIER PASS OF THE SAME VIDEO DECIDES IT. The draft, the proof and the
+    final are one video, and a proof exists to be a proof of the thing that
+    ships: choosing again at each pass lets any render in between move the
+    rotation, and the final comes out at the other hour from the proof that
+    was approved. So the hour a manifest in this workspace already recorded
+    stands for as long as the kit still shoots episodes at it. Otherwise the
+    registry picks, off the episode, steering away from the hours the last
+    few videos were shot at.
+    """
+    from pipeline.reach import recent_plates
+
+    reg = load_plates(settings.assets_dir)
+    kept = recorded_hour(workspace)
+    if kept and kept in reg.hour_rotation:
+        return kept
+    return reg.hour_for(episode, avoid=recent_plates(settings, exclude=workspace))
+
+
+@contextmanager
+def at_episode_hour(settings, workspace, episode: str) -> Iterator[str]:
+    """Render inside this: one hour for the episode, on every plate in it.
+
+    Nested, it keeps the hour already set, so a cover made inside a render is
+    a frame of that render rather than a second pick. With no kit installed
+    the hour is empty and the render's own `load_plates` raises the error that
+    names the ingest.
+    """
+    hour = _EPISODE_HOUR.get()
+    if not hour:
+        try:
+            hour = hour_of_episode(settings, workspace, episode)
+        except PlateError:
+            hour = ""
+    with episode_hour(hour):
+        yield hour
+
+
 def load_registry(root: Path) -> Registry:
     """The registry at ``root``, cached until the file underneath it changes.
 
     Re-read on a new mtime rather than once per process: an ingest replaces
     `assets/plates/` wholesale under a running bot, and a cache with no way to
     notice is a bot rendering the kit before last. See `_CACHE`.
+
+    Inside a render it is the registry VIEWED AT THE EPISODE'S HOUR (see
+    `_EPISODE_HOUR`), which is how the hour reaches every plate at once.
     """
     root = Path(root)
     path = root / REGISTRY_NAME
@@ -1007,10 +1400,12 @@ def load_registry(root: Path) -> Registry:
         return Registry(root)
     hit = _CACHE.get(root)
     if hit is not None and hit[0] == stamp:
-        return hit[1]
-    reg = Registry(root)
-    _CACHE[root] = (stamp, reg)
-    return reg
+        reg = hit[1]
+    else:
+        reg = Registry(root)
+        _CACHE[root] = (stamp, reg)
+    hour = _EPISODE_HOUR.get()
+    return reg.at(hour) if hour else reg
 
 
 def load_plates(assets_dir: Path) -> Registry:

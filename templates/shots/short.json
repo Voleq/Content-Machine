@@ -34,7 +34,9 @@
     "",
     "ALTERNATES: a beat may name other plates that can carry it, and code picks between them, rotating off what the last few videos used. The writer still chooses nothing — that is the point of a format that exists to be mass-produced. An alternate restates `bind` when it names its slots differently, and inherits when it does not.",
     "",
-    "ORDERS: an alternate sequence may only move shots the NARRATION does not pin. A shot with an `anchor` starts where its own words are spoken, and the words are one take written to the beat order in the writing prompt, so moving an anchored beat puts the picture over the wrong sentence. Only unanchored shots, and ones sharing an anchor with another, are free — which today is one swap. Reordering beats properly means the prompt stating the order it picked and the script carrying it back."
+    "ORDERS: an alternate sequence may only move shots the NARRATION does not pin. A shot with an `anchor` starts where its own words are spoken, and the words are one take written to the beat order in the writing prompt, so moving an anchored beat puts the picture over the wrong sentence. Only unanchored shots, and ones sharing an anchor with another, are free — which today is one swap. Reordering beats properly means the prompt stating the order it picked and the script carrying it back.",
+    "",
+    "THE ROUND-ONE PHONE PLATES that a short script can fill are alternates here: the fifth hook card, the move on the day in both directions, and the one-line close. Placing a figure the size of the move's on a shot with captions switches the captions off for that shot, in code, because the template's `captions` flag cannot know which plate the rotation will pick."
   ],
   "shots": [
     {
@@ -57,6 +59,10 @@
         {
           "plate": "shorts/hook-card-t3",
           "notes": "The third treatment. `huge` goes unfilled, which is the drawing, not a gap."
+        },
+        {
+          "plate": "shorts/hook-card-t5",
+          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same three slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
         }
       ]
     },
@@ -72,7 +78,27 @@
         "plot-area": "chart.series",
         "mark-last": "?chart.last"
       },
-      "notes": "The price, as a path through the figures the data carries. `plot-area` is a data region: it takes the series and the renderer draws it, which is not the renderer computing anything — it is being handed one."
+      "notes": "The price, as a path through the figures the data carries. `plot-area` is a data region: it takes the series and the renderer draws it, which is not the renderer computing anything — it is being handed one.",
+      "alts": [
+        {
+          "plate": "figures/move-on-the-day-up-9x16",
+          "bind": {
+            "kicker": "?script.ticker",
+            "value": "chart.move_up",
+            "label": "?chart.move_detail"
+          },
+          "notes": "THE MOVE AS ONE FIGURE, WITH ITS ARROW. The arrow is drawn, so the plate has to match the sign: `chart.move_up` is the move summary's leading figure only when it opens on a `+`, and nothing otherwise, which makes this plate ineligible on a fall. The rest of the summary is the label. It needs no price data, so a short rendered without prices still has a picture for this beat. The session path the plate reserves room for stays empty: the price data is daily closes, and six of those in a box drawn for one session would read as a day."
+        },
+        {
+          "plate": "figures/move-on-the-day-9x16",
+          "bind": {
+            "kicker": "?script.ticker",
+            "value": "chart.move_down",
+            "label": "?chart.move_detail"
+          },
+          "notes": "The falling twin, eligible only on a move summary that opens on a minus."
+        }
+      ]
     },
     {
       "id": "the-news",
@@ -246,6 +272,14 @@
             "source": "?script.ticker"
           },
           "notes": "THE OTHER WAY TO END. All three vertical formats closed on `structure/closing` every time, so every short in the channel signed off on the same drawing. The conclusion is a line worth pulling out by definition, and `quote-pull`'s body is the only other 9:16 plate wide enough to hold one without narrowing what the writer may write — `structure/end-card` holds 58 characters against closing's 136, so rotating onto it would have shrunk every conclusion in the channel to suit the alternate."
+        },
+        {
+          "plate": "structure/closing-t2-9x16",
+          "bind": {
+            "kicker": "?channel.handle",
+            "statement": "script.conclusion"
+          },
+          "notes": "ONE THING AT STATEMENT SIZE. The original close has three lines and a script has one conclusion, so two of them were always empty. The handle moves up to the kicker: this plate's date label sits inside the caption band, where the last spoken words would run over it. Its detail line stays empty — the plate's own caution is not to pad it."
         }
       ]
     }

@@ -235,6 +235,30 @@ on the plate. What sits on the rail comes from you, as a PAIR OF NUMBERS:
   trailing-to-forward walk is three figures and two connectors and does not
   belong in seventy-five seconds.
 
+#### Plates that DRAW numbers — read the `data:` line
+
+Every chart, walk and rail in the catalogue has a `data:` line saying what it
+draws and where the drawing reads it from.
+
+* **Where the plate prints the figures, the printed figures ARE the drawing.**
+  A bar chart's `value-1…6`, a walk's `value-N`, a rail plate's `share-N` and
+  `growth-value-N`, a paired chart's two rows of figures: write them once, in
+  those slots, and the bars, steps and marks are drawn from exactly what is
+  printed. Do not repeat them in a data key.
+* **Where it prints none, name them in the tag**: `series=612,640,598,…` (one
+  figure per column, oldest first), `series2=` for a second series on the same
+  scale, `open=` `steps=` `close=` on a walk that prints no values, `points=x:y,…`
+  on a scatter, `band-2=4,11` for an extent, `cac-line=2.4` for a level.
+* **A walk must add up.** The opening level plus the steps reaches the close,
+  to the rounding printed, or the tag is rejected. Parts printed as shares of
+  one whole must reach 100%.
+* **A position is written on the scale the plate prints**, as the figure
+  itself (`marker=18` on an axis printed 0 to 40), never as a fraction. Label
+  the axis or the ticks, or the position has nothing to sit on. The multiples
+  strip's `t`/`median` pair above is the one exception.
+* `accent=3` puts one column, row or company in attention and spends the
+  frame's one attention. A line can only accent its latest point: `accent=last`.
+
 ### everything else
 [IMG: query]            real imagery of operations / facilities / people (literal query like "{{ticker}} distribution warehouse")
 [PRODUCT: query]        real imagery of the product itself

@@ -32,6 +32,7 @@ concatenated stream.
 
 from __future__ import annotations
 
+import contextvars
 import hashlib
 import json
 import logging
@@ -333,8 +334,13 @@ def encode_segments(
                 f"segment {spec.index} ({spec.kind}) could not be encoded "
                 f"and has no fallback: {e}") from e
 
+    # Each job runs in a copy of THIS thread's context. A pool thread starts
+    # with an empty one, and the render's hour lives in a context variable
+    # (`plates.at_episode_hour`): a fallback that loads the kit from a bare
+    # worker would draw its still at the base hour inside a dusk video.
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(work, s): s for s in specs}
+        futures = {pool.submit(contextvars.copy_context().run, work, s): s
+                   for s in specs}
         for fut in as_completed(futures):
             run.results.append(fut.result())
             done += 1

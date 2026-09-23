@@ -251,6 +251,61 @@ def test_no_direction_survives_into_the_captions(settings):
         assert banned not in ass
 
 
+def _ass_style_colours(ass: str) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+    """(PrimaryColour, OutlineColour) of the Caps style, as RGB. The outline
+    colour is the BOX under BorderStyle 3."""
+    line = next(l for l in ass.splitlines() if l.startswith("Style: Caps,"))
+    fields = line.split(":", 1)[1].split(",")
+
+    def rgb(ass_colour: str) -> tuple[int, int, int]:
+        h = ass_colour.strip()[2:]           # &HAABBGGRR
+        return (int(h[6:8], 16), int(h[4:6], 16), int(h[2:4], 16))
+
+    assert fields[15] == "3", "the caption is set in an opaque box"
+    return rgb(fields[3]), rgb(fields[5])
+
+
+def test_captions_are_legible_on_their_own_box(settings):
+    """THE CAPTION'S INK AND BOX ARE ONE PAIR, read from one hour.
+
+    The first cut set `structure` at the base hour on a cream box typed out as
+    a hex. When the rebuild made night the base hour, `structure` became the
+    pale ink drawn for a dark wall and every caption in every video came out
+    pale on cream, about 1.3:1. Nothing failed; the words were just gone."""
+    from pipeline.models import WordTimestamp
+    from pipeline.rasters import build_phrase_ass, contrast
+
+    words = [WordTimestamp(word=w, start=i * 0.3, end=i * 0.3 + 0.25,
+                           char_start=0, char_end=0)
+             for i, w in enumerate("the money arrives one seat at a time".split())]
+    ink, box = _ass_style_colours(
+        build_phrase_ass(words, settings=settings, play_res=(1920, 1080)))
+    assert contrast(ink, box) >= 4.5, (ink, box)
+
+
+def test_the_caption_pair_is_the_kit_paper_hour(monkeypatch, settings):
+    """Dark ink in a paper box, per design's caption decision, whichever hour
+    the registry calls its base; and on a kit with one dark hour, that hour's
+    own pairing rather than a mix of two."""
+    import pipeline.plates as plates_mod
+    from pipeline.rasters import caption_colours, contrast
+
+    class _Reg:
+        def __init__(self, palettes):
+            self.palettes = palettes
+
+    two = {"night": {"ground": "#171D2A", "structure": "#C6D2E0"},
+           "dusk": {"ground": "#F2E8D4", "structure": "#2A2036"}}
+    monkeypatch.setattr(plates_mod, "load_plates", lambda _d: _Reg(two))
+    assert caption_colours(settings) == ((0x2A, 0x20, 0x36), (0xF2, 0xE8, 0xD4))
+
+    one = {"night": {"ground": "#171D2A", "structure": "#C6D2E0"}}
+    monkeypatch.setattr(plates_mod, "load_plates", lambda _d: _Reg(one))
+    ink, box = caption_colours(settings)
+    assert (ink, box) == ((0xC6, 0xD2, 0xE0), (0x17, 0x1D, 0x2A))
+    assert contrast(ink, box) >= 4.5
+
+
 def test_chunking_counts_the_tags_the_request_will_carry(settings):
     """The character budget is checked on the CLEAN script before any spend,
     which is right — but the request carries the re-inserted direction, so it

@@ -509,6 +509,27 @@ _ATTACHED_RE = re.compile(r"^\s*(?:on|for|in|per|across|toward|towards)\s+"
 
 _NEGATIVE_RE = re.compile(r"(?:minus|negative|-)\s*$")
 
+# A PRICE MOVE IS NOT A METRIC CLAIM. "EXMPL is up twelve percent because the
+# boring machine beat earnings again" names earnings, and the nearest-metric
+# rule read the day's move as net-income growth and blocked a correct short —
+# a hook of exactly the shape every short opens with. A percentage whose
+# subject is the STOCK moving (the ticker, "the stock", "shares", "the share
+# price") is about the price; a metric named after it is the reason for the
+# move, not the owner of the number. "Shares outstanding" and "the share count"
+# never match: a word between the subject and its verb is a different subject.
+_MOVE_TAIL = (r"\s+(?:(?:is|was|are|were|has|have|had|'s)\s+)?(?:been\s+)?"
+              r"(?:up|down|higher|lower|rose|fell|jumped|dropped|gained|lost|climbed|"
+              r"slid|popped|sank|surged|tumbled|rallied)"
+              r"(?:\s+(?:by|about|around|nearly|almost|over|some))?\s*$")
+
+
+def _price_move_re(ticker: str) -> re.Pattern:
+    """The stock as the subject of a move, ending where the number starts."""
+    subjects = [r"(?:the\s+)?stock", r"(?:the\s+)?shares", r"(?:the\s+)?share\s+price"]
+    if ticker.strip():
+        subjects.append(re.escape(ticker.strip().lower()))
+    return re.compile(r"\b(?:" + "|".join(subjects) + r")" + _MOVE_TAIL)
+
 
 def _unit_scale(series: list[float]) -> float:
     """What one unit of this series is worth in absolute terms.
@@ -784,7 +805,7 @@ def _owner_of(number_end: int, tail: str, named: dict[str, int],
 
 
 def fact_check(narration: str, data, *,
-               severity: str = "block") -> list[Finding]:
+               severity: str = "block", ticker: str = "") -> list[Finding]:
     """Re-read every numeric claim against the loaded company data.
 
     This is the last line of defence the README describes, and it BLOCKS.
@@ -825,6 +846,7 @@ def fact_check(narration: str, data, *,
 
     known, unreadable = _known_series(data)
     findings.extend(unreadable)
+    price_move = _price_move_re(ticker)
     labels = _history_labels(data)
     qlabels = _quarter_labels(data)
     for lineno, line in enumerate(narration.splitlines(), 1):
@@ -843,6 +865,8 @@ def fact_check(narration: str, data, *,
                 # hyphenated spoken run does not appear verbatim in the
                 # sentence and used to collapse to position 0.
                 pos, end = num.start, num.end
+                if num.is_percent and price_move.search(low[:pos]):
+                    continue
                 metric = _owner_of(end, low[end:], named, low)
                 if metric is None:
                     continue
@@ -1963,11 +1987,10 @@ def reachable_plates(reg) -> dict[str, set[str]]:
 
     def _pose(key: str) -> None:
         by_template.add(key)
-        # A pose is three strips and, for a framing, two glances the pipeline
-        # picks itself. Reaching the base reaches all of them.
-        for suffix in ("-talk", "-idle", "-glance-left", "-glance-right",
-                       "-glance-left-talk", "-glance-left-idle",
-                       "-glance-right-talk", "-glance-right-idle"):
+        # A pose is four strips — the hold, talk, idle and blink — and the
+        # pipeline plays all of them off the one it was cut to. Reaching the
+        # base reaches every one.
+        for suffix in ("-talk", "-idle", "-blink"):
             if f"{key}{suffix}" in reg:
                 by_template.add(f"{key}{suffix}")
 
@@ -1977,22 +2000,15 @@ def reachable_plates(reg) -> dict[str, set[str]]:
         if name.startswith("room/"):
             role = name.split("/", 1)[1]
             if role in reg.room_roles:
-                for stem in reg.room_roles[role]:
-                    # EVERY HOUR AN EPISODE MAY BE DRAWN AT, not just the
-                    # night one. An episode picks its hour from its own
-                    # identity, so every variant of an angle a role names is
-                    # reachable — and the 24 dusk plates were flagged as dead
-                    # art until this asked the same question `room_for`
-                    # answers. The ROTATION rather than every hour the kit
-                    # draws: an hour no episode is ever drawn at is artwork
-                    # with no route to the screen, which is this report's job
-                    # to say rather than to hide.
-                    for hour in (reg.hour_rotation or ("",)):
-                        at = reg.at_hour(stem, hour)
-                        for a in ("16x9", "9x16"):
-                            key = reg.aspect_key(at, a)
-                            if key:
-                                by_template.add(key)
+                # EVERY HOUR AN EPISODE MAY BE DRAWN AT, asked the way
+                # `room_for` asks it. An angle the kit keeps to its own light
+                # is out of the role at dusk and still in it at night, so it
+                # is reachable as long as some hour in the rotation takes it.
+                # The library is the base hour's: a drawing is reachable or
+                # not, and its other hours go wherever the episode does.
+                for hour in (reg.hour_rotation or ("",)):
+                    for a in ("16x9", "9x16"):
+                        by_template.update(reg.angles_for(role, a, hour))
                 return
         got = resolve_plate(reg, name, aspect)
         if got is not None:
@@ -2121,7 +2137,9 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
             findings.append(Finding(gate="kit", severity="warn", message=w))
 
     ledger = load_variant_ledger(settings)
-    ever_used = used | ledger.all_used()
+    # By the drawing: a render at dusk reached `cards/term-dusk-16x9`, which
+    # is `cards/term-16x9` drawn at another hour and not a different plate.
+    ever_used = reg.base_keys(used | ledger.all_used())
     never_used = [k for k in reg.keys() if k not in ever_used]
     renders_seen = len(ledger.recent("render"))
 
@@ -2137,6 +2155,15 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
             gate="kit", severity="warn",
             message=f"{key} is drawn and no template, chapter type or "
                     f"renderer can put it on screen"))
+    # AN HOUR IS REACHABLE OR NOT AS A WHOLE. The kit draws every plate at
+    # every hour it lights, and an hour no episode is drawn at is a full copy
+    # of the library with no way to the screen — one line, not two hundred.
+    for hour in sorted(set(reg.hour_suffixes) - set(reg.hour_rotation)):
+        findings.append(Finding(
+            gate="kit", severity="warn",
+            message=f"the kit draws every plate at {hour} and no episode is "
+                    f"drawn at it — `hours.episodes` in roles.json leaves "
+                    f"it out"))
 
     return findings, {
         "used": sorted(used),
@@ -2321,7 +2348,8 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     # A gate that ran and found nothing used to look exactly like one that
     # never ran, and for a record whose whole purpose is honesty about what
     # happened, those cannot render the same way.
-    report.findings += report.record("fact-check", fact_check(narration, data))
+    report.findings += report.record("fact-check", fact_check(
+        narration, data, ticker=str(getattr(script, "ticker", "") or "")))
     report.findings += report.record("on-screen",
                                      onscreen_fact_check(script, data))
     report.findings += report.record("voice", voice_lint(delivery_text(script)))

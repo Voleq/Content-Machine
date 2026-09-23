@@ -1,10 +1,12 @@
-"""The on-screen host: roles off the registry, the flap, and the anchor.
+"""The on-screen host: roles off the registry, the face, and the anchor.
 
-The rig changed shape with the kit. The host is six poses, each a base strip, a
-`-talk` strip whose first frame has the mouth open, and an `-idle` strip that
-bobs — and WHICH POSE SERVES WHICH ROLE comes off the registry, not out of a
-list in host.py. That is the test that matters: a kit with different poses has
-to drop in without editing Python.
+The rig changed shape with the kit. The host is twelve poses and one framing,
+each four strips — the hold, `-talk` (closed, mid and wide mouths), `-idle`
+(his weight settling) and `-blink` — and the frames say what they are, so the
+player reads `mouthOpen` and `eyes` rather than a frame's position. WHICH POSE
+SERVES WHICH ROLE comes off the registry, not out of a list in host.py. That
+is the test that matters: a kit with different poses has to drop in without
+editing Python.
 
 The placement tests are the other half. The anchor contract is the one thing
 here that is silently wrong when approximated: scaled to the wrong thing, he
@@ -22,15 +24,17 @@ import pytest
 from config import Settings
 from pipeline.host import (
     BEAT_GAP_S,
+    BLINK_S,
+    IDLE_MIN_SPAN_S,
     available,
     beat_times,
     build_host_clip,
+    face_plan,
+    frame_shot,
+    host_shot,
     mouth_schedule,
     pick_framing,
     pick_shot,
-    dressed,
-    frame_shot,
-    looking_at,
     place_on_room,
     shots,
     speaking_spans,
@@ -189,7 +193,7 @@ def test_he_is_never_scaled_to_the_anchor_width(reg):
     """The figure box includes the arms, which are meant to pass the anchor.
     Fitting the width makes him small and puts his feet in the air."""
     shot = shots(reg, "beat")[0]
-    room = reg.require("room/wide-16x9")
+    room = reg.require("room/desk-front-16x9")
     anchor = room.slot("host-anchor")
     _, _, aw, _ = anchor.scaled()
     placed = place_on_room(room, shot)
@@ -216,131 +220,110 @@ def test_a_room_with_no_anchor_refuses_rather_than_guessing(reg):
 
 
 def _framing(reg, key):
-    from pipeline.host import HostShot
-    return HostShot(pose=reg.require(key),
-                    talk=reg.host_strip(key, "talk"),
-                    idle=reg.host_strip(key, "idle"))
+    return host_shot(reg, key)
 
 
-@pytest.mark.parametrize("key", ("host/close-up", "host/medium"))
-def test_a_framing_is_never_solved_onto_an_anchor(reg, key):
-    """`close-up` and `medium` publish `floorLineY: false`.
+def test_a_framing_is_never_solved_onto_an_anchor(reg):
+    """`close-up` publishes `floorLineY: false`.
 
-    They are head-and-shoulders and waist-up crops: there is no floor line to
-    pin and no anchor to solve them onto. Fitted into a room's standing spot,
-    a close-up is a head the size of a man hovering where his shoes would be.
+    It is a head-and-shoulders window on him: there is no floor line to pin
+    and no anchor to solve it onto. Fitted into a room's standing spot, a
+    close-up is a head the size of a man hovering where his shoes would be.
     """
     from pipeline.host import HostPlacementError, stands_on
 
-    shot = _framing(reg, key)
+    shot = _framing(reg, "host/close-up")
     assert shot.is_framing
-    room = reg.require("room/wide-16x9")
+    room = reg.require("room/desk-front-16x9")
     assert not stands_on(room, shot)
     with pytest.raises(HostPlacementError, match="camera distance"):
         place_on_room(room, shot)
 
 
 @pytest.mark.parametrize("frame", ((1920, 1080), (1080, 1920)))
-@pytest.mark.parametrize("key", ("host/close-up", "host/medium"))
-def test_a_framing_sits_its_crop_on_the_bottom_of_the_frame(reg, key, frame):
-    """The ink runs to the plate's bottom edge — `figure` is y=40 h=1400 on a
-    1440 canvas — so that edge is at or below the frame's. Lifted to put the
-    eye line on the upper third, a medium draws a straight cut across his
-    hands a quarter of the way up the picture."""
-    placed = frame_shot(_framing(reg, key), frame)
+def test_a_framing_sits_its_crop_on_the_bottom_of_the_frame(reg, frame):
+    """The window cuts him across the chest, so its bottom edge is at or below
+    the frame's. Lifted to put the eye line on the upper third, a short crop
+    draws a straight cut across him partway up the picture."""
+    placed = frame_shot(_framing(reg, "host/close-up"), frame)
     assert placed is not None
     assert placed.y + placed.height >= frame[1] - 1
 
 
-@pytest.mark.parametrize("key", ("host/close-up", "host/medium"))
-def test_a_framing_is_placed_on_its_eye_line_and_its_head(reg, key):
-    """Scale by the head, place by the eyes. Both numbers are the plate's."""
-    shot = _framing(reg, key)
-    fw, fh = 1920, 1080
-    placed = frame_shot(shot, (fw, fh))
+@pytest.mark.parametrize("frame", ((1920, 1080), (1080, 1920)))
+def test_a_framing_is_placed_on_its_eye_line_and_its_head(reg, frame):
+    """Scale by the head, place by the eyes. Both numbers are the plate's.
+
+    THE EYES ARE ON THE UPPER THIRD, not wherever the crop's bottom edge
+    drags them. The crop was pulled UP until its bottom sat on the frame's —
+    a `min` that meant `max` — which on the rebuild's close-up, a window that
+    runs well past a 16:9 frame, lifted his eyes off the top of the picture:
+    the one shot whose whole point is his face.
+    """
+    shot = _framing(reg, "host/close-up")
+    fw, fh = frame
+    placed = frame_shot(shot, frame)
     head = shot.pose.slot("head")
     k = placed.height / shot.pose.delivered[1]
     head_h = head.h * shot.pose.export_scale * k
-    want = 0.49 if shot.pose.framing == "close-up" else 0.31
-    assert abs(head_h / fh - want) < 0.01, \
-        f"{key}: head is {head_h / fh:.0%} of frame height"
+    assert abs(head_h / fh - 0.49) < 0.01, \
+        f"head is {head_h / fh:.0%} of frame height"
+    eyes = placed.y + shot.pose.fit["eyeLineY"] * shot.pose.export_scale * k
+    assert abs(eyes - fh / 3) <= 2, \
+        f"his eyes are at {eyes:.0f}px, the upper third at {fh / 3:.0f}px"
     # And his head is on screen, whatever his plate does at the sides.
     hx = placed.x + head.x * shot.pose.export_scale * k
     assert hx >= 0 and hx + head.w * shot.pose.export_scale * k <= fw
+    assert placed.y + head.y * shot.pose.export_scale * k >= 0, \
+        "the top of his head is off the frame"
 
 
 def test_the_width_of_a_framing_is_not_a_bound(reg):
-    """The kit is explicit: both framings run off the left and right edges by
+    """The kit is explicit: a framing runs off the left and right edges by
     design, and cropping to the width re-frames the shot into a narrower one
     than was drawn. In a 9:16 frame the close-up is wider than the frame."""
     placed = frame_shot(_framing(reg, "host/close-up"), (1080, 1920))
     assert placed.width > 1080
 
 
-def test_a_glance_is_cut_only_when_the_side_is_known(reg):
-    """A glance against a graphic on the OPPOSITE side is worse than him
-    facing camera, so straight to camera is the default and the fallback."""
-    shot = _framing(reg, "host/medium")
-    assert looking_at(reg, shot, "left").key == "host/medium-glance-left"
-    assert looking_at(reg, shot, "right").key == "host/medium-glance-right"
-    assert looking_at(reg, shot, "").key == "host/medium"
-    assert looking_at(reg, shot, "up").key == "host/medium"
+@pytest.mark.parametrize("graphic_side", ("left", "right"))
+def test_a_close_up_beside_a_graphic_keeps_his_shoulders_in_his_column(
+        reg, graphic_side):
+    """A two-shot gives him 44% of a 16:9 frame. At the full-frame head size
+    his shoulders are wider than that, and the graphic is drawn over one of
+    them — so in a column the close-up is framed at the loose end of the
+    kit's band, and his ink stays on his side of the split."""
+    from PIL import Image
 
+    from pipeline.compose import CLOSE_UP_IN_COLUMN_FH, TWO_SHOT_GRAPHIC
 
-def test_a_pose_with_no_glance_drawn_stays_facing_camera(reg):
-    """The kit drew glances for the two framings and nothing else. A figure
-    asked to look at a graphic returns unchanged rather than resolving to a
-    key that is not there."""
-    figure = shots(reg, "panel")[0]
-    assert looking_at(reg, figure, "left").key == figure.key
+    assert 0.42 <= CLOSE_UP_IN_COLUMN_FH <= 0.56, "outside the kit's own band"
+    fw, fh = 1920, 1080
+    gw = int(fw * TWO_SHOT_GRAPHIC)
+    col_x, col_w = (gw, fw - gw) if graphic_side == "left" else (0, fw - gw)
 
-
-def test_the_robe_is_not_worn_while_it_dresses_one_shot(reg):
-    """ONE OUTFIT PER EPISODE IS A PROPERTY OF THE ARTWORK.
-
-    `host/medium-robe` is a single key. A video that picks it and then cuts to
-    the close-up — which every chapter does, on the line it rests on — has him
-    in two outfits in one cut, and no amount of care in the picker fixes that.
-    A consistent tee beats a wardrobe that changes halfway through.
-    """
-    from pipeline.host import wardrobe_gaps
-
-    rule = reg.wardrobe.get("medium") or {}
-    assert rule.get("alt") == "host/medium-robe", "the kit stopped declaring it"
-    gaps = wardrobe_gaps(reg, rule)
-    assert "host/close-up" in gaps, \
-        "a robe close-up shipped — the outfit can be worn now, and this test " \
-        "is the thing to delete"
-    shot = _framing(reg, "host/medium")
-    for seed in ("EXMPL", "AAPL", "NVDA", "TSLA", "MSFT", "GOOG", "AMZN"):
-        assert dressed(reg, shot, seed=seed).key == "host/medium"
-
-
-def test_an_outfit_that_covers_every_pose_would_be_worn(reg):
-    """The gate is coverage, not a hard-coded refusal.
-
-    Which matters, because it means the day the robe variants ship the outfit
-    turns itself on with no code change — and if it never ships, nothing here
-    has to remember to keep saying no.
-    """
-    from pipeline.host import wardrobe_gaps
-
-    # A rule whose alt IS the default covers everything, trivially.
-    assert wardrobe_gaps(reg, {"default": "host/medium",
-                               "alt": "host/medium"}) == []
-    assert wardrobe_gaps(reg, {"default": "host/medium", "alt": ""})
+    shot = _framing(reg, "host/close-up")
+    placed = frame_shot(shot, (fw, fh), head_fh=CLOSE_UP_IN_COLUMN_FH,
+                        centre_fw=(col_x + col_w / 2) / fw)
+    img = Image.open(shot.pose.frame_paths()[0]).convert("RGBA")
+    x0, _, x1, _ = img.getchannel("A").getbbox()
+    k = placed.width / img.width
+    left, right = placed.x + x0 * k, placed.x + x1 * k
+    if graphic_side == "left":
+        assert left >= col_x - 2, f"his shoulder crosses into the graphic by {col_x - left:.0f}px"
+    else:
+        assert right <= col_x + col_w + 2, f"his shoulder crosses into the graphic by {right - col_w:.0f}px"
 
 
 def test_a_room_that_refuses_a_host_places_nobody(reg):
     """`hostAnchor: false` is DATA. The camera is above the desk on
-    `high-desk-down` and square to a wall of index cards on `wall-of-calls`:
-    neither has a floor in shot and both say so in the field rather than
-    leaving it out. Reading a refusal as an omission is how a renderer ends up
+    `desk-top-down` and square to the board on `board`: neither has a floor
+    in shot and both say so in the field rather than leaving it out. Reading a refusal as an omission is how a renderer ends up
     compositing a man onto a surface the camera is above."""
     from pipeline.host import HostPlacementError, stands_on
 
     figure = shots(reg, "beat")[0]
-    for key in ("room/high-desk-down-16x9", "room/wall-of-calls-16x9"):
+    for key in ("room/desk-top-down-16x9", "room/board-16x9"):
         room = reg.require(key)
         assert room.refuses_host
         assert not stands_on(room, figure)
@@ -378,9 +361,8 @@ def test_nothing_in_the_placement_chain_returns_nothing(reg):
 def test_a_registry_with_no_wardrobe_block_is_refused(tmp_path):
     """It reads as a kit that declares no outfits and it is a stale build.
 
-    `roles.json` has always carried the block; the ingest simply did not stamp
-    it, so `reg.wardrobe` was `{}` and `host/medium-robe` could not be reached
-    by name. A silent no-op that looked exactly like a working picker.
+    `roles.json` has always carried the block; an ingest that does not stamp
+    it wrote `{}`, which reads exactly like a kit with one outfit.
     """
     import json
     import shutil
@@ -524,3 +506,167 @@ def test_a_role_that_serves_no_framing_says_so_rather_than_guessing(reg):
         pick_framing(reg, "rests-on").is_framing
     assert reg.framing_for("no-such-role-in-any-kit") is None
     assert pick_framing(reg, "no-such-role-in-any-kit") is None
+
+
+# --------------------------------------------------------------------------
+# The face — one plan for both lanes: talk by mouth shape, idle, blink.
+# --------------------------------------------------------------------------
+
+
+def _strip_frame(reg, face):
+    return reg.require(face.key).frames[face.index]
+
+
+def test_every_pose_carries_its_four_strips(reg):
+    """ONE CONSTRUCTOR. The blink was in none of the five places that used to
+    build a shot, which is how the kit shipped a blink for every pose and no
+    frame of any video ever closed his eyes."""
+    for key in reg.host_poses:
+        shot = host_shot(reg, key)
+        assert shot is not None, key
+        assert shot.idle is not None, f"{key} has no idle strip"
+        assert shot.blink is not None, f"{key} has no blink strip"
+        talks = reg.host_poses[key].get("talks", True)
+        assert (shot.talk is not None) == talks, key
+
+
+def test_the_mouth_is_read_off_the_frame_not_its_position(reg):
+    """The rebuild put the CLOSED mouth first in the talk strip, where the kit
+    before it put the open one. A player that took `talk[0]` as "open" mouths
+    every word shut, so every talking frame has to be one that says
+    `mouthOpen` — and a sentence plays both of them, mid and wide."""
+    shot = host_shot(reg, "host/to-camera")
+    plan, did = face_plan(shot, words((0.0, 3.0)), 0.0, 3.0, 30, seed="t")
+    talking = [f for f in plan if f.key == shot.talk.key]
+    opens = {f.index for f in talking if _strip_frame(reg, f).mouth_open}
+    assert did["talk_frames"] > 0 and len(opens) >= 2, \
+        "a sentence swaps one open mouth, not the strip's two"
+    for f in plan:
+        if f.key == shot.talk.key and f.index == 0:
+            assert not _strip_frame(reg, f).mouth_open
+
+
+def test_a_long_silence_plays_the_idle_and_a_short_one_holds(reg):
+    shot = host_shot(reg, "host/to-camera")
+    fps = 30
+    gap = IDLE_MIN_SPAN_S + 0.5
+    plan, did = face_plan(shot, words((0.0, 1.0), (1.0 + gap, 2.0 + gap)),
+                          0.0, 2.0 + gap, fps, seed="t")
+    mid = plan[int((1.0 + gap / 2) * fps)]
+    assert mid.key == shot.idle.key, "a long silence held the still"
+    assert did["idle_frames"] > 0
+
+    plan, _ = face_plan(shot, words((0.0, 1.0), (1.3, 2.3)), 0.0, 2.3, fps,
+                        seed="t")
+    assert plan[int(1.15 * fps)].key != shot.idle.key, \
+        "a breath between two words cut to the idle"
+
+
+def test_a_close_up_never_holds_its_still(reg):
+    """design's crop review (ANSWERS.md §4, finding 2): the closed mouth is a
+    filled bar, a mouth at full figure and a dash at close-up scale. "Cut
+    close on -talk or -idle, where the mouth shapes cycle." So no frame of a
+    close-up is the still, however short the gap it falls in."""
+    shot = host_shot(reg, "host/close-up")
+    for spans in (((0.0, 1.0), (1.3, 2.3)),          # a breath
+                  ((0.5, 1.0),),                     # silence either side
+                  ()):                               # not a word at all
+        plan, did = face_plan(shot, words(*spans), 0.0, 3.0, 30, seed="c")
+        assert did["held_frames"] == 0, f"{spans}: held the still"
+        assert all(f.key != shot.pose.key for f in plan)
+
+
+def test_he_blinks_and_never_mid_word(reg):
+    """Every three to six seconds, for a tenth of a second, on the blink
+    strip's shut-eyes drawing — and only over a closed mouth, where people do
+    blink, never on an open one, where it reads as a dropped frame."""
+    shot = host_shot(reg, "host/to-camera")
+    fps = 30
+    plan, did = face_plan(shot, words((0.0, 12.0)), 0.0, 12.0, fps,
+                          seed="b")
+    assert 2 <= did["blinks"] <= 4, f"{did['blinks']} blinks in twelve seconds"
+    shut = [i for i, f in enumerate(plan) if f.key == shot.blink.key]
+    assert shut, "no frame closed his eyes"
+    for i in shut:
+        assert _strip_frame(reg, plan[i]).eyes == "closed"
+    is_open = mouth_schedule(words((0.0, 12.0)), 0.0, 12.0, fps)
+    assert not any(is_open[i] for i in shut), "he blinked over an open mouth"
+    runs, run = [], 1
+    for a, b in zip(shut, shut[1:]):
+        if b == a + 1:
+            run += 1
+        else:
+            runs.append(run)
+            run = 1
+    runs.append(run)
+    assert set(runs) == {max(int(round(BLINK_S * fps)), 1)}
+
+
+def test_two_shots_do_not_blink_in_lockstep(reg):
+    shot = host_shot(reg, "host/to-camera")
+    a, _ = face_plan(shot, words((0.0, 12.0)), 0.0, 12.0, 30, seed="one")
+    b, _ = face_plan(shot, words((0.0, 12.0)), 0.0, 12.0, 30, seed="two")
+    blink = shot.blink.key
+    assert ([i for i, f in enumerate(a) if f.key == blink]
+            != [i for i, f in enumerate(b) if f.key == blink])
+
+
+# --------------------------------------------------------------------------
+# The room's front layer — he stands between the room and its desk.
+# --------------------------------------------------------------------------
+
+
+def test_a_room_with_a_desk_in_front_ships_it_as_a_layer(reg):
+    from pipeline.host import front_of
+
+    room = reg.require("room/desk-front-16x9")
+    front = front_of(room)
+    assert front is not None and front.exists()
+    assert front_of(None) is None
+    assert front_of(reg.require("room/board-16x9")) is None
+
+
+def test_the_front_is_painted_after_him():
+    """Pasting him over the whole room put the desk behind his legs."""
+    from PIL import Image
+
+    from pipeline.host import Placement, composite_on_room
+
+    room = Image.new("RGBA", (100, 100), (255, 255, 255, 255))
+    host = Image.new("RGBA", (40, 80), (255, 0, 0, 255))
+    front = Image.new("RGBA", (100, 100), (0, 0, 0, 0))
+    front.paste((0, 0, 255, 255), (0, 70, 100, 100))      # the desk
+    composite_on_room(room, host, Placement(1.0, 30, 10, 40, 80), front=front)
+    assert room.getpixel((50, 50))[:3] == (255, 0, 0), "he is not in the room"
+    assert room.getpixel((50, 80))[:3] == (0, 0, 255), "the desk is behind him"
+
+
+def test_compose_lays_the_desk_over_him_only_when_he_stands_there(reg):
+    from types import SimpleNamespace
+
+    from pipeline.compose import Layer, _front_layer
+
+    shot = SimpleNamespace(id="s1")
+    room = reg.require("room/desk-front-16x9")
+    placed = (0, 0, 1920, 1080)
+    standing = Layer(name="s1:host", kind="host", shot_id="s1", t_start=0.0,
+                     t_end=2.0, entry_key="host/to-camera", z=40)
+    front = _front_layer(reg, shot, room, placed, standing)
+    assert front is not None and front.kind == "front"
+    assert front.z > standing.z
+    assert (front.x, front.y, front.w, front.h) == placed
+
+    framed = Layer(name="s1:host", kind="host", shot_id="s1", t_start=0.0,
+                   t_end=2.0, entry_key="host/close-up", z=40)
+    assert _front_layer(reg, shot, room, placed, framed) is None
+    chart = reg.require("tables/numbers-sheet-6r-16x9")
+    assert _front_layer(reg, shot, chart, placed, standing) is None
+
+
+def test_a_still_two_shot_never_takes_a_framing(reg):
+    """The long's two-shot is one picture with him pasted in it, so a framing
+    there is the still close-up the kit says never to hold."""
+    assert pick_shot(reg, "to-camera", 0, figures_only=True) is None
+    for i in range(len(shots(reg, "panel")) + 2):
+        got = pick_shot(reg, "panel", i, figures_only=True)
+        assert got is not None and not got.is_framing

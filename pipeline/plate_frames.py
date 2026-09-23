@@ -472,7 +472,11 @@ def render_frame(plate: Plate, frame_index: int, values: dict[str, str] | None,
     if not values:
         return img
 
-    unknown = set(values) - set(plate.slots)
+    # The data keys (`series=`, `steps=` …) are drawn by the data layer, not
+    # typeset, and belong to no slot by design.
+    from pipeline.series import DATA_KEYS
+
+    unknown = set(values) - set(plate.slots) - set(DATA_KEYS)
     if unknown:
         log.warning("%s has no slot named %s — value dropped",
                     plate.key, ", ".join(sorted(unknown)))

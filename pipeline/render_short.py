@@ -31,7 +31,7 @@ from pipeline import marks as mk
 from pipeline.compose import (BuildResult, Layer, build_layers,
                               check_budgets, check_invariants,
                               held_layer_spans)
-from pipeline.plates import load_plates
+from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
 from pipeline.render_common import RenderError, encode_profile, run_ffmpeg
 from pipeline.shots import (Format, apply_order, choose_order,
@@ -101,6 +101,28 @@ def _bare(value: str, unit: str) -> str:
     if not m or m.group(2) + m.group(4) + m.group(5) != unit:
         return value
     return f"{m.group(1)}{m.group(3)}"
+
+
+# The day's move, as the writing prompt asks for it: `move_summary` LEADS with
+# it, signed — "+34% today · 6× average volume". The sign is what the two move
+# plates turn on. Each draws its arrow, so a figure is offered to one of them
+# only when it says which way it went, and a summary that opens on words
+# offers it to neither.
+_MOVE_LEAD = re.compile(r"^\s*([+\-\u2212])\s?(\d[\d,]*(?:\.\d+)?)\s?%")
+
+
+def move_lead(summary: str) -> tuple[str, str, str] | None:
+    """`"+34% today · 6× average volume"` -> `("up", "+34%", "today · 6× average volume")`.
+
+    None when the summary does not open on a signed percentage, or opens on
+    a zero one — a flat day has no arrow to draw.
+    """
+    m = _MOVE_LEAD.match(summary or "")
+    if not m or not float(m.group(2).replace(",", "")):
+        return None
+    way = "up" if m.group(1) == "+" else "down"
+    rest = summary[m.end():].strip(" ·-—–,;:")
+    return way, f"{m.group(1)}{m.group(2)}%", rest
 
 
 # ---------------------------------------------------------------------------
@@ -233,9 +255,21 @@ class ShortResolver:
         series goes in as figures and the renderer draws a path THROUGH them.
         That is not the renderer computing anything — it is being handed one.
         """
-        if not rest or self.prices is None:
+        if not rest:
             return None
         field = rest[0]
+        # THE MOVE, which is the writer's figure and needs no price data: a
+        # short with no prices loaded still has one, in its move summary.
+        if field in ("move_up", "move_down", "move_detail"):
+            lead = move_lead(str(getattr(self.script, "move_summary", "") or ""))
+            if lead is None:
+                return None
+            way, figure, detail = lead
+            if field == "move_detail":
+                return detail or None
+            return figure if field == f"move_{way}" else None
+        if self.prices is None:
+            return None
         series = _legible(self.prices)
         closes = [float(c) for c in getattr(series, "closes", []) or []]
         if not closes:
@@ -283,6 +317,8 @@ class ShortResolver:
             return "BOTH TRUE"
         if which == "expected_label":
             return "Expected"
+        if which == "reported_label":
+            return "Reported"
         # `structure/both-true` takes two STATEMENTS, not two stacked figures.
         # The plate wraps them itself in the face it declares, so a newline
         # here would be a second opinion about the line break.
@@ -564,23 +600,14 @@ def _frame_index(layer: Layer, t: float) -> int:
         else min(i, layer.frame_count - 1)
 
 
-def _host_strip(reg, layer: Layer, speaking: bool) -> tuple[str, int, bool]:
-    """Which of a pose's three strips plays, and at what rate.
-
-    A hold, a talk and an idle. He talks while there are words under him and
-    idles when there are not — a mouth that keeps moving through silence is
-    the thing that makes a rig look like a puppet rather than a person.
-    """
-    kind = "talk" if speaking else "idle"
-    strip = reg.host_strip(layer.entry_key, kind)
-    if strip is None:
-        return layer.entry_key, layer.fps or 2, True
-    return strip.key, int(strip.fps or 4), True
-
-
 def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
-                *, reg, settings, speaking: bool, lost: dict[str, int]) -> None:
-    """One layer, at one instant, onto the frame."""
+                *, reg, settings, face=None, lost: dict[str, int]) -> None:
+    """One layer, at one instant, onto the frame.
+
+    `face` is what a host layer shows at this instant — a strip and which of
+    its frames, off :func:`pipeline.host.face_plan` — and nothing else reads
+    it.
+    """
     if layer.kind == "ground":
         return                                    # the canvas IS the ground
 
@@ -592,13 +619,20 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
         return
 
     if layer.kind == "host":
-        key, fps, loops = _host_strip(reg, layer, speaking)
-        shown = Layer(name=layer.name, kind="host", shot_id=layer.shot_id,
-                      t_start=layer.t_start, t_end=layer.t_end,
-                      entry_key=key, frame_count=2, fps=fps, loops=loops)
-        img = cache.plate(key, _frame_index(shown, t), {}, layer.w, layer.h)
+        key, index = (face.key, face.index) if face is not None \
+            else (layer.entry_key, 0)
+        img = cache.plate(key, index, {}, layer.w, layer.h)
+        if img is None and key != layer.entry_key:
+            img = cache.plate(layer.entry_key, 0, {}, layer.w, layer.h)
         if img is not None:
             canvas.alpha_composite(img, (layer.x, layer.y))
+        return
+
+    if layer.kind == "front":
+        # The desk he stands behind: the room's front layer, after him.
+        if layer.path is not None and Path(layer.path).exists():
+            canvas.alpha_composite(cache.file(Path(layer.path), layer.w,
+                                              layer.h), (layer.x, layer.y))
         return
 
     if layer.kind == "media":
@@ -683,7 +717,7 @@ def render_frames(result: BuildResult, resolver, duration: float,
     uncompressed 1080x1920 frames is not something to put on a disk on the
     way past.
     """
-    from pipeline.host import speaking_spans
+    from pipeline.host import face_plan, host_shot
 
     w, h = result.frame
     n = max(int(round(duration * FPS)), 1)
@@ -691,11 +725,21 @@ def render_frames(result: BuildResult, resolver, duration: float,
     profile = encode_profile(settings, "short")
     paper = reg.colour("ground")
 
-    # When he is talking, per host layer. Computed once: `speaking_spans` walks
-    # the word list, and doing that per frame is the same answer 2,000 times.
-    speech: dict[str, list[tuple[float, float]]] = {}
+    # WHAT HIS FACE DOES, per host layer, planned once: which frame of which
+    # strip is on screen at every output frame — the talk strip's open mouths
+    # under words, the idle strip in silence, a blink every few seconds, and
+    # on a close-up never the still. `face_plan` is the same call the long
+    # makes, so the two lanes cannot disagree about a face.
+    faces: dict[str, tuple[int, list]] = {}
+    face_reports: dict[str, dict] = {}
     for l in result.of_kind("host"):
-        speech[l.name] = list(speaking_spans(list(words), l.t_start, l.t_end))
+        shot = host_shot(reg, l.entry_key)
+        if shot is None:
+            continue
+        plan, did = face_plan(shot, list(words), l.t_start, l.t_end, FPS,
+                              seed=l.name)
+        faces[l.name] = (int(round(l.t_start * FPS)), plan)
+        face_reports[l.name] = did
 
     cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
            "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{w}x{h}",
@@ -717,9 +761,12 @@ def render_frames(result: BuildResult, resolver, duration: float,
             for layer in ordered:
                 if not (layer.t_start - 1e-6 <= t < layer.t_end):
                     continue
-                talking = any(a <= t < b for a, b in speech.get(layer.name, ()))
+                face = None
+                if layer.name in faces:
+                    first, plan = faces[layer.name]
+                    face = plan[min(max(i - first, 0), len(plan) - 1)]
                 _draw_layer(canvas, layer, t, cache, reg=reg, settings=settings,
-                            speaking=talking, lost=lost)
+                            face=face, lost=lost)
             proc.stdin.write(canvas.tobytes())
     finally:
         proc.stdin.close()
@@ -728,6 +775,7 @@ def render_frames(result: BuildResult, resolver, duration: float,
     if rc != 0:
         raise RenderError(f"encode failed ({rc}): {err[-800:]}")
     render_frames.last_text_overflow = dict(lost)     # type: ignore[attr-defined]
+    render_frames.last_faces = dict(face_reports)     # type: ignore[attr-defined]
     return out_video
 # ---------------------------------------------------------------------------
 # Entry point
@@ -763,6 +811,23 @@ def render_short(script, tts, workspace: Path, settings, *,
                  format_name: str = "short",
                  resolver=None, anchors=None) -> tuple[Path, Path]:
     """Render the SHORT. Returns `(mp4, manifest)`.
+
+    At ONE HOUR for the whole cut, fixed here and recorded on the manifest;
+    see `plates.at_episode_hour`. The work is `_render_short`.
+    """
+    with at_episode_hour(settings, workspace, script.ticker):
+        return _render_short(script, tts, workspace, settings,
+                             content=content, prices=prices, proof=proof,
+                             out_name=out_name, format_name=format_name,
+                             resolver=resolver, anchors=anchors)
+
+
+def _render_short(script, tts, workspace: Path, settings, *,
+                  content=None, prices=None, proof: bool = False,
+                  out_name: str | None = None,
+                  format_name: str = "short",
+                  resolver=None, anchors=None) -> tuple[Path, Path]:
+    """`render_short`, at the hour it has already fixed for the episode.
 
     Interpolated word timings must never be the master clock of a published
     cut, so draft audio cannot make a FINAL. A PROOF is the deliberate
@@ -886,6 +951,7 @@ def render_short(script, tts, workspace: Path, settings, *,
     render_frames(result, resolver, duration, silent, settings, reg=reg,
                   words=words)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}
+    faces = getattr(render_frames, "last_faces", {}) or {}
 
     # Captions are BURNED, not drawn per frame: one phrase at a time, in the
     # same ink as everything else on the frame, from the same builder the LONG
@@ -942,6 +1008,9 @@ def render_short(script, tts, workspace: Path, settings, *,
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "format": fmt.name,
+        # The hour the set is at, for the whole cut; the next pass of this
+        # video reads it back (`plates.hour_of_episode`).
+        "hour": reg.hour,
         # "Who it hits" is one beat told across four shots because four cards
         # cannot share a frame legibly — so a nine-beat format cutting to
         # fourteen shots is the design working, not drift. Reporting
@@ -998,6 +1067,10 @@ def render_short(script, tts, workspace: Path, settings, *,
         # means a script said more than its shot can hold, and the words were
         # cut. Under the writing form this is what a character budget prevents.
         "text_overflow": overflow,
+        # WHAT HIS FACE DID, per host shot: whether he spoke, how many talk
+        # and idle frames played, how often he blinked, and how many frames
+        # held the still — which on a close-up is meant to be none.
+        "host_faces": faces,
         "longest_layer_hold_s": round(
             max((b - a for a, b, _ in held_layer_spans(result)), default=0.0), 3),
         # PACING, WHICH IS A PROPERTY OF THE CUT AND NOT OF THE SUITE. A
