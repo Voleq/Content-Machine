@@ -336,6 +336,10 @@ def _reconcile(built: dict, shipped: dict) -> list[str]:
         if e.get("slots") != twin.get("slots") or e.get("canvas") != twin.get("canvas"):
             problems.append(f"{key}: its slots are not {e['atBaseHour']}'s, and "
                             f"every hour is meant to be one shape list")
+        elif e.get("keys") != twin.get("keys"):
+            problems.append(f"{key}: its legend keys {e.get('keys')!r} are not "
+                            f"{e['atBaseHour']}'s {twin.get('keys')!r}, so a series would "
+                            f"change colour at dusk")
     return problems
 
 
@@ -572,8 +576,18 @@ def _host_contract(reg) -> list[str]:
                     f"the kit ships no such plate")
                 continue
             # A framing is a camera distance and composites against the frame,
-            # so it is exempt from the cut-out rule by construction.
+            # so it is exempt from the cut-out rule by construction. What it
+            # may NOT be is a framing with nothing to play between words: a
+            # close-up held on its still is the closed mouth at close-up
+            # scale, a dash (ANSWERS.md §4, finding 2), so the player cuts
+            # its silences to the idle strip and needs one to cut to.
             if not pose.floor_line_y:
+                if reg.host_strip(key, "idle") is None:
+                    problems.append(
+                        f"{key}: the {role!r} host role serves this framing "
+                        f"and the kit ships no `{key}-idle` — a close framing "
+                        f"may never hold its still, so its silences have "
+                        f"nothing to play")
                 continue
             if not pose.alpha:
                 problems.append(
@@ -612,7 +626,24 @@ def _host_contract(reg) -> list[str]:
                         f"{room.key}: the {role!r} room role stands him here "
                         f"and the room's front layer covers "
                         f"{room.head_covered:.0%} of his head")
+
+    # A CHAPTER OPENS IN A ROOM WITH SOMEWHERE TO PUT ITS TITLE. The opener is
+    # the room with the chapter's title set in its `title` slot; a member with
+    # no such slot is a chapter whose title silently never reaches the screen,
+    # which is what every chapter was until rebuild-21 published one.
+    for stem in reg.room_roles.get(_OPENER_ROLE, ()):
+        for aspect in ("16x9", "9x16"):
+            room = reg.get(f"{stem}-{aspect}")
+            if room is not None and room.slot("title") is None:
+                problems.append(
+                    f"{room.key}: the {_OPENER_ROLE!r} room role opens chapters "
+                    f"here and the room publishes no `title` slot, so the "
+                    f"chapter's title would have nowhere to land")
     return problems
+
+
+# The room role a chapter opens in. `pipeline/render_long.py` names the same one.
+_OPENER_ROLE = "opener"
 
 
 # How much of his head a room's front layer may cover before the room is

@@ -42,12 +42,13 @@ def reg(settings):
 
 
 def _manifests() -> dict:
-    """Every plate the shipped manifests declare.
+    """Every plate the shipped manifests publish a slot table for.
 
     Through the ingest's own reader, so the table name lives in one place:
     delta-14 renamed it `assets` -> `plates`, and a second copy of that
     knowledge here would read zero plates and pass every loop below without
-    checking anything.
+    checking anything. The host and the rooms are drawn flat and publish no
+    slot table the plates' way, so they are not in it.
     """
     import importlib.util
 
@@ -55,46 +56,57 @@ def _manifests() -> dict:
         "_ingest_for_budgets", KIT.parent / "scripts" / "ingest_kit.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    return mod._shipped_manifests(KIT)
+    return {k: v for k, v in mod._shipped_slot_tables(KIT).items()
+            if k.split("/", 1)[0] not in mod._FLAT_FAMILIES}
 
 
 # --------------------------------------------------------------------------
 # §0 — an engine file nobody named must stop the build.
 # --------------------------------------------------------------------------
+def _declared(src: str, const: str) -> list[str]:
+    """The .js names a `const` in kit_engine.js lists, array or object."""
+    m = re.search(rf"const {const} = ([\[{{].*?[\]}}]);", src, re.S)
+    assert m, f"{const} is not declared in kit_engine.js"
+    return re.findall(r'"([^"]+\.js)"', m.group(1))
+
+
 def test_every_engine_file_is_named_in_the_loader():
     """`kit/engine/*.js` is accounted for, one way or the other.
 
-    `budget.js` arrived carrying the whole derivation and was not in
-    ENGINE_FILES. It did not fail: `Plate.manifest()` calls it behind
+    `budget.js` arrived carrying the whole derivation and was not in the
+    loader's list. It did not fail: `Plate.manifest()` calls it behind
     `if (g.BUDGET && ...)`, so BUDGET was undefined, the hook was skipped, and
     the engine emitted slots with no budgets while the delivered manifests
     carried them. The missing feature was not the bug — nothing saying anything
     was.
     """
     src = (ROOT / "scripts" / "kit_engine.js").read_text(encoding="utf-8")
-
-    def names(const: str) -> set[str]:
-        m = re.search(rf"const {const} = \[(.*?)\];", src, re.S)
-        assert m, f"{const} is not declared in kit_engine.js"
-        return set(re.findall(r'"([^"]+)"', m.group(1)))
-
-    known = names("ENGINE_FILES") | names("ENGINE_NOT_LOADED")
+    known = (set(_declared(src, "ENGINE_MODULES"))
+             | set(_declared(src, "ENGINE_VIA_PORT"))
+             | set(_declared(src, "ENGINE_NOT_LOADED")))
     on_disk = {p.name for p in (KIT / "engine").glob("*.js")}
     assert on_disk <= known, (
-        f"engine file(s) in neither list: {sorted(on_disk - known)}. An "
+        f"engine file(s) in no list: {sorted(on_disk - known)}. An "
         f"unnamed file loads nothing and fails no check.")
     # The other direction — a file NAMED here but absent from disk — is already
     # fatal in the loader ("missing engine file"), so it needs no assertion.
 
 
-def test_budget_js_loads_before_the_hook_that_calls_it():
-    """Order is load-bearing: `hand.js` reads `g.BUDGET` at manifest time."""
-    src = (ROOT / "scripts" / "kit_engine.js").read_text(encoding="utf-8")
-    order = re.findall(r'"([^"]+\.js)"',
-                       re.search(r"const ENGINE_FILES = \[(.*?)\];", src, re.S).group(1))
+def test_budget_js_loads_before_the_plates_that_derive_from_it():
+    """Order is load-bearing: `plates.js` derives every slot's `maxChars`
+    through `g.BUDGET` at manifest time. The kit's own `port.js` loads the
+    legacy engine now, so the order is asserted where it is written — and the
+    driver refuses a port.js that comes back without BUDGET, which is the
+    silent failure in its loudest form."""
+    port = (KIT / "engine" / "port.js").read_text(encoding="utf-8")
+    m = re.search(r"\[((?:\s*'[\w.-]+\.js'\s*,?)+)\]\.forEach", port)
+    assert m, "port.js no longer loads the legacy engine as a list"
+    order = re.findall(r"'([\w.-]+\.js)'", m.group(1))
     assert "budget.js" in order, "budget.js is not loaded at all"
-    assert order.index("budget.js") < order.index("hand.js"), \
-        "budget.js must load before hand.js, whose Plate.manifest() calls it"
+    assert order.index("budget.js") < order.index("plates.js"), \
+        "budget.js must load before plates.js, whose manifest() calls it"
+    driver = (ROOT / "scripts" / "kit_engine.js").read_text(encoding="utf-8")
+    assert "BUDGET is not defined" in driver
 
 
 def test_the_loader_rejects_an_unaccounted_engine_file(tmp_path):
@@ -108,7 +120,8 @@ def test_the_loader_rejects_an_unaccounted_engine_file(tmp_path):
 
     proc = subprocess.run(
         ["node", str(ROOT / "scripts" / "kit_engine.js"),
-         "--kit", str(kit), "--out", str(tmp_path / "out"), "--only", "overlays"],
+         "--kit", str(kit), "--out", str(tmp_path / "out"), "--only", "overlays",
+         "--emit", str(tmp_path / "emit.json")],
         capture_output=True, text=True, cwd=ROOT, timeout=300)
     assert proc.returncode != 0, "a stray engine file did not stop the build"
     assert "zz-unnamed.js" in proc.stderr
@@ -201,6 +214,7 @@ def test_the_engine_and_the_delivery_agree_on_every_type_role(reg):
         (Path(reg.root) / "plates-registry.json").read_text(encoding="utf-8")
     )["assets"]
     shipped = _manifests()
+    assert shipped, "no shipped slot tables were read"
 
     # THE INSTALLED KIT MUST BE THE SHIPPED ONE. A pack lands in `kit/` as
     # manifests and an engine; `assets/plates/` is only updated when someone
@@ -217,7 +231,7 @@ def test_the_engine_and_the_delivery_agree_on_every_type_role(reg):
             f"(e.g. {absent[:3]}).\n\n"
             f"This is the ingest not having been run, not a defect:\n"
             f"    npm install\n"
-            f"    python scripts/ingest_kit.py kit      # or --batched\n"
+            f"    python scripts/ingest_kit.py kit\n"
             f"    /kit doctor\n\n"
             f"Until then the render path draws the old library while the "
             f"curation and the prompts describe the new one.")

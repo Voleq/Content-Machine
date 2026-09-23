@@ -270,6 +270,12 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
     # across his chest. He is sized by the room and placed by the layout: the
     # reserved column on the wide cover, the foot of the frame on the tall one,
     # with his floor line kept on the room's.
+    #
+    # And so the cover does NOT lay the room's front layer over him, which the
+    # video does. The front is the desk in front of the spot the anchor names,
+    # and he is not on that spot here: laid over a man moved into the type's
+    # column it would cut a desk across whichever part of him happens to be
+    # where the desk is, and a cover is where he has to be seen whole.
     # How far down the type reaches. The wide cover keeps him in a reserved
     # column beside it; the tall one has no column to spare, so he goes UNDER
     # the type and has to be short enough to clear it.

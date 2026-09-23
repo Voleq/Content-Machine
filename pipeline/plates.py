@@ -93,6 +93,37 @@ GICS_SECTORS = (
 )
 
 
+# The workbook's `sector` is typed by whoever filled it, in whichever data
+# vendor's words: "Technology", "Information Technology", "Financial Services".
+# Each folds to the GICS slug its sector plates carry. Industry-level words are
+# not guessed at: a sector the table does not know is "", and the writer is
+# then shown every sector plate, each labelled with the industry it is for.
+_SECTOR_WORDS = {
+    "energy": "energy", "oil-and-gas": "energy",
+    "materials": "materials", "basic-materials": "materials",
+    "industrials": "industrials", "industrial": "industrials",
+    "consumer-discretionary": "consumer-discretionary",
+    "consumer-cyclical": "consumer-discretionary",
+    "consumer-staples": "consumer-staples", "consumer-defensive": "consumer-staples",
+    "health-care": "health-care", "healthcare": "health-care",
+    "financials": "financials", "financial-services": "financials",
+    "financial": "financials",
+    "information-technology": "information-technology",
+    "technology": "information-technology", "it": "information-technology",
+    "communication-services": "communication-services",
+    "communications": "communication-services",
+    "telecommunication-services": "communication-services",
+    "utilities": "utilities",
+    "real-estate": "real-estate", "realestate": "real-estate",
+}
+
+
+def fold_sector(raw: str | None) -> str:
+    """A workbook's sector as the GICS slug the sector plates carry, or ""."""
+    key = _re.sub(r"[^a-z]+", "-", str(raw or "").lower().replace("&", " and ")).strip("-")
+    return _SECTOR_WORDS.get(key, key if key in GICS_SECTORS else "")
+
+
 def fold_chapter_type(raw: str) -> str:
     """A type as a writer typed it, in the kit's spelling.
 
@@ -187,6 +218,17 @@ class Slot:
     # anything: a title that overhangs its card is back to being set on the
     # wall, which is the whole thing the card exists to prevent.
     ground_box: dict = field(default_factory=dict)
+    # THE GEOMETRY A DATA LAYER READS, in canvas units, published per slot and
+    # never re-derived here — kit/engine/series.js's one rule, "every x comes
+    # from anchorX, every box from the slot". A column's centre and the line its
+    # bar grows from; which way a rail runs; a scale the plate has drawn its
+    # furniture to (`[lo, hi]` on a band, `{"x": […], "y": […]}` on a plot); and
+    # whether a bridge floats between two rates rather than standing on zero.
+    anchor_x: float | None = None
+    baseline_y: float | None = None
+    axis: str = ""
+    scale: object = None
+    floats: bool = False
 
     def scaled(self) -> tuple[int, int, int, int]:
         """The box in delivered pixels."""
@@ -243,9 +285,27 @@ class Slot:
             max_lines=int(raw.get("maxLines") or 0),
             colour=str(raw.get("colour") or ""),
             ground=str(raw.get("ground") or ""),
-            ground_box=(raw.get("groundBox")
-                        if isinstance(raw.get("groundBox"), dict) else {}),
+            ground_box=_box_dict(raw.get("groundBox")),
+            anchor_x=_opt_float(raw.get("anchorX")),
+            baseline_y=_opt_float(raw.get("baselineY")),
+            axis=str(raw.get("axis") or ""),
+            scale=raw.get("scale") if isinstance(raw.get("scale"), (list, dict)) else None,
+            floats=raw.get("float") is True,
         )
+
+
+def _opt_float(raw) -> float | None:
+    return float(raw) if isinstance(raw, (int, float)) and not isinstance(raw, bool) else None
+
+
+def _box_dict(raw) -> dict:
+    """A box as {x, y, w, h}. The rebuild's emitter publishes a room title's
+    ground as [x, y, w, h]; the drawn kit published the dict."""
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, (list, tuple)) and len(raw) == 4:
+        return dict(zip("xywh", raw))
+    return {}
 
 
 @dataclass(frozen=True)
@@ -265,6 +325,10 @@ class Frame:
     boil: int = 0
     mouth_open: bool = False
     bob: int = 0
+    # `open` or `closed`: the blink strip's second frame is the shut one, and a
+    # face that looked for it by position would blink on whichever frame a
+    # future strip happened to put first.
+    eyes: str = "open"
 
 
 @dataclass(frozen=True)
@@ -363,6 +427,14 @@ class Plate:
     # its anchor, as the engine driver measured it. None off a room, or on a
     # room nobody stands in.
     head_covered: float | None = None
+    # A ROOM A CHAPTER MAY OPEN IN: it publishes a `title` slot and the card
+    # under it is drawn into its back layer (rebuild-21). Only `desk-wide`.
+    opener: bool = False
+    # THE INK EACH LEGEND KEYS ITS SERIES IN, as {label slot: palette role} —
+    # `{"legend-1": "up", "legend-2": "neutral-data"}`. The kit draws the key
+    # swatch and publishes only the label's box, so the engine driver reads the
+    # ink off the drawing. Empty on a plate with no keyed legend.
+    keys: dict = field(default_factory=dict)
 
     @property
     def base_key(self) -> str:
@@ -598,6 +670,7 @@ class Registry:
                 boil=int(f.get("boil") or 0),
                 mouth_open=bool(f.get("mouthOpen", False)),
                 bob=int(f.get("bob") or 0),
+                eyes=str(f.get("eyes") or "open"),
             )
             for f in e.get("frames", [])
         )
@@ -690,6 +763,8 @@ class Registry:
             beats=tuple(str(b) for b in note.get("beats") or ()),
             head_covered=(float(occlusion["headCovered"])
                           if occlusion.get("headCovered") is not None else None),
+            opener=bool(e.get("opener", False)),
+            keys={str(k): str(v) for k, v in (e.get("keys") or {}).items()},
         )
 
     # ---------------------------------------------------------------- basics

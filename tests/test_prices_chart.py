@@ -105,6 +105,16 @@ def test_every_period_grid_has_a_head_per_column(reg):
                 f"{key} is dense and its heads now match its columns, which is "
                 f"the signal plate_tags reads to tell a dense chart apart")
             continue
+        # HEADS THAT SKIP COLUMNS LABEL AN AXIS, and the plate says so in its
+        # own slot names. `charts/intraday-9x16` has seven columns and heads
+        # over the first, third, fifth and seventh: a phone is too narrow for
+        # seven times of day, so every other one is written. That is the same
+        # signal `line-dense` sends, for the same reason. What this check
+        # exists to catch is the other shape — heads 1 to 5 over six columns,
+        # the last period with no name.
+        idx = sorted(int(h.split("-", 1)[1]) for h in heads)
+        if idx != list(range(1, len(idx) + 1)) and idx[-1] <= plate.columns:
+            continue
         if len(heads) != plate.columns:
             problems.append(
                 f"{key}: {len(heads)} period heads against "

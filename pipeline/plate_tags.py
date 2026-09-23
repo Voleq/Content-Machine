@@ -65,6 +65,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from pipeline import series as S
 from pipeline.plates import PERIOD_COUNT, Plate, Registry
 
 # `[PLATE: name | k=v | k=v]`. The parts split on `|`; the first is the plate
@@ -157,28 +158,50 @@ def marker_slots(plate: Plate) -> list[str]:
 
 
 def _is_marker(slot) -> bool:
-    """Whether the KIT says this slot is a range mark.
+    """Whether the KIT says this slot is a range mark, which takes a PAIR.
 
-    Asked of the manifest — the role plus the renderer it names — and not of a
-    list of slot names kept here, which is the mistake the whole registry is
-    built to avoid.
+    Asked of the manifest — the renderer it names — and not of a list of slot
+    names kept here, which is the mistake the whole registry is built to avoid.
+
+    THE RENDERER, NOT THE ROLE. `marker` is also the role of every axisMark
+    rail in the kit — a sector plate's growth-N, a payback's cac-line, a
+    percentile, a scorecard verdict — and each of those takes ONE figure.
+    Reading the role asked a growth rail for `t:…, median:…` and refused the
+    single figure it is drawn from.
     """
-    return bool(slot.region
+    return bool(slot.region and slot.renderer.rsplit(".", 1)[-1] == "rangeMark")
+
+
+def _is_position(slot) -> bool:
+    """One position on a rail, drawn by `series.axisMark` from ONE figure."""
+    return bool(slot.region and not _is_marker(slot)
                 and (slot.role == "marker"
-                     or slot.renderer.rsplit(".", 1)[-1] == "rangeMark"))
+                     or slot.renderer.rsplit(".", 1)[-1] == "axisMark"))
+
+
+def _is_extent(slot) -> bool:
+    """An extent on a rail, drawn by `series.historyBand` from `start, end`.
+
+    A `band` that OVERLAYS a row is the row highlight and lights by number;
+    a band that is a region with no overlay is an extent, and takes two.
+    """
+    return bool(slot.region and not slot.overlay
+                and (slot.role == "band"
+                     or slot.renderer.rsplit(".", 1)[-1] == "historyBand"))
 
 
 def _draws_a_series(slot) -> bool:
     """Whether this region is one the director hands a run of figures.
 
-    `series.rowBars`, `series.cycleArc`, `series.sparkBars` and the bare
-    `plot-area` are drawn THROUGH a series. `series.rangeMark` is not — it
-    takes two named numbers — and a figure, a mouth or a host anchor is not
-    drawn from data at all.
+    `series.rowBars`, `series.cycleArc`, `series.sparkBars`, `series.divide`,
+    a small-multiples tile and the bare `plot-area` are drawn THROUGH a series.
+    A range mark takes two named numbers, a position one figure, an extent two;
+    and a figure, a mouth or a host anchor is not drawn from data at all.
     """
-    if _is_marker(slot):
+    if _is_marker(slot) or _is_position(slot) or _is_extent(slot):
         return False
-    return bool(slot.renderer) or slot.role in ("plot-area", "bars", "path", "spark")
+    return bool(slot.renderer) or slot.role in (
+        "plot-area", "bars", "path", "spark", "series", "segments")
 
 
 def _never_typeset(slot) -> bool:
@@ -386,6 +409,50 @@ def build_fill(reg: Registry, payload: str, *, aspect: str = "",
                     f"This is a reading, not a mistake: say it in the line.")
             continue
 
+        # 0a. ONE POSITION ON A RAIL. `growth-3=+12%` on a sector rail,
+        #     `cac-line=1,450` on a payback, `mark-2=0.5` on a scorecard: one
+        #     figure, placed on the scale the plate prints on that axis (its
+        #     axis labels or ticks) or, where it prints none, a 0-1 position.
+        if named is not None and _is_position(named):
+            got = [p.strip() for p in raw.split(",") if p.strip()]
+            if len(got) != 1 or S.figure(got[0]) is None:
+                detail = f" The kit says: {named.note}" if named.note else ""
+                fill.problems.append(
+                    f"[PLATE: {name}] {k}= is one position on a rail and takes "
+                    f"one figure, and this has {raw!r}.{detail}")
+                continue
+            fill.values[k] = got[0]
+            continue
+
+        # 0a'. AN EXTENT ON A RAIL. `band-2=4, 11` on a runway: where it starts
+        #      and ends, on the scale the plate's ticks print.
+        if named is not None and _is_extent(named):
+            got = [p.strip() for p in raw.split(",")]
+            if len(got) not in (2, 3) or any(S.figure(p) is None for p in got[:2]):
+                detail = f" The kit says: {named.note}" if named.note else ""
+                fill.problems.append(
+                    f"[PLATE: {name}] {k}= is an extent on a rail and takes "
+                    f"`start, end`, and this has {raw!r}.{detail}")
+                continue
+            fill.values[k] = ",".join(got)
+            continue
+
+        # 0a''. DATA THE PLATE DRAWS BUT DOES NOT PRINT. `series=` and
+        #       `series2=` on a spread whose two lines carry no figures,
+        #       `steps=` on a waterfall, `points=` on a scatter, `accent=`.
+        #       The kit's own data vocabulary, offered only on a plate that
+        #       can draw it — checked against the plate after the loop.
+        if named is None and k in S.DATA_KEYS:
+            offered = S.data_keys(plate)
+            if k not in offered:
+                fill.problems.append(
+                    f"[PLATE: {name}] {k}= is data this plate does not draw"
+                    + (f" — it takes {', '.join(offered)}" if offered
+                       else " — it draws no series"))
+                continue
+            fill.values[k] = raw.strip()
+            continue
+
         # 0b. A REGION THE KIT SETS NO TYPE IN IS NEVER TYPESET.
         #
         #     Asked of the manifest, never of a list here: eight regions in the
@@ -565,8 +632,23 @@ def build_fill(reg: Registry, payload: str, *, aspect: str = "",
             + (f" — did you mean {near!r}?" if near else
                f" (it declares {_slot_summary(plate)})"))
 
+    _check_data(plate, fill)
     _warn_unfilled(plate, fill)
     return fill
+
+
+def _check_data(plate: Plate, fill: "PlateFill") -> None:
+    """What the plate will DRAW from these values, checked before a render.
+
+    The series has as many figures as the plate has columns; a walk's steps
+    reach its own close; shares printed on a divided bar reach 100; a
+    position has a scale to sit on. Each of these otherwise renders as a
+    drawing that disagrees with the type beside it, which is the one failure a
+    viewer can check and the pipeline could not.
+    """
+    got = S.plate_data(plate, fill.values)
+    for why in got.problems:
+        fill.problems.append(f"[PLATE: {fill.name}] {why}")
 
 
 
@@ -698,7 +780,7 @@ def check_bound(reg: Registry, key: str, values: dict[str, str], *,
         fill.problems.append(
             f"[PLATE: {fill.name}] is {plate.aspect} and this is a {aspect} "
             f"cut — 9:16 is a re-author, never a crop")
-    unknown = sorted(set(values) - set(plate.slots))
+    unknown = sorted(set(values) - set(plate.slots) - set(S.data_keys(plate)))
     for name in unknown:
         if _capacity_problem(plate, name, fill, fill.name):
             continue
@@ -721,10 +803,12 @@ def check_bound(reg: Registry, key: str, values: dict[str, str], *,
             fill.problems.append(
                 f"[PLATE: {fill.name}] {sname}= is a text slot and {raw!r} is "
                 f"a range mark")
-        elif _never_typeset(slot) and not slot.is_band and not _draws_a_series(slot):
+        elif (_never_typeset(slot) and not slot.is_band and not _draws_a_series(slot)
+              and not _is_position(slot) and not _is_extent(slot)):
             fill.problems.append(
                 f"[PLATE: {fill.name}] {sname}= is a region the plate sets no "
                 f"type in, and {raw!r} would be typeset into it")
+    _check_data(plate, fill)
     _warn_unfilled(plate, fill)
     return fill
 

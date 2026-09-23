@@ -61,6 +61,51 @@ def role(settings: Settings, name: str) -> tuple[int, int, int]:
     return load_plates(settings.assets_dir).colour(name)
 
 
+def _rgb(hex_: str) -> tuple[int, int, int]:
+    h = hex_.lstrip("#")
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+def luminance(c: tuple[int, int, int]) -> float:
+    """WCAG relative luminance of an sRGB colour."""
+    def lin(v: int) -> float:
+        v = v / 255.0
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    r, g, b = (lin(v) for v in c[:3])
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def contrast(a: tuple[int, int, int], b: tuple[int, int, int]) -> float:
+    """WCAG contrast ratio between two colours, 1 to 21."""
+    la, lb = sorted((luminance(a), luminance(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def caption_colours(settings: Settings) -> tuple[tuple[int, int, int],
+                                                 tuple[int, int, int]]:
+    """The captions' ink and box: the kit's ink on the kit's paper, AS A PAIR.
+
+    Design decided captions are a different register from the plates — the
+    kit's materials without its hand, dark ink in a box of the kit's paper
+    (kit/CHANGES.md, "Captions: deliberately a different register"). The first
+    cut asked for `structure` at the base hour and put it on a cream box
+    typed out here as a hex. That held while the base hour was the paper one.
+    The rebuild's base hour is night, where `structure` is the pale ink drawn
+    for a dark wall, and every caption came out pale on cream: about 1.3:1,
+    unreadable, on every beat of every video.
+
+    So both colours now come from ONE hour's palette — the hour whose ground
+    is the lightest, which is the kit's paper — and can never be drawn for two
+    different grounds. On a kit with a single dark hour this is light ink in
+    a dark box, which is still the kit's own pairing and still legible.
+    """
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    paper = max(reg.palettes.values(), key=lambda p: luminance(_rgb(p["ground"])))
+    return _rgb(paper["structure"]), _rgb(paper["ground"])
+
+
 def load_font(settings: Settings, name: str, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(str(settings.fonts_dir / name), size)
 
@@ -266,11 +311,11 @@ def build_phrase_ass(
     """
     W, H = play_res
 
-    def bgr(c):  # ASS colours are &HAABBGGRR
+    def bgr(c, alpha: int = 0):  # ASS colours are &HAABBGGRR
         r, g, b = c
-        return f"&H00{b:02X}{g:02X}{r:02X}"
+        return f"&H{alpha:02X}{b:02X}{g:02X}{r:02X}"
 
-    ink = role(settings, "structure")
+    ink, box = caption_colours(settings)
 
     header = f"""[Script Info]
 ScriptType: v4.00+
@@ -281,7 +326,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caps,Archivo Narrow,{font_size},{bgr(ink)},{bgr(ink)},&H0AF6F9FA,&H0AF6F9FA,-1,0,0,0,100,100,0,0,3,14,0,2,{margin_h},{margin_h},{margin_v},1
+Style: Caps,Archivo Narrow,{font_size},{bgr(ink)},{bgr(ink)},{bgr(box, 0x0A)},{bgr(box, 0x0A)},-1,0,0,0,100,100,0,0,3,14,0,2,{margin_h},{margin_h},{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

@@ -54,7 +54,7 @@ def _write_kit(root: Path, episodes=("night", "dusk")) -> Path:
                     duskSafe=True, hostAnchor=False)
     assets |= _both("room/lamp-16x9", "room/lamp-dusk-16x9", seed=None,
                     duskSafe=False, hostAnchor=False)
-    for pose in ("host/medium", "host/medium-talk", "host/medium-glance-left",
+    for pose in ("host/medium", "host/medium-talk", "host/medium-blink",
                  "host/head-in-hands"):
         assets |= _both(pose, f"{pose}-dusk", framing="medium")
     raw = {
@@ -126,14 +126,17 @@ def test_curation_named_by_the_base_key_still_answers_for_the_hour(kit):
         "cards/term-16x9", "room/wide-16x9"}
 
 
-def test_a_dusk_host_glances_like_a_night_one(kit):
-    from pipeline.host import looking_at, shots
+def test_a_dusk_host_talks_and_blinks_in_his_own_light(kit):
+    """Every strip of a pose is at the episode's hour, not only the one the
+    shot was cut to: a night blink in a dusk talk is a flash of the wrong
+    colours for a tenth of a second."""
+    from pipeline.host import shots
 
     dusk = load_plates(kit.assets_dir).at("dusk")
     shot = next(s for s in shots(dusk, "to-camera"))
-    turned = looking_at(dusk, shot, "left")
 
-    assert turned.pose.key == "host/medium-glance-left-dusk"
+    assert shot.talk.key == "host/medium-talk-dusk"
+    assert shot.blink.key == "host/medium-blink-dusk"
 
 
 def test_an_angle_kept_to_its_own_light_is_not_shot_at_dusk(kit):

@@ -190,10 +190,41 @@ RENDERER_DIRECTING_NOTES: dict = {
 }
 
 
-def plate_catalogue(settings: Settings, *, fmt: str = "long") -> str:
-    """Every plate the director may name, with what it is for and its slots."""
+def _held_stems(reg) -> set[str]:
+    """Plate stems the curation holds back: off the writer's menu entirely."""
+    return set((getattr(reg, "held_back", {}) or {}).get("plates") or {})
+
+
+def _stem_of(key: str) -> str:
+    return key.removesuffix("-16x9").removesuffix("-9x16")
+
+
+def _for_company(plate, sector: str) -> bool:
+    """Whether a plate belongs on this company's menu.
+
+    A SECTOR PLATE PRESUMES ONE KIND OF ISSUER — an ARR bridge a subscription
+    business, a reserve-life plate a producer — so it is only offered to that
+    kind. A plate with no sector is for anyone, and so is every plate when the
+    company's sector is not known: the writer then sees each one labelled.
+    """
+    return not sector or not plate.sectors or sector in plate.sectors
+
+
+def plate_catalogue(settings: Settings, *, fmt: str = "long",
+                    sector: str = "") -> str:
+    """Every plate the director may name: what it is for, when not to use it,
+    and its slots.
+
+    Design writes a purpose and a caution on every plate (`roles.fragment.json`)
+    and both are shown: the caution is where a plate says which sibling to use
+    instead, or what it needs disclosed to be filled honestly. Plates the
+    curation holds back are left off, and so are sector plates drawn for a
+    different kind of company than this one (`sector`, the workbook's own
+    word for it, folded to GICS).
+    """
     from pipeline.plate_tags import _slot_summary
-    from pipeline.plates import PlateError, load_plates
+    from pipeline.plates import PlateError, fold_sector, load_plates
+    from pipeline.series import data_menu
 
     try:
         reg = load_plates(settings.assets_dir)
@@ -203,12 +234,24 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long") -> str:
                 "will resolve and the video will be a talking head.)")
 
     aspect = "9x16" if fmt == "short" else "16x9"
+    gics = fold_sector(sector)
+    held = _held_stems(reg)
     lines: list[str] = []
+    elsewhere = 0
     for family in reg.families():
         if family in ("host", "room", "overlays"):
             continue          # the renderer places these; a script never names one
-        keys = [k for k in reg.family(family)
-                if not reg.assets[k].aspect or reg.assets[k].aspect == aspect]
+        keys = []
+        for k in reg.family(family):
+            plate = reg.assets[k]
+            if plate.aspect and plate.aspect != aspect:
+                continue
+            if _stem_of(k) in held:
+                continue
+            if not _for_company(plate, gics):
+                elsewhere += 1
+                continue
+            keys.append(k)
         if not keys:
             continue
         lines.append("")
@@ -218,23 +261,38 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long") -> str:
             short = k.split("/", 1)[1]
             lines.append(f"  {short}"
                          + (f" — {plate.purpose}" if plate.purpose else ""))
+            if plate.sectors and not gics:
+                lines.append(f"      for: {', '.join(plate.sectors)} companies only")
+            if plate.caution:
+                lines.append(f"      caution: {plate.caution}")
             slots = _slot_summary(plate)
             if slots:
                 lines.append(f"      slots: {slots}")
+            # What the plate DRAWS and where from: the printed figures it
+            # reads, or the data keys the tag names (`series=`, `steps=` …).
+            data = data_menu(plate) if plate.slots else ""
+            if data:
+                lines.append(f"      data: {data}")
             # Keyed on the STEM: the catalogue prints `seasonality-6y-9x16`
             # and the rule is about the drawing, which is the same one in
             # both aspects even where the rule is not.
-            stem = short.removesuffix("-16x9").removesuffix("-9x16")
+            stem = _stem_of(short)
             note = (DIRECTING_NOTES.get((stem, aspect))
                     or DIRECTING_NOTES.get(stem))
             if note:
                 lines.append(f"      ⚠ {note}")
+    if elsewhere:
+        lines.append("")
+        lines.append(f"({elsewhere} sector plates drawn for other industries "
+                     f"than {gics} are not offered.)")
     return "\n".join(lines).strip() or "(no plates in the registry)"
 
 
-def chapter_type_catalogue(settings: Settings, *, fmt: str = "long") -> str:
+def chapter_type_catalogue(settings: Settings, *, fmt: str = "long",
+                           sector: str = "") -> str:
     """The sixteen types, what each is for, and the plates it may use."""
-    from pipeline.plates import CHAPTER_TYPES, PlateError, load_plates
+    from pipeline.plates import (CHAPTER_TYPES, PlateError, fold_sector,
+                                 load_plates)
 
     try:
         reg = load_plates(settings.assets_dir)
@@ -242,6 +300,8 @@ def chapter_type_catalogue(settings: Settings, *, fmt: str = "long") -> str:
         return "(the design kit is not ingested — run scripts/ingest_kit.py kit)"
 
     aspect = "9x16" if fmt == "short" else "16x9"
+    gics = fold_sector(sector)
+    held = _held_stems(reg)
     lines: list[str] = []
     for ctype in CHAPTER_TYPES:
         purpose = reg.chapter_purpose(ctype)
@@ -254,6 +314,8 @@ def chapter_type_catalogue(settings: Settings, *, fmt: str = "long") -> str:
         universal = set(reg.universal_plates())
         extra = sorted({k.split("/", 1)[1] for k in reg.plates_for_chapter(ctype)
                         if k not in universal
+                        and _stem_of(k) not in held
+                        and _for_company(reg.assets[k], gics)
                         and (not reg.assets[k].aspect
                              or reg.assets[k].aspect == aspect)})
         if extra:
@@ -721,6 +783,16 @@ def _macro(ctx: "_Ctx") -> bool:
     return ctx.data is None
 
 
+def _sector(ctx: "_Ctx") -> str:
+    """The company's sector as its workbook spells it, or "" (macro, unknown)."""
+    if ctx.data is None:
+        return ""
+    try:
+        return str(ctx.data.get("sector") or "")
+    except Exception:
+        return ""
+
+
 PAYLOAD: tuple[PayloadBlock, ...] = (
     # --- subject
     PayloadBlock("{{ticker}}", _ALL, lambda c: c.ticker.upper()),
@@ -808,11 +880,13 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{broll_palette}}", _LONG_FORM, lambda c: broll_catalog()),
     PayloadBlock("{{plate_catalogue}}", ("short", "long_write", "update"),
                  lambda c: plate_catalogue(
-                     c.settings, fmt="short" if c.fmt == "short" else "long")),
+                     c.settings, fmt="short" if c.fmt == "short" else "long",
+                     sector=_sector(c))),
     PayloadBlock("{{scribble_styles}}", _LONG_FORM,
                  lambda c: scribble_styles(c.settings)),
     PayloadBlock("{{chapter_types}}", _LONG_FORM,
-                 lambda c: chapter_type_catalogue(c.settings, fmt=c.fmt)),
+                 lambda c: chapter_type_catalogue(c.settings, fmt=c.fmt,
+                                                  sector=_sector(c))),
 
     # --- craft rules
     PayloadBlock("{{tagging_density}}", ("short", "long_write", "update"),

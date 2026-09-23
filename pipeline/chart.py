@@ -26,29 +26,27 @@ usually turns on.
 direction is ``neutral-data`` even when the story about it is bad news. The
 subject's own series is ``structure``; a peer's, consensus, or last year's is
 ``other-party``.
+
+**Flat, like the kit.** The rebuild draws with one contour weight, flat fills and
+no hand: no wobble, no pressure, no hatching. A series drawn in the old kit's
+hand over a flat plate reads as a different object pasted on, so everything
+here is a straight polyline or a filled box. A plate's declared data regions
+are drawn by :mod:`pipeline.series`, the port of the kit's own renderers.
 """
 
 from __future__ import annotations
 
 import logging
-import math
-import random
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import ImageDraw
 
 from config import Settings
+from pipeline import series as S
 from pipeline.plates import PERIOD_COUNT, Plate, Registry
 
 log = logging.getLogger(__name__)
-
-# The hand. The plate's own line work is drawn with seeded wobble and two-pass
-# pressure; a mathematically straight polyline through it reads as a different
-# object pasted on. These are the same quantities the engine uses, in delivered
-# pixels.
-_WOBBLE_PX = 3.0
-_STEP_PX = 26.0
 
 
 @dataclass(frozen=True)
@@ -107,25 +105,7 @@ def axis_domain(plate: Plate, slot_values: dict[str, str]) -> tuple[float, float
     data's own range — which is honest, because then nothing on the plate
     claims otherwise.
     """
-    nums: list[float] = []
-    for name, slot in plate.slots.items():
-        if slot.role != "axis":
-            continue
-        raw = str(slot_values.get(name) or "").strip()
-        if not raw:
-            continue
-        cleaned = raw.replace(",", "").replace("%", "").replace("$", "")
-        mult = 1.0
-        if cleaned[-1:].lower() in "kmbt":
-            mult = {"k": 1e3, "m": 1e6, "b": 1e9, "t": 1e12}[cleaned[-1].lower()]
-            cleaned = cleaned[:-1]
-        try:
-            nums.append(float(cleaned) * mult)
-        except ValueError:
-            continue
-    if len(nums) < 2:
-        return None
-    return min(nums), max(nums)
+    return S.axis_domain(plate, slot_values)
 
 
 def _domain(values: list[float]) -> tuple[float, float]:
@@ -137,29 +117,17 @@ def _domain(values: list[float]) -> tuple[float, float]:
     return lo - pad, hi + pad
 
 
-def _wobble(a: tuple[float, float], b: tuple[float, float],
-            rng: random.Random) -> list[tuple[float, float]]:
-    """A hand-drawn segment between two points.
-
-    The sampling step is capped to a fifth of the stroke. A constant step is
-    what made every short mark in the kit vanish: anything shorter than the step
-    got one sample and the path collapsed to nothing.
-    """
-    dx, dy = b[0] - a[0], b[1] - a[1]
-    length = math.hypot(dx, dy)
-    if length < 1e-6:
-        return [a, b]
-    step = min(_STEP_PX, length / 5.0)
-    n = max(int(length / step), 1)
-    nx, ny = -dy / length, dx / length
-    out = []
-    for i in range(n + 1):
-        t = i / n
-        # Windowed to zero at both ends, so segments join without a kink.
-        amp = _WOBBLE_PX * math.sin(math.pi * t)
-        j = rng.uniform(-amp, amp)
-        out.append((a[0] + dx * t + nx * j, a[1] + dy * t + ny * j))
-    return out
+def _polyline(d: ImageDraw.ImageDraw, pts: list[tuple[float, float]], colour,
+              width: int) -> None:
+    """A flat polyline with round joins and round ends, as series.linePath
+    asks for (`stroke-linejoin` and `stroke-linecap` round)."""
+    if len(pts) < 2:
+        return
+    fill = (*colour[:3], 255)
+    d.line(pts, fill=fill, width=width, joint="curve")
+    r = width / 2
+    for x, y in (pts[0], pts[-1]):
+        d.ellipse([x - r, y - r, x + r, y + r], fill=fill)
 
 
 def draw_line(img, area: PlotArea, values: list[float | None], colour,
@@ -169,24 +137,25 @@ def draw_line(img, area: PlotArea, values: list[float | None], colour,
 
     No axis, no grid, no frame, no badge, no glow. Those are on the plate.
     `domain` is the scale the axis labels declare — pass it, or the path fits
-    itself and stops agreeing with the gridlines behind it.
+    itself and stops agreeing with the gridlines behind it. A gap stays a gap:
+    the path breaks at an empty period rather than joining across it.
     """
-    pts = [p for p in series_points(values, periods=len(values)) if p is not None]
-    if len(pts) < 2:
+    pts = series_points(values, periods=len(values))
+    present = [p for p in pts if p is not None]
+    if len(present) < 2:
         return
-    lo, hi = domain or _domain([v for _, v in pts])
+    lo, hi = domain or _domain([v for _, v in present])
     span = hi - lo or 1.0
     n = max(len(values) - 1, 1)
-    px = [area.point(i / n, (v - lo) / span) for i, v in pts]
-
-    rng = random.Random(seed)
     d = ImageDraw.Draw(img)
-    # Two passes, like the hand: a light under-stroke and the real line over it,
-    # which is what gives a drawn line its pressure.
-    for pass_width, alpha in ((width + 2, 90), (width, 255)):
-        for a, b in zip(px, px[1:]):
-            d.line(_wobble(a, b, rng), fill=(*colour[:3], alpha),
-                   width=pass_width, joint="curve")
+    run: list[tuple[float, float]] = []
+    for p in pts + [None]:
+        if p is None:
+            _polyline(d, run, colour, width)
+            run = []
+            continue
+        i, v = p
+        run.append(area.point(i / n, (v - lo) / span))
 
 
 def draw_bars(img, area: PlotArea, values: list[float | None],
@@ -197,7 +166,8 @@ def draw_bars(img, area: PlotArea, values: list[float | None],
     the top, which is the shape the beat has.
 
     `colour_for` takes a value and returns its role colour, so direction is
-    decided once, by the caller, from the registry.
+    decided once, by the caller, from the registry. Flat fills: the rebuild
+    draws a bar as a box, and so does this.
     """
     pts = [p for p in series_points(values, periods=len(values)) if p is not None]
     if not pts:
@@ -209,22 +179,13 @@ def draw_bars(img, area: PlotArea, values: list[float | None],
     slot_w = area.w / n
     bw = slot_w * (1.0 - gap)
     zero_y = area.y + (1.0 - (0.0 - lo) / span) * area.h
-
-    rng = random.Random(seed)
     d = ImageDraw.Draw(img)
     for i, v in pts:
         cx = area.x + slot_w * (i + 0.5)
         top = area.y + (1.0 - (v - lo) / span) * area.h
         y0, y1 = (top, zero_y) if v >= 0 else (zero_y, top)
-        colour = colour_for(v)
-        # Hatched, not filled: a flat rectangle beside hand-drawn furniture is
-        # the one thing that reads as computer output.
-        for hx in range(int(cx - bw / 2), int(cx + bw / 2), 7):
-            jitter = rng.uniform(-2.0, 2.0)
-            d.line([(hx, y0 + jitter), (hx, y1 - jitter)],
-                   fill=(*colour[:3], 210), width=4)
-        d.line(_wobble((cx - bw / 2, y0), (cx + bw / 2, y0), rng),
-               fill=(*colour[:3], 255), width=5)
+        d.rectangle([cx - bw / 2, y0, cx + bw / 2, max(y1, y0 + 3)],
+                    fill=(*colour_for(v)[:3], 255))
 
 
 def draw_row_bars(img, area: PlotArea, values: list[float | None],
@@ -244,15 +205,14 @@ def draw_row_bars(img, area: PlotArea, values: list[float | None],
     rows = len(values)
     row_h = area.h / rows
     zero_x = area.x + ((0.0 - lo) / span) * area.w
-
-    rng = random.Random(seed)
+    thick = max(row_h * 0.42, 4)
     d = ImageDraw.Draw(img)
     for i, v in present:
         cy = area.y + row_h * (i + 0.5)
         end_x = area.x + ((v - lo) / span) * area.w
-        colour = colour_for(v)
-        d.line(_wobble((zero_x, cy), (end_x, cy), rng),
-               fill=(*colour[:3], 235), width=max(int(row_h * 0.34), 4))
+        x0, x1 = sorted((zero_x, end_x))
+        d.rectangle([x0, cy - thick / 2, max(x1, x0 + 1), cy + thick / 2],
+                    fill=(*colour_for(v)[:3], 255))
 
 
 def draw_range_mark(img, area: PlotArea, t: float, median: float | None,
@@ -310,7 +270,6 @@ def draw_range_mark(img, area: PlotArea, t: float, median: float | None,
     def x_at(v: float) -> float:
         return area.x + r + max(0.0, min(1.0, v)) * span
 
-    rng = random.Random(seed)
     d = ImageDraw.Draw(img)
 
     # The median as a TICK, not a second dot: two dots on one rail read as two
@@ -318,8 +277,9 @@ def draw_range_mark(img, area: PlotArea, t: float, median: float | None,
     if median is not None:
         mx = x_at(median)
         other = reg.colour("other-party")
-        d.line(_wobble((mx, cy - area.h * 0.4), (mx, cy + area.h * 0.4), rng),
-               fill=(*other[:3], 230), width=max(int(r * 0.42), 4))
+        w = max(int(r * 0.42), 4)
+        d.rectangle([mx - w / 2, cy - area.h * 0.4, mx + w / 2, cy + area.h * 0.4],
+                    fill=(*other[:3], 255))
 
     off = 1 if t > 1.0 else -1 if t < 0.0 else 0
     subject = reg.colour("structure")
@@ -327,10 +287,9 @@ def draw_range_mark(img, area: PlotArea, t: float, median: float | None,
     d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(*subject[:3], 255))
     if off:
         tip = x_at(t) + off * r * 0.85
-        d.line(_wobble((tip - off * r * 0.8, cy - r * 0.6), (tip, cy), rng),
-               fill=(*subject[:3], 235), width=max(int(r * 0.2), 3))
-        d.line(_wobble((tip, cy), (tip - off * r * 0.8, cy + r * 0.6), rng),
-               fill=(*subject[:3], 235), width=max(int(r * 0.2), 3))
+        _polyline(d, [(tip - off * r * 0.8, cy - r * 0.6), (tip, cy),
+                      (tip - off * r * 0.8, cy + r * 0.6)],
+                  subject, max(int(r * 0.2), 3))
     return True
 
 
@@ -378,20 +337,11 @@ def _num(raw: str) -> float | None:
     """A figure as the director wrote it. None when it is not a number.
 
     An empty cell means NO DATA and stays None — the path breaks there rather
-    than interpolating, because interpolating invents a figure.
+    than interpolating, because interpolating invents a figure. The reading is
+    :func:`pipeline.series.figure`'s, so `$1.2bn`, `−$18m` and `+1.6pt` are
+    figures here exactly as they are on a walk.
     """
-    text = str(raw or "").strip()
-    if not text:
-        return None
-    cleaned = text.replace(",", "").replace("%", "").replace("$", "").replace("x", "")
-    mult = 1.0
-    if cleaned[-1:].lower() in "kmbt":
-        mult = {"k": 1e3, "m": 1e6, "b": 1e9, "t": 1e12}[cleaned[-1].lower()]
-        cleaned = cleaned[:-1]
-    try:
-        return float(cleaned) * mult
-    except ValueError:
-        return None
+    return S.figure(raw)
 
 
 class ChartSlotError(RuntimeError):
@@ -476,50 +426,51 @@ def _draw_range_marks(reg: Registry, plate: Plate, values: dict[str, str],
     return drew
 
 
+def _ink(reg: Registry, plate: Plate) -> dict[str, str]:
+    """The kit's inks at the hour this plate is drawn at."""
+    palette = reg.palettes.get(plate.hour or reg.base_hour) or reg.palette
+    return S.ink_for(palette)
+
+
 def draw_declared(reg: Registry, plate: Plate, values: dict[str, str], img,
                   *, seed: str = "") -> bool:
-    """Draw a plate's data region from its own slot values. True if it drew.
+    """Draw a plate's data regions from its own slot values. True if it drew.
 
-    This is what makes `[PLATE: line-6y-16x9 | value=400,431,…]` a chart rather
-    than a set of labels around an empty box: the plate reserves the region, the
-    director writes the figures, and the path goes through them.
+    This is what makes `[PLATE: bars-6y-16x9 | value=400,431,…]` a chart rather
+    than a set of labels around an empty box: the plate reserves the regions,
+    the writer writes the figures, and the kit's own renderers — ported in
+    :mod:`pipeline.series` — draw through them. Every region the plate declares
+    is drawn, not the first one found: a rail plate carries a column of share
+    bars AND a growth mark per row.
+
+    A tag the grammar would refuse never reaches here, so a problem found now
+    is logged and that part is left undrawn rather than guessed at.
     """
     # A PLATE MAY RESERVE MANY REGIONS, NOT ONE. `tables/multiples-strip`
-    # declares a rail per row — six of them — and each takes its own pair, so
-    # the single-region lookup below would have drawn the first row and left
-    # the other five as empty rails. They are drawn first and independently:
-    # a plate can carry both a series region and a column of range marks.
+    # declares a rail per row and each takes its own {t, median} pair — the bot's
+    # own renderer, with the peer median as a tick, drawn first.
     drew = _draw_range_marks(reg, plate, values, img, seed=seed)
+    got = S.plate_data(plate, values)
+    for why in got.problems:
+        log.warning("%s: %s — that part is not drawn", plate.key, why)
+    nodes = S.data_layer(S.boxes(plate), got.data, _ink(reg, plate))
+    if nodes:
+        S.paint(img, nodes, plate.export_scale * img.width / max(plate.pixel_size[0], 1))
+        drew = True
+    return drew
 
-    slot = next((s for s in plate.slots.values()
-                 if s.role in ("plot-area", "bars", "path")), None)
-    if slot is None:
-        return drew
-    # A series written straight onto the region wins: some plates reserve a
-    # shape and have no per-period slot for it, because the intervening figures
-    # are a path rather than type.
-    written = values.get(slot.name, "")
-    if written and "," in str(written):
-        series = [_num(v) for v in str(written).split(",")]
-    else:
-        series = declared_series(plate, values, slot.role)
-    if not series or sum(1 for v in series if v is not None) < 2:
-        return drew
-    x, y, w, h = slot.scaled()
-    area = PlotArea(x, y, w, h)
-    if slot.role == "bars":
-        neutral = reg.colour("neutral-data")
-        draw_row_bars(img, area, series, lambda v: neutral,
-                      seed=seed or plate.key)
-        return True
-    domain = axis_domain(plate, values)
-    if "bars" in plate.key:
-        draw_bars(img, area, series, reg.direction_colour,
-                  seed=seed or plate.key, domain=domain)
-    else:
-        draw_line(img, area, series, reg.colour("structure"),
-                  seed=seed or plate.key, domain=domain)
-    return True
+
+def declared_layer(reg: Registry, plate: Plate, values: dict[str, str],
+                   size: tuple[int, int] | None = None, *, seed: str = ""):
+    """The data drawing alone, on a transparent layer, or None if nothing drew.
+
+    For a plate that boils: the frames differ, the data does not, so it is
+    drawn once and laid over every frame rather than drawn three times.
+    """
+    from PIL import Image
+
+    layer = Image.new("RGBA", tuple(size or plate.pixel_size), (0, 0, 0, 0))
+    return layer if draw_declared(reg, plate, values, layer, seed=seed) else None
 
 
 def render_series(reg: Registry, plate: Plate, values: list[float | None],
@@ -528,27 +479,38 @@ def render_series(reg: Registry, plate: Plate, values: list[float | None],
     """A charts/ plate with its data path drawn in. The whole public surface.
 
     The caller supplies the figures — the renderer never computes one — and the
-    plate supplies everything else.
+    plate supplies everything else. Drawn by the kit's own renderers: through
+    each column's published `anchorX`, on the scale the axis labels declare.
     """
     from pipeline.plate_frames import render_still
 
-    img = render_still(plate, slot_values or {}, settings, reg)
-    area = plot_area(plate)
-    if area is None:
+    slot_values = dict(slot_values or {})
+    img = render_still(plate, slot_values, settings, reg)
+    if plot_area(plate) is None:
         log.warning("%s reserves no plot area — nothing to draw into", plate.key)
         return img
-
-    role = "structure" if subject else "other-party"
-    domain = axis_domain(plate, slot_values or {})
+    domain = axis_domain(plate, slot_values)
     if domain is None:
         log.warning("%s has no labelled y-axis — the path is fitted to its own "
                     "range, and the gridlines behind it mean nothing", plate.key)
-    if "bars" in plate.key:
-        draw_bars(img, area, values, lambda v: reg.direction_colour(v),
-                  seed=seed or plate.key, domain=domain)
-    else:
-        draw_line(img, area, values, reg.colour(role), seed=seed or plate.key,
-                  domain=domain)
+    data: dict = {"series": [None if v is None else float(v) for v in values]}
+    if domain is not None:
+        data["min"], data["max"] = domain
+    ink = _ink(reg, plate)
+    if not subject:
+        # A peer's, consensus', last year's series: the other party's ink.
+        ink = dict(ink, subject=ink.get("axis", ink.get("subject")))
+    present = [v for v in data["series"] if v is not None]
+    if len(present) < 2:
+        return img
+    if any(v is None for v in data["series"]):
+        # series.js has no gaps; an empty period is NO DATA and the line
+        # breaks there, so a series with holes is drawn as runs.
+        area = plot_area(plate)
+        draw_line(img, area, data["series"], S._rgba(ink["subject"])[:3], domain=domain)
+        return img
+    nodes = S.data_layer(S.boxes(plate), data, ink)
+    S.paint(img, nodes, plate.export_scale * img.width / max(plate.pixel_size[0], 1))
     return img
 
 
@@ -562,6 +524,9 @@ def render_price_plate(reg: Registry, series, out: Path, settings: Settings, *,
     point. What comes back is the path plus the plot box in DELIVERED pixels,
     so a mark can be placed from where the line actually went rather than from
     a second guess at the same arithmetic.
+
+    One flat line, no dot per close: sixty dots a phone-width apart is a
+    string of beads, and the individual closes are not the claim.
     """
     from pipeline.plate_frames import render_still
 
@@ -579,15 +544,9 @@ def render_price_plate(reg: Registry, series, out: Path, settings: Settings, *,
         span = hi - lo or 1.0
         n = max(len(closes) - 1, 1)
         px = [area.point(i / n, (v - lo) / span) for i, v in enumerate(closes)]
-        rng = random.Random(seed)
-        d = ImageDraw.Draw(img)
         # The subject's own series is `structure`. A price line is not a
         # direction — the move is the direction, and it is stated in type.
-        colour = reg.colour("structure")
-        for pass_width, alpha in ((8, 90), (6, 255)):
-            for a, b in zip(px, px[1:]):
-                d.line(_wobble(a, b, rng), fill=(*colour, alpha),
-                       width=pass_width, joint="curve")
+        _polyline(ImageDraw.Draw(img), px, reg.colour("structure"), 6)
 
     img.convert("RGBA").save(out)
     box = ((area.x, area.y, area.x + area.w, area.y + area.h) if area

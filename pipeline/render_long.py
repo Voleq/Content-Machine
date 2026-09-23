@@ -77,10 +77,9 @@ from pipeline.audio_assets import (
 )
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
-from pipeline.host import (HostShot, build_host_clip, dressed,
-                           frame_shot, looking_at, pick_framing, pick_shot,
-                           place_on_room, stands_on)
-from pipeline.chart import draw_declared
+from pipeline.host import (build_host_clip, frame_shot, front_of, host_shot,
+                           pick_shot, place_on_room, stands_on)
+from pipeline.chart import declared_layer, draw_declared
 from pipeline.media_frames import FrameRotation, composite as frame_media
 from pipeline.models import (
     CueKind,
@@ -529,7 +528,11 @@ def _render_long(
         point: this used to paint a flat colour instead, which is how every
         two-shot in the format went weeks with no room in it.
         """
-        plate = _room_plate(role_name, seed=f"{script.ticker}|{variant % 3}")
+        return _room_file(_room_plate(role_name,
+                                      seed=f"{script.ticker}|{variant % 3}"))
+
+    def _room_file(plate) -> Path:
+        """A room plate rasterised at the frame's size, once per video."""
         plates_used.add(plate.key)
         key = (plate.key, "")
         if key not in room_cache:
@@ -545,6 +548,25 @@ def _render_long(
             room_cache[key] = dest
         return room_cache[key]
 
+    def _front_file(room) -> Path | None:
+        """The room's FRONT layer at the frame's size, or None.
+
+        The desk he stands behind, drawn after him. A rebuild room is the
+        whole room plus this layer: he goes between them, and pasting him over
+        the whole room put the desk behind his legs.
+        """
+        src = front_of(room)
+        if src is None:
+            return None
+        key = (room.key, "front")
+        if key not in room_cache:
+            dest = rdir / f"front_{room.name}_{_plate_fingerprint(src)}.png"
+            if not dest.exists():
+                Image.open(src).convert("RGBA").resize(
+                    (W, H), Image.LANCZOS).save(dest)
+            room_cache[key] = dest
+        return room_cache[key]
+
     def _chapter_opener(title: str, seg_i: int) -> Path:
         """A chapter opener is THE ROOM WITH THE TITLE IN ITS SLOT.
 
@@ -554,9 +576,16 @@ def _render_long(
         """
         from pipeline.plate_frames import render_still
 
-        plate = _room_plate("establish", seed=f"{script.ticker}|{title}")
+        # THE OPENER ROLE, where the kit publishes one: the rooms with a
+        # `title` slot and the card drawn under it (rebuild-21, desk-wide only).
+        # `establish` also holds rooms with no slot, and a pick of one of those
+        # was a chapter whose title silently never reached the screen.
+        role_name = "opener" if reg.room_roles.get("opener") else "establish"
+        plate = _room_plate(role_name, seed=f"{script.ticker}|{title}")
         if "title" not in plate.slots:
-            return _room_still(seg_i, "establish")
+            log.warning("chapters: %s has no title slot, so %r is not on "
+                        "screen", plate.key, title)
+            return _room_still(seg_i, role_name)
         plates_used.add(plate.key)
         dest = rdir / f"chapter_{seg_i}.png"
         img = render_still(plate, {"title": title}, settings, reg)
@@ -614,9 +643,16 @@ def _render_long(
         # actually went.
         span = max(seg.end - seg.start, playback_seconds(plate))
         plan = frame_indices(plate, span, fps)
+        # THE DATA GOES ON EVERY FRAME. Every chart, walk and rail in the
+        # rebuild boils, so every one of them took this branch — and this
+        # branch drew the type and never the data, which put every chart in a
+        # long video on screen as an empty form. Drawn once, laid on each.
+        data = declared_layer(reg, plate, values, seed=f"{plate.key}|{seg_i}")
         frames = []
         for idx in range(plate.frame_count):
             img = render_frame(plate, idx, values, settings, reg)
+            if data is not None:
+                img.alpha_composite(data)
             frames.append(img.resize((W, H), Image.LANCZOS))
         dest = rdir / f"plate_{seg_i}_{plate.name[:24]}.mov"
         frames_to_alpha_clip(frames, max(plate.fps or 2, 1), dest)
@@ -720,16 +756,23 @@ def _render_long(
     # without noticing, so the manifest records it.
     host_motion: list[dict] = []
 
-    def _host_input(seg_i: int, seg, seg_len: float, *, panel: bool = False):
-        """Add the host clip as an input. Returns (index, x, y) or None.
+    def _host_input(seg_i: int, seg, seg_len: float, *, room,
+                    panel: bool = False):
+        """Add the host clip as an input.
 
-        The room this beat is shot in decides his size and where he stands.
+        Returns (index, x, y, w, h, front) or None, where `front` is the
+        room's front layer when he is standing in it — the caller lays it
+        over him — and None when he is framed or the room has no front.
+
+        The room this beat is shot in decides his size and where he stands,
+        and it is the CALLER'S room: this used to pick its own with a seed of
+        the segment number while the background was picked with the beat's
+        variant, so on two beats in three he was placed on one angle and
+        drawn over another.
         """
         role_name = ("panel" if panel
                      else "rests-on" if seg_i in lands_a_chapter
                      else "beat")
-        room = _room_plate("panel" if panel else "talk",
-                           seed=f"{script.ticker}|{seg_i % 3}")
         # He is composited per output frame, so he is loaded at the size he
         # will be SHOWN at rather than at his delivered 2160x3840. Without
         # this every frame of every host beat is a 4K RGBA resize.
@@ -760,25 +803,23 @@ def _render_long(
         clip_path, (hw, hh) = built
         # The pose the clip was actually BUILT from, not a second guess at it:
         # `build_host_clip` reads the same `used` tally this call just moved.
-        pose = reg.get(motion.get("pose", "")) if motion else None
-        shot = (HostShot(pose=pose,
-                         talk=reg.host_strip(pose.key, "talk"),
-                         idle=reg.host_strip(pose.key, "idle"))
-                if pose is not None
-                else pick_shot(reg, role_name, seg_i, used=host_used))
+        shot = (host_shot(reg, motion.get("pose", "")) if motion else None) \
+            or pick_shot(reg, role_name, seg_i, used=host_used)
         if shot is not None and shot.is_framing:
             spot = frame_shot(shot, (W, H))
             if spot is not None:
                 return (_add_input(["-i", str(clip_path)]),
-                        spot.x, spot.y, max(spot.width, 1), max(spot.height, 1))
+                        spot.x, spot.y, max(spot.width, 1),
+                        max(spot.height, 1), None)
         if room is not None and shot is not None and stands_on(room, shot):
             placed = place_on_room(room, shot)
             k = W / room.delivered[0]
             return (_add_input(["-i", str(clip_path)]),
                     int(placed.x * k), int(placed.y * k),
-                    max(int(placed.width * k), 1), max(int(placed.height * k), 1))
+                    max(int(placed.width * k), 1),
+                    max(int(placed.height * k), 1), _front_file(room))
         return (_add_input(["-i", str(clip_path)]),
-                int((W - hw) / 2), max(H - hh, 0), hw, hh)
+                int((W - hw) / 2), max(H - hh, 0), hw, hh, None)
 
     def _overlay_chain(bg_i: int, fg_i: int, x: int, y: int,
                        seg_len: float, seg_i: int, tail: str) -> str:
@@ -795,7 +836,8 @@ def _render_long(
 
     def _scaled_overlay_chain(bg_i: int, fg_i: int, x: int, y: int,
                               w: int, h: int, seg_len: float, tail: str, *,
-                              loop: bool = False) -> str:
+                              loop: bool = False,
+                              front_i: int | None = None) -> str:
         """As `_overlay_chain`, but the layer is scaled into its box first.
 
         `loop` is what a BOIL needs. A two-frame loop is encoded once at its
@@ -803,6 +845,9 @@ def _render_long(
         — which is what `tpad` does — freezes the drawing after half a second,
         and a frozen plate beside a boiling room is the exact thing the boil
         exists to prevent.
+
+        `front_i` is a full-frame still laid over the result — the room's
+        front layer, so the desk he stands behind is in front of him.
         """
         fg = (f"[{fg_i}:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,"
               f"trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,scale={w}:{h}[hfg];"
@@ -810,6 +855,17 @@ def _render_long(
               f"[{fg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
               f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
               f"trim=0:{seg_len:.4f},scale={w}:{h}[hfg];")
+        if front_i is not None:
+            return (
+                f"[{bg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+                f"scale={W}:{H}[hbg];"
+                + fg +
+                f"[{front_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+                f"format=rgba,scale={W}:{H}[hfr];"
+                f"[hbg][hfg]overlay={x}:{y}:eof_action=repeat[hmid];"
+                f"[hmid][hfr]overlay=0:0:eof_action=repeat"
+                f"{tail}"
+            )
         return (
             f"[{bg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
             f"scale={W}:{H}[hbg];"
@@ -837,13 +893,8 @@ def _render_long(
     def _panel_host(room, seg_i: int):
         """(shot, box, evidence side) for a two-shot, or None.
 
-        THE GLANCE IS DECIDED HERE, because this is where the side is known.
         A figure is placed by the room — the angle and its contact point say
-        where he stands, and which side is left over follows from that. A
-        FRAMING has no floor line and no anchor: the medium is a camera
-        distance, so it is placed against the frame on its eye line, and the
-        side alternates rather than being read off a room that never put him
-        anywhere.
+        where he stands, and which side is left over follows from that.
         """
         if seg_i in panel_host_memo:
             return panel_host_memo[seg_i]
@@ -852,51 +903,22 @@ def _render_long(
         return picked
 
     def _solve_panel_host(room, seg_i: int):
-        shot = pick_shot(reg, "panel", seg_i, used=host_used)
+        # THE TWO-SHOT IS A STILL, SO IT NEVER HOLDS A FRAMING. The evidence
+        # beside him is pasted into one picture, and him with it: a close-up
+        # held still for a beat is the closed mouth — a filled bar, which at
+        # close-up scale reads as a dash — on screen for the whole of it.
+        # design's crop review says never to cut close on a still (ANSWERS.md
+        # §4, finding 2). A full figure is a still that reads: his mouth is a
+        # few pixels at that size.
+        shot = pick_shot(reg, "panel", seg_i, used=host_used, figures_only=True)
         if shot is None:
             return None
-        # A ROOM THAT REFUSES A CUT-OUT STILL TAKES A SHOT OF HIS FACE. The
-        # angle says nobody stands here; a framing has no floor line to pin,
-        # so the beat survives as the shot it should probably have been.
-        #
-        # THE REPLACEMENT HAS TO BE A FRAMING, NOT MERELY A `to-camera` POSE.
-        # This asked the role for its next pose and took whatever came back,
-        # which was sound only while `to-camera` served nothing but the two
-        # framings. delta-15 added `host/sitting-at-desk` to that role — a
-        # cut-out, `floorLineY: 1728`, no `framing` — so the substitution
-        # started handing back a figure with a floor line to stand a man in a
-        # room that has declared it has no floor. Swapping one unplaceable
-        # pose for another, and reading as fixed because a swap happened.
-        #
-        # Ask for the property the situation needs. A role is curation and can
-        # gain a member in any drop; `is_framing` is the kit's own answer to
-        # "is there a floor line on this plate", which is the actual question.
-        if room is not None and room.refuses_host and not shot.is_framing:
-            instead = pick_framing(reg, "to-camera", seg_i, used=host_used)
-            if instead is not None:
-                shot = instead
-        shot = dressed(reg, shot, seed=script.ticker)
-        if shot.is_framing:
-            # WHICH SIDE HE STANDS ON ALTERNATES BETWEEN TWO-SHOTS, NOT
-            # BETWEEN SEGMENTS. Keyed on `seg_i` it looked like it did, and
-            # did not: `pick_shot` steps the same index through a four-pose
-            # bank, so the medium is only ever reached on a segment number
-            # that is odd, and every glance in a twelve-minute cut went the
-            # same way. Counting the framings already placed is independent
-            # of which segment they landed on.
-            placed_before = sum(1 for got in panel_host_memo.values()
-                                if got is not None and got[0].is_framing)
-            side = "left" if placed_before % 2 else "right"   # his side
-            spot = frame_shot(shot, (W, H),
-                              centre_fw=(0.24 if side == "left" else 0.76))
-            if spot is not None:
-                shot = looking_at(reg, shot,
-                                  "right" if side == "left" else "left")
-                return (shot, (spot.x, spot.y, spot.width, spot.height),
-                        "right" if side == "left" else "left")
+        # A ROOM THAT REFUSES A CUT-OUT TAKES NOBODY IN A TWO-SHOT. The angle
+        # says nobody stands here; the only thing that could stand in for him
+        # is the close-up, and a still two-shot may not hold one. So the
+        # evidence has the frame.
         if room is None or not stands_on(room, shot):
-            return (shot, (W - px(520), int(H * 0.3), px(460), int(H * 0.7)),
-                    "left")
+            return None
         placed = place_on_room(room, shot)
         k = W / room.delivered[0]
         box = (int(placed.x * k), int(placed.y * k),
@@ -905,8 +927,7 @@ def _render_long(
         # which side that is depends on the angle rather than on a flag.
         left_w = box[0] - px(120)
         right_w = W - (box[0] + box[2]) - px(120)
-        return (looking_at(reg, shot, "right" if right_w >= left_w else "left"),
-                box, "right" if right_w >= left_w else "left")
+        return (shot, box, "right" if right_w >= left_w else "left")
 
     def _evidence_box(room, seg_i: int, two_shot: bool) -> tuple[int, int, int, int]:
         """(x, y, max width, max height) for the evidence, beside the host."""
@@ -959,6 +980,11 @@ def _render_long(
             fig = Image.open(shot.pose.path).convert("RGBA").resize(
                 (max(hw, 1), max(hh, 1)), Image.LANCZOS)
             base.paste(fig, (hx, hy), fig)
+            # The desk he stands behind goes back on in front of him.
+            front = _front_file(room) if room is not None else None
+            if front is not None:
+                layer = Image.open(front).convert("RGBA")
+                base.paste(layer, (0, 0), layer)
             plates_used.add(shot.key)
             panel_hosts[seg_i] = shot.key
         base.save(dest)
@@ -973,10 +999,10 @@ def _render_long(
     # the seed picked.
     panel_rects: dict[int, tuple[int, int, int, int]] = {}
 
-    # Which pose stood in each two-shot, glance and all. Recorded because
-    # ingesting the glances and never cutting to one is a failure the suite
-    # cannot see: it is not an error, it is nine identical straight-to-camera
-    # beats, and the only place it shows is here.
+    # Which pose stood in each two-shot. Recorded because a panel role that
+    # only ever reaches one of its poses is a failure the suite cannot see:
+    # it is not an error, it is nine identical beats, and the only place it
+    # shows is here.
     panel_hosts: dict[int, str] = {}
 
     def _panel_frame(still: Path, seg_i: int, dest: Path, *,
@@ -1061,14 +1087,18 @@ def _render_long(
             # lip-synced to this segment's slice of the voice-over.
             visual = None
             variant = seg.payload.get("variant", 0)
-            bg_i = _still_input(_room_still(variant))
-            host = _host_input(i, seg, seg_len)
+            # ONE ROOM FOR THE BEAT: the one drawn behind him is the one he is
+            # placed on, and the one whose desk is drawn in front of him.
+            room = _room_plate("talk", seed=f"{script.ticker}|{variant % 3}")
+            bg_i = _still_input(_room_file(room))
+            host = _host_input(i, seg, seg_len, room=room)
             if host is None:
                 chain = _still_chain(bg_i, seg, seg_len, i, tail)
             else:
-                host_i, hx, hy, hw, hh = host
+                host_i, hx, hy, hw, hh, front = host
+                front_i = _still_input(front) if front is not None else None
                 chain = _scaled_overlay_chain(bg_i, host_i, hx, hy, hw, hh,
-                                              seg_len, tail)
+                                              seg_len, tail, front_i=front_i)
         elif seg.kind == "clip":
             # Footage plays inside a frames/ plate rather than edge to edge.
             # Raw and full-frame it destroys the drawn surface the rest of the

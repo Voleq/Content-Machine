@@ -86,15 +86,15 @@ const ENGINE_NOT_LOADED = {
  * rule covers every plate. */
 const BASE_HOUR = "night";
 
-/* FAMILIES INSTALLED AS STILLS whatever their frames say, each with the reason.
+/* FAMILIES INSTALLED AS STILLS, each with the reason.
  *
  * The marks: ANSWERS.md §1 decided "the frame breathes, the mark does not", and
- * the operator approved exactly that. rebuild-19 still exports every mark
- * wrapped whole in `translate(0 1)` on frame two — the mark itself moving, not
- * a rule under it — which is the boil that answer removed. So frame one is the
- * mark. */
+ * the operator approved exactly that. rebuild-19 and -20 still exported every
+ * mark with three frames, the whole mark shifted a unit on frame two; since
+ * rebuild-21 the kit draws them still/1/1 itself, once, at offset 0, and so
+ * does this. */
 const STILL_FAMILIES = {
-  annotations: "ANSWERS.md §1: the mark does not move; the kit's frame two shifts the whole mark a unit",
+  annotations: "ANSWERS.md §1: the mark does not move",
 };
 
 // The canvas a room is delivered on. The model draws rooms in a 320x180 box;
@@ -266,6 +266,44 @@ function flatPaths(svg) {
   return out;
 }
 
+/* THE KEY IS DRAWN, NOT PUBLISHED. A plate that names its series in a legend
+ * draws a short swatch in the series' ink just left of the label (`key()` in
+ * plates-r2.js, and the swatched rows of its paired charts), and its manifest
+ * carries the label's box but never the ink. The inks differ by plate:
+ * book-to-bill and its sector copies key the second series in neutralData,
+ * the other paired charts in down. A renderer that assumed one drew revenue in
+ * a colour its own legend does not show. So the ink is read off the drawing:
+ * a short stroke in a palette ink, wholly inside the swatch box left of a
+ * `legend-N` or `row-N` label. Returned as {slot: registry palette role}. */
+const KEY_INKS = { up: "up", down: "down", neutralData: "neutral-data", attention: "attention",
+  otherParty: "other-party", structure: "structure" };
+function keyInks(svg, slots, pal) {
+  const roleOf = {};
+  for (const [k, role] of Object.entries(KEY_INKS)) {
+    if (typeof pal[k] === "string") roleOf[pal[k].toUpperCase()] = role;
+  }
+  const strokes = [];
+  const re = /<path d="([^"]*)"([^>]*)\/>/g;
+  let m;
+  while ((m = re.exec(svg))) {
+    const st = /\bstroke="(#[0-9A-Fa-f]{6})"/.exec(m[2]);
+    const role = st && roleOf[st[1].toUpperCase()];
+    if (!role) continue;
+    const n = (m[1].match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+    const xs = n.filter((_, i) => i % 2 === 0), ys = n.filter((_, i) => i % 2 === 1);
+    if (!xs.length || !ys.length) continue;
+    strokes.push({ x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys), role });
+  }
+  const keys = {};
+  for (const [name, sl] of Object.entries(slots || {})) {
+    if (!/^(legend|row)-\d+$/.test(name) || !sl || !(sl.w > 0)) continue;
+    const roles = new Set(strokes.filter((s) => s.x1 - s.x0 >= 24 && s.x1 - s.x0 <= 60 && s.y1 - s.y0 <= 16
+      && s.x0 >= sl.x - 64 && s.x1 <= sl.x - 4 && s.y0 >= sl.y - 6 && s.y1 <= sl.y + sl.h + 6).map((s) => s.role));
+    if (roles.size === 1) keys[name] = [...roles][0];
+  }
+  return keys;
+}
+
 /* Frames to files: every distinct drawing gets one PNG, named after the first
  * frame that drew it, and the base file IS frame one — the same file, so a loop
  * entered from the base cannot pop. */
@@ -291,6 +329,8 @@ async function writeFrames(ctx, famDir, name, svgs, scale) {
 async function drawContent(ctx, items, emitWrite) {
   const { g, tokens, hours, palFor, args, problems } = ctx;
   const offs = (tokens.motion && tokens.motion.dataRuleOffsets) || [0];
+  // The kit's own rule (emit.js): a still family is drawn once, at offset 0.
+  const offsFor = (family) => (STILL_FAMILIES[family] ? [0] : offs);
   const fps = (tokens.motion && tokens.motion.fps) || 0;
   let checked = 0;
   for (const it of items) {
@@ -304,7 +344,7 @@ async function drawContent(ctx, items, emitWrite) {
          * consumes its seed as it goes has to be asked the same questions in
          * the same sequence to give the same answers. */
         const cache = {};
-        svgs = offs.map((dy) => cache[dy] || (cache[dy] = P.toSVG({ ruleOffset: dy })));
+        svgs = offsFor(family).map((dy) => cache[dy] || (cache[dy] = P.toSVG({ ruleOffset: dy })));
       } catch (e) {
         problems.push(it.key + " at " + hour + ": the engine failed to draw it (" + e.message + ")");
         continue;
@@ -315,7 +355,10 @@ async function drawContent(ctx, items, emitWrite) {
       }
       if (args.against) {
         const stem = path.basename(it.key) + "-" + hour;
-        const want = [[stem + ".svg", svgs[0]]].concat(svgs.map((s, i) => [stem + "_f" + pad(i + 1) + ".svg", s]));
+        /* A still family exports its base file and no frames (rebuild-21:
+         * emit.js draws the marks once, at offset 0). */
+        const want = [[stem + ".svg", svgs[0]]].concat(STILL_FAMILIES[family] ? []
+          : svgs.map((s, i) => [stem + "_f" + pad(i + 1) + ".svg", s]));
         for (const [file, svg] of want) {
           const why = againstExport(svg, path.join(args.against, it.dir, file));
           if (why) problems.push(it.key + " at " + hour + ": " + why);
@@ -331,7 +374,16 @@ async function drawContent(ctx, items, emitWrite) {
        * the kit's own answers say does not move. Neither is a loop of copies. */
       const still = !!STILL_FAMILIES[family] || svgs.every((s) => s === svgs[0]);
       const drawn = await writeFrames(ctx, famDir, name, still ? svgs.slice(0, 1) : svgs, m.exportScale);
-      emitWrite(key, Object.assign({}, m, {
+      const keys = keyInks(svgs[0], m.slots, palFor(tokens, hour));
+      /* The data layer draws a plate's first series in subject and nothing
+       * else, so a legend that keys it in another ink is a legend that lies. */
+      for (const first of ["legend-1", "row-1"]) {
+        if (keys[first] && keys[first] !== "up") {
+          problems.push(it.key + " at " + hour + ": " + first + " keys the first series in " + keys[first]
+            + ", and the data layer draws it in subject (up)");
+        }
+      }
+      emitWrite(key, Object.assign({}, m, Object.keys(keys).length ? { keys } : {}, {
         family: family,
         author: it.author,
         seed: it.seed,
@@ -446,7 +498,30 @@ async function drawRooms(ctx, emitWrite) {
           files: files, slots: {}, typeRoles: {}, dir: "room/",
           duskSafe: r.duskSafe === undefined ? null : !!r.duskSafe,
           hostAnchor: false,
+          opener: !!r.opener,
         };
+
+        /* THE TITLE SLOT (rebuild-21). A chapter opener is the room with the
+         * chapter's title set in the room's `title` slot, and the card under it
+         * is drawn into the room's back layer, so the slot is all the bot adds.
+         * emit.js publishes it per aspect in canvas units; only `opener` rooms
+         * have one. groundBox arrives as [x, y, w, h] and is carried as the
+         * {x, y, w, h} every other slot's ground uses. */
+        const table = (ctx.slotTables || {})["room/" + r.id + "-" + aspect];
+        if (table && table.slots) {
+          for (const [slotName, raw] of Object.entries(table.slots)) {
+            const slot = Object.assign({}, raw);
+            if (Array.isArray(slot.groundBox)) {
+              const [gx, gy, gw, gh] = slot.groundBox;
+              slot.groundBox = { x: gx, y: gy, w: gw, h: gh };
+            }
+            entry.slots[slotName] = slot;
+          }
+          Object.assign(entry.typeRoles, table.typeRoles || {});
+        }
+        if (r.opener && !entry.slots.title) {
+          problems.push("room/" + r.id + " at " + hour + " " + aspect + ": the kit marks it a chapter opener and publishes no title slot for it");
+        }
 
         if (e.hostAnchor) {
           const [ax, ay, aw, ah] = e.hostAnchor;
@@ -808,7 +883,10 @@ async function main() {
   const content = PORT.catalogue().filter((x) => x.dir !== "host" && x.dir !== "room");
   const slotsFile = path.join(kitDir, "emit", "slots.json");
   if (fs.existsSync(slotsFile)) {
-    const audited = new Set(Object.keys(JSON.parse(fs.readFileSync(slotsFile, "utf8")).plates || {}));
+    ctx.slotTables = JSON.parse(fs.readFileSync(slotsFile, "utf8")).plates || {};
+    /* Rooms publish slot tables too since rebuild-21 (an opener's title), and
+     * they are drawn by drawRooms from kit-model, not from this catalogue. */
+    const audited = new Set(Object.keys(ctx.slotTables).filter((k) => !k.startsWith("room/") && !k.startsWith("host/")));
     const drawn = new Set(content.map((x) => x.key));
     const unseen = [...drawn].filter((k) => !audited.has(k)).sort();
     const undrawn = [...audited].filter((k) => !drawn.has(k)).sort();

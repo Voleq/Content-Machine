@@ -1,10 +1,17 @@
 """Dennis on screen — a cut-out placed on the room, flapped to the voice-over.
 
-The kit ships six poses, each as three two-frame strips: the base (a hold), a
-``-talk`` strip whose first frame has the mouth open, and an ``-idle`` strip
-whose second frame bobs three canvas units. Talking is frame swapping, and the
-swap schedule comes from the voice-over word timestamps — ``tts.words``, the
-same master clock every other cue reads.
+The kit draws twelve poses and one framing, and each is four strips: the pose
+itself (one frame, a hold); ``-talk``, three frames whose mouths are closed,
+mid and wide; ``-idle``, three frames that settle his weight a canvas unit up
+and down; and ``-blink``, open eyes then closed. The frames say what they are
+— ``mouthOpen``, ``eyes``, ``bob`` — and this module reads that rather than a
+frame's position, because the rebuild reordered the talk strip: its FIRST
+frame is the closed mouth now, where the kit before it put the open one there,
+and a player that took ``talk[0]`` as "open" would have mouthed every word
+shut. Talking is frame swapping, and the swap schedule comes from the
+voice-over word timestamps — ``tts.words``, the same master clock every other
+cue reads. :func:`face_plan` is the one place that decides which frame of
+which strip is on screen, and both lanes ask it.
 
 WHICH POSE SERVES WHICH SHOT COMES OFF THE REGISTRY, not out of a list here.
 ``kit/roles.json`` declares the roles (open, beat, panel, close) and which poses
@@ -33,6 +40,17 @@ which are meant to pass the anchor. Both mistakes put him at a plausible-looking
 size that is wrong by ten to twenty percent, standing slightly above or below the
 floor — which reads as a bad composite rather than as an error.
 
+In the rebuild every pose is drawn in ONE standing box, 400 by 720 canvas units
+(DESIGN.md §2.5), so the figure box is the whole plate and its floor line is its
+bottom edge: the rule above comes out as "the box fills the anchor's height, its
+top on the anchor's top", which is design's own wording of it. The seated pose
+is in the same box and scales like the rest.
+
+A ROOM IS TWO LAYERS AND HE STANDS BETWEEN THEM. The desk he stands behind is
+drawn after him, not under him: :func:`front_of` is the room's front layer, and
+whoever composites him on a room paints it after him. Pasting him over the whole
+room put the desk behind his legs on every angle that has one in front of him.
+
 Everything degrades to ``None`` when the registry cannot supply a pose, so a
 render never fails for want of a host — but the SHORT engine treats that as an
 error rather than a shrug, because a short with no host is the bug this replaced.
@@ -40,7 +58,6 @@ error rather than a shrug, because a short with no host is the bug this replaced
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import random
 from dataclasses import dataclass
@@ -59,21 +76,19 @@ FLAP_HZ = 7.0
 # allowed to settle without looking twitchy.
 BEAT_GAP_S = 0.32
 
-# Held (non-speaking) frames alternate with their boil twin at this rate.
-BOIL_HZ = 4.0
-
 # --------------------------------------------------------------------------
 # Micro-motion.
 #
-# The face composed exactly two states — mouth-open and mouth-closed — plus a
-# boil on held frames. Over forty minutes that is a face that only ever talks,
-# and it is the most-viewed element in the channel: a host who never blinks
-# reads as a still with a mouth cut into it.
+# Over forty minutes the face is the most-viewed element in the channel, and a
+# host who only ever opens and shuts his mouth reads as a still with a mouth
+# cut into it. So a beat has four things to play, all off the registry by
+# naming convention exactly the way `-talk` is: the talk strip under words,
+# the idle strip in silence, a blink every few seconds, and the pose itself as
+# the hold between. There is no boil any more — §6 of the rebuild removed it —
+# so a hold is one frame, and the idle strip is what keeps a silence alive.
 #
-# `-blink` and `-idle` strips are resolved by naming convention through the
-# registry, exactly the way `-talk` is, so a later artwork batch adds them and
-# nothing here changes. Everything degrades to the current boil when a shot
-# ships neither — nothing in this file may raise or block a render.
+# Everything degrades to the hold when a pose ships no strip: nothing in this
+# file may raise or block a render for want of a face.
 # --------------------------------------------------------------------------
 
 # How often a face blinks. Real resting rate is every 3-6 seconds, and the
@@ -84,6 +99,12 @@ BLINK_EVERY_S = (3.0, 6.0)
 # enough to hold it. One that cannot is dropped rather than forced onto an
 # open mouth, which reads as a dropped frame.
 BLINK_SEARCH_S = 0.9
+
+# How long the eyes stay shut. A real blink is a tenth of a second or a little
+# more; the kit's strip plays at 4fps, which would hold them shut for a quarter
+# of a second and read as a slow, tired close. So the length is set in time and
+# the strip only supplies the drawing.
+BLINK_S = 0.1
 
 # A non-speaking span at least this long is somewhere the idle strip plays.
 # Shorter than this and the shift is over before it registers.
@@ -102,7 +123,8 @@ BLINK_SEARCH_S = 0.9
 # mock rather than working around here.
 IDLE_MIN_SPAN_S = 1.8
 
-# The idle strip loops at this rate: a slow shift of weight, not a fidget.
+# The idle strip loops at this rate when it does not publish its own: a slow
+# shift of weight, not a fidget. The rebuild's idle strips all say 4fps.
 IDLE_HZ = 3.0
 
 # The shot banks. Every entry is a kit key whose ``-talk`` twin exists, so the
@@ -114,11 +136,12 @@ IDLE_HZ = 3.0
 # `beat`  a mid-video return to his face
 @dataclass(frozen=True)
 class HostShot:
-    """One pose, as the three strips a beat plays: hold, talk, idle."""
+    """One pose, as the four strips a beat plays: hold, talk, idle, blink."""
 
-    pose: Plate                     # the base strip — a hold, and the cut frame
-    talk: Plate | None = None       # mouth open on f01; None when talks=false
-    idle: Plate | None = None       # f02 bobs three canvas units
+    pose: Plate                     # the pose itself — a hold, and the cut frame
+    talk: Plate | None = None       # closed, mid, wide mouths; None when talks=false
+    idle: Plate | None = None       # the weight settling, a canvas unit each way
+    blink: Plate | None = None      # eyes open, then shut
 
     @property
     def key(self) -> str:
@@ -132,17 +155,31 @@ class HostShot:
     def is_framing(self) -> bool:
         """Whether this is a camera DISTANCE rather than a figure in a room.
 
-        `close-up` and `medium` publish `floorLineY: false`: they are head-and-
-        shoulders and waist-up crops, so there is no floor line to pin and no
-        anchor to solve them onto. A framing IS the shot. Treating one as a
-        cut-out puts a disembodied head standing on a desk.
+        `close-up` publishes `floorLineY: false`: it is a head-and-shoulders
+        window on him, so there is no floor line to pin and no anchor to solve
+        it onto. A framing IS the shot. Treating one as a cut-out puts a
+        disembodied head standing on a desk.
         """
         return not self.pose.floor_line_y
 
-    @property
-    def glance(self) -> str:
-        """Where he is looking: `to camera`, `camera-left`, `camera-right`."""
-        return str(getattr(self.pose, "glance", "") or "to camera")
+
+def host_shot(reg: Registry, pose: Plate | str | None) -> HostShot | None:
+    """A pose with every strip the kit draws for it. None if there is no pose.
+
+    ONE CONSTRUCTOR, because there used to be five — in this module, the long
+    renderer, the compositor and the tests — each building a `HostShot` out of
+    the strips it happened to remember. The blink was in none of them, which
+    is how the kit shipped a blink for every pose and no frame of any video
+    ever closed his eyes.
+    """
+    if isinstance(pose, str):
+        pose = reg.get(pose)
+    if pose is None:
+        return None
+    return HostShot(pose=pose,
+                    talk=reg.host_strip(pose.key, "talk"),
+                    idle=reg.host_strip(pose.key, "idle"),
+                    blink=reg.host_strip(pose.key, "blink"))
 
 
 def shots(reg: Registry, role: str = "open") -> list[HostShot]:
@@ -153,19 +190,17 @@ def shots(reg: Registry, role: str = "open") -> list[HostShot]:
     """
     out: list[HostShot] = []
     for key in reg.host_roles.get(role, ()):
-        pose = reg.get(key)
-        if pose is None:
+        shot = host_shot(reg, key)
+        if shot is None:
             log.debug("host role %s names %s, which the kit does not ship", role, key)
             continue
-        out.append(HostShot(pose=pose,
-                            talk=reg.host_strip(key, "talk"),
-                            idle=reg.host_strip(key, "idle")))
+        out.append(shot)
     return out
 
 
 def pick_shot(reg: Registry, role: str, index: int = 0, *,
-              speaking: bool = False, used: dict[str, int] | None = None
-              ) -> HostShot | None:
+              speaking: bool = False, used: dict[str, int] | None = None,
+              figures_only: bool = False) -> HostShot | None:
     """The `index`-th pose of a role, wrapping.
 
     Stepping rather than hashing: consecutive host beats in one video must not
@@ -175,8 +210,14 @@ def pick_shot(reg: Registry, role: str, index: int = 0, *,
     declares a ``limit`` is not chosen past it. head-in-hands is capped at one
     per video by the kit itself: it is the cost of being right, and a second one
     turns it into a running joke.
+
+    `figures_only` is for a shot that will hold him STILL: a framing held
+    still is the closed mouth at close-up scale, which reads as a dash
+    (ANSWERS.md §4, finding 2), so a still never takes one.
     """
-    bank = [s for s in shots(reg, role) if not speaking or s.talk is not None]
+    bank = [s for s in shots(reg, role)
+            if (not speaking or s.talk is not None)
+            and not (figures_only and s.is_framing)]
     if used:
         allowed = []
         for shot in bank:
@@ -353,28 +394,18 @@ def place_on_room(room: Plate, host: HostShot) -> Placement:
 CLOSE_UP_HEAD_FH = 0.49         # the kit's band is 0.42-0.56: this is its centre
 EYE_LINE_FH = 1.0 / 3.0
 
-# THE MEDIUM'S BAND AND ITS CROP DISAGREE, AND THE CROP WINS. The kit asks for
-# a head at 0.16-0.22 of frame height, but on both framings the ink runs to the
-# plate's bottom edge — `figure` is y=40 h=1400 on a 1440 canvas, and the fit
-# block says the hands leave frame there. Scaled to a 0.19 head, the medium is
-# 0.61 of frame height, so that cut edge floats a quarter of the frame above
-# the bottom and shows as a straight line across him. Sitting the crop on the
-# frame's bottom edge instead puts his head at 0.31 — larger than the band,
-# and the only reading of the two rules that does not draw the cut.
-MEDIUM_HEAD_FH = 0.31
-
 
 def frame_shot(host: HostShot, frame: tuple[int, int], *,
                head_fh: float = 0.0,
                centre_fw: float = 0.5) -> Placement | None:
     """Place a framing against the FRAME. None if this pose is not one.
 
-    `close-up` and `medium` are camera distances. They have no floor line and
-    no anchor to solve onto, and the manifest is explicit about what they take
-    instead: scale so `slots.head` is the fraction of frame height the shot
-    wants, then put `fit.eyeLineY` on the frame's upper third.
+    `close-up` is a camera distance. It has no floor line and no anchor to
+    solve onto, and the plate is explicit about what it takes instead: scale
+    so `slots.head` is the fraction of frame height the shot wants, then put
+    `fit.eyeLineY` on the frame's upper third.
 
-    THE WIDTH IS NOT A BOUND. Both framings run off the left and right edges
+    THE WIDTH IS NOT A BOUND. A framing may run off the left and right edges
     by design — cropping to the width re-frames the shot into something
     narrower than what was drawn — so `x` here may be negative and `x + width`
     may pass the frame's right edge. `centre_fw` moves his head, not his
@@ -390,123 +421,67 @@ def frame_shot(host: HostShot, frame: tuple[int, int], *,
 
     fw, fh = frame
     hs = host.pose.export_scale
-    if not head_fh:
-        head_fh = MEDIUM_HEAD_FH if host.pose.framing == "medium" else CLOSE_UP_HEAD_FH
-    scale = (fh * head_fh) / max(head.h * hs, 1)
+    scale = (fh * (head_fh or CLOSE_UP_HEAD_FH)) / max(head.h * hs, 1)
 
     width = int(round(host.pose.delivered[0] * scale))
     height = int(round(host.pose.delivered[1] * scale))
     # His eyes on the upper third, and his head — not the plate — on centre_fw.
     y = int(round(fh * EYE_LINE_FH - float(fit["eyeLineY"]) * hs * scale))
-    # NEVER FLOAT THE CROP. The ink reaches the plate's bottom edge on both
-    # framings, so that edge has to be at or below the frame's — a framing
-    # lifted to put its eye line on the third would otherwise draw a straight
-    # cut across his hands in the middle of the picture.
-    y = min(y, fh - height)
+    # NEVER FLOAT THE CROP. The window cuts him across the chest, so its bottom
+    # edge has to be at or below the frame's — a framing lifted to put its eye
+    # line on the third would otherwise draw a straight cut across him in the
+    # middle of the picture. So the crop may go DOWN to reach the bottom, and
+    # never up.
+    #
+    # This line said `min` and did the opposite. A crop taller than the space
+    # under the eye line was pulled UP until its bottom sat on the frame's,
+    # which is harmless while the crop is short and, on the rebuild's close-up
+    # (a window that runs well past the frame), lifted his eyes off the top of
+    # a 16:9 picture: the one shot whose whole point is his face.
+    y = max(y, fh - height)
     head_mid = (head.x + head.w / 2) * hs * scale
     x = int(round(fw * centre_fw - head_mid))
     return Placement(scale=scale, x=x, y=y, width=width, height=height)
 
 
-# How often the medium framing is the robe instead of the tee. One in three
-# episodes: the robe is the late one, and a thing that happens every time is
-# not a thing anybody notices.
-WARDROBE_ALT_ONE_IN = 3
+def front_of(room: Plate | None) -> Path | None:
+    """The part of a room that stands IN FRONT of him, or None.
 
+    A rebuild room is two layers split where he stands — `back` is the wall
+    and everything on it, `front` is the desk and what is on the desk — and
+    the base file is both at once, for a shot with nobody in it. So a man
+    stands on a room as: the room, then him, then this. Painting the front
+    again over the base is a no-op everywhere he is not, which is why the
+    back layer is never needed on its own.
 
-def wardrobe_gaps(reg: Registry, rule: dict) -> list[str]:
-    """Poses this outfit is not drawn for. Empty means it dresses a whole cut.
-
-    ONE OUTFIT PER EPISODE IS A PROPERTY OF THE ARTWORK, NOT OF THE PICKER.
-    `host/medium-robe` is one key: there is no robe close-up and no robe
-    figure, so a video that chooses it and then cuts to the close-up — which
-    every chapter does, on the line it rests on — has him in two outfits in
-    one cut. That is a more visible break of the rule than the missing glance
-    is, and it is not something the seed can be careful about.
-
-    So the alt is offered only when the kit can dress every shot in it. This
-    reads the registry rather than a list, which means the day the robe
-    variants ship the outfit turns itself on with no code change.
+    None on a room drawn in one piece, and on a room whose front file is
+    missing: `Registry.verify` reports that, and a render without a desk in
+    front of him is a smaller wrong than a render that stops.
     """
-    default, alt = str(rule.get("default") or ""), str(rule.get("alt") or "")
-    if not default or not alt or not alt.startswith(default):
-        return [default or "(no default declared)"]
-    suffix = alt[len(default):]                   # "-robe"
-    gaps = []
-    for key in reg.keys():
-        if not key.startswith("host/"):
-            continue
-        if key.endswith(("-talk", "-idle")) or key.endswith(suffix):
-            continue
-        if f"{key}{suffix}" not in reg:
-            gaps.append(key)
-    return gaps
+    if room is None:
+        return None
+    path = room.layer_path("front")
+    return path if path is not None and path.exists() else None
 
 
-def dressed(reg: Registry, host: HostShot, *, seed: str) -> HostShot:
-    """The same shot in this episode's clothes.
+def composite_on_room(room_img, host_img, placement: Placement, *,
+                      front=None):
+    """Paste a scaled host cut-out onto a room frame, in place.
 
-    ONE OUTFIT PER EPISODE, THE SAME IN EVERY FRAME OF IT. The figure poses
-    are settled at ingest — the outfit is baked into the artwork by
-    `--outfit` — but the robe is a different KEY rather than an engine
-    argument, because a garment with a shawl collar, crossing panels and its
-    own cuff is drawn and not recoloured. So that one choice is the
-    pipeline's, and it is made from the video's seed. Picked per shot he
-    would change clothes mid-sentence.
-
-    Which is exactly what one key on its own does, over a cut: see
-    `wardrobe_gaps`. Until the alt covers every pose, this returns the shot
-    it was given, and a consistent tee beats a wardrobe that changes halfway
-    through.
+    `front` is the room's front layer at the room frame's size, when it has
+    one (:func:`front_of`): it goes on after him, so the desk he stands behind
+    is in front of his legs rather than behind them.
     """
-    rule = (getattr(reg, "wardrobe", None) or {}).get("medium") or {}
-    alt = rule.get("alt")
-    # The curation names the base hour's key; a dusk episode holds the dusk one.
-    if not alt or reg.base_key(host.key) != rule.get("default"):
-        return host
-    gaps = wardrobe_gaps(reg, rule)
-    if gaps:
-        log.debug("%s dresses %d of the poses in the kit — not offered "
-                  "(missing: %s)", alt, len(reg.host_poses) - len(gaps),
-                  ", ".join(sorted(gaps)[:4]))
-        return host
-    picked = int(hashlib.sha256(f"wardrobe|{seed}".encode()).hexdigest(), 16)
-    if picked % WARDROBE_ALT_ONE_IN != 0 or reg.get(alt) is None:
-        return host
-    return HostShot(pose=reg.require(alt),
-                    talk=reg.host_strip(alt, "talk"),
-                    idle=reg.host_strip(alt, "idle"))
-
-
-def looking_at(reg: Registry, host: HostShot, side: str) -> HostShot:
-    """The same shot, glancing toward `side` ("left"/"right"), if one exists.
-
-    A GLANCE IS CUT AGAINST THE SIDE THE GRAPHIC IS ON. The kit says it on the
-    plate: using one with the graphic on the opposite side is worse than him
-    facing camera. So this returns the host unchanged unless the side is known
-    and the glance was actually drawn — straight to camera is the default and
-    the fallback both.
-    """
-    if side not in ("left", "right") or not host.pose.framing:
-        return host
-    # Off the BASE key: the hour goes after the glance in a key
-    # (`-glance-left-dusk`), so appending to a dusk key names nothing, and a
-    # dusk episode would never glance. `get` returns the episode's hour.
-    pose = reg.get(f"{reg.base_key(host.pose.key)}-glance-{side}")
-    if pose is None:
-        return host
-    return HostShot(pose=pose,
-                    talk=reg.host_strip(pose.key, "talk"),
-                    idle=reg.host_strip(pose.key, "idle"))
-
-
-def composite_on_room(room_img, host_img, placement: Placement):
-    """Paste a scaled host cut-out onto a room frame, in place."""
     from PIL import Image
 
     scaled = host_img.convert("RGBA").resize(
         (max(placement.width, 1), max(placement.height, 1)), Image.LANCZOS)
     room_img.alpha_composite(scaled, (placement.x, placement.y))
+    if front is not None:
+        layer = front.convert("RGBA")
+        if layer.size != room_img.size:
+            layer = layer.resize(room_img.size, Image.LANCZOS)
+        room_img.alpha_composite(layer)
     return room_img
 
 
@@ -528,9 +503,10 @@ def mouth_schedule(words: list[WordTimestamp], start: float, end: float,
                    fps: int) -> list[bool]:
     """True on every output frame where the mouth should be open.
 
-    The kit ships two mouth states, not three, so this is a boolean rather than
-    the old ramp: open while a word is sounding, alternating with closed at
-    :data:`FLAP_HZ` so the mouth *works* rather than gaping through a sentence.
+    Open while a word is sounding, alternating with closed at :data:`FLAP_HZ`
+    so the mouth *works* rather than gaping through a sentence. The talk strip
+    draws two open mouths, mid and wide, and which of them an open frame shows
+    is :func:`face_plan`'s business: this only says open or shut.
     """
     spans = speaking_spans(words, start, end)
     n = max(int(round((end - start) * fps)), 1)
@@ -620,6 +596,108 @@ def blink_schedule(plan: list[bool], fps: int, *, seed: str,
     return out
 
 
+@dataclass(frozen=True)
+class FaceFrame:
+    """What is on screen for one output frame: a strip, and which of its frames."""
+
+    key: str
+    index: int = 0
+
+
+def _frames_where(plate: Plate | None, test) -> list[int]:
+    return [i for i, f in enumerate(plate.frames) if test(f)] if plate else []
+
+
+def face_plan(shot: HostShot, words: list[WordTimestamp], start: float,
+              end: float, fps: int, *, seed: str) -> tuple[list[FaceFrame], dict]:
+    """Which frame of which strip shows on every output frame of [start, end).
+
+    THE ONE PLACE THAT DECIDES IT, for both lanes: the long builds a clip out of
+    this list and the short draws it frame by frame, and before this they each
+    had their own idea of a face — and neither ever blinked.
+
+    Under a word the mouth flaps at :data:`FLAP_HZ`: shut on the off-beats,
+    and on the beats one of the strip's OPEN mouths, mid and wide in turn, so
+    a sentence is not the same two drawings swapped forty times. The frames
+    are found by what they say they are (`mouthOpen`), never by position.
+
+    In a silence long enough to register (:data:`IDLE_MIN_SPAN_S`) the idle
+    strip plays at its own rate. Anywhere else he holds the pose.
+
+    A FRAMING NEVER HOLDS THE POSE. design's crop review (ANSWERS.md §4,
+    finding 2): the closed mouth is a filled bar, which at full figure is a
+    mouth and at close-up scale is a horizontal dash, and a still close framing
+    holds that dash on screen. "Cut close on -talk or -idle, where the mouth
+    shapes cycle — this belongs in the shot list as a rule." So in a framing
+    every frame that is not a word is an idle frame, however short the gap.
+
+    A blink replaces a run of closed-mouth frames with the blink strip's
+    shut-eyes drawing for :data:`BLINK_S`, every three to six seconds
+    (:func:`blink_schedule`). The report says what happened, so the manifest
+    can say whether the face moved rather than somebody having to watch.
+    """
+    n = max(int(round((end - start) * fps)), 1)
+    talk = shot.talk
+    opens = _frames_where(talk, lambda f: f.mouth_open)
+    shuts = _frames_where(talk, lambda f: not f.mouth_open)
+    if talk is not None and not opens:
+        log.warning("%s draws no open mouth — he will not talk", talk.key)
+        talk = None
+    idle = shot.idle if shot.idle is not None and shot.idle.frames else None
+    idle_fps = float(idle.fps or IDLE_HZ) if idle else IDLE_HZ
+    framing = shot.is_framing
+    if framing and idle is None:
+        log.warning("%s is a framing with no idle strip — its silences hold "
+                    "the still, which the kit says never to do", shot.key)
+
+    is_open = mouth_schedule(words, start, end, fps) if talk else [False] * n
+    quiet = ([(a, b) for a, b in quiet_spans(words, start, end)
+              if framing or b - a >= IDLE_MIN_SPAN_S] if idle else [])
+    speaking = speaking_spans(words, start, end)
+
+    hold = FaceFrame(shot.pose.key, 0)
+    shut = FaceFrame(talk.key, shuts[0]) if talk and shuts else hold
+    plan: list[FaceFrame] = []
+    talk_frames = idle_frames = 0
+    for i in range(n):
+        t = start + i / fps
+        if talk is not None and is_open[i]:
+            beat = int(t * FLAP_HZ) // 2
+            plan.append(FaceFrame(talk.key, opens[beat % len(opens)]))
+            talk_frames += 1
+            continue
+        if idle is not None and any(a <= t < b for a, b in quiet):
+            plan.append(FaceFrame(idle.key,
+                                  int((t - start) * idle_fps) % len(idle.frames)))
+            idle_frames += 1
+            continue
+        # Between two words: the talk strip's own shut mouth, which is the
+        # same drawing as the pose, so a sentence never cuts to another file.
+        in_word = any(a <= t < b for a, b in speaking)
+        plan.append(shut if in_word else hold)
+
+    blinks = 0
+    shut_eyes = _frames_where(shot.blink, lambda f: f.eyes == "closed")
+    if shut_eyes:
+        length = max(int(round(BLINK_S * fps)), 1)
+        for j in blink_schedule(is_open, fps, seed=seed, length=length):
+            for m in range(j, min(j + length, n)):
+                plan[m] = FaceFrame(shot.blink.key, shut_eyes[0])
+            blinks += 1
+
+    report = {
+        "pose": shot.key,
+        "spoke": talk_frames > 0,
+        "talk_frames": talk_frames,
+        "idle_frames": idle_frames,
+        "blinks": blinks,
+        "has_talk": talk is not None,
+        "has_idle": idle is not None,
+        "held_frames": sum(1 for f in plan if f == hold),
+    }
+    return plan, report
+
+
 def build_host_clip(
     words: list[WordTimestamp],
     start: float,
@@ -648,8 +726,9 @@ def build_host_clip(
     path existed to work around.
 
     `report`, when given, is filled with what the shot actually did — the pose,
-    whether it spoke, how many idle frames played — so the manifest can say
-    whether the face moved rather than the operator having to watch for it.
+    whether it spoke, how many idle frames played, how often he blinked — so
+    the manifest can say whether the face moved rather than the operator
+    having to watch for it.
     """
     from PIL import Image
 
@@ -660,66 +739,36 @@ def build_host_clip(
     shot = pick_shot(reg, role, shot_index, speaking=speaking, used=used)
     if shot is None or end <= start:
         return None
-
-    def variants(plate: Plate) -> list["Image.Image"]:
-        imgs = []
-        for frame in plate.frame_paths():
-            img = Image.open(frame).convert("RGBA")
-            if display_w or display_h:
-                img = _resize_to(img, display_w, display_h)
-            imgs.append(img)
-        return imgs
-
-    hold = variants(shot.pose)
-    if not hold:
+    if not shot.pose.frames or not shot.pose.frame_paths()[0].exists():
         return None
 
-    def optional(plate: Plate | None) -> list["Image.Image"]:
-        if plate is None:
-            return []
+    plan, did = face_plan(shot, words, start, end, fps,
+                          seed=f"{shot.key}|{start:.3f}")
+
+    loaded: dict[tuple[str, int], "Image.Image"] = {}
+
+    def image(face: FaceFrame) -> "Image.Image":
+        got = loaded.get((face.key, face.index))
+        if got is not None:
+            return got
         try:
-            return variants(plate)
+            plate = reg.require(face.key)
+            img = Image.open(plate.frame_paths()[face.index]).convert("RGBA")
         except Exception as exc:  # noqa: BLE001 — a face is never fatal
-            log.warning("host %s: %s did not load (%s) — holding instead",
-                        shot.key, plate.key, exc)
-            return []
+            if face.key == shot.pose.key:
+                raise
+            log.warning("host %s: %s frame %d did not load (%s) — holding "
+                        "instead", shot.key, face.key, face.index, exc)
+            img = image(FaceFrame(shot.pose.key, 0))
+        else:
+            if display_w or display_h:
+                img = _resize_to(img, display_w, display_h)
+        loaded[(face.key, face.index)] = img
+        return img
 
-    talk = optional(shot.talk)
-    idle = optional(shot.idle)
-
-    plan = mouth_schedule(words, start, end, fps) if talk else [False] * max(
-        int(round((end - start) * fps)), 1)
-    quiet = [(a, b) for a, b in quiet_spans(words, start, end)
-             if b - a >= IDLE_MIN_SPAN_S] if idle else []
-
-    frames: list["Image.Image"] = []
-    idle_frames = 0
-    talk_frames = 0
-    for i, is_open in enumerate(plan):
-        t = start + i / fps
-        if talk and is_open:
-            # f01 is the open mouth. Cut hard — a dissolve between two boil
-            # frames reads as a camera artefact, not as a hand redrawing a line.
-            frames.append(talk[0])
-            talk_frames += 1
-            continue
-        in_quiet = any(a <= t < b for a, b in quiet)
-        if idle and in_quiet:
-            frames.append(idle[int(t * IDLE_HZ) % len(idle)])
-            idle_frames += 1
-            continue
-        pool = talk if (talk and not is_open and talk_frames) else hold
-        frames.append(pool[int(t * BOIL_HZ) % len(pool)])
-
+    frames = [image(face) for face in plan]
     if report is not None:
-        report.update({
-            "pose": shot.key,
-            "spoke": bool(talk) and talk_frames > 0,
-            "talk_frames": talk_frames,
-            "idle_frames": idle_frames,
-            "has_talk": bool(talk),
-            "has_idle": bool(idle),
-        })
+        report.update(did)
 
     frames_to_alpha_clip(frames, fps, out_path)
     return out_path, frames[0].size
