@@ -1,229 +1,458 @@
-/* Dennis v2 — the canonical audit metric.
+#!/usr/bin/env node
+/**
+ * Dennis v2 — audit.js
+ *
+ * DESIGN.md §8's rules, executed. Not asserted, not described: run, with counts.
+ *
+ *   node engine/audit.js --check            # exit 1 on any FAIL or DID NOT RUN
+ *   node engine/audit.js --check --json     # machine-readable
+ *   node engine/audit.js                    # human report, always exit 0
+ *
+ * FOUR STATES, and this is load-bearing (§8):
+ *
+ *   pass          the rule ran and the condition held
+ *   FAIL          the rule ran and the condition did not hold
+ *   needs-data    the rule cannot run yet; the input it needs does not exist
+ *   DID NOT RUN   the rule threw, or its input was present but unreadable
+ *
+ * `needs-data` and `DID NOT RUN` were one sentinel for exactly one rebuild, and
+ * in that rebuild a rule that silently failed to execute was reported — and
+ * counted — as a rule that was not due yet. A rule that did not run is LOUDER
+ * than a rule that failed, because a failure is at least information.
+ *
+ * --check exits non-zero on FAIL *and* on DID NOT RUN. It does not exit on
+ * needs-data: that is a schedule, not a defect.
+ */
 
-   This file exists because of a disagreement, not a defect. A pipeline-side
-   audit reported seven over-boiled assets (overlays/row-band at 14.67 units,
-   underline-swipe at 11.0) and one dead one (shorts/hook-card-t3 at 0.0). Every
-   one of those assets measures 0.6–1.4 units mean, 2.8–5.0 peak, against a spec
-   of ~2 units of movement per point. Both audits are reading the same files.
+'use strict';
+const fs = require('fs');
+const path = require('path');
 
-   Two ways to get a wrong number out of a right file, and this file closes both:
+const ROOT = path.resolve(__dirname, '..');
+const read = p => JSON.parse(fs.readFileSync(path.join(ROOT, p), 'utf8'));
+const exists = p => fs.existsSync(path.join(ROOT, p));
 
-   1. UNALIGNED TOKEN DIFF. Diff two frames by walking their numeric tokens in
-      order, and the reading is only valid while the two frames have the SAME
-      geometry with different coordinates. The moment frame two has a different
-      number of paths — the host's open mouth, a bob, any structural change —
-      every token after the divergence is compared against the wrong token and
-      the mean explodes. Measured that way the host strips read 230–296 units of
-      "boil". They are not boiling 250 units; the metric lost alignment on token
-      12 and never recovered. So amplitude() REFUSES rather than returns a
-      number when the two frames are not structurally comparable.
+/* ── colour ─────────────────────────────────────────────────────────────── */
 
-   2. SAMPLING A SPARSE PLATE. On a full-bleed plate the ink is a small fraction
-      of the numbers in the file: shorts/hook-card-t3 moves 269 of its 11,627
-      tokens, because the other 11,358 are a card, a grain field and type
-      geometry that are deliberately held still. Sample the head of the file and
-      you measure the still part and report 0.0. So amplitude() reports movement
-      over the tokens THAT MOVE, and carries the moved/total fraction next to it
-      so a sparse plate can never be mistaken for a frozen one.
+const srgb = c => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+const lum = hex => { const [r, g, b] = rgb(hex).map(srgb); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+const wcag = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
 
-   Everything here is measurement only. It draws nothing and it fixes nothing —
-   if a number comes back out of band, the fix belongs in hand.js or build.js. */
-(function (g) {
-  // ONE SCALE, WHOLE LIBRARY. Not a per-family choice, and not a per-asset
-  // argument: a shot cuts a room, a card and an annotation into the same frame,
-  // and any family rendered at a different scale forces a resample step in the
-  // middle of a composite. 2 is the floor that survives the two things this
-  // library is actually asked to do — a 16:9 room filling a 9:16 frame (1.78×
-  // horizontal crop-and-scale), and a push-in on a card — and 1 has no headroom
-  // for either. The constant lives here, hand.js reads it, and manifest() takes
-  // no scale argument at all, so drift has nowhere to enter.
-  const EXPORT_SCALE = 2;
+function oklab(hex) {
+  const [R, G, B] = rgb(hex).map(srgb);
+  const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+  const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+  const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+  return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+          1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+          0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s];
+}
+const deltaE = (a, b) => { const A = oklab(a), B = oklab(b); return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]); };
 
-  // The boil spec, in canvas units of displacement per drawn point.
-  const BOIL = {
-    target: 2,        // hand.js amplitude
-    meanBand: [0.4, 2.0],   // mean Euclidean displacement of a moved point
-    peakBand: [1.5, 6.0],   // largest single displacement on the plate
-    deadBelow: 0.15,        // below this the asset is frozen, not subtle
-    minMovedFraction: 0.01, // below this the INK isn't moving, whatever the mean says
-  };
+/* ── the run ────────────────────────────────────────────────────────────── */
 
-  const NUM = /-?\d*\.?\d+/g;
-  const CMD = /[MmLlCcQqSsTtAaZzHhVv]|-?\d*\.?\d+/g;
+const RULES = [];
+const rule = (n, name, fn) => RULES.push({ n, name, fn });
 
-  // Every d="" in the file, in document order.
-  function pathsOf(svg) {
-    const out = []; const re = /\sd="([^"]*)"/g; let m;
-    while ((m = re.exec(svg))) out.push(m[1]);
-    return out;
-  }
+/** A rule body returns {ok, count, note} or throws NeedsData. */
+class NeedsData extends Error {}
+const needs = what => { throw new NeedsData(what); };
 
-  // A path split into its command signature and its coordinate stream. The
-  // signature is what makes two paths comparable: same commands in the same
-  // order means the same drawing, and any coordinate difference is movement.
-  function shapeOf(d) {
-    const toks = d.match(CMD) || [];
-    let sig = ""; const xy = [];
-    for (const t of toks) {
-      if (/[A-Za-z]/.test(t)) sig += t; else xy.push(+t);
+const T = () => read('design-tokens.json');
+const HOURS = ['night', 'dusk'];
+const FIGURE_ROLES = ['skin', 'hair', 'shirt', 'trouser', 'prop'];
+const TEXT_ROLES = ['structure', 'quiet', 'ground', 'band'];
+
+const manifest = () => (exists('emit/manifest.json') ? read('emit/manifest.json') : needs('emit/manifest.json — run the emitter'));
+const plates = () => (exists('emit/plates.json') ? read('emit/plates.json') : needs('emit/plates.json — run the emitter'));
+const exportIndex = () => (exists('out/index.json') ? read('out/index.json') : needs('out/index.json — run engine/export.js'));
+const roles = () => (exists('roles.fragment.json') ? read('roles.fragment.json') : needs('roles.fragment.json'));
+
+rule(1, 'No gradients', () => {
+  const m = manifest();
+  const bad = Object.keys(m.assets).filter(k => (m.assets[k].gradients || 0) > 0);
+  return { ok: !bad.length, count: `${Object.keys(m.assets).length} assets`,
+    note: bad.length ? `gradient nodes in ${bad.slice(0, 3).join(', ')}` : 'No <linearGradient> or <radialGradient> in any emitted plate.' };
+});
+
+/* SCOPED BY FAMILY (§8.2). The flat law governs everything the host touches —
+ * figure, rooms, title grounds. The ported plates are hand-drawn ink and fail
+ * this by construction, which is the technique and not a defect: §0's
+ * diagnosis is about a drawn FIGURE, and the six rejections were the host. An
+ * asset opts out by declaring `drawn: true`, and the count says how many did,
+ * so the exemption is visible in the report rather than silent. */
+rule(2, 'No opacity shading (flat families)', () => {
+  const m = manifest();
+  const ids = Object.keys(m.assets);
+  const flat = ids.filter(k => !m.assets[k].drawn);
+  const drawn = ids.length - flat.length;
+  const bad = flat.filter(k => (m.assets[k].partialOpacity || 0) > 0);
+  return { ok: !bad.length, count: `${flat.length} flat assets${drawn ? `, ${drawn} drawn exempt` : ''}`,
+    note: bad.length ? `partial opacity in ${bad.slice(0, 3).join(', ')}` : 'Every opacity in a flat-family asset is exactly 0 or 1. Drawn families keep their ink by declaration (§8.2), never by omission.' };
+});
+
+rule(3, 'Palette closure', () => {
+  const t = T(), p = plates();
+  const declared = {};
+  HOURS.forEach(h => {
+    const s = new Set([t.hours[h].contour]);
+    Object.keys(t.hours[h].materials).forEach(k => { s.add(t.hours[h].materials[k].lit); s.add(t.hours[h].materials[k].shade); });
+    Object.keys(t.hours[h].ink).forEach(k => s.add(t.hours[h].ink[k]));
+    declared[h] = s;
+  });
+  let fills = 0; const stray = [];
+  p.plates.forEach(pl => (pl.fills || []).forEach(f => { fills++; if (!declared[pl.hour] || !declared[pl.hour].has(f)) stray.push(`${pl.id}:${f}`); }));
+  return { ok: !stray.length, count: `${fills} fills`,
+    note: stray.length ? `outside the palette: ${stray.slice(0, 3).join(', ')}` : 'Every fill resolves through a role name; no literal is typed into a draw call.' };
+});
+
+rule(4, 'Uniform contour (flat families)', () => {
+  const t = T(), p = plates();
+  const seen = {}; let drawn = 0;
+  p.plates.forEach(pl => {
+    if (pl.drawn) { drawn++; return; }
+    (pl.strokes || []).forEach(s => { (seen[pl.hour] = seen[pl.hour] || new Set()).add(`${s.colour}@${s.width}`); });
+  });
+  const bad = HOURS.filter(h => seen[h] && seen[h].size > 1);
+  return { ok: !bad.length, count: HOURS.map(h => `${h} ${(seen[h] || new Set()).size}`).join(', ') + (drawn ? `, ${drawn} drawn exempt` : ''),
+    note: bad.length ? `more than one contour in: ${bad.join(', ')}` : `One colour and one width per hour in the flat families: ${t.hours.night.contour} / ${t.hours.dusk.contour}. Drawn plates carry their own weights (§8.2).` };
+});
+
+rule(5, 'Type legibility ≥ 4.5:1', () => {
+  const t = T(); const pairs = [];
+  HOURS.forEach(h => {
+    const I = t.hours[h].ink;
+    pairs.push({ id: `${h} card title`, r: wcag(I.structure, I.ground) });
+    pairs.push({ id: `${h} card caption`, r: wcag(I.quiet, I.ground) });
+    // A slab sits on wall.shade, not on ink.ground (§5.3). Different ground,
+    // so it needs its own measurement and its own pair.
+    const g = t.hours[h].materials.wall.shade;
+    const ranked = TEXT_ROLES.map(k => ({ k, r: wcag(I[k], g) })).sort((a, b) => b.r - a.r);
+    pairs.push({ id: `${h} slab title`, r: ranked[0].r });
+    pairs.push({ id: `${h} slab caption`, r: (ranked.slice(1).find(c => c.r >= 4.5) || ranked[1]).r });
+  });
+  // EVERY TYPE ENTRY ON EVERY EMITTED PLATE, against the ground that plate
+  // declares behind it. Without this the rule only ever checked the two title
+  // treatments — eleven data plates carrying forty type entries were emitted
+  // unmeasured, which is the half of §5.3 that has no wall to hide behind.
+  try {
+    plates().plates.forEach(pl => (pl.typeOn || []).forEach(t => {
+      const I = T().hours[pl.hour].ink;
+      if (I[t.role] && I[t.on]) pairs.push({ id: `${pl.id} ${t.role}/${t.on}`, r: wcag(I[t.role], I[t.on]) });
+    }));
+  } catch (e) { if (!(e instanceof NeedsData)) throw e; }
+  const worst = pairs.reduce((a, b) => (a.r < b.r ? a : b));
+  return { ok: worst.r >= 4.5, count: `${pairs.length} pairs, worst ${worst.r.toFixed(2)}:1`,
+    note: `Tightest is ${worst.id}. Sampled against the ground actually behind the box, never against the wall.` };
+});
+
+rule(6, 'Twin geometry', () => {
+  const p = plates(), by = {};
+  p.plates.forEach(pl => { (by[pl.twinId || pl.id] = by[pl.twinId || pl.id] || []).push(pl); });
+  const bad = Object.keys(by).filter(k => by[k].length === 2 && by[k][0].geometryHash !== by[k][1].geometryHash);
+  return { ok: !bad.length, count: `${Object.keys(by).length} twin pairs`,
+    note: bad.length ? `geometry differs between hours: ${bad.slice(0, 3).join(', ')}` : 'Each hour pair shares one geometry hash — the hours are one shape list read through two colour tables.' };
+});
+
+rule(7, 'Role coherence', () => {
+  const m = manifest();
+  const bad = Object.keys(m.assets).filter(k => { const a = m.assets[k]; return a.role === 'host' && !a.hostAnchor; });
+  return { ok: !bad.length, count: `${Object.keys(m.assets).length} assets`,
+    note: bad.length ? `host-role without an anchor: ${bad.slice(0, 3).join(', ')}` : 'No asset can be selected into a host role without publishing an anchor.' };
+});
+
+rule(8, 'Anchor constant C', () => {
+  const t = T(), P = t.proportion;
+  const figY = 40, boxH = 720;
+  const C = ((60 + P.shoulderFromCrown * 100) + (P.armUpperLength + P.armForeLength) * 100 - figY) / boxH;
+  let declaredC = null;
+  try { declaredC = manifest().C; } catch (e) { /* derivable without it */ }
+  const ok = declaredC === null || Math.abs(declaredC - C) < 1e-4;
+  return { ok, count: `C = ${C.toFixed(4)}`,
+    note: 'Derived from the proportion table, so it is identical for every pose. A plate reporting a different C has a broken box (§2.5).' };
+});
+
+rule(9, 'Manifests are what the engine emits', () => {
+  /* RUN, not named. This rule used to carry the name of emit_manifests --check
+   * and not execute it, which is why it showed as passing while that script
+   * crashed on this file's own shebang. It now rebuilds every manifest in
+   * memory through engine/emit.js and diffs it against what is on disk. */
+  const E = require('./emit');
+  const r = E.check();
+  return { ok: r.ok, count: r.files + ' manifest files',
+    note: r.ok ? 'emit/manifest.json, emit/plates.json, emit/slots.json and every <family>/manifest.json match a fresh build from the engine.'
+      : r.diffs.length + ' differ from a fresh build: ' + r.diffs.slice(0, 5).join(', ') + ' \u2014 run node engine/emit.js' };
+});
+rule(10, 'No <text> nodes', () => {
+  const m = manifest();
+  const bad = Object.keys(m.assets).filter(k => (m.assets[k].textNodes || 0) > 0);
+  return { ok: !bad.length, count: `${Object.keys(m.assets).length} assets`,
+    note: bad.length ? `live text in ${bad.slice(0, 3).join(', ')}` : 'All type is outlined; nothing depends on a font at render time.' };
+});
+
+rule(11, '≥ 6 flat shapes per room', () => {
+  const p = plates();
+  const rooms = p.plates.filter(pl => pl.role === 'room');
+  if (!rooms.length) needs('no room plates in emit/plates.json');
+  const counts = rooms.map(r => r.shapeCount);
+  const min = Math.min.apply(null, counts);
+  return { ok: min >= 6, count: `${rooms.length} room plates, ${min}–${Math.max.apply(null, counts)} shapes`,
+    note: 'Six is the measured floor at which a 9:16 crop stops reading as a backdrop (§4.3).' };
+});
+
+rule(12, 'Figure reads against wall', () => {
+  const t = T(); let worst = Infinity, which = '';
+  HOURS.forEach(h => FIGURE_ROLES.forEach(k => {
+    const d = deltaE(t.hours[h].materials[k].lit, t.hours[h].materials.wall.lit);
+    if (d < worst) { worst = d; which = `${h}.${k}`; }
+  }));
+  return { ok: worst >= 0.10, count: `${HOURS.length * FIGURE_ROLES.length} materials, worst ΔE ${worst.toFixed(3)}`,
+    note: `Tightest is ${which}. Floor is 0.10 OKLab — deliberately not a WCAG ratio (§2.2a).` };
+});
+
+rule(13, 'Ink inside the published box', () => {
+  const p = plates();
+  const figs = p.plates.filter(pl => pl.role === 'host' && pl.inkBox && pl.box);
+  if (!figs.length) needs('no host plates with inkBox in emit/plates.json');
+  const over = figs.filter(f => f.inkBox[0] < f.box[0] || f.inkBox[1] < f.box[1]
+    || f.inkBox[2] > f.box[0] + f.box[2] || f.inkBox[3] > f.box[1] + f.box[3]);
+  return { ok: !over.length, count: `${figs.length} plates scanned, ${over.length} outside`,
+    note: over.length ? `ink leaves the box: ${over.slice(0, 3).map(f => f.id).join(', ')}` : 'The box is a promise about where the ink is; a pose that breaks it is cropped at composite (§2.5).' };
+});
+
+rule(14, 'Anchor survives the portrait window', () => {
+  const p = plates();
+  const rooms = p.plates.filter(pl => pl.role === 'room' && pl.hostAnchor && pl.portraitWindow);
+  if (!rooms.length) needs('no anchored room plates with a portrait window');
+  const clipped = rooms.filter(r => {
+    const [ax, ay, aw, ah] = r.hostAnchor, [wx, wy, ww, wh] = r.portraitWindow;
+    return ax < wx || ay < wy || ax + aw > wx + ww || ay + ah > wy + wh;
+  });
+  return { ok: !clipped.length, count: `${rooms.length} anchored room plates, ${clipped.length} clipped`,
+    note: clipped.length ? `clipped: ${clipped.slice(0, 3).map(r => r.id).join(', ')}` : '9:16 is a declared window, not a crop — the anchor has to be inside it with margin (§4.4a).' };
+});
+
+rule(15, 'Anchored rooms declare a split', () => {
+  const p = plates();
+  const rooms = p.plates.filter(pl => pl.role === 'room' && pl.hostAnchor);
+  if (!rooms.length) needs('no anchored room plates');
+  const missing = rooms.filter(r => typeof r.occlusionSplit !== 'number');
+  return { ok: !missing.length, count: `${rooms.length - missing.length} of ${rooms.length}`,
+    note: missing.length ? `no split: ${missing.slice(0, 3).map(r => r.id).join(', ')}` : 'Every room a host can stand in says which shapes paint in front of him (§4.5). A room with no anchor declares no split.' };
+});
+
+rule(16, 'Every drawn anchor comes from one derivation', () => {
+  const t = T(), p = plates();
+  const rooms = p.plates.filter(pl => pl.role === 'room' && pl.hostAnchor);
+  if (!rooms.length) needs('no anchored room plates');
+  // An anchor publishes a HEIGHT; its width follows from the figure's ink
+  // aspect (§4.4a). A published width that does not match is a second source.
+  const ratio = p.figureInkAspect;
+  if (typeof ratio !== 'number') needs('plates.json does not publish figureInkAspect');
+  const bad = rooms.filter(r => Math.abs(r.hostAnchor[2] - r.hostAnchor[3] * ratio) > 0.2);
+  return { ok: !bad.length, count: `${rooms.length} anchor rects`,
+    note: bad.length ? `width not derived: ${bad.slice(0, 3).map(r => r.id).join(', ')}` : 'Every anchor width equals height × the figure ink aspect. A self-consistent model plus one stale source is invisible to any other check.' };
+});
+
+rule(25, 'Every talk, idle and blink strip actually moves', () => {
+  /* The host exported 72 strip files byte-identical to the pose's still while
+   * the manifest declared three-frame loops. This fails any strip whose frames
+   * all hash the same. */
+  const x = exportIndex(), groups = {};
+  x.index.forEach(e => {
+    if (!e.frame || !/^-(talk|idle|blink)$/.test(e.strip || '')) return;
+    (groups[e.key + '@' + e.hour] = groups[e.key + '@' + e.hour] || new Set()).add(e.hash);
+  });
+  const keys = Object.keys(groups);
+  if (!keys.length) needs('out/index.json lists no strip frames \u2014 run node engine/export.js');
+  const frozen = keys.filter(k => groups[k].size < 2);
+  return { ok: !frozen.length, count: keys.length + ' strips',
+    note: frozen.length ? frozen.length + ' strips have identical frames: ' + frozen.slice(0, 4).join(', ')
+      : 'Every talk, idle and blink strip has at least two distinct frames, measured by hash off the exported files.' };
+});
+
+rule(26, 'Every exported file frames its own ink', () => {
+  /* The host exported into the room's 320x180 box: a head cut off at the neck
+   * and, for sitting-at-desk, an empty file. This fails any file whose ink box
+   * leaves its viewBox by more than a 10% bleed allowance per edge.
+   *
+   * The allowance is measured, not picked: two plates run a band deliberately
+   * off the side edges — paper/headline-band-t3-9x16 at 9.0%, shorts/hook-card-t5
+   * at 5.3% — and every other file of 1,964 stays within 3.7%. The failure this
+   * rule exists for is an order of magnitude outside it: the old host export
+   * left 25% of the figure's width and three times its height out of frame. */
+  const x = exportIndex(), B = 0.10, bad = [];
+  let n = 0;
+  x.index.forEach(e => {
+    if (!e.viewBox || !e.inkBox) return;
+    n++;
+    const [vx, vy, vw, vh] = e.viewBox, [x0, y0, x1, y1] = e.inkBox;
+    if (x0 < vx - vw * B || y0 < vy - vh * B || x1 > vx + vw * (1 + B) || y1 > vy + vh * (1 + B)) bad.push(e.file);
+  });
+  if (!n) needs('out/index.json carries no viewBox/inkBox \u2014 run node engine/export.js');
+  return { ok: !bad.length, count: n + ' files',
+    note: bad.length ? bad.length + ' files draw outside their viewBox: ' + bad.slice(0, 4).join(', ')
+      : 'Every exported file contains its own ink, within a 10% bleed per edge.' };
+});
+
+rule(24, 'Every plate is reachable and explains itself', () => {
+  const m = manifest();
+  const rf = roles();
+  const ids = Object.keys(m.assets).filter(k => m.assets[k].role === 'plate');
+  const entryFor = id => rf[id + '-16x9'] || rf[id + '-9x16'] || rf[id];
+  const noPurpose = ids.filter(id => { const e = entryFor(id); return !e || !e.purpose; });
+  const unreachable = ids.filter(id => {
+    const e = entryFor(id);
+    return !e || (!(e.chapter_types || []).length && !e.reached_by);
+  });
+  const withCaution = ids.filter(id => { const e = entryFor(id); return e && e.caution; }).length;
+  return { ok: !noPurpose.length && !unreachable.length,
+    count: ids.length + ' plates, ' + withCaution + ' with a caution',
+    note: noPurpose.length ? 'no purpose line: ' + noPurpose.slice(0, 4).join(', ')
+      : unreachable.length ? 'reachable by nothing: ' + unreachable.slice(0, 4).join(', ')
+      : 'A plate reaches the writer as a purpose line, not as a bare name and a list of slot names. '
+        + 'Before this rule, 0 of 95 carried one. A plate named by no chapter type must say how it IS '
+        + 'reached — as a [SCRIBBLE:] mark, a shorts shot list, the compositor or room rotation.' };
+});
+
+rule(23, 'No rendered string is wider than its slot box', () => {
+  const p = plates();
+  if (p.widestRatio === undefined) needs('plates.json does not report widestRatio — run engine/content.js');
+  const over = p.overflowing || [];
+  return { ok: !over.length,
+    count: 'widest ' + p.widestRatio + 'x of box'
+      + (p.loosePublishedBudgets ? ', ' + p.loosePublishedBudgets + ' loose published budgets' : ''),
+    note: over.length
+      ? over.length + ' strings render outside their box, worst ' + over[0].key + '.' + over[0].slot
+      : 'Measured with engine/budget.js\'s own per-class advances off the shipped fonts\' hmtx table, at the '
+        + 'size the renderer will actually use (content.js fittedSize). CORRECTION, rebuild-15: this rule '
+        + 'previously reported "314 slots publish a budget wider than their own geometry" and that was an '
+        + 'artefact of measuring with a flat 0.54em estimate instead of the real metric. Re-measured with '
+        + 'budget.js the count is 0 \u2014 the published budgets were right and the measurement was wrong. What '
+        + 'remains true is the original finding: 68 strings did render outside their boxes, because fit() '
+        + 'only trimmed where a slot published a budget and many publish none.' };
+});
+
+rule(22, 'Every emitted plate has an export entry', () => {
+  const m = manifest(), x = exportIndex();
+  const want = Object.keys(m.assets).filter(k => m.assets[k].role === 'plate');
+  const have = {};
+  x.index.forEach(e => { if (!e.error) have[e.key.replace(/-(16x9|9x16)$/, '') + '@' + e.hour] = 1; });
+  const missing = [];
+  want.forEach(k => ['night', 'dusk'].forEach(h => { if (!have[k + '@' + h]) missing.push(k + '@' + h); }));
+  const failed = x.index.filter(e => e.error);
+  return { ok: !missing.length && !failed.length,
+    count: x.index.length + ' exported, ' + want.length + ' plate assets',
+    note: failed.length ? failed.length + ' failed to render: ' + failed.slice(0, 3).map(f => f.key).join(', ')
+      : missing.length ? 'emitted but never exported: ' + missing.slice(0, 4).join(', ')
+      : 'The pipeline closes: every plate the audit passed has a file at both hours, from one code path. A second path is how a 2.33x lower third reached the last pack.' };
+});
+
+rule(21, 'Every override names a slot that exists', () => {
+  const p = plates();
+  const stray = p.strayOverrides || [];
+  const count = p.overrideCount;
+  if (count === undefined) needs('plates.json does not report overrideCount — run engine/emit.js');
+  return { ok: !stray.length, count: count + ' overrides',
+    note: stray.length
+      ? 'these name no such slot: ' + stray.slice(0, 4).map(s => s.key + '.' + s.slot).join(', ')
+      : 'A typo in content-overrides.json silently does nothing — you edit the text, nothing changes, and there is no error to read. This is that error.' };
+});
+
+rule(20, 'Every plate slot is filled and within budget', () => {
+  const p = plates();
+  const withSlots = p.plates.filter(pl => typeof pl.filledSlots === 'number');
+  if (!withSlots.length) needs('no plate reports filledSlots — run engine/content.js');
+  // A plate with NO text slots is not an unfilled plate — overlays/row-band is
+  // a pure graphic band and has nothing to fill. The rule fired on it on its
+  // first run, which is the distinction worth encoding rather than excusing.
+  const empty = withSlots.filter(pl => pl.filledSlots === 0 && (pl.textSlots === undefined || pl.textSlots > 0));
+  const graphic = withSlots.filter(pl => pl.textSlots === 0).length;
+  const over = p.overBudget || [];
+  return { ok: !empty.length && !over.length,
+    count: withSlots.reduce((a2, b) => a2 + b.filledSlots, 0) + ' slots across ' + withSlots.length + ' plates'
+      + (graphic ? ', ' + graphic + ' graphic-only' : ''),
+    note: empty.length ? 'no content: ' + empty.slice(0, 3).map(x => x.id).join(', ')
+      : over.length ? over.length + ' strings over their slot maxChars'
+      : 'Content is generated from each plate\'s own slot table (engine/content.js) and every string is checked against that slot\'s maxChars. A plate that only fits because the words were chosen short breaks on the first real script.' };
+});
+
+rule(19, 'The drawn exemption is declared and bounded', () => {
+  const m = manifest();
+  const DRAWN = ['annotations', 'cards', 'charts', 'cycles', 'figures', 'frames', 'overlays', 'paper', 'peers', 'shorts', 'structure', 'tables'];
+  const ids = Object.keys(m.assets);
+  const claiming = ids.filter(k => m.assets[k].drawn);
+  // An asset may only claim the exemption if its family is on the list, and no
+  // host or room asset may claim it at all — that is the line §0 actually drew.
+  const illegal = claiming.filter(k => DRAWN.indexOf(m.assets[k].dir) < 0);
+  const hostDrawn = ids.filter(k => m.assets[k].drawn && (m.assets[k].dir === 'host' || m.assets[k].dir === 'room'));
+  return { ok: !illegal.length && !hostDrawn.length,
+    count: `${claiming.length} of ${ids.length} claim it`,
+    note: illegal.length || hostDrawn.length
+      ? `illegal exemption: ${illegal.concat(hostDrawn).slice(0, 3).join(', ')}`
+      : 'Only the twelve drawn families may opt out of rules 2 and 4, and no host or room asset may — the figure is what §0 was about. New at the port.' };
+});
+
+rule(17, 'Band direction per hour', () => {
+  const t = T();
+  const got = HOURS.map(h => {
+    const I = t.hours[h].ink;
+    const want = h === 'night' ? 'lighter' : 'darker';
+    const is = lum(I.band) > lum(I.ground) ? 'lighter' : 'darker';
+    return { h, want, is, ok: want === is };
+  });
+  const bad = got.filter(g => !g.ok);
+  return { ok: !bad.length, count: got.map(g => `${g.h} ${g.is}`).join(', '),
+    note: bad.length ? `wrong direction: ${bad.map(g => g.h).join(', ')}` : 'Night bands sit lighter than their ground, dusk darker (§5.1) — backwards is the muddy inversion §5 forbids.' };
+});
+
+rule(18, 'Both title treatments legible, both hours', () => {
+  const t = T(); const out = [];
+  HOURS.forEach(h => {
+    const I = t.hours[h].ink;
+    out.push({ id: `${h} card`, title: wcag(I.structure, I.ground), cap: wcag(I.quiet, I.ground) });
+    const g = t.hours[h].materials.wall.shade;
+    const ranked = TEXT_ROLES.map(k => ({ k, r: wcag(I[k], g) })).sort((a, b) => b.r - a.r);
+    const cap = ranked.slice(1).find(c => c.r >= 4.5) || ranked[1];
+    out.push({ id: `${h} slab`, title: ranked[0].r, cap: cap.r, pair: `${ranked[0].k} / ${cap.k}` });
+  });
+  const worst = out.reduce((a, b) => (Math.min(a.title, a.cap) < Math.min(b.title, b.cap) ? a : b));
+  return { ok: Math.min(worst.title, worst.cap) >= 4.5,
+    count: `${out.length} combinations, worst ${Math.min(worst.title, worst.cap).toFixed(2)}:1`,
+    note: `Tightest is ${worst.id}. A slab sits on wall.shade and a card on ink.ground, so the pair inverts at dusk (§5.3). Candidates are the text roles only — contrast is a floor, not a selector.` };
+});
+
+/* ── report ─────────────────────────────────────────────────────────────── */
+
+function run() {
+  return RULES.map(r => {
+    try {
+      const out = r.fn();
+      return { n: r.n, name: r.name, state: out.ok ? 'pass' : 'FAIL', count: out.count, note: out.note };
+    } catch (e) {
+      if (e instanceof NeedsData) return { n: r.n, name: r.name, state: 'needs-data', count: '—', note: String(e.message) };
+      return { n: r.n, name: r.name, state: 'DID NOT RUN', count: '—', note: `${e && e.message ? e.message : e}` };
     }
-    return { sig: sig, xy: xy };
-  }
+  });
+}
 
-  // Arcs and the shorthand H/V commands break the assumption that coordinates
-  // arrive in (x, y) pairs, so Euclidean pairing is not valid on those paths.
-  const pairable = (sig) => !/[AaHhVv]/.test(sig);
+const argv = process.argv.slice(2);
+const results = run();
+const tally = s => results.filter(r => r.state === s).length;
 
-  /* Align two path lists by command signature.
+if (argv.includes('--json')) {
+  process.stdout.write(JSON.stringify({ results, summary: { pass: tally('pass'), fail: tally('FAIL'), needsData: tally('needs-data'), didNotRun: tally('DID NOT RUN') } }, null, 1) + '\n');
+} else {
+  const pad = s => String(s).padStart(2);
+  results.forEach(r => {
+    const tag = { 'pass': '  pass', 'FAIL': '  FAIL', 'needs-data': '  data?', 'DID NOT RUN': ' !!RUN' }[r.state];
+    process.stdout.write(`${tag}  ${pad(r.n)}  ${r.name}\n        ${r.count}\n        ${r.note}\n\n`);
+  });
+  const ran = results.filter(r => r.state === 'pass' || r.state === 'FAIL').length;
+  process.stdout.write(`${tally('pass')} of ${ran} runnable rules pass · ${tally('needs-data')} need data`
+    + (tally('DID NOT RUN') ? ` · ${tally('DID NOT RUN')} DID NOT RUN` : '') + '\n');
+}
 
-     Needed because a boil offset can change a plate's path COUNT, not just its
-     coordinates: the hatch and fibre passes take their line counts from the same
-     rng the wobble does, so re-seeding the wobble re-rolls how many hatch lines
-     the plate has. Every host frame pair differs by 10–40 paths for that reason
-     alone, with no structural intent behind it. A strict count check therefore
-     refuses the entire host family, which is over-strict: most paths still
-     correspond, and those are measurable.
-
-     So walk both lists and pair paths whose signatures match, skipping inserted
-     ones on either side. Returns the pairs and the coverage — what fraction of
-     the larger list found a partner. Low coverage still means the frames are
-     different drawings, and amplitude() still refuses. */
-  function align(A, B) {
-    const pairs = [];
-    let i = 0, j = 0, skipped = 0;
-    while (i < A.length && j < B.length) {
-      const a = shapeOf(A[i]), b = shapeOf(B[j]);
-      if (a.sig === b.sig && a.xy.length === b.xy.length) { pairs.push([a, b]); i++; j++; continue; }
-      // look a short way ahead on each side for the next signature match rather
-      // than giving up — an inserted path should cost one path, not the rest
-      let hit = -1, side = 0;
-      for (let k = 1; k <= 6 && hit < 0; k++) {
-        if (i + k < A.length) { const s = shapeOf(A[i + k]); if (s.sig === b.sig && s.xy.length === b.xy.length) { hit = k; side = 1; } }
-        if (hit < 0 && j + k < B.length) { const s = shapeOf(B[j + k]); if (s.sig === a.sig && s.xy.length === a.xy.length) { hit = k; side = 2; } }
-      }
-      if (hit < 0) { i++; j++; skipped++; continue; }
-      if (side === 1) { i += hit; skipped += hit; } else { j += hit; skipped += hit; }
-    }
-    return { pairs: pairs, skipped: skipped, coverage: pairs.length / Math.max(A.length, B.length) };
-  }
-
-  /* Displacement between two renders of the same drawing, in canvas units.
-
-     Returns {comparable:false, reason} rather than a number when the two frames
-     are not the same drawing — that refusal is the point of this function. When
-     they are, returns mean/peak Euclidean displacement over the points that
-     moved, plus how much of the plate moved at all. */
-  function amplitude(svgA, svgB) {
-    const A = pathsOf(svgA), B = pathsOf(svgB);
-    if (!A.length || !B.length) return { comparable: false, reason: "no path data in one or both frames" };
-    const al = align(A, B);
-    if (al.coverage < 0.8) {
-      return { comparable: false, reason: `only ${(al.coverage * 100).toFixed(0)}% of paths correspond between the frames (${A.length} vs ${B.length}) — these are different drawings, not one drawing re-wobbled, and a positional diff across them is meaningless.` };
-    }
-    let sum = 0, moved = 0, total = 0, peak = 0, unpairable = 0;
-    for (const pr of al.pairs) {
-      const a = pr[0], b = pr[1];
-      if (!pairable(a.sig)) { unpairable++; continue; }
-      for (let j = 0; j + 1 < a.xy.length; j += 2) {
-        const dx = b.xy[j] - a.xy[j], dy = b.xy[j + 1] - a.xy[j + 1];
-        const d = Math.sqrt(dx * dx + dy * dy);
-        total++;
-        if (d > 1e-9) { moved++; sum += d; if (d > peak) peak = d; }
-      }
-    }
-    if (!total) return { comparable: false, reason: "no pairable coordinates (all arc/shorthand paths)" };
-    return {
-      comparable: true,
-      partial: al.coverage < 0.999,
-      coverage: al.coverage,
-      mean: moved ? sum / moved : 0,
-      peak: peak,
-      moved: moved,
-      total: total,
-      movedFraction: moved / total,
-      skipped: { unaligned: al.skipped, unpairable: unpairable },
-    };
-  }
-
-  // Verdict for one asset's amplitude reading, against the boil spec.
-  function boilVerdict(r) {
-    if (!r.comparable) return { ok: null, note: r.reason };
-    if (r.movedFraction < BOIL.minMovedFraction) return { ok: false, note: `only ${(r.movedFraction * 100).toFixed(1)}% of points move — the ink is frozen` };
-    if (r.mean < BOIL.deadBelow) return { ok: false, note: `dead: ${r.mean.toFixed(2)} units` };
-    if (r.mean < BOIL.meanBand[0]) return { ok: false, note: `under-boiled: ${r.mean.toFixed(2)} units mean` };
-    if (r.mean > BOIL.meanBand[1]) return { ok: false, note: `over-boiled: ${r.mean.toFixed(2)} units mean` };
-    if (r.peak > BOIL.peakBand[1]) return { ok: false, note: `peak ${r.peak.toFixed(1)} units exceeds ${BOIL.peakBand[1]}` };
-    const cov = r.partial ? `, ${(r.coverage * 100).toFixed(0)}% of paths aligned` : "";
-    return { ok: true, note: `${r.mean.toFixed(2)} mean / ${r.peak.toFixed(1)} peak over ${(r.movedFraction * 100).toFixed(0)}% of points${cov}` };
-  }
-
-  /* Scale check for one manifest entry. delivered MUST be canvas × EXPORT_SCALE
-     and the file on disk must match delivered. Pass the real PNG dimensions in
-     as [w,h]; this file does not read files. */
-  function scaleVerdict(entry, filePx) {
-    const want = [entry.canvas[0] * EXPORT_SCALE, entry.canvas[1] * EXPORT_SCALE];
-    const declared = entry.delivered || [];
-    const notes = [];
-    if (entry.exportScale !== EXPORT_SCALE) notes.push(`declares exportScale ${entry.exportScale}, library scale is ${EXPORT_SCALE}`);
-    if (declared[0] !== want[0] || declared[1] !== want[1]) notes.push(`declares delivered ${declared.join("×")}, canvas × ${EXPORT_SCALE} is ${want.join("×")}`);
-    if (filePx && (filePx[0] !== want[0] || filePx[1] !== want[1])) notes.push(`file is ${filePx.join("×")}, should be ${want.join("×")}`);
-    return { ok: !notes.length, want: want, notes: notes };
-  }
-
-  /* COVERAGE - what fraction of the plate's PIXELS change between two frames.
-
-     amplitude() answers 'how far does a moved point move'. It cannot answer 'is
-     enough of this plate moving to read as alive', and those are different
-     questions with different failure modes. A plate with one drawn rule on it
-     can post a perfect 1.5-unit amplitude and still be visibly frozen, because
-     one rule is a rounding error in the frame. The pack norm is 1-6% of pixels
-     changing; below about 0.5% a plate reads as a still with one element
-     twitching, which is worse than an honest still.
-
-     Takes two ImageData-shaped {width, height, data} objects. A pixel counts as
-     changed when any channel moves more than tol (default 8/255, which ignores
-     rasteriser dither). */
-  function coverage(a, b, tol) {
-    if (!a || !b || a.width !== b.width || a.height !== b.height) {
-      return { comparable: false, reason: 'frames rasterised at different sizes' };
-    }
-    const t = tol == null ? 8 : tol;
-    const A = a.data, B = b.data;
-    let changed = 0, inked = 0;
-    const n = a.width * a.height;
-    for (let i = 0; i < n; i++) {
-      const o = i * 4;
-      if (A[o + 3] > 16) inked++;
-      if (Math.abs(A[o] - B[o]) > t || Math.abs(A[o + 1] - B[o + 1]) > t ||
-          Math.abs(A[o + 2] - B[o + 2]) > t || Math.abs(A[o + 3] - B[o + 3]) > t) changed++;
-    }
-    return { comparable: true, changedFraction: changed / n,
-      changedOfInked: inked ? changed / inked : 0, pixels: n, changed: changed, inked: inked };
-  }
-
-  // Pack norm, measured across the library's healthy boiled assets.
-  const COVERAGE = { band: [0.01, 0.06], frozenBelow: 0.005 };
-
-  function coverageVerdict(c) {
-    if (!c.comparable) return { ok: null, note: c.reason };
-    const f = c.changedFraction;
-    if (f < COVERAGE.frozenBelow) return { ok: false, note: (f * 100).toFixed(2) + '% of pixels change - frozen; too little drawn ink on the plate to boil' };
-    if (f < COVERAGE.band[0]) return { ok: false, note: (f * 100).toFixed(2) + '% of pixels change - under the 1% pack floor' };
-    if (f > COVERAGE.band[1]) return { ok: false, note: (f * 100).toFixed(1) + '% of pixels change - over the 6% pack ceiling' };
-    return { ok: true, note: (f * 100).toFixed(1) + '% of pixels change' };
-  }
-
-  g.AUDIT = {
-    coverage: coverage,
-    coverageVerdict: coverageVerdict,
-    COVERAGE: COVERAGE,
-    EXPORT_SCALE: EXPORT_SCALE,
-    BOIL: BOIL,
-    pathsOf: pathsOf,
-    shapeOf: shapeOf,
-    align: align,
-    amplitude: amplitude,
-    boilVerdict: boilVerdict,
-    scaleVerdict: scaleVerdict,
-  };
-})(typeof window !== "undefined" ? window : globalThis);
+// --check fails on FAIL and on DID NOT RUN. needs-data is a schedule, not a defect.
+if (argv.includes('--check') && (tally('FAIL') || tally('DID NOT RUN'))) process.exit(1);

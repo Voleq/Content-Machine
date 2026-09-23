@@ -16,14 +16,20 @@ out to node — `tests/test_kit_ingest.py` holds that line.
 NOTHING HERE TRUSTS ANYTHING, and it runs in this order:
 
 1. The kit proves itself, on a staged copy so the checkout is never written
-   to: its own audit on the files it shipped, then the regeneration its README
-   documents (`node engine/emit.js && node engine/audit.js --check`), then its
-   own export, which is the review set the plates are checked against.
+   to: its own audit on the files it shipped, then its emitter's own check
+   that every shipped manifest is what the engine writes (`node engine/emit.js
+   --check`), then its own export, which the plates are checked against.
 2. `scripts/kit_engine.js` draws every plate BLANK at every hour, and proves
-   each one is design's exported file minus the sample content burned into it.
+   each one is design's exported file byte for byte. It also draws the host's
+   close-up, which the kit specifies as a window rather than ships as a file,
+   and stands him in every room to measure what paints over him.
 3. Every drawn plate's slot table is checked against the one the delivery
    published, and every hour's slots against the base hour's.
-4. The host is checked against the model it was drawn from.
+4. Design's note on every plate (`roles.fragment.json`: purpose, caution,
+   chapter types, sector) is filed under the key it names and checked against
+   the vocabulary it claims; `roles.json` adds who stands where and what is
+   held back.
+5. The host and the rooms are checked against the roles that use them.
 
 Every problem from every stage is collected and printed together, because a
 drop that fails is a message to design, and a message that stops at the first
@@ -47,7 +53,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from pipeline.plates import (  # noqa: E402
-    CHAPTER_TYPES, PLATES_DIRNAME, REGISTRY_NAME, PlateError, load_registry,
+    CHAPTER_TYPES, GICS_SECTORS, PLATES_DIRNAME, REGISTRY_NAME, PlateError,
+    load_registry,
 )
 
 REPO = Path(__file__).resolve().parents[1]
@@ -132,22 +139,35 @@ def _kit_proves_itself(staged: Path) -> list[str]:
     Node step regenerates it with 73 assets instead of 193 and the audit then
     fails three rules. A manifest nothing can regenerate is a snapshot, and a
     check against a snapshot proves only that the snapshot was checked.
+
+    So the emitter is asked to regenerate every file it ships and compare
+    (`emit.js --check`, since rebuild-19), which is the claim in full: not
+    that the asset count agrees, that all of `emit/` and every family manifest
+    is what the engine beside it writes. When it is not, the ingest carries on
+    from what the engine writes, because that is what gets drawn, and the audit
+    is asked again of that.
     """
     problems = _audit(staged, "on the files as shipped")
-    shipped = _asset_count(staged)
 
-    proc = _node(["node", "engine/emit.js"], staged)
-    if proc.returncode != 0:
-        problems.append(f"`node engine/emit.js` fails (exit {proc.returncode}): "
-                        f"{(proc.stderr or proc.stdout).strip()[-300:]}")
-        return problems
-    fresh = _asset_count(staged)
-    if fresh != shipped:
+    proc = _node(["node", "engine/emit.js", "--check"], staged)
+    if proc.returncode != 0 or "clean" not in proc.stdout:
+        said = (proc.stdout or proc.stderr).strip().splitlines()
         problems.append(
-            f"`node engine/emit.js` regenerates {fresh} assets where the kit "
-            f"shipped {shipped}: the shipped manifest is not what the kit's own "
-            f"emitter produces")
-    problems += _audit(staged, "after `node engine/emit.js`")
+            f"`node engine/emit.js --check` says the shipped manifests are not "
+            f"what the kit's own emitter writes: "
+            f"{'; '.join(said[:6]) or f'exit {proc.returncode}, no output'}")
+        shipped = _asset_count(staged)
+        proc = _node(["node", "engine/emit.js"], staged)
+        if proc.returncode != 0:
+            problems.append(f"`node engine/emit.js` fails (exit {proc.returncode}): "
+                            f"{(proc.stderr or proc.stdout).strip()[-300:]}")
+            return problems
+        fresh = _asset_count(staged)
+        if fresh != shipped:
+            problems.append(
+                f"`node engine/emit.js` regenerates {fresh} assets where the kit "
+                f"shipped {shipped}")
+        problems += _audit(staged, "after `node engine/emit.js`")
 
     proc = _node(["node", "engine/export.js"], staged)
     if proc.returncode != 0:
@@ -204,6 +224,25 @@ def _shipped_slot_tables(delivery: Path) -> dict:
         m = delivery / family / "manifest.json"
         if m.exists():
             out.update(_plate_table(json.loads(m.read_text(encoding="utf-8"))))
+    return out
+
+
+def _shipped_keys(delivery: Path) -> set[str]:
+    """The registry keys the shipped pack installs as, at the base hour.
+
+    What the preflight compares the installed library against. A plate's
+    table is keyed as the registry keys it, and so is the host's, whose
+    figure is one drawing at every aspect. A room publishes ONE table for both
+    aspects too, but the driver crops it once per aspect (a 9:16 room is its
+    `portraitWindow`), so `room/desk-front` installs as `room/desk-front-16x9`
+    and `room/desk-front-9x16`.
+    """
+    out: set[str] = set()
+    for key in _shipped_slot_tables(delivery):
+        if key.split("/", 1)[0] == "room":
+            out.update(f"{key}-{aspect}" for aspect in ("16x9", "9x16"))
+        else:
+            out.add(key)
     return out
 
 
@@ -300,7 +339,160 @@ def _reconcile(built: dict, shipped: dict) -> list[str]:
     return problems
 
 
-def _install(built: dict, delivery: Path, staged_out: Path, dest: Path) -> dict:
+_ASPECT = re.compile(r"^(.*)-(16x9|9x16)$")
+
+
+def _stem(key: str) -> str:
+    m = _ASPECT.match(key)
+    return m.group(1) if m else key
+
+
+def _template_vocabulary() -> tuple[set[str], set[str]]:
+    """The formats and beats our shot templates actually define."""
+    formats: set[str] = set()
+    beats: set[str] = set()
+    for path in sorted((REPO / "templates" / "shots").glob("*.json")):
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        formats.add(str(raw.get("format") or path.stem))
+        beats |= {str(s.get("id")) for s in raw.get("shots") or [] if s.get("id")}
+    return formats, beats
+
+
+def _plate_notes(delivery: Path, built: dict) -> tuple[dict, list[str], list[str]]:
+    """Design's note on every plate, filed under the registry key it names.
+
+    WHAT A PLATE IS FOR IS DESIGN'S WORD, AND IT ARRIVES WITH THE PLATE. Since
+    rebuild-12 every plate in `roles.fragment.json` carries a purpose, a
+    caution, the chapter types it serves, and — for the sector rounds — the one
+    GICS sector its structure presumes. Retyping that into our own curation is
+    how the writer came to see a bare name and a list of slots: 0 of 95 plates
+    had a purpose before design wrote them, and a copy is stale the drop after.
+
+    THE FRAGMENT IS READ, NOT TRUSTED. Its keys are checked against what was
+    drawn and its values against the vocabulary they claim to be in:
+
+      a key with an aspect suffix the plate does not have (the marks, the host
+      strips, the hook cards) is filed under the plate's own key — the entry is
+      right, the key is spelled wrong, and design has been told;
+
+      a key naming nothing this kit ships is dropped and reported, not merged:
+      rebuild-19's names four assets the rebuild removed;
+
+      a chapter type outside the sixteen, a sector outside GICS, a format or a
+      beat our templates do not define is dropped and reported. A value that
+      resolves to nothing is a promise no shot can keep.
+
+    Returns (notes, problems, remarks). A missing fragment is a problem: every
+    chapter's menu is built from it. The rest are remarks, printed and not
+    fatal, because each is a drop being tidied rather than a drop being wrong.
+    """
+    path = delivery / "roles.fragment.json"
+    if not path.exists():
+        return {}, [f"{path.name} is missing: nothing says what any plate is "
+                    f"for or which chapter types may use it, so every "
+                    f"chapter's menu would be empty"], []
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    drawn = {e.get("atBaseHour") or k for k, e in built.items()}
+    formats, beats = _template_vocabulary()
+
+    notes: dict[str, dict] = {}
+    respelled, stale, doubled = [], [], []
+    dropped: Counter = Counter()
+
+    def names(field: str, v: dict, allowed) -> list[str]:
+        got = v.get(field) or []
+        if not isinstance(got, list):
+            dropped[(field, str(got)[:40])] += 1
+            return []
+        keep = []
+        for x in got:
+            if str(x) in allowed:
+                keep.append(str(x))
+            else:
+                dropped[(field, str(x))] += 1
+        return keep
+
+    for key, v in raw.items():
+        if key.startswith("_") or not isinstance(v, dict):
+            continue
+        target = key
+        if target not in drawn:
+            if _stem(target) != target and _stem(target) in drawn:
+                target = _stem(target)
+                respelled.append(key)
+            else:
+                stale.append(key)
+                continue
+        if target in notes:
+            doubled.append(key)
+            continue
+        note = {
+            "purpose": str(v.get("purpose") or "").strip(),
+            "caution": str(v.get("caution") or "").strip(),
+            "chapterTypes": names("chapter_types", v, CHAPTER_TYPES),
+            "sectors": names("sectors", v, GICS_SECTORS),
+            "formats": names("formats", v, formats),
+            "beats": names("beats", v, beats),
+        }
+        if v.get("round"):
+            note["round"] = str(v["round"])
+        notes[target] = {k: val for k, val in note.items() if val}
+
+    remarks = []
+    if respelled:
+        remarks.append(
+            f"roles.fragment.json: {len(respelled)} entries add an aspect to a "
+            f"plate that has none (e.g. {', '.join(respelled[:3])}); filed under "
+            f"the plate's own key")
+    if doubled:
+        remarks.append(
+            f"roles.fragment.json: {len(doubled)} entries repeat a plate another "
+            f"entry already covers (e.g. {', '.join(doubled[:3])}); the first "
+            f"one stands")
+    if stale:
+        remarks.append(
+            f"roles.fragment.json: {len(stale)} entries name assets this kit "
+            f"does not ship, dropped: {', '.join(stale)}")
+    for (field, value), n in sorted(dropped.items()):
+        remarks.append(
+            f"roles.fragment.json: {n} entries give {field} {value!r}, which "
+            f"resolves to nothing here; dropped")
+    return notes, [], remarks
+
+
+def _held_back(roles: dict) -> tuple[dict, dict]:
+    """(plates, rooms) roles.json holds back, stem -> the reason."""
+    block = roles.get("heldBack") or {}
+
+    def own(name: str) -> dict:
+        return {str(k): str(v) for k, v in (block.get(name) or {}).items()
+                if not str(k).startswith("_")}
+    return own("plates"), own("rooms")
+
+
+def _chapter_types(roles: dict, notes: dict, held: dict) -> dict:
+    """Each chapter type's purpose and plates: ours, plus design's filing.
+
+    The purposes are ours and are what the director reads. Which plates a type
+    may use is the union of what roles.json adds and every plate the fragment
+    files under that type, minus anything held back — a plate held back is off
+    every menu, whoever put it there.
+    """
+    block = roles.get("chapterTypes") or {}
+    out: dict = {k: v for k, v in block.items() if k.startswith("_")}
+    for ctype in CHAPTER_TYPES:
+        own = block.get(ctype) or {}
+        plates = list(own.get("plates") or ())
+        plates += sorted(k for k, n in notes.items() if ctype in n.get("chapterTypes", ()))
+        plates = [p for p in dict.fromkeys(plates) if _stem(p) not in held]
+        entry = {k: v for k, v in own.items() if k != "plates"}
+        entry["plates"] = plates
+        out[ctype] = entry
+    return out
+
+
+def _install(built: dict, delivery: Path, staged_out: Path, dest: Path,
+             notes: dict | None = None) -> dict:
     """Replace the installed kit with what was just drawn.
 
     REPLACES, never merges. Merging is what left stale assets resolvable last
@@ -325,6 +517,8 @@ def _install(built: dict, delivery: Path, staged_out: Path, dest: Path) -> dict:
     def own(block: str) -> dict:
         return {k: v for k, v in (roles.get(block) or {}).items() if not k.startswith("_")}
 
+    notes = notes or {}
+    held_plates, held_rooms = _held_back(roles)
     registry = {k: v for k, v in built.items()
                 if k not in ("problems", "checkedAgainstExport")}
     registry["hostRoles"] = own("hostRoles")
@@ -337,8 +531,13 @@ def _install(built: dict, delivery: Path, staged_out: Path, dest: Path) -> dict:
         "suffixes": built.get("hourSuffixes") or {BASE_HOUR: ""},
         "episodes": list((roles.get("hours") or {}).get("episodes") or [BASE_HOUR]),
     }
-    registry["chapterTypes"] = roles.get("chapterTypes", {})
-    registry["purposes"] = own("purposes")
+    registry["chapterTypes"] = _chapter_types(roles, notes, held_plates)
+    # A purpose roles.json writes is ours and wins; every other plate's is
+    # design's, off the fragment.
+    registry["purposes"] = {**{k: n["purpose"] for k, n in notes.items()
+                               if n.get("purpose")}, **own("purposes")}
+    registry["plateNotes"] = notes
+    registry["heldBack"] = {"plates": held_plates, "rooms": held_rooms}
     registry["wardrobe"] = own("wardrobe")
     (dest / REGISTRY_NAME).write_text(
         json.dumps(registry, indent=1, sort_keys=False) + "\n", encoding="utf-8")
@@ -390,16 +589,51 @@ def _host_contract(reg) -> list[str]:
             f"what a beat falls back to when its room declares `hostAnchor: "
             f"false`, and every member of it has a floor line, so there is "
             f"nothing to put in a room with no floor")
+
+    # A ROOM HE STANDS IN MUST NOT PAINT OVER HIS HEAD. rebuild-19 shipped four
+    # rooms that list a wall item after the desk, so the split the kit publishes
+    # puts a frame, a sheet or a shelf in FRONT of him — and every check on the
+    # rooms passed, because they were checked with nobody in them. The engine
+    # driver stands him in each anchored room by the contract and measures it.
+    held = set((getattr(reg, "held_back", {}) or {}).get("rooms", {}))
+    for role, stems in sorted(reg.room_roles.items()):
+        for stem in stems:
+            if stem in held:
+                problems.append(
+                    f"roles.json puts {stem} in the {role!r} room role and also "
+                    f"holds it back; it is one or the other")
+                continue
+            for aspect in ("16x9", "9x16"):
+                room = reg.get(f"{stem}-{aspect}")
+                if room is None or room.refuses_host or room.head_covered is None:
+                    continue
+                if room.head_covered > _HEAD_COVER_LIMIT:
+                    problems.append(
+                        f"{room.key}: the {role!r} room role stands him here "
+                        f"and the room's front layer covers "
+                        f"{room.head_covered:.0%} of his head")
     return problems
+
+
+# How much of his head a room's front layer may cover before the room is
+# refused for a role. Not zero: a lamp's rim clipping an ear is a room, and the
+# four rooms rebuild-19 got wrong cover between 67% and 97% of it.
+_HEAD_COVER_LIMIT = 0.05
 
 
 def _verify(repo: Path) -> int:
     """The exhaustive pass: every asset, every frame, every layer, every file."""
     dest = repo / "assets" / PLATES_DIRNAME
     reg = load_registry(dest)
+    # EVERY HOUR'S ART, not the library. `reg.assets` is the base hour — the
+    # keys a template names — and a verify over it leaves every dusk file on
+    # disk unnamed, which this pass then reports as unregistered: 958 of them
+    # the first time every plate had an hour.
+    everything = reg.all_plates()
 
-    print(f"registry: {len(reg.assets)} plates, "
-          f"{sum(a.frame_count for a in reg.assets.values())} frames, "
+    print(f"registry: {len(reg.assets)} plates at "
+          f"{len(reg.hour_suffixes) or 1} hour(s), {len(everything)} drawn, "
+          f"{sum(a.frame_count for a in everything.values())} frames, "
           f"hours {', '.join(reg.hour_suffixes) or '(none)'}")
 
     problems: list[str] = []
@@ -414,7 +648,7 @@ def _verify(repo: Path) -> int:
             problems.append(f"{key}: {p.name} is {got[0]}x{got[1]}, the registry "
                             f"promises {size[0]}x{size[1]}")
 
-    for key, a in sorted(reg.assets.items()):
+    for key, a in sorted(everything.items()):
         d = dest / a.family
         delivered = tuple(a.delivered)
         for fr in a.frames:
@@ -470,12 +704,12 @@ def _verify(repo: Path) -> int:
     problems.extend(_host_contract(reg))
 
     fams = Counter(a.family for a in reg.assets.values())
-    hours = Counter(a.hour or BASE_HOUR for a in reg.assets.values())
+    hours = Counter(a.hour or BASE_HOUR for a in everything.values())
     aspects = Counter(a.aspect for a in reg.assets.values())
     print(f"families:  {dict(sorted(fams.items()))}")
     print(f"hours:     {dict(sorted(hours.items()))}")
     print(f"aspects:   {dict(sorted(aspects.items()))}")
-    print(f"scale:     {sorted({a.export_scale for a in reg.assets.values()})} "
+    print(f"scale:     {sorted({a.export_scale for a in everything.values()})} "
           f"<- read per plate, never assumed")
     print(f"slots:     {sum(len(a.slots) for a in reg.assets.values())} across "
           f"{len(reg.assets)} plates")
@@ -494,7 +728,7 @@ def _verify(repo: Path) -> int:
         print("\nDO NOT COMMIT.")
         return 1
 
-    print(f"\nOK — {len(reg.assets)} plates verified, every frame and layer "
+    print(f"\nOK — {len(everything)} plates verified at every hour, every frame and layer "
           f"present at its delivered size, nothing on disk the registry does "
           f"not name.")
     return 0
@@ -540,6 +774,9 @@ def build(delivery: Path, only: str = "") -> int:
         if only:
             shipped = {k: v for k, v in shipped.items() if k.split("/", 1)[0] == only}
         problems += _reconcile(built.get("assets") or {}, shipped)
+        notes, note_problems, remarks = _plate_notes(delivery, built.get("assets") or {})
+        if not only:
+            problems += note_problems
         if problems:
             _report("the delivery cannot be installed", problems)
             return 1
@@ -548,8 +785,12 @@ def build(delivery: Path, only: str = "") -> int:
             print("NOT INSTALLED — `--only` checks one family; a partial kit is "
                   "not a kit.")
             return 0
-        print(f"  reconciled: {len(built['assets'])} plates")
-        _install(built, delivery, drawn, REPO / "assets" / PLATES_DIRNAME)
+        print(f"  reconciled: {len(built['assets'])} plates; design's notes on "
+              f"{len(notes)} of them")
+        for remark in remarks:
+            print(f"  note: {remark}")
+        _install(built, delivery, drawn, REPO / "assets" / PLATES_DIRNAME,
+                 notes=notes)
     finally:
         if STAGE.exists():
             shutil.rmtree(STAGE)

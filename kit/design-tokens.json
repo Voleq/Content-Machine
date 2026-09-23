@@ -1,0 +1,249 @@
+{
+  "_spec": "EVERYTHING NUMERIC OR CHROMATIC IN THE KIT, AS DATA. The engine reads this file; no draw function hardcodes a colour or a length. Prose describing a colour is not a colour, so there is none here. Authored by eye and by hand — nothing in this file is computed from anything else in it, which is the whole point of §5: a shade is a picked colour, not a function of its lit.",
+  "version": "rebuild-01",
+  "supersedes": "engine/plates.js ROLES + the per-author colour literals of delta-15. The hand-drawn kit's palette was one light-paper set with everything else multiplied down from it.",
+  "proportion": {
+    "_unit": "HU — one head height, crown to chin. Every length here is in HU, so the figure has ONE size number and everything else is a ratio. A pose cannot disagree with another pose about how long an arm is.",
+    "totalHeight": 7,
+    "headHeight": 1,
+    "headWidth": 0.78,
+    "eyelineFromCrown": 0.52,
+    "shoulderFromCrown": 1.32,
+    "shoulderWidth": 1.8,
+    "torsoLength": 2.45,
+    "hipFromCrown": 3.77,
+    "armUpperLength": 1.32,
+    "armForeLength": 1.18,
+    "handLength": 0.46,
+    "handWidth": 0.3,
+    "legUpperLength": 1.6,
+    "legLowerLength": 1.63,
+    "footLength": 0.62,
+    "seatedRatio": 0.735,
+    "glassesWidth": 0.62,
+    "glassesLensHeight": 0.2,
+    "glassesRadius": 0.06,
+    "eyeDashLength": 0.1,
+    "eyeDashWeight": 0.038,
+    "_widthsMoved": "SEVEN WIDTHS MOVED at rebuild-02, none of them vertical, so the closure above is untouched and totalHeight is still 7.00. shoulderWidth 2.05 -> 1.80: at 2.05 the shoulder line is 2.6 head widths and the torso reads as a slab with a head on it, which is a proportion complaint of exactly the kind 7.0 HU exists to answer — it was simply the horizontal one, and nobody had measured it. glassesWidth 0.72 -> 0.62, lens height 0.24 -> 0.20, radius 0.07 -> 0.06: at 0.72 the frames span 92% of the head width and the face is a pair of frames. eyeDash 0.12 -> 0.10 and its weight 0.045 -> 0.038: two heavy bars in big lenses read vacant rather than deadpan. handLength 0.52 -> 0.46, handWidth 0.34 -> 0.30: the mitten was reading as a mitt.",
+    "_closes": "shoulderFromCrown 1.32 + torsoLength 2.45 = hipFromCrown 3.77; + legUpperLength 1.60 + legLowerLength 1.63 = 7.00 = totalHeight. The table is arithmetically closed on purpose — a fresh session can check it rather than trust it.",
+    "_armCloses": "shoulder 1.32 + upper 1.32 = elbow 2.64; + fore 1.18 = wrist 3.82, which is 0.05 HU below the hip. Arms hang correctly at rest with no per-pose correction.",
+    "_whySeven": "SEVEN, not the old kit's 6.8. 'is he a midget or sum' was a proportion complaint, so the number that drew it gets changed deliberately rather than kept. Seven heads reads adult and composed at 9:16; six-and-a-half reads juvenile. It is one number and it is now wrong once if at all."
+  },
+  "contourWeight": {
+    "value": 0.035,
+    "unit": "HU",
+    "_note": "ONE weight, every part, every pose, both hours. No pressure, no taper, no second pass. The figure's contour is what makes him read against any wall; the room carries NO contour at all and separates by value difference between adjacent flat shapes, which forces the palette to be good."
+  },
+  "_quietFloor": "BOTH quiet VALUES MOVED at rebuild-03, caught by audit rule 5 on its first run against real plates. night.quiet #6E7C90 measured 3.97:1 against night.ink.ground and dusk.quiet #7A6A58 measured 4.29:1 against dusk.ink.ground — rule 5's floor is 4.5:1 and both captions were under it. Now #8592A6 (5.35:1) and #685A48 (5.49:1). The pair had never been measured because a caption colour looks fine next to a title colour; it is only wrong against the ground it actually sits on, which is what rule 5 samples and prose does not.",
+  "materialRoles": [
+    "wall",
+    "wallSide",
+    "floor",
+    "desk",
+    "screen",
+    "glow",
+    "lamp",
+    "skin",
+    "hair",
+    "shirt",
+    "trouser",
+    "paper",
+    "prop"
+  ],
+  "materialRoleCount": 13,
+  "hours": {
+    "night": {
+      "label": "three in the morning",
+      "key": "#7FD4E8",
+      "keyIs": "the monitor. Cyan. The brightest thing in the room and the reason he is still up.",
+      "ambient": "#141824",
+      "ambientIs": "the unlit room. Near-black blue.",
+      "fill": "#F0B460",
+      "fillIs": "the desk lamp. Amber. Reaches the desk, the paper, his hands and one side of his face; it does not reach the back wall.",
+      "materials": {
+        "wall": {
+          "lit": "#20293C",
+          "shade": "#141824"
+        },
+        "wallSide": {
+          "lit": "#27324A",
+          "shade": "#171C2B"
+        },
+        "floor": {
+          "lit": "#1A2130",
+          "shade": "#0F131D"
+        },
+        "desk": {
+          "lit": "#3E4759",
+          "shade": "#6B4A32"
+        },
+        "screen": {
+          "lit": "#7FD4E8",
+          "shade": "#4FA8BE"
+        },
+        "glow": {
+          "lit": "#3C7A8C",
+          "shade": "#2A5866"
+        },
+        "lamp": {
+          "lit": "#F0B460",
+          "shade": "#C4813A"
+        },
+        "skin": {
+          "lit": "#8FA8B8",
+          "shade": "#D9A06B"
+        },
+        "hair": {
+          "lit": "#525E74",
+          "shade": "#6B5247",
+          "_floor": "lit is 2.21:1 against wall.lit #20293C. At the authored-by-instinct #2A3040 it was 1.10:1 and the top of his head dissolved into the wall. See DESIGN.md §2.2a."
+        },
+        "shirt": {
+          "lit": "#46596E",
+          "shade": "#2A3242"
+        },
+        "trouser": {
+          "lit": "#4E5A70",
+          "shade": "#38404F",
+          "_floor": "lit is 2.07:1 against wall.lit. At #2A3140 it was 1.12:1 and both legs dissolved. See DESIGN.md §2.2a."
+        },
+        "paper": {
+          "lit": "#C9D2D8",
+          "shade": "#E0BC88"
+        },
+        "prop": {
+          "lit": "#5A4A3E",
+          "shade": "#38302A",
+          "_floor": "ΔE_ok 0.155 against wall.lit. At #333C4E it was 0.074 and his shoes read only as contour, which is itself 0.119. Lamp-warm because shoes and desk props sit where the lamp reaches. See DESIGN.md §2.2a."
+        }
+      },
+      "contour": "#0B0E16",
+      "ink": {
+        "ground": "#171D2A",
+        "band": "#1F2634",
+        "rule": "#2C3444",
+        "axis": "#4A566A",
+        "quiet": "#8592A6",
+        "structure": "#C6D2E0",
+        "subject": "#7FD4E8",
+        "subject2": "#F0B460",
+        "attention": "#F07A5A"
+      }
+    },
+    "dusk": {
+      "label": "the lit set",
+      "key": "#F2B268",
+      "keyIs": "the window, late. Warm.",
+      "ambient": "#3B3550",
+      "ambientIs": "violet. Every dark in this hour leans to it, which is what keeps the warm key from going orange-and-brown.",
+      "fill": "#F5C981",
+      "fillIs": "the same desk lamp, now the weaker of the two sources.",
+      "materials": {
+        "wall": {
+          "lit": "#B9A184",
+          "shade": "#5E5470"
+        },
+        "wallSide": {
+          "lit": "#A8906F",
+          "shade": "#514868"
+        },
+        "floor": {
+          "lit": "#9B7F5E",
+          "shade": "#453C58"
+        },
+        "desk": {
+          "lit": "#D8A95F",
+          "shade": "#6A5A70"
+        },
+        "screen": {
+          "lit": "#8FB8C4",
+          "shade": "#5E8894"
+        },
+        "glow": {
+          "lit": "#F0D49A",
+          "shade": "#C9A870"
+        },
+        "lamp": {
+          "lit": "#F5C981",
+          "shade": "#C99A55"
+        },
+        "skin": {
+          "lit": "#F5C79A",
+          "shade": "#B06A5E"
+        },
+        "hair": {
+          "lit": "#4A3A34",
+          "shade": "#33283C"
+        },
+        "shirt": {
+          "lit": "#93AECE",
+          "shade": "#3B4A72"
+        },
+        "trouser": {
+          "lit": "#6B6480",
+          "shade": "#3E3850"
+        },
+        "paper": {
+          "lit": "#F2E8D4",
+          "shade": "#B8A894"
+        },
+        "prop": {
+          "lit": "#6E6478",
+          "shade": "#453E55",
+          "_floor": "ΔE_ok 0.216 against wall.lit. At #A89078 it was 0.054 — a near-identical tan on a tan wall. Violet-leaning per this hour's ambient doctrine. See DESIGN.md §2.2a."
+        }
+      },
+      "contour": "#2A2036",
+      "ink": {
+        "ground": "#F2E8D4",
+        "band": "#E6D8C0",
+        "rule": "#D8C8AC",
+        "axis": "#A08E74",
+        "quiet": "#685A48",
+        "structure": "#2A2036",
+        "subject": "#2F5FA8",
+        "subject2": "#D88A2F",
+        "attention": "#A8243C"
+      }
+    }
+  },
+  "hoursAreNotStyles": "Two hours of ONE set. Every room exists at both with byte-identical slot boxes, floorLineY and hostAnchor — only the colour table differs. roomHours.episodes picks one per episode and never mixes them inside a video.",
+  "typeScale": {
+    "_unit": "canvas units at 1920x1080; delivered is x2.",
+    "_floor": "24 units is the hard floor and nothing in the kit is set below it.",
+    "display": 132,
+    "title": 96,
+    "big": 240,
+    "statement": 64,
+    "body": 44,
+    "label": 34,
+    "micro": 26,
+    "_note": "Unchanged from delta-15 — the type scale was never the problem and budget.js's hmtx-derived maxChars is computed against it. Changing it would re-derive 3,033 slot budgets for no reason."
+  },
+  "motion": {
+    "fps": 3,
+    "frames": 3,
+    "hostOffsets": [
+      {
+        "headRotate": 0,
+        "shoulderY": 0
+      },
+      {
+        "headRotate": 1.5,
+        "shoulderY": -1
+      },
+      {
+        "headRotate": -1,
+        "shoulderY": 1
+      }
+    ],
+    "_hostNote": "AUTHORED micro-offsets, not noise. Identical every loop. The head rotation is degrees about the neck join; shoulderY is canvas units at 1920x1080.",
+    "dataRuleOffsets": [
+      0,
+      1,
+      0
+    ],
+    "_dataNote": "A data plate's FRAME breathes and its figures do not. Only the frame's rule lines take the 1px offset. Axes, series, cells and anything a viewer reads a value off stay pinned across all three frames."
+  }
+}

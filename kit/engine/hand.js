@@ -617,7 +617,15 @@
     };
     P.r = () => P._r();
     P.colourAdd = (s) => { P.colour.push(s); return P; };
-    P.inkAdd = (s) => { P.ink.push(s); return P; };
+    /* PINNED IS RECORDED AT THE MOMENT OF THE DRAW (rebuild-17). H.pin() already
+     * marks measurement references — axes, baselines, the prior close — as
+     * "must not move". Recording it per ink entry is what lets toSVG give the
+     * frame's rule lines their authored offset (tokens.motion.dataRuleOffsets)
+     * while everything a viewer reads a value off stays still. This and the
+     * ruleOffset branch in toSVG are the only edits to this file; with offset 0
+     * the output is byte-identical to before, so the base file IS frame one. */
+    P.inkPin = [];
+    P.inkAdd = (s) => { P.ink.push(s); P.inkPin.push(PINNED > 0); return P; };
     P.topAdd = (s) => { P.top.push(s); return P; };
     P.slot = (key, x, y, w, h, extra) => {
       // the box always wins: extra metadata can never clobber geometry
@@ -675,7 +683,16 @@
         grain ? (function () { const b = BOIL; BOIL = 0; const s = speckle(P.w, P.h, { seed: P.seed * 3 + 7, color: grain.tint, opacity: grain.opacity, count: Math.round((P.w * P.h) / 900) }); BOIL = b; return s; })() : "",
         cfg.surface || "",
         P.colour.join(""),
-        P.ink.join(""),
+        (function (dy) {
+          if (!dy) return P.ink.join("");
+          let out = "", run = "";
+          P.ink.forEach((s, i) => {
+            if (P.inkPin[i]) { if (run) { out += '<g transform="translate(0 ' + dy + ')">' + run + "</g>"; run = ""; } out += s; }
+            else run += s;
+          });
+          if (run) out += '<g transform="translate(0 ' + dy + ')">' + run + "</g>";
+          return out;
+        })(opts.ruleOffset || 0),
         P.top.join(""),
       ].join("");
       setProfile(prev);

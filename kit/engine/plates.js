@@ -4732,22 +4732,13 @@
       key: o.key, w, h, seed: o.seed, pal: Object.assign({}, p, { ground: "none", grain: null }),
       meta: {
         aspect: w > h ? "16x9" : "9x16", family: "host", type: "empty-chair",
-        // `cutout` and `alpha` ADDED DOWNSTREAM, against the drop as shipped.
-        //
-        // Every other plate that composites over something declares both —
-        // hostFigure, the two framings, every annotation. This author declared
-        // neither, while its own dataPolicy on the next line says "alpha
-        // cut-out, no ground" and the Plate above is built with
-        // `ground: "none"`. So the drawing was always a cut-out and only the
-        // flag was missing, which is why nothing looked wrong: `alpha` has no
-        // reader in the render path at all, and the single thing that consults
-        // it is the check that every pose a host role serves is a cut-out.
-        // That check is right and it caught a real hole — `beat` was handing
-        // the compositor a plate that declared itself opaque.
-        //
-        // This is a correction to the vendor delivery, so it does not survive
-        // a drop. Re-apply it or, better, get it fixed upstream: the ingest's
-        // host-contract check will fail the build until one of the two happens.
+        // DECLARED, not implied. This author was written apart from hostFigure and
+        // hostHead and never carried the two fields both of those set in this same
+        // object — so the one host plate that IS unarguably a cut-out (ground
+        // "none", no grain, composites onto a host-anchor, and its own dataPolicy
+        // below says so in prose) published nothing a gate could read, and
+        // test_every_role_can_supply_a_shot failed on "not a cut-out". The plate
+        // was always a cut-out; the metadata was the defect.
         cutout: true, alpha: true,
         dataPolicy: "alpha cut-out, no ground: it composites onto a room's host-anchor exactly as a figure does",
       },
@@ -7865,5 +7856,11 @@
   const ROOM_CAMERA_ANGLES = ["corner-perspective", "low-desk-height", "high-desk-down"];
   const HOST_FRAMINGS = ["close-up", "medium"];
 
-  g.PLATES = { ROLES, SURFACES, pal, titleGround, typeBlockOf, TITLE_GROUNDS, quarterPair, seasonality, languageShift, headlineStack, emptyChair, hostChair, lowerThird, confession, CONFESSION_TREATMENTS, shortInterest, insiderFlow, macroSeries, endCard, multiplesStrip, multipleBridge, numbersSheet, rowBand, threeSeries, swatch, surfaceCard, chartFrame, cashFlow, headlineBand, bothTrue, unitLadder, closingPlate, rowSpotlight, flowPlate, bigNumber, bigFraction, compare, definitionCard, quotePull, criteriaCard, timeline, mediaFrame, captureFrame, hookCard, hostFigure, hostHead, hostBlink, waterfall, impliedPlate, proportionBar, distribution, scaleFig, receipt, saidHappened, sensitivity, multiplesGrid, whiteboard, HOST_POSES, HOST_FRAMINGS, HOST_OUTFITS, ellipse, room, wallOfCalls, ROOM_ANGLES, ROOM_CAMERA_ANGLES, annotation, ANNOTATIONS, peerStrip, cycleFrame };
+  /* ROUND-ONE ADDITION (rebuild-15), and the ONLY edit to this file: the private
+   layout helpers are exported so engine/plates-r1.js can author new plates with
+   the SAME machinery rather than a copy of it. No drawing code is touched. A
+   second copy of base()/place()/TR is how two plates in one kit end up with
+   different type scales and nobody can say which is right. */
+  g.PLATES = { base, TR, figRoles, unitOf, blockH, measure, place, field, ruleH, surfaceFurniture,
+    ROLES, SURFACES, pal, titleGround, typeBlockOf, TITLE_GROUNDS, quarterPair, seasonality, languageShift, headlineStack, emptyChair, hostChair, lowerThird, confession, CONFESSION_TREATMENTS, shortInterest, insiderFlow, macroSeries, endCard, multiplesStrip, multipleBridge, numbersSheet, rowBand, threeSeries, swatch, surfaceCard, chartFrame, cashFlow, headlineBand, bothTrue, unitLadder, closingPlate, rowSpotlight, flowPlate, bigNumber, bigFraction, compare, definitionCard, quotePull, criteriaCard, timeline, mediaFrame, captureFrame, hookCard, hostFigure, hostHead, hostBlink, waterfall, impliedPlate, proportionBar, distribution, scaleFig, receipt, saidHappened, sensitivity, multiplesGrid, whiteboard, HOST_POSES, HOST_FRAMINGS, HOST_OUTFITS, ellipse, room, wallOfCalls, ROOM_ANGLES, ROOM_CAMERA_ANGLES, annotation, ANNOTATIONS, peerStrip, cycleFrame };
 })(typeof window !== "undefined" ? window : globalThis);

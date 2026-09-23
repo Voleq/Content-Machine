@@ -1,29 +1,19 @@
 {
  "family": "overlays",
- "pack": "delta-15",
- "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
+ "pack": "rebuild-17",
+ "generated": "engine/emit.js. Deterministic — regenerate from the engine you are holding: node engine/emit.js (node engine/emit.js --check diffs without writing).",
  "exportScale": 2,
- "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
- "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
- "assetCount": 3,
- "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
- "coordinateOrigin": "top-left of canvas",
- "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8",
+ "frameNaming": "<name>-<hour>_f01.._fNN before the extension. The BASE file carries no frame tag and is byte-identical to _f01.",
+ "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
+ "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
- "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
- "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
- "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
- "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
- "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
- "slotTotal": 5,
- "frameTotal": 3,
+ "assetCount": 3,
  "plates": {
   "overlays/row-band": {
    "key": "overlays/row-band",
    "dir": "overlays",
+   "aspect": "16x9",
    "canvas": [
     1744,
     112
@@ -33,22 +23,103 @@
     224
    ],
    "exportScale": 2,
-   "playback": "static",
-   "fps": null,
-   "frameCount": 1,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "row-band.png",
-    "baseIsFrame": false,
+    "base": "row-band-night.png",
+    "baseIsFrame": true,
     "frames": [
      {
-      "file": "row-band.png",
-      "tag": null,
-      "args": {},
-      "hash": "1956b7ea"
+      "file": "row-band-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "8961ef66"
+     },
+     {
+      "file": "row-band-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "a9b0de68"
+     },
+     {
+      "file": "row-band-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "8961ef66"
      }
     ]
    },
+   "filesByHour": {
+    "night": {
+     "base": "row-band-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "row-band-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8961ef66"
+      },
+      {
+       "file": "row-band-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "a9b0de68"
+      },
+      {
+       "file": "row-band-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8961ef66"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "row-band-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "row-band-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d6f52da0"
+      },
+      {
+       "file": "row-band-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "814f3270"
+      },
+      {
+       "file": "row-band-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d6f52da0"
+      }
+     ]
+    }
+   },
    "slotCount": 1,
+   "typeRoles": {},
    "slots": {
     "area": {
      "role": "band",
@@ -57,32 +128,6 @@
      "w": 1744,
      "h": 112
     }
-   },
-   "meta": {
-    "delivered": [
-     3488,
-     224
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "row-band.svg",
-      "png": "row-band.png"
-     }
-    ],
-    "files": {
-     "png": "row-band.png",
-     "svg": "row-band.svg"
-    },
-    "family": "overlays",
-    "type": "row-band",
-    "composite": "multiply-ok",
-    "stretch": "x-only",
-    "colourRule": "second ground, bracketed in structure. The band says HERE, never good or bad — direction stays in the cells, and attention belongs to annotations.",
-    "why": "ground2 hatch alone is invisible on the sheet's own ground2 zebra stripe, so the row is bracketed top and bottom in structure. That reads on a striped row and an unstriped one alike."
    }
   },
   "overlays/lower-third-16x9": {
@@ -98,20 +143,100 @@
     416
    ],
    "exportScale": 2,
-   "playback": "static",
-   "fps": null,
-   "frameCount": 1,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "lower-third-16x9.png",
-    "baseIsFrame": false,
+    "base": "lower-third-16x9-night.png",
+    "baseIsFrame": true,
     "frames": [
      {
-      "file": "lower-third-16x9.png",
-      "tag": null,
-      "args": {},
-      "hash": "a9101d84"
+      "file": "lower-third-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "e0b9d321"
+     },
+     {
+      "file": "lower-third-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "e0b9d321"
+     },
+     {
+      "file": "lower-third-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "e0b9d321"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "lower-third-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "lower-third-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e0b9d321"
+      },
+      {
+       "file": "lower-third-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "e0b9d321"
+      },
+      {
+       "file": "lower-third-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e0b9d321"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "lower-third-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "lower-third-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8e4bc0e0"
+      },
+      {
+       "file": "lower-third-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "8e4bc0e0"
+      },
+      {
+       "file": "lower-third-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8e4bc0e0"
+      }
+     ]
+    }
    },
    "slotCount": 2,
    "typeRoles": {
@@ -157,48 +282,12 @@
      "h": 39,
      "maxChars": 49
     }
-   },
-   "meta": {
-    "delivered": [
-     1640,
-     416
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "lower-third-16x9.svg",
-      "png": "lower-third-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "lower-third-16x9.png",
-     "svg": "lower-third-16x9.svg"
-    },
-    "aspect": "16x9",
-    "family": "overlays",
-    "type": "lower-third",
-    "composite": "alpha, over anything",
-    "panel": {
-     "x": 10,
-     "y": 10,
-     "w": 788,
-     "h": 176,
-     "opaque": true
-    },
-    "noBoil": "DELIBERATE, AND THE REASON IS DURATION. This is on screen longer than any other asset in the product. A wobble re-drawn three times a second at the edge of vision for forty minutes is not craft, it is a crawl — overlays/row-band is already exempt for the narrower case (movement under type held still), and here the viewer is not even looking at it. The hand is in the drawing, not in the motion. Enforced twice: engine/build.js NO_BOIL_KEYS ships one frame, AND every mark is inside pin(), so the plate cannot wobble even if a later boil strip asks it to.",
-    "ownGround": "It composites over a room, a chart, a filing screenshot and stock footage, so there is no wall to borrow legibility from — not even a family of walls to measure against, as the chapter openers had. Hence an opaque panel with its own bloom rim and its own cast: §1's finding, applied where it is unarguable. NO TAPE, unlike the title card: tape says the object arrived after the room did, which is true of a chapter title and false of the channel's own furniture.",
-    "replaces": "render_long.py:1450 simple_text() from rasters.py — PIL, Courier Bold, stroke outline. Two slots replace one formatted string: the ticker is a proper noun that must not wrap and the tagline is copy that might change, and one string cannot carry two failure modes.",
-    "placement": "the renderer positions this plate; it does not fill a frame. Bottom-left at one panel-height of margin is what it was designed against. It is its own size for the same reason overlays/row-band is — an overlay the compositor places, not a full-frame plate.",
-    "captionRegister": "SEE THE CAPTION DECISION IN CHANGES.md §1.2. This plate is drawn in the kit's hand because it is large, persistent and a brand element. Captions are NOT, and get the kit's materials without its hand — the two are one decision, and they differ on purpose."
    }
   },
   "overlays/lower-third-9x16": {
    "key": "overlays/lower-third-9x16",
    "dir": "overlays",
-   "aspect": "16x9",
+   "aspect": "9x16",
    "canvas": [
     960,
     252
@@ -208,20 +297,100 @@
     504
    ],
    "exportScale": 2,
-   "playback": "static",
-   "fps": null,
-   "frameCount": 1,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
    "files": {
-    "base": "lower-third-9x16.png",
-    "baseIsFrame": false,
+    "base": "lower-third-9x16-night.png",
+    "baseIsFrame": true,
     "frames": [
      {
-      "file": "lower-third-9x16.png",
-      "tag": null,
-      "args": {},
-      "hash": "cee7a445"
+      "file": "lower-third-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "e3c49946"
+     },
+     {
+      "file": "lower-third-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "e3c49946"
+     },
+     {
+      "file": "lower-third-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "e3c49946"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "lower-third-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "lower-third-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e3c49946"
+      },
+      {
+       "file": "lower-third-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "e3c49946"
+      },
+      {
+       "file": "lower-third-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e3c49946"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "lower-third-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "lower-third-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "71a9edde"
+      },
+      {
+       "file": "lower-third-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "71a9edde"
+      },
+      {
+       "file": "lower-third-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "71a9edde"
+      }
+     ]
+    }
    },
    "slotCount": 2,
    "typeRoles": {
@@ -267,42 +436,6 @@
      "h": 39,
      "maxChars": 59
     }
-   },
-   "meta": {
-    "delivered": [
-     1920,
-     504
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "lower-third-9x16.svg",
-      "png": "lower-third-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "lower-third-9x16.png",
-     "svg": "lower-third-9x16.svg"
-    },
-    "aspect": "16x9",
-    "family": "overlays",
-    "type": "lower-third",
-    "composite": "alpha, over anything",
-    "panel": {
-     "x": 10,
-     "y": 10,
-     "w": 928,
-     "h": 220,
-     "opaque": true
-    },
-    "noBoil": "DELIBERATE, AND THE REASON IS DURATION. This is on screen longer than any other asset in the product. A wobble re-drawn three times a second at the edge of vision for forty minutes is not craft, it is a crawl — overlays/row-band is already exempt for the narrower case (movement under type held still), and here the viewer is not even looking at it. The hand is in the drawing, not in the motion. Enforced twice: engine/build.js NO_BOIL_KEYS ships one frame, AND every mark is inside pin(), so the plate cannot wobble even if a later boil strip asks it to.",
-    "ownGround": "It composites over a room, a chart, a filing screenshot and stock footage, so there is no wall to borrow legibility from — not even a family of walls to measure against, as the chapter openers had. Hence an opaque panel with its own bloom rim and its own cast: §1's finding, applied where it is unarguable. NO TAPE, unlike the title card: tape says the object arrived after the room did, which is true of a chapter title and false of the channel's own furniture.",
-    "replaces": "render_long.py:1450 simple_text() from rasters.py — PIL, Courier Bold, stroke outline. Two slots replace one formatted string: the ticker is a proper noun that must not wrap and the tagline is copy that might change, and one string cannot carry two failure modes.",
-    "placement": "the renderer positions this plate; it does not fill a frame. Bottom-left at one panel-height of margin is what it was designed against. It is its own size for the same reason overlays/row-band is — an overlay the compositor places, not a full-frame plate.",
-    "captionRegister": "SEE THE CAPTION DECISION IN CHANGES.md §1.2. This plate is drawn in the kit's hand because it is large, persistent and a brand element. Captions are NOT, and get the kit's materials without its hand — the two are one decision, and they differ on purpose."
    }
   }
  }

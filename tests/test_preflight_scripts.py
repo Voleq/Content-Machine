@@ -305,7 +305,7 @@ def _installed_matches_shipped() -> bool:
             "_ingest_probe", SCRIPTS / "ingest_kit.py")
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        shipped = set(mod._shipped_manifests(ROOT / "kit"))
+        shipped = mod._shipped_keys(ROOT / "kit")
         installed = set(load_plates(
             Settings(MOCK_MODE=True, _env_file=None).assets_dir).keys())
     except (PlateError, OSError, KeyError):

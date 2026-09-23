@@ -1,624 +1,308 @@
 {
+ "_note": [
+  "Curation, as DATA. Everything here is the part of the kit that is a judgement",
+  "rather than a measurement: which pose serves which kind of shot, which room",
+  "angle carries which kind of beat, and which plates are held back. Geometry",
+  "never appears here: that comes off the engine, which drew it.",
+  "",
+  "WHAT A PLATE IS FOR IS DESIGN'S, AND IT IS NOT IN THIS FILE. Since rebuild-12",
+  "every plate carries a purpose, a caution, the chapter types it serves and, for",
+  "the sector rounds, the GICS sector its structure presumes, in the delivery's own",
+  "roles.fragment.json. The ingest reads that file and this one together: the",
+  "fragment says what each plate is for and where it belongs, this file says who",
+  "stands where and what is held back. So a new drop brings its own plate notes",
+  "and nothing here has to be retyped to keep up with it.",
+  "",
+  "Written for rebuild-19/20 ('hopefully the last one', 2026-09-23). Every name",
+  "below is in that kit; nothing is carried over from the drawn kit before it."
+ ],
+ "hostRoles": {
   "_note": [
-    "Curation, as DATA. Everything here is the part of the kit that is a judgement",
-    "rather than a measurement: which pose serves which kind of shot, which plates a",
-    "chapter type may reach for, and the one line that tells a writer what a plate is",
-    "FOR. Geometry never appears here — that comes off the engine, which drew it.",
-    "",
-    "It lives beside the manifests because a kit is swapped in as a whole. Ingest",
-    "reads whatever roles.json ships with the delivery and stamps it into the",
-    "registry; the pipeline then asks the registry for a role and never holds a list",
-    "of asset names. That is the test: a new kit with a different set of poses and a",
-    "different plate library drops in by shipping its own roles.json, and no Python",
-    "changes."
+   "Which poses serve which kind of shot. The twelve poses are figure.js's, each",
+   "with a still, a talk strip (closed, mid and wide mouths on the head offsets),",
+   "an idle strip and a blink strip.",
+   "",
+   "THE CLOSE-UP IS A WINDOW, NOT A POSE. The rebuild drew no close-up: design's",
+   "crop review (ANSWERS.md §4) found that a window on to-camera reads at",
+   "delivered scale, so scripts/kit_engine.js draws host/close-up through that",
+   "window, with all four strips. It is the only framing, and so the only member",
+   "of the roles a room with no floor falls back to. There is no medium and no",
+   "glance any more: a two-shot is a figure in a room, and he looks where his",
+   "pose looks.",
+   "",
+   "checking-a-figure is the EYELINE pose and design says it needs lateral room,",
+   "so it is in panel only. sitting-at-desk is drawn in the same standing box as",
+   "every other pose (DESIGN.md §2.5), so it scales like them; it is capped at one",
+   "a video because design has not reviewed it at 1:1."
   ],
-  "hostRoles": {
-    "_note": [
-      "Which poses serve which kind of shot. `talks` is false where the pose has talk",
-      "frames on disk for continuity of the file set but using them looks like a",
-      "mistake (scripts/host.txt, TRAPS). `limit` caps how often a pose may appear in",
-      "one video — head-in-hands is the cost of being right, not a reaction to a mild",
-      "loss.",
-      "",
-      "THE FRAMINGS ARE NOT POSES. close-up and medium are camera distances with no",
-      "floor line: they are the whole shot rather than a cut-out standing in a room,",
-      "so they are never solved onto a host-anchor. The close-up is the shot that was",
-      "missing — it carries the confession, the turn, and the line a chapter rests on.",
-      "",
-      "A GLANCE IS CUT AGAINST THE SIDE THE GRAPHIC IS ON. Every glance key publishes",
-      "its eyeline as `glance` in the registry; a glance cut against a graphic on the",
-      "opposite side is worse than him facing camera, so straight-to-camera stays the",
-      "default and a glance is only chosen when the side is known."
-    ],
-    "open": [
-      "host/leaning-on-desk",
-      "host/hands-in-pockets"
-    ],
-    "beat": [
-      "host/empty-chair",
-      "host/hands-in-pockets",
-      "host/holding-a-page",
-      "host/leaning-on-desk",
-      "host/sitting-at-desk"
-    ],
-    "panel": [
-      "host/pointing-down-at-desk",
-      "host/holding-a-page",
-      "host/leaning-on-desk",
-      "host/medium"
-    ],
-    "close": [
-      "host/walking-out-of-frame",
-      "host/head-in-hands"
-    ],
-    "confession": [
-      "host/close-up"
-    ],
-    "turn": [
-      "host/close-up"
-    ],
-    "rests-on": [
-      "host/close-up"
-    ],
-    "to-camera": [
-      "host/close-up",
-      "host/medium",
-      "host/sitting-at-desk"
-    ],
-    "glance-left": [
-      "host/close-up-glance-left",
-      "host/medium-glance-left"
-    ],
-    "glance-right": [
-      "host/close-up-glance-right",
-      "host/medium-glance-right"
-    ]
+  "open": [
+   "host/to-camera",
+   "host/leaning-on-desk",
+   "host/hands-in-pockets"
+  ],
+  "beat": [
+   "host/considering",
+   "host/hands-in-pockets",
+   "host/holding-a-page",
+   "host/leaning-on-desk",
+   "host/arms-crossed",
+   "host/sitting-at-desk"
+  ],
+  "panel": [
+   "host/pointing-down-at-desk",
+   "host/holding-a-page",
+   "host/checking-a-figure",
+   "host/turn-to-screen"
+  ],
+  "close": [
+   "host/walking-out-of-frame",
+   "host/head-in-hands"
+  ],
+  "confession": [
+   "host/close-up"
+  ],
+  "turn": [
+   "host/close-up"
+  ],
+  "rests-on": [
+   "host/close-up"
+  ],
+  "to-camera": [
+   "host/close-up"
+  ]
+ },
+ "hostPoses": {
+  "host/to-camera": {
+   "talks": true,
+   "purpose": "square to camera, weight even: the plain talking stance"
   },
-  "hostPoses": {
-    "host/leaning-on-desk": {
-      "talks": true,
-      "purpose": "the default — talking to camera, weight on one arm"
-    },
-    "host/hands-in-pockets": {
-      "talks": true,
-      "purpose": "listening, or between arguments. Neutral, low energy"
-    },
-    "host/holding-a-page": {
-      "talks": true,
-      "purpose": "reading a figure out, when the page is the source of the number on screen"
-    },
-    "host/pointing-down-at-desk": {
-      "talks": true,
-      "purpose": "the number is on the desk — pairs with a table or chart in the lower half"
-    },
-    "host/head-in-hands": {
-      "talks": false,
-      "limit": 1,
-      "purpose": "the cost of being right. Weary, not comic — never for a mild loss"
-    },
-    "host/walking-out-of-frame": {
-      "talks": false,
-      "purpose": "the exit. Last host frame of a section, never mid-argument"
-    },
-    "host/close-up": {
-      "talks": true,
-      "framing": true,
-      "purpose": "head and shoulders, down the lens — the confession, the turn, and the line a chapter rests on"
-    },
-    "host/medium": {
-      "talks": true,
-      "framing": true,
-      "purpose": "waist up, down the lens — a talking beat with more air than the close-up and no room behind him"
-    },
-    "host/close-up-glance-left": {
-      "talks": true,
-      "framing": true,
-      "glance": "camera-left",
-      "purpose": "close-up looking off to camera-left; cut only against a graphic on THAT side"
-    },
-    "host/close-up-glance-right": {
-      "talks": true,
-      "framing": true,
-      "glance": "camera-right",
-      "purpose": "close-up looking off to camera-right; cut only against a graphic on THAT side"
-    },
-    "host/medium-glance-left": {
-      "talks": true,
-      "framing": true,
-      "glance": "camera-left",
-      "purpose": "medium looking off to camera-left; the two-shot's own eyeline"
-    },
-    "host/medium-glance-right": {
-      "talks": true,
-      "framing": true,
-      "glance": "camera-right",
-      "purpose": "medium looking off to camera-right; the two-shot's own eyeline"
-    },
-    "host/medium-robe": {
-      "talks": true,
-      "framing": true,
-      "outfit": "robe",
-      "purpose": "the second wardrobe, at medium — a garment needs waist-up to show at all"
-    },
-    "host/sitting-at-desk": {
-      "talks": true,
-      "limit": 0,
-      "note": "seated at his own desk. 0.739 of a standing figure's height — meta.seated.heights — so the compositor scales to that ratio, not to the anchor height."
-    },
-    "host/empty-chair": {
-      "talks": false,
-      "limit": 1,
-      "note": "the same chair with nobody in it. A cut-away at the end of a chapter, or under a line delivered over an empty set. Once a video or the absence stops reading."
-    }
+  "host/leaning-on-desk": {
+   "talks": true,
+   "purpose": "talking to camera, weight on one arm"
   },
-  "roomRoles": {
-    "_note": [
-      "Which room angle opens a section, carries a talking beat, or backs a plate.",
-      "",
-      "THREE CAMERA POSITIONS, NOT NINE STRAIGHT-ON ELEVATIONS. corner-perspective,",
-      "low-desk-height and high-desk-down exist because a cut made only of",
-      "eye-level frontal plates reads as props sliding on a shelf. They are in the",
-      "rotation, not a special case.",
-      "",
-      "high-desk-down declares `hostAnchor: false` — looking down at the desk there",
-      "is no floor for him to stand on — so it is a SURFACE angle and never carries",
-      "a host. wall-of-calls refuses an anchor for the same reason.",
-      "",
-      "panel is the TWO-SHOT: him on one side, the thing being discussed on",
-      "the other. The angles here are the ones with lateral room — a corner",
-      "or a wall — because a straight-on desk shot puts him in the middle of",
-      "the frame with nowhere for a graphic to go. `render_long` asked for",
-      "this role and nothing filled it, so every two-shot in the tag-driven",
-      "long was composed on flat ground with no room in it at all."
-    ],
-    "establish": [
-      "room/wide",
-      "room/wide-tight",
-      "room/corner-perspective"
-    ],
-    "talk": [
-      "room/desk-front",
-      "room/desk-corner",
-      "room/low-desk-height"
-    ],
-    "panel": [
-      "room/desk-corner",
-      "room/corner-perspective",
-      "room/whiteboard-wall"
-    ],
-    "read": [
-      "room/from-behind-the-monitor",
-      "room/over-the-shoulder",
-      "room/printer-corner"
-    ],
-    "diagram": [
-      "room/whiteboard-wall"
-    ],
-    "exit": [
-      "room/doorway"
-    ],
-    "surface": [
-      "room/high-desk-down"
-    ],
-    "receipts": [
-      "room/wall-of-calls"
-    ]
+  "host/hands-in-pockets": {
+   "talks": true,
+   "purpose": "listening, or between arguments. Neutral, low energy"
   },
-  "roomHours": {
-    "_note": [
-      "WHICH HOUR THE SET IS AT. An hour name to the suffix its keys carry, and",
-      "the whole of what makes the 24 dusk plates reachable.",
-      "",
-      "SHIPPED AS ASSETS, NOT AS A MODE. `room/desk-front-dusk-16x9` sits beside",
-      "`room/desk-front-16x9` on all twelve angles in both aspects. Every one has",
-      "byte-identical slot boxes, `floorLineY` and `hostAnchor` to its night twin",
-      "— verified by design across all 24, not asserted — and only the wall tone",
-      "differs. So an hour is a SUFFIX ON A STEM the roles above already name,",
-      "and a shot template that works at night works at dusk with no changes.",
-      "",
-      "ONE HOUR PER EPISODE, AND NEVER TWO. The hour is drawn from the video's",
-      "own identity, once, the way `roomRoles` resolves `talk` to one of three",
-      "desk angles by seed — but at EPISODE granularity, never per shot. Two",
-      "hours on one wall in one video is two rooms, so the pick must not see a",
-      "shot index. `Registry.hour_for` is the only thing that chooses, and it",
-      "takes the episode and nothing else.",
-      "",
-      "`hours` IS WHAT THE KIT DRAWS. `episodes` IS HOW OFTEN EACH IS USED, and",
-      "they are two fields because they are two different judgements. An hour",
-      "can be drawn and held back; leaving the mix implicit in which keys exist",
-      "would make \"the kit ships dusk\" and \"half the channel is at dusk\" the",
-      "same statement, and only one of them is a decision anybody made.",
-      "",
-      "`episodes` IS THE DIAL, and it is a list rather than a weighting so it",
-      "reads as what it is: the hours an episode may be drawn at, picked from",
-      "uniformly. Rarer dusk is repetition — [\"night\", \"night\", \"night\",",
-      "\"dusk\"] is one episode in four. Both hours is [\"night\", \"dusk\"].",
-      "",
-      "IT SHIPS [\"night\"], DELIBERATELY, AND NOT BECAUSE DUSK IS UNFINISHED.",
-      "The 24 plates are drawn, verified and reachable the moment this list",
-      "names dusk. Three things hold it back, and the third is the one that",
-      "decides:",
-      "",
-      "  1. CHANGES.md §12: nobody has cut night against dusk in motion. The",
-      "     side-by-side reads; the cut has never been watched.",
-      "  2. The relight fails at 1:1 on the WIDEST angles — the desk's cast",
-      "     reads as lamp-lit while the wall reads as late light from outside.",
-      "     §12's own advice is that a director cutting dusk prefers the",
-      "     tighter angles.",
-      "  3. AND THE HOUR CANNOT BE MADE TO PREFER THEM. `hour_for` takes the",
-      "     episode; `roomRoles` picks the angle by seed; the two are",
-      "     independent by construction, which is what keeps one video at one",
-      "     hour. So there is no way to say \"dusk, but only on the tighter",
-      "     angles\". At [\"night\", \"dusk\"] half the channel goes to an hour",
-      "     nobody has watched, and some of those episodes land on exactly the",
-      "     angles where 2 is worst.",
-      "",
-      "The route back is to force one dusk episode, watch it end to end, and",
-      "then move to [\"night\", \"night\", \"night\", \"dusk\"] once it has survived",
-      "a real cut. It is one line, and it reverts nothing.",
-      "",
-      "EXPECTED WHILE THIS SAYS [\"night\"]: gates.reachable_plates reports the",
-      "24 dusk plates as unreachable, taking the count from 20 to 44. That is",
-      "the report working rather than a regression — an hour no episode is",
-      "drawn at is artwork with no route to the screen, and saying so is the",
-      "honest answer. It reverses the moment this list names dusk again.",
-      "",
-      "NIGHT IS FIRST AND THAT IS LOAD-BEARING: it is the empty suffix, so it is",
-      "also what an episode with no identity to draw from gets. The set the kit",
-      "was built at stays the default.",
-      "",
-      "AN ANGLE WITH NO PLATE AT AN HOUR KEEPS ITS OWN KEY. Derived per stem",
-      "rather than declared in a list here, so a kit that adds `-dusk` to an",
-      "angle that lacks one gets it the day it ships and no list falls behind —",
-      "which is the whole lesson of the slot fields the manifests used to drop.",
-      "Today that is `room/wall-of-calls`, and it is correct rather than a gap:",
-      "the receipts wall is drawn by `wallOfCalls`, not by `room`, and is a",
-      "content plate that happens to be a room rather than an angle on the set.",
-      "It has no hour because it is not the wall the light is failing on.",
-      "",
-      "`day` IS DELIBERATELY ABSENT. The set is lit by one warm desk lamp and one",
-      "cold monitor and every cast shadow derives from those two. At dusk that is",
-      "still true. In daylight it is false, and shipping it means a relight."
-    ],
-    "hours": {
-      "night": "",
-      "dusk": "-dusk"
-    },
-    "episodes": [
-      "night"
-    ]
+  "host/holding-a-page": {
+   "talks": true,
+   "purpose": "reading a figure out, when the page is the source of the number on screen"
   },
-  "chapterTypes": {
-    "_note": [
-      "The sixteen generic types, fixed. The director returns one of these plus a",
-      "display title; the type decides which plates the chapter may use and the title",
-      "is the only thing that reaches the screen. A type may appear twice in one video",
-      "under different titles, so nothing here is a per-video identity — there are no",
-      "ordinals and no uniqueness.",
-      "",
-      "`plates` is what this type adds to the universal set below. A plate named by",
-      "neither is not available to that chapter, and the validator says so by name."
-    ],
-    "_universal": {
-      "_why": "titles, the set, the host, marks, row highlights and framed foreign media belong to every chapter",
-      "plates": [
-        "paper/",
-        "room/",
-        "host/",
-        "annotations/",
-        "overlays/",
-        "frames/"
-      ]
-    },
-    "cold-open": {
-      "purpose": "the hook — the move, and why the next thirty minutes exist",
-      "plates": [
-        "charts/line-dense",
-        "figures/big-number-l1",
-        "figures/big-number-l2",
-        "paper/headline-stack-3-16x9",
-        "shorts/"
-      ]
-    },
-    "how-we-got-here": {
-      "purpose": "the history that makes the present readable",
-      "plates": [
-        "charts/insider-flow-12-16x9",
-        "charts/line-6y",
-        "charts/line-8q-16x9",
-        "charts/macro-series-16x9",
-        "cycles/",
-        "paper/headline-stack-3",
-        "paper/headline-stack-4",
-        "structure/confession-ledger-16x9",
-        "structure/confession-statement-16x9",
-        "structure/timeline",
-        "tables/numbers-sheet-3r",
-        "tables/numbers-sheet-4r",
-        "tables/numbers-sheet-5r",
-        "tables/numbers-sheet-6r"
-      ]
-    },
-    "how-the-money-is-made": {
-      "purpose": "the mechanism — what the business actually sells and to whom",
-      "plates": [
-        "cards/definition",
-        "charts/macro-series-16x9",
-        "charts/seasonality-4y-16x9",
-        "charts/seasonality-6y-16x9",
-        "figures/big-fraction",
-        "figures/by-region-5-16x9",
-        "figures/share-of-4-16x9",
-        "figures/waterfall-3s",
-        "figures/waterfall-4s",
-        "figures/waterfall-5s",
-        "paper/receipt-8-16x9",
-        "structure/whiteboard-3-16x9",
-        "structure/whiteboard-4-16x9",
-        "structure/flow",
-        "structure/unit-ladder",
-        "tables/"
-      ]
-    },
-    "the-numbers": {
-      "purpose": "the series, shown so it can be checked",
-      "plates": [
-        "charts/",
-        "figures/",
-        "paper/receipt-8-16x9",
-        "structure/row-spotlight",
-        "tables/"
-      ]
-    },
-    "one-framework": {
-      "purpose": "teach one idea the rest of the video leans on",
-      "plates": [
-        "cards/criteria",
-        "cards/definition",
-        "charts/macro-series",
-        "figures/big-fraction",
-        "figures/by-region-5-16x9",
-        "structure/whiteboard-3-16x9",
-        "structure/whiteboard-4-16x9",
-        "structure/both-true",
-        "structure/unit-ladder"
-      ]
-    },
-    "moat": {
-      "purpose": "what stops someone else doing this",
-      "plates": [
-        "cards/criteria",
-        "structure/whiteboard-3-16x9",
-        "structure/whiteboard-4-16x9",
-        "structure/both-true",
-        "figures/compare-side",
-        "figures/compare-stacked",
-        "peers/"
-      ]
-    },
-    "sector-comps": {
-      "purpose": "it did not move alone — the same moment across several names",
-      "plates": [
-        "charts/bars-6y",
-        "charts/multiples-grid-6-16x9",
-        "figures/compare-side",
-        "peers/",
-        "tables/"
-      ]
-    },
-    "management": {
-      "purpose": "who is running it, and what they have said",
-      "plates": [
-        "cards/quote-pull",
-        "charts/dilution-6y-16x9",
-        "charts/guided-vs-actual-6y-16x9",
-        "charts/insider-flow-12",
-        "charts/insider-flow-6",
-        "figures/ownership-16x9",
-        "room/wall-of-calls",
-        "structure/confession-ledger-16x9",
-        "structure/confession-statement-16x9",
-        "structure/language-shift",
-        "structure/said-happened-3-16x9",
-        "structure/said-happened-4-16x9",
-        "structure/said-happened-5-16x9",
-        "structure/timeline"
-      ]
-    },
-    "capital-allocation": {
-      "purpose": "where the cash went",
-      "plates": [
-        "charts/bars-6y",
-        "charts/dilution-6y",
-        "charts/insider-flow-12-16x9",
-        "charts/insider-flow-6-16x9",
-        "charts/maturities-16x9",
-        "figures/big-number-l1",
-        "figures/big-number-l2",
-        "structure/unit-ladder",
-        "tables/cash-flow"
-      ]
-    },
-    "guidance-estimates": {
-      "purpose": "what they promised against what the street expects",
-      "plates": [
-        "cards/quote-pull",
-        "charts/",
-        "figures/compare-side",
-        "figures/compare-stacked",
-        "figures/qoq-yoy-16x9",
-        "structure/language-shift-16x9",
-        "structure/said-happened-3-16x9",
-        "structure/said-happened-4-16x9",
-        "structure/said-happened-5-16x9",
-        "tables/"
-      ]
-    },
-    "short-interest": {
-      "purpose": "who is betting against it, and how crowded that is",
-      "plates": [
-        "charts/line-dense",
-        "figures/big-number-l1",
-        "figures/big-number-l2",
-        "figures/ownership-16x9",
-        "figures/short-interest",
-        "peers/",
-        "structure/both-true"
-      ]
-    },
-    "valuation": {
-      "purpose": "what the price implies, and what it used to imply",
-      "plates": [
-        "charts/line-6y",
-        "cycles/",
-        "figures/big-fraction",
-        "figures/short-interest-16x9",
-        "peers/",
-        "structure/confession-ledger-16x9",
-        "structure/implied",
-        "structure/multiple-bridge",
-        "structure/sensitivity-16x9",
-        "tables/"
-      ]
-    },
-    "risk": {
-      "purpose": "what actually breaks the thesis",
-      "plates": [
-        "cards/quote-pull",
-        "charts/macro-series",
-        "charts/maturities",
-        "figures/big-number-l1",
-        "figures/big-number-l2",
-        "figures/by-region-5-16x9",
-        "figures/scale-3-16x9",
-        "paper/headline-stack-3-16x9",
-        "paper/headline-stack-4-16x9",
-        "structure/both-true",
-        "structure/language-shift-16x9"
-      ]
-    },
-    "filing-walk": {
-      "purpose": "the document itself, read on screen",
-      "plates": [
-        "cards/quote-pull",
-        "charts/insider-flow-6-16x9",
-        "structure/language-shift-16x9",
-        "structure/timeline"
-      ]
-    },
-    "bull-vs-bear": {
-      "purpose": "two readings that are both true",
-      "plates": [
-        "cards/criteria",
-        "charts/insider-flow-6-16x9",
-        "figures/compare-side",
-        "figures/compare-stacked",
-        "figures/short-interest-16x9",
-        "structure/both-true",
-        "structure/confession-ledger-16x9",
-        "structure/confession-statement-16x9"
-      ]
-    },
-    "resigned-close": {
-      "purpose": "the sign-off — what he is left holding",
-      "plates": [
-        "charts/guided-vs-actual-6y-16x9",
-        "figures/big-number-l1",
-        "figures/big-number-l2",
-        "structure/closing",
-        "structure/confession-ledger",
-        "structure/confession-statement",
-        "structure/end-card",
-        "structure/implied-16x9",
-        "structure/said-happened-3-16x9",
-        "structure/said-happened-4-16x9",
-        "structure/said-happened-5-16x9"
-      ]
-    }
+  "host/pointing-down-at-desk": {
+   "talks": true,
+   "purpose": "the number is on the desk: pairs with a table or chart in the lower half"
   },
-  "purposes": {
-    "_note": "One line per plate, for the writing prompt's catalogue. Taken from the kit's own scripts/*.txt so the catalogue and the artwork say the same thing.",
-    "tables/numbers-sheet-3r": "three rows, six periods. The smallest sheet — use it rather than leaving rows empty",
-    "tables/numbers-sheet-4r": "four rows, six periods",
-    "tables/numbers-sheet-5r": "five rows, six periods",
-    "tables/numbers-sheet-6r": "six rows, six periods. The full sheet",
-    "tables/numbers-sheet-6r-spark": "six rows with a sparkline column; labels must be abbreviated, the spark takes real width",
-    "tables/numbers-sheet-4r-spark": "four rows with a sparkline column; labels must be abbreviated",
-    "tables/cash-flow": "the cash-flow statement — three groups, subtotals, a total",
-    "tables/multiples-strip": "the subject against the peer set on several multiples at once — rows are METRICS, columns are subject / peer median / position on the peer range. Six rows in 16:9; the 9:16 re-author takes THREE rows and has no median column, so the peer number reaches the plate through marker-N's median argument instead. The inverse of peers/peer-strip, never a substitute for it",
-    "charts/line-6y": "six periods, points labelled. The default series chart. Always after a table of the same series",
-    "charts/bars-6y": "six periods as bars. When the periods are independent quantities rather than a path",
-    "charts/line-dense": "many observations, four period heads, three marks. A price or daily series",
-    "figures/big-number-l1": "one quantity: kicker, value, label, caption",
-    "figures/big-number-l2": "one quantity plus a qualifier the number cannot carry alone",
-    "figures/big-fraction": "a ratio, shown as what it is made of",
-    "figures/compare-side": "two quantities side by side — two different things at the same time",
-    "figures/compare-stacked": "two quantities stacked with a delta — the same measure at two times",
-    "cards/definition": "kicker, term, body, example. The example is not optional",
-    "cards/quote-pull": "management's own words, verbatim. If it needs an ellipsis it is too long",
-    "cards/criteria": "a test being applied — three check/row pairs",
-    "structure/both-true": "two statements that appear to conflict and are both true. mark-1/mark-2 take one up and one down",
-    "structure/unit-ladder": "a top-line quantity walked down to an outcome in five steps",
-    "structure/row-spotlight": "one row of a table pulled out, six periods. Use straight after the sheet it came from",
-    "structure/flow": "input, three boxes, output. 16:9 only — in 9:16 use timeline or unit-ladder",
-    "structure/multiple-bridge": "one multiple walked into another — trailing figure, what came out, forward figure, with the removal named on each connector. Three steps and two connectors, fixed. 16:9 only: there is no portrait bridge",
-    "structure/timeline": "six dated events. For decisions or disclosures, never a financial series",
-    "structure/closing": "three lines and a date. The last plate of a section",
-    "peers/peer-strip": "one moment across several names — the move and the multiple. Not for comparing fundamentals",
-    "cycles/cycle-frame": "the same metric at two moments, with the path between them. For arguing cyclicality",
-    "paper/headline-band-t1": "the plain band. Default section title",
-    "paper/headline-band-t2": "heavier treatment, for a section opener",
-    "paper/headline-band-t3": "the loudest. Once per video — the thesis",
-    "shorts/hook-card-t1": "ticker, move, hook, sub. The standard vertical opener",
-    "shorts/hook-card-t2": "the same slots at a different weight, so cards do not all look alike",
-    "shorts/hook-card-t3": "ticker, huge, hook, sub — one dominant number rather than a percentage",
-    "frames/media-frame-t1": "a bordered area with caption and source. t1 is the lightest — for a busy image",
-    "frames/media-frame-t2": "a bordered area with caption and source, middle weight",
-    "frames/media-frame-t3": "a bordered area with caption and source, heaviest — for a sparse image",
-    "frames/capture-frame": "for text captures: headline, body and a mark on what you are pointing at",
-    "room/wide": "the establishing shot. Opens a section",
-    "room/wide-tight": "the same set closer; the far wall stops being drawn. Use when a headline band needs the top third",
-    "room/desk-front": "straight on at the desk. The workhorse for talking-to-camera",
-    "room/desk-corner": "three-quarter on the desk. Has a caption slot for naming an object in the set",
-    "room/from-behind-the-monitor": "over the screen backs toward him — he is reading, not addressing us",
-    "room/whiteboard-wall": "for a structure plate; the wall gives the diagram a reason to be in the room",
-    "room/printer-corner": "for paper — a filing, a transcript, a printout",
-    "room/doorway": "arrival and exit. Pairs with host/walking-out-of-frame",
-    "room/wall-of-calls": "the receipts wall — ticker, date and a one-word outcome per row",
-    "overlays/row-band": "the row highlight. The only sanctioned way to emphasise a row",
-    "annotations/scrawl-oval-wide": "the workhorse — circles a line of type or a headline",
-    "annotations/scrawl-oval-tight": "one cell, one candle, one word",
-    "annotations/underline-swipe": "two swipes under a line. Emphasis without enclosing",
-    "annotations/underline-tight": "the same, for a cell or a single figure",
-    "annotations/strike-out": "two crossing swipes. For a number that is wrong or stale",
-    "annotations/box-scrawl": "a rough rectangle. For a block, not a line",
-    "annotations/bracket-rows": "a tall bracket for grouping rows, with a note slot beside it",
-    "annotations/arrow-elbow": "from a scrawled note to a target",
-    "annotations/caret-note": "a caret with words above it, for an insertion",
-    "annotations/tick-marks": "three ticks. For a list being confirmed"
+  "host/arms-crossed": {
+   "talks": true,
+   "purpose": "the assertion: him committed to a point"
   },
-  "wardrobe": {
-    "_note": [
-      "One outfit per episode, the same in every frame of it — picked at ingest",
-      "or per workspace, never per shot. Every outfit keeps a mid-to-dark torso",
-      "and the darkest cloth at the trousers, so his separation from the room",
-      "survives whichever is chosen."
-    ],
-    "figure": {
-      "default": "shirt",
-      "options": [
-        "shirt",
-        "cardigan",
-        "rolled",
-        "jumper",
-        "gilet"
-      ],
-      "how": "an argument to the engine at ingest (--outfit)"
-    },
-    "medium": {
-      "default": "host/medium",
-      "alt": "host/medium-robe",
-      "how": "a different KEY, not an engine argument — the robe is drawn, not recoloured"
-    }
+  "host/considering": {
+   "talks": true,
+   "purpose": "the beat between two sentences, weight settled. Not for a point being made"
+  },
+  "host/checking-a-figure": {
+   "talks": true,
+   "purpose": "the eyeline pose: near arm raised toward the graphic side. Only where there is lateral room"
+  },
+  "host/turn-to-screen": {
+   "talks": true,
+   "purpose": "turned to the monitor: he is reading something off it"
+  },
+  "host/head-in-hands": {
+   "talks": false,
+   "limit": 1,
+   "purpose": "the cost of being right. Weary, not comic: never for a mild loss"
+  },
+  "host/walking-out-of-frame": {
+   "talks": false,
+   "purpose": "the exit. Last host frame of a section, never mid-argument"
+  },
+  "host/sitting-at-desk": {
+   "talks": true,
+   "limit": 1,
+   "purpose": "seated at his own desk: changes the scene inside a long chapter. Not yet reviewed at 1:1 by design, so once a video"
+  },
+  "host/close-up": {
+   "talks": true,
+   "framing": true,
+   "purpose": "head and shoulders, down the lens: the confession, the turn, and the line a chapter rests on. Never held on the still strip"
   }
+ },
+ "roomRoles": {
+  "_note": [
+   "Which room angle carries which kind of beat, picked by seed within a role.",
+   "",
+   "SIX OF THE FOURTEEN ROOMS ARE HELD BACK, and heldBack.rooms says why. With",
+   "him composited by the contract, four of them paint a wall item over him",
+   "(panel-left over his head, read-close over his face, turn-to-screen over his",
+   "head, desk-side across his body) and the two new talk angles stand him behind",
+   "the monitor. That went back to design on 2026-09-23. Until it is fixed every",
+   "role is filled from the rooms that are clean, which is why read borrows",
+   "desk-wide and window-wall and talk has two members rather than design's",
+   "three. A room goes back in with one line here, once the drop that fixes it",
+   "has been checked; the ingest measures every room in a role and refuses one",
+   "whose front layer covers his head.",
+   "",
+   "board and desk-top-down declare no host anchor, so nobody stands in them: a",
+   "beat that asks for a host there is told in the close-up. board is the index",
+   "card wall and carries the receipts role now; it publishes no card slots, so",
+   "the wall of calls is not written on it."
+  ],
+  "establish": [
+   "room/desk-wide",
+   "room/doorway"
+  ],
+  "talk": [
+   "room/desk-front",
+   "room/window-wall"
+  ],
+  "panel": [
+   "room/desk-front",
+   "room/window-wall",
+   "room/board-side"
+  ],
+  "read": [
+   "room/desk-wide",
+   "room/window-wall"
+  ],
+  "diagram": [
+   "room/board-side"
+  ],
+  "exit": [
+   "room/doorway",
+   "room/doorway-wide"
+  ],
+  "surface": [
+   "room/desk-top-down"
+  ],
+  "receipts": [
+   "room/board"
+  ]
+ },
+ "heldBack": {
+  "_note": [
+   "Plates and rooms the kit ships that no shot may reach yet, each with the",
+   "reason. A held-back plate is off every chapter's menu, so the writer is never",
+   "offered it and a [PLATE] tag naming it is refused; a held-back room is in no",
+   "role. Each entry is a stem and covers both aspects."
+  ],
+  "plates": {
+   "figures/waterfall-3s": "design's geometry probe: the total label collides with step one. Legacy pass requested 2026-09-23",
+   "figures/waterfall-4s": "design's geometry probe: the total label collides with step one. Legacy pass requested 2026-09-23",
+   "figures/waterfall-5s": "design's geometry probe: the total label collides with step one. Legacy pass requested 2026-09-23",
+   "charts/insider-flow-6": "design's geometry probe: the who line collides with the caption. Legacy pass requested 2026-09-23",
+   "charts/insider-flow-12": "design's geometry probe: the who line collides with the caption. Legacy pass requested 2026-09-23",
+   "charts/macro-series": "design's geometry probe: the first axis value collides with the first head. Legacy pass requested 2026-09-23",
+   "cycles/cycle-frame": "design's geometry probe: the now value collides with the first head. Legacy pass requested 2026-09-23",
+   "structure/said-happened-6": "design's geometry probe: the rails run outside the 5% safe margin. Legacy pass requested 2026-09-23"
+  },
+  "rooms": {
+   "room/panel-left": "a wall frame is painted over his head (97% of it hidden)",
+   "room/read-close": "a wall sheet is painted over his face (78% of his head hidden)",
+   "room/turn-to-screen": "a wall shelf is painted over his head (67% of it hidden)",
+   "room/desk-side": "the lower wall shelf is painted across his body",
+   "room/desk-front-b": "he stands behind the monitor; it hides about half of him",
+   "room/desk-front-low": "he stands behind the monitor; only his head shows over it"
+  }
+ },
+ "hours": {
+  "_note": [
+   "WHICH HOURS AN EPISODE MAY BE SHOT AT, picked from uniformly, one per video.",
+   "The kit draws every plate at night and at dusk; this list is how often each",
+   "is used, which is a separate decision from what is drawn.",
+   "",
+   "IT SAYS [\"night\"], DELIBERATELY, as the kit before this one did: nobody has",
+   "watched a dusk episode cut end to end. The route is to force one, watch it,",
+   "then move to [\"night\", \"night\", \"night\", \"dusk\"]. It is one line. Until",
+   "then gates.reachable_plates reports every dusk plate as unreachable, which",
+   "is the report being right. Night is first because it is the empty suffix and",
+   "what an episode with no identity to draw from gets."
+  ],
+  "episodes": [
+   "night"
+  ]
+ },
+ "chapterTypes": {
+  "_note": [
+   "The sixteen generic types, fixed. The director returns one of these plus a",
+   "display title; the type decides which plates the chapter may use and the",
+   "title is the only thing that reaches the screen.",
+   "",
+   "`purpose` is ours and is what the director reads. WHICH PLATES a type may",
+   "use comes off the delivery: every plate in roles.fragment.json names its",
+   "chapter types, and the ingest files it under each. `plates` here is only",
+   "what a type adds on top of that, and `_universal` is what every type gets."
+  ],
+  "_universal": {
+   "_why": "the set, the host, marks, row highlights and framed foreign media belong to every chapter",
+   "plates": [
+    "room/",
+    "host/",
+    "annotations/",
+    "overlays/",
+    "frames/"
+   ]
+  },
+  "cold-open": {
+   "purpose": "the hook — the move, and why the next thirty minutes exist"
+  },
+  "how-we-got-here": {
+   "purpose": "the history that makes the present readable"
+  },
+  "how-the-money-is-made": {
+   "purpose": "the mechanism — what the business actually sells and to whom"
+  },
+  "the-numbers": {
+   "purpose": "the series, shown so it can be checked"
+  },
+  "one-framework": {
+   "purpose": "teach one idea the rest of the video leans on"
+  },
+  "moat": {
+   "purpose": "what stops someone else doing this"
+  },
+  "sector-comps": {
+   "purpose": "it did not move alone — the same moment across several names"
+  },
+  "management": {
+   "purpose": "who is running it, and what they have said"
+  },
+  "capital-allocation": {
+   "purpose": "where the cash went"
+  },
+  "guidance-estimates": {
+   "purpose": "what they promised against what the street expects"
+  },
+  "short-interest": {
+   "purpose": "who is betting against it, and how crowded that is"
+  },
+  "valuation": {
+   "purpose": "what the price implies, and what it used to imply"
+  },
+  "risk": {
+   "purpose": "what actually breaks the thesis"
+  },
+  "filing-walk": {
+   "purpose": "the document itself, read on screen"
+  },
+  "bull-vs-bear": {
+   "purpose": "two readings that are both true"
+  },
+  "resigned-close": {
+   "purpose": "the sign-off — what he is left holding"
+  }
+ },
+ "wardrobe": {
+  "_note": [
+   "The rebuild draws one outfit, so there is nothing to pick: figure.js paints",
+   "him in the kit's own cloth roles in every frame. The block stays because the",
+   "registry refuses a curation without one, and an absent block and a single",
+   "outfit are different statements."
+  ],
+  "figure": {
+   "default": "the kit's own",
+   "options": [],
+   "how": "figure.js, one outfit"
+  }
+ }
 }

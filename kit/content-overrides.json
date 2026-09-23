@@ -1,0 +1,72 @@
+{
+  "_spec": "THE EDIT SURFACE. Everything in the kit that a person changes by hand lives here and nowhere else. engine/content.js generates review content from each plate's own slot table; this file overrides it, per asset, per slot. Precedence: override > family rule > role default.",
+  "_howToUse": [
+    "A key is an asset id with no aspect and no hour: 'figures/big-number-l1', never 'figures/big-number-l1-16x9'.",
+    "`slots` sets text by the slot's published name. Run engine/audit.js --check after editing: rule 21 fails any slot name that does not exist on that plate, so a typo is caught rather than silently doing nothing.",
+    "`data` sets what engine/series.js draws — series, bars, steps, cycle, spark, low/high/mark.",
+    "`args` overrides what is passed to the plate author itself (row counts, layouts, treatments).",
+    "Every string is still checked against its slot's own maxChars. An override that does not fit is a failure, not a truncation you find later on screen."
+  ],
+  "_whatElseIsEditable": {
+    "palette": "design-tokens.json — the 13 material roles and the 9 ink roles, per hour. engine/port.js maps the legacy 8 roles onto them; that map is the whole recolour.",
+    "proportion": "design-tokens.json → proportion. One size number, everything else a ratio.",
+    "poses": "engine/kit-model.js → POSES. A pose is joint positions, not a redraw.",
+    "rooms": "engine/kit-model.js → rooms(). Shape lists plus an anchor height; the anchor width and the portrait window are derived.",
+    "whichAssetsExist": "engine/build.js → LIB. 270 entries, each an author plus args plus a seed.",
+    "theStory": "engine/content.js → STORY. One fictional filing drives every sample number, so a contact sheet reads as one story.",
+    "renderers": "engine/series.js — the six the plates name, plus linePath and bridge."
+  },
+  "overrides": {
+    "figures/big-number-l1": {
+      "_why": "The one plate most likely to carry a real headline number, kept here as the worked example of an override.",
+      "slots": {
+        "kicker": "CLAIMS DESK · FY24 AS FILED",
+        "value": "1,388",
+        "label": "of 1,511 claims actually checked",
+        "caption": "The other 123 were signed off on a summary."
+      }
+    },
+    "structure/said-happened-3": {
+      "slots": {
+        "kicker": "WHAT WAS SAID, AND WHAT HAPPENED",
+        "caption": "Three quarters, three statements, three outcomes."
+      }
+    },
+    "overlays/lower-third": {
+      "_why": "The wordmark still reads [FILL IN] everywhere else; this is where it gets set once there is a word.",
+      "slots": {
+        "ticker": "DENNIS",
+        "tagline": "reads the filings so you do not have to"
+      }
+    },
+    "charts/line-6y": {
+      "data": {
+        "series": [
+          11.02,
+          11.4,
+          11.8,
+          12.04,
+          11.88,
+          13.88
+        ],
+        "min": 0,
+        "max": 20,
+        "accentLast": true
+      },
+      "slots": {
+        "unit": "claims checked, hundreds"
+      }
+    }
+  },
+  "_wordmark": {
+    "_why": "The wordmark and strapline were [FILL IN] in three documents and in no code. A name that lives in prose gets typed differently every time it is used; this is the one place it is set, and overlays/lower-third reads it from here.",
+    "wordmark": "DENNIS",
+    "strapline": "reads the filings so you do not have to",
+    "_alternates": [
+      "the numbers, at three in the morning",
+      "someone has to read page 41",
+      "what was said, and what happened"
+    ],
+    "_note": "Strapline picked to match the show's own device (structure/said-happened) and the hours the kit is lit for. Swap it here and the lower third follows; nothing else hard-codes it."
+  }
+}

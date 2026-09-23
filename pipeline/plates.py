@@ -81,6 +81,18 @@ CHAPTER_TYPES = (
 )
 
 
+# The eleven GICS sectors, in the kit's spelling. A sector plate names the ONE
+# kind of issuer its structure presumes — an ARR bridge is for a subscription
+# business, a reserve-life plate is for a producer — and a plate that names no
+# sector is for any company. Fixed, because GICS is: a value outside it is a
+# typo, and a typo here hides a plate from every company it was drawn for.
+GICS_SECTORS = (
+    "energy", "materials", "industrials", "consumer-discretionary",
+    "consumer-staples", "health-care", "financials", "information-technology",
+    "communication-services", "utilities", "real-estate",
+)
+
+
 def fold_chapter_type(raw: str) -> str:
     """A type as a writer typed it, in the kit's spelling.
 
@@ -338,6 +350,19 @@ class Plate:
     # drawn for. The kit marks its wide angles False: their cast shadows still
     # fall where the night lamp puts them. None when the plate does not say.
     dusk_safe: bool | None = None
+    # DESIGN'S NOTE ON THE PLATE, off `roles.fragment.json`: when NOT to use it
+    # (or which sibling to prefer), the chapter types it is filed under, and —
+    # for the sector rounds — the one GICS sector its structure presumes. Empty
+    # `sectors` means any company. The writer is shown all of it.
+    caution: str = ""
+    sectors: tuple[str, ...] = ()
+    chapter_types: tuple[str, ...] = ()
+    formats: tuple[str, ...] = ()
+    beats: tuple[str, ...] = ()
+    # How much of his head the room's front layer covers with him standing on
+    # its anchor, as the engine driver measured it. None off a room, or on a
+    # room nobody stands in.
+    head_covered: float | None = None
 
     @property
     def base_key(self) -> str:
@@ -498,6 +523,18 @@ class Registry:
         # plate into every chapter's options twice, and rotate a video between
         # a drawing and itself.
         purposes: dict[str, str] = raw.get("purposes") or {}
+        # Design's note per plate, by its base-hour key. Absent on a registry
+        # an older ingest wrote, which is every plate with no caution.
+        self._notes: dict[str, dict] = {
+            str(k): v for k, v in (raw.get("plateNotes") or {}).items()
+            if isinstance(v, dict)}
+        # What the curation holds back, stem -> why. Held-back plates are off
+        # every chapter's menu already (the ingest leaves them out); this is
+        # kept so a report can say why a drawn plate is unreachable.
+        _held = raw.get("heldBack") or {}
+        self.held_back: dict[str, dict[str, str]] = {
+            "plates": dict(_held.get("plates") or {}),
+            "rooms": dict(_held.get("rooms") or {})}
         self._everything: dict[str, Plate] = {}
         for key, entry in (raw.get("assets") or {}).items():
             self._everything[key] = self._build(key, entry, purposes)
@@ -580,6 +617,12 @@ class Registry:
             if stem.endswith(suffix):
                 stem = stem[: -len(suffix)]
         purpose = purposes.get(key) or purposes.get(stem, "")
+        # Design's note is filed under the BASE-hour key, since every hour is
+        # the same plate; a dusk entry finds it through `atBaseHour`.
+        note = self._notes.get(str(e.get("atBaseHour") or key)) or {}
+        if not purpose:
+            purpose = str(note.get("purpose") or "")
+        occlusion = e.get("occlusion") if isinstance(e.get("occlusion"), dict) else {}
 
         # `columns` ARRIVES IN TWO SHAPES, because two different plate authors
         # spell two different things with one word and the registry flattens
@@ -640,6 +683,13 @@ class Registry:
             layers={k: str(v) for k, v in (e.get("layers") or {}).items()
                     if k in ("back", "front") and v},
             dusk_safe=(None if e.get("duskSafe") is None else bool(e["duskSafe"])),
+            caution=str(note.get("caution") or ""),
+            sectors=tuple(str(s) for s in note.get("sectors") or ()),
+            chapter_types=tuple(str(c) for c in note.get("chapterTypes") or ()),
+            formats=tuple(str(f) for f in note.get("formats") or ()),
+            beats=tuple(str(b) for b in note.get("beats") or ()),
+            head_covered=(float(occlusion["headCovered"])
+                          if occlusion.get("headCovered") is not None else None),
         )
 
     # ---------------------------------------------------------------- basics

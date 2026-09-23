@@ -1,0 +1,53 @@
+{
+ "_spec": "What the emitter must write for engine/audit.js to run every rule. This file is the CONTRACT, not an example: a field named here is a field a rule reads. Rules whose fields are absent report needs-data, never pass.",
+ "_generated": "rebuild-06, slice 6",
+ "_files": {
+  "emit/manifest.json": "One record per asset. Per-asset facts: what it is, how it plays, what it contains.",
+  "emit/plates.json": "One record per emitted PLATE (asset × hour × aspect). Per-plate facts: geometry, fills, boxes."
+ },
+
+ "manifest.json": {
+  "C": "number — the anchor constant. Rule 8 compares it against the value derived from design-tokens.json and fails on disagreement. Emit it so the two can be checked against each other; never as the source.",
+  "assets": {
+   "<asset id>": {
+    "role": "'host' | 'room' | 'plate' | 'overlay' — rule 7 fails any host-role asset with no hostAnchor",
+    "dir": "string — the folder, carried from the rename map",
+    "playback": "'loop' | 'overlay' | 'still' — rule 9",
+    "fps": "number — rule 9",
+    "frameCount": "number — rule 9; 3 for base/-talk/-idle, 2 for -blink (§3.5)",
+    "hostAnchor": "[x, y, w, h] or null — required when role is 'host'",
+    "gradients": "number — rule 1 fails on any non-zero",
+    "partialOpacity": "number — rule 2 fails on any non-zero; count of nodes whose opacity is neither 0 nor 1",
+    "textNodes": "number — rule 10 fails on any non-zero; all type is outlined"
+   }
+  }
+ },
+
+ "plates.json": {
+  "figureInkAspect": "number — the figure's ink width divided by the 720-unit box height. Rule 16 checks every anchor width equals height × this. An anchor publishes a HEIGHT; the width is derived (§4.4a).",
+  "plates": [
+   {
+    "id": "string",
+    "role": "'host' | 'room' | 'plate' | 'overlay'",
+    "hour": "'night' | 'dusk' — rule 3 resolves fills against this hour's palette",
+    "aspect": "'16x9' | '9x16'",
+    "twinId": "string — the id shared by an asset's two hours. Rule 6 requires both twins to carry the same geometryHash.",
+    "geometryHash": "string — hash of the shape list ONLY, no colours. Rule 6.",
+    "fills": "[hex, …] — every fill actually emitted. Rule 3 fails any not in the hour's declared palette.",
+    "strokes": "[{colour, width}, …] — rule 4 requires exactly one distinct pair per hour",
+    "shapeCount": "number — rule 11 requires ≥ 6 on room plates (§4.3)",
+    "box": "[x, y, w, h] — the PUBLISHED figure box. Every pose publishes the standing box, padded above (§2.5).",
+    "inkBox": "[x0, y0, x1, y1] — the plate's real ink extent. Rule 13 fails if it leaves box.",
+    "hostAnchor": "[x, y, w, h] — room plates only",
+    "portraitWindow": "[x, y, w, h] — room plates only. Rule 14 requires hostAnchor inside it (§4.4a).",
+    "occlusionSplit": "number — the index from which shapes paint AFTER the host. Rule 15 requires it on every anchored room; a room with no anchor declares none (§4.5)."
+   }
+  ]
+ },
+
+ "_notes": [
+  "Rules 5, 8, 12, 17 and 18 read design-tokens.json alone and run today — they were verified against the real tokens at rebuild-06 and agree to the digit with the review surface.",
+  "Every other rule reports needs-data until the emitter writes these two files. needs-data is a schedule; DID NOT RUN is a defect. --check exits non-zero on the second, not the first (§8).",
+  "engine/audit.legacy.js is the predecessor's boil metric, kept because it settled a real disagreement about over-boiled assets. It measures stroke motion, and §6 removes the strokes it measured — it becomes live again only if annotations/ are rebuilt with strokes."
+ ]
+}

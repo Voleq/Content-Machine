@@ -1,0 +1,17 @@
+{
+  "_spec": "OLD ID -> NEW ID, for Code to re-wire roles.json, shot templates and constants mechanically instead of by hand. Required deliverable per the rebuild brief §2.1. This file is the SHAPE, populated in slice 6 once the new plate ids exist — an empty map is not an oversight, it is a scaffold so nobody invents a second format.",
+  "_status": "SCAFFOLD — EMPTY UNTIL SLICE 6. Populating it before the new inventory exists would record guesses.",
+  "_shape": {
+    "old/plate-id": "new/plate-id",
+    "old/plate-id-that-is-gone": null
+  },
+  "_rules": [
+    "A null value means DROPPED — the plate does not exist in the new kit and any reference to it must be removed, not repointed.",
+    "Keys are the delta-15 ids exactly as they appear in kit/<family>/manifest.json, both aspects listed separately.",
+    "One key per old id. If an old plate splits into two new ones, the value is the primary and the note field says what else to look at.",
+    "Generated, not hand-written: slice 6 emits it from the old manifests plus the new library so it cannot miss an id."
+  ],
+  "_coverage": "Slice 6 must assert that every key in the delta-15 manifests appears here exactly once. 270 plates across 14 families.",
+  "map": {},
+  "notes": {}
+}

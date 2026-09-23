@@ -1,29 +1,14 @@
 {
  "family": "peers",
- "pack": "delta-15",
- "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
+ "pack": "rebuild-17",
+ "generated": "engine/emit.js. Deterministic — regenerate from the engine you are holding: node engine/emit.js (node engine/emit.js --check diffs without writing).",
  "exportScale": 2,
- "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
- "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
- "assetCount": 4,
- "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
- "coordinateOrigin": "top-left of canvas",
- "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8",
+ "frameNaming": "<name>-<hour>_f01.._fNN before the extension. The BASE file carries no frame tag and is byte-identical to _f01.",
+ "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
+ "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
- "dataPolicy": "plate draws the ledger and reserves the bar column; every ticker, move and multiple is a slot, and engine/series.js draws the bars from the data",
- "slotKinds": {
-  "region": "a graphic region for code to draw into, not a text box (bars)"
- },
- "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
- "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
- "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
- "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
- "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
- "slotTotal": 74,
- "frameTotal": 12,
+ "assetCount": 7,
  "plates": {
   "peers/peer-strip-16x9": {
    "key": "peers/peer-strip-16x9",
@@ -39,37 +24,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "peer-strip-16x9.png",
+    "base": "peer-strip-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "peer-strip-16x9_f01.png",
+      "file": "peer-strip-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "a25c8007"
+      "hash": "30df5d7e"
      },
      {
-      "file": "peer-strip-16x9_f02.png",
+      "file": "peer-strip-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "fec7dc60"
+      "hash": "42033eb2"
      },
      {
-      "file": "peer-strip-16x9_f03.png",
+      "file": "peer-strip-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "84dec04b"
+      "hash": "30df5d7e"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "peer-strip-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "peer-strip-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "30df5d7e"
+      },
+      {
+       "file": "peer-strip-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "42033eb2"
+      },
+      {
+       "file": "peer-strip-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "30df5d7e"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "peer-strip-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "peer-strip-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "c11b2c50"
+      },
+      {
+       "file": "peer-strip-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "8cf6bebc"
+      },
+      {
+       "file": "peer-strip-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "c11b2c50"
+      }
+     ]
+    }
    },
    "slotCount": 25,
    "typeRoles": {
@@ -365,34 +412,7 @@
      "h": 30,
      "maxChars": 98
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "peer-strip-16x9.svg",
-      "png": "peer-strip-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "peer-strip-16x9.png",
-     "svg": "peer-strip-16x9.svg"
-    },
-    "aspect": "16x9",
-    "family": "peers",
-    "type": "peer-strip",
-    "rows": 5,
-    "moveNote": "move-N is authored in the down colour, because a peer strip is called for when a complex moves together and that move is almost always red. A green row is a role override on the shot: boxes['move-2'] = { …rect, role: 'moveUp' }.",
-    "subjectNote": "row 1 is the subject — its ticker role is tickerSubject (structure). Rows 2+ are otherParty."
-   },
-   "boilGate": "frame-only"
+   }
   },
   "peers/peer-strip-9x16": {
    "key": "peers/peer-strip-9x16",
@@ -408,37 +428,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "peer-strip-9x16.png",
+    "base": "peer-strip-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "peer-strip-9x16_f01.png",
+      "file": "peer-strip-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "d35bc54e"
+      "hash": "813cf3e8"
      },
      {
-      "file": "peer-strip-9x16_f02.png",
+      "file": "peer-strip-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "570fd982"
+      "hash": "de3df72e"
      },
      {
-      "file": "peer-strip-9x16_f03.png",
+      "file": "peer-strip-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "cd4239f2"
+      "hash": "813cf3e8"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "peer-strip-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "peer-strip-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "813cf3e8"
+      },
+      {
+       "file": "peer-strip-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "de3df72e"
+      },
+      {
+       "file": "peer-strip-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "813cf3e8"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "peer-strip-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "peer-strip-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d8216690"
+      },
+      {
+       "file": "peer-strip-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "c4c7ae5e"
+      },
+      {
+       "file": "peer-strip-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d8216690"
+      }
+     ]
+    }
    },
    "slotCount": 21,
    "typeRoles": {
@@ -699,34 +781,7 @@
      "h": 30,
      "maxChars": 58
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "peer-strip-9x16.svg",
-      "png": "peer-strip-9x16.png"
-     }
-    ],
-    "files": {
-     "png": "peer-strip-9x16.png",
-     "svg": "peer-strip-9x16.svg"
-    },
-    "aspect": "9x16",
-    "family": "peers",
-    "type": "peer-strip",
-    "rows": 4,
-    "moveNote": "move-N is authored in the down colour, because a peer strip is called for when a complex moves together and that move is almost always red. A green row is a role override on the shot: boxes['move-2'] = { …rect, role: 'moveUp' }.",
-    "subjectNote": "row 1 is the subject — its ticker role is tickerSubject (structure). Rows 2+ are otherParty."
-   },
-   "boilGate": "frame-only"
+   }
   },
   "peers/distribution-16x9": {
    "key": "peers/distribution-16x9",
@@ -742,37 +797,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "distribution-16x9.png",
+    "base": "distribution-16x9-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "distribution-16x9_f01.png",
+      "file": "distribution-16x9-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "021626df"
+      "hash": "2f53dac0"
      },
      {
-      "file": "distribution-16x9_f02.png",
+      "file": "distribution-16x9-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "021626df"
+      "hash": "2f53dac0"
      },
      {
-      "file": "distribution-16x9_f03.png",
+      "file": "distribution-16x9-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "021626df"
+      "hash": "2f53dac0"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "distribution-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "distribution-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "2f53dac0"
+      },
+      {
+       "file": "distribution-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "2f53dac0"
+      },
+      {
+       "file": "distribution-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "2f53dac0"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "distribution-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "distribution-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "dec42672"
+      },
+      {
+       "file": "distribution-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "dec42672"
+      },
+      {
+       "file": "distribution-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "dec42672"
+      }
+     ]
+    }
    },
    "slotCount": 14,
    "typeRoles": {
@@ -969,33 +1086,7 @@
      "h": 30,
      "maxChars": 101
     }
-   },
-   "meta": {
-    "delivered": [
-     3840,
-     2160
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
-    "frames": [
-     {
-      "tag": "",
-      "svg": "distribution-16x9.svg",
-      "png": "distribution-16x9.png"
-     }
-    ],
-    "files": {
-     "png": "distribution-16x9.png",
-     "svg": "distribution-16x9.svg"
-    },
-    "aspect": "16x9",
-    "family": "peers",
-    "type": "distribution",
-    "buckets": 7,
-    "axisNote": "the buckets and the marker share one horizontal scale, published here. Two scales would put the subject in the wrong bucket, which is a lie the plate would tell silently."
-   },
-   "boilGate": "frame-only"
+   }
   },
   "peers/distribution-9x16": {
    "key": "peers/distribution-9x16",
@@ -1011,37 +1102,99 @@
    ],
    "exportScale": 2,
    "playback": "loop",
-   "fps": 2,
+   "fps": 3,
    "frameCount": 3,
    "files": {
-    "base": "distribution-9x16.png",
+    "base": "distribution-9x16-night.png",
     "baseIsFrame": true,
     "frames": [
      {
-      "file": "distribution-9x16_f01.png",
+      "file": "distribution-9x16-night_f01.png",
       "tag": "_f01",
       "args": {
-       "boil": 1
+       "ruleOffset": 0
       },
-      "hash": "c25c9b5e"
+      "hash": "28380238"
      },
      {
-      "file": "distribution-9x16_f02.png",
+      "file": "distribution-9x16-night_f02.png",
       "tag": "_f02",
       "args": {
-       "boil": 2
+       "ruleOffset": 1
       },
-      "hash": "c25c9b5e"
+      "hash": "28380238"
      },
      {
-      "file": "distribution-9x16_f03.png",
+      "file": "distribution-9x16-night_f03.png",
       "tag": "_f03",
       "args": {
-       "boil": 5
+       "ruleOffset": 0
       },
-      "hash": "c25c9b5e"
+      "hash": "28380238"
      }
     ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "distribution-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "distribution-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "28380238"
+      },
+      {
+       "file": "distribution-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "28380238"
+      },
+      {
+       "file": "distribution-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "28380238"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "distribution-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "distribution-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "f346e168"
+      },
+      {
+       "file": "distribution-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "f346e168"
+      },
+      {
+       "file": "distribution-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "f346e168"
+      }
+     ]
+    }
    },
    "slotCount": 14,
    "typeRoles": {
@@ -1238,33 +1391,1346 @@
      "h": 30,
      "maxChars": 59
     }
-   },
-   "meta": {
-    "delivered": [
-     2160,
-     3840
-    ],
-    "frameCount": 1,
-    "fps": 0,
-    "playback": "static",
+   }
+  },
+  "peers/scatter-16x9": {
+   "key": "peers/scatter-16x9",
+   "dir": "peers",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "scatter-16x9-night.png",
+    "baseIsFrame": true,
     "frames": [
      {
-      "tag": "",
-      "svg": "distribution-9x16.svg",
-      "png": "distribution-9x16.png"
+      "file": "scatter-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "4ddb1098"
+     },
+     {
+      "file": "scatter-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "bd977ba8"
+     },
+     {
+      "file": "scatter-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "4ddb1098"
      }
-    ],
-    "files": {
-     "png": "distribution-9x16.png",
-     "svg": "distribution-9x16.svg"
-    },
-    "aspect": "9x16",
-    "family": "peers",
-    "type": "distribution",
-    "buckets": 7,
-    "axisNote": "the buckets and the marker share one horizontal scale, published here. Two scales would put the subject in the wrong bucket, which is a lie the plate would tell silently."
+    ]
    },
-   "boilGate": "frame-only"
+   "filesByHour": {
+    "night": {
+     "base": "scatter-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "scatter-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "4ddb1098"
+      },
+      {
+       "file": "scatter-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "bd977ba8"
+      },
+      {
+       "file": "scatter-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "4ddb1098"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "scatter-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "scatter-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7a6022be"
+      },
+      {
+       "file": "scatter-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "83ec2c89"
+      },
+      {
+       "file": "scatter-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7a6022be"
+      }
+     ]
+    }
+   },
+   "slotCount": 14,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 42,
+     "budget": "derived from the slot boxes that set this role; 42 is the floor (narrowest of 1), was 54"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 34,
+     "budget": "derived from the slot boxes that set this role; 34 is the floor (narrowest of 1), was 34"
+    },
+    "xAxis": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 38,
+     "budget": "derived from the slot boxes that set this role; 38 is the floor (narrowest of 1), was 38"
+    },
+    "yAxis": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 19,
+     "budget": "derived from the slot boxes that set this role; 19 is the floor (narrowest of 1), was 19"
+    },
+    "ticker": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 8), was 7"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 97,
+     "budget": "derived from the slot boxes that set this role; 97 is the floor (narrowest of 1), was 97"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 200,
+     "y": 110,
+     "w": 912,
+     "h": 32,
+     "maxChars": 42
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1142,
+     "y": 110,
+     "w": 578,
+     "h": 32,
+     "maxChars": 34
+    },
+    "plot-area": {
+     "role": "plot-area",
+     "container": true,
+     "note": "code draws one mark per peer in here only; the subject is the accent",
+     "x": 200,
+     "y": 250,
+     "w": 1520,
+     "h": 580
+    },
+    "ticker-1": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 200,
+     "y": 250,
+     "w": 120,
+     "h": 30,
+     "maxChars": 7
+    },
+    "ticker-2": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 200,
+     "y": 250,
+     "w": 120,
+     "h": 30,
+     "maxChars": 7
+    },
+    "ticker-3": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 200,
+     "y": 250,
+     "w": 120,
+     "h": 30,
+     "maxChars": 7
+    },
+    "ticker-4": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 200,
+     "y": 250,
+     "w": 120,
+     "h": 30,
+     "maxChars": 7
+    },
+    "ticker-5": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 200,
+     "y": 250,
+     "w": 120,
+     "h": 30,
+     "maxChars": 7
+    },
+    "ticker-6": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 200,
+     "y": 250,
+     "w": 120,
+     "h": 30,
+     "maxChars": 7
+    },
+    "ticker-7": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 200,
+     "y": 250,
+     "w": 120,
+     "h": 30,
+     "maxChars": 7
+    },
+    "ticker-8": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 200,
+     "y": 250,
+     "w": 120,
+     "h": 30,
+     "maxChars": 7
+    },
+    "x-axis": {
+     "align": "left",
+     "role": "xAxis",
+     "x": 200,
+     "y": 860,
+     "w": 608,
+     "h": 30,
+     "maxChars": 38
+    },
+    "y-axis": {
+     "align": "left",
+     "role": "yAxis",
+     "x": 200,
+     "y": 190,
+     "w": 300,
+     "h": 30,
+     "maxChars": 19
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 200,
+     "y": 950,
+     "w": 1520,
+     "h": 30,
+     "maxChars": 97
+    }
+   }
+  },
+  "peers/rule-of-40-16x9": {
+   "key": "peers/rule-of-40-16x9",
+   "dir": "peers",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "rule-of-40-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "rule-of-40-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "eb43f804"
+     },
+     {
+      "file": "rule-of-40-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "d7804142"
+     },
+     {
+      "file": "rule-of-40-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "eb43f804"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "rule-of-40-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "rule-of-40-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "eb43f804"
+      },
+      {
+       "file": "rule-of-40-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "d7804142"
+      },
+      {
+       "file": "rule-of-40-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "eb43f804"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "rule-of-40-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "rule-of-40-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "dc7cc328"
+      },
+      {
+       "file": "rule-of-40-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "5e9a0240"
+      },
+      {
+       "file": "rule-of-40-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "dc7cc328"
+      }
+     ]
+    }
+   },
+   "slotCount": 31,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "tick": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 12), was 6"
+    },
+    "axisTitle": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 2), was 36"
+    },
+    "lineLabel": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 14,
+     "budget": "derived from the slot boxes that set this role; 14 is the floor (narrowest of 1), was 18"
+    },
+    "ticker": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 8), was 8"
+    },
+    "name": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 16,
+     "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 21"
+    },
+    "scoreLabel": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 25,
+     "budget": "derived from the slot boxes that set this role; 25 is the floor (narrowest of 1), was 25"
+    },
+    "score": {
+     "font": "Courier Prime",
+     "size": 150,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 4,
+     "budget": "derived from the slot boxes that set this role; 4 is the floor (narrowest of 1), was 3"
+    },
+    "detail": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 32,
+     "budget": "derived from the slot boxes that set this role; 32 is the floor (narrowest of 1), was 40"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "y-axis": {
+     "align": "left",
+     "role": "axisTitle",
+     "x": 250,
+     "y": 164,
+     "w": 520,
+     "h": 28,
+     "maxChars": 36
+    },
+    "line-label": {
+     "align": "left",
+     "role": "lineLabel",
+     "x": 359,
+     "y": 224,
+     "w": 260,
+     "h": 28,
+     "maxChars": 14
+    },
+    "plot-area": {
+     "role": "plot-area",
+     "container": true,
+     "scale": {
+      "x": [
+       0,
+       50
+      ],
+      "y": [
+       -10,
+       40
+      ]
+     },
+     "note": "series.scatter places one mark per company on this FIXED scale and clamps and reports anything off it; the subject is the accent",
+     "x": 250,
+     "y": 220,
+     "w": 1090,
+     "h": 560
+    },
+    "ticker-1": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 250,
+     "y": 220,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-2": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 250,
+     "y": 220,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-3": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 250,
+     "y": 220,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-4": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 250,
+     "y": 220,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-5": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 250,
+     "y": 220,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-6": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 250,
+     "y": 220,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-7": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 250,
+     "y": 220,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-8": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 250,
+     "y": 220,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "x-tick-1": {
+     "align": "center",
+     "role": "tick",
+     "x": 205,
+     "y": 796,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-1": {
+     "align": "right",
+     "role": "tick",
+     "x": 150,
+     "y": 767,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-tick-2": {
+     "align": "center",
+     "role": "tick",
+     "x": 423,
+     "y": 796,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-2": {
+     "align": "right",
+     "role": "tick",
+     "x": 150,
+     "y": 655,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-tick-3": {
+     "align": "center",
+     "role": "tick",
+     "x": 641,
+     "y": 796,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-3": {
+     "align": "right",
+     "role": "tick",
+     "x": 150,
+     "y": 543,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-tick-4": {
+     "align": "center",
+     "role": "tick",
+     "x": 859,
+     "y": 796,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-4": {
+     "align": "right",
+     "role": "tick",
+     "x": 150,
+     "y": 431,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-tick-5": {
+     "align": "center",
+     "role": "tick",
+     "x": 1077,
+     "y": 796,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-5": {
+     "align": "right",
+     "role": "tick",
+     "x": 150,
+     "y": 319,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-tick-6": {
+     "align": "right",
+     "role": "tick",
+     "x": 1250,
+     "y": 796,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-6": {
+     "align": "right",
+     "role": "tick",
+     "x": 150,
+     "y": 207,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-axis": {
+     "align": "left",
+     "role": "axisTitle",
+     "x": 250,
+     "y": 836,
+     "w": 520,
+     "h": 28,
+     "maxChars": 36
+    },
+    "name": {
+     "align": "left",
+     "role": "name",
+     "x": 1400,
+     "y": 250,
+     "w": 360,
+     "h": 32,
+     "maxChars": 16
+    },
+    "score-label": {
+     "align": "left",
+     "role": "scoreLabel",
+     "x": 1400,
+     "y": 300,
+     "w": 360,
+     "h": 28,
+     "maxChars": 25
+    },
+    "score": {
+     "align": "left",
+     "role": "score",
+     "x": 1400,
+     "y": 340,
+     "w": 360,
+     "h": 174,
+     "maxChars": 4
+    },
+    "score-detail": {
+     "align": "left",
+     "role": "detail",
+     "x": 1400,
+     "y": 524,
+     "w": 360,
+     "h": 108,
+     "maxChars": 71,
+     "wraps": 3,
+     "maxCharsPerLine": 32,
+     "maxLines": 2
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "peers/rule-of-40-9x16": {
+   "key": "peers/rule-of-40-9x16",
+   "dir": "peers",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "rule-of-40-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "rule-of-40-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "51e59c90"
+     },
+     {
+      "file": "rule-of-40-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "915381a8"
+     },
+     {
+      "file": "rule-of-40-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "51e59c90"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "rule-of-40-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "rule-of-40-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "51e59c90"
+      },
+      {
+       "file": "rule-of-40-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "915381a8"
+      },
+      {
+       "file": "rule-of-40-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "51e59c90"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "rule-of-40-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "rule-of-40-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "06703512"
+      },
+      {
+       "file": "rule-of-40-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "418a5dc3"
+      },
+      {
+       "file": "rule-of-40-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "06703512"
+      }
+     ]
+    }
+   },
+   "slotCount": 31,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "tick": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 12), was 6"
+    },
+    "axisTitle": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 55,
+     "budget": "derived from the slot boxes that set this role; 55 is the floor (narrowest of 2), was 55"
+    },
+    "lineLabel": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 14,
+     "budget": "derived from the slot boxes that set this role; 14 is the floor (narrowest of 1), was 18"
+    },
+    "ticker": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 8), was 8"
+    },
+    "name": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "scoreLabel": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 61,
+     "budget": "derived from the slot boxes that set this role; 61 is the floor (narrowest of 1), was 61"
+    },
+    "score": {
+     "font": "Courier Prime",
+     "size": 150,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 4,
+     "budget": "derived from the slot boxes that set this role; 4 is the floor (narrowest of 1), was 3"
+    },
+    "detail": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 79,
+     "budget": "derived from the slot boxes that set this role; 79 is the floor (narrowest of 1), was 40"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "y-axis": {
+     "align": "left",
+     "role": "axisTitle",
+     "x": 186,
+     "y": 384,
+     "w": 798,
+     "h": 28,
+     "maxChars": 55
+    },
+    "line-label": {
+     "align": "left",
+     "role": "lineLabel",
+     "x": 266,
+     "y": 458,
+     "w": 260,
+     "h": 28,
+     "maxChars": 14
+    },
+    "plot-area": {
+     "role": "plot-area",
+     "container": true,
+     "scale": {
+      "x": [
+       0,
+       50
+      ],
+      "y": [
+       -10,
+       40
+      ]
+     },
+     "note": "series.scatter places one mark per company on this FIXED scale and clamps and reports anything off it; the subject is the accent",
+     "x": 186,
+     "y": 440,
+     "w": 798,
+     "h": 700
+    },
+    "ticker-1": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 186,
+     "y": 440,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-2": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 186,
+     "y": 440,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-3": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 186,
+     "y": 440,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-4": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 186,
+     "y": 440,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-5": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 186,
+     "y": 440,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-6": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 186,
+     "y": 440,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-7": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 186,
+     "y": 440,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "ticker-8": {
+     "overlay": true,
+     "role": "ticker",
+     "note": "positioned by the renderer beside its own mark",
+     "x": 186,
+     "y": 440,
+     "w": 120,
+     "h": 28,
+     "maxChars": 8
+    },
+    "x-tick-1": {
+     "align": "center",
+     "role": "tick",
+     "x": 141,
+     "y": 1156,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-1": {
+     "align": "right",
+     "role": "tick",
+     "x": 86,
+     "y": 1127,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-tick-2": {
+     "align": "center",
+     "role": "tick",
+     "x": 301,
+     "y": 1156,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-2": {
+     "align": "right",
+     "role": "tick",
+     "x": 86,
+     "y": 987,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-tick-3": {
+     "align": "center",
+     "role": "tick",
+     "x": 460,
+     "y": 1156,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-3": {
+     "align": "right",
+     "role": "tick",
+     "x": 86,
+     "y": 847,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-tick-4": {
+     "align": "center",
+     "role": "tick",
+     "x": 620,
+     "y": 1156,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-4": {
+     "align": "right",
+     "role": "tick",
+     "x": 86,
+     "y": 707,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-tick-5": {
+     "align": "center",
+     "role": "tick",
+     "x": 779,
+     "y": 1156,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-5": {
+     "align": "right",
+     "role": "tick",
+     "x": 86,
+     "y": 567,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-tick-6": {
+     "align": "right",
+     "role": "tick",
+     "x": 894,
+     "y": 1156,
+     "w": 90,
+     "h": 26,
+     "maxChars": 6
+    },
+    "y-tick-6": {
+     "align": "right",
+     "role": "tick",
+     "x": 86,
+     "y": 427,
+     "w": 84,
+     "h": 26,
+     "maxChars": 6
+    },
+    "x-axis": {
+     "align": "left",
+     "role": "axisTitle",
+     "x": 186,
+     "y": 1196,
+     "w": 798,
+     "h": 28,
+     "maxChars": 55
+    },
+    "name": {
+     "align": "left",
+     "role": "name",
+     "x": 96,
+     "y": 1270,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "score-label": {
+     "align": "left",
+     "role": "scoreLabel",
+     "x": 96,
+     "y": 1320,
+     "w": 888,
+     "h": 28,
+     "maxChars": 61
+    },
+    "score": {
+     "align": "left",
+     "role": "score",
+     "x": 96,
+     "y": 1360,
+     "w": 360,
+     "h": 174,
+     "maxChars": 4
+    },
+    "score-detail": {
+     "align": "left",
+     "role": "detail",
+     "x": 96,
+     "y": 1544,
+     "w": 888,
+     "h": 108,
+     "maxChars": 176,
+     "wraps": 3,
+     "maxCharsPerLine": 79,
+     "maxLines": 2
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
   }
  }
 }
