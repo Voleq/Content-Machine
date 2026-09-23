@@ -46,6 +46,12 @@ class StubResolver:
     def text_for(self, src: str) -> str | None:
         if src in self.missing:
             return None
+        # A day moves one way. The stub's went up, so the rising move plate is
+        # in its rotation and the falling one never is.
+        if src == "chart.move_up":
+            return "+3.4%"
+        if src == "chart.move_down":
+            return None
         if src == "numbers.header":
             return "\tFY-4\tFY-3\tFY-2\tFY-1\tFY-0"
         parts = set(src.split("."))
@@ -536,7 +542,11 @@ def test_the_reachability_report_counts_an_alternate_as_a_template_route(reg):
     for key in ("shorts/hook-card-t3", "figures/compare-side-9x16",
                 "cards/definition-9x16", "paper/headline-band-t3-9x16",
                 "tables/numbers-sheet-4r-spark-9x16",
-                "structure/confession-statement-9x16"):
+                "structure/confession-statement-9x16",
+                # round one's phone plates
+                "shorts/hook-card-t5", "figures/move-on-the-day-9x16",
+                "figures/move-on-the-day-up-9x16", "structure/closing-t2-9x16",
+                "structure/before-after-9x16"):
         assert key in routes["template"], key
 
 
@@ -596,3 +606,113 @@ def test_the_rotation_never_asks_the_writer_for_a_shorter_line(name, tmp_path):
         assert allowed is not None and now >= int(allowed), (
             f"{name}: an alternate narrows {field.src} from {was} to {now}, "
             f"and the writer may write {allowed}")
+
+
+# ---------------------------------------------------------------------------
+# Round one's phone plates
+# ---------------------------------------------------------------------------
+
+def _script(**over):
+    from pipeline.models import ShortScript
+
+    data = {
+        "ticker": "EXMPL", "format": "short",
+        "hook_text": "A muted hook line here.",
+        "audio_script": "Numbers first. Then the point. Noise.",
+        "move_summary": "+34% today · 6× average volume",
+        "headlines": [{"text": "H", "meaning": "M"}],
+        "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
+        "numbers": [{"label": "Rev", "values": ["$1M"] * 5 + ["$2M"]}],
+        "numbers_comment": "flat", "conclusion": "Noise.",
+    }
+    data.update(over)
+    return ShortScript.model_validate(data)
+
+
+def _real(script, tmp_path):
+    """The render's own resolver, with no price data loaded."""
+    from config import Settings
+    from pipeline.render_short import ShortResolver
+
+    return ShortResolver(script=script, workdir=tmp_path,
+                         settings=Settings(_env_file=None), prices=None,
+                         handle="@channel")
+
+
+@pytest.mark.parametrize("summary, want", [
+    ("+34% today · 6× average volume", "figures/move-on-the-day-up-9x16"),
+    ("-8.5% · guidance cut", "figures/move-on-the-day-9x16"),
+    ("\u221212% after the call", "figures/move-on-the-day-9x16"),
+    ("+0% · flat into the print", "charts/line-dense-9x16"),
+    ("Q3 print · guide raised", "charts/line-dense-9x16"),
+])
+def test_the_move_is_drawn_with_the_arrow_its_sign_calls_for(summary, want, reg,
+                                                             tmp_path):
+    """The two move plates DRAW their arrow, so each is the right picture for
+    one direction only. The figure is offered to a plate only when the move
+    summary opens on a sign that says which; a summary that opens on words, or
+    on a flat day, reaches neither and the beat keeps its authored chart.
+
+    No prices are loaded here, which is also the case this helps most: the
+    chart has nothing to draw, and the move plate needs nothing but the line
+    the writer already wrote.
+    """
+    from pipeline.compose import choose_variant
+
+    fmt = load_format("short")
+    shot = next(s for s in fmt.shots if s.id == "the-move")
+    resolver = _real(_script(move_summary=summary), tmp_path)
+    for i in range(6):
+        assert choose_variant(reg, shot, fmt.aspect, resolver,
+                              seed=f"s{i}").plate == want
+
+
+def test_the_move_figure_and_its_label_come_off_the_summary(tmp_path):
+    up = _real(_script(move_summary="+34% today · 6× average volume"), tmp_path)
+    assert up.text_for("chart.move_up") == "+34%"
+    assert up.text_for("chart.move_down") is None
+    assert up.text_for("chart.move_detail") == "today · 6× average volume"
+    down = _real(_script(move_summary="-8.5% · guidance cut"), tmp_path)
+    assert down.text_for("chart.move_down") == "-8.5%"
+    assert down.text_for("chart.move_up") is None
+    words = _real(_script(move_summary="Q3 print · guide raised"), tmp_path)
+    assert words.text_for("chart.move_detail") is None
+
+
+@pytest.mark.parametrize("name", VERTICAL)
+def test_no_caption_runs_under_a_figure_the_plate_sets_at_display_size(name, reg):
+    """Large type and the caption band never share a shot, WHICHEVER drawing
+    the rotation picked. The template's `captions` flag is the shot's and
+    cannot know the plate: the payoff says false by hand for `big-number`, and
+    the move on the day, an alternate, sets its figure just as large."""
+    from pipeline.shots import LARGE_TYPE_FH
+
+    base = load_format(name)
+    for i in range(12):
+        fmt, result, _plates = _cut(base, reg, f"seed-{i}")
+        captioned = {l.shot_id for l in result.layers if l.kind == "caption"}
+        for layer in result.layers:
+            if layer.kind != "plate" or layer.shot_id not in captioned:
+                continue
+            plate = reg.get(layer.entry_key)
+            k = layer.h / plate.canvas[1] / fmt.frame[1]
+            big = [n for n, v in (layer.values or {}).items()
+                   if plate.slot(n) is not None and str(v).strip()
+                   and float((plate.type_roles.get(plate.slot(n).role) or {})
+                             .get("size") or 0) * k >= LARGE_TYPE_FH]
+            assert not big, (f"{name} seed-{i}: captions run under "
+                             f"{layer.entry_key}'s {big}")
+
+
+@pytest.mark.parametrize("name", ("earnings", "macro"))
+def test_before_and_after_is_only_drawn_against_a_real_expectation(name, reg):
+    """`structure/before-after`'s caution: without a prior expectation it reads
+    as a comparison against a number the plate invented. So the consensus is a
+    REQUIRED bind there, and a script without one never lands on it."""
+    base = load_format(name)
+    reached = {_cut(base, reg, f"s{i}")[2]["vs-expected"] for i in range(12)}
+    assert "structure/before-after-9x16" in reached
+    blind = StubResolver(missing={"compare.expected"})
+    for i in range(12):
+        _f, _result, plates = _cut(base, reg, f"s{i}", resolver=blind)
+        assert plates["vs-expected"] != "structure/before-after-9x16"
