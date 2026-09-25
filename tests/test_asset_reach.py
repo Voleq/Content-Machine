@@ -412,3 +412,174 @@ def test_the_sfx_check_script_passes_only_when_a_render_could_proceed():
         assert good.returncode == 0, good.stdout + good.stderr
         assert "PASS" in good.stdout
 
+
+
+# What Freesound's text search returns under `fields=…,license,…`: the licence
+# as its deed URL, never its name. The API serialises `license.deed_url`; the
+# names ("Creative Commons 0", "Attribution", …) are only what the search
+# FILTER takes.
+_CC0_URL = "http://creativecommons.org/publicdomain/zero/1.0/"
+_BY_URL = "https://creativecommons.org/licenses/by/4.0/"
+_BY_NC_URL = "http://creativecommons.org/licenses/by-nc/3.0/"
+
+
+def _fetch_script(name: str):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        name, ROOT / "scripts" / "fetch_sfx.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _hit(i: int, licence: str, duration: float = 1.0) -> dict:
+    return {"id": i, "name": f"sound {i}", "username": f"user{i}",
+            "license": licence, "duration": duration,
+            "previews": {"preview-hq-mp3":
+                         f"https://cdn.freesound.org/previews/{i}-hq.mp3"}}
+
+
+def _answer(asked: list, *pages):
+    """A stand-in for `httpx.get` that answers each search with the next
+    page: a list of hits, or an HTTP status to fail with."""
+    import httpx
+
+    replies = list(pages)
+
+    def get(url, params=None, timeout=None):
+        asked.append(params["filter"])
+        page = replies.pop(0)
+        request = httpx.Request("GET", url)
+        if isinstance(page, int):
+            return httpx.Response(page, json={"detail": "refused"},
+                                  request=request)
+        return httpx.Response(200, json={"results": page}, request=request)
+
+    return get
+
+
+def test_the_fetch_reads_the_licence_the_way_freesound_writes_it(monkeypatch):
+    """The fetch matched licence NAMES against a field that holds a URL, so
+    no hit ever matched and every key came back "no licence-clean result":
+    the one script that clears the audio gate could not clear it. It asks for
+    CC0 by name in the filter and reads the URL off each hit."""
+    import httpx
+
+    mod = _fetch_script("_fetch_sfx_licence")
+    asked: list = []
+    monkeypatch.setattr(httpx, "get", _answer(asked, [
+        _hit(1, _BY_NC_URL, 0.4), _hit(2, _BY_URL, 0.3),
+        _hit(3, _CC0_URL, 2.5), _hit(4, _CC0_URL, 0.2)]))
+
+    hit = mod.search("vinyl record scratch stop", "key", max_s=4.0)
+
+    assert hit is not None, "a CC0 sound was in the answer and was not taken"
+    # The most relevant CC0 hit, not the shortest: under the cap, the
+    # shortest record scratch is a fragment of one.
+    assert hit["id"] == 3
+    assert asked == ['duration:[0.1 TO 4.0] license:"Creative Commons 0"']
+
+
+def test_the_fetch_never_takes_a_sound_the_channel_cannot_play(monkeypatch):
+    """A monetised channel is commercial use, so NonCommercial is out; an
+    Attribution sound owes a credit in every video that plays it, and no
+    upload carries one. Neither is taken, whichever way the licence is
+    spelled, even when nothing else turns up."""
+    import httpx
+
+    mod = _fetch_script("_fetch_sfx_refuse")
+    usable_elsewhere = [
+        _hit(1, _BY_NC_URL), _hit(2, _BY_URL),
+        dict(_hit(3, ""), license="Attribution"),
+        dict(_hit(4, ""), license="Attribution NonCommercial"),
+        dict(_hit(5, ""), license="http://creativecommons.org/licenses/sampling+/1.0/"),
+    ]
+    asked: list = []
+    monkeypatch.setattr(httpx, "get",
+                        _answer(asked, usable_elsewhere, usable_elsewhere))
+
+    assert mod.search("sad trombone", "key", max_s=4.0) is None
+    # It asked once more without the licence filter before giving up.
+    assert asked == ['duration:[0.1 TO 4.0] license:"Creative Commons 0"',
+                     "duration:[0.1 TO 4.0]"]
+
+
+def test_a_refused_licence_filter_costs_a_request_not_the_sound(monkeypatch, capsys):
+    """If the API ever reads the licence filter differently and refuses it,
+    the fetch asks again without it and picks CC0 out of the answer itself,
+    rather than losing all fifteen sounds to one filter string."""
+    import httpx
+
+    mod = _fetch_script("_fetch_sfx_fallback")
+    asked: list = []
+    monkeypatch.setattr(httpx, "get", _answer(
+        asked, 400, [_hit(1, _BY_URL), _hit(2, _CC0_URL)]))
+
+    hit = mod.search("pop bubble click short", "key", max_s=4.0)
+
+    assert hit is not None and hit["id"] == 2
+    assert asked[1] == "duration:[0.1 TO 4.0]"
+    # The first refusal is not reported as a failed search: the second
+    # request answered.
+    assert "search failed" not in capsys.readouterr().err
+
+    # Both refused is a failed search, and says so.
+    monkeypatch.setattr(httpx, "get", _answer([], 400, 500))
+    assert mod.search("pop", "key", max_s=4.0) is None
+    assert "search failed" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("licence, cc0", [
+    (_CC0_URL, True),
+    ("https://creativecommons.org/publicdomain/zero/1.0/", True),
+    ("Creative Commons 0", True),
+    ("CC0", True),
+    ("CC0-1.0", True),
+    (_BY_URL, False),
+    (_BY_NC_URL, False),
+    ("Attribution", False),
+    ("Attribution NonCommercial", False),
+    ("CC-BY-4.0", False),
+    ("", False),
+])
+def test_cc0_is_recognised_however_it_is_spelled(licence, cc0):
+    from pipeline.audio_assets import is_cc0
+
+    assert is_cc0(licence) is cc0
+
+
+def test_the_sfx_check_names_every_sound_that_owes_a_credit():
+    """The check looked for the word "attribution" in the licence, which a
+    deed URL never contains, so a CC BY file added by hand passed without a
+    word about the credit it owes in every video that plays it."""
+    import subprocess
+    import tempfile
+
+    from pipeline.audio_assets import AudioSource, save_sources
+
+    with tempfile.TemporaryDirectory() as tmp:
+        assets = Path(tmp)
+        sfx = assets / "sfx"
+        sfx.mkdir(parents=True)
+        for name in ("ding.wav", "pop.wav", "sting.wav"):
+            (sfx / name).write_bytes(b"RIFF")
+        save_sources(sfx, {
+            "ding.wav": AudioSource(name="ding.wav", source="freesound.org/s/1/",
+                                    licence=_CC0_URL, author="a", generated=False),
+            "pop.wav": AudioSource(name="pop.wav", source="freesound.org/s/2/",
+                                   licence=_BY_URL, author="b", generated=False),
+            "sting.wav": AudioSource(name="sting.wav", source="freesound.org/s/3/",
+                                     licence="CC0", author="c", generated=False)})
+        env = {"PATH": os.environ.get("PATH", ""),
+               "MOCK_MODE": "true", "ASSETS_DIR": str(assets),
+               "PYTHONPATH": str(ROOT)}
+        got = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "check_sfx.py")],
+            capture_output=True, text=True, env=env, cwd=ROOT)
+
+    assert got.returncode == 0, got.stdout + got.stderr
+    assert "ATTRIBUTION REQUIRED for 1 file(s)" in got.stdout, got.stdout
+    owed = got.stdout.split("ATTRIBUTION REQUIRED", 1)[1].split("PASS", 1)[0]
+    assert "pop.wav" in owed
+    assert "ding.wav" not in owed and "sting.wav" not in owed

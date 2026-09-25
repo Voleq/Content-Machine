@@ -14,8 +14,8 @@ are now the only thing standing between a placeholder and an upload, and
 render.
 
 So a sidecar records provenance. ``scripts/fetch_sfx.py`` writes it when it
-pulls real licence-clean effects; anything without an entry is assumed
-generated, because that is what it was before this file existed.
+pulls real CC0 effects; anything without an entry is assumed generated,
+because that is what it was before this file existed.
 
 Two things read it. :func:`audio_banner` labels the render's log the same way
 mock data is labelled. :func:`pipeline.gates.check_audio` turns the same list
@@ -67,6 +67,21 @@ class AudioSource:
     @property
     def real(self) -> bool:
         return not self.generated
+
+
+def is_cc0(licence: str) -> bool:
+    """Whether a licence is CC0, the one a video can play without a credit.
+
+    One definition, because it is spelled three ways. Freesound's API returns
+    a licence as its deed URL, here
+    ``http://creativecommons.org/publicdomain/zero/1.0/``; its search filter
+    and its website name it ``Creative Commons 0``; and an entry written by
+    hand usually says ``CC0``. Anything else carries terms that every video
+    playing the file has to meet.
+    """
+    s = str(licence or "").strip().lower()
+    return ("creativecommons.org/publicdomain/zero/" in s
+            or s == "creative commons 0" or s.startswith("cc0"))
 
 
 def sidecar_path(directory: Path) -> Path:
