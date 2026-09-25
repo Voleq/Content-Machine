@@ -355,6 +355,98 @@ class CompositeSpec:
         return sum(1 for a in self.base_input_args if a == "-i")
 
 
+def audio_graph(spec: CompositeSpec, first_input: int) -> tuple[list[str], list[str]]:
+    """The mix: input args, and filter lines that end in `[aout]`.
+
+    ONE mix for every renderer. The SHORT's used to be its own `-shortest`
+    mux of the voice alone, and when the shots rewrite replaced the old
+    renderer the room tone, the effects and the loudness pass went with it
+    and nobody noticed for six weeks. Both formats now build the same graph
+    here, so a change to the master bus reaches both or neither.
+
+    `first_input` is the ffmpeg input index the first track will take.
+    """
+    inputs: list[str] = []
+    lines: list[str] = []
+    idx = first_input
+    a_labels: list[str] = []
+    for j, track in enumerate(spec.audio):
+        if track.loop:
+            inputs += ["-stream_loop", "-1", "-i", str(track.path)]
+        else:
+            inputs += ["-i", str(track.path)]
+        chain = f"atrim=0:{max(spec.duration - track.start_s, 0.1):.3f}"
+        if track.voice:
+            # Light compression on the voice only, before the mix: a deadpan
+            # read has a wide dynamic range, and the quiet asides are exactly
+            # the lines that carry the joke.
+            chain += (",acompressor=threshold=-18dB:ratio=3:attack=8"
+                      ":release=180:makeup=2")
+        if track.start_s > 0:
+            chain += f",adelay={int(track.start_s * 1000)}:all=1"
+        chain += f",volume={track.gain_db:.1f}dB"
+        lines.append(f"[{idx}:a]{chain}[a{j}]")
+        a_labels.append(f"[a{j}]")
+        idx += 1
+    if len(a_labels) == 1:
+        lines.append(f"{a_labels[0]}anull[amixed]")
+    else:
+        lines.append(
+            f"{''.join(a_labels)}amix=inputs={len(a_labels)}"
+            f":duration=longest:normalize=0[amixed]"
+        )
+    # Master: normalise the programme to the streaming target and cap true
+    # peak, so uploads are not quietly turned down (or up) after the fact.
+    # Single-pass loudnorm — a two-pass measurement would double the audio
+    # work for a correction well under the threshold of audibility here.
+    if spec.normalise_audio:
+        lines.append(
+            f"[amixed]loudnorm=I={spec.loudness_lufs}:TP={spec.true_peak_db}"
+            f":LRA={spec.loudness_range},alimiter=limit={spec.limiter_ceiling}"
+            f"[aout]"
+        )
+    else:
+        lines.append(f"[amixed]alimiter=limit={spec.limiter_ceiling}[aout]")
+    return inputs, lines
+
+
+def mix_under_picture(
+    video: Path,
+    tracks: list[AudioTrack],
+    out_path: Path,
+    *,
+    duration: float,
+    audio_bitrate: str,
+    normalise: bool,
+    graph_path: Path | None = None,
+) -> Path:
+    """Put the mix under a picture that is already encoded.
+
+    The SHORT draws its frames and burns its captions before any sound is
+    involved, so there is no filtergraph to add the audio to. The picture is
+    stream-copied, not re-encoded, and the audio is `audio_graph`, the same
+    one `composite_video` builds for the LONG.
+    """
+    if not tracks:
+        raise RenderError("a mix needs at least one track")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    spec = CompositeSpec(base_input_args=["-i", str(video)], audio=tracks,
+                         duration=duration, normalise_audio=normalise)
+    a_inputs, lines = audio_graph(spec, first_input=1)
+    script = graph_path or out_path.with_suffix(".filter.txt")
+    script.write_text(";\n".join(lines) + "\n", encoding="utf-8")
+    run_ffmpeg([
+        "-y", "-i", str(video), *a_inputs,
+        "-filter_complex_script", str(script),
+        "-map", "0:v", "-map", "[aout]",
+        "-t", f"{duration:.3f}",
+        "-c:v", "copy", "-c:a", "aac", "-b:a", audio_bitrate,
+        "-movflags", "+faststart",
+        str(out_path),
+    ])
+    return out_path
+
+
 def composite_video(
     spec: CompositeSpec,
     profile: EncodeProfile,
@@ -401,44 +493,9 @@ def composite_video(
     else:
         lines.append(f"{v_label}null[vout]")
 
-    a_labels: list[str] = []
-    for j, track in enumerate(spec.audio):
-        if track.loop:
-            inputs += ["-stream_loop", "-1", "-i", str(track.path)]
-        else:
-            inputs += ["-i", str(track.path)]
-        chain = f"atrim=0:{max(spec.duration - track.start_s, 0.1):.3f}"
-        if track.voice:
-            # Light compression on the voice only, before the mix: a deadpan
-            # read has a wide dynamic range, and the quiet asides are exactly
-            # the lines that carry the joke.
-            chain += (",acompressor=threshold=-18dB:ratio=3:attack=8"
-                      ":release=180:makeup=2")
-        if track.start_s > 0:
-            chain += f",adelay={int(track.start_s * 1000)}:all=1"
-        chain += f",volume={track.gain_db:.1f}dB"
-        lines.append(f"[{idx}:a]{chain}[a{j}]")
-        a_labels.append(f"[a{j}]")
-        idx += 1
-    if len(a_labels) == 1:
-        lines.append(f"{a_labels[0]}anull[amixed]")
-    else:
-        lines.append(
-            f"{''.join(a_labels)}amix=inputs={len(a_labels)}"
-            f":duration=longest:normalize=0[amixed]"
-        )
-    # Master: normalise the programme to the streaming target and cap true
-    # peak, so uploads are not quietly turned down (or up) after the fact.
-    # Single-pass loudnorm — a two-pass measurement would double the audio
-    # work for a correction well under the threshold of audibility here.
-    if spec.normalise_audio:
-        lines.append(
-            f"[amixed]loudnorm=I={spec.loudness_lufs}:TP={spec.true_peak_db}"
-            f":LRA={spec.loudness_range},alimiter=limit={spec.limiter_ceiling}"
-            f"[aout]"
-        )
-    else:
-        lines.append(f"[amixed]alimiter=limit={spec.limiter_ceiling}[aout]")
+    a_inputs, a_lines = audio_graph(spec, first_input=idx)
+    inputs += a_inputs
+    lines += a_lines
 
     script = out_path.with_suffix(".filter.txt")
     script.write_text(";\n".join(lines) + "\n", encoding="utf-8")

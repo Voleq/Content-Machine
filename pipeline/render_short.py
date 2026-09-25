@@ -33,7 +33,9 @@ from pipeline.compose import (BuildResult, Layer, build_layers,
                               held_layer_spans)
 from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
-from pipeline.render_common import RenderError, encode_profile, run_ffmpeg
+from pipeline.render_common import (RenderError, encode_profile,
+                                    mix_under_picture, run_ffmpeg)
+from pipeline.sound import manifest_rows, normalises, short_mix
 from pipeline.shots import (Format, apply_order, choose_order,
                             expand_sequences, load_format,
                             resolve_spans)
@@ -992,11 +994,14 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # is the same pattern, which is why it is not a new one.
     out = Path(workspace) / out_name
     part = out.with_suffix(".part.mp4")
-    audio = getattr(tts, "audio_path", None)
-    if audio and Path(audio).exists():
-        run_ffmpeg(["-y", "-i", str(silent), "-i", str(audio),
-                    "-c:v", "copy", "-c:a", "aac", "-b:a", "160k",
-                    "-shortest", str(part)])
+    # THE MIX, not the voice alone. See `pipeline/sound.py` for what this
+    # replaced and why it is the LONG's mixer rather than a second one.
+    tracks = short_mix(tts, settings)
+    if tracks:
+        mix_under_picture(silent, tracks, part, duration=duration,
+                          audio_bitrate=settings.audio_bitrate,
+                          normalise=normalises(settings, tts),
+                          graph_path=workdir / "mix.filter.txt")
     else:
         silent.replace(part)
     if not part.exists() or part.stat().st_size == 0:
@@ -1057,6 +1062,9 @@ def _render_short(script, tts, workspace: Path, settings, *,
         # `plates_used`; a manifest from before the field existed simply
         # contributes nothing.
         "shot_order": shot_order,
+        # WHAT THE MIX DID, in the LONG's shape. A short had no mix for six
+        # weeks and no field that would have shown it (`pipeline/sound.py`).
+        "audio": manifest_rows(tracks),
         "kit_reach": (
             f"Kit: {len(result.plates_used)} of {len(reg)} plates, "
             f"{len({l.concept for l in result.layers if l.concept})} families, "

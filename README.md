@@ -214,6 +214,8 @@ pipeline/
   memes.py               owned meme library (meme_index.json) + providers
   sources.py             free feeds: 8-K + EX-99.1, Form 4, 13F, FRED, IR RSS
   audio_assets.py        where the sound came from, and whether it is real
+  sound.py               what a SHORT sounds like: voice and room through
+                         the LONG's mixer (render_common.audio_graph)
   screener.py            Yahoo + StockTwits lanes + digest + move context
   alerts.py              intraday watch: moves, volume, earnings, filings
   standing.py            thesis book, confession ledger, ranked idea queue
