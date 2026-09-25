@@ -32,6 +32,10 @@ tmp/
 # Local neural voice (bootstrap downloads it; ~63MB of model, not source)
 assets/voices/
 
+# The oscillators `scripts/fetch_sfx.py` sets aside as it replaces them: the
+# offline fallback on the machine that ran it, and already in history.
+assets/sfx/*.placeholder
+
 # The materialised design kit — a BUILD PRODUCT, ~400MB of 4K PNGs.
 #
 # The kit is deterministic: `kit/` holds the engine, the manifests and the

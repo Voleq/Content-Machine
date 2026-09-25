@@ -28,7 +28,7 @@ if str(ROOT) not in sys.path:
 
 def main() -> int:
     from config import get_settings
-    from pipeline.audio_assets import SIDECAR_NAME, load_sources
+    from pipeline.audio_assets import SIDECAR_NAME, is_cc0, load_sources
     from pipeline.audio_assets import generated_audio
 
     settings = get_settings()
@@ -51,13 +51,16 @@ def main() -> int:
     print(f"attributed    : {len(files) - len(placeholders)}")
     print(f"placeholders  : {len(placeholders)}")
 
+    # Read with `is_cc0`, not by looking for "attribution" in the text: the
+    # licence Freesound gives is a deed URL, which never contains the word.
     attribution = [s for s in known.values()
-                   if s.real and "attribution" in s.licence.lower()]
+                   if s.real and not is_cc0(s.licence)]
     if attribution:
-        print(f"\nATTRIBUTION REQUIRED for {len(attribution)} file(s) — these "
-              f"belong in the video description:")
+        print(f"\nATTRIBUTION REQUIRED for {len(attribution)} file(s) that are "
+              f"not CC0 — each owes a credit in the description of every video "
+              f"that plays it, and a NonCommercial one cannot be played at all:")
         for s in sorted(attribution, key=lambda x: x.name):
-            print(f"  {s.name:20s} {s.author}  {s.source}")
+            print(f"  {s.name:20s} {s.licence}  {s.author}  {s.source}")
 
     if not placeholders:
         print("\nPASS — every sound file carries provenance. `check_audio` "

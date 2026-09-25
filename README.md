@@ -1022,15 +1022,17 @@ env var, case-insensitive).
   replaced.
 - **Placeholder AUDIO cannot be published.** Every wav in `assets/sfx` is an
   ffmpeg oscillator until `scripts/fetch_sfx.py` replaces it — that script
-  pulls licence-clean effects for all 14 cue keys plus the room bed,
-  normalises each to one peak, and records source/licence/author per file in
-  `assets/sfx/SOURCES.json`. A file with no provenance entry counts as
-  generated. Both renderers log a one-line `PLACEHOLDER AUDIO` banner, and
-  the same list is a **gate** (`pipeline.gates.check_audio`): a blocking
-  finding in the validation report the operator approves from whenever a
-  FINAL render outside `MOCK_MODE` would play one, a warning in `MOCK_MODE`
-  and on drafts — which is what the offline suite runs on. A banner is
-  discipline; the block is the guarantee.
+  pulls CC0 effects for all 14 cue keys plus the room bed, normalises each to
+  one peak, and records source/licence/author per file in
+  `assets/sfx/SOURCES.json`. CC0 only, because a monetised channel cannot
+  play a NonCommercial sound and no upload carries the credit an Attribution
+  one owes. A file with no provenance entry counts as generated. Both
+  renderers log a one-line `PLACEHOLDER AUDIO` banner, and the same list is a
+  **gate** (`pipeline.gates.check_audio`): a blocking finding in the
+  validation report the operator approves from whenever a FINAL render
+  outside `MOCK_MODE` would play one, a warning in `MOCK_MODE` and on drafts
+  — which is what the offline suite runs on. A banner is discipline; the
+  block is the guarantee.
 - **Draft renders sit behind the same approval gate in live mode** — the
   first LONG render (draft or final) is what triggers the single paid TTS
   call; after that, drafts and re-renders are free from cache.
@@ -1058,7 +1060,7 @@ python scripts/check_preflight.py --live   # also the production-only settings
 |---|---|---|
 | 1 | `npm install`, then `python scripts/ingest_kit.py kit` | `assets/plates/` is a gitignored ~300MB build product. Without it `Registry` raises, `kit doctor` blocks, and **nothing renders on either lane**. The ingest runs the kit's own audit and `emit.js --check` on a staged copy, draws every plate blank at night and at dusk, proves each one is design's exported file byte for byte, draws the host's close-up, and stands him in every room to measure what paints over him. `--only FAMILY` draws and checks one family without installing anything. |
 | 2 | `/kit doctor` | Immediately after the ingest, while the host/room change is fresh — a stale plate found three fixes later looks like a regression in something else. |
-| 3 | `export FREESOUND_API_KEY=…`, then `scripts/fetch_sfx.py` | `assets/sfx/` ships fifteen ffmpeg oscillators and no `SOURCES.json`, so `check_audio` blocks **every** final render. The gate is per file: room tone alone leaves fourteen. |
+| 3 | `export FREESOUND_API_KEY=…`, then `scripts/fetch_sfx.py`, then commit `assets/sfx/` | `assets/sfx/` ships fifteen ffmpeg oscillators and no `SOURCES.json`, so `check_audio` blocks **every** final render. The gate is per file: room tone alone leaves fourteen. Committed, the real files clear it for every checkout, CI included. |
 | 4 | `python scripts/check_sfx.py` | Must report zero placeholders. Anything listed still blocks. |
 | 5 | `SEC_USER_AGENT="Your Name your@email"` | The SEC 403s generic agents. Nothing blocks — you just quietly lose the filing brief, the 8-K source and `[SHOW FILING]`. The bot warns at startup when `MOCK_MODE` is off. |
 | 6 | `python scripts/check_freshness.py TICKER DATE` | Against the **real** workbook. `DATA_STALE_BLOCKS` defaults on and an unreadable date blocks too; your sheet's as-of format is whatever Capital IQ wrote under your locale. |

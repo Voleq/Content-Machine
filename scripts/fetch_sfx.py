@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pull real, licence-clean sound effects into `assets/sfx/`.
+"""Pull real CC0 sound effects into `assets/sfx/`.
 
 The SFX taxonomy in `SFX_KEYS`, the gain staging and every cue that fires them
 were already right. Only the FILES were fake: `scripts/gen_assets.py` builds
@@ -11,10 +11,15 @@ This fetches the real thing from Freesound, which is the only large library
 with a machine-readable licence per sound and a free API. Every file gets:
 
 * **provenance**, in `assets/sfx/SOURCES.json` — the source URL, the licence
-  and the author, so an attribution-required sound can actually be attributed
-  and a licence can be re-checked later without guessing;
+  and the author, so a licence can be re-checked later without guessing;
 * **one peak**, normalised to `TARGET_PEAK_DBFS`, so swapping a placeholder
   for a real effect does not change the mix under it.
+
+Only CC0 is taken. The channel is built to be monetised, which is commercial
+use, so a NonCommercial sound cannot be played at all, and an Attribution one
+would owe a credit in every video that plays it, which no upload carries.
+Commit `assets/sfx/` after a run: the files and `SOURCES.json` are what every
+checkout, CI included, reads the gate from.
 
 `gen_assets.py` keeps generating placeholders, so a checkout with no network
 still renders and the suite still runs. The difference is that a placeholder
@@ -59,6 +64,7 @@ from pipeline.audio_assets import (  # noqa: E402
     SIDECAR_NAME,
     TARGET_PEAK_DBFS,
     AudioSource,
+    is_cc0,
     load_sources,
     save_sources,
 )
@@ -91,10 +97,13 @@ QUERIES: dict[str, str] = {
 # video, so the audio between words is a room rather than digital silence.
 ROOM_QUERY = "room tone ambience quiet office hum"
 
-# Licences that need no attribution to publish, preferred first. An
-# attribution licence is still accepted — the sidecar records the author so
-# the credit can actually be given — but CC0 is less to get wrong.
-LICENCE_ORDER = ("Creative Commons 0", "Attribution", "Attribution NonCommercial")
+# CC0 only (see the module docstring). The filter takes the licence's NAME,
+# but the `license` field of a result is its deed URL — the API serialises
+# `license.deed_url` — so the licence is read off each hit by `is_cc0`, which
+# knows both. This used to match names against that field, which matched
+# nothing: every key came back "no licence-clean result" and the gate could
+# not be cleared.
+CC0_FILTER = 'license:"Creative Commons 0"'
 
 MAX_SECONDS = 4.0        # an effect longer than this is a recording, not a cue
 ROOM_MAX_SECONDS = 60.0
@@ -105,36 +114,38 @@ def _key() -> str | None:
 
 
 def search(query: str, token: str, *, max_s: float) -> dict | None:
-    """The best licence-clean hit for `query`, or None."""
+    """The most relevant CC0 hit for `query`, or None.
+
+    Asks for CC0 outright, then, if that filter is refused or turns up nothing,
+    once more without it, picking CC0 out of the answer here. So a filter the
+    API reads differently costs one request rather than every sound.
+    """
     import httpx
 
-    params = {
-        "query": query,
-        "filter": f"duration:[0.1 TO {max_s}]",
-        "fields": "id,name,username,license,previews,duration",
-        "page_size": 30,
-        "token": token,
-    }
-    try:
-        r = httpx.get(f"{API}/search/text/", params=params, timeout=30)
-        r.raise_for_status()
-    except Exception as exc:  # noqa: BLE001 — one failed key is not fatal
-        print(f"  search failed: {exc}", file=sys.stderr)
-        return None
-    results = (r.json() or {}).get("results") or []
-
-    def rank(hit: dict) -> tuple:
-        lic = str(hit.get("license", ""))
-        for i, name in enumerate(LICENCE_ORDER):
-            if name.lower() in lic.lower():
-                return (i, hit.get("duration", 99))
-        return (len(LICENCE_ORDER), hit.get("duration", 99))
-
-    ranked = sorted(results, key=rank)
-    for hit in ranked:
-        lic = str(hit.get("license", ""))
-        if any(n.lower() in lic.lower() for n in LICENCE_ORDER):
+    duration = f"duration:[0.1 TO {max_s}]"
+    failures: list[Exception] = []
+    for flt in (f"{duration} {CC0_FILTER}", duration):
+        params = {
+            "query": query,
+            "filter": flt,
+            "fields": "id,name,username,license,previews,duration",
+            "page_size": 30,
+            "token": token,
+        }
+        try:
+            r = httpx.get(f"{API}/search/text/", params=params, timeout=30)
+            r.raise_for_status()
+            results = (r.json() or {}).get("results") or []
+        except Exception as exc:  # noqa: BLE001 — one failed key is not fatal
+            failures.append(exc)
+            continue
+        # Freesound's relevance order, not the shortest hit: the shortest
+        # record scratch or sad trombone under the cap is a fragment of one.
+        hit = next((h for h in results if is_cc0(h.get("license", ""))), None)
+        if hit is not None:
             return hit
+    if len(failures) == 2:
+        print(f"  search failed: {failures[-1]}", file=sys.stderr)
     return None
 
 
@@ -228,7 +239,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  {key} ...", end=" ", flush=True)
         hit = search(QUERIES[key], token, max_s=MAX_SECONDS)
         if hit is None:
-            print("no licence-clean result")
+            print("no CC0 result")
             continue
         dest = out / f"{key}.wav"
         backup = dest.with_suffix(".wav.placeholder")
@@ -280,12 +291,14 @@ def main(argv: list[str] | None = None) -> int:
     print()
     print(f"fetched     : {fetched}")
     print(f"provenance  : {path}")
+    # Only a file added by hand can land here, since the fetch takes CC0.
     attribution = [s for s in known.values()
-                   if s.real and "attribution" in s.licence.lower()]
+                   if s.real and not is_cc0(s.licence)]
     if attribution:
-        print(f"ATTRIBUTION REQUIRED for {len(attribution)} file(s):")
+        print(f"ATTRIBUTION REQUIRED for {len(attribution)} file(s) that are "
+              f"not CC0 (a NonCommercial one cannot be played at all):")
         for s in attribution:
-            print(f"   {s.name:20s} {s.author}  {s.source}")
+            print(f"   {s.name:20s} {s.licence}  {s.author}  {s.source}")
     if not unattributed:
         print("still fake  : 0 — every audio file in this directory is "
               "attributed, so `check_audio` will pass.")
