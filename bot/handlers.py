@@ -37,6 +37,7 @@ from pipeline.cost import (
     build_long_report,
     build_short_report,
 )
+from pipeline import journal
 from pipeline.delivery import deliver
 from pipeline.filing_brief import FilingReader
 from pipeline.gates import run_gates
@@ -93,6 +94,8 @@ HELP_TEXT = """Dennis — operator commands
 /status — job queue
 /cancel TICKER — cancel queued/running jobs + pending approval
 /cost — month-to-date spend vs cap (/cost reconciled after checking the provider)
+/ask <question> — the local AI answers from everything the bot has saved
+/find <words> — search everything the bot has saved, no AI
 /kit doctor — unresolved tag keys, never-used artwork, unregistered PNGs
 /help — this text
 
@@ -113,6 +116,17 @@ class Reply:
     keyboard: object | None = None  # telegram.InlineKeyboardMarkup
     files: list[Path] = field(default_factory=list)
     photo: Path | None = None
+
+
+def _journal_script(settings: Settings, ws: Workspace, fmt: str,
+                    report) -> None:
+    """One journal line for a pasted script and what the checks said."""
+    ok = bool(getattr(report, "approvable", False))
+    journal.note(settings, "script",
+                 f"{fmt.upper()} script checked: "
+                 f"{'approvable' if ok else 'blocked'}",
+                 ticker=ws.ticker, workdate=ws.workdate, fmt=fmt,
+                 approvable=ok)
 
 
 # ---------------------------------------------------------------------------
@@ -326,6 +340,10 @@ class BotCore:
                  "LONG (16:9 deep dive)")
         head = f"📁 {ticker} / {ws.workdate} — {label}"
         warn = "" if update else self._lane_warning(ticker, lane)
+        journal.note(self.settings, "video",
+                     f"started {'an UPDATE' if update else 'a ' + lane.upper()}",
+                     ticker=ticker, workdate=ws.workdate, lane=lane,
+                     update=update)
 
         # THE READING STARTS NOW (K3), not after the upload. It needs only
         # EDGAR, so it runs in parallel with the operator refreshing the
@@ -493,6 +511,9 @@ class BotCore:
         # routed by its shape rather than by what the operator had asked for.
         ws.set_lane("short")
         ws.clear_awaiting_angle()  # a headline short is never in the LONG angle flow
+        journal.note(self.settings, "video",
+                     f"started a headline SHORT: {headline[:160]}",
+                     ticker=ws_ticker, workdate=ws.workdate, lane="short")
         # `_enrich_headline` summarises a linked article with the LLM, which
         # is a call this video made — tally it here rather than against
         # whatever scope happened to be open.
@@ -1201,6 +1222,7 @@ class BotCore:
         report = build_short_report(script, warnings, self.settings,
                                     self.ledger, self.tts, gate_report=gates)
         (ws.path / "report_short.txt").write_text(report.render_text(), encoding="utf-8")
+        _journal_script(self.settings, ws, "short", report)
         return Reply(
             report.render_text(),
             keyboard=approval_keyboard("short", ws.ticker, ws.workdate,
@@ -1233,6 +1255,7 @@ class BotCore:
             self.settings, self.ledger, self.tts, plan, filing_count,
         )
         (ws.path / "report_long.txt").write_text(report.render_text(), encoding="utf-8")
+        _journal_script(self.settings, ws, "long", report)
         sheet = self._contact_sheet(ws, plan)
         return Reply(
             report.render_text(),
@@ -1310,6 +1333,9 @@ class BotCore:
         report_file = ws.path / f"report_{fmt}.txt"
         ws.approve(fmt, script.content_sha(),
                    report_file.read_text(encoding="utf-8") if report_file.exists() else "")
+        journal.note(self.settings, "approved",
+                     f"approved the {fmt.upper()} script ({sha8})",
+                     ticker=ticker, workdate=workdate, fmt=fmt, sha=sha8)
         cmd = "/render" if fmt == "short" else "/render_long"
         return Reply(
             f"✅ {ticker} {fmt.upper()} approved (script {sha8}).\n"
@@ -1899,6 +1925,11 @@ class BotCore:
                 fresh.detail = f"delivered via {result.backend}"
                 fresh.byproducts = extras
                 self.queue.store.save(fresh)
+        journal.note(self.settings, "delivered",
+                     f"{job.kind.value} delivered via {result.backend}: "
+                     f"{job.delivered_link}",
+                     ticker=job.ticker, workdate=job.workdate,
+                     job_kind=job.kind.value, link=job.delivered_link)
         self._record_thesis(job)
 
     def _provenance_text(self, job: JobRecord) -> str:
@@ -1968,6 +1999,9 @@ class BotCore:
             ThesisBook(self.settings).record(
                 job.ticker, summary, data, workdate=job.workdate, fmt=fmt,
                 **said)
+            journal.note(self.settings, "thesis",
+                         f"pinned the {fmt.upper()} thesis: {summary[:200]}",
+                         ticker=job.ticker, workdate=job.workdate, fmt=fmt)
             self._note_confession(job, script, fmt)
         except Exception as e:  # noqa: BLE001 - never fail a shipped video
             log.warning("thesis bookkeeping failed for %s: %s", job.ticker, e)
@@ -2632,6 +2666,23 @@ class BotCore:
         return "\n\n".join(
             x for x in (dead_air_report(manifest), measured) if x)
 
+    # ------------------------------------------ asking the bot about itself
+    def find_text(self, args: list[str]) -> str:
+        """`/find WORDS` — every saved record with those words, no model."""
+        from pipeline.recall import find_text
+
+        return find_text(self.settings, " ".join(args or []))
+
+    def ask_text(self, args: list[str]) -> str:
+        """`/ask QUESTION` — the local model, reading the bot's own records.
+
+        Blocking for as long as the model takes, so the glue runs it off the
+        event loop. Counts and totals never reach the model.
+        """
+        from pipeline.recall import ask
+
+        return ask(self.settings, " ".join(args or [])).text
+
     def said_text(self, args: list[str]) -> str:
         """`/said PHRASE` — have I used this line before?"""
         from pipeline.corpus import Corpus
@@ -2760,7 +2811,14 @@ def _authorized(core: BotCore, chat_id: int) -> bool:
     return bool(ids) and chat_id in ids
 
 
-async def _send(update, reply: Reply) -> None:
+async def _send(update, reply: Reply | str) -> None:
+    # Half the read commands return a bare string. They were handed here
+    # as-is and died on `.text`, so /said, /lines, /hooks, /rules, /runtime,
+    # /shots, /stillness, /why, /experiments, /scoreboard and /correct
+    # answered "internal error" in Telegram while their tests, which call
+    # BotCore directly, passed.
+    if isinstance(reply, str):
+        reply = Reply(reply)
     msg = update.effective_message
     text = reply.text
     while text:  # Telegram 4096-char message cap
@@ -3083,6 +3141,21 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, reply)
 
     @guard
+    async def cmd_find(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.find_text, list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
+    async def cmd_ask(update, ctx):
+        import asyncio
+        args = list(ctx.args or [])
+        if args:
+            await _send(update, Reply("🔎 reading the records…"))
+        reply = await asyncio.to_thread(core.ask_text, args)
+        await _send(update, reply)
+
+    @guard
     async def cmd_why(update, ctx):
         await _send(update, core.why_command(list(ctx.args or [])))
 
@@ -3268,6 +3341,8 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("shots", cmd_shots))
     app.add_handler(CommandHandler("stillness", cmd_stillness))
     app.add_handler(CommandHandler("said", cmd_said))
+    app.add_handler(CommandHandler("find", cmd_find))
+    app.add_handler(CommandHandler("ask", cmd_ask))
     app.add_handler(CommandHandler("why", cmd_why))
     app.add_handler(CommandHandler("experiments", cmd_experiments))
     app.add_handler(CommandHandler("scoreboard", cmd_scoreboard))
