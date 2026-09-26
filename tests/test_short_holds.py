@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 from pipeline.byproducts import (BOIL_SAMPLE_FPS, BOIL_SCALE, held_spans,
-                                 longest_hold)
+                                 holds_past, longest_hold)
 
 SAMPLES = Path("samples")
 
@@ -191,3 +191,60 @@ def test_a_hold_that_spans_a_cut_is_not_one_composition():
     assert pieces == [4.0, 6.0, 3.0]
     assert max(pieces) < span[1] - span[0], \
         "a hold that runs through two cuts is three compositions, not one"
+
+
+# ----------------------------------------------- the same ceiling, per render
+# The samples above are measured once, in the suite. Every short the bot
+# renders is measured the same way before it is delivered, and these hold the
+# render-time check to the same rule.
+
+
+def _spans(*bounds):
+    """Stand-ins for resolved spans, from `(shot id, start, end)`."""
+    from types import SimpleNamespace
+
+    return [SimpleNamespace(start=a, end=b, shot=SimpleNamespace(id=i))
+            for i, a, b in bounds]
+
+
+def _held_then_changed(path: Path, *, held_s: float, total_s: float) -> Path:
+    """A 270x480 clip that holds one grey frame, then turns white."""
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i",
+         f"color=c=gray:s=270x480:r=30:d={total_s}",
+         "-vf", (f"drawbox=x=0:y=0:w=270:h=480:color=white:t=fill"
+                 f":enable='gte(t,{held_s})'"),
+         "-pix_fmt", "yuv420p", str(path)],
+        check=True)
+    return path
+
+
+def test_a_hold_is_judged_per_composition_split_at_the_cuts():
+    measured = [(0.0, 9.8), (10.0, 11.8)]
+
+    assert holds_past(measured, cuts=[0.0], ceiling=8.0) == [(0.0, 9.8)]
+    # The same stretch with a cut inside it is two compositions.
+    assert holds_past(measured, cuts=[0.0, 6.0], ceiling=8.0) == []
+    # At the ceiling is inside it.
+    assert holds_past([(0.0, 8.0)], cuts=[], ceiling=8.0) == []
+
+
+def test_a_finished_short_names_the_shot_that_held_past_the_ceiling(tmp_path):
+    from pipeline.render_short import held_over_ceiling
+
+    video = _held_then_changed(tmp_path / "held.mp4", held_s=10, total_s=12)
+
+    found = held_over_ceiling(video, _spans(("numbers", 0.0, 12.0)), 8.0)
+    assert [h["shot"] for h in found] == ["numbers"], found
+    assert found[0]["start_s"] == 0.0
+    assert 9.5 <= found[0]["held_s"] <= 10.0, found
+
+    cut = _spans(("numbers", 0.0, 6.0), ("payoff", 6.0, 12.0))
+    assert held_over_ceiling(video, cut, 8.0) == []
+
+
+def test_frames_that_cannot_be_read_are_not_reported_as_nothing_held(tmp_path):
+    from pipeline.render_short import held_over_ceiling
+
+    missing = tmp_path / "never-rendered.mp4"
+    assert held_over_ceiling(missing, _spans(("a", 0.0, 9.0)), 8.0) is None

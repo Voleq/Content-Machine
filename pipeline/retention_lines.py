@@ -502,16 +502,25 @@ class ShotHold:
 def manifest_spans(manifest: dict) -> list[tuple[str, str, float, float]]:
     """Shot spans out of either renderer's manifest.
 
-    The SHORT records `shots` with their own bounds; the LONG records layers
-    with `t_start`/`t_end`. Both are the cut, described differently, and a
-    caller asking "which shot were they on" should not have to know which
-    renderer ran.
+    The SHORT records `shots` with their own bounds; the LONG records its cut
+    as `segments`. Both are the cut, described differently, and a caller
+    asking "which shot were they on" should not have to know which renderer
+    ran. The LONG's layers are the overlays on top of the cut; they answer
+    only for a manifest written before segments were recorded.
     """
     shots = manifest.get("shots")
     if isinstance(shots, list) and shots:
         return [(str(s.get("id", "")), str(s.get("plate", "")),
                  float(s.get("start_s", 0.0)), float(s.get("end_s", 0.0)))
                 for s in shots if isinstance(s, dict)]
+    segments = manifest.get("segments")
+    if isinstance(segments, list) and segments:
+        from pipeline.pacing import segment_label
+        return [(str(s.get("kind", "")), segment_label(s),
+                 float(s.get("start", 0.0)), float(s.get("end", 0.0)))
+                for s in segments if isinstance(s, dict)
+                and isinstance(s.get("start"), (int, float))
+                and isinstance(s.get("end"), (int, float))]
     layers = manifest.get("layers")
     if isinstance(layers, list) and layers and isinstance(layers[0], dict):
         return [(str(l.get("name", "")), str(l.get("name", "")),

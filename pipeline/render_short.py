@@ -19,6 +19,7 @@ LONG uses.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import subprocess
@@ -37,6 +38,8 @@ from pipeline.render_common import RenderError, encode_profile, run_ffmpeg
 from pipeline.shots import (Format, apply_order, choose_order,
                             expand_sequences, load_format,
                             resolve_spans)
+
+log = logging.getLogger(__name__)
 
 FPS = 30
 # The kit boils at three frames, 7fps. Code-drawn artwork matches it.
@@ -805,6 +808,34 @@ def _provenance(script, settings, workspace: Path, duration: float,
         visual_sources={}, filings={}, tts=tts, settings=settings)
 
 
+def held_over_ceiling(video: Path, spans,
+                      ceiling: float) -> list[dict] | None:
+    """The compositions in `video` that hold past `ceiling`, by shot.
+
+    MEASURED OFF THE FRAMES, which is what `short_max_hold_s` always said it
+    was and what nothing did. A span inside its own `max_hold_s` can still sit
+    on one unchanged picture for longer, and only the encode shows it. Each
+    entry names the shot it happens in and where. `None` means the frames
+    could not be read, which is not the same answer as "none held".
+    """
+    from pipeline.byproducts import (BOIL_SAMPLE_FPS, BOIL_SCALE, held_spans,
+                                     holds_past)
+
+    try:
+        measured = held_spans(video, sample_fps=BOIL_SAMPLE_FPS,
+                              scale=BOIL_SCALE)
+    except (RenderError, OSError) as e:
+        log.warning("could not measure the holds in %s: %s", video.name, e)
+        return None
+    found: list[dict] = []
+    for lo, hi in holds_past(measured, [sp.start for sp in spans], ceiling):
+        shot = next((sp.shot.id for sp in spans
+                     if sp.start - 1e-6 <= lo < sp.end), "")
+        found.append({"shot": shot, "start_s": round(lo, 2),
+                      "end_s": round(hi, 2), "held_s": round(hi - lo, 2)})
+    return found
+
+
 def render_short(script, tts, workspace: Path, settings, *,
                  content=None, prices=None, proof: bool = False,
                  out_name: str | None = None,
@@ -952,6 +983,18 @@ def _render_short(script, tts, workspace: Path, settings, *,
                   words=words)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}
     faces = getattr(render_frames, "last_faces", {}) or {}
+    # THE CEILING, MEASURED ON THE FRAMES the shots drew, before captions
+    # are burned over them: it bounds the composition, not the subtitle
+    # track. Warned and recorded rather than refused, because the voice
+    # is already paid for and whether nine seconds on a table is too long
+    # is the operator's call.
+    held_over = held_over_ceiling(silent, result.spans,
+                                  settings.short_max_hold_s)
+    for h in held_over or ():
+        log.warning("%s holds one picture for %.1fs (%.1f-%.1fs), over "
+                    "the %.0fs ceiling", h["shot"] or "the cut",
+                    h["held_s"], h["start_s"], h["end_s"],
+                    settings.short_max_hold_s)
 
     # Captions are BURNED, not drawn per frame: one phrase at a time, in the
     # same ink as everything else on the frame, from the same builder the LONG
@@ -973,7 +1016,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
         spoken, settings=settings, play_res=(W, H),
         font_size=int(H * 0.030), margin_v=int(H * 0.13),
         margin_h=int(W * 0.10), max_words=5, max_chars=24,
-        duration=duration), encoding="utf-8")
+        duration=duration, windows=bands), encoding="utf-8")
     if spoken:
         burned = workdir / "video_captioned.mp4"
         # The filter takes a PATH, and a Windows drive letter or a colon in a
@@ -1091,6 +1134,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
                 f"{sp.shot.id} {sp.end - sp.start:.1f}s over {sp.shot.max_hold_s}s"
                 for sp in result.spans
                 if sp.end - sp.start > sp.shot.max_hold_s + 0.05],
+            # The same question asked of the frames rather than the plan:
+            # a shot inside its own ceiling can still hold one picture
+            # past this one. `null` means they could not be measured.
+            "hold_ceiling_s": settings.short_max_hold_s,
+            "held_over_ceiling": held_over,
         },
     }, indent=1), encoding="utf-8")
 

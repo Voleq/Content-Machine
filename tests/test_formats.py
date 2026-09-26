@@ -446,3 +446,9 @@ def test_the_short_manifest_names_the_template_it_rendered(settings, tmp_path,
                 Provenance.from_json(manifest["provenance"])
                 .render_text().splitlines() if ln.startswith("render"))
     assert "shots" in line and "template short" in line
+
+    # Measured on the frames, not skipped: a list, where `None` would
+    # mean they could not be read back.
+    pacing = manifest["pacing"]
+    assert pacing["hold_ceiling_s"] == small.short_max_hold_s
+    assert isinstance(pacing["held_over_ceiling"], list)

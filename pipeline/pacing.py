@@ -212,20 +212,39 @@ class Still:
         return max(0.0, self.end_s - self.start_s)
 
 
+def segment_label(seg: dict) -> str:
+    """A LONG segment as the operator would name it: its kind, and what it
+    shows when the record says (`host`, `img: ...`, `plate: ...`)."""
+    kind = str(seg.get("kind") or "segment")
+    what = seg.get("value") or seg.get("layout")
+    return f"{kind}: {what}" if what else kind
+
+
 def change_times(manifest: dict) -> list[tuple[float, str]]:
     """Every moment the picture changes, from either renderer's manifest.
 
-    The SHORT records shots with their own bounds; the LONG records layers
-    with `t_start`/`t_end`, and a layer appearing or leaving is a change in
-    the picture as surely as a cut is. Both are folded into one sorted list
-    so the caller never has to know which engine ran.
+    The SHORT records shots with their own bounds; the LONG records its cut
+    as `segments` and its overlays as layers with `t_start`/`t_end`, and a
+    layer appearing or leaving is a change in the picture as surely as a cut
+    is. All of it is folded into one sorted list so the caller never has to
+    know which engine ran.
+
+    Reading only the layers is how a long cut every eleven seconds came out
+    as "178 s still": the segments are the cut, and they were never read. And
+    the SHORT's `layers` is a count, not a list, which made every short a
+    TypeError here.
     """
     events: list[tuple[float, str]] = []
     for shot in manifest.get("shots") or []:
         if isinstance(shot, dict) and shot.get("start_s") is not None:
             events.append((float(shot["start_s"]),
                            str(shot.get("plate") or shot.get("id") or "shot")))
-    for layer in manifest.get("layers") or []:
+    segments = manifest.get("segments")
+    for seg in segments if isinstance(segments, list) else []:
+        if isinstance(seg, dict) and isinstance(seg.get("start"), (int, float)):
+            events.append((float(seg["start"]), segment_label(seg)))
+    layers = manifest.get("layers")
+    for layer in layers if isinstance(layers, list) else []:
         if not isinstance(layer, dict):
             continue
         name = str(layer.get("name", "layer"))
@@ -270,6 +289,33 @@ def dead_air_report(manifest: dict, *,
                      f"{still.what}")
     lines.append("  These are where people leave, and none of them costs a "
                  "paid call to fix.")
+    return "\n".join(lines)
+
+
+def frame_holds_report(manifest: dict) -> str:
+    """The pictures the finished SHORT held past its ceiling, or "".
+
+    Read off the frames at render time (`render_short.held_over_ceiling`),
+    so this is what the encode did rather than what the cut planned. Empty
+    when nothing held, and for a manifest written before it was measured; a
+    render whose frames could not be read says so rather than passing.
+    """
+    pacing = manifest.get("pacing")
+    if not isinstance(pacing, dict) or "held_over_ceiling" not in pacing:
+        return ""
+    held = pacing["held_over_ceiling"]
+    ceiling = float(pacing.get("hold_ceiling_s") or 0.0)
+    if held is None:
+        return (f"🎞 The frames could not be read back, so the "
+                f"{ceiling:.0f}s hold ceiling went unchecked on this render.")
+    if not held:
+        return ""
+    lines = [f"🎞 Measured on the frames, {len(held)} picture(s) hold past "
+             f"the {ceiling:.0f}s ceiling:"]
+    for h in held[:4]:
+        lines.append(f"  {h.get('shot') or 'the cut'} holds "
+                     f"{float(h['held_s']):.1f}s from "
+                     f"{float(h['start_s']):.1f}s")
     return "\n".join(lines)
 
 

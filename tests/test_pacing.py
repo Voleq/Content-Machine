@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pipeline.pacing import (
     FIGURE_GAP_LIMIT_S, FIRST_FIGURE_LIMIT_S, STILL_LIMIT_S, change_times,
-    dead_air, dead_air_report, loop_check, measure_pacing, open_loops,
-    pacing_report, title_coherence,
+    dead_air, dead_air_report, frame_holds_report, loop_check,
+    measure_pacing, open_loops, pacing_report, title_coherence,
 )
 
 
@@ -104,6 +104,38 @@ def test_change_times_reads_the_long_manifest_layers():
     assert change_times(manifest) == [(1.0, "chart"), (9.0, "chart")]
 
 
+def test_the_short_manifest_records_its_layers_as_a_count():
+    """`render_short` writes `layers` as a count. Iterating it made /stillness
+    a TypeError on every short there has ever been."""
+    manifest = {"duration_s": 20.0, "layers": 31,
+                "shots": [{"id": "a", "plate": "room/x", "start_s": 0.0},
+                          {"id": "b", "plate": "data/y", "start_s": 4.0}]}
+    assert change_times(manifest) == [(0.0, "room/x"), (4.0, "data/y")]
+    assert "16.0s still" in dead_air_report(manifest)
+
+
+def test_the_long_cut_is_its_segments_not_only_its_overlays():
+    """The LONG records its cut as `segments`. Reading only the overlay
+    layers reported "178 s still" on a video that cuts every eleven."""
+    manifest = {"duration": 44.0,
+                "segments": [
+                    {"kind": "host", "start": 0.0, "end": 11.0},
+                    {"kind": "img", "value": "fed-chart", "start": 11.0,
+                     "end": 22.0},
+                    {"kind": "plate", "layout": "two-shot", "start": 22.0,
+                     "end": 33.0},
+                    {"kind": "host", "start": 33.0, "end": 44.0}],
+                "layers": [{"name": "lower-third", "t_start": 2.0,
+                            "t_end": 6.0}]}
+    assert change_times(manifest) == [
+        (0.0, "host"), (2.0, "lower-third"), (6.0, "lower-third"),
+        (11.0, "img: fed-chart"), (22.0, "plate: two-shot"), (33.0, "host")]
+    stills = dead_air(manifest)
+    assert [round(s.seconds, 1) for s in stills] == [11.0, 11.0, 11.0], stills
+    overlays_only = {"duration": 44.0, "layers": manifest["layers"]}
+    assert dead_air(overlays_only)[0].seconds == 38.0
+
+
 def test_a_manifest_with_no_timings_has_no_changes():
     assert change_times({}) == []
     assert dead_air({}) == []
@@ -135,6 +167,25 @@ def test_the_limit_is_the_caller_s_to_move():
                 "shots": [{"id": "a", "plate": "p", "start_s": 0.0}]}
     assert dead_air(manifest, limit_s=STILL_LIMIT_S)
     assert dead_air(manifest, limit_s=20.0) == []
+
+
+def test_a_hold_measured_on_the_frames_is_named_by_its_shot():
+    manifest = {"pacing": {"hold_ceiling_s": 8.0, "held_over_ceiling": [
+        {"shot": "numbers", "start_s": 21.4, "end_s": 31.0, "held_s": 9.6}]}}
+    report = frame_holds_report(manifest)
+
+    assert "8s ceiling" in report
+    assert "numbers holds 9.6s from 21.4s" in report
+
+
+def test_frames_that_could_not_be_read_say_so_and_old_manifests_say_nothing():
+    unread = {"pacing": {"hold_ceiling_s": 8.0, "held_over_ceiling": None}}
+    assert "unchecked" in frame_holds_report(unread)
+
+    clean = {"pacing": {"hold_ceiling_s": 8.0, "held_over_ceiling": []}}
+    assert frame_holds_report(clean) == ""
+    assert frame_holds_report({"pacing": {"shots": 9}}) == ""
+    assert frame_holds_report({}) == ""
 
 
 # ---------------------------------------------------------------- open loops

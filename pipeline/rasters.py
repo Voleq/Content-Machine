@@ -31,6 +31,7 @@ import math
 import random
 import re
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
@@ -298,6 +299,7 @@ def build_phrase_ass(
     max_chars: int = 30,
     duration: float | None = None,
     punch: bool = True,
+    windows: Sequence[tuple[float, float]] | None = None,
 ) -> str:
     """The SHORT's captions: structure ink on the ground, phrase by phrase.
 
@@ -308,6 +310,12 @@ def build_phrase_ass(
 
     `punch` gives each line a 60ms scale-up on entry. It is the caption half of
     the motion layer: enough to register as a cut, not enough to bounce.
+
+    `windows` are the stretches captions may show in, when not all of the cut
+    carries them. A line holds until the next one starts, and across a shot
+    with captions off that is the whole shot: "Cheap only counts…" stayed up
+    for seven seconds over the payoff card, the one shot that asked for none.
+    Each line now also ends where its window does.
     """
     W, H = play_res
 
@@ -331,6 +339,15 @@ Style: Caps,Archivo Narrow,{font_size},{bgr(ink)},{bgr(ink)},{bgr(box, 0x0A)},{b
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
+    # Touching windows are one stretch: a line may run on across a cut
+    # between two captioned shots, just not into a shot without captions.
+    merged: list[list[float]] = []
+    for a, b in sorted((float(a), float(b)) for a, b in (windows or ())):
+        if merged and a <= merged[-1][1] + 1e-6:
+            merged[-1][1] = max(merged[-1][1], b)
+        else:
+            merged.append([a, b])
+
     events: list[str] = []
     pages = phrase_pages(words, max_words=max_words, max_chars=max_chars)
     for i, page in enumerate(pages):
@@ -339,6 +356,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             end = max(pages[i + 1][0].start, page[-1].end)
         else:
             end = page[-1].end + 0.7
+        for a, b in merged:
+            if a <= start < b:
+                end = min(end, b)
+                break
         if duration is not None:
             end = min(end, duration)
         if end <= start:

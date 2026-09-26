@@ -227,3 +227,28 @@ def test_the_short_lane_is_told_its_structured_fields_reach_no_frame():
             f"`broll` and `annotations` are not drawn")
         assert "{{meme_catalog}}" not in text
         assert "{{broll_palette}}" not in text
+
+
+def test_the_short_prompts_put_the_host_where_the_templates_do():
+    """Both short prompts told the writer "Dennis opens and closes ON CAMERA
+    — the first ~3–5 seconds and the last ~3–5 seconds are him talking to the
+    viewer". No vertical template has ever opened or closed on him: every one
+    opens on the hook card and ends on the sign-off card, and macro has no
+    host shot at all. A writer shaping its first line for a face on camera is
+    writing for a picture nobody sees."""
+    import json
+
+    for name in ("short", "earnings", "macro"):
+        spec = json.loads((TEMPLATES / "shots" / f"{name}.json")
+                          .read_text(encoding="utf-8"))
+        shots = spec["shots"]
+        assert not shots[0].get("host") and not shots[-1].get("host"), (
+            f"{name} now opens or closes on the host; the prompts say not")
+        assert shots[0]["plate"].startswith("shorts/hook-card"), name
+        assert shots[-1]["id"] == "close", name
+    for fmt in ("short", "headline"):
+        text = (TEMPLATES / f"master_prompt_{fmt}.md").read_text(encoding="utf-8")
+        for stale in ("ON CAMERA", "HOST OPEN", "HOST CLOSE",
+                      "back on camera"):
+            assert stale not in text, f"master_prompt_{fmt}.md: {stale!r}"
+        assert "opens on the hook card" in text, fmt

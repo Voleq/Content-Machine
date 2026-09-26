@@ -298,6 +298,18 @@ def test_shot_spans_fall_back_to_the_long_manifest_layers():
     assert manifest_spans(manifest) == [("chart", "chart", 1.0, 6.0)]
 
 
+def test_shot_spans_are_the_long_segments_when_it_records_them():
+    """The LONG's layers are the overlays on top of its cut; `segments` is
+    the cut, and "which shot were they on" is a question about the cut."""
+    manifest = {"segments": [{"kind": "host", "start": 0.0, "end": 11.0},
+                             {"kind": "img", "value": "fed-chart",
+                              "start": 11.0, "end": 22.0}],
+                "layers": [{"name": "lower-third", "t_start": 2.0,
+                            "t_end": 6.0}]}
+    assert manifest_spans(manifest) == [("host", "host", 0.0, 11.0),
+                                        ("img", "img: fed-chart", 11.0, 22.0)]
+
+
 def test_a_manifest_with_neither_yields_no_spans():
     assert manifest_spans({}) == []
     assert manifest_spans({"layers": 3}) == []

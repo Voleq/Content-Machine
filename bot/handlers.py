@@ -167,6 +167,23 @@ def _macro_index_for(symbol: str) -> str:
     return sym if sym in _INDEX_SYMS else "SPY"
 
 
+def _frame_holds(manifest_path) -> str:
+    """The finished SHORT's over-ceiling holds as operator text, or "".
+
+    Best-effort: a manifest that cannot be read costs the operator this note,
+    never the delivery it rides on.
+    """
+    import json as _json
+
+    from pipeline.pacing import frame_holds_report
+
+    try:
+        data = _json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return ""
+    return frame_holds_report(data) if isinstance(data, dict) else ""
+
+
 def _what_it_said(script, fmt: str) -> dict:
     """`hook` / `conclusion` / `claims` off a shipped script, best-effort.
 
@@ -1519,6 +1536,10 @@ class BotCore:
                 format_name=self.short_format_name(ws))
             checkpoint("delivery")
             result = deliver(out, job.ticker, job.workdate, self.settings)
+            held = _frame_holds(manifest)
+            if held:
+                result.note = "\n\n".join(
+                    x for x in (result.note, held) if x)
             self._finish(job, result)
             return str(out)
 
@@ -1718,6 +1739,7 @@ class BotCore:
         script = ws.load_short() if short else ws.load_long()
         if script is None:
             raise RuntimeError("script vanished before proof")
+        held = ""
         checkpoint("tts")
         tts = self.tts.synthesize(
             script.audio_script if short else script.narration,
@@ -1731,9 +1753,10 @@ class BotCore:
             # `proof=True` picks `short_proof.mp4` (D5). It used to land on
             # `short_final.mp4` and replace a paid final with a free-voice
             # pass, which `/upload` would then send to YouTube.
-            out, _ = render_short(
+            out, manifest = render_short(
                 script, tts, ws.path, self.settings, content=self.content,
                 proof=True, format_name=self.short_format_name(ws))
+            held = _frame_holds(manifest)
         else:
             data = self._company_data(ws)
             as_of = str(data.get("as_of_date") or "") if data is not None else ""
@@ -1756,7 +1779,7 @@ class BotCore:
         self.push_file(Path(out), (
             f"{job.ticker} — {'SHORT' if short else 'LONG'} PROOF, full "
             f"resolution, {tts.tier} voice, $0. Cue times move slightly under "
-            f"the paid voice."))
+            f"the paid voice." + (f"\n\n{held}" if held else "")))
         return str(out)
 
     def _send_storyboard(self, job: JobRecord, script, tts, ws, data) -> None:
@@ -2593,7 +2616,7 @@ class BotCore:
         """
         import json as _json
 
-        from pipeline.pacing import dead_air_report
+        from pipeline.pacing import dead_air_report, frame_holds_report
 
         if not args:
             return "usage: /stillness TICKER"
@@ -2605,7 +2628,9 @@ class BotCore:
             manifest = _json.loads(manifests[0].read_text(encoding="utf-8"))
         except (OSError, ValueError) as e:
             return f"That manifest could not be read: {e}"
-        return dead_air_report(manifest)
+        measured = frame_holds_report(manifest)
+        return "\n\n".join(
+            x for x in (dead_air_report(manifest), measured) if x)
 
     def said_text(self, args: list[str]) -> str:
         """`/said PHRASE` — have I used this line before?"""

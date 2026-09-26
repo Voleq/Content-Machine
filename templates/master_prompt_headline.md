@@ -46,14 +46,13 @@ Chartable metrics present in THIS data — every company/earnings `numbers` row 
 {{craft_rules}}
 
 ## THE FORMAT — fixed beats (the render kit is fixed — you only supply the rotating content)
-**Dennis opens and closes ON CAMERA** — the first ~3–5 seconds and the last ~3–5 seconds are him talking to the viewer, lip-synced to your words. Everything between is the evidence.
+**The video opens on the hook card and ends on the sign-off card, which prints your `conclusion`. Dennis is on camera for one shot in the middle of a company or earnings video, and not at all in a macro one.** Everything else is the evidence. Your words run under all of it, so the first sentence IS the hook, heard from the first frame.
 
-0. HOST OPEN (~3–5s) — the first sentence is Dennis on screen, saying the hook out loud.
 1. HOOK — the branded chart is the hero (the {{ticker}} price/index, rendered from our own data — never a screenshot). `hook_text` states the news and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. Choose `chart_style`: "clean" or "marker" (the crude napkin look, for the extra-deadpan takes).
 2. WHAT IT SAYS vs WHAT THEY'LL ASSUME — the headline is overlaid ON the chart; you say what it literally reports, then what the crowd will read into it (usually more than it says; occasionally less).
 3. GUT CHECK — company/earnings: the MULTI-YEAR numbers sheet, **held ~4–5 seconds so it can be read** — does this news change the trajectory or just the week? macro: OPTIONAL — an index/sector or macro series (CPI, rates), or skip straight to the payoff. If the PEER PERCENTILES sharpen it, you MAY drop a SINGLE percentile one-liner — at most one, never a table.
 4. CHEAP OR TRAP — **also held ~4–5 seconds**. company/earnings: is the multiple a bargain or a trap after this news? Name it, then say what would have to be true for it to be cheap. macro: what the release would have to keep doing for the market's reaction to make sense. Goes in `cheap_or_trap`.
-5. PAYOFF + HOST CLOSE — the deadpan verdict: priced in · nothingburger · actually matters (macro: what it does to your holdings), spoken by Dennis back on camera. Free text. NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
+5. PAYOFF — the deadpan verdict: priced in · nothingburger · actually matters (macro: what it does to your holdings), spoken over the closing beats; the sign-off card then prints it. Free text. NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
 
 ## PACE — faster than long-form, but NOT machine-gun
 The extra runtime exists so the two data beats can breathe. The numbers sheet and the cheap-or-trap card each hold four to five seconds — write enough narration over each to fill that. A viewer who cannot read the numbers has watched a screensaver.
