@@ -94,7 +94,7 @@ QUERIES: dict[str, str] = {
     "whoosh": "whoosh transition swish short",
     "impact": "cinematic impact hit low punch short",
     # One per design move, fetched now so this one run gets everything; the
-    # renderer plays them once the moves are wired (`sound.MOVE_SOUNDS`).
+    # renderer plays them once the moves are wired (`sound.MOVE_CUES`).
     "tick_roll": "fast mechanical ratchet ticking counter short",
     "marker_draw": "marker pen writing on paper stroke short",
     "marker_circle": "marker pen circling scribble on paper",
@@ -244,7 +244,10 @@ def normalise(src: Path, dest: Path, *, loop: bool = False) -> bool:
                  f"[body][head]acrossfade=d={d}:c1=tri:c2=tri,{level}[out]")
         af = ["-filter_complex", graph, "-map", "[out]"]
     else:
-        af = ["-af", level]
+        # A one-shot starts on its first sound, not on the silence the
+        # uploader left before it: the renderer places a knock or a hit on a
+        # frame, and 80 ms of lead-in puts it two frames late.
+        af = ["-af", f"silenceremove=start_periods=1:start_threshold=-50dB,{level}"]
     cmd = [
         "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(src),
         *af, "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(dest),
