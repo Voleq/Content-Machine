@@ -290,6 +290,8 @@ def test_the_record_survives_the_manifest_unchanged(tmp_path):
     ("visuals", {"filler": 4}),
     ("filings", {"shots": 9}),
     ("audio", {"tier": "free", "model": "piper", "chunks": 1}),
+    ("sound", {"lufs": -13.9, "effects": 11, "bed": "bed-2.wav",
+               "placeholders": 0}),
     ("llm", {"provider": "openai", "model": "gpt-x", "calls": 3}),
     ("gates", "voice ⛔"),
 ])

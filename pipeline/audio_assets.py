@@ -53,6 +53,13 @@ TARGET_PEAK_DBFS = -3.0
 ROOM_TONE_NAME = "room_tone.wav"
 ROOM_TONE_GAIN_DB = -40.0
 
+# The owned music: the channel theme and the loops under a short, made once by
+# `scripts/make_score.py`. Scanned by the same gate as the effects, so a track
+# dropped in by hand with no record of where it came from blocks a final the
+# way an oscillator does. A Content ID claim takes a video's money.
+SCORE_DIR_NAME = "score"
+AUDIO_DIRS = ("sfx", SCORE_DIR_NAME)
+
 
 @dataclass(frozen=True)
 class AudioSource:
@@ -137,16 +144,17 @@ def generated_audio(settings) -> list[str]:
     upload.
     """
     out: list[str] = []
-    directory = settings.assets_dir / "sfx"
-    if not directory.is_dir():
-        return out
-    known = load_sources(directory)
-    for path in sorted(directory.iterdir()):
-        if path.suffix.lower() not in AUDIO_SUFFIXES:
+    for sub in AUDIO_DIRS:
+        directory = settings.assets_dir / sub
+        if not directory.is_dir():
             continue
-        entry = known.get(path.name)
-        if entry is None or entry.generated:
-            out.append(f"sfx/{path.name}")
+        known = load_sources(directory)
+        for path in sorted(directory.iterdir()):
+            if path.suffix.lower() not in AUDIO_SUFFIXES:
+                continue
+            entry = known.get(path.name)
+            if entry is None or entry.generated:
+                out.append(f"{sub}/{path.name}")
     return out
 
 
