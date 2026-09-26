@@ -1226,6 +1226,15 @@ def plate_data(plate, values: dict[str, str]) -> PlateData:
         d["min"], d["max"] = float(pa.scale["y"][0]), float(pa.scale["y"][1])
     elif (dom := axis_domain(plate, v)) is not None:
         d["min"], d["max"] = dom
+        # A LINE KEEPS THE AXIS IT IS PRINTED AGAINST. series.js's `extent`
+        # pulls the bottom of every scale down to zero unless told
+        # `zero: false`, even when handed a min — right for a bar, whose
+        # baseline is the claim, and wrong for a line on labelled gridlines:
+        # a price chart printed 15 to 18 drew its line on 0 to 18, squashed
+        # into the top sixth of the plot, with every gridline misreading it.
+        # Bars are left to the kit's rule.
+        if not bar_cols:
+            d["zero"] = False
     # ONE SCALE FOR EVERYTHING ON ONE PLOT. series.js scales each call to its
     # own data unless it is handed min and max, and dataLayer hands both series
     # the SAME pair for a reason it states: "two scales on one plot is how a

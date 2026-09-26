@@ -717,18 +717,27 @@ def _type_floor(canvas: Image.Image) -> int:
 
 
 def render_frames(result: BuildResult, resolver, duration: float,
-                  out_video: Path, settings, *, reg, words=()) -> Path:
+                  out_video: Path, settings, *, reg, words=(), plan=None) -> Path:
     """Compose every frame and pipe it into the encoder.
 
     Frames are composed in memory and go straight into ffmpeg — 2,000
     uncompressed 1080x1920 frames is not something to put on a disk on the
     way past.
+
+    `plan` is the move plan (`pipeline.moves.plan_short`): a plate with
+    moves on it is drawn by the move compositor, and its source tags and
+    wipes go over everything else on the frame. Without one, every plate is
+    the still it always was.
     """
     from pipeline.host import face_plan, host_shot
+    from pipeline.moves import MoveCompositor
 
     w, h = result.frame
     n = max(int(round(duration * FPS)), 1)
     cache = _Cache(settings, reg)
+    mover = (MoveCompositor(plan, reg, settings, cache)
+             if plan is not None and (plan.moves or plan.wipes or plan.tags)
+             else None)
     profile = encode_profile(settings, "short")
     paper = reg.colour("ground")
 
@@ -768,12 +777,17 @@ def render_frames(result: BuildResult, resolver, duration: float,
             for layer in ordered:
                 if not (layer.t_start - 1e-6 <= t < layer.t_end):
                     continue
+                if mover is not None and mover.owns(layer):
+                    mover.draw_layer(canvas, layer, t, _frame_index(layer, t))
+                    continue
                 face = None
                 if layer.name in faces:
-                    first, plan = faces[layer.name]
-                    face = plan[min(max(i - first, 0), len(plan) - 1)]
+                    first, strip = faces[layer.name]
+                    face = strip[min(max(i - first, 0), len(strip) - 1)]
                 _draw_layer(canvas, layer, t, cache, reg=reg, settings=settings,
                             face=face, lost=lost)
+            if mover is not None:
+                mover.draw_overlays(canvas, t)
             proc.stdin.write(canvas.tobytes())
     finally:
         proc.stdin.close()
@@ -982,9 +996,19 @@ def _render_short(script, tts, workspace: Path, settings, *,
             "the script does not fit the shots it is written for:\n  "
             + "\n  ".join(over))
 
+    # WHAT MOVES, AND WHEN (items 8-14 of the motion plan). Planned off the
+    # finished composition and the words, before a frame is drawn, so the
+    # manifest records what the frames play and the sound is cut to it.
+    from pipeline.moves import plan_short, recent_circled
+
+    plan = plan_short(fmt, result, reg, words, seed=script.content_sha(),
+                      settings=settings,
+                      sources=getattr(resolver, "sources", lambda: {})(),
+                      recent_circled=recent_circled(settings, exclude=workspace))
+
     silent = workdir / "video_silent.mp4"
     render_frames(result, resolver, duration, silent, settings, reg=reg,
-                  words=words)
+                  words=words, plan=plan)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}
     faces = getattr(render_frames, "last_faces", {}) or {}
     # THE CEILING, MEASURED ON THE FRAMES the shots drew, before captions
@@ -1125,6 +1149,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
         # `plates_used`; a manifest from before the field existed simply
         # contributes nothing.
         "shot_order": shot_order,
+        # EVERY MOVE THE FRAMES PLAYED: design's move id, the programme time
+        # of its first frame, the shot and the slot; each wipe with the cut it
+        # covers. The sound's move hits are cut to this, and `recent_moves`
+        # reads it back so the pen-circle never plays in two shorts running.
+        "moves": plan.record(),
         # WHAT THE MIX DID, in the LONG's shape. A short had no mix for six
         # weeks and no field that would have shown it (`pipeline/sound.py`).
         "audio": audio_rows,

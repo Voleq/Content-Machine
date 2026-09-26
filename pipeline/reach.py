@@ -358,6 +358,46 @@ def recent_orders(settings, *, window: int = ROTATION_WINDOW,
     return {order for _, order in found[:window]}
 
 
+def recent_moves(settings, *, window: int = ROTATION_WINDOW,
+                 exclude: "Path | str | None" = None) -> set[str]:
+    """Which of design's moves the last few renders played.
+
+    `recent_orders` for the move record: each manifest's ``moves.moves`` rows
+    name the move ids a render actually played, and a manifest from before
+    the field existed contributes nothing. What it is for is rarity — the
+    pen-circle never plays in two shorts running — so it reads the same
+    renders the rotation does and forgives the same things.
+
+    `exclude` is the workspace being rendered, and a renderer MUST pass it:
+    a second pass that read its own first pass would drop a circle the first
+    pass drew, and the proof would stop being a proof of the thing that ships.
+    """
+    import json
+    from pathlib import Path
+
+    base = Path(settings.workspace_dir)
+    if not base.is_dir():
+        return set()
+    skip = Path(exclude).resolve() if exclude else None
+    found: list[tuple[float, set[str]]] = []
+    for manifest in base.glob("*/*/*manifest*.json"):
+        if skip is not None and manifest.parent.resolve() == skip:
+            continue
+        try:
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+            record = payload.get("moves")
+            rows = record.get("moves") if isinstance(record, dict) else None
+            if not isinstance(rows, list):
+                continue
+            found.append((manifest.stat().st_mtime,
+                          {str(r.get("move")) for r in rows
+                           if isinstance(r, dict) and r.get("move")}))
+        except (OSError, json.JSONDecodeError, ValueError, AttributeError):
+            continue
+    found.sort(key=lambda row: row[0], reverse=True)
+    return set().union(*(moves for _, moves in found[:window]))
+
+
 def rotation_line(settings, used: "set[str] | None" = None) -> str:
     """How much of this video's look the last few videos already had.
 

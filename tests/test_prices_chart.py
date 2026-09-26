@@ -202,6 +202,31 @@ def test_the_path_lands_on_the_scale_the_axis_declares(reg, settings):
     assert box[3] >= area.y + area.h - 12
 
 
+def test_a_price_line_is_drawn_on_the_axis_printed_beside_it(reg):
+    """THE SHORT'S PRICE CHART, through the data layer the render uses. Its
+    axis is printed 15 to 18; series.js pulls every scale down to zero unless
+    told not to, so the line was drawn on 0 to 18 — squashed into the top
+    sixth of the plot, ending on a gridline that read 17.6 beside a label
+    saying 15.42. The lowest close must land on the bottom of the plot."""
+    import numpy as np
+
+    from pipeline.chart import declared_layer
+
+    plate = reg.require("charts/line-dense-9x16")
+    closes = [15.1, 16.0, 17.4, 18.0, 16.2, 15.4]
+    values = {"plot-area": ",".join(str(c) for c in closes),
+              "y-1": "15", "y-2": "16", "y-3": "17", "y-4": "18"}
+    layer = declared_layer(reg, plate, values, plate.pixel_size, seed="t")
+    assert layer is not None
+    k = plate.pixel_size[0] / plate.canvas[0]
+    area = plate.slots["plot-area"]
+    ys = np.nonzero(np.asarray(layer)[:, :, 3] > 0)[0] / k
+    span = ys.max() - ys.min()
+    assert span >= area.h * 0.85, (
+        f"the line covers {span:.0f} of the plot's {area.h} units")
+    assert ys.max() >= area.y + area.h * (1 - (15.1 - 15) / 3) - 20
+
+
 # -------------------------------------------------------------------- the bars
 
 def test_bars_stand_on_the_zero_the_domain_declares(reg):
