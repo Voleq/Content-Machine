@@ -280,7 +280,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.force or rt is None or rt.generated:
             print(f"room tone   : {ROOM_TONE_NAME} will be fetched")
     if args.dry_run:
-        for name, _key, query, _max_s, _loop in todo:
+        for name, _k, query, _max_s, _loop in todo:
             print(f"  would fetch {name:20s} <- {query!r}")
         return 0
 
@@ -310,7 +310,7 @@ def main(argv: list[str] | None = None) -> int:
     for w in todo:
         by_key.setdefault(w[1], []).append(w)
     for key, need in by_key.items():
-        _name, _key, query, max_s, loop = need[0]
+        _name, _k, query, max_s, loop = need[0]
         takes = sum(1 for w in files if w[1] == key)
         hits = search_many(query, token, max_s=max_s, n=takes + len(need),
                            min_s=AMBIENCE_MIN_SECONDS if loop else 0.1)
