@@ -541,10 +541,22 @@ class Settings(BaseSettings):
     # Cramer does.
     #
     # A setting rather than a constant because the choice can only really be
-    # made by listening to real videos: `paper_rustle` and `ding` are the
-    # alternatives worth auditioning. Blank turns the cue off. LONG only —
+    # made by listening to real videos. Blank turns the cue off. LONG only —
     # shorts have no chapters.
-    chapter_cue_sfx: str = Field(default="keyboard_clack", alias="CHAPTER_CUE_SFX")
+    #
+    # `impact` since 2026-09-25: the operator wanted the short's hook hit on
+    # the chapter change rather than chapter music, so the long's chapters
+    # land the way a short's first frame does. It fires ON the cut, where the
+    # diegetic keys fire just ahead of it (`pipeline.sound.cue_lead_s`).
+    # `keyboard_clack`, `paper_rustle` and `ding` remain the quieter options.
+    chapter_cue_sfx: str = Field(default="impact", alias="CHAPTER_CUE_SFX")
+
+    # The loop under a SHORT: one of the owned score's `bed-*.wav`, dipped
+    # under the voice whenever he speaks (`pipeline/sound.py`). Nothing plays
+    # until `scripts/make_score.py` has made the loops. The long never gets
+    # one under its voice; its music is the theme, as intro and outro.
+    short_bed: bool = Field(default=True, alias="SHORT_BED")
+    short_bed_gain_db: float = Field(default=-24.0, alias="SHORT_BED_GAIN_DB")
 
     # --- encode politeness ------------------------------------------------
     # The render box is the operator's daily-driver desktop, and renders are

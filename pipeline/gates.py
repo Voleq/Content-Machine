@@ -1868,12 +1868,19 @@ def check_audio(settings: Settings, *, final: bool = True) -> list[Finding]:
     reason = ("this render is a FINAL and MOCK_MODE is off"
               if blocks else
               ("MOCK_MODE is on" if settings.mock_mode else "this is a draft"))
+    # A music file with no record is not an oscillator; it is a track nobody
+    # can say the channel is allowed to play, which is worse.
+    score = [p for p in placeholders if p.startswith("score/")]
+    fix = "Run scripts/fetch_sfx.py before publishing"
+    if score:
+        fix += (f"; {len(score)} music file(s) have no record of where they "
+                f"came from, so remove them or re-make them with "
+                f"scripts/make_score.py")
     return [Finding(
         gate="audio", severity="block" if blocks else "warn",
         message=(f"PLACEHOLDER AUDIO — {len(placeholders)} of the sound files "
                  f"this render plays are ffmpeg oscillators, not real effects "
-                 f"({shown}). Run scripts/fetch_sfx.py before publishing "
-                 f"({reason})."))]
+                 f"({shown}). {fix} ({reason})."))]
 
 
 # --------------------------------------------------------------------------

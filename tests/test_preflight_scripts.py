@@ -372,7 +372,7 @@ def test_the_readme_preflight_and_the_script_name_the_same_scripts():
         assert (SCRIPTS / name).is_file(), f"{name} is named and absent"
     # The two hard blockers are steps 1 and 3, and the sound gate is per file.
     assert "nothing renders on either lane" in section
-    assert "room tone alone leaves fourteen" in section
+    assert "room tone alone leaves twenty-six" in section
     # And the deselect escape hatch for both gates, which clears neither.
     assert "not audio_provenance" in section
     assert "not kit_ingest" in section, (

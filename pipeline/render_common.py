@@ -318,6 +318,23 @@ class AudioTrack:
     loop: bool = False       # e.g. room tone, which runs the whole video
     voice: bool = False      # the VO — gets light compression before the mix
     name: str = ""           # for the manifest / debugging
+    # Playback speed, and a level trim on top of `gain_db`. A few percent of
+    # speed moves an effect's pitch without changing what it is, and a
+    # decibel or so either way does the same for its weight: that is how one
+    # swish stops sounding like the same file on every cut
+    # (`pipeline/sound.py`). `gain_db` stays the level the effect was staged
+    # at, so the manifest keeps saying what was intended. 1.0 and 0.0 for
+    # anything tuned: the voice, the theme, the music.
+    rate: float = 1.0
+    trim_db: float = 0.0
+    # Cut the sound off after this many seconds, with a short fade; 0 plays
+    # it out. A swish longer than the shot it announces runs into the next.
+    max_s: float = 0.0
+    # Dips under the voice whenever it speaks. For music only.
+    duck: bool = False
+    # Windows of programme time, (start, end), this track is silent in. The
+    # half-second of nothing before a SHORT's payoff lands.
+    gaps: tuple[tuple[float, float], ...] = ()
 
 
 @dataclass
@@ -370,12 +387,32 @@ def audio_graph(spec: CompositeSpec, first_input: int) -> tuple[list[str], list[
     lines: list[str] = []
     idx = first_input
     a_labels: list[str] = []
-    for j, track in enumerate(spec.audio):
+    tracks = spec.audio
+    voice_j = next((j for j, t in enumerate(tracks) if t.voice), None)
+    duckers = ([j for j, t in enumerate(tracks) if t.duck]
+               if voice_j is not None else [])
+    for j, track in enumerate(tracks):
         if track.loop:
             inputs += ["-stream_loop", "-1", "-i", str(track.path)]
         else:
             inputs += ["-i", str(track.path)]
-        chain = f"atrim=0:{max(spec.duration - track.start_s, 0.1):.3f}"
+        # In SOURCE seconds: a track played faster covers more of its file.
+        avail = max(spec.duration - track.start_s, 0.1) * track.rate
+        if track.max_s > 0:
+            avail = min(avail, track.max_s * track.rate)
+        # Every track in at one rate and in stereo before anything else, so
+        # the mix keeps the music's width: left to negotiate, a mono voice
+        # folded the whole programme to mono.
+        chain = (f"aformat=sample_rates=44100:channel_layouts=stereo,"
+                 f"atrim=0:{avail:.3f}")
+        if track.max_s > 0:
+            fade = min(0.04, avail / 2)
+            chain += f",afade=t=out:st={avail - fade:.3f}:d={fade:.3f}"
+        if abs(track.rate - 1.0) > 1e-3:
+            # Resampled to a known rate first, so the shift is the same
+            # size whatever rate the file was delivered at.
+            chain += (f",aresample=44100,asetrate={44100 * track.rate:.0f}"
+                      f",aresample=44100")
         if track.voice:
             # Light compression on the voice only, before the mix: a deadpan
             # read has a wide dynamic range, and the quiet asides are exactly
@@ -384,10 +421,28 @@ def audio_graph(spec: CompositeSpec, first_input: int) -> tuple[list[str], list[
                       ":release=180:makeup=2")
         if track.start_s > 0:
             chain += f",adelay={int(track.start_s * 1000)}:all=1"
-        chain += f",volume={track.gain_db:.1f}dB"
-        lines.append(f"[{idx}:a]{chain}[a{j}]")
+        chain += f",volume={track.gain_db + track.trim_db:.1f}dB"
+        for a, b in track.gaps:
+            chain += f",volume=0:enable='between(t,{a:.3f},{b:.3f})'"
+        ducked = j in duckers
+        out = f"[pre{j}]" if (ducked or (j == voice_j and duckers)) else f"[a{j}]"
+        lines.append(f"[{idx}:a]{chain}{out}")
         a_labels.append(f"[a{j}]")
         idx += 1
+    if duckers:
+        # The voice keys every music track: one copy to the mix, one per
+        # track it pushes down. Music that sits at one level under speech
+        # either buries the quiet lines or vanishes between them.
+        # The key is padded with silence past the voice's last word: the
+        # compressor stops when either input does, and an unpadded key cut
+        # the end-card theme off at the sign-off.
+        sc = "".join(f"[sc{j}]" for j in duckers)
+        lines.append(f"[pre{voice_j}]asplit={len(duckers) + 1}[a{voice_j}]{sc}")
+        for j in duckers:
+            lines.append(f"[sc{j}]apad[key{j}]")
+            lines.append(
+                f"[pre{j}][key{j}]sidechaincompress=threshold=0.02:ratio=6"
+                f":attack=20:release=400[a{j}]")
     if len(a_labels) == 1:
         lines.append(f"{a_labels[0]}anull[amixed]")
     else:
@@ -399,14 +454,18 @@ def audio_graph(spec: CompositeSpec, first_input: int) -> tuple[list[str], list[
     # peak, so uploads are not quietly turned down (or up) after the fact.
     # Single-pass loudnorm — a two-pass measurement would double the audio
     # work for a correction well under the threshold of audibility here.
+    # loudnorm works at 192 kHz and hands that on, which the AAC encoder took
+    # as 96 kHz and spent the bitrate on what nobody hears: back to 48 kHz,
+    # video's rate, before the limiter has the last word.
     if spec.normalise_audio:
         lines.append(
             f"[amixed]loudnorm=I={spec.loudness_lufs}:TP={spec.true_peak_db}"
-            f":LRA={spec.loudness_range},alimiter=limit={spec.limiter_ceiling}"
-            f"[aout]"
+            f":LRA={spec.loudness_range},aresample=48000,"
+            f"alimiter=limit={spec.limiter_ceiling}[aout]"
         )
     else:
-        lines.append(f"[amixed]alimiter=limit={spec.limiter_ceiling}[aout]")
+        lines.append(f"[amixed]aresample=48000,"
+                     f"alimiter=limit={spec.limiter_ceiling}[aout]")
     return inputs, lines
 
 

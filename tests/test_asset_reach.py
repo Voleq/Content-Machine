@@ -173,10 +173,10 @@ def test_every_plate_a_template_names_resolves(registry):
 # --------------------------------------------------------------------------
 #
 # THIS IS A GATE, NOT A BUG. It fails on a fresh checkout and it is supposed
-# to: `assets/sfx/` ships fifteen ffmpeg oscillators with no `SOURCES.json`
+# to: `assets/sfx/` ships twenty-seven ffmpeg oscillators with no `SOURCES.json`
 # beside them, `generated_audio` counts a file with no provenance entry as
 # generated, and `check_audio` therefore blocks every final render outside
-# MOCK_MODE. All fifteen, not just the room bed — the gate is per file.
+# MOCK_MODE. All twenty-seven, not just the room bed — the gate is per file.
 #
 # The fix is an OPERATOR action and nobody else's:
 #
@@ -243,15 +243,17 @@ def test_the_fetch_script_fails_on_a_file_it_does_not_know_how_to_query():
         "_fetch_sfx", ROOT / "scripts" / "fetch_sfx.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    keys = list(mod.QUERIES)
+    # Every file the script fills — each effect's takes and the ambience
+    # loops as well as the base keys — plus the room it owns by flag.
+    names = [w[0] for w in mod.wanted()] + ["room_tone.wav"]
 
     with tempfile.TemporaryDirectory() as tmp:
         sfx = Path(tmp)
         attributed = {}
-        for i, key in enumerate(keys + ["room_tone"]):
-            (sfx / f"{key}.wav").write_bytes(b"RIFF")
-            attributed[f"{key}.wav"] = AudioSource(
-                name=f"{key}.wav", source=f"freesound.org/s/{i}/",
+        for i, name in enumerate(names):
+            (sfx / name).write_bytes(b"RIFF")
+            attributed[name] = AudioSource(
+                name=name, source=f"freesound.org/s/{i}/",
                 licence="CC0", author="someone", generated=False)
         # One file the script has no query for, with no provenance — exactly
         # what an unfetchable room bed or a hand-dropped effect looks like.
@@ -337,8 +339,8 @@ def test_the_room_bed_is_not_the_whole_job():
 
     `--room-tone` is `store_true, default=True` — already on — so passing it
     explicitly changes nothing and calling it required is wrong. And the room
-    bed is one file of fifteen: an operator who fetched only that would have
-    found fourteen blockers left and no explanation of why the render still
+    bed is one file of twenty-seven: an operator who fetched only that would
+    have found twenty-six blockers left and no explanation of why the render still
     refused.
     """
     import importlib.util
@@ -508,7 +510,7 @@ def test_the_fetch_never_takes_a_sound_the_channel_cannot_play(monkeypatch):
 def test_a_refused_licence_filter_costs_a_request_not_the_sound(monkeypatch, capsys):
     """If the API ever reads the licence filter differently and refuses it,
     the fetch asks again without it and picks CC0 out of the answer itself,
-    rather than losing all fifteen sounds to one filter string."""
+    rather than losing every sound to one filter string."""
     import httpx
 
     mod = _fetch_script("_fetch_sfx_fallback")
