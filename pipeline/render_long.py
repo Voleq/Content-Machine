@@ -588,7 +588,8 @@ def _render_long(
         from pipeline.plate_frames import render_still
 
         # THE OPENER ROLE, where the kit publishes one: the rooms with a
-        # `title` slot and the card drawn under it (rebuild-21, desk-wide only).
+        # `title` slot and the card drawn under it (desk-wide since rebuild-21,
+        # window-wide since rebuild-39; board-wide has one too and is held back).
         # `establish` also holds rooms with no slot, and a pick of one of those
         # was a chapter whose title silently never reached the screen.
         role_name = "opener" if reg.room_roles.get("opener") else "establish"

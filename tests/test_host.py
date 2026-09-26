@@ -1,9 +1,10 @@
 """The on-screen host: roles off the registry, the face, and the anchor.
 
-The rig changed shape with the kit. The host is twelve poses and one framing,
-each four strips — the hold, `-talk` (closed, mid and wide mouths), `-idle`
-(his weight settling) and `-blink` — and the frames say what they are, so the
-player reads `mouthOpen` and `eyes` rather than a frame's position. WHICH POSE
+The rig changed shape with the kit. The host is eighteen poses and one
+framing, each four strips — the hold, `-talk` (six mouths since rebuild-31,
+closed first), `-idle` (his weight settling) and `-blink` — and the frames say
+what they are, so the player reads `mouthOpen` and `eyes` rather than a
+frame's position. WHICH POSE
 SERVES WHICH ROLE comes off the registry, not out of a list in host.py. That
 is the test that matters: a kit with different poses has to drop in without
 editing Python.
@@ -534,7 +535,7 @@ def test_the_mouth_is_read_off_the_frame_not_its_position(reg):
     """The rebuild put the CLOSED mouth first in the talk strip, where the kit
     before it put the open one. A player that took `talk[0]` as "open" mouths
     every word shut, so every talking frame has to be one that says
-    `mouthOpen` — and a sentence plays both of them, mid and wide."""
+    `mouthOpen` — and a sentence plays more than one of them."""
     shot = host_shot(reg, "host/to-camera")
     plan, did = face_plan(shot, words((0.0, 3.0)), 0.0, 3.0, 30, seed="t")
     talking = [f for f in plan if f.key == shot.talk.key]
@@ -544,6 +545,17 @@ def test_the_mouth_is_read_off_the_frame_not_its_position(reg):
     for f in plan:
         if f.key == shot.talk.key and f.index == 0:
             assert not _strip_frame(reg, f).mouth_open
+
+
+def test_a_long_read_plays_every_open_mouth_the_strip_draws(reg):
+    """rebuild-31 drew six mouths so that a long read no longer loops three
+    shapes. The player walks the open ones in the kit's phrase order."""
+    shot = host_shot(reg, "host/to-camera")
+    drawn = {i for i, f in enumerate(shot.talk.frames) if f.mouth_open}
+    plan, _did = face_plan(shot, words((0.0, 6.0)), 0.0, 6.0, 30, seed="t")
+    played = {f.index for f in plan if f.key == shot.talk.key
+              and shot.talk.frames[f.index].mouth_open}
+    assert played == drawn
 
 
 def test_a_long_silence_plays_the_idle_and_a_short_one_holds(reg):

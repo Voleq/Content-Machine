@@ -621,7 +621,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 x=placed[0], y=placed[1], w=w, h=h,
                 entry_key=plate.key, concept=plate.family, values=values,
                 frame_count=plate.frame_count, fps=plate.fps or 0,
-                loops=plate.animated, z=10))
+                loops=plate.animated and not plate.plays_once, z=10))
 
         # -- nested plates and foreign media, into a slot of the shot's plate
         for fill_index, (slot_name, src) in enumerate(shot.bind.items()):
@@ -651,7 +651,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                     x=nx, y=ny, w=nw, h=nh, slot=slot_name,
                     entry_key=nested.key, concept=nested.family,
                     frame_count=nested.frame_count, fps=nested.fps or 0,
-                    loops=nested.animated, z=20))
+                    loops=nested.animated and not nested.plays_once, z=20))
                 continue
 
             # Foreign media. It never lands on the ground bare — a photograph

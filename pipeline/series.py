@@ -207,16 +207,20 @@ def spark_bars(box, values, ink, *, gap=0.22) -> dict:
     return {"nodes": nodes, "returns": {"zeroY": r1(zero_y)}}
 
 
-def axis_mark(box, value, ink, *, axis="horizontal", weight=8) -> dict:
+def axis_mark(box, value, ink, *, axis="horizontal", weight=8, tone=None) -> dict:
     """`series.axisMark`: one position on an axis, 0 to 1. Off the end is
     clamped to the end and REPORTED — a mark sitting on the end of a range is
-    a different claim from one off the end of it."""
+    a different claim from one off the end of it.
+
+    `tone` is the ink role the mark's slot publishes (the event calendar's
+    first date in attention and the rest in subject, the sector ranking's
+    market line in quiet); attention when it publishes none."""
     raw = num(value)
     if not box or raw is None:
         return {"nodes": [], "returns": None}
     v = clamp01(raw)
     t = weight
-    fill = _ink(ink, "attention", "#F07A5A")
+    fill = (ink.get(tone) if tone else None) or _ink(ink, "attention", "#F07A5A")
     if axis == "vertical":
         y = box["y"] + box["h"] - v * box["h"]
         nodes = [rect(box["x"], y - t / 2, box["w"], t, fill)]
@@ -421,6 +425,7 @@ def bridge(box, columns, steps, ink, *, open=0, close=0, open_column=None,  # no
 # ── export.js dataLayer ───────────────────────────────────────────────────────
 
 _INDEX = re.compile(r"-(\d+)$")
+_NUMBERED = re.compile(r"^(.+)-(\d+)$")
 
 
 def _pick(slots: dict, pattern: str) -> list[dict]:
@@ -443,6 +448,21 @@ def data_layer(slots: dict[str, dict], data: dict, ink: dict[str, str]) -> list[
     if not data:
         return []
     outs: list[dict] = []
+    # A RANGE BEHIND A LINE paints before the series, or it hides the line it
+    # frames: a band that publishes `under` (valuation history's own range,
+    # the floor under a ratio) goes first, every other band after the marks.
+    for k, v in (data.get("bands") or {}).items():
+        b = SL.get(k)
+        if b and v and b.get("under"):
+            outs.append(history_band(b, v[0], v[1], ink, tone=v[2] if len(v) > 2 else None,
+                                     axis=b.get("axis") or "horizontal"))
+    # The fill between two series and the second series' ink default to what
+    # the plate PUBLISHES on its plot area, so a plate drawn without them in
+    # the data still matches its own legend.
+    pa = SL.get("plot-area") or {}
+    data = {**data,
+            "spread": data["spread"] if data.get("spread") is not None else pa.get("spreadFill") is True,
+            "tone2": data.get("tone2") or pa.get("tone2") or "subject2"}
     bar_cols = _pick(SL, r"^bar-\d+$")
     pair_cols = _pick(SL, r"^pair-\d+$")
     point_cols = _pick(SL, r"^point-\d+$")
@@ -459,10 +479,10 @@ def data_layer(slots: dict[str, dict], data: dict, ink: dict[str, str]) -> list[
                               zero=g("zero")))
     if g("series2") and pair_cols:
         outs.append(column_bars(pair_cols, g("series2")[:len(pair_cols)], ink, min=g("min"), max=g("max"),
-                                tone=g("tone2") or "subject2"))
+                                tone=g("tone2")))
     elif g("series2") and SL.get("plot-area"):
         outs.append(line_path(SL["plot-area"], g("series2"), ink, columns=point_cols, min=g("min"),
-                              max=g("max"), tone=g("tone2") or "subject2", zero_rule=bool(g("zeroRule")),
+                              max=g("max"), tone=g("tone2"), zero_rule=bool(g("zeroRule")),
                               zero=g("zero")))
     if g("split") and SL.get("bars"):
         outs.append(split_bar(SL["bars"], g("split"), ink, accent=g("accent")))
@@ -478,10 +498,32 @@ def data_layer(slots: dict[str, dict], data: dict, ink: dict[str, str]) -> list[
     for k, v in (g("marks") or {}).items():
         b = SL.get(k)
         if b:
-            outs.append(axis_mark(b, v, ink, axis=b.get("axis") or "horizontal"))
+            outs.append(axis_mark(b, v, ink, axis=b.get("axis") or "horizontal", tone=b.get("ink")))
+    # The attention underline a slot publishes (the footnote spotlight).
+    for b in SL.values():
+        if b.get("underline"):
+            outs.append({"nodes": [rect(_js_round(b["x"]), _js_round(b["y"] + b["h"] + 2),
+                                        _js_round(b["w"] * 0.8), 5,
+                                        _ink(ink, b["underline"], _ink(ink, "attention", "#F07A5A")))]})
+    # Said-vs-happened's tie: one attention bar down the middle of the named
+    # column's `diverge-N` box.
+    for i in g("diverge") or ():
+        b = SL.get(f"diverge-{i}")
+        if b:
+            outs.append({"nodes": [rect(_js_round(b["x"] + b["w"] / 2 - 4), _js_round(b["y"]), 8,
+                                        _js_round(b["h"]), _ink(ink, "attention", "#F07A5A"))]})
+    # Small multiples: one series per published `panel-N`, all on the plate's
+    # ONE min-max unless the data scales a panel of its own, evenly spaced
+    # across the panel, in the ink the panel publishes.
+    for k, vals in (g("panels") or {}).items():
+        b = SL.get(k)
+        ps = (g("panelScale") or {}).get(k) or [g("min"), g("max")]
+        if b:
+            outs.append(line_path(b, vals, ink, min=ps[0], max=ps[1], zero_rule=bool(g("zeroRule")),
+                                  accent_last=bool(g("accentLast")), tone=b.get("tone")))
     for k, v in (g("bands") or {}).items():
         b = SL.get(k)
-        if b and v:
+        if b and v and not b.get("under"):
             outs.append(history_band(b, v[0], v[1], ink, tone=v[2] if len(v) > 2 else None,
                                      axis=b.get("axis") or "horizontal"))
     if g("cycle") and SL.get("path"):
@@ -531,6 +573,18 @@ def boxes(plate) -> dict[str, dict]:
             box["axis"] = s.axis
         if s.scale is not None:
             box["scale"] = s.scale
+        # The inks and the draw order a slot publishes for its data (rebuild-39's
+        # round five): which ink a mark or a panel is drawn in, the second
+        # series' ink and whether the gap between two lines is filled, whether
+        # a band sits under the line, and the ink of an underline.
+        for key, val in (("ink", s.ink), ("tone", s.tone), ("tone2", s.tone2),
+                         ("underline", s.underline)):
+            if val:
+                box[key] = val
+        if s.spread_fill is not None:
+            box["spreadFill"] = s.spread_fill
+        if s.under:
+            box["under"] = True
         out[name] = box
     return out
 
@@ -676,19 +730,121 @@ def _as_series(texts: list[str]) -> list[float | None]:
     return [figure(t) for t in texts]
 
 
+def _columns(plate, stem: str) -> list[str]:
+    """A numbered family as COLUMNS a series is drawn into. A ranking's `bar-N`
+    are rails, bands with extents of their own (sector-ranking, peer-rank), and
+    a series drawn into them stands columns on top of the rails; the kit's own
+    sample draws no series there."""
+    fam = _family(plate, stem)
+    return [] if fam and all(plate.slots[n].role in ("band", "marker") for n in fam) else fam
+
+
+def _parallel_shapes(plate, names: list[str]) -> list[str]:
+    """The numbered band and marker families that run beside a printed family,
+    one shape per printed figure: guidance's `guide-N` and `actual-N` beside
+    its `value-N`, a ranking's `bar-N` rails, a combined ratio's two stacked
+    parts. Where one does, the printed figures are THOSE shapes' figures, and
+    no line is drawn through them: the kit's own sample nulls the series on
+    every such plate."""
+    if not names:
+        return []
+    stems = sorted({m.group(1) for k in plate.slots if (m := _NUMBERED.match(k))})
+    out = []
+    for stem in stems:
+        fam = _family(plate, stem)
+        if fam != names and len(fam) == len(names) and all(
+                plate.slots[n].region and plate.slots[n].role in ("band", "marker") for n in fam):
+            out.append(stem)
+    return out
+
+
+def _printed_marks(plate) -> dict[str, str]:
+    """{mark: the printed figure that places it}, for a numbered marker family
+    beside `value-N`: guidance's `actual-N`, each quarter's reported figure
+    printed under it. The mark stands where that figure is, so the printed
+    figure places it, as `growth-value-N` places `growth-N`."""
+    values = _family(plate, "value")
+    out: dict[str, str] = {}
+    for stem in _parallel_shapes(plate, values):
+        fam = _family(plate, stem)
+        if all(plate.slots[n].role == "marker" and plate.slots[n].scale == "plot-area" for n in fam):
+            out.update(zip(fam, values))
+    return out
+
+
+def _mixed_units(plate, v: dict, printed_marks: dict) -> str | None:
+    """Why the plot's figures cannot share one scale, or None. The printed
+    quarters read `$186m` and a range written `180, 195` beside them is a
+    hundred-million times smaller: on one scale every bar lies flat on the
+    floor. Written as printed (`$180m, $195m`), they agree."""
+    marks = [figure(v.get(src)) for src in printed_marks.values()]
+    marks = [abs(x) for x in marks if x]
+    bands = [abs(figure(p.strip()) or 0) for n, sl in plate.slots.items()
+             if sl.scale == "plot-area" and sl.role == "band" and v.get(n)
+             for p in str(v[n]).split(",")[:2]]
+    bands = [x for x in bands if x]
+    if not marks or not bands:
+        return None
+    ratio = sorted(bands)[len(bands) // 2] / sorted(marks)[len(marks) // 2]
+    if 1 / 20 <= ratio <= 20:
+        return None
+    stem = next(iter(printed_marks.values())).rsplit("-", 1)[0]
+    return (f"the ranges and the printed {stem}-N are not in the same units (a range reads "
+            f"{ratio:.3g} times the figures printed beside it): write each range the way the "
+            f"figures are printed")
+
+
+def _plot_figures(plate, v: dict, printed_marks: dict) -> list[float]:
+    """The figures of every band and mark the plate publishes on the PLOT'S
+    scale (`scale: "plot-area"`): a multiple's own range and average, each
+    quarter's guided range and reported figure. They are on the plot's one
+    min-max with the line, so the scale is worked out over them too. A figure
+    that does not read is skipped here and reported where it is placed."""
+    out: list[float] = []
+    for name, slot in plate.slots.items():
+        if slot.scale != "plot-area" or not slot.region:
+            continue
+        raw = str(v.get(name) or "") or str(v.get(printed_marks.get(name, ""), "") or "")
+        if slot.role == "band":
+            pair = [figure(p.strip()) for p in raw.split(",")[:2]]
+            if len(pair) == 2 and None not in pair:
+                out += pair
+        elif slot.role == "marker" and figure(raw) is not None:
+            out.append(figure(raw))
+    return out
+
+
+def _tight(lo: float, hi: float) -> tuple[float, float]:
+    """A scale for figures compared only with EACH OTHER and printed on no
+    axis — guided ranges against what was reported, the panels of a small
+    multiple, a driver beside its effect: their own extent with a tenth of it
+    to spare at each end. Zero is not forced in. Eight quarters of guidance
+    between $180m and $230m on a scale from zero are eight identical bars at
+    the top of the plot, and design's own samples draw them tight."""
+    span = hi - lo if hi > lo else (abs(hi) or 1.0)
+    return lo - span * 0.1, hi + span * 0.1
+
+
 def _note(plate, name: str) -> str:
     s = plate.slots.get(name)
     return (s.note or "").lower() if s is not None else ""
 
 
-def _axis_scale(plate, values: dict, box_name: str) -> tuple[float, float] | None:
+def _axis_scale(plate, values: dict, box_name: str,
+                plot: tuple[float, float] | None = None) -> tuple[float, float] | None:
     """The scale a mark or an extent is written on, as the PLATE states it.
 
-    First what is printed on the axis the writer filled — `axis-low`/`axis-high`,
-    or the first and last `tick-N` — because those labels are on screen and a
-    mark that disagrees with them is wrong in front of the viewer. Then the
-    slot's own published `scale`. None: the value is already a 0-1 position.
+    A slot published on the plot's own scale (`scale: "plot-area"`) is on
+    `plot`, the one min-max the line and everything else on the plot share.
+    Otherwise, first what is printed on the axis the writer filled —
+    `axis-low`/`axis-high`, or the first and last `tick-N` — because those
+    labels are on screen and a mark that disagrees with them is wrong in front
+    of the viewer. Then the slot's own published `scale`. None: the value is
+    already a 0-1 position.
     """
+    own = plate.slots.get(box_name)
+    if own is not None and own.scale == "plot-area" and plot is not None:
+        return plot
     lo = figure(values.get("axis-low"))
     hi = figure(values.get("axis-high"))
     if lo is not None and hi is not None and hi != lo:
@@ -777,7 +933,10 @@ def data_keys(plate) -> list[str]:
     s = plate.slots
     has = lambda stem: bool(_family(plate, stem))           # noqa: E731
     keys: list[str] = []
-    columns = has("bar") or has("point") or "plot-area" in s
+    columns = bool(_columns(plate, "bar")) or has("point") or "plot-area" in s
+    # A plot of bands and marks beside the figures it prints draws no line.
+    if _parallel_shapes(plate, _family(plate, "value")):
+        columns = False
     if columns and not _scatter(plate):
         keys.append("series")
         if has("pair") or _two_lines(plate):
@@ -816,7 +975,7 @@ def data_menu(plate) -> str:
     s = plate.slots
     fam = lambda stem: _family(plate, stem)             # noqa: E731
     keys = data_keys(plate)
-    bar_cols, pair_cols, point_cols = fam("bar"), fam("pair"), fam("point")
+    bar_cols, pair_cols, point_cols = _columns(plate, "bar"), fam("pair"), fam("point")
     parts: list[str] = []
 
     if "series" in keys:
@@ -873,17 +1032,31 @@ def data_menu(plate) -> str:
     if growth:
         parts.append(f"{_span(fam('growth-value'))} place the growth marks on the "
                      f"axis-low…axis-high rail")
+    printed_marks = _printed_marks(plate)
+    if printed_marks:
+        stems = sorted({n.rsplit("-", 1)[0] for n in printed_marks})
+        parts.append(f"{_span(fam('value'))} place the {' and '.join(stems)} marks, as printed")
+    on_plot = "on the plot's one scale, in the figures' own units"
     for name in sorted(n for n in positions if n not in growth and not re.match(r".*-\d+$", n)):
-        on = "on the line's scale" if s[name].axis == "vertical" else "on the scale the axis prints"
+        on = (on_plot if s[name].scale == "plot-area"
+              else "on the line's scale" if s[name].axis == "vertical" else "on the scale the axis prints")
         parts.append(f"{name}=<one figure, {on}>")
     numbered = sorted({n.rsplit("-", 1)[0] for n in positions
-                       if n not in growth and re.match(r".*-\d+$", n)})
+                       if n not in growth and n not in printed_marks and re.match(r".*-\d+$", n)})
     for stem in numbered:
         parts.append(f"{_span(fam(stem))}=<one figure each, on the scale the plate prints>")
     for stem in sorted({re.sub(r"-\d+$", "", n) for n in extents}):
         names = fam(stem) if re.match(r".*-\d+$", next(n for n in extents if n.startswith(stem))) else [stem]
         label = _span(names) if len(names) > 1 else names[0]
-        parts.append(f"{label}=<start,end[,tone]> on the {'ticks' if fam('tick') else 'axis'}")
+        where = (on_plot if all(s[n].scale == "plot-area" for n in names)
+                 else f"on the {'ticks' if fam('tick') else 'axis'}")
+        parts.append(f"{label}=<start,end[,tone]> {where}")
+    panels = fam("panel")
+    if panels:
+        own = all(s[n].scale == "own" for n in panels)
+        parts.append(f"{_span(panels)}=<figures, oldest first> per panel, "
+                     + ("each on its own scale" if own else "all on one shared scale")
+                     + "; each line's last figure is the one printed beside it")
     if any(re.match(r"^series-\d+$", n) and sl.region for n, sl in s.items()):
         parts.append(f"{_span([n for n in sorted(s) if re.match(r'^series-[0-9]+$', n)])}"
                      f"=<figures> per tile, each on its own scale")
@@ -908,7 +1081,7 @@ def _printed_series(plate) -> tuple[list[str], list[str]]:
     `value-N`, one per column.
     """
     s = plate.slots
-    bar_cols = _family(plate, "bar")
+    bar_cols = _columns(plate, "bar")
     columns = bar_cols or _family(plate, "point")
     if columns and "row-1" in s and "row-2" in s:
         rows: dict[str, set] = {}
@@ -924,7 +1097,8 @@ def _printed_series(plate) -> tuple[list[str], list[str]]:
             return _family(plate, first), _family(plate, second)
     if "plot-area" in s or bar_cols:
         values = _family(plate, "value")
-        if values and (not columns or len(values) == len(columns)):
+        if values and (not columns or len(values) == len(columns)) \
+                and not _parallel_shapes(plate, values):
             return values, []
     return [], []
 
@@ -983,8 +1157,11 @@ def plate_data(plate, values: dict[str, str]) -> PlateData:
             return None
         return got
 
-    bar_cols, pair_cols, point_cols = _family(plate, "bar"), _family(plate, "pair"), _family(plate, "point")
+    bar_cols, pair_cols, point_cols = _columns(plate, "bar"), _family(plate, "pair"), _family(plate, "point")
     columns = bar_cols or point_cols
+    # A plot of bands and marks beside its printed figures draws no line.
+    if _parallel_shapes(plate, _family(plate, "value")):
+        columns = []
 
     # ── the first series ─────────────────────────────────────────────────
     # WHERE THE PLATE PRINTS ITS SERIES, THE PRINTED FIGURES ARE WHAT IS DRAWN:
@@ -1056,16 +1233,27 @@ def plate_data(plate, values: dict[str, str]) -> PlateData:
     # the plate, the pair is worked out here, over both series — and over a
     # payback's level, which is drawn on the same axis as its line.
     both = [x for x in (d.get("series") or []) + (d.get("series2") or []) if x is not None]
-    if "min" not in d and both and not _scatter(plate):
+    # What else is drawn on the plot's own scale — a multiple's range and
+    # average, each quarter's guided range and reported figure — is on the same
+    # min-max, so it counts toward it. With no line on the plot those figures
+    # are only compared with each other, and the scale is their own extent.
+    printed_marks = _printed_marks(plate)
+    plotted = _plot_figures(plate, v, printed_marks)
+    if (why := _mixed_units(plate, v, printed_marks)) is not None:
+        out.problems.append(why)
+    if "min" not in d and (both or plotted) and not _scatter(plate):
         level = next((figure(v[n]) for n, sl in s.items()
                       if sl.region and sl.role == "marker" and sl.axis == "vertical"
+                      and sl.scale != "plot-area"
                       and n in v and figure(v[n]) is not None), None)
-        if level is not None:
+        if level is not None and both:
             d["min"] = builtin_min(0.0, builtin_min(both + [level]))
             d["max"] = _kit_ceiling(builtin_max(both + [level]))
+        elif both:
+            d["min"], d["max"] = _headroom(builtin_min(0.0, builtin_min(both + plotted)),
+                                           builtin_max(0.0, builtin_max(both + plotted)))
         else:
-            d["min"], d["max"] = _headroom(builtin_min(0.0, builtin_min(both)),
-                                           builtin_max(0.0, builtin_max(both)))
+            d["min"], d["max"] = _tight(builtin_min(plotted), builtin_max(plotted))
     if any(x < 0 for x in both):
         d["zeroRule"] = True
 
@@ -1123,9 +1311,10 @@ def plate_data(plate, values: dict[str, str]) -> PlateData:
         written = v.get(name, "")
         source = name
         if not written and slot.role == "marker":
-            printed = v.get(name.replace("growth-", "growth-value-")) if name.startswith("growth-") else None
-            if printed:
-                written, source = printed, name.replace("growth-", "growth-value-")
+            src = (name.replace("growth-", "growth-value-") if name.startswith("growth-")
+                   else printed_marks.get(name))
+            if src and v.get(src):
+                written, source = v[src], src
         if not written:
             continue
         if slot.role == "marker":
@@ -1142,7 +1331,8 @@ def plate_data(plate, values: dict[str, str]) -> PlateData:
             if len(parts) < 2 or any(x is None for x in pair):
                 out.problems.append(f"{name}= takes `start, end` and has {written!r}")
                 continue
-            scale = _axis_scale(plate, v, name)
+            plot = (d["min"], d["max"]) if d.get("min") is not None and d.get("max") is not None else None
+            scale = _axis_scale(plate, v, name, plot=plot)
             got = [_position(x, scale, name, out) for x in pair]
             if any(x is None for x in got):
                 continue
@@ -1213,6 +1403,33 @@ def plate_data(plate, values: dict[str, str]) -> PlateData:
     if tiles:
         d["tiles"] = tiles
 
+    # ── small multiples, and a driver beside its effect (rebuild-39) ─────
+    # One line per `panel-N`, the figures the tag gives it, oldest first. Each
+    # panel says which scale it is drawn on: `shared`, every panel on the
+    # plate's ONE min-max ("never rescale a panel to itself"), or `own`, its
+    # own, handed to the kit as `panelScale` ("never share a plot with the
+    # other panel"). Neither prints an axis, so a scale is the figures' own
+    # extent. Each line's last point is in attention: it is the figure the
+    # panel prints beside it.
+    panels = {}
+    for name in _family(plate, "panel"):
+        if "," in v.get(name, ""):
+            got = nums(name, v[name])
+            if got:
+                panels[name] = got
+    if panels:
+        d["panels"] = panels
+        shared = [x for n, xs in panels.items() if s[n].scale != "own" for x in xs]
+        if shared and "min" not in d:
+            d["min"], d["max"] = _tight(builtin_min(shared), builtin_max(shared))
+        own = {n: list(_tight(builtin_min(xs), builtin_max(xs)))
+               for n, xs in panels.items() if s[n].scale == "own"}
+        if own:
+            d["panelScale"] = own
+        if any(x < 0 for xs in panels.values() for x in xs):
+            d["zeroRule"] = True
+        d["accentLast"] = True
+
     # ── a cycle's path, and each row's own spark ─────────────────────────
     if "path" in s and "," in v.get("path", ""):
         d["cycle"] = nums("path", v["path"])
@@ -1273,10 +1490,10 @@ def _mark_scale(plate, v: dict, name: str, d: dict) -> tuple[float, float] | Non
     placed on what its axis prints, else taken as a 0-1 position.
     """
     slot = plate.slots[name]
-    if (slot.axis == "vertical" and "plot-area" in plate.slots
-            and d.get("min") is not None and d.get("max") is not None):
-        return (d["min"], d["max"])
-    return _axis_scale(plate, v, name)
+    plot = (d["min"], d["max"]) if d.get("min") is not None and d.get("max") is not None else None
+    if slot.axis == "vertical" and "plot-area" in plate.slots and plot is not None:
+        return plot
+    return _axis_scale(plate, v, name, plot=plot)
 
 
 def _check_shares(texts: list[str] | None, parts: list | None, out: PlateData) -> None:

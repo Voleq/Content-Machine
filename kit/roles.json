@@ -13,14 +13,15 @@
   "stands where and what is held back. So a new drop brings its own plate notes",
   "and nothing here has to be retyped to keep up with it.",
   "",
-  "Written for rebuild-21 ('Bot reconstruction kit 3', 2026-09-23). Every name",
-  "below is in that kit; nothing is carried over from the drawn kit before it."
+  "Written for rebuild-39 (the drop of 2026-09-25 that brought the animations).",
+  "Every name below is in that kit; nothing is carried over from the drawn kit",
+  "before it."
  ],
  "hostRoles": {
   "_note": [
-   "Which poses serve which kind of shot. The twelve poses are figure.js's, each",
-   "with a still, a talk strip (closed, mid and wide mouths on the head offsets),",
-   "an idle strip and a blink strip.",
+   "Which poses serve which kind of shot. The eighteen poses are figure.js's,",
+   "each with a still, a talk strip (six mouths since rebuild-31: closed, mid,",
+   "wide, O, EE and F/V, on the head offsets), an idle strip and a blink strip.",
    "",
    "THE CLOSE-UP IS A WINDOW, NOT A POSE. The rebuild drew no close-up: design's",
    "crop review (ANSWERS.md §4) found that a window on to-camera reads at",
@@ -33,7 +34,25 @@
    "checking-a-figure is the EYELINE pose and design says it needs lateral room,",
    "so it is in panel only. sitting-at-desk is drawn in the same standing box as",
    "every other pose (DESIGN.md §2.5), so it scales like them; it is capped at one",
-   "a video because design has not reviewed it at 1:1."
+   "a video because design has not reviewed it at 1:1.",
+   "",
+   "THE SIX POSES rebuild-30 AND rebuild-31 ADDED ARE IN NO ROLE, ON PURPOSE. A",
+   "role is picked by seed, and each of the six is chosen by what is being said:",
+   "counting-on-fingers for a list and never for one item, shrug for a range too",
+   "wide to mean anything, holding-a-filing for a page citation, holding-a-phone",
+   "for an alert read out, holding-a-mug between beats and never on a number",
+   "(design's cautions, roles.fragment.json and kit-model.js). gesturing-at-plate",
+   "also needs the plate on camera-right, and only the long's two-shot knows",
+   "which side the evidence lands on, after it has placed him. Put in a role",
+   "today, a seed would count on his fingers over a single number. So they are",
+   "installed, drawn and described in hostPoses, and casting them from the",
+   "script's words is its own change.",
+   "",
+   "Design fits each of them to certain rooms (kit-model.js `fits`, which the",
+   "render path never reads), and casting them has to keep to it: the holding",
+   "poses to desk-front and desk-wide, the mug also to desk-side;",
+   "gesturing-at-plate to panel-left, board-side and board-wide; counting-on-",
+   "fingers and shrug to desk-front, desk-front-b, desk-wide and window-wide."
   ],
   "open": [
    "host/to-camera",
@@ -122,6 +141,31 @@
    "limit": 1,
    "purpose": "seated at his own desk: changes the scene inside a long chapter. Not yet reviewed at 1:1 by design, so once a video"
   },
+  "host/gesturing-at-plate": {
+   "talks": true,
+   "purpose": "the PRESENT pose: his camera-right hand open toward the plate beside him. checking-a-figure is him reading the plate; this is him showing it to you. Only with a plate or the card wall on camera-right"
+  },
+  "host/counting-on-fingers": {
+   "talks": true,
+   "purpose": "the LIST pose: hands meet at the chest for a three-things beat. The count is in the voice-over, so never for one item"
+  },
+  "host/shrug": {
+   "talks": true,
+   "limit": 1,
+   "purpose": "the NOBODY-KNOWS pose: a range too wide to mean anything, or a question the filing does not answer. Deadpan, never a joke about the company; once a video, like head-in-hands"
+  },
+  "host/holding-a-filing": {
+   "talks": true,
+   "purpose": "the annual report held up to camera in both hands: for 'it says so on page 96'"
+  },
+  "host/holding-a-phone": {
+   "talks": true,
+   "purpose": "reading a phone, not looking at us: the price alert, the message, the post read out"
+  },
+  "host/holding-a-mug": {
+   "talks": true,
+   "purpose": "the three-in-the-morning prop: between beats, never on a number"
+  },
   "host/close-up": {
    "talks": true,
    "framing": true,
@@ -132,7 +176,7 @@
   "_note": [
    "Which room angle carries which kind of beat, picked by seed within a role.",
    "",
-   "ALL FOURTEEN ROOMS ARE IN USE. rebuild-20 painted a wall item over him in four",
+   "ALL FOURTEEN OF rebuild-21's ROOMS ARE IN USE. rebuild-20 painted a wall item over him in four",
    "rooms and stood him behind the monitor in the two new talk angles, so six were",
    "held back; rebuild-21 marks every room shape as behind or in front of him and",
    "moved the anchors, and with every pose composited in every room none of his",
@@ -143,22 +187,35 @@
    "The ingest still measures every room in a role and refuses one whose front",
    "layer covers his head.",
    "",
-   "opener IS THE ONE ROOM A CHAPTER OPENS IN. A chapter opener is a room with the",
-   "chapter's title set in its `title` slot, and only desk-wide publishes one; the",
-   "read and talk angles are too tight to fit a card above him. The ingest refuses",
-   "an opener that publishes no title slot.",
+   "opener IS WHERE A CHAPTER OPENS: a room with the chapter's title set in its",
+   "`title` slot. desk-wide published the only one until rebuild-39 added",
+   "window-wide and board-wide, each an existing angle pulled back (window-wall",
+   "and board-side scaled 0.8 about the floor) with the same card above him, so",
+   "one title fits all three. window-wide opens chapters beside desk-wide.",
+   "board-wide is held back: design says to open on it only when the chapter",
+   "will be argued on the board, and a seed does not know that. The read and",
+   "talk angles are too tight to fit a card above him. The ingest refuses an",
+   "opener that publishes no title slot.",
    "",
    "board and desk-top-down declare no host anchor, so nobody stands in them: a",
    "beat that asks for a host there is told in the close-up. board is the index",
    "card wall and carries the receipts role; it publishes no card slots, so the",
-   "wall of calls is not written on it."
+   "wall of calls is not written on it.",
+   "",
+   "THE CHRISTMAS TWINS ARE HELD BACK until something dresses a whole episode.",
+   "rebuild-39 ships a -christmas twin of each of the fourteen rooms he stands",
+   "in, and design's rule is December only and every angle or none: cut plain",
+   "and dressed angles of one room into one video and the decorations flicker in",
+   "and out. That is a per-episode switch, like the hour, and nothing makes it",
+   "yet."
   ],
   "establish": [
    "room/desk-wide",
    "room/doorway"
   ],
   "opener": [
-   "room/desk-wide"
+   "room/desk-wide",
+   "room/window-wide"
   ],
   "talk": [
    "room/desk-front",
@@ -198,14 +255,38 @@
    "offered it and a [PLATE] tag naming it is refused; a held-back room is in no",
    "role. Each entry is a stem and covers both aspects.",
    "",
-   "EMPTY SINCE rebuild-21. The six legacy plates design's geometry probe flagged",
-   "(the waterfalls, insider-flow, macro-series, cycle-frame, said-happened-6)",
-   "had their slots moved clear of each other and of the safe margin, and the six",
-   "rooms that painted over him were fixed. A plate or room goes back in here with",
-   "its reason the day a drop breaks it."
+   "No plate was held back from rebuild-21 to rebuild-39: the six legacy plates",
+   "design's geometry probe flagged (the waterfalls, insider-flow, macro-series,",
+   "cycle-frame, said-happened-6) had their slots moved clear of each other and of",
+   "the safe margin, and the six rooms that painted over him were fixed. A plate",
+   "or room goes back in here with its reason the day a drop breaks it.",
+   "",
+   "figures/guidance-raise-cut is held back since rebuild-39 because a name clash",
+   "in the kit redrew it as a copy of another plate; see its reason.",
+   "",
+   "The rooms held back since rebuild-39 are not broken. Each is right for a",
+   "shot nothing can recognise yet, and a room in a role is picked by seed."
   ],
-  "plates": {},
-  "rooms": {}
+  "plates": {
+   "figures/guidance-raise-cut": "NOT THE PLATE ITS NOTES DESCRIBE. rebuild-39's round five named its new guidance chart's drawing guidanceRange, the name of the round-one drawing behind this plate, and round five installs last, so this key now draws an exact copy of charts/guidance-range-9x16 (same slots, same art) while roles.fragment.json still describes the old range-and-mark figure. Offered, the writer would pick it for a figure it no longer draws. charts/guidance-range-9x16 carries the new chart; this comes back when design renames one of the two drawings."
+  },
+  "rooms": {
+   "room/board-wide": "design: open on it only when the chapter will be argued on the board. The opener role picks by seed, so in it this would open chapters that never go near the board. Night only as well (duskSafe false), like board-side.",
+   "room/board-side-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/board-wide-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/desk-front-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/desk-front-b-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/desk-front-low-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/desk-side-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/desk-wide-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/doorway-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/doorway-wide-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/panel-left-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/read-close-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/turn-to-screen-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/window-wall-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out.",
+   "room/window-wide-christmas": "SEASONAL, design: December only, and every angle or none. Nothing dresses an episode yet, and one dressed angle cut among plain ones flickers the decorations in and out."
+  }
  },
  "hours": {
   "_note": [
