@@ -70,6 +70,27 @@ def _period_heads(plate) -> list[str]:
             if n.startswith("head-") and n.split("-", 1)[1].isdigit()]
 
 
+def _heads_span_equal_runs(plate, heads: list[str]) -> bool:
+    """Whether every head is drawn the width of the same whole run of columns.
+
+    Read off the plate: the columns' pitch from their published `anchorX`, and
+    each head's own box. Five heads over twenty columns only counts when each
+    head is about four columns wide — the count alone would also pass a plate
+    that forgot fifteen heads.
+    """
+    if len(heads) < 2 or not plate.columns or plate.columns % len(heads):
+        return False
+    run = plate.columns // len(heads)
+    if run < 2:
+        return False
+    xs = sorted(s.anchor_x for s in plate.slots.values()
+                if s.anchor_x is not None and s.role in ("point-column", "bar"))
+    if len(xs) != plate.columns:
+        return False
+    pitch = (xs[-1] - xs[0]) / (len(xs) - 1)
+    return all(abs(plate.slots[h].w - run * pitch) <= pitch for h in heads)
+
+
 def test_every_period_grid_has_a_head_per_column(reg):
     """The plates themselves, not just the code that fills them.
 
@@ -114,6 +135,15 @@ def test_every_period_grid_has_a_head_per_column(reg):
         # the last period with no name.
         idx = sorted(int(h.split("-", 1)[1]) for h in heads)
         if idx != list(range(1, len(idx) + 1)) and idx[-1] <= plate.columns:
+            continue
+        # HEADS THAT EACH SPAN A RUN OF COLUMNS LABEL A COARSER PERIOD. The
+        # valuation-history round (rebuild-39) plots twenty quarters under
+        # five year heads, and each head is drawn exactly four columns wide:
+        # a quarter per column, a year per head. The heads disagreeing with
+        # the columns is again the signal `plate_tags` reads, so a writer's
+        # twenty figures are not refused for not being five. Measured off the
+        # plate's own boxes, so heads 1 to 5 over six columns still fails.
+        if _heads_span_equal_runs(plate, heads):
             continue
         if len(heads) != plate.columns:
             problems.append(

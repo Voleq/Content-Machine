@@ -8,7 +8,7 @@
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
  "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "assetCount": 21,
+ "assetCount": 25,
  "plates": {
   "paper/headline-band-t1-16x9": {
    "key": "paper/headline-band-t1-16x9",
@@ -4553,7 +4553,7 @@
      "weight": 700,
      "colour": "structure",
      "tracking": "-.02em",
-     "maxLines": 3,
+     "maxLines": 2,
      "maxCharsPerLine": 34,
      "budget": "derived from the slot boxes that set this role; 34 is the floor (narrowest of 3), was 22"
     },
@@ -4589,14 +4589,14 @@
     "headline-1": {
      "align": "left",
      "role": "headline",
+     "wraps": 2,
      "x": 246,
      "y": 340,
      "w": 738,
-     "h": 363,
-     "maxChars": 126,
-     "wraps": 5,
+     "h": 128,
+     "maxChars": 50,
      "maxCharsPerLine": 34,
-     "maxLines": 3
+     "maxLines": 2
     },
     "source-1": {
      "align": "left",
@@ -4619,14 +4619,14 @@
     "headline-2": {
      "align": "left",
      "role": "headline",
+     "wraps": 2,
      "x": 246,
      "y": 793,
      "w": 738,
-     "h": 363,
-     "maxChars": 126,
-     "wraps": 5,
+     "h": 128,
+     "maxChars": 50,
      "maxCharsPerLine": 34,
-     "maxLines": 3
+     "maxLines": 2
     },
     "source-2": {
      "align": "left",
@@ -4649,14 +4649,14 @@
     "headline-3": {
      "align": "left",
      "role": "headline",
+     "wraps": 2,
      "x": 246,
      "y": 1246,
      "w": 738,
-     "h": 363,
-     "maxChars": 126,
-     "wraps": 5,
+     "h": 128,
+     "maxChars": 50,
      "maxCharsPerLine": 34,
-     "maxLines": 3
+     "maxLines": 2
     },
     "source-3": {
      "align": "left",
@@ -4822,7 +4822,7 @@
      "weight": 700,
      "colour": "structure",
      "tracking": "-.02em",
-     "maxLines": 3,
+     "maxLines": 2,
      "maxCharsPerLine": 44,
      "budget": "derived from the slot boxes that set this role; 44 is the floor (narrowest of 5), was 22"
     },
@@ -4858,14 +4858,14 @@
     "headline-1": {
      "align": "left",
      "role": "headline",
+     "wraps": 2,
      "x": 246,
      "y": 340,
      "w": 738,
-     "h": 202,
-     "maxChars": 97,
-     "wraps": 3,
+     "h": 100,
+     "maxChars": 65,
      "maxCharsPerLine": 44,
-     "maxLines": 3
+     "maxLines": 2
     },
     "source-1": {
      "align": "left",
@@ -4888,14 +4888,14 @@
     "headline-2": {
      "align": "left",
      "role": "headline",
+     "wraps": 2,
      "x": 246,
      "y": 612,
      "w": 738,
-     "h": 202,
-     "maxChars": 97,
-     "wraps": 3,
+     "h": 100,
+     "maxChars": 65,
      "maxCharsPerLine": 44,
-     "maxLines": 3
+     "maxLines": 2
     },
     "source-2": {
      "align": "left",
@@ -4918,14 +4918,14 @@
     "headline-3": {
      "align": "left",
      "role": "headline",
+     "wraps": 2,
      "x": 246,
      "y": 884,
      "w": 738,
-     "h": 202,
-     "maxChars": 97,
-     "wraps": 3,
+     "h": 100,
+     "maxChars": 65,
      "maxCharsPerLine": 44,
-     "maxLines": 3
+     "maxLines": 2
     },
     "source-3": {
      "align": "left",
@@ -4948,14 +4948,14 @@
     "headline-4": {
      "align": "left",
      "role": "headline",
+     "wraps": 2,
      "x": 246,
      "y": 1156,
      "w": 738,
-     "h": 202,
-     "maxChars": 97,
-     "wraps": 3,
+     "h": 100,
+     "maxChars": 65,
      "maxCharsPerLine": 44,
-     "maxLines": 3
+     "maxLines": 2
     },
     "source-4": {
      "align": "left",
@@ -4978,14 +4978,14 @@
     "headline-5": {
      "align": "left",
      "role": "headline",
+     "wraps": 2,
      "x": 246,
      "y": 1428,
      "w": 738,
-     "h": 202,
-     "maxChars": 97,
-     "wraps": 3,
+     "h": 100,
+     "maxChars": 65,
      "maxCharsPerLine": 44,
-     "maxLines": 3
+     "maxLines": 2
     },
     "source-5": {
      "align": "left",
@@ -5448,6 +5448,1291 @@
      "w": 1520,
      "h": 30,
      "maxChars": 97
+    }
+   }
+  },
+  "paper/risk-factor-diff-16x9": {
+   "key": "paper/risk-factor-diff-16x9",
+   "dir": "paper",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "risk-factor-diff-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "risk-factor-diff-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "38c3e2f8"
+     },
+     {
+      "file": "risk-factor-diff-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "bfda517e"
+     },
+     {
+      "file": "risk-factor-diff-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "38c3e2f8"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "risk-factor-diff-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "risk-factor-diff-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "38c3e2f8"
+      },
+      {
+       "file": "risk-factor-diff-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "bfda517e"
+      },
+      {
+       "file": "risk-factor-diff-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "38c3e2f8"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "risk-factor-diff-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "risk-factor-diff-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "020fd320"
+      },
+      {
+       "file": "risk-factor-diff-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "d9155908"
+      },
+      {
+       "file": "risk-factor-diff-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "020fd320"
+      }
+     ]
+    }
+   },
+   "slotCount": 18,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "mark": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 3,
+     "budget": "derived from the slot boxes that set this role; 3 is the floor (narrowest of 5), was 3"
+    },
+    "line": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 115,
+     "maxLines": 1,
+     "maxCharsPerLine": 115,
+     "budget": "derived from the slot boxes that set this role; 115 is the floor (narrowest of 5), was 86"
+    },
+    "tag": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 112,
+     "budget": "derived from the slot boxes that set this role; 112 is the floor (narrowest of 5), was 112"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "mark-1": {
+     "align": "center",
+     "role": "mark",
+     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "x": 160,
+     "y": 250,
+     "w": 90,
+     "h": 51,
+     "maxChars": 3
+    },
+    "tag-1": {
+     "align": "left",
+     "role": "tag",
+     "x": 270,
+     "y": 250,
+     "w": 1490,
+     "h": 26,
+     "maxChars": 112
+    },
+    "line-1": {
+     "align": "left",
+     "role": "line",
+     "maxLines": 1,
+     "x": 270,
+     "y": 282,
+     "w": 1490,
+     "h": 74,
+     "maxChars": 115,
+     "maxCharsPerLine": 115
+    },
+    "mark-2": {
+     "align": "center",
+     "role": "mark",
+     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "x": 160,
+     "y": 380,
+     "w": 90,
+     "h": 51,
+     "maxChars": 3
+    },
+    "tag-2": {
+     "align": "left",
+     "role": "tag",
+     "x": 270,
+     "y": 380,
+     "w": 1490,
+     "h": 26,
+     "maxChars": 112
+    },
+    "line-2": {
+     "align": "left",
+     "role": "line",
+     "maxLines": 1,
+     "x": 270,
+     "y": 412,
+     "w": 1490,
+     "h": 74,
+     "maxChars": 115,
+     "maxCharsPerLine": 115
+    },
+    "mark-3": {
+     "align": "center",
+     "role": "mark",
+     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "x": 160,
+     "y": 510,
+     "w": 90,
+     "h": 51,
+     "maxChars": 3
+    },
+    "tag-3": {
+     "align": "left",
+     "role": "tag",
+     "x": 270,
+     "y": 510,
+     "w": 1490,
+     "h": 26,
+     "maxChars": 112
+    },
+    "line-3": {
+     "align": "left",
+     "role": "line",
+     "maxLines": 1,
+     "x": 270,
+     "y": 542,
+     "w": 1490,
+     "h": 74,
+     "maxChars": 115,
+     "maxCharsPerLine": 115
+    },
+    "mark-4": {
+     "align": "center",
+     "role": "mark",
+     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "x": 160,
+     "y": 640,
+     "w": 90,
+     "h": 51,
+     "maxChars": 3
+    },
+    "tag-4": {
+     "align": "left",
+     "role": "tag",
+     "x": 270,
+     "y": 640,
+     "w": 1490,
+     "h": 26,
+     "maxChars": 112
+    },
+    "line-4": {
+     "align": "left",
+     "role": "line",
+     "maxLines": 1,
+     "x": 270,
+     "y": 672,
+     "w": 1490,
+     "h": 74,
+     "maxChars": 115,
+     "maxCharsPerLine": 115
+    },
+    "mark-5": {
+     "align": "center",
+     "role": "mark",
+     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "x": 160,
+     "y": 770,
+     "w": 90,
+     "h": 51,
+     "maxChars": 3
+    },
+    "tag-5": {
+     "align": "left",
+     "role": "tag",
+     "x": 270,
+     "y": 770,
+     "w": 1490,
+     "h": 26,
+     "maxChars": 112
+    },
+    "line-5": {
+     "align": "left",
+     "role": "line",
+     "maxLines": 1,
+     "x": 270,
+     "y": 802,
+     "w": 1490,
+     "h": 74,
+     "maxChars": 115,
+     "maxCharsPerLine": 115
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "paper/risk-factor-diff-9x16": {
+   "key": "paper/risk-factor-diff-9x16",
+   "dir": "paper",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "risk-factor-diff-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "risk-factor-diff-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "cc3dc140"
+     },
+     {
+      "file": "risk-factor-diff-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "461948ec"
+     },
+     {
+      "file": "risk-factor-diff-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "cc3dc140"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "risk-factor-diff-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "risk-factor-diff-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "cc3dc140"
+      },
+      {
+       "file": "risk-factor-diff-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "461948ec"
+      },
+      {
+       "file": "risk-factor-diff-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "cc3dc140"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "risk-factor-diff-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "risk-factor-diff-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "5234ef1e"
+      },
+      {
+       "file": "risk-factor-diff-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "324a5060"
+      },
+      {
+       "file": "risk-factor-diff-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "5234ef1e"
+      }
+     ]
+    }
+   },
+   "slotCount": 18,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "mark": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 3,
+     "budget": "derived from the slot boxes that set this role; 3 is the floor (narrowest of 5), was 3"
+    },
+    "line": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 61,
+     "maxLines": 2,
+     "maxCharsPerLine": 61,
+     "budget": "derived from the slot boxes that set this role; 61 is the floor (narrowest of 5), was 45"
+    },
+    "tag": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 59,
+     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 5), was 59"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "mark-1": {
+     "align": "center",
+     "role": "mark",
+     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "x": 96,
+     "y": 480,
+     "w": 80,
+     "h": 51,
+     "maxChars": 3
+    },
+    "tag-1": {
+     "align": "left",
+     "role": "tag",
+     "x": 196,
+     "y": 480,
+     "w": 788,
+     "h": 26,
+     "maxChars": 59
+    },
+    "line-1": {
+     "align": "left",
+     "role": "line",
+     "maxLines": 2,
+     "x": 196,
+     "y": 512,
+     "w": 788,
+     "h": 111,
+     "maxChars": 61,
+     "wraps": 2,
+     "maxCharsPerLine": 61
+    },
+    "mark-2": {
+     "align": "center",
+     "role": "mark",
+     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "x": 96,
+     "y": 712,
+     "w": 80,
+     "h": 51,
+     "maxChars": 3
+    },
+    "tag-2": {
+     "align": "left",
+     "role": "tag",
+     "x": 196,
+     "y": 712,
+     "w": 788,
+     "h": 26,
+     "maxChars": 59
+    },
+    "line-2": {
+     "align": "left",
+     "role": "line",
+     "maxLines": 2,
+     "x": 196,
+     "y": 744,
+     "w": 788,
+     "h": 111,
+     "maxChars": 61,
+     "wraps": 2,
+     "maxCharsPerLine": 61
+    },
+    "mark-3": {
+     "align": "center",
+     "role": "mark",
+     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "x": 96,
+     "y": 944,
+     "w": 80,
+     "h": 51,
+     "maxChars": 3
+    },
+    "tag-3": {
+     "align": "left",
+     "role": "tag",
+     "x": 196,
+     "y": 944,
+     "w": 788,
+     "h": 26,
+     "maxChars": 59
+    },
+    "line-3": {
+     "align": "left",
+     "role": "line",
+     "maxLines": 2,
+     "x": 196,
+     "y": 976,
+     "w": 788,
+     "h": 111,
+     "maxChars": 61,
+     "wraps": 2,
+     "maxCharsPerLine": 61
+    },
+    "mark-4": {
+     "align": "center",
+     "role": "mark",
+     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "x": 96,
+     "y": 1176,
+     "w": 80,
+     "h": 51,
+     "maxChars": 3
+    },
+    "tag-4": {
+     "align": "left",
+     "role": "tag",
+     "x": 196,
+     "y": 1176,
+     "w": 788,
+     "h": 26,
+     "maxChars": 59
+    },
+    "line-4": {
+     "align": "left",
+     "role": "line",
+     "maxLines": 2,
+     "x": 196,
+     "y": 1208,
+     "w": 788,
+     "h": 111,
+     "maxChars": 61,
+     "wraps": 2,
+     "maxCharsPerLine": 61
+    },
+    "mark-5": {
+     "align": "center",
+     "role": "mark",
+     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "x": 96,
+     "y": 1408,
+     "w": 80,
+     "h": 51,
+     "maxChars": 3
+    },
+    "tag-5": {
+     "align": "left",
+     "role": "tag",
+     "x": 196,
+     "y": 1408,
+     "w": 788,
+     "h": 26,
+     "maxChars": 59
+    },
+    "line-5": {
+     "align": "left",
+     "role": "line",
+     "maxLines": 2,
+     "x": 196,
+     "y": 1440,
+     "w": 788,
+     "h": 111,
+     "maxChars": 61,
+     "wraps": 2,
+     "maxCharsPerLine": 61
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "paper/footnote-spotlight-16x9": {
+   "key": "paper/footnote-spotlight-16x9",
+   "dir": "paper",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "footnote-spotlight-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "footnote-spotlight-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "95bdad28"
+     },
+     {
+      "file": "footnote-spotlight-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "c44f1284"
+     },
+     {
+      "file": "footnote-spotlight-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "95bdad28"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "footnote-spotlight-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "footnote-spotlight-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "95bdad28"
+      },
+      {
+       "file": "footnote-spotlight-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "c44f1284"
+      },
+      {
+       "file": "footnote-spotlight-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "95bdad28"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "footnote-spotlight-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "footnote-spotlight-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d5e815f8"
+      },
+      {
+       "file": "footnote-spotlight-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "fbc6d7a2"
+      },
+      {
+       "file": "footnote-spotlight-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "d5e815f8"
+      }
+     ]
+    }
+   },
+   "slotCount": 9,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "ref": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 86,
+     "budget": "derived from the slot boxes that set this role; 86 is the floor (narrowest of 1), was 86"
+    },
+    "quote": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 83,
+     "maxLines": 4,
+     "maxCharsPerLine": 83,
+     "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), was 62"
+    },
+    "mark": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 83,
+     "maxLines": 2,
+     "maxCharsPerLine": 83,
+     "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), was 62"
+    },
+    "calloutLabel": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 21,
+     "budget": "derived from the slot boxes that set this role; 21 is the floor (narrowest of 1), was 27"
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 95,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 1), was 7"
+    },
+    "calloutDetail": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 35,
+     "budget": "derived from the slot boxes that set this role; 35 is the floor (narrowest of 1), was 40"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "ref": {
+     "align": "left",
+     "role": "ref",
+     "x": 160,
+     "y": 230,
+     "w": 1140,
+     "h": 26,
+     "maxChars": 86
+    },
+    "quote": {
+     "align": "left",
+     "role": "quote",
+     "maxLines": 4,
+     "x": 160,
+     "y": 280,
+     "w": 1140,
+     "h": 158,
+     "maxChars": 83,
+     "wraps": 3,
+     "maxCharsPerLine": 83
+    },
+    "marked": {
+     "align": "left",
+     "role": "mark",
+     "maxLines": 2,
+     "underline": "attention",
+     "note": "the sentence that matters, in the text colour with an attention underline drawn by the renderer",
+     "x": 160,
+     "y": 458,
+     "w": 1140,
+     "h": 118,
+     "maxChars": 83,
+     "wraps": 2,
+     "maxCharsPerLine": 83
+    },
+    "pull-label": {
+     "align": "left",
+     "role": "calloutLabel",
+     "x": 1360,
+     "y": 280,
+     "w": 400,
+     "h": 28,
+     "maxChars": 21
+    },
+    "pull": {
+     "align": "left",
+     "role": "big",
+     "x": 1360,
+     "y": 324,
+     "w": 400,
+     "h": 110,
+     "maxChars": 7
+    },
+    "pull-detail": {
+     "align": "left",
+     "role": "calloutDetail",
+     "x": 1360,
+     "y": 446,
+     "w": 400,
+     "h": 112,
+     "maxChars": 79,
+     "wraps": 3,
+     "maxCharsPerLine": 35,
+     "maxLines": 2
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "paper/footnote-spotlight-9x16": {
+   "key": "paper/footnote-spotlight-9x16",
+   "dir": "paper",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "footnote-spotlight-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "footnote-spotlight-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "cf9c1208"
+     },
+     {
+      "file": "footnote-spotlight-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "caa07018"
+     },
+     {
+      "file": "footnote-spotlight-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "cf9c1208"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "footnote-spotlight-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "footnote-spotlight-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "cf9c1208"
+      },
+      {
+       "file": "footnote-spotlight-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "caa07018"
+      },
+      {
+       "file": "footnote-spotlight-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "cf9c1208"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "footnote-spotlight-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "footnote-spotlight-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "73d124ac"
+      },
+      {
+       "file": "footnote-spotlight-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "eebfcf90"
+      },
+      {
+       "file": "footnote-spotlight-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "73d124ac"
+      }
+     ]
+    }
+   },
+   "slotCount": 9,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "ref": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 67,
+     "budget": "derived from the slot boxes that set this role; 67 is the floor (narrowest of 1), was 67"
+    },
+    "quote": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 64,
+     "maxLines": 6,
+     "maxCharsPerLine": 64,
+     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), was 48"
+    },
+    "mark": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 64,
+     "maxLines": 4,
+     "maxCharsPerLine": 64,
+     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), was 48"
+    },
+    "calloutLabel": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 48,
+     "budget": "derived from the slot boxes that set this role; 48 is the floor (narrowest of 1), was 36"
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 123,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 12,
+     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 1), was 7"
+    },
+    "calloutDetail": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 79,
+     "budget": "derived from the slot boxes that set this role; 79 is the floor (narrowest of 1), was 40"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "ref": {
+     "align": "left",
+     "role": "ref",
+     "x": 96,
+     "y": 460,
+     "w": 888,
+     "h": 26,
+     "maxChars": 67
+    },
+    "quote": {
+     "align": "left",
+     "role": "quote",
+     "maxLines": 6,
+     "x": 96,
+     "y": 510,
+     "w": 888,
+     "h": 237,
+     "maxChars": 64,
+     "wraps": 5,
+     "maxCharsPerLine": 64
+    },
+    "marked": {
+     "align": "left",
+     "role": "mark",
+     "maxLines": 4,
+     "underline": "attention",
+     "note": "the sentence that matters, in the text colour with an attention underline drawn by the renderer",
+     "x": 96,
+     "y": 767,
+     "w": 888,
+     "h": 158,
+     "maxChars": 64,
+     "wraps": 3,
+     "maxCharsPerLine": 64
+    },
+    "pull-label": {
+     "align": "left",
+     "role": "calloutLabel",
+     "x": 96,
+     "y": 995,
+     "w": 888,
+     "h": 28,
+     "maxChars": 48
+    },
+    "pull": {
+     "align": "left",
+     "role": "big",
+     "x": 96,
+     "y": 1039,
+     "w": 888,
+     "h": 143,
+     "maxChars": 12
+    },
+    "pull-detail": {
+     "align": "left",
+     "role": "calloutDetail",
+     "x": 96,
+     "y": 1194,
+     "w": 888,
+     "h": 112,
+     "maxChars": 176,
+     "wraps": 3,
+     "maxCharsPerLine": 79,
+     "maxLines": 2
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
     }
    }
   }

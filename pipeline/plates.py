@@ -224,11 +224,37 @@ class Slot:
     # bar grows from; which way a rail runs; a scale the plate has drawn its
     # furniture to (`[lo, hi]` on a band, `{"x": […], "y": […]}` on a plot); and
     # whether a bridge floats between two rates rather than standing on zero.
+    #
+    # Since rebuild-39 a scale can also be a WORD naming whose scale the slot
+    # is drawn on: `plot-area` (the plot's one min-max, shared with the line
+    # and everything else on it), `shared` or `own` (a small-multiples panel
+    # on every panel's scale, or on its own), `window` and `rail`.
     anchor_x: float | None = None
     baseline_y: float | None = None
     axis: str = ""
     scale: object = None
     floats: bool = False
+    # THE INK AND THE ORDER THE DATA IS DRAWN IN, per slot (rebuild-39). A
+    # data layer that picked its own ink keys a legend in one colour and draws
+    # the series in another, so every one of these is read, never chosen here:
+    # `ink` is the palette role a mark, rail or legend's series is drawn in,
+    # by the kit's ink names (subject, subject2, quiet, attention, band);
+    # `tone`/`tone2` the first and second series' inks on a plot or a panel;
+    # `spread_fill` whether the gap between two lines is filled (None when
+    # the plot does not say); `under` a band that sits BEHIND the line it
+    # frames; `underline` the ink of the rule under a slot's text.
+    ink: str = ""
+    tone: str = ""
+    tone2: str = ""
+    spread_fill: bool | None = None
+    under: bool = False
+    underline: str = ""
+    # Informational, as the kit's own data layer reads neither: the stroke a
+    # mark's slot asks for, a rule for colouring its TEXT by what it says
+    # ("+ in down, − in up"), and a rail that clamps what falls off its ends.
+    weight: float | None = None
+    ink_by: str = ""
+    clamp: bool = False
 
     def scaled(self) -> tuple[int, int, int, int]:
         """The box in delivered pixels."""
@@ -289,8 +315,17 @@ class Slot:
             anchor_x=_opt_float(raw.get("anchorX")),
             baseline_y=_opt_float(raw.get("baselineY")),
             axis=str(raw.get("axis") or ""),
-            scale=raw.get("scale") if isinstance(raw.get("scale"), (list, dict)) else None,
+            scale=raw.get("scale") if isinstance(raw.get("scale"), (list, dict, str)) else None,
             floats=raw.get("float") is True,
+            ink=str(raw.get("ink") or ""),
+            tone=str(raw.get("tone") or ""),
+            tone2=str(raw.get("tone2") or ""),
+            spread_fill=(None if raw.get("spreadFill") is None else raw.get("spreadFill") is True),
+            under=raw.get("under") is True,
+            underline=str(raw.get("underline") or ""),
+            weight=_opt_float(raw.get("weight")),
+            ink_by=str(raw.get("inkBy") or ""),
+            clamp=raw.get("clamp") is True,
         )
 
 
@@ -324,11 +359,18 @@ class Frame:
     svg: str = ""
     boil: int = 0
     mouth_open: bool = False
+    # WHICH MOUTH, by the kit's name: `mouthClosed`, `mouthMid`, `mouthWide`,
+    # and since rebuild-31 `mouthO`, `mouthEE` and `mouthFV`. `mouth_open` says
+    # whether it is a word; this says which sound it can stand for.
+    mouth: str = ""
     bob: int = 0
     # `open` or `closed`: the blink strip's second frame is the shut one, and a
     # face that looked for it by position would blink on whichever frame a
     # future strip happened to put first.
     eyes: str = "open"
+    # How far through a move this frame is, 0 to 1, on a strip that plays once
+    # (a wipe's eight frames run 0.125 to 1). None on a loop.
+    t: float | None = None
 
 
 @dataclass(frozen=True)
@@ -342,7 +384,11 @@ class Plate:
     delivered: tuple[int, int]
     export_scale: int
     aspect: str                   # "16x9", "9x16", or "" for aspect-free marks
-    # "static" | "loop" | "overlay".
+    # "static" | "loop" | "once" | "overlay".
+    #
+    # `once` ARRIVED WITH rebuild-39's wipes: eight frames that cover the cut
+    # on the fourth and are gone by the eighth, played one time and never
+    # looped (see `plays_once`).
     #
     # `overlay` ARRIVED WITH delta-14 and nothing plays it yet. The seven
     # blink strips carry it: they are not poses and no template selects one
@@ -428,13 +474,32 @@ class Plate:
     # room nobody stands in.
     head_covered: float | None = None
     # A ROOM A CHAPTER MAY OPEN IN: it publishes a `title` slot and the card
-    # under it is drawn into its back layer (rebuild-21). Only `desk-wide`.
+    # under it is drawn into its back layer. desk-wide since rebuild-21, and
+    # window-wide and board-wide since rebuild-39 (roles.json holds board-wide
+    # back, so only the first two open a chapter).
     opener: bool = False
     # THE INK EACH LEGEND KEYS ITS SERIES IN, as {label slot: palette role} —
     # `{"legend-1": "up", "legend-2": "neutral-data"}`. The kit draws the key
     # swatch and publishes only the label's box, so the engine driver reads the
     # ink off the drawing. Empty on a plate with no keyed legend.
     keys: dict = field(default_factory=dict)
+    # WHAT A PLATE SAYS ABOUT ITS OWN TIME AND PLACE ON SCREEN (rebuild-39),
+    # read as published and never assumed: a wipe's `transition` (its frame
+    # count and `cutAt`, the frame whose full cover hides the cut); a shorts
+    # plate's `safe` band ({top, bottom} in canvas units, clear of the
+    # platform's caption and buttons); how an overlay drawn at its own canvas
+    # is laid (`composite`, "alpha, over anything" on the source tag); and
+    # how long the chapter bumper holds (`hold_s`). Empty where a plate does
+    # not say.
+    transition: dict = field(default_factory=dict)
+    safe: dict = field(default_factory=dict)
+    composite: str = ""
+    hold_s: float | None = None
+    # WHERE EACH OF THE KIT'S MOVES LANDS ON THIS PLATE, off
+    # `emit/motion.json`: {move: {"slot": name or None, "box": {x, y, w, h}}}
+    # in canvas units, for the moves that land here at all. A move absent from
+    # it has nothing on this plate to act on, and is skipped.
+    motion: dict = field(default_factory=dict)
 
     @property
     def base_key(self) -> str:
@@ -486,6 +551,16 @@ class Plate:
     def animated(self) -> bool:
         return (self.playback not in ("static", "overlay")
                 and self.frame_count > 1)
+
+    @property
+    def plays_once(self) -> bool:
+        """A strip played through ONE time, holding its last frame after.
+
+        A wipe covers the cut on its fourth frame and has cleared by its
+        eighth. Looped, it would wipe across the picture again every two
+        thirds of a second for as long as its layer lasts.
+        """
+        return self.playback in ("once", "one-shot") and self.frame_count > 1
 
     @property
     def path(self) -> Path:
@@ -607,6 +682,17 @@ class Registry:
         self.held_back: dict[str, dict[str, str]] = {
             "plates": dict(_held.get("plates") or {}),
             "rooms": dict(_held.get("rooms") or {})}
+        # THE KIT'S MOVES, as data (rebuild-39): what each is — its frames,
+        # whether it plays once or loops, its ease — and where it lands on
+        # every plate, by the plate's base-hour key. Empty on a kit before it.
+        _motion = raw.get("motion") or {}
+        self.motion_fps: int = int(_motion.get("fps") or 0)
+        self.motion_moves: dict[str, dict] = {
+            str(k): v for k, v in (_motion.get("moves") or {}).items()
+            if isinstance(v, dict)}
+        self._motion_anchors: dict[str, dict] = {
+            str(k): v for k, v in (_motion.get("anchors") or {}).items()
+            if isinstance(v, dict)}
         self._everything: dict[str, Plate] = {}
         for key, entry in (raw.get("assets") or {}).items():
             self._everything[key] = self._build(key, entry, purposes)
@@ -669,8 +755,10 @@ class Registry:
                 svg=str(f.get("svg") or ""),
                 boil=int(f.get("boil") or 0),
                 mouth_open=bool(f.get("mouthOpen", False)),
+                mouth=str(f.get("mouth") or ""),
                 bob=int(f.get("bob") or 0),
                 eyes=str(f.get("eyes") or "open"),
+                t=_opt_float(f.get("t")),
             )
             for f in e.get("frames", [])
         )
@@ -765,6 +853,12 @@ class Registry:
                           if occlusion.get("headCovered") is not None else None),
             opener=bool(e.get("opener", False)),
             keys={str(k): str(v) for k, v in (e.get("keys") or {}).items()},
+            transition=dict(e["transition"]) if isinstance(e.get("transition"), dict) else {},
+            safe=dict(e["safe"]) if isinstance(e.get("safe"), dict) else {},
+            composite=str(e.get("composite") or ""),
+            hold_s=(_opt_float(e["hold"].get("seconds"))
+                    if isinstance(e.get("hold"), dict) else None),
+            motion=dict(self._motion_anchors.get(str(e.get("atBaseHour") or key)) or {}),
         )
 
     # ---------------------------------------------------------------- basics

@@ -236,6 +236,24 @@ def test_a_note_is_filed_under_the_plate_it_names_and_checked(tmp_path):
     assert "'astrology'" in said and "'crypto'" in said
 
 
+def test_a_note_without_its_aspect_is_filed_under_every_aspect_drawn(tmp_path):
+    """rebuild-39 files round five and the Christmas rooms under the bare stem.
+    Read as a miss, that dropped 86 of the drop's 98 new notes and left their
+    plates on no menu at all."""
+    built = {"charts/valuation-history-16x9": {}, "charts/valuation-history-9x16": {},
+             "room/desk-wide-christmas-16x9": {}, "room/desk-wide-christmas-9x16": {}}
+    notes, problems, remarks = ingest._plate_notes(_fragment(tmp_path, {
+        "charts/valuation-history": {"purpose": "the multiple against its own range",
+                                     "chapter_types": ["valuation"]},
+        "room/desk-wide-christmas": {"purpose": "desk-wide, dressed for December"},
+    }), built)
+    assert problems == []
+    for aspect in ("16x9", "9x16"):
+        assert notes[f"charts/valuation-history-{aspect}"]["chapterTypes"] == ["valuation"]
+        assert notes[f"room/desk-wide-christmas-{aspect}"]["purpose"]
+    assert any("without the aspect" in r for r in remarks)
+
+
 def test_a_delivery_with_no_notes_cannot_be_installed(tmp_path):
     """Every chapter's menu is built from the fragment. Without it every
     menu is empty, which is a problem, not a remark."""
@@ -256,14 +274,78 @@ def test_the_installed_kit_carries_designs_notes(registry):
     assert any(p.caution for p in content), "no plate carries a caution"
 
 
+def _motion_file(tmp_path: Path, doc: dict) -> Path:
+    (tmp_path / "emit").mkdir(exist_ok=True)
+    (tmp_path / "emit" / "motion.json").write_text(json.dumps(doc), encoding="utf-8")
+    return tmp_path
+
+
+def test_the_moves_are_carried_as_design_anchored_them(tmp_path):
+    """A move lands where design's anchors say, read off the plate's own
+    slots, and nowhere a plate has nothing for it to act on. Nothing here
+    places a move by eye."""
+    box = {"x": 96, "y": 476, "w": 888, "h": 300}
+    built = {"charts/line-9x16": {"slots": {"plot-area": box, "num": box}},
+             "charts/line-dusk-9x16": {"atBaseHour": "charts/line-9x16",
+                                       "slots": {"plot-area": box, "num": box}},
+             "charts/macro-9x16": {"slots": {"frame": box}}}
+    motion, remarks = ingest._motion(_motion_file(tmp_path, {
+        "fps": 12,
+        "moves": [{"id": "line-draw", "frames": 10, "playback": "once", "ease": "linear"},
+                  {"id": "count-up", "frames": 7, "playback": "once", "ease": "out"}],
+        "anchors": {"why": "read from the slots", "plates": {
+            "charts/line-9x16": {"line-draw": {"slot": "plot-area", "box": box},
+                                 "count-up": {"slot": "num", "box": box},
+                                 "tick-over": None},
+            "charts/macro-9x16": {"line-draw": {"slot": "plot-area", "box": box}},
+            "charts/retired-9x16": {"count-up": {"slot": "num", "box": box}},
+        }},
+    }), built)
+    assert motion["fps"] == 12
+    assert motion["moves"]["line-draw"] == {"frames": 10, "playback": "once", "ease": "linear"}
+    line = motion["anchors"]["charts/line-9x16"]
+    assert set(line) == {"line-draw", "count-up"}, "a null move is a move to skip"
+    assert line["count-up"] == {"slot": "num", "box": box}
+    # A slot the plate does not publish keeps its box, and is said.
+    assert motion["anchors"]["charts/macro-9x16"]["line-draw"]["box"] == box
+    said = " ".join(remarks)
+    assert "'plot-area'" in said and "charts/retired-9x16" in said
+    assert "charts/retired-9x16" not in motion["anchors"]
+
+
+def test_a_kit_with_no_moves_installs_with_none(tmp_path):
+    motion, remarks = ingest._motion(tmp_path, {})
+    assert motion == {} and remarks
+
+
+def test_the_installed_kit_knows_its_wipes_holds_safe_areas_and_moves(registry):
+    """What rebuild-39's plates say about their own time and place on screen
+    reaches the registry as published, so no later change has to guess it."""
+    if not registry.motion_moves:
+        pytest.skip("the installed kit predates rebuild-39's moves")
+    wipe = registry.get("overlays/wipe-sweep-16x9")
+    assert wipe.plays_once and wipe.transition.get("cutAt") == 4
+    assert [f.t for f in wipe.frames] == [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1]
+    assert registry.get("structure/chapter-bumper-16x9").hold_s == 2
+    assert registry.get("shorts/short-number-9x16").safe.get("bottom") == 1560
+    assert registry.get("overlays/source-tag-16x9").canvas == (900, 72)
+    assert registry.get("overlays/source-tag-16x9").composite
+    talk = registry.get("host/to-camera-talk")
+    assert [f.mouth for f in talk.frames] == ["mouthClosed", "mouthMid", "mouthWide",
+                                              "mouthO", "mouthEE", "mouthFV"]
+    assert "count-up" in registry.motion_moves
+    moved = [p for p in registry.assets.values() if p.motion]
+    assert moved and all(set(p.motion) <= set(registry.motion_moves) for p in moved)
+
+
 # --------------------------------------------------------------------------
 # The curation: held back is off every menu, and the host is placeable.
 # --------------------------------------------------------------------------
 
 
 def test_what_roles_json_holds_back_is_not_also_wired_in():
-    """Empty since rebuild-21 fixed the plates and rooms it held; the rule is
-    for the day a drop breaks one again."""
+    """No plate is held back since rebuild-21 fixed them; the rooms held back
+    since rebuild-39 are right for shots nothing can recognise yet."""
     roles = _roles()
     held_plates, held_rooms = ingest._held_back(roles)
     for role, stems in roles["roomRoles"].items():
@@ -271,6 +353,41 @@ def test_what_roles_json_holds_back_is_not_also_wired_in():
             continue
         clash = set(stems) & set(held_rooms)
         assert not clash, f"the {role!r} room role stands him in held-back {clash}"
+
+
+_NEW_POSES = ("gesturing-at-plate", "counting-on-fingers", "shrug",
+              "holding-a-filing", "holding-a-phone", "holding-a-mug")
+
+
+def test_the_six_new_poses_are_known_and_cast_by_nobody_yet():
+    """Each of rebuild-30 and rebuild-31's poses is chosen by what is being
+    said — a list, a shrug, a citation, an alert, a pause — and a role picks
+    by seed. So they are described, not rotated: in a role today a seed would
+    count on his fingers over a single number."""
+    roles = _roles()
+    for pose in _NEW_POSES:
+        entry = roles["hostPoses"].get(f"host/{pose}")
+        assert entry and entry.get("purpose"), pose
+        assert entry.get("talks") is True, pose
+        for role, keys in roles["hostRoles"].items():
+            if not role.startswith("_"):
+                assert f"host/{pose}" not in keys, f"{pose} is rotated into {role}"
+    assert roles["hostPoses"]["host/shrug"].get("limit") == 1, (
+        "design: at most once an episode, like head-in-hands")
+
+
+def test_the_new_rooms_are_each_either_used_or_held_back_with_a_reason():
+    """rebuild-39's two wide openers and fourteen Christmas twins. window-wide
+    opens chapters beside desk-wide; board-wide waits for a chapter argued on
+    the board, and the Christmas set for a switch that dresses a whole
+    episode, since one dressed angle among plain ones flickers."""
+    roles = _roles()
+    assert roles["roomRoles"]["opener"] == ["room/desk-wide", "room/window-wide"]
+    held = roles["heldBack"]["rooms"]
+    assert "room/board-wide" in held
+    twins = [k for k in held if k.endswith("-christmas")]
+    assert len(twins) == 14
+    assert all(held[k] for k in held), "a room held back with no reason"
 
 
 def test_a_held_back_plate_is_on_no_chapters_menu(registry):
@@ -426,9 +543,9 @@ def test_nothing_in_the_suite_hard_codes_the_library_size():
 def test_the_playback_vocabulary_is_one_the_renderer_knows(registry):
     """`overlay` was a third value once, on the blink strips, and
     `Plate.animated` was `playback != "static"` — so an overlay strip would
-    have played as a loop in its own right. What this holds is that a value
-    no code path handles cannot arrive unnoticed."""
-    known = {"static", "loop", "overlay"}
+    have played as a loop in its own right. `once` is rebuild-39's wipes. What
+    this holds is that a value no code path handles cannot arrive unnoticed."""
+    known = {"static", "loop", "once", "overlay"}
     got = {p.playback for p in registry.assets.values()}
     assert got <= known, f"playback value(s) nothing handles: {sorted(got - known)}"
 
@@ -450,6 +567,26 @@ def test_an_overlay_strip_is_not_treated_as_an_animation():
     assert _plate("overlay").animated is False, (
         "a blink strip played as a loop is a pair of eyelids with no face "
         "behind them")
+
+
+def test_a_wipe_plays_once_and_holds_its_last_frame():
+    """rebuild-39's wipes are eight frames that cover the cut on the fourth and
+    have cleared by the eighth. Looped, one wipes across the picture again
+    every two thirds of a second for as long as its layer lasts."""
+    from pipeline.plate_frames import frame_indices
+    from pipeline.plates import Plate
+
+    wipe = Plate(
+        key="overlays/wipe-sweep-9x16", family="overlays", name="wipe-sweep-9x16",
+        canvas=(1080, 1920), delivered=(2160, 3840), export_scale=2,
+        aspect="9x16", playback="once", fps=12.0, frame_count=8, frames=(),
+        files_png="", files_svg="", base_is_frame="", slots={},
+        type_roles={}, root=ROOT)
+    assert wipe.animated and wipe.plays_once
+    plan = frame_indices(wipe, 2.0, 24)
+    assert plan[:16] == [i // 2 for i in range(16)]
+    assert set(plan[16:]) == {7}, "the wipe came round again"
+
 
 
 # --------------------------------------------------------------------------

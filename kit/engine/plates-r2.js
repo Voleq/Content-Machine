@@ -72,10 +72,14 @@
 
     /* A key: the series' own ink as a short drawn swatch, then its name. The
      * swatch is what ties a bar to a word without colouring the word. */
-    function key(P, name, x, y, w, colour, roleName, roles, seed) {
+    /* rebuild-22: the swatch and the published `ink` come from ONE palette key,
+     * so a slot cannot publish a colour its drawing does not show. INK maps the
+     * drawn kit's palette names onto the data ink roles series.js takes. */
+    const INK = { up: 'subject', down: 'subject2', neutralData: 'quiet', attention: 'attention', otherParty: 'axis' };
+    function key(P, name, x, y, w, palKey, roleName, roles, seed) {
       const hh = blockH(roles[roleName], 1);
-      tick(P, x, y + Math.round(hh / 2) + 2, 36, colour, seed);
-      P.slot(name, x + 52, y, w - 52, hh, { align: 'left', role: roleName });
+      tick(P, x, y + Math.round(hh / 2) + 2, 36, P.pal[palKey], seed);
+      P.slot(name, x + 52, y, w - 52, hh, { align: 'left', role: roleName, ink: INK[palKey] });
     }
     /* The floor a bar is measured from is a reference, so it is pinned. */
     const floor = (P, x1, y, x2, seed) => H.pin(function () {
@@ -91,11 +95,11 @@
      * columnBars draws each from its own list; the scale is shared by the
      * caller, because two scales on one plot is how a viewer reads a
      * relationship the data does not contain. */
-    function pairs(P, x0, W, n, pt, pb, seed, note) {
+    function pairs(P, x0, W, n, pt, pb, seed, note, tone2) {
       const colW = W / n, bw = Math.round(colW * 0.3), gi = Math.max(6, Math.round(colW * 0.05));
       grid(P, x0, x0 + W, pt, pb, [1 / 3, 2 / 3], seed);
       floor(P, x0, pb, x0 + W, seed + 5);
-      P.slot('plot-area', x0, pt, W, pb - pt, { role: 'plot-area', container: true, note: note });
+      P.slot('plot-area', x0, pt, W, pb - pt, { role: 'plot-area', container: true, tone: 'subject', tone2: tone2 || 'subject2', note: note });
       for (let i = 1; i <= n; i++) {
         const cx = x0 + colW * (i - 0.5), ax = Math.round(cx - gi / 2 - bw), bx = Math.round(cx + gi / 2);
         P.slot('bar-' + i, ax, pt, bw, pb - pt, { role: 'point-column', container: true, anchorX: ax + Math.round(bw / 2), baselineY: pb, growth: 'up-from-baseline' });
@@ -296,14 +300,15 @@
       P.meta.columns = n;
       top(P, F, roles);
       const pt = F.land ? 210 : 420, pb = F.land ? 510 : 1000;
-      pairs(P, F.L, F.cw, n, pt, pb, spec.seed, spec.note);
+      const sw = spec.rows.filter(r => r.swatch);
+      pairs(P, F.L, F.cw, n, pt, pb, spec.seed, spec.note, sw[1] ? INK[sw[1].swatch] : 'subject2');
       const hh = blockH(roles.head, 1), vh = blockH(roles.value, 1), lh = blockH(roles.rowLabel, 1);
       row(P, 'head', F.L, colW, n, pb + 18, 'head', hh);
       let y = pb + 18 + hh + 20;
       spec.rows.forEach(function (r, j) {
         if (r.rule) { rule(P, F.L, y + 4, F.Rr, spec.seed + 20 + j, 3.2, 0.6); y += 20; }
         if (r.swatch) tick(P, F.L, y + Math.round(lh / 2) + 2, 36, P.pal[r.swatch], spec.seed + 30 + j);
-        P.slot(r.label, F.L + (r.swatch ? 52 : 0), y, F.cw - 60, lh, { align: 'left', role: 'rowLabel' });
+        P.slot(r.label, F.L + (r.swatch ? 52 : 0), y, F.cw - 60, lh, r.swatch ? { align: 'left', role: 'rowLabel', ink: INK[r.swatch] } : { align: 'left', role: 'rowLabel' });
         y += lh + 6;
         row(P, r.name, F.L, colW, n, y, 'value', vh);
         y += vh + 16;
@@ -391,17 +396,17 @@
       P.meta.columns = n;
       P.slot('kicker', F.L, F.kickY, F.cw, blockH(roles.kicker, 1), { align: 'left', role: 'kicker' });
       const ly = F.land ? 166 : 310;
-      key(P, 'legend-1', F.L, ly, F.land ? 480 : F.cw, P.pal.up, 'legend', roles, 2801);
-      key(P, 'legend-2', F.land ? F.L + 520 : F.L, F.land ? ly : ly + 46, F.land ? 480 : F.cw, P.pal.attention, 'legend', roles, 2802);
+      key(P, 'legend-1', F.L, ly, F.land ? 480 : F.cw, 'up', 'legend', roles, 2801);
+      key(P, 'legend-2', F.land ? F.L + 520 : F.L, F.land ? ly : ly + 46, F.land ? 480 : F.cw, 'attention', 'legend', roles, 2802);
       const pt = F.land ? 240 : 450, pb = F.land ? 640 : 1030;
       grid(P, F.L, F.L + W, pt, pb, [1 / 3, 2 / 3], 2810);
       floor(P, F.L, pb, F.L + W, 2813);
       H.pin(function () {
         P.inkAdd(H.line(F.L, pt - 14, F.L - 3, pb + 14, { stroke: P.pal.structure, width: 5, opacity: 0.9, amp: 2.6, over: 13, seed: 2814 }));
       });
-      P.slot('plot-area', F.L, pt, W, pb - pt, { role: 'plot-area', container: true,
+      P.slot('plot-area', F.L, pt, W, pb - pt, { role: 'plot-area', container: true, tone: 'subject',
         note: 'cumulative gross profit per customer, month 0 to 36 \u2014 linePath draws it through point-N' });
-      P.slot('cac-line', F.L, pt, W, pb - pt, { role: 'marker', region: true, axis: 'vertical',
+      P.slot('cac-line', F.L, pt, W, pb - pt, { role: 'marker', region: true, axis: 'vertical', ink: 'attention',
         note: 'the acquisition cost on the SAME scale as the line \u2014 axisMark draws it level across the plot; the crossing is the payback month' });
       for (let i = 1; i <= n; i++) {
         const ax = Math.round(F.L + W * (i - 1) / (n - 1)), half = Math.round(W / (2 * (n - 1)));
@@ -441,10 +446,10 @@
       P.meta.columns = n;
       top(P, F, roles);
       const ly = F.land ? 166 : 350;
-      key(P, 'legend-1', F.L, ly, 300, P.pal.up, 'legend', roles, 2601);
-      key(P, 'legend-2', F.L + 320, ly, 300, P.pal.neutralData, 'legend', roles, 2602);
+      key(P, 'legend-1', F.L, ly, 300, 'up', 'legend', roles, 2601);
+      key(P, 'legend-2', F.L + 320, ly, 300, 'neutralData', 'legend', roles, 2602);
       const pt = F.land ? 240 : 430, pb = F.land ? 680 : 1000;
-      pairs(P, F.L, W, n, pt, pb, 2610, 'orders on bar-N, revenue on pair-N, ONE scale \u2014 columnBars draws both');
+      pairs(P, F.L, W, n, pt, pb, 2610, 'orders on bar-N, revenue on pair-N, ONE scale \u2014 columnBars draws both; pair-N in quiet, as legend-2 keys it', 'quiet');
       row(P, 'head', F.L, colW, n, pb + 18, 'head', blockH(roles.head, 1));
       P.slot('ratio-label', F.L, pb + 66, W, blockH(roles.ratioLabel, 1), { align: 'left', role: 'ratioLabel' });
       row(P, 'ratio', F.L, colW, n, pb + 100, 'ratio', blockH(roles.ratio, 1));
@@ -507,7 +512,7 @@
         H.pin(function () {
           P.inkAdd(H.line(G.gx + G.gw / 2, ry - 10, G.gx + G.gw / 2, ry + railH + 10, { stroke: P.pal.structure, width: 3.2, opacity: 0.7, amp: 1.6, over: 6, seed: 2930 + i }));
         });
-        P.slot('growth-' + i, G.gx + 18, ry, G.gw - 36, railH, { role: 'marker', region: true, axis: 'horizontal',
+        P.slot('growth-' + i, G.gx + 18, ry, G.gw - 36, railH, { role: 'marker', region: true, axis: 'horizontal', scale: [-20, 20], clamp: true,
           note: 'growth on a rail centred on zero, -20% to +20% \u2014 axisMark draws it; pass (g + 20) / 40' });
         P.slot('growth-value-' + i, G.vx, y + (F.land ? 30 : railY - 6), G.vw, blockH(roles.growth, 1), { align: 'right', role: 'growth' });
         if (i < n) rule(P, F.L, y + G.rowH - 6, F.Rr, 2940 + i, 1.6, 0.22);
@@ -528,17 +533,23 @@
         legend: role(TR.label, 30, F.land ? 380 : F.cw), head: role(TR.caption, 22, colW - 6),
       }, calloutRoles(F.land ? cw2 : 520, 6));
       const P = base(o, o.type || 'price-cost-spread', roles);
+      /* rebuild-22: whether the gap is filled is a property of the plate, and
+       * it is published. Two rates you compare (price against cost) fill; two
+       * parts that ADD UP to the headline (price plus volume) do not, because
+       * the area between them is not a quantity. */
+      const fill = o.fill !== false;
       P.meta.family = o.family || 'charts';
       P.meta.columns = n;
       top(P, F, roles);
       const ly = F.land ? 166 : 350;
-      key(P, 'legend-1', F.L, ly, F.land ? 380 : F.cw, P.pal.up, 'legend', roles, 3001);
-      key(P, 'legend-2', F.land ? F.L + 400 : F.L, F.land ? ly : ly + 46, F.land ? 380 : F.cw, P.pal.down, 'legend', roles, 3002);
+      key(P, 'legend-1', F.L, ly, F.land ? 380 : F.cw, 'up', 'legend', roles, 3001);
+      key(P, 'legend-2', F.land ? F.L + 400 : F.L, F.land ? ly : ly + 46, F.land ? 380 : F.cw, 'down', 'legend', roles, 3002);
       const pt = F.land ? 240 : 460, pb = F.land ? 720 : 1080;
       grid(P, F.L, F.L + W, pt, pb, [0.25, 0.5, 0.75], 3010);
       floor(P, F.L, pb, F.L + W, 3014);
-      P.slot('plot-area', F.L, pt, W, pb - pt, { role: 'plot-area', container: true,
-        note: 'two linePaths on ONE scale through point-N, the second in subject2, and spreadFill between them; zero drawn by the renderer if the data crosses it' });
+      P.slot('plot-area', F.L, pt, W, pb - pt, { role: 'plot-area', container: true, tone: 'subject', tone2: 'subject2', spreadFill: fill,
+        note: fill ? 'two linePaths on ONE scale through point-N, the second in subject2, and spreadFill between them; zero drawn by the renderer if the data crosses it'
+          : 'two linePaths on ONE scale through point-N, the second in subject2, gap NOT filled: the two are parts that add up, not rates compared; zero drawn by the renderer if the data crosses it' });
       for (let i = 1; i <= n; i++) {
         const x = F.L + colW * (i - 1);
         P.slot('point-' + i, Math.round(x), pt, Math.round(colW), pb - pt, { role: 'point-column', container: true, anchorX: Math.round(x + colW / 2) });
@@ -568,6 +579,9 @@
         days: role(TR.figure, 48, G.fw), daysUnit: role(TR.caption, 22, G.fw), tick: role(TR.caption, 22, 100),
       };
       const P = base(o, o.type || 'cash-conversion-cycle', roles);
+      /* rebuild-22: the band slots publish the plate's REAL scale. Eight plates
+       * on this shape are not on days; they said so only in the note. */
+      const sc = o.bandScale || [0, 180];
       P.meta.family = o.family || 'structure';
       P.meta.scale = o.scale || { days: [0, 180], why: 'fixed, so two years cut together are on one scale' };
       P.slot('kicker', F.L, F.kickY, F.cw, blockH(roles.kicker, 1), { align: 'left', role: 'kicker' });
@@ -596,7 +610,7 @@
         P.slot('days-' + i, G.fx, y + (F.land ? 18 : 0), G.fw, blockH(roles.days, 1), { align: 'right', role: 'days' });
         P.inkAdd(H.outline(H.polyRect(G.rx, ry, G.rw, G.railH), { stroke: P.pal.structure, width: 2.4, opacity: 0.45, amp: 2.2, over: 8, seed: 3110 + i }));
         bands[i - 1].forEach(function (b) {
-          P.slot(b, G.rx, ry, G.rw, G.railH, { role: 'band', region: true, axis: 'horizontal', scale: [0, 180],
+          P.slot(b, G.rx, ry, G.rw, G.railH, { role: 'band', region: true, axis: 'horizontal', scale: sc.slice(),
             note: o.bandNote || 'an extent in days on the fixed 0-180 scale \u2014 historyBand draws it; pass [start/180, end/180, ink role]' });
         });
       }
@@ -622,6 +636,8 @@
         note: 'first series on bar-N, second on pair-N, ONE scale \u2014 columnBars draws both' });
     };
 
+    /* Round five draws new shapes from the same furniture instead of copying it. */
+    P0.R2_HELPERS = { frame, topRoles, top, foot, key, floor, grid, row, pairs, callout, calloutRoles, INK };
     return P0;
   }
 

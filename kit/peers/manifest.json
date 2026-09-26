@@ -8,7 +8,7 @@
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
  "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "assetCount": 7,
+ "assetCount": 11,
  "plates": {
   "peers/peer-strip-16x9": {
    "key": "peers/peer-strip-16x9",
@@ -2720,6 +2720,2288 @@
      "wraps": 3,
      "maxCharsPerLine": 79,
      "maxLines": 2
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "peers/sector-ranking-16x9": {
+   "key": "peers/sector-ranking-16x9",
+   "dir": "peers",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "sector-ranking-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "sector-ranking-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "14f86cb2"
+     },
+     {
+      "file": "sector-ranking-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "14f86cb2"
+     },
+     {
+      "file": "sector-ranking-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "14f86cb2"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "sector-ranking-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "sector-ranking-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "14f86cb2"
+      },
+      {
+       "file": "sector-ranking-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "14f86cb2"
+      },
+      {
+       "file": "sector-ranking-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "14f86cb2"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "sector-ranking-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "sector-ranking-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ce359b16"
+      },
+      {
+       "file": "sector-ranking-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "ce359b16"
+      },
+      {
+       "file": "sector-ranking-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ce359b16"
+      }
+     ]
+    }
+   },
+   "slotCount": 41,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "legend": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 35,
+     "budget": "derived from the slot boxes that set this role; 35 is the floor (narrowest of 2), was 29"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 31,
+     "budget": "derived from the slot boxes that set this role; 31 is the floor (narrowest of 11), was 23"
+    },
+    "value": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 9,
+     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 11), was 9"
+    },
+    "axisEnd": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 9,
+     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 2), was 9"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "legend-1": {
+     "align": "left",
+     "role": "legend",
+     "ink": "attention",
+     "x": 212,
+     "y": 166,
+     "w": 368,
+     "h": 30,
+     "maxChars": 35
+    },
+    "legend-2": {
+     "align": "left",
+     "role": "legend",
+     "ink": "quiet",
+     "x": 652,
+     "y": 166,
+     "w": 368,
+     "h": 30,
+     "maxChars": 35
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 265,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-1": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 265,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 265,
+     "w": 1080,
+     "h": 30
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 324,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-2": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 324,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 324,
+     "w": 1080,
+     "h": 30
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 383,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-3": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 383,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 383,
+     "w": 1080,
+     "h": 30
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 442,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-4": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 442,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 442,
+     "w": 1080,
+     "h": 30
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 501,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-5": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 501,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 501,
+     "w": 1080,
+     "h": 30
+    },
+    "label-6": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 560,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-6": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 560,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-6": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 560,
+     "w": 1080,
+     "h": 30
+    },
+    "label-7": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 619,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-7": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 619,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-7": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 619,
+     "w": 1080,
+     "h": 30
+    },
+    "label-8": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 678,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-8": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 678,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-8": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 678,
+     "w": 1080,
+     "h": 30
+    },
+    "label-9": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 737,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-9": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 737,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-9": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 737,
+     "w": 1080,
+     "h": 30
+    },
+    "label-10": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 796,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-10": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 796,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-10": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 796,
+     "w": 1080,
+     "h": 30
+    },
+    "label-11": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 855,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-11": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 855,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-11": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 855,
+     "w": 1080,
+     "h": 30
+    },
+    "market": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": [
+      -30,
+      30
+     ],
+     "weight": 5,
+     "note": "the market’s return for the same period, one line down all the rows — axisMark as a fraction of the fixed scale",
+     "x": 510,
+     "y": 250,
+     "w": 1080,
+     "h": 650
+    },
+    "axis-low": {
+     "align": "left",
+     "role": "axisEnd",
+     "x": 510,
+     "y": 912,
+     "w": 120,
+     "h": 26,
+     "maxChars": 9
+    },
+    "axis-high": {
+     "align": "right",
+     "role": "axisEnd",
+     "x": 1470,
+     "y": 912,
+     "w": 120,
+     "h": 26,
+     "maxChars": 9
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "peers/sector-ranking-9x16": {
+   "key": "peers/sector-ranking-9x16",
+   "dir": "peers",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "sector-ranking-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "sector-ranking-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "b9e18516"
+     },
+     {
+      "file": "sector-ranking-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "b9e18516"
+     },
+     {
+      "file": "sector-ranking-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "b9e18516"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "sector-ranking-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "sector-ranking-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "b9e18516"
+      },
+      {
+       "file": "sector-ranking-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "b9e18516"
+      },
+      {
+       "file": "sector-ranking-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "b9e18516"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "sector-ranking-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "sector-ranking-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "15e6f1e8"
+      },
+      {
+       "file": "sector-ranking-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "15e6f1e8"
+      },
+      {
+       "file": "sector-ranking-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "15e6f1e8"
+      }
+     ]
+    }
+   },
+   "slotCount": 41,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "legend": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 79,
+     "budget": "derived from the slot boxes that set this role; 79 is the floor (narrowest of 2), was 63"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 68,
+     "budget": "derived from the slot boxes that set this role; 68 is the floor (narrowest of 11), was 51"
+    },
+    "value": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 9,
+     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 11), was 9"
+    },
+    "axisEnd": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 9,
+     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 2), was 9"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "legend-1": {
+     "align": "left",
+     "role": "legend",
+     "ink": "attention",
+     "x": 148,
+     "y": 350,
+     "w": 836,
+     "h": 30,
+     "maxChars": 79
+    },
+    "legend-2": {
+     "align": "left",
+     "role": "legend",
+     "ink": "quiet",
+     "x": 148,
+     "y": 392,
+     "w": 836,
+     "h": 30,
+     "maxChars": 79
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 526,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-1": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 526,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 566,
+     "w": 888,
+     "h": 34
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 628,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-2": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 628,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 668,
+     "w": 888,
+     "h": 34
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 730,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-3": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 730,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 770,
+     "w": 888,
+     "h": 34
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 831,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-4": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 831,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 871,
+     "w": 888,
+     "h": 34
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 933,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-5": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 933,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 973,
+     "w": 888,
+     "h": 34
+    },
+    "label-6": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1035,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-6": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 1035,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-6": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 1075,
+     "w": 888,
+     "h": 34
+    },
+    "label-7": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1137,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-7": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 1137,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-7": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 1177,
+     "w": 888,
+     "h": 34
+    },
+    "label-8": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1239,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-8": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 1239,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-8": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 1279,
+     "w": 888,
+     "h": 34
+    },
+    "label-9": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1341,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-9": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 1341,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-9": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 1381,
+     "w": 888,
+     "h": 34
+    },
+    "label-10": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1442,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-10": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 1442,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-10": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 1482,
+     "w": 888,
+     "h": 34
+    },
+    "label-11": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1544,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-11": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 1544,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-11": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -30,
+      30
+     ],
+     "note": "the sector’s return on the fixed -30–30 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 1584,
+     "w": 888,
+     "h": 34
+    },
+    "market": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": [
+      -30,
+      30
+     ],
+     "weight": 5,
+     "note": "the market’s return for the same period, one line down all the rows — axisMark as a fraction of the fixed scale",
+     "x": 96,
+     "y": 520,
+     "w": 888,
+     "h": 1120
+    },
+    "axis-low": {
+     "align": "left",
+     "role": "axisEnd",
+     "x": 96,
+     "y": 1652,
+     "w": 120,
+     "h": 26,
+     "maxChars": 9
+    },
+    "axis-high": {
+     "align": "right",
+     "role": "axisEnd",
+     "x": 864,
+     "y": 1652,
+     "w": 120,
+     "h": 26,
+     "maxChars": 9
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "peers/peer-rank-16x9": {
+   "key": "peers/peer-rank-16x9",
+   "dir": "peers",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "peer-rank-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "peer-rank-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7b859348"
+     },
+     {
+      "file": "peer-rank-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "7b859348"
+     },
+     {
+      "file": "peer-rank-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7b859348"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "peer-rank-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "peer-rank-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7b859348"
+      },
+      {
+       "file": "peer-rank-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "7b859348"
+      },
+      {
+       "file": "peer-rank-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7b859348"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "peer-rank-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "peer-rank-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a3802aa4"
+      },
+      {
+       "file": "peer-rank-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "a3802aa4"
+      },
+      {
+       "file": "peer-rank-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "a3802aa4"
+      }
+     ]
+    }
+   },
+   "slotCount": 32,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "legend": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 35,
+     "budget": "derived from the slot boxes that set this role; 35 is the floor (narrowest of 2), was 29"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 31,
+     "budget": "derived from the slot boxes that set this role; 31 is the floor (narrowest of 8), was 23"
+    },
+    "value": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 9,
+     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 8), was 9"
+    },
+    "axisEnd": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 9,
+     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 2), was 9"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "legend-1": {
+     "align": "left",
+     "role": "legend",
+     "ink": "attention",
+     "x": 212,
+     "y": 166,
+     "w": 368,
+     "h": 30,
+     "maxChars": 35
+    },
+    "legend-2": {
+     "align": "left",
+     "role": "legend",
+     "ink": "quiet",
+     "x": 652,
+     "y": 166,
+     "w": 368,
+     "h": 30,
+     "maxChars": 35
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 276,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-1": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 276,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 274,
+     "w": 1080,
+     "h": 34
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 357,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-2": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 357,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 355,
+     "w": 1080,
+     "h": 34
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 438,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-3": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 438,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 436,
+     "w": 1080,
+     "h": 34
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 519,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-4": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 519,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 517,
+     "w": 1080,
+     "h": 34
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 601,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-5": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 601,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 599,
+     "w": 1080,
+     "h": 34
+    },
+    "label-6": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 682,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-6": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 682,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-6": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 680,
+     "w": 1080,
+     "h": 34
+    },
+    "label-7": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 763,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-7": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 763,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-7": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 761,
+     "w": 1080,
+     "h": 34
+    },
+    "label-8": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 844,
+     "w": 330,
+     "h": 30,
+     "maxChars": 31
+    },
+    "value-8": {
+     "align": "right",
+     "role": "value",
+     "x": 1610,
+     "y": 844,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-8": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 510,
+     "y": 842,
+     "w": 1080,
+     "h": 34
+    },
+    "market": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": [
+      -20,
+      40
+     ],
+     "weight": 5,
+     "note": "the market’s return for the same period, one line down all the rows — axisMark as a fraction of the fixed scale",
+     "x": 510,
+     "y": 250,
+     "w": 1080,
+     "h": 650
+    },
+    "axis-low": {
+     "align": "left",
+     "role": "axisEnd",
+     "x": 510,
+     "y": 912,
+     "w": 120,
+     "h": 26,
+     "maxChars": 9
+    },
+    "axis-high": {
+     "align": "right",
+     "role": "axisEnd",
+     "x": 1470,
+     "y": 912,
+     "w": 120,
+     "h": 26,
+     "maxChars": 9
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "peers/peer-rank-9x16": {
+   "key": "peers/peer-rank-9x16",
+   "dir": "peers",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "peer-rank-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "peer-rank-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "aac8670c"
+     },
+     {
+      "file": "peer-rank-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "aac8670c"
+     },
+     {
+      "file": "peer-rank-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "aac8670c"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "peer-rank-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "peer-rank-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "aac8670c"
+      },
+      {
+       "file": "peer-rank-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "aac8670c"
+      },
+      {
+       "file": "peer-rank-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "aac8670c"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "peer-rank-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "peer-rank-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "fd97ae78"
+      },
+      {
+       "file": "peer-rank-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "fd97ae78"
+      },
+      {
+       "file": "peer-rank-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "fd97ae78"
+      }
+     ]
+    }
+   },
+   "slotCount": 32,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "legend": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 79,
+     "budget": "derived from the slot boxes that set this role; 79 is the floor (narrowest of 2), was 63"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 68,
+     "budget": "derived from the slot boxes that set this role; 68 is the floor (narrowest of 8), was 51"
+    },
+    "value": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 9,
+     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 8), was 9"
+    },
+    "axisEnd": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 9,
+     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 2), was 9"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "legend-1": {
+     "align": "left",
+     "role": "legend",
+     "ink": "attention",
+     "x": 148,
+     "y": 350,
+     "w": 836,
+     "h": 30,
+     "maxChars": 79
+    },
+    "legend-2": {
+     "align": "left",
+     "role": "legend",
+     "ink": "quiet",
+     "x": 148,
+     "y": 392,
+     "w": 836,
+     "h": 30,
+     "maxChars": 79
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 526,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-1": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 526,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 566,
+     "w": 888,
+     "h": 34
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 666,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-2": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 666,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 706,
+     "w": 888,
+     "h": 34
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 806,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-3": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 806,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 846,
+     "w": 888,
+     "h": 34
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 946,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-4": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 946,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 986,
+     "w": 888,
+     "h": 34
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1086,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-5": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 1086,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 1126,
+     "w": 888,
+     "h": 34
+    },
+    "label-6": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1226,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-6": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 1226,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-6": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 1266,
+     "w": 888,
+     "h": 34
+    },
+    "label-7": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1366,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-7": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 1366,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-7": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 1406,
+     "w": 888,
+     "h": 34
+    },
+    "label-8": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1506,
+     "w": 718,
+     "h": 30,
+     "maxChars": 68
+    },
+    "value-8": {
+     "align": "right",
+     "role": "value",
+     "x": 834,
+     "y": 1506,
+     "w": 150,
+     "h": 30,
+     "maxChars": 9
+    },
+    "bar-8": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      -20,
+      40
+     ],
+     "note": "the sector’s return on the fixed -20–40 scale, a bar from zero — historyBand, [zero, value] as fractions, ink \"attention\" for the episode’s sector",
+     "x": 96,
+     "y": 1546,
+     "w": 888,
+     "h": 34
+    },
+    "market": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": [
+      -20,
+      40
+     ],
+     "weight": 5,
+     "note": "the market’s return for the same period, one line down all the rows — axisMark as a fraction of the fixed scale",
+     "x": 96,
+     "y": 520,
+     "w": 888,
+     "h": 1120
+    },
+    "axis-low": {
+     "align": "left",
+     "role": "axisEnd",
+     "x": 96,
+     "y": 1652,
+     "w": 120,
+     "h": 26,
+     "maxChars": 9
+    },
+    "axis-high": {
+     "align": "right",
+     "role": "axisEnd",
+     "x": 864,
+     "y": 1652,
+     "w": 120,
+     "h": 26,
+     "maxChars": 9
     },
     "caption": {
      "align": "left",

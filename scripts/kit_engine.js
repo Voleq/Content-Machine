@@ -21,7 +21,7 @@
  * frames are `toSVG({ ruleOffset })` for each of `motion.dataRuleOffsets`: its
  * rule lines move a unit and its axes and values stay where they are. A host
  * strip's frames are `figure.svg` for each of `figure.framesOf(strip)`: the
- * talk strip cycles the three mouths, idle moves the head, blink closes the eyes.
+ * talk strip cycles the six mouths, idle moves the head, blink closes the eyes.
  *
  * AGAINST THE KIT'S EXPORT, BYTE FOR BYTE. Since rebuild-17 `engine/export.js`
  * writes BLANK files, every one of them through the same `emit.build()` that
@@ -63,6 +63,8 @@ const ENGINE_VIA_PORT = {
   "plates-r2.js": "round two: six software and six industrials sector plates",
   "plates-r3.js": "rounds three and four: a set per GICS sector, built out of round two's shapes",
   "sector-copy.js": "round four's plates as rows of data, read by plates-r3.js",
+  "plates-r5.js": "round five: five new shapes, the banks and insurers, macro drivers, sector performance and said-vs-happened sets, the chapter bumper and source tag, the shorts plates and the wipes",
+  "copy-r5.js": "round five's copy and sample series, and the sector variant of each shape, read by plates-r5.js",
 };
 
 /* Engine files that ship and are DELIBERATELY not run by this driver, each with
@@ -77,6 +79,7 @@ const ENGINE_NOT_LOADED = {
   "export.js": "writes the kit's blank files; ingest_kit.py runs it on a staged copy and passes --against",
   "kit-plates.js": "eleven flat-model exemplars the audit reads; sample type, no slots, not plates a shot can cut to",
   "series.js": "draws the review set's data layer; the bot draws every series itself (pipeline/chart.py)",
+  "motion.js": "the thirteen moves as per-frame functions, played over a plate's slots by the renderer rather than drawn here; the data half, emit/motion.json, is read by ingest_kit.py",
 };
 
 /* THE HOUR THE KEYS DO NOT NAME. Every other hour is a suffix on the key,
@@ -96,6 +99,17 @@ const BASE_HOUR = "night";
 const STILL_FAMILIES = {
   annotations: "ANSWERS.md §1: the mark does not move",
 };
+
+/* A WIPE IS DRAWN BY ITS PROGRESS, NOT ITS BOIL (rebuild-34). A plate whose
+ * catalogue args carry `transition` is a fresh drawing per frame at these
+ * steps of `t`, played ONCE at the kit's move rate, and the cut falls under
+ * the frame its manifest names (`transition.cutAt`). These are emit.js's own
+ * numbers, and the export check holds every frame to design's file. Drawn at
+ * the rule offsets, a wipe is its midpoint, a full hatched cover boiling in
+ * place; registered as a loop at the plate rate, its eight frames repeat every
+ * 2.7 seconds instead of playing once. */
+const TRANSITION_STEPS = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
+const TRANSITION_FPS = 12;
 
 // The canvas a room is delivered on. The model draws rooms in a 320x180 box;
 // every other plate in the library is 1920x1080 at exportScale 2, and a shot
@@ -304,6 +318,13 @@ function keyInks(svg, slots, pal) {
   return keys;
 }
 
+/* THE INK A KEYED LABEL PUBLISHES, as the palette role the swatch is drawn in.
+ * Since rebuild-22 a legend or row label carries `ink`, the data ink role its
+ * series is drawn in, and plates-r2.js's `key()` draws the swatch and publishes
+ * the ink off ONE palette key; this is that map read backwards. */
+const DATA_INK_ROLE = { subject: "up", subject2: "down", quiet: "neutral-data", attention: "attention",
+  axis: "other-party" };
+
 /* Frames to files: every distinct drawing gets one PNG, named after the first
  * frame that drew it, and the base file IS frame one — the same file, so a loop
  * entered from the base cannot pop. */
@@ -337,14 +358,21 @@ async function drawContent(ctx, items, emitWrite) {
     const family = it.key.split("/")[0];
     for (const hour of hours) {
       let P, m, svgs;
+      const wipe = !!(it.args && it.args.transition);
       try {
-        P = g.PLATES[it.author](Object.assign({}, it.args, { key: it.key, seed: it.seed, pal: palFor(tokens, hour) }));
+        const draw = (extra) => g.PLATES[it.author](Object.assign({}, it.args, extra || {},
+          { key: it.key, seed: it.seed, pal: palFor(tokens, hour) }));
+        P = draw();
         m = P.manifest();
-        /* One draw per distinct offset, in the kit's order: a drawing that
-         * consumes its seed as it goes has to be asked the same questions in
-         * the same sequence to give the same answers. */
-        const cache = {};
-        svgs = offsFor(family).map((dy) => cache[dy] || (cache[dy] = P.toSVG({ ruleOffset: dy })));
+        if (wipe) {
+          svgs = TRANSITION_STEPS.map((t) => draw({ t }).toSVG());
+        } else {
+          /* One draw per distinct offset, in the kit's order: a drawing that
+           * consumes its seed as it goes has to be asked the same questions in
+           * the same sequence to give the same answers. */
+          const cache = {};
+          svgs = offsFor(family).map((dy) => cache[dy] || (cache[dy] = P.toSVG({ ruleOffset: dy })));
+        }
       } catch (e) {
         problems.push(it.key + " at " + hour + ": the engine failed to draw it (" + e.message + ")");
         continue;
@@ -375,11 +403,20 @@ async function drawContent(ctx, items, emitWrite) {
       const still = !!STILL_FAMILIES[family] || svgs.every((s) => s === svgs[0]);
       const drawn = await writeFrames(ctx, famDir, name, still ? svgs.slice(0, 1) : svgs, m.exportScale);
       const keys = keyInks(svgs[0], m.slots, palFor(tokens, hour));
-      /* The data layer draws a plate's first series in subject and nothing
-       * else, so a legend that keys it in another ink is a legend that lies. */
-      for (const first of ["legend-1", "row-1"]) {
-        if (keys[first] && keys[first] !== "up") {
-          problems.push(it.key + " at " + hour + ": " + first + " keys the first series in " + keys[first]
+      /* A KEY THAT LIES. A label that publishes its ink says which ink the data
+       * layer draws its series in, so the swatch beside it must be that ink. A
+       * label that publishes none is the older contract: the data layer draws
+       * the first series in subject and nothing else, so a first label keyed in
+       * another ink is keying a colour nothing on the plate is drawn in. */
+      for (const [label, drawnIn] of Object.entries(keys)) {
+        const said = m.slots[label] && m.slots[label].ink;
+        if (said) {
+          if (DATA_INK_ROLE[said] !== drawnIn) {
+            problems.push(it.key + " at " + hour + ": " + label + " publishes ink " + said + " ("
+              + (DATA_INK_ROLE[said] || "no palette role") + ") and its swatch is drawn in " + drawnIn);
+          }
+        } else if ((label === "legend-1" || label === "row-1") && drawnIn !== "up") {
+          problems.push(it.key + " at " + hour + ": " + label + " keys the first series in " + drawnIn
             + ", and the data layer draws it in subject (up)");
         }
       }
@@ -390,11 +427,12 @@ async function drawContent(ctx, items, emitWrite) {
         surface: palFor(tokens, hour).surfaceKey,
         hour: hour,
         atBaseHour: it.key,
-        playback: still ? "static" : "loop",
-        fps: still ? 0 : fps,
+        playback: still ? "static" : wipe ? "once" : "loop",
+        fps: still ? 0 : wipe ? TRANSITION_FPS : fps,
         frameCount: still ? 1 : svgs.length,
         frames: still ? [{ tag: "", png: drawn[0].png, svg: drawn[0].svg }]
-          : drawn.map((d, i) => ({ tag: "_f" + pad(i + 1), png: d.png, svg: d.svg, boil: offs[i] })),
+          : drawn.map((d, i) => Object.assign({ tag: "_f" + pad(i + 1), png: d.png, svg: d.svg },
+            wipe ? { t: TRANSITION_STEPS[i] } : { boil: offs[i] })),
         files: { png: drawn[0].png, svg: drawn[0].svg, baseIsFrame: still ? null : "_f01" },
         dir: family + "/",
       }));
@@ -653,10 +691,13 @@ async function drawHost(ctx, emitWrite) {
           playback: still ? "static" : strip.playback,
           fps: still ? 0 : strip.fps,
           frameCount: svgs.length,
+          /* WHICH MOUTH, not only whether it is open. rebuild-31 draws six
+           * (closed, mid, wide, O, EE, F/V), and a frame that said only
+           * `mouthOpen` threw away the five shapes a voice can choose from. */
           frames: frames.map((fr, i) => ({
             tag: still ? "" : "_f" + pad(i + 1),
             png: files[i] + ".png", svg: args.svg ? files[i] + ".svg" : null,
-            mouthOpen: fr.mouth !== "mouthClosed", eyes: fr.eyes, bob: fr.shoulderY || 0,
+            mouthOpen: fr.mouth !== "mouthClosed", mouth: fr.mouth, eyes: fr.eyes, bob: fr.shoulderY || 0,
           })),
           files: { png: files[0] + ".png", svg: args.svg ? files[0] + ".svg" : null, baseIsFrame: still ? null : "_f01" },
           /* A cut-out: composited onto a room, never over one. */
@@ -774,7 +815,7 @@ async function drawClose(ctx, emitWrite) {
   const closer = (svg) => '<svg xmlns="http://www.w3.org/2000/svg" width="' + win[2] + '" height="' + win[3] +
     '" viewBox="' + win.join(" ") + '">' + svg.slice(root(svg).length).split(weight).join('stroke-width="' + (cw * k).toFixed(3) + '"');
 
-  const mouths = [G.mouthClosed, G.mouthMid, G.mouthWide].filter(Boolean);
+  const mouths = [G.mouthClosed, G.mouthMid, G.mouthWide, G.mouthO, G.mouthEE, G.mouthFV].filter(Boolean);
   const mb = raster.bbox(wrap('<g transform="' + (G.headT || "") + '">' +
     mouths.map((d) => '<path d="' + d + '"/>').join("") + "</g>"));
   const slots = {
@@ -786,7 +827,7 @@ async function drawClose(ctx, emitWrite) {
       note: "visible extent only. A framing has no floor line, and this box is not a scaling authority: see fit" },
   };
   if (mb) slots.mouth = { role: "mouth", region: true, x: at(mb[0], win[0]), y: at(mb[1], win[1]), w: Math.round(mb[2] * u), h: Math.round(mb[3] * u),
-    note: "every mouth the talk strip draws, closed, mid and wide" };
+    note: "every mouth the talk strip draws: closed, mid, wide, O, EE and F/V" };
   const eyeLineY = at(eb[1] + eb[3] / 2, win[1]);
 
   const famDir = path.join(args.out, "host");
@@ -837,7 +878,7 @@ async function drawClose(ctx, emitWrite) {
         frames: frames.map((fr, i) => ({
           tag: still ? "" : "_f" + pad(i + 1),
           png: files[i] + ".png", svg: args.svg ? files[i] + ".svg" : null,
-          mouthOpen: fr.mouth !== "mouthClosed", eyes: fr.eyes, bob: fr.shoulderY || 0,
+          mouthOpen: fr.mouth !== "mouthClosed", mouth: fr.mouth, eyes: fr.eyes, bob: fr.shoulderY || 0,
         })),
         files: { png: files[0] + ".png", svg: args.svg ? files[0] + ".svg" : null, baseIsFrame: still ? null : "_f01" },
         alpha: true,

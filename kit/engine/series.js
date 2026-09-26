@@ -162,12 +162,14 @@ function axisMark(o) {
   const vertical = o.axis === 'vertical';
   const t = o.weight || 8;
   const nodes = [];
+  /* `tone` (rebuild-23) is the ink role the slot publishes; attention by default. */
+  const fill = (o.tone && ink[o.tone]) || ink.attention || '#F07A5A';
   if (vertical) {
     const y = box.y + box.h - v * box.h;
-    nodes.push(rect(box.x, y - t / 2, box.w, t, ink.attention || '#F07A5A'));
+    nodes.push(rect(box.x, y - t / 2, box.w, t, fill));
   } else {
     const x = box.x + v * box.w;
-    nodes.push(rect(x - t / 2, box.y, t, box.h, ink.attention || '#F07A5A'));
+    nodes.push(rect(x - t / 2, box.y, t, box.h, fill));
   }
   return { nodes, returns: { clamped: raw !== v, raw, value: v, overshoot: raw > 1 ? raw - 1 : raw < 0 ? raw : 0 } };
 }

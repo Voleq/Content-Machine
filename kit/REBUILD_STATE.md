@@ -1,5 +1,428 @@
 # Dennis v2 — REBUILD_STATE.md
 
+> ## rebuild-39 — stamp move removed (user call)
+> `stamp` is gone from `motion.js` (MOVES, stampScale, anchorFor), from `emit/motion.json` (moves and all 573 anchor sets) and from Motion Review. 13 moves remain. Older notes below that mention the stamp are history.
+
+> ## rebuild-38 — multi-line text and motion anchors
+>
+> **Multi-line text: where it broke.** `content.js budgetOf()` capped every slot at its published
+> `maxChars`, which is the ONE-line figure, even where the slot wraps. Legacy multi-line slots
+> (755 of them) publish no `maxChars` and were fine. The 17 round-five slots that wrap were cut to
+> one line. These are risk-factor lines, the footnote quote and the marked sentence, the bumper
+> title, and the short-number context.
+> - The cap is now `maxCharsPerLine × lines` where the slot wraps.
+> - Round five's multi-line roles now carry `maxLines` and `maxCharsPerLine`, via `ml()` in
+>   `plates-r5.js`.
+> - The full-length footnote quote and risk line are restored, and all 134 round-five plates fit
+>   uncut. Audit 30 of 30.
+>
+> **Motion anchors.** Nothing is placed by eye now:
+> - `motion.anchorFor(manifest)` reads where each move lands from the plate's own slots:
+>   - count-up and pen-circle go on the callout figure (X with X-label and X-detail), then
+>     `num`/`delta`, then the biggest one-line slot;
+>   - stamp and line-draw go on the plot area;
+>   - highlight and zoom go on the underline, quote or marked slot;
+>   - tick-over goes on `num`.
+> - It is published for all 573 plates in `emit/motion.json → anchors`. `null` means skip the move.
+> - `inkBox()` shrinks a slot box to the text's ink, so the circle rings the figure.
+> - `pinSpot(room)` puts the new card over the union of that wall's existing cards.
+> - Motion Review shows pen-circle and stamp on three different plates each, and card-pin on both
+>   board angles.
+
+> ## rebuild-37 — housekeeping
+>
+> - `content.js`: for a round-five type, any text slot the copy does not fill is now `''`, not
+>   generic sample copy. Container, region, band and marker slots are untouched. Audit 30 of 30.
+> - `/New Shapes Review.dc.html` groups all round-five plates (shapes, banks, macro, sectors,
+>   said, six, furniture, shorts, wipes, variants). Variants can be filtered by sector, and the
+>   9:16-only shorts now show.
+> - **Still open, needing a decision:**
+>   - The fitter (`sized()`/`fit()`) fits every slot as ONE line, and `maxLines` is ignored.
+>     Multi-line quotes use line slots as a workaround.
+>   - The motion demos place the pen circle, stamp and pinned card by eye. Publishing an anchor
+>     slot per plate would make them exact.
+
+> ## rebuild-36 — sector variants of the round-five shapes
+>
+> Through the kit's own scripts: `emit.js` **414 assets · 1,386 plate records · 573 slot tables**;
+> `export.js --index` **5,088 files**; `audit.js --check` **30 of 30**. Every copy string on all
+> 134 round-five plates fits uncut.
+>
+> **30 new types, 60 plates**, in `copy-r5.js`, each gated by `sectors`:
+> - **Valuation against its own history, ×10:** each sector on the multiple it is priced on.
+>   - EV/EBITDA for energy, materials, media and retail.
+>   - Forward P/E for utilities, health care and staples.
+>   - P/FFO for REITs, P/TBV for banks, and P/B for insurers.
+> - **Small multiples, ×4:** basins (energy), customer classes (utilities), property types (REIT),
+>   and six drugs (health care).
+> - **Earnings against cash, ×4:** software (share pay), industrials (working capital), health care,
+>   and REIT (non-cash writedowns).
+> - **Segment margin grid, ×4:** media, staples, health care and materials.
+> - **Guidance range, ×4:** energy output, utility EPS, retail revenue and health-care revenue.
+> - **Macro driver, ×4:** oil to producer cash, gas to utility fuel cost, bond yields to REIT NAV,
+>   and the euro to staples growth.
+>
+> The series come from a seeded walk, so they are deterministic. Ranges, averages, records and
+> accruals are still derived. There are four new fictional issuers: **Ashby** (energy), **Norland**
+> (utilities), **Calder** (real estate) and **Vireo** (health care).
+>
+> **Not reviewed by eye.** The shapes were built before sign-off, as asked. The sample numbers are
+> plausible, not researched.
+
+> ## rebuild-35 — motion moves
+>
+> **`engine/motion.js`** plus **`emit/motion.json`** make up a catalogue of 14 moves at 12 fps. They are
+> published as DATA, not baked frames. Each move names what it applies to, its frames, its easing and
+> whether it plays once or loops, and `motion.js` exports the pure per-frame function. A renderer
+> plays a move OVER a plate's published slots. The plates stay stills, so no audit or asset count
+> changed.
+> - **Plate:** `count-up`, `line-draw`, `bars-grow`, `highlight`, `pen-circle`, `stamp`, `zoom-to-slot`.
+> - **Room:** `screen-flicker`, `window-snow`, `window-rain`, `lights-twinkle`, `card-pin`.
+> - **Overlay:** `slide-in` (lower third and source tag) and `tick-over` (the bumper number).
+>
+> No move fades (rule 2). Things draw on, grow, slide, or land with a small overshoot (`E.land`).
+> They play live in section 3 of `/Motion Review.dc.html`.
+
+> ## rebuild-34 — Q11 · transitions
+>
+> Through the kit's own scripts: `emit.js` **384 assets · 1,266 plate records · 513 slot tables**;
+> `export.js --index` **4,608 files (3,402 animation frames)**; `audit.js --check` **30 of 30**.
+> Frame strip: `screenshots/q11.png`.
+>
+> **Three wipes in overlays/**, both aspects, alpha outside the cover:
+> - `wipe-sweep`: a hatched cover moves left to right, with a structure-ink leading edge.
+> - `wipe-page`: a sheet rises from the bottom and leaves at the top.
+> - `wipe-blinds`: slats close and reopen. It goes under the chapter bumper.
+>
+> **How they play:**
+> - Each is eight frames, `playback: 'once'`, at 12 fps, so about 0.7 s.
+> - `role: 'transition'`, and it is reached by the assembler only, never the writer.
+> - **`meta.transition.cutAt: 4`**: the cover is full on frame 4, and the edit cuts the two shots
+>   under it there. A wipe never shows two shots at once.
+> - They are drawn in the band ink over structure, the room's own colours.
+>
+> **Engine change:** `emit.js` treats `args.transition` as progress frames. It draws one plate
+> per frame at t = 0.125…1, instead of the breathing rule offsets.
+
+> ## rebuild-33 — Q10 · shorts plates
+>
+> Through the kit's own scripts: `emit.js` **381 assets · 1,254 plate records · 507 slot tables**;
+> `export.js --index` \u2014 see below; `audit.js --check` **30 of 30**. Contact sheet:
+> `screenshots/q10-v2.png`.
+>
+> **Three 9:16-only shorts plates** (`portOnly` in the round-five `LIB`). Each publishes
+> `meta.safe` (top 260, bottom 1,560), and the content sits in the middle, clear of the platform's
+> UI. `formats: ['short']` in roles.
+> - `shorts/short-number`: one figure large, a label, one line of context, and the source.
+> - `shorts/short-quote`: the quote as four LINE slots, `quote-1..4`, broken on words in
+>   `copy-r5.js`. It throws past four lines, so the quote is cut and never the font. Who said it,
+>   and a date line that carries why it matters.
+> - `shorts/short-chart`: a three-second chart, one line with its last point, and the change as
+>   the big figure (derived).
+>
+> **Noticed:** `content.js` fills any slot left unset with generic sample copy. An unused
+> `quote-4` printed an unrelated sentence until it was set to `''`. Optional slots should
+> probably default to empty.
+
+> ## rebuild-32 — Q9 · episode furniture
+>
+> Through the kit's own scripts: `emit.js` **378 assets · 1,248 plate records · 504 slot tables**;
+> `export.js --index` **4,476 files**; `audit.js --check` **30 of 30**. Contact sheet:
+> `screenshots/q9-v2.png`.
+>
+> The end card (`structure/end-card`) and the name lower third (`overlays/lower-third`) already
+> existed. The two the episodes lacked are new:
+> - **`structure/chapter-bumper`** (`chapterBumper`) is the full frame between chapters.
+>   - It shows the chapter number large, "of seven", the chapter's title and the episode.
+>   - It is held for 2 seconds (`meta.hold`).
+>   - `reached_by`: the assembler places one before every chapter after the first.
+> - **`overlays/source-tag`** (`sourceTag`) is an alpha strip, "SOURCE · 10-K FY25, note 14, page 96".
+>   - It has its own canvas: 900×72 at 16:9 and 980×92 at 9:16.
+>   - It is placed whenever a plate carries a sourced figure.
+>   - Round-five `LIB` now takes `sizes` for overlays drawn at their own canvas.
+>
+> **Fixed before shipping:** the first cut drew the bumper's upright divider and the tag's accent
+> with `rule()`, which is horizontal-only. The weight argument became 6,401 px and covered the
+> frame. The divider is now a narrow `band`, and the tag has no accent.
+
+> ## rebuild-31 — Q8 · hand props and mouths
+>
+> Through the kit's own scripts: `emit.js` **376 assets · 1,240 plate records**; `export.js --index`
+> **4,444 files (3,264 animation frames)**; `audit.js --check` **30 of 30**. Contact sheet:
+> `screenshots/q8.png` and `q8b.png`.
+>
+> **Three new poses in `KitModel.POSES`.** Each prop is one path in an EXISTING material role,
+> placed from the wrist it sits in, so no new colour is added:
+> - `holding-a-filing`: both hands, a bound report taller than a page (paper).
+> - `holding-a-phone`: right hand at the chest, head dropped to it. The phone is in the SCREEN
+>   role, so it reads as lit. A dark phone read as a patch on the shirt.
+> - `holding-a-mug`: right hand at the sternum, a pale mug over the fingers with a handle (paper).
+>
+> Each pose gets the four strips (still, talk, idle, blink): 12 new host assets.
+>
+> **Mouths:** the geometry now carries `mouthO`, `mouthEE` and `mouthFV` beside closed, mid and
+> wide. Every `-talk` strip is six frames in phrase order (closed, mid, wide, O, EE, F/V), not
+> three, so a long read no longer loops three shapes. This is a change to EVERY existing talk
+> strip, which is why the animation frame count rose by 156. The head framings in `build.js`
+> (`hostHead`) still use their own three-mouth talk and are unchanged.
+
+> ## rebuild-30 — Q7 · six plates
+>
+> Through the kit's own scripts: `emit.js` **364 assets · 1,216 plate records · 500 slot tables**;
+> `export.js --index` **4,264 files**; `audit.js --check` **30 of 30**. Every round-five copy
+> string fits uncut.
+>
+> **New authors in `plates-r5.js`:**
+> - `pairedBars` draws `charts/surprise-vs-reaction`. It shows the EPS surprise and the next
+>   day's share move per quarter, on two FIXED symmetric scales, with up and down ink by sign.
+> - `markedList` draws `paper/risk-factor-diff`. Each line is marked + added, − removed or
+>   ~ reworded, and `data.markInk` gives each mark's ink.
+> - `footnoteSpot` draws `paper/footnote-spotlight`. The note is quoted, the key sentence has an
+>   attention underline (`underline` on the slot, which `dataLayer` now draws), and one figure is
+>   pulled out.
+> - `eventCalendar` draws `structure/event-calendar`. The next five dates sit on a six-month rail,
+>   numbered, with what to watch at each.
+>
+> **Reused authors:**
+> - `sectorRanking` draws `peers/peer-rank`. Its line is the peer MEDIAN, and the caution says the
+>   legend must say so.
+> - `stackedToLine` draws `charts/capital-returned`: dividends and buybacks as a % of free cash
+>   flow, against a 100% line.
+>
+> **Noticed:** `maxLines` on the new text slots is not honoured by `sized()`, which fits them as
+> ONE line. I shortened the copy instead of changing the fitter. Multi-line quotes need the
+> fitter to take `maxLines`.
+
+> ## rebuild-29 — Q6 · said-vs-happened and revision-trail variants
+>
+> Through the kit's own scripts: `emit.js` **358 assets · 1,192 plate records · 488 slot tables**;
+> `export.js --index` **4,168 files**; `audit.js --check` **30 of 30**.
+>
+> - Two wrappers in `plates-r5.js`, `saidHappenedAs` and `revisionTrailAs`. They draw the
+>   legacy drawings under their own `type`, so each variant carries its own copy and roles.
+> - **Said-happened, four events, both aspects:**
+>   - `said-happened-guidance` (Tessera)
+>   - `said-happened-capital` (Harrow)
+>   - `said-happened-strategy` (Larkin)
+> - **Revision trail, 16:9 only** (`landOnly`, as in round one):
+>   - `revision-trail-up` (Merrow EPS rising)
+>   - `revision-trail-target` (Larkin's average price target, six cuts)
+>   - `revision-trail-revenue` (Tessera's next-year revenue)
+>
+>   The moves are derived from the estimates.
+> - **Fixed along the way:** said-happened's `diverge-N` note has always promised "the renderer
+>   draws the tie in attention", and nothing drew it. `dataLayer` now draws `data.diverge`
+>   (column indices) as an attention bar down the named column. The legacy said-happened-3–6
+>   plates can use it too.
+> - The review page lists round five newest first.
+
+> ## rebuild-28 — Q5 · sector performance
+>
+> Through the kit's own scripts: `emit.js` **352 assets · 1,174 plate records · 479 slot tables**;
+> `export.js --index` **4,096 files**; `audit.js --check` **30 of 30**.
+>
+> - **`peers/sector-ranking`** (new author `sectorRanking`): all eleven sectors' returns for one
+>   period, ranked, as bars from zero on a FIXED symmetric −30% to +30% scale. The episode's
+>   sector is in attention, and the market is one `market` line down every row. The ranking is
+>   sorted in `copy-r5.js`, never typed.
+> - **`charts/sector-vs-market`** (uses `priceCostSpread`, `fill: false`, 12 months): the sector and
+>   the market rebased to 100 on one scale, with the gap as the callout. The scale floats on
+>   purpose (`zero: false`), because the lines are rebased levels and `rebased to 100` is in the
+>   unit line.
+>
+> The two plates reconcile: Industrials +3.1% against a market of +8.4% is the −5.3pt on both.
+
+> ## rebuild-27 — Q4 · macro drivers
+>
+> Through the kit's own scripts: `emit.js` **350 assets · 1,166 plate records · 475 slot tables**;
+> `export.js --index` **4,064 files**; `audit.js --check` **30 of 30**. Review: the bottom of
+> `/New Shapes Review.dc.html`.
+>
+> **One new author, `driverEffect`:** the driver in `panel-1` (quiet) and the effect on the
+> company in `panel-2` (subject), on one time axis. Each panel is on its OWN published scale
+> (`data.panelScale`, which `dataLayer` now reads). There is never a second axis on one plot. The
+> company's disclosed sensitivity is the callout.
+>
+> Five plates, each with an issuer the kit already has:
+> - `macro-rates`: the policy rate against the Merrow net interest margin.
+> - `macro-inflation`: food inflation against Fenwick's price and mix.
+> - `macro-fx`: the dollar index against the currency effect on Harrow's growth.
+> - `macro-commodity`: copper against the Corvane EBITDA margin.
+> - `macro-wages`: retail wage growth against Larkin store costs.
+>
+> Every copy string on the round-five plates fits its box uncut. This is checked against
+> content.js fit() on every run of the fit probe.
+
+> ## rebuild-26 — Q3 · banks and insurers
+>
+> Through the kit's own scripts: `emit.js` **345 assets · 1,146 plate records · 465 slot tables**;
+> `export.js --index` **3,984 files**; `audit.js --check` **30 of 30**. Review: the bottom of
+> `/New Shapes Review.dc.html`.
+>
+> Three new authors in `plates-r5.js` and four plates in `copy-r5.js`, all sector `financials`:
+> - `ratioVsFloor` draws both of these on a FIXED scale:
+>   - `cet1-vs-minimum` (Merrow Bank, 0–20%): the 4.5% minimum is a `floor` marker in attention,
+>     and the minimum plus buffers is a `target` band.
+>   - `solvency-ratio` (Pellam, 0–250%): the 100% requirement, with the 150–180% target range.
+> - `stackedToLine` draws `combined-ratio`: the loss and expense ratios stacked
+>   (`part-a-N` / `part-b-N` bands), against a 100% `line` marker, on a fixed 0–120 scale.
+> - `developmentRails` draws `reserve-development`: the first estimate (quiet) and today's
+>   estimate (attention) for each accident year, on one rail. The rail runs $350m–$600m, and its
+>   ends are printed.
+>
+> Every figure is derived: headroom, combined totals and development percentages. Pellam is a
+> new fictional P&C insurer.
+>
+> **Noticed:** the `target` band is in `ink.band`, which is faint against the ground at night.
+> It reads, but only just. A stronger ink is a one-word change if wanted.
+>
+> **Next:** Q4 macro drivers, then Q5 sector performance, Q6 said-vs-happened, Q7 the six plates,
+> Q8 props and mouths, Q9 episode furniture, Q10 shorts, Q11 transitions.
+
+> ## rebuild-25 — the Christmas set
+>
+> Through the kit's own scripts: `emit.js` **341 assets · 1,130 plate records · 457 slot
+> tables**; `export.js --index` **3,920 files**; `audit.js --check` **30 of 30**. Preview:
+> section 0 of `/Rooms and Poses Review.dc.html`. A grid of four dressed rooms at both
+> hours is at `screenshots/xmas-grid.png`.
+>
+> - Every anchored angle (14) gets a seasonal twin, `room/<id>-christmas`, built by
+>   `dress()` in `kit-model.js`. The plain rooms are unchanged. You switch the season by
+>   picking the asset.
+> - **The lights** run along the picture rail just under the ceiling, so they are in every
+>   angle. Where a window pane is in frame (`desk-wide`, `window-wall`, `window-wide`) a
+>   second string hangs along its head.
+> - **The tree** stands on the floor at the window's left, sized from the window. It is
+>   derived from each angle's own window, so it is the same tree in the same place.
+>   Behind him, before the desk.
+> - **A new material role, `foliage`**, is in both hours in `design-tokens.json` and
+>   `KitModel.NIGHT/DUSK`. It is SEASONAL ONLY, and it is the first addition past the 13 roles.
+>   Bulbs use the existing inks (attention, subject2, subject), so no other new colour.
+> - The `PLAN` objects gain `tree` and `lights`. Each dressed angle is `pulledFrom` its
+>   source, so rule 30 holds. Clearance is measured with the source's poses (`fitsAs`).
+>   The worst cover above the desk is 3%.
+> - **Noticed, not changed:** the tree is only in the three angles that show the window. In
+>   `desk-wide` it is cropped by the left frame edge. The talk angles do not see the window
+>   wall, so they carry the lights only. Say if a second tree position in the talk angles is
+>   wanted.
+> - The review page's fit section is now opt-in (`showFits` tweak). It measures cover pixel
+>   by pixel and was freezing the page.
+
+> ## rebuild-24 — the room's floor plan (Q1) and five new shapes for review (Q2)
+>
+> Run through the kit's own scripts under the shim:
+> - `emit.js`: **327 assets · 1,074 plate records · 451 slot tables · 14 family manifests**.
+> - `export.js --index`: **3,892 files**.
+> - `audit.js --check`: **30 of 30**.
+> - `audit.test.js`: **25 of 25**. Rule 9's rebuild was stubbed in memory for time in the
+>   negative control only; unstubbed, it passes in the full audit.
+>
+> **Q1 · One room.** `KitModel.PLAN` lists the room's objects once: desk, monitor, desk lamp,
+> window, door and board. It also lists what each of the fourteen drawn angles sees.
+> `KitModel.seen()` counts the drawn objects by role. **New rule 30** fails any of these:
+> - an angle that draws two of anything
+> - an angle whose drawing disagrees with what it declares
+> - an angle outside the drawn fourteen that isn't `pull()`-ed from one of them
+>
+> All 16 angles pass, and 2 are pulled. The existing fourteen were already consistent (one of
+> each). The two openers were the only breach, and they were fixed in rebuild-23.
+>
+> **Q2 · Five new shapes**, in `engine/plates-r5.js`, with copy, data and roles in
+> `engine/copy-r5.js`. Review page: `/New Shapes Review.dc.html`.
+> - `valuationHistory`: four plates (EV/EBITDA, forward P/E, EV/Sales, FCF yield). A line
+>   over its own five-year range (`range` band, `under: true`) and average (`average` marker,
+>   `ink: quiet`).
+> - `guidanceRange`: guide-N bars (quiet) and actual-N marks (attention) on one scale.
+> - `smallMultiples`: 4 and 6 panels, one series per `panel-N`, on ONE shared scale.
+> - `earningsVsCash`: two lines with the gap filled (`spreadFill: true`) and an accruals row.
+> - `segmentMarginGrid`: 5×5 cells, each with a bar on the fixed 0–40 scale. A falling latest
+>   year is in attention.
+>
+> Engine changes:
+> - `plates-r2.js` exports `R2_HELPERS`.
+> - `series.axisMark` takes `tone`.
+> - `dataLayer` draws `data.panels`, paints `under` bands first, and takes a mark's ink from
+>   its slot.
+>
+> The data is derived in `copy-r5.js`: the range, average, record and accruals are computed,
+> never typed.
+>
+> **Sector variants wait for sign-off on these shapes.** Q3 onward are next: bank and
+> insurer, macro, sector performance, said-vs-happened, the six new plates, props and mouths,
+> episode furniture, shorts, then transitions.
+
+> ## rebuild-23 — opener rooms and three poses (rooms and poses first, as asked; plates next)
+>
+> Through the kit's own scripts under the shim: `emit.js` **318 assets · 1,038 plate records ·
+> 433 slot tables · 14 family manifests**; `export.js --index` **3,748 files** (+76: 3 poses × 4
+> strips × 2 hours × frames, plus 2 rooms × 2 hours); `audit.js --check` **29 of 29**. Review:
+> `/Rooms and Poses Review.dc.html`. The composites are also in `/Room Composite Check.dc.html`.
+>
+> **Opener rooms.** `board-wide` and `window-wide` join `desk-wide`, all with `opener: true` and the
+> same 92×42 card, so one title fits all three. Rule 28 now finds 3 openers.
+>
+> **Corrected after operator review:** the first cut drew both from scratch. That put a second
+> desk and a second monitor in his room and lost every object the viewer knows. They are now
+> DERIVED by `pull()` in `kit-model.js`:
+> - `window-wide` is `window-wall` and `board-wide` is `board-side`, each scaled 0.8 about the
+>   floor centre.
+> - Same objects, same places. Surfaces that bled off the frame still bleed off it.
+> - The only addition is the title card on the wall above him, at [55, 10].
+>
+> Head cover is 0% in both. The worst cover above the desk is 1.7% (shrug, window-wide).
+>
+> **Poses** (`kit-model.js` POSES, joint positions only, no new parts):
+> - `gesturing-at-plate` fits panel-left, board-side and board-wide.
+> - `counting-on-fingers` fits desk-front, desk-front-b, desk-wide and window-wide.
+> - `shrug` fits the same four. It adds one rig field, `shoulderDy` (−10), which lifts both shoulders.
+>
+> All three stay inside the 400×720 box (rule 13). The worst cover above the desk is 3.3%
+> (counting-on-fingers in desk-front). `roles.fragment.json` has entries for all 12 new host
+> strips and both rooms.
+>
+> **Noticed, not changed:** fingers are not drawn. A hand is one rounded shape, so
+> counting-on-fingers reads as hands meeting, and the count is carried by the voice-over. Separate
+> fingers would mean a new part, which is the operator's call.
+>
+> **Next, in this order:**
+> 1. The five new shapes: valuation against its own history, guidance range, small multiples
+>    (4 and 6), earnings against cash, and segment margin grid. These go for review before any sector variants.
+> 2. Bank and insurer plates: CET1, combined ratio, reserve development, solvency.
+> 3. The five macro drivers.
+> 4. Sector performance against other sectors over a period.
+> 5. More said-vs-happened and revision-trail variants.
+> 6. Shorts plates, then transitions.
+
+> ## rebuild-22 — the data contract, from the Node integration report
+>
+> Through the kit's own scripts under the shim: `emit.js` **304 assets · 1,006 plate records ·
+> 429 slot tables · 14 family manifests**; `export.js --index` **3,672 files** (unchanged: no
+> drawn ink moved); `audit.js --check` **29 of 29**; `audit.test.js` **23 of 23** (rule 9's
+> rebuild stubbed in memory for time in the negative control only; unstubbed it passes in the
+> full audit). All changes are published fields. The drawing is unchanged, so the samples
+> render the same figures.
+>
+> 1. **Fill.** `plot-area.spreadFill` is published on all 17 two-line designs (34 tables), and
+>    the note drops "and spreadFill between them" where it is false. Unfilled:
+>    price-vs-volume, net-price-vs-volume, traffic-vs-ticket. **brand-vs-private-label fills.**
+>    Its sample was the one that was wrong. `fill: false` is removed and the purpose now says so.
+> 2. **Legend ink.** `ink` goes on every keyed legend-N/row-N (180 slots), and `tone`/`tone2` goes on
+>    the plot-area. The eight ratio pairs publish `tone2: quiet`. The eight payback plates publish
+>    `legend-2.ink: attention` and `cac-line.ink: attention`. The swatch colour and `ink` now come from
+>    one palette key. The dataLayer defaults `tone2` and fill from the slot table.
+> 3. **Band scale.** Band slots publish each plate's own range (`bandScale`). exclusivity-runway
+>    and lease-maturity get [2025, 2040], rate-case-calendar [2025, 2030], trial-timeline [2025, 2031],
+>    mine-life [0, 30], repricing-gap [0, 60], reserve-life [0, 20] and staples-cash-cycle [0, 120].
+> 4. **Growth rail.** All 150 growth-N markers publish `scale: [-20, 20]` and `clamp: true`.
+> 5. **Wire strips.** Each headline box is now exactly two lines at the compositor's pitch
+>    (`maxLines 2`). The 3-row strip's headline is 340–468 with its source at 479. The 5-row
+>    strip's is 340–440 with its source at 451.
+>
+> **New rule 29** checks all four fields against their notes and keys.
+>
+> **Noticed, not changed:** the report counts 18 designs with the spread note. The kit has 17
+> designs (34 slot tables) on `priceCostSpread`.
+
 > ## rebuild-21 — the composite check, and five items from the Node report (supersedes the counts below)
 >
 > **This is the output of the kit's own scripts, run unmodified through the CommonJS shim.**

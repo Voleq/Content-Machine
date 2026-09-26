@@ -94,14 +94,15 @@ def frame_indices(plate: Plate, duration_s: float, fps: int) -> list[int]:
     Driven entirely by ``playback``/``frameCount``/``fps`` from the registry.
     ``static`` holds its single frame; ``loop`` cycles the strip at the plate's
     own rate, which is slower than the output frame rate on purpose — a boil is
-    a hand redrawing a line, not an animation.
+    a hand redrawing a line, not an animation. ``once`` (a wipe) plays through
+    one time and holds its last frame.
     """
     n_out = max(int(round(max(duration_s, 0.0) * fps)), 1)
     n_src = max(plate.frame_count, 1)
     if n_src == 1 or plate.playback == "static":
         return [0] * n_out
     rate = plate.fps or fps
-    if plate.playback == "one-shot":
+    if plate.playback in ("once", "one-shot"):
         return [min(int(i / fps * rate), n_src - 1) for i in range(n_out)]
     return [int(i / fps * rate) % n_src for i in range(n_out)]
 

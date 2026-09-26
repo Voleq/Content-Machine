@@ -50,7 +50,10 @@ function framesOf(suffix, tokens) {
   if (suffix === '-talk') {
     /* Three mouths, closed \u2192 mid \u2192 wide, each on its own head offset so the
      * talk reads as speech and not as a mouth sliding on a still face. */
-    return ['mouthClosed', 'mouthMid', 'mouthWide'].map((mouth, i) =>
+    /* rebuild-31: six visemes, not three. The order is a phrase, not a sweep:
+     * closed, mid, wide, O, EE, F/V, so the loop never reads as a mouth
+     * opening and closing on a metronome. */
+    return ['mouthClosed', 'mouthMid', 'mouthWide', 'mouthO', 'mouthEE', 'mouthFV'].map((mouth, i) =>
       ({ mouth, headRotate: o(i).headRotate, shoulderY: o(i).shoulderY, eyes: 'open' }));
   }
   if (suffix === '-idle') {

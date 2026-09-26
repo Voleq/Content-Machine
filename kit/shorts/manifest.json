@@ -8,7 +8,7 @@
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
  "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "assetCount": 5,
+ "assetCount": 8,
  "plates": {
   "shorts/hook-card-t1": {
    "key": "shorts/hook-card-t1",
@@ -1001,6 +1001,597 @@
      "w": 360,
      "h": 60,
      "maxChars": 11
+    }
+   }
+  },
+  "shorts/short-number-9x16": {
+   "key": "shorts/short-number-9x16",
+   "dir": "shorts",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "short-number-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "short-number-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "547cf818"
+     },
+     {
+      "file": "short-number-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "480dbaa9"
+     },
+     {
+      "file": "short-number-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "547cf818"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "short-number-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "short-number-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "547cf818"
+      },
+      {
+       "file": "short-number-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "480dbaa9"
+      },
+      {
+       "file": "short-number-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "547cf818"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "short-number-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "short-number-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "69b43462"
+      },
+      {
+       "file": "short-number-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "1af542c0"
+      },
+      {
+       "file": "short-number-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "69b43462"
+      }
+     ]
+    }
+   },
+   "slotCount": 4,
+   "typeRoles": {
+    "label": {
+     "font": "Courier Prime",
+     "size": 34,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 44,
+     "budget": "derived from the slot boxes that set this role; 44 is the floor (narrowest of 1), was 44"
+    },
+    "num": {
+     "font": "Courier Prime",
+     "size": 230,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 1), was 6"
+    },
+    "context": {
+     "font": "Archivo Narrow",
+     "size": 46,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 48,
+     "maxLines": 2,
+     "maxCharsPerLine": 48,
+     "budget": "derived from the slot boxes that set this role; 48 is the floor (narrowest of 1), was 36"
+    },
+    "source": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 62,
+     "budget": "derived from the slot boxes that set this role; 62 is the floor (narrowest of 1), was 62"
+    }
+   },
+   "slots": {
+    "label": {
+     "align": "left",
+     "role": "label",
+     "x": 90,
+     "y": 648,
+     "w": 900,
+     "h": 39,
+     "maxChars": 44
+    },
+    "num": {
+     "align": "left",
+     "role": "num",
+     "inkBy": "attention for a fall or a warning, subject otherwise",
+     "x": 90,
+     "y": 717,
+     "w": 900,
+     "h": 267,
+     "maxChars": 6
+    },
+    "context": {
+     "align": "left",
+     "role": "context",
+     "maxLines": 2,
+     "x": 90,
+     "y": 1034,
+     "w": 900,
+     "h": 107,
+     "maxChars": 48,
+     "maxCharsPerLine": 48
+    },
+    "source": {
+     "align": "left",
+     "role": "source",
+     "x": 90,
+     "y": 1520,
+     "w": 900,
+     "h": 28,
+     "maxChars": 62
+    }
+   }
+  },
+  "shorts/short-quote-9x16": {
+   "key": "shorts/short-quote-9x16",
+   "dir": "shorts",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "short-quote-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "short-quote-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "61c9fd48"
+     },
+     {
+      "file": "short-quote-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "a3434010"
+     },
+     {
+      "file": "short-quote-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "61c9fd48"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "short-quote-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "short-quote-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "61c9fd48"
+      },
+      {
+       "file": "short-quote-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "a3434010"
+      },
+      {
+       "file": "short-quote-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "61c9fd48"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "short-quote-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "short-quote-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1cc9c9b2"
+      },
+      {
+       "file": "short-quote-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "1d68a64e"
+      },
+      {
+       "file": "short-quote-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1cc9c9b2"
+      }
+     ]
+    }
+   },
+   "slotCount": 6,
+   "typeRoles": {
+    "quote": {
+     "font": "Archivo Narrow",
+     "size": 64,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 34,
+     "budget": "derived from the slot boxes that set this role; 34 is the floor (narrowest of 4), was 26"
+    },
+    "who": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 50,
+     "budget": "derived from the slot boxes that set this role; 50 is the floor (narrowest of 1), was 50"
+    },
+    "when": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 57,
+     "budget": "derived from the slot boxes that set this role; 57 is the floor (narrowest of 1), was 57"
+    }
+   },
+   "slots": {
+    "quote-1": {
+     "align": "left",
+     "role": "quote",
+     "optional": false,
+     "x": 90,
+     "y": 762,
+     "w": 900,
+     "h": 74,
+     "maxChars": 34
+    },
+    "quote-2": {
+     "align": "left",
+     "role": "quote",
+     "optional": true,
+     "x": 90,
+     "y": 836,
+     "w": 900,
+     "h": 74,
+     "maxChars": 34
+    },
+    "quote-3": {
+     "align": "left",
+     "role": "quote",
+     "optional": true,
+     "x": 90,
+     "y": 910,
+     "w": 900,
+     "h": 74,
+     "maxChars": 34
+    },
+    "quote-4": {
+     "align": "left",
+     "role": "quote",
+     "optional": true,
+     "x": 90,
+     "y": 984,
+     "w": 900,
+     "h": 74,
+     "maxChars": 34
+    },
+    "who": {
+     "align": "left",
+     "role": "who",
+     "x": 90,
+     "y": 1114,
+     "w": 900,
+     "h": 35,
+     "maxChars": 50
+    },
+    "when": {
+     "align": "left",
+     "role": "when",
+     "x": 90,
+     "y": 1157,
+     "w": 900,
+     "h": 30,
+     "maxChars": 57
+    }
+   }
+  },
+  "shorts/short-chart-9x16": {
+   "key": "shorts/short-chart-9x16",
+   "dir": "shorts",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "short-chart-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "short-chart-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "91e6e958"
+     },
+     {
+      "file": "short-chart-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "91e6e958"
+     },
+     {
+      "file": "short-chart-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "91e6e958"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "short-chart-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "short-chart-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "91e6e958"
+      },
+      {
+       "file": "short-chart-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "91e6e958"
+      },
+      {
+       "file": "short-chart-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "91e6e958"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "short-chart-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "short-chart-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "03d709e6"
+      },
+      {
+       "file": "short-chart-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "03d709e6"
+      },
+      {
+       "file": "short-chart-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "03d709e6"
+      }
+     ]
+    }
+   },
+   "slotCount": 6,
+   "typeRoles": {
+    "label": {
+     "font": "Courier Prime",
+     "size": 34,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 44,
+     "budget": "derived from the slot boxes that set this role; 44 is the floor (narrowest of 1), was 44"
+    },
+    "delta": {
+     "font": "Courier Prime",
+     "size": 200,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 1), was 7"
+    },
+    "end": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 17,
+     "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 2), was 17"
+    },
+    "source": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 62,
+     "budget": "derived from the slot boxes that set this role; 62 is the floor (narrowest of 1), was 62"
+    }
+   },
+   "slots": {
+    "label": {
+     "align": "left",
+     "role": "label",
+     "x": 90,
+     "y": 380,
+     "w": 900,
+     "h": 39,
+     "maxChars": 44
+    },
+    "delta": {
+     "align": "left",
+     "role": "delta",
+     "x": 90,
+     "y": 439,
+     "w": 900,
+     "h": 232,
+     "maxChars": 7
+    },
+    "plot-area": {
+     "role": "plot-area",
+     "container": true,
+     "tone": "subject",
+     "note": "ONE series, linePath with accentLast, evenly spaced; the whole chart is the line and its last point",
+     "x": 90,
+     "y": 741,
+     "w": 900,
+     "h": 639
+    },
+    "start": {
+     "align": "left",
+     "role": "end",
+     "x": 90,
+     "y": 1396,
+     "w": 300,
+     "h": 32,
+     "maxChars": 17
+    },
+    "end": {
+     "align": "right",
+     "role": "end",
+     "x": 690,
+     "y": 1396,
+     "w": 300,
+     "h": 32,
+     "maxChars": 17
+    },
+    "source": {
+     "align": "left",
+     "role": "source",
+     "x": 90,
+     "y": 1520,
+     "w": 900,
+     "h": 28,
+     "maxChars": 62
     }
    }
   }

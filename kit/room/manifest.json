@@ -8,7 +8,7 @@
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
  "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "assetCount": 14,
+ "assetCount": 30,
  "plates": {
   "room/desk-front": {
    "key": "room/desk-front",
@@ -43,7 +43,7 @@
    "duskSafe": null,
    "opener": false,
    "clearance": {
-    "poses": 7,
+    "poses": 12,
     "head": {
      "pose": "to-camera",
      "headCover": 0,
@@ -55,7 +55,7 @@
      "upperCover": 6.4
     },
     "figureBox": [
-     214.6,
+     204.2,
      31.3,
      263.8,
      146
@@ -112,7 +112,7 @@
    "duskSafe": null,
    "opener": true,
    "clearance": {
-    "poses": 4,
+    "poses": 9,
     "head": {
      "pose": "to-camera",
      "headCover": 0,
@@ -124,9 +124,9 @@
      "upperCover": 0
     },
     "figureBox": [
-     237.3,
+     232.7,
      56.9,
-     267.1,
+     271.7,
      134
     ]
    },
@@ -296,7 +296,7 @@
    "duskSafe": null,
    "opener": false,
    "clearance": {
-    "poses": 4,
+    "poses": 5,
     "head": {
      "pose": "to-camera",
      "headCover": 0,
@@ -654,21 +654,21 @@
    "duskSafe": true,
    "opener": false,
    "clearance": {
-    "poses": 2,
+    "poses": 4,
     "head": {
      "pose": "to-camera",
      "headCover": 0,
      "upperCover": 0
     },
     "upper": {
-     "pose": "to-camera",
+     "pose": "shrug",
      "headCover": 0,
-     "upperCover": 0
+     "upperCover": 2.7
     },
     "figureBox": [
-     262.8,
+     252.2,
      33.2,
-     298.4,
+     308.2,
      144
     ]
    },
@@ -861,7 +861,7 @@
    "duskSafe": false,
    "opener": false,
    "clearance": {
-    "poses": 2,
+    "poses": 3,
     "head": {
      "pose": "to-camera",
      "headCover": 0,
@@ -875,7 +875,7 @@
     "figureBox": [
      64.3,
      45.1,
-     103.4,
+     114,
      144
     ]
    },
@@ -999,7 +999,7 @@
    "duskSafe": true,
    "opener": false,
    "clearance": {
-    "poses": 2,
+    "poses": 3,
     "head": {
      "pose": "to-camera",
      "headCover": 0,
@@ -1013,7 +1013,7 @@
     "figureBox": [
      81.8,
      39.2,
-     123.3,
+     134.5,
      144
     ]
    },
@@ -1030,6 +1030,1685 @@
     },
     "dusk": {
      "base": "panel-left-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/window-wide": {
+   "key": "room/window-wide",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    90.7,
+    71.2,
+    21.9,
+    75.2
+   ],
+   "portraitWindow": [
+    53,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 16,
+   "roomRole": null,
+   "duskSafe": null,
+   "opener": true,
+   "clearance": {
+    "poses": 4,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0.9
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.7
+    },
+    "figureBox": [
+     83,
+     72,
+     120.6,
+     146.4
+    ]
+   },
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 2,
+     "maxCharsPerLine": 16,
+     "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+    }
+   },
+   "slots": {
+    "title": {
+     "x": 354,
+     "y": 78,
+     "w": 504,
+     "h": 216,
+     "align": "left",
+     "role": "title",
+     "ground": "card",
+     "groundBox": [
+      330,
+      60,
+      552,
+      252
+     ],
+     "colour": "structure",
+     "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+     "maxCharsPerLine": 16,
+     "maxLines": 2
+    }
+   },
+   "slotsByAspect": {
+    "16x9": {
+     "canvas": [
+      1920,
+      1080
+     ],
+     "aspect": "16x9",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 76,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 2,
+       "maxCharsPerLine": 16,
+       "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 354,
+       "y": 78,
+       "w": 504,
+       "h": 216,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        330,
+        60,
+        552,
+        252
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 16,
+       "maxLines": 2
+      }
+     }
+    },
+    "9x16": {
+     "canvas": [
+      1080,
+      1920
+     ],
+     "aspect": "9x16",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 62,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 3,
+       "maxCharsPerLine": 37,
+       "budget": "derived from the slot boxes that set this role; 37 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 66,
+       "y": 99,
+       "w": 926,
+       "h": 397,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        22,
+        66,
+        1014,
+        463
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 37,
+       "maxLines": 3
+      }
+     }
+    }
+   },
+   "files": {
+    "base": "window-wide-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "window-wide-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "window-wide-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/board-wide": {
+   "key": "room/board-wide",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    90.8,
+    71.2,
+    23.3,
+    80
+   ],
+   "portraitWindow": [
+    53,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 31,
+   "roomRole": "diagram",
+   "duskSafe": false,
+   "opener": true,
+   "clearance": {
+    "poses": 3,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     89.9,
+     72.1,
+     123.2,
+     151.2
+    ]
+   },
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 2,
+     "maxCharsPerLine": 16,
+     "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+    }
+   },
+   "slots": {
+    "title": {
+     "x": 354,
+     "y": 78,
+     "w": 504,
+     "h": 216,
+     "align": "left",
+     "role": "title",
+     "ground": "card",
+     "groundBox": [
+      330,
+      60,
+      552,
+      252
+     ],
+     "colour": "structure",
+     "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+     "maxCharsPerLine": 16,
+     "maxLines": 2
+    }
+   },
+   "slotsByAspect": {
+    "16x9": {
+     "canvas": [
+      1920,
+      1080
+     ],
+     "aspect": "16x9",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 76,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 2,
+       "maxCharsPerLine": 16,
+       "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 354,
+       "y": 78,
+       "w": 504,
+       "h": 216,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        330,
+        60,
+        552,
+        252
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 16,
+       "maxLines": 2
+      }
+     }
+    },
+    "9x16": {
+     "canvas": [
+      1080,
+      1920
+     ],
+     "aspect": "9x16",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 62,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 3,
+       "maxCharsPerLine": 37,
+       "budget": "derived from the slot boxes that set this role; 37 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 66,
+       "y": 99,
+       "w": 926,
+       "h": 397,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        22,
+        66,
+        1014,
+        463
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 37,
+       "maxLines": 3
+      }
+     }
+    }
+   },
+   "files": {
+    "base": "board-wide-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "board-wide-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "board-wide-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/desk-front-christmas": {
+   "key": "room/desk-front-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    216.1,
+    30,
+    33.8,
+    116
+   ],
+   "portraitWindow": [
+    184,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 51,
+   "roomRole": null,
+   "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 12,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 3
+    },
+    "upper": {
+     "pose": "sitting-at-desk",
+     "headCover": 0,
+     "upperCover": 6.4
+    },
+    "figureBox": [
+     204.2,
+     31.3,
+     263.8,
+     146
+    ]
+   },
+   "files": {
+    "base": "desk-front-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "desk-front-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "desk-front-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/desk-wide-christmas": {
+   "key": "room/desk-wide-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    240.7,
+    56,
+    22.7,
+    78
+   ],
+   "portraitWindow": [
+    203,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 76,
+   "roomRole": null,
+   "duskSafe": null,
+   "opener": true,
+   "clearance": {
+    "poses": 9,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     232.7,
+     56.9,
+     271.7,
+     134
+    ]
+   },
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 2,
+     "maxCharsPerLine": 16,
+     "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+    }
+   },
+   "slots": {
+    "title": {
+     "x": 1260,
+     "y": 84,
+     "w": 504,
+     "h": 216,
+     "align": "left",
+     "role": "title",
+     "ground": "card",
+     "groundBox": [
+      1236,
+      66,
+      552,
+      252
+     ],
+     "colour": "structure",
+     "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+     "maxCharsPerLine": 16,
+     "maxLines": 2
+    }
+   },
+   "slotsByAspect": {
+    "16x9": {
+     "canvas": [
+      1920,
+      1080
+     ],
+     "aspect": "16x9",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 76,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 2,
+       "maxCharsPerLine": 16,
+       "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 1260,
+       "y": 84,
+       "w": 504,
+       "h": 216,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        1236,
+        66,
+        552,
+        252
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 16,
+       "maxLines": 2
+      }
+     }
+    },
+    "9x16": {
+     "canvas": [
+      1080,
+      1920
+     ],
+     "aspect": "9x16",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 62,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 3,
+       "maxCharsPerLine": 37,
+       "budget": "derived from the slot boxes that set this role; 37 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 77,
+       "y": 110,
+       "w": 926,
+       "h": 397,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        33,
+        77,
+        1014,
+        463
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 37,
+       "maxLines": 3
+      }
+     }
+    }
+   },
+   "files": {
+    "base": "desk-wide-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "desk-wide-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "desk-wide-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/desk-side-christmas": {
+   "key": "room/desk-side-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    254.3,
+    50,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    219,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 51,
+   "roomRole": null,
+   "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 5,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     253.4,
+     51,
+     292.9,
+     144
+    ]
+   },
+   "files": {
+    "base": "desk-side-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "desk-side-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "desk-side-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/turn-to-screen-christmas": {
+   "key": "room/turn-to-screen-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    59.7,
+    42,
+    28.5,
+    98
+   ],
+   "portraitWindow": [
+    25,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 51,
+   "roomRole": null,
+   "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 4,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     59.8,
+     43.1,
+     92.5,
+     140
+    ]
+   },
+   "files": {
+    "base": "turn-to-screen-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "turn-to-screen-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "turn-to-screen-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/window-wall-christmas": {
+   "key": "room/window-wall-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    73.3,
+    44,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    38,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 77,
+   "roomRole": null,
+   "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 1,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 1.6
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 1.6
+    },
+    "figureBox": [
+     73.9,
+     45,
+     101.2,
+     138
+    ]
+   },
+   "files": {
+    "base": "window-wall-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "window-wall-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "window-wall-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/doorway-christmas": {
+   "key": "room/doorway-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    221.5,
+    38,
+    29.1,
+    100
+   ],
+   "portraitWindow": [
+    187,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 50,
+   "roomRole": null,
+   "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 3,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     217.1,
+     39.1,
+     255.4,
+     138
+    ]
+   },
+   "files": {
+    "base": "doorway-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "doorway-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "doorway-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/desk-front-b-christmas": {
+   "key": "room/desk-front-b-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    263.7,
+    32,
+    32.6,
+    112
+   ],
+   "portraitWindow": [
+    222,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 52,
+   "roomRole": "talk",
+   "duskSafe": true,
+   "opener": false,
+   "clearance": {
+    "poses": 4,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 2.7
+    },
+    "figureBox": [
+     252.2,
+     33.2,
+     308.2,
+     144
+    ]
+   },
+   "files": {
+    "base": "desk-front-b-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "desk-front-b-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "desk-front-b-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/desk-front-low-christmas": {
+   "key": "room/desk-front-low-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    268.9,
+    44,
+    30.3,
+    104
+   ],
+   "portraitWindow": [
+    222,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 49,
+   "roomRole": "talk",
+   "duskSafe": true,
+   "opener": false,
+   "clearance": {
+    "poses": 2,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     259.3,
+     45.2,
+     300,
+     148
+    ]
+   },
+   "files": {
+    "base": "desk-front-low-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "desk-front-low-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "desk-front-low-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/read-close-christmas": {
+   "key": "room/read-close-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    219.5,
+    40,
+    29.1,
+    100
+   ],
+   "portraitWindow": [
+    185,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 47,
+   "roomRole": "read",
+   "duskSafe": true,
+   "opener": false,
+   "clearance": {
+    "poses": 2,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     218.7,
+     41.1,
+     250.5,
+     140
+    ]
+   },
+   "files": {
+    "base": "read-close-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "read-close-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "read-close-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/board-side-christmas": {
+   "key": "room/board-side-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    73.5,
+    44,
+    29.1,
+    100
+   ],
+   "portraitWindow": [
+    39,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 63,
+   "roomRole": "diagram",
+   "duskSafe": false,
+   "opener": false,
+   "clearance": {
+    "poses": 3,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     64.3,
+     45.1,
+     114,
+     144
+    ]
+   },
+   "files": {
+    "base": "board-side-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "board-side-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "board-side-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/doorway-wide-christmas": {
+   "key": "room/doorway-wide-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    279.4,
+    34,
+    33.2,
+    114
+   ],
+   "portraitWindow": [
+    222,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 75,
+   "roomRole": "exit",
+   "duskSafe": false,
+   "opener": false,
+   "clearance": {
+    "poses": 1,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     280.1,
+     35.3,
+     313.3,
+     148
+    ]
+   },
+   "files": {
+    "base": "doorway-wide-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "doorway-wide-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "doorway-wide-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/panel-left-christmas": {
+   "key": "room/panel-left-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    91.6,
+    38,
+    30.8,
+    106
+   ],
+   "portraitWindow": [
+    58,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 54,
+   "roomRole": "panel",
+   "duskSafe": true,
+   "opener": false,
+   "clearance": {
+    "poses": 3,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     81.8,
+     39.2,
+     134.5,
+     144
+    ]
+   },
+   "files": {
+    "base": "panel-left-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "panel-left-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "panel-left-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/window-wide-christmas": {
+   "key": "room/window-wide-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    90.7,
+    71.2,
+    21.9,
+    75.2
+   ],
+   "portraitWindow": [
+    53,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 76,
+   "roomRole": null,
+   "duskSafe": null,
+   "opener": true,
+   "clearance": {
+    "poses": 4,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0.9
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.7
+    },
+    "figureBox": [
+     83,
+     72,
+     120.6,
+     146.4
+    ]
+   },
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 2,
+     "maxCharsPerLine": 16,
+     "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+    }
+   },
+   "slots": {
+    "title": {
+     "x": 354,
+     "y": 78,
+     "w": 504,
+     "h": 216,
+     "align": "left",
+     "role": "title",
+     "ground": "card",
+     "groundBox": [
+      330,
+      60,
+      552,
+      252
+     ],
+     "colour": "structure",
+     "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+     "maxCharsPerLine": 16,
+     "maxLines": 2
+    }
+   },
+   "slotsByAspect": {
+    "16x9": {
+     "canvas": [
+      1920,
+      1080
+     ],
+     "aspect": "16x9",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 76,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 2,
+       "maxCharsPerLine": 16,
+       "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 354,
+       "y": 78,
+       "w": 504,
+       "h": 216,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        330,
+        60,
+        552,
+        252
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 16,
+       "maxLines": 2
+      }
+     }
+    },
+    "9x16": {
+     "canvas": [
+      1080,
+      1920
+     ],
+     "aspect": "9x16",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 62,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 3,
+       "maxCharsPerLine": 37,
+       "budget": "derived from the slot boxes that set this role; 37 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 66,
+       "y": 99,
+       "w": 926,
+       "h": 397,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        22,
+        66,
+        1014,
+        463
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 37,
+       "maxLines": 3
+      }
+     }
+    }
+   },
+   "files": {
+    "base": "window-wide-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "window-wide-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "window-wide-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/board-wide-christmas": {
+   "key": "room/board-wide-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    90.8,
+    71.2,
+    23.3,
+    80
+   ],
+   "portraitWindow": [
+    53,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 65,
+   "roomRole": "diagram",
+   "duskSafe": false,
+   "opener": true,
+   "clearance": {
+    "poses": 3,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     89.9,
+     72.1,
+     123.2,
+     151.2
+    ]
+   },
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 2,
+     "maxCharsPerLine": 16,
+     "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+    }
+   },
+   "slots": {
+    "title": {
+     "x": 354,
+     "y": 78,
+     "w": 504,
+     "h": 216,
+     "align": "left",
+     "role": "title",
+     "ground": "card",
+     "groundBox": [
+      330,
+      60,
+      552,
+      252
+     ],
+     "colour": "structure",
+     "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+     "maxCharsPerLine": 16,
+     "maxLines": 2
+    }
+   },
+   "slotsByAspect": {
+    "16x9": {
+     "canvas": [
+      1920,
+      1080
+     ],
+     "aspect": "16x9",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 76,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 2,
+       "maxCharsPerLine": 16,
+       "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 354,
+       "y": 78,
+       "w": 504,
+       "h": 216,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        330,
+        60,
+        552,
+        252
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 16,
+       "maxLines": 2
+      }
+     }
+    },
+    "9x16": {
+     "canvas": [
+      1080,
+      1920
+     ],
+     "aspect": "9x16",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 62,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 3,
+       "maxCharsPerLine": 37,
+       "budget": "derived from the slot boxes that set this role; 37 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 66,
+       "y": 99,
+       "w": 926,
+       "h": 397,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        22,
+        66,
+        1014,
+        463
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 37,
+       "maxLines": 3
+      }
+     }
+    }
+   },
+   "files": {
+    "base": "board-wide-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "board-wide-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "board-wide-christmas-dusk.png",
      "baseIsFrame": true,
      "frames": []
     }

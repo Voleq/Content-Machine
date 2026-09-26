@@ -169,7 +169,10 @@
         const y = top + rowH * (i - 1);
         if (i % 2 === 0) band(P, L - 24, y - 12, cw + 48, rowH - 16, 410 + i, 0.4);
         P.slot('time-' + i, L, y + 6, 130, blockH(roles.time, 1), { align: 'left', role: 'time' });
-        P.slot('headline-' + i, L + 150, y, headW, rowH - (n <= 3 ? 90 : 70), { align: 'left', role: 'headline' });
+        /* rebuild-22: the box is exactly two lines. It was the row height less
+         * a margin, so tighten() published maxLines 3 while the source sat
+         * under line two, and a three-line headline ran into it. */
+        P.slot('headline-' + i, L + 150, y, headW, Math.ceil(roles.headline.size * 1.16 * 2) + 2, { align: 'left', role: 'headline', wraps: 2 });
         /* Under its headline. RECHECK rebuild-19: it was pinned to the foot of
          * the row, so at three rows a one-line headline sat 250px above its
          * own source and the source read as the next row's. */

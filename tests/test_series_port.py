@@ -135,11 +135,151 @@ def test_the_port_draws_every_sample_as_the_kit_does(reg, ink, samples):
     assert not wrong, f"{len(wrong)} of {len(samples)} plates draw differently:\n" + "\n".join(wrong[:20])
 
 
+# rebuild-39's round five, one rule each, without node: the port test above
+# holds all of them against the kit, and these say what each one is for.
+_INK = {"subject": "#S1", "subject2": "#S2", "quiet": "#Q", "attention": "#A",
+        "band": "#B", "axis": "#X"}
+_PLOT = {"x": 100, "y": 100, "w": 800, "h": 400}
+
+
+def test_a_range_behind_a_line_is_painted_before_it():
+    """Valuation history: the multiple's own range sits UNDER the line it
+    frames. Painted after, it hides the line."""
+    slots = {"plot-area": dict(_PLOT), "range": {**_PLOT, "axis": "vertical", "under": True}}
+    nodes = S.data_layer(slots, {"series": [10, 12, 14], "bands": {"range": [0.2, 0.6]}}, _INK)
+    assert nodes[0]["tag"] == "rect" and nodes[0]["attrs"]["fill"] == "#B"
+    assert any(n["tag"] == "path" for n in nodes[1:])
+
+
+def test_a_mark_is_drawn_in_the_ink_its_slot_publishes():
+    """The event calendar's first date is attention and the rest subject; the
+    sector ranking's market line is quiet. Attention only when unsaid."""
+    slots = {"when-1": {"x": 0, "y": 0, "w": 100, "h": 40, "ink": "attention"},
+             "when-2": {"x": 0, "y": 0, "w": 100, "h": 40, "ink": "subject"},
+             "market": {"x": 0, "y": 0, "w": 100, "h": 40, "ink": "quiet"},
+             "marker-1": {"x": 0, "y": 0, "w": 100, "h": 40}}
+    nodes = S.data_layer(slots, {"marks": {"when-1": 0.1, "when-2": 0.5,
+                                           "market": 0.3, "marker-1": 0.9}}, _INK)
+    assert [n["attrs"]["fill"] for n in nodes] == ["#A", "#S1", "#Q", "#A"]
+
+
+def test_small_multiples_draw_one_line_per_panel_on_one_scale():
+    """Every panel on the plate's one min-max unless the data scales a panel
+    of its own, in the ink the panel publishes."""
+    panel = {"x": 0, "y": 0, "w": 200, "h": 100, "tone": "quiet"}
+    slots = {"panel-1": dict(panel), "panel-2": {**panel, "x": 300}}
+    nodes = S.data_layer(slots, {"panels": {"panel-1": [1, 2, 3], "panel-2": [2, 4, 6]},
+                                 "min": 0, "max": 10}, _INK)
+    lines = [n for n in nodes if n["tag"] == "path"]
+    assert len(lines) == 2 and all(n["attrs"]["stroke"] == "#Q" for n in lines)
+    # Both on 0-10, so the second panel's last point sits higher than the first's.
+    last = [n for n in nodes if n["tag"] == "circle"]
+    assert last[5]["attrs"]["cy"] < last[2]["attrs"]["cy"]
+
+
+def test_an_underline_and_a_tie_are_drawn_where_the_plate_says():
+    """The footnote spotlight's underline, in the ink its slot names, and
+    said-vs-happened's tie: one attention bar down its diverge column."""
+    slots = {"footnote": {"x": 10, "y": 20, "w": 100, "h": 30, "underline": "attention"},
+             "diverge-2": {"x": 200, "y": 50, "w": 40, "h": 300}}
+    nodes = S.data_layer(slots, {"diverge": [2]}, _INK)
+    assert nodes[0]["attrs"] == {"x": 10, "y": 52, "width": 80, "height": 5, "fill": "#A"}
+    assert nodes[1]["attrs"] == {"x": 216, "y": 50, "width": 8, "height": 300, "fill": "#A"}
+
+
+def test_the_plot_area_decides_the_fill_and_the_second_ink_the_data_leaves_open():
+    """Real data drawn without a `spread` or a `tone2` matches the legend the
+    plate drew: the plot area publishes both."""
+    slots = {"plot-area": {**_PLOT, "spreadFill": True, "tone2": "quiet"}}
+    data = {"series": [1, 2, 3], "series2": [3, 2, 1]}
+    nodes = S.data_layer(slots, data, _INK)
+    strokes = [n["attrs"]["stroke"] for n in nodes if n["tag"] == "path" and "stroke" in n["attrs"]]
+    assert strokes == ["#S1", "#Q"]
+    assert len([n for n in nodes if n["tag"] == "path"]) > 2, "the gap was not filled"
+    unfilled = S.data_layer(slots, {**data, "spread": False}, _INK)
+    assert len([n for n in unfilled if n["tag"] == "path"]) == 2, "the data's word is final"
+
+
+def test_the_slot_fields_the_data_layer_reads_come_through_the_registry():
+    from pipeline.plates import Slot
+
+    raw = {"x": 1, "y": 2, "w": 3, "h": 4, "role": "marker", "ink": "quiet",
+           "tone": "subject", "tone2": "subject2", "spreadFill": False, "under": True,
+           "underline": "attention", "weight": 5, "inkBy": "+ in down", "clamp": True}
+    slot = Slot.from_registry("market", raw, 2)
+    box = S.boxes(type("P", (), {"slots": {"market": slot}})())["market"]
+    assert box == {"x": 1, "y": 2, "w": 3, "h": 4, "ink": "quiet", "tone": "subject",
+                   "tone2": "subject2", "underline": "attention", "spreadFill": False,
+                   "under": True}
+    assert slot.weight == 5 and slot.ink_by == "+ in down" and slot.clamp
+
+
+def test_small_multiples_draw_one_line_per_panel_on_one_scale(reg, ink):
+    plate = reg.get("charts/small-multiples-reit-16x9")
+    got = S.plate_data(plate, {"panel-1": "-1,-2,-3,-5", "panel-2": "5,6,5,6",
+                               "panel-3": "1,1,0,-2", "panel-4": "7,6,8,9"})
+    assert not got.problems
+    assert list(got.data["panels"]) == ["panel-1", "panel-2", "panel-3", "panel-4"]
+    assert "panelScale" not in got.data, "a shared panel was given a scale of its own"
+    assert got.data["min"] < -5 and got.data["max"] > 9 and got.data["zeroRule"]
+    paths = [n for n in S.data_layer(S.boxes(plate), got.data, ink) if n["tag"] == "path"]
+    assert len(paths) >= 4
+
+
+def test_a_driver_and_its_effect_are_each_on_their_own_scale(reg):
+    plate = reg.get("charts/macro-oil-16x9")
+    got = S.plate_data(plate, {"panel-1": "78,84,91,82,76,71,68,72",
+                               "panel-2": "980,1060,1180,1040,940,880,820,870"})
+    lo1, hi1 = got.data["panelScale"]["panel-1"]
+    lo2, hi2 = got.data["panelScale"]["panel-2"]
+    assert lo1 < 68 and 91 < hi1 < 200, "oil drawn on the effect's scale"
+    assert lo2 < 820 and hi2 > 1180
+
+
+def test_guidance_marks_stand_on_the_printed_quarters_and_no_line_is_drawn(reg):
+    plate = reg.get("charts/guidance-range-16x9")
+    values = ({f"value-{i}": f"${180 + 5 * i}m" for i in range(1, 9)}
+              | {f"guide-{i}": f"${175 + 5 * i}m, ${190 + 5 * i}m" for i in range(1, 9)})
+    got = S.plate_data(plate, values)
+    assert not got.problems
+    assert "series" not in got.data and "series" not in S.data_keys(plate)
+    for i in range(1, 9):
+        lo, hi = got.data["bands"][f"guide-{i}"][:2]
+        assert lo < got.data["marks"][f"actual-{i}"] < hi, i
+    # Tight, not from zero: the first range sits well clear of the floor.
+    assert got.data["bands"]["guide-1"][0] < 0.2
+
+
+def test_a_range_written_in_other_units_than_the_quarters_is_refused(reg):
+    plate = reg.get("charts/guidance-range-16x9")
+    values = ({f"value-{i}": f"${180 + 5 * i}m" for i in range(1, 9)}
+              | {f"guide-{i}": f"{175 + 5 * i}, {190 + 5 * i}" for i in range(1, 9)})
+    got = S.plate_data(plate, values)
+    assert any("same units" in p for p in got.problems)
+
+
+def test_a_ranking_draws_its_rails_and_no_columns(reg):
+    """sector-ranking's `bar-N` are rails; a series drawn from the moves it
+    prints stood columns on top of them."""
+    plate = reg.get("peers/sector-ranking-16x9")
+    values = ({f"value-{i}": f"+{i}.0%" for i in range(1, 12)}
+              | {f"bar-{i}": f"0, {i}" for i in range(1, 12)}
+              | {"axis-low": "-30%", "axis-high": "+30%"})
+    got = S.plate_data(plate, values)
+    assert "series" not in got.data and "series" not in S.data_keys(plate)
+    assert got.data["bands"]["bar-11"][:2] == [0.5, (11 + 30) / 60]
+
+
 # ------------------------------------------------------------ the round trip
 
 
+def _fig(x: float) -> str:
+    """A figure as a writer types it: never `4.2e+08`."""
+    return f"{x:.6f}".rstrip("0").rstrip(".")
+
+
 def _csv(xs) -> str:
-    return ",".join(f"{x:g}" for x in xs)
+    return ",".join(_fig(x) for x in xs)
 
 
 def _tag(plate, text: dict, data: dict) -> str:
@@ -160,13 +300,16 @@ def _tag(plate, text: dict, data: dict) -> str:
     if data.get("series2") and "series2" in dk:
         parts.append("series2=" + _csv(data["series2"]))
     if data.get("steps") and "steps" in dk:
-        parts += [f"open={data['open']:g}", "steps=" + _csv(data["steps"]), f"close={data['close']:g}"]
+        parts += [f"open={_fig(data['open'])}", "steps=" + _csv(data["steps"]), f"close={_fig(data['close'])}"]
     if data.get("points"):
-        parts.append("points=" + ",".join(f"{x:g}:{y:g}" for x, y in data["points"]))
+        parts.append("points=" + ",".join(f"{_fig(x)}:{_fig(y)}" for x, y in data["points"]))
     if data.get("split"):
         parts.append("split=" + _csv(data["split"]))
     if data.get("cycle"):
         parts.append("path=" + _csv(data["cycle"]))
+    for k, vals in (data.get("panels") or {}).items():
+        if k in plate.slots:
+            parts.append(f"{k}=" + _csv(vals))
 
     # A position or an extent is written on the scale the plate PRINTS — its
     # axis ends, or its first and last tick — not as the kit's fraction.
@@ -177,20 +320,56 @@ def _tag(plate, text: dict, data: dict) -> str:
     ticks = [S.figure(text[n]) for n in sorted((n for n in text if re.match(r"^tick-\d+$", n)),
                                                key=lambda n: int(n.split("-")[1]))]
     ticks = [t for t in ticks if t is not None]
+    printed_marks = S._printed_marks(plate)
+
+    def scale_for(name: str) -> tuple[float, float]:
+        """Where the plate prints no axis: the slot's own published scale, or
+        for a slot on the plot's scale, design's min-max — recovered from the
+        figures the plate prints beside its marks where the data carries none
+        of its own (guidance's quarters)."""
+        lo, hi = S.figure(text.get("axis-low")), S.figure(text.get("axis-high"))
+        if lo is not None and hi is not None and hi != lo:
+            return lo, hi
+        if len(ticks) >= 2:
+            return ticks[0], ticks[-1]
+        sc = plate.slots[name].scale
+        if isinstance(sc, list) and len(sc) == 2:
+            return float(sc[0]), float(sc[1])
+        if sc == "plot-area":
+            pairs = [(data["marks"][m], S.figure(text.get(val)))
+                     for m, val in printed_marks.items() if m in (data.get("marks") or {})]
+            pairs = [(f, x) for f, x in pairs if x is not None]
+            if len(pairs) >= 2:
+                n = len(pairs)
+                mf, mx = sum(f for f, _ in pairs) / n, sum(x for _, x in pairs) / n
+                slope = (sum((f - mf) * (x - mx) for f, x in pairs)
+                         / sum((f - mf) ** 2 for f, _ in pairs))
+                return mx - slope * mf, mx - slope * mf + slope
+            if data.get("min") is not None and data.get("max") is not None:
+                return float(data["min"]), float(data["max"])
+        return 0.0, 1.0
+
     for k, fr in (data.get("marks") or {}).items():
-        if k in plate.slots and not k.startswith("growth-"):   # growth: off growth-value-N
-            parts.append(f"{k}={fr * data['max'] if k == 'cac-line' else on_axis(fr):g}")
+        if k in plate.slots and not k.startswith("growth-") and k not in printed_marks:
+            # growth-N and guidance's actual-N: placed by the figures printed beside them
+            if k == "cac-line":
+                parts.append(f"{k}={_fig(fr * data['max'])}")
+            elif S.figure(text.get("axis-low")) is not None or not plate.slots[k].scale:
+                parts.append(f"{k}={_fig(on_axis(fr))}")
+            else:
+                lo, hi = scale_for(k)
+                parts.append(f"{k}={_fig(lo + fr * (hi - lo))}")
     for k, b in (data.get("bands") or {}).items():
         if k in plate.slots:
-            lo, hi = (ticks[0], ticks[-1]) if len(ticks) >= 2 else (0.0, 1.0)
+            lo, hi = scale_for(k)
             tone = f",{b[2]}" if len(b) > 2 else ""
-            parts.append(f"{k}={lo + b[0] * (hi - lo):g},{lo + b[1] * (hi - lo):g}{tone}")
+            parts.append(f"{k}={_fig(lo + b[0] * (hi - lo))},{_fig(lo + b[1] * (hi - lo))}{tone}")
     if data.get("low") is not None and "band" in plate.slots:
-        parts.append(f"band={on_axis(data['low']):g},{on_axis(data['high']):g}")
+        parts.append(f"band={_fig(on_axis(data['low']))},{_fig(on_axis(data['high']))}")
     if data.get("mark") is not None and "marker" in plate.slots:
-        parts.append(f"marker={on_axis(data['mark']):g}")
-    if data.get("accent") is not None and "accent" in dk:
-        parts.append(f"accent={data['accent'] + 1}")
+        parts.append(f"marker={_fig(on_axis(data['mark']))}")
+    if data.get("accent") is not None and data["accent"] >= 0 and "accent" in dk:
+        parts.append(f"accent={data['accent'] + 1}")        # -1 accents nothing
     columns = any(re.match(r"^bar-\d+$", n) for n in plate.slots)
     if data.get("accentLast") and "accent" in dk and data.get("accent") is None and not columns:
         parts.append("accent=last")          # the kit draws accentLast on a line only
@@ -262,31 +441,76 @@ def test_design_sample_copy_round_trips_to_the_kit_data(reg, samples):
         tol = {"series": printed(first), "series2": printed(second),
                "bars": printed(rail), "split": printed(rail),
                "open": printed(walk), "steps": printed(walk), "close": printed(walk)}
+        # A key the kit's data sets to null draws nothing, like one it leaves
+        # out (the small multiples and guidance ranges null the series).
         for k in ("series", "series2", "steps", "open", "close", "bars", "split", "points", "cycle"):
-            if k in want and (k != "bars" or "bars" in plate.slots):
+            if want.get(k) is not None and (k != "bars" or "bars" in plate.slots):
                 a, b = _flat(want[k]), _flat(got[k]) if got.get(k) is not None else []
                 if k == "bars":
                     a = a[:len(S._family(plate, "band"))]   # rowBars draws a bar per row, no more
                 if not _same(a, b, tol.get(k, 0.0)):
                     bad(k, want[k], got.get(k))
-        if "series2" in want and (got.get("tone2") or "subject2") != (want.get("tone2") or "subject2"):
+        # One line per panel, each on the scale its panel says: the plate's
+        # shared min-max, or its own (`panelScale`).
+        for k, vals in (want.get("panels") or {}).items():
+            g = (got.get("panels") or {}).get(k)
+            if g is None or not _same(_flat(vals), _flat(g)):
+                bad(f"panels[{k}]", vals, g)
+                continue
+            own = (want.get("panelScale") or {}).get(k)
+            if bool(own) != bool((got.get("panelScale") or {}).get(k)):
+                bad(f"panelScale[{k}]", own, (got.get("panelScale") or {}).get(k))
+        if want.get("series2") is not None \
+                and (got.get("tone2") or "subject2") != (want.get("tone2") or "subject2"):
             bad("tone2", want.get("tone2"), got.get("tone2"))
         if bool(got.get("spread")) != bool(want.get("spread")):
             bad("spread", want.get("spread"), got.get("spread"))
-        if "accent" in want and got.get("accent") != want["accent"]:
+        # The kit draws the line it is given and no other: a series its sample
+        # nulls is one the bot must not invent from the figures beside it.
+        for k in ("series", "series2"):
+            if k in want and want[k] is None and got.get(k):
+                bad(k, None, got.get(k))
+        want_acc = want.get("accent") if (want.get("accent") or 0) >= 0 else None
+        if "accent" in want and got.get("accent") != want_acc:
             bad("accent", want["accent"], got.get("accent"))
         # A position is compared as the fraction the kit draws, to half the
         # printed figure's last digit; `cac-line` sits on the scale the bot
-        # chose, which is its own.
+        # chose, which is its own. So does everything on the PLOT's scale where
+        # the plate prints no axis: those are compared as one set, up to the
+        # one stretch and shift a scale of the bot's own choosing makes, with
+        # the line on the same plot in the set.
+        on_plot = {n for n, sl in plate.slots.items() if sl.scale == "plot-area"}
+        pairs: list[tuple[float, float]] = []
         for k, fr in (want.get("marks") or {}).items():
             g = (got.get("marks") or {}).get(k)
-            if k != "cac-line" and (g is None or abs(fr - g) > 0.02):
+            if k in on_plot and g is not None:
+                pairs.append((fr, g))
+            elif k != "cac-line" and (g is None or abs(fr - g) > 0.02):
                 bad(f"marks[{k}]", fr, g)
         for k, b in (want.get("bands") or {}).items():
             g = (got.get("bands") or {}).get(k)
-            if g is None or abs(b[0] - g[0]) > 0.02 or abs(b[1] - g[1]) > 0.02 \
-                    or (len(b) > 2 and (len(g) < 3 or g[2] != b[2])):
+            # A tone the kit has no ink for ('up' on surprise-vs-reaction) is
+            # drawn in the band ink, by the kit and the bot alike.
+            if g is not None and len(b) > 2 and b[2] in S.KIT_INK \
+                    and (len(g) < 3 or g[2] != b[2]):
+                bad(f"bands[{k}] tone", b, g)
+            elif k in on_plot and g is not None:
+                pairs += [(b[0], g[0]), (b[1], g[1])]
+            elif g is None or abs(b[0] - g[0]) > 0.02 or abs(b[1] - g[1]) > 0.02:
                 bad(f"bands[{k}]", b, g)
+        if pairs and want.get("series") and got.get("series") \
+                and None not in (want.get("min"), want.get("max"), got.get("min"), got.get("max")):
+            span_w, span_g = want["max"] - want["min"], got["max"] - got["min"]
+            pairs += [((x - want["min"]) / span_w, (y - got["min"]) / span_g)
+                      for x, y in zip(_flat(want["series"]), _flat(got["series"]))]
+        if pairs:
+            n = len(pairs)
+            mw, mg = sum(a for a, _ in pairs) / n, sum(b for _, b in pairs) / n
+            var = sum((a - mw) ** 2 for a, _ in pairs)
+            slope = sum((a - mw) * (b - mg) for a, b in pairs) / var if var else 0.0
+            worst = max(abs(mg + slope * (a - mw) - b) for a, b in pairs)
+            if slope <= 0 or worst > 0.02:
+                bad("the plot's marks and bands", pairs, f"off one scale by {worst:.3f}")
         for k in ("low", "high", "mark"):
             if k in want and (got.get(k) is None or abs(want[k] - got[k]) > 0.02):
                 bad(k, want[k], got.get(k))

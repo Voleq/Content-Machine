@@ -169,3 +169,14 @@ The 86 requirement is a general one and is worth stating as a rule: **a plate wh
 may legitimately not exist must have a declared empty behaviour.** An empty plate on
 screen reads as a production fault; a plate that is simply not cut reads as an editorial
 choice. Tracked as `degrades_to` in `roles.fragment.json`.
+
+
+---
+
+## rebuild-22 · Which way brand-vs-private-label goes
+
+**It fills.** The two lines are compared, and the gap is the plate's own callout ("LATEST
+GAP 10.2pt"), so the area between them is a quantity. The sample was wrong, not the note.
+The three that do not fill are price-vs-volume, net-price-vs-volume and traffic-vs-ticket,
+because their two parts add up to the headline. Every two-line plot now publishes
+`plot-area.spreadFill`. Read that field, not the note. See DESIGN.md §5.5.

@@ -379,6 +379,11 @@ def _plate_notes(delivery: Path, built: dict) -> tuple[dict, list[str], list[str
       strips, the hook cards) is filed under the plate's own key — the entry is
       right, the key is spelled wrong, and design has been told;
 
+      a key WITHOUT the aspect a plate is drawn at (rebuild-39 files round five
+      and the Christmas rooms under the bare stem, `charts/valuation-history`)
+      is filed under every aspect it is drawn at. Read as a miss, it dropped 86
+      of the drop's 98 new notes and left their plates on no menu at all;
+
       a key naming nothing this kit ships is dropped and reported, not merged:
       rebuild-19's names four assets the rebuild removed;
 
@@ -400,7 +405,7 @@ def _plate_notes(delivery: Path, built: dict) -> tuple[dict, list[str], list[str
     formats, beats = _template_vocabulary()
 
     notes: dict[str, dict] = {}
-    respelled, stale, doubled = [], [], []
+    respelled, stale, doubled, spread = [], [], [], []
     dropped: Counter = Counter()
 
     def names(field: str, v: dict, allowed) -> list[str]:
@@ -419,15 +424,21 @@ def _plate_notes(delivery: Path, built: dict) -> tuple[dict, list[str], list[str
     for key, v in raw.items():
         if key.startswith("_") or not isinstance(v, dict):
             continue
-        target = key
-        if target not in drawn:
-            if _stem(target) != target and _stem(target) in drawn:
-                target = _stem(target)
+        targets = [key]
+        if key not in drawn:
+            twins = [f"{key}-{aspect}" for aspect in ("16x9", "9x16")
+                     if f"{key}-{aspect}" in drawn]
+            if _stem(key) != key and _stem(key) in drawn:
+                targets = [_stem(key)]
                 respelled.append(key)
+            elif _stem(key) == key and twins:
+                targets = twins
+                spread.append(key)
             else:
                 stale.append(key)
                 continue
-        if target in notes:
+        targets = [t for t in targets if t not in notes]
+        if not targets:
             doubled.append(key)
             continue
         note = {
@@ -440,7 +451,8 @@ def _plate_notes(delivery: Path, built: dict) -> tuple[dict, list[str], list[str
         }
         if v.get("round"):
             note["round"] = str(v["round"])
-        notes[target] = {k: val for k, val in note.items() if val}
+        for target in targets:
+            notes[target] = {k: val for k, val in note.items() if val}
 
     remarks = []
     if respelled:
@@ -448,6 +460,11 @@ def _plate_notes(delivery: Path, built: dict) -> tuple[dict, list[str], list[str
             f"roles.fragment.json: {len(respelled)} entries add an aspect to a "
             f"plate that has none (e.g. {', '.join(respelled[:3])}); filed under "
             f"the plate's own key")
+    if spread:
+        remarks.append(
+            f"roles.fragment.json: {len(spread)} entries name a plate without "
+            f"the aspect it is drawn at (e.g. {', '.join(spread[:3])}); filed "
+            f"under every aspect it has")
     if doubled:
         remarks.append(
             f"roles.fragment.json: {len(doubled)} entries repeat a plate another "
@@ -462,6 +479,66 @@ def _plate_notes(delivery: Path, built: dict) -> tuple[dict, list[str], list[str
             f"roles.fragment.json: {n} entries give {field} {value!r}, which "
             f"resolves to nothing here; dropped")
     return notes, [], remarks
+
+
+def _motion(delivery: Path, built: dict) -> tuple[dict, list[str]]:
+    """The kit's moves and where each lands, off `emit/motion.json`.
+
+    MOVES ARE DATA, PLAYED BY THE RENDERER OVER A PLATE'S PUBLISHED SLOTS
+    (rebuild-35 on): thirteen of them, each with its frame count, whether it
+    plays once or loops, and its ease, and for every plate a slot and box per
+    move or null where the plate has nothing for it to act on. The anchors are
+    design's reading of the plate's own slots, so they are carried as given
+    and nothing here places a move by eye.
+
+    READ, NOT TRUSTED, like the fragment: an anchor set for a plate this kit
+    did not draw is dropped and reported, and one naming a slot the plate does
+    not publish keeps its box — the move acts on the box — and is reported.
+    rebuild-39 names `plot-area` for the line-draw and bars-grow of 105 plates
+    whose plot is a container slot under another name.
+
+    Returns (motion, remarks). A kit that ships no motion is a kit whose plates
+    do not move, which is a remark rather than a failure.
+    """
+    path = delivery / "emit" / "motion.json"
+    if not path.exists():
+        return {}, [f"the kit ships no emit/{path.name}, so no plate has a move"]
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    moves = {}
+    for m in raw.get("moves") or ():
+        if isinstance(m, dict) and m.get("id"):
+            moves[str(m["id"])] = {k: v for k, v in m.items() if k != "id"}
+    drawn = {e.get("atBaseHour") or k: e for k, e in built.items()}
+    anchors: dict = {}
+    stale: list[str] = []
+    misnamed: Counter = Counter()
+    for key, per_move in ((raw.get("anchors") or {}).get("plates") or {}).items():
+        if not isinstance(per_move, dict):
+            continue
+        plate = drawn.get(key)
+        if plate is None:
+            stale.append(key)
+            continue
+        kept = {}
+        for move, at in per_move.items():
+            if not isinstance(at, dict) or not isinstance(at.get("box"), dict):
+                continue
+            slot = at.get("slot")
+            if slot is not None and slot not in (plate.get("slots") or {}):
+                misnamed[(move, str(slot))] += 1
+            kept[str(move)] = {"slot": slot, "box": dict(at["box"])}
+        if kept:
+            anchors[key] = kept
+    remarks = []
+    if stale:
+        remarks.append(
+            f"emit/motion.json: anchors for {len(stale)} plates this kit does "
+            f"not draw, dropped: {', '.join(sorted(stale)[:4])}")
+    for (move, slot), n in sorted(misnamed.items()):
+        remarks.append(
+            f"emit/motion.json: {move} names slot {slot!r} on {n} plates that "
+            f"publish none by that name; its box stands")
+    return {"fps": int(raw.get("fps") or 0), "moves": moves, "anchors": anchors}, remarks
 
 
 def _held_back(roles: dict) -> tuple[dict, dict]:
@@ -496,7 +573,7 @@ def _chapter_types(roles: dict, notes: dict, held: dict) -> dict:
 
 
 def _install(built: dict, delivery: Path, staged_out: Path, dest: Path,
-             notes: dict | None = None) -> dict:
+             notes: dict | None = None, motion: dict | None = None) -> dict:
     """Replace the installed kit with what was just drawn.
 
     REPLACES, never merges. Merging is what left stale assets resolvable last
@@ -543,6 +620,7 @@ def _install(built: dict, delivery: Path, staged_out: Path, dest: Path,
     registry["plateNotes"] = notes
     registry["heldBack"] = {"plates": held_plates, "rooms": held_rooms}
     registry["wardrobe"] = own("wardrobe")
+    registry["motion"] = motion or {}
     (dest / REGISTRY_NAME).write_text(
         json.dumps(registry, indent=1, sort_keys=False) + "\n", encoding="utf-8")
     print(f"  {REGISTRY_NAME}")
@@ -806,6 +884,8 @@ def build(delivery: Path, only: str = "") -> int:
             shipped = {k: v for k, v in shipped.items() if k.split("/", 1)[0] == only}
         problems += _reconcile(built.get("assets") or {}, shipped)
         notes, note_problems, remarks = _plate_notes(delivery, built.get("assets") or {})
+        motion, motion_remarks = _motion(delivery, built.get("assets") or {})
+        remarks += motion_remarks
         if not only:
             problems += note_problems
         if problems:
@@ -821,7 +901,7 @@ def build(delivery: Path, only: str = "") -> int:
         for remark in remarks:
             print(f"  note: {remark}")
         _install(built, delivery, drawn, REPO / "assets" / PLATES_DIRNAME,
-                 notes=notes)
+                 notes=notes, motion=motion)
     finally:
         if STAGE.exists():
             shutil.rmtree(STAGE)

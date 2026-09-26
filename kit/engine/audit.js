@@ -67,6 +67,7 @@ const TEXT_ROLES = ['structure', 'quiet', 'ground', 'band'];
 const manifest = () => (exists('emit/manifest.json') ? read('emit/manifest.json') : needs('emit/manifest.json — run the emitter'));
 const plates = () => (exists('emit/plates.json') ? read('emit/plates.json') : needs('emit/plates.json — run the emitter'));
 const exportIndex = () => (exists('out/index.json') ? read('out/index.json') : needs('out/index.json — run engine/export.js'));
+const slotTables = () => (exists('emit/slots.json') ? read('emit/slots.json') : needs('emit/slots.json — run the emitter'));
 const roles = () => (exists('roles.fragment.json') ? read('roles.fragment.json') : needs('roles.fragment.json'));
 
 rule(1, 'No gradients', () => {
@@ -298,6 +299,67 @@ rule(28, 'A chapter title has somewhere to land', () => {
     note: !openers.length ? 'no anchored room publishes a title slot — every chapter title would drop'
       : bad.length ? 'title misplaced: ' + bad.map(r => r.id).join(', ')
       : 'Every opener room\u2019s title sits on its card, inside the portrait window, and clear of every pose that fits the room.' };
+});
+
+rule(30, 'One room: no angle adds furniture', () => {
+  /* rebuild-23. The first cut of the openers was drawn fresh and put a second
+   * desk and a second monitor in his room. This fails any angle that draws more
+   * of an object than the one room holds, any angle whose drawn objects disagree
+   * with what it declares it sees, and any angle outside the drawn fourteen that
+   * is not pulled from one of them. */
+  const p = plates();
+  const rooms = p.plates.filter(pl => pl.role === 'room' && pl.hour === 'night' && pl.aspect === '16x9');
+  if (!rooms.length || rooms.some(r => r.seen === undefined)) needs('room records carry no seen/sees — run the emitter');
+  const bad = [];
+  rooms.forEach(r => {
+    const id = r.id.split('@')[0].replace('room/', ''), s = r.seen, d = r.sees || [];
+    ['monitor', 'desk', 'deskLamp'].forEach(o => {
+      if (s[o] > 1) bad.push(id + ' draws ' + s[o] + ' ' + o);
+      if ((s[o] > 0) !== d.includes(o)) bad.push(id + ' ' + (s[o] ? 'draws' : 'declares') + ' ' + o + ' the other does not');
+    });
+    if (s.opening > 1) bad.push(id + ' shows ' + s.opening + ' openings');
+    if (!r.drawnAngle && !r.pulledFrom) bad.push(id + ' is drawn fresh, not pulled from an angle of the room');
+  });
+  return { ok: !bad.length, count: `${rooms.length} angles, ${rooms.filter(r => r.pulledFrom).length} pulled`,
+    note: bad.length ? bad.slice(0, 6).join('; ') : 'Every angle shows at most one desk, one monitor, one lamp and one opening, agrees with what it declares, and every angle added after the drawn set is pulled from it.' };
+});
+
+rule(29, 'The data contract is published, not implied', () => {
+  /* rebuild-22. A consumer drawing real data read four things off the drawing
+   * or the prose because the slot table did not carry them: whether a
+   * two-line plot fills its gap, which ink a keyed series is in, the scale a
+   * band sits on, and the growth rail's range. This fails any keyed slot
+   * without an ink, a second series whose published tone2 is not the ink
+   * its key shows, a two-line plot without a boolean spreadFill or whose note
+   * says the opposite, and a band or marker region whose note names a scale
+   * its `scale` field does not carry. */
+  const S = slotTables().plates || {};
+  const bad = []; let keyed = 0, plots = 0, scaled = 0;
+  const num = s => +String(s).replace('\u2212', '-');
+  Object.keys(S).forEach(k => {
+    const sl = S[k].slots || {};
+    const keys = Object.keys(sl).filter(n => /^(legend|row)-\d+$/.test(n) && sl[n].role !== undefined && ('ink' in sl[n] || sl[n].role === 'legend'));
+    keys.forEach(n => { keyed++; if (!sl[n].ink) bad.push(k + ':' + n + ' no ink'); });
+    const pa = sl['plot-area'];
+    const second = sl['legend-2'] || sl['row-2'];
+    if (pa && second && second.ink && pa.tone2 && pa.tone2 !== second.ink && !/^cac|payback/.test(k.split('/').pop()))
+      bad.push(k + ': tone2 ' + pa.tone2 + ' but key shows ' + second.ink);
+    if (pa && /two linePaths/i.test(pa.note || '')) {
+      plots++;
+      if (typeof pa.spreadFill !== 'boolean') bad.push(k + ': no spreadFill');
+      else if (/spreadFill between/.test(pa.note) !== pa.spreadFill) bad.push(k + ': note contradicts spreadFill');
+    }
+    Object.keys(sl).forEach(n => {
+      const s = sl[n]; if (!s.region || !/^(band|marker)$/.test(s.role)) return;
+      const m = /fixed (\u2212?-?\d+)\s*[\u2013-]\s*(\d+)/.exec(s.note || '') || (/(-\d+)% to \+(\d+)%/.exec(s.note || ''));
+      if (!m) return;
+      scaled++;
+      if (!Array.isArray(s.scale) || s.scale[0] !== num(m[1]) || s.scale[1] !== num(m[2])) bad.push(k + ':' + n + ' scale ' + JSON.stringify(s.scale) + ' vs note ' + m[1] + '\u2013' + m[2]);
+    });
+  });
+  if (!keyed) needs('no keyed slots in emit/slots.json');
+  return { ok: !bad.length, count: `${keyed} keyed slots, ${plots} two-line plots, ${scaled} scaled regions`,
+    note: bad.length ? bad.length + ' gaps: ' + bad.slice(0, 5).join('; ') : 'Every key publishes its ink, every second series its tone2, every two-line plot its fill, and every scale its range.' };
 });
 
 rule(25, 'Every talk, idle and blink strip actually moves', () => {

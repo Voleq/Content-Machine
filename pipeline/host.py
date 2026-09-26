@@ -1,9 +1,10 @@
 """Dennis on screen — a cut-out placed on the room, flapped to the voice-over.
 
-The kit draws twelve poses and one framing, and each is four strips: the pose
-itself (one frame, a hold); ``-talk``, three frames whose mouths are closed,
-mid and wide; ``-idle``, three frames that settle his weight a canvas unit up
-and down; and ``-blink``, open eyes then closed. The frames say what they are
+The kit draws eighteen poses and one framing, and each is four strips: the
+pose itself (one frame, a hold); ``-talk``, six frames whose mouths are closed,
+mid, wide, O, EE and F/V (three until rebuild-31); ``-idle``, three frames that
+settle his weight a canvas unit up and down; and ``-blink``, open eyes then
+closed. The frames say what they are
 — ``mouthOpen``, ``eyes``, ``bob`` — and this module reads that rather than a
 frame's position, because the rebuild reordered the talk strip: its FIRST
 frame is the closed mouth now, where the kit before it put the open one there,
@@ -139,7 +140,7 @@ class HostShot:
     """One pose, as the four strips a beat plays: hold, talk, idle, blink."""
 
     pose: Plate                     # the pose itself — a hold, and the cut frame
-    talk: Plate | None = None       # closed, mid, wide mouths; None when talks=false
+    talk: Plate | None = None       # six mouths, closed first; None when talks=false
     idle: Plate | None = None       # the weight settling, a canvas unit each way
     blink: Plate | None = None      # eyes open, then shut
 
@@ -505,8 +506,8 @@ def mouth_schedule(words: list[WordTimestamp], start: float, end: float,
 
     Open while a word is sounding, alternating with closed at :data:`FLAP_HZ`
     so the mouth *works* rather than gaping through a sentence. The talk strip
-    draws two open mouths, mid and wide, and which of them an open frame shows
-    is :func:`face_plan`'s business: this only says open or shut.
+    draws five open mouths (mid, wide, O, EE, F/V), and which of them an open
+    frame shows is :func:`face_plan`'s business: this only says open or shut.
     """
     spans = speaking_spans(words, start, end)
     n = max(int(round((end - start) * fps)), 1)
@@ -617,9 +618,10 @@ def face_plan(shot: HostShot, words: list[WordTimestamp], start: float,
     had their own idea of a face — and neither ever blinked.
 
     Under a word the mouth flaps at :data:`FLAP_HZ`: shut on the off-beats,
-    and on the beats one of the strip's OPEN mouths, mid and wide in turn, so
-    a sentence is not the same two drawings swapped forty times. The frames
-    are found by what they say they are (`mouthOpen`), never by position.
+    and on the beats the strip's OPEN mouths in the kit's phrase order (mid,
+    wide, O, EE, F/V), so a sentence is not the same two drawings swapped forty
+    times. The frames are found by what they say they are (`mouthOpen`), never
+    by position.
 
     In a silence long enough to register (:data:`IDLE_MIN_SPAN_S`) the idle
     strip plays at its own rate. Anywhere else he holds the pose.

@@ -137,13 +137,13 @@
 
   /* The round-two author each shape uses, and the args it needs. */
   const SHAPE = {
-    spread: ['priceCostSpread', () => ({ quarters: 8 })],
+    spread: ['priceCostSpread', e => ({ quarters: 8, fill: e.fill !== false })],
     walk: ['walkN', e => ({ cols: e.steps.length + 2, float: !!e.float })],
     rails: ['endMarketExposure', () => ({ rows: 5 })],
     ceiling: ['rpoCoverage', () => ({ quarters: 8 })],
     pairs: ['pairedN', () => ({ years: 6, rows: [{ label: 'row-1', name: 'sa', swatch: 'up' }, { label: 'row-2', name: 'sb', swatch: 'down' }, { label: 'ratio-label', name: 'ratio', rule: true }] })],
     b2b: ['bookToBill', () => ({ quarters: 8 })],
-    tracks: ['cashConversionCycle', e => ({ ticks: e.ticks.length, bands: [['band-1'], ['band-2'], ['band-3']], scale: { range: e.scale, why: 'fixed, so every row is read on one scale' },
+    tracks: ['cashConversionCycle', e => ({ ticks: e.ticks.length, bands: [['band-1'], ['band-2'], ['band-3']], bandScale: e.scale.slice(), scale: { range: e.scale, why: 'fixed, so every row is read on one scale' },
       bandNote: 'an extent on the fixed ' + e.scale[0] + '\u2013' + e.scale[1] + ' scale \u2014 historyBand draws it; pass [start, end] as fractions of the scale, then an ink role' })],
     cohort: ['nrrCohorts', () => ({ cohorts: 5 })],
     payback: ['cacPayback', () => ({})],
@@ -385,10 +385,10 @@
     purpose: 'gross margin from one year to the next through price, input costs, mix and productivity. Rates, so the scale floats.',
     caution: 'Steps in points; they must add to the change in margin.' });
   add('consumer-staples', 'charts', 'brand-vs-private-label', 'spread', { kicker: 'BRANDS AGAINST PRIVATE LABEL', unit: 'volume, % change on a year earlier',
-    legs: ['Private label volume', 'Branded volume'], a: [2.1, 3.4, 4.8, 5.9, 6.4, 6.8, 7.1, 7.3], b: [-0.4, -1.2, -2.1, -2.8, -3.1, -3.3, -3.0, -2.9], min: -5, max: 10, fill: false,
+    legs: ['Private label volume', 'Branded volume'], a: [2.1, 3.4, 4.8, 5.9, 6.4, 6.8, 7.1, 7.3], b: [-0.4, -1.2, -2.1, -2.8, -3.1, -3.3, -3.0, -2.9], min: -5, max: 10,
     spreadLabel: 'LATEST GAP', spread: '10.2pt', detail: 'Shoppers trade down once prices pass a threshold',
     caption: 'Private label has grown every quarter for two years', ch: ['moat', 'risk'], beat: 'the-turn',
-    purpose: 'private-label volume growth against branded volume growth in the company\u2019s categories, eight quarters.',
+    purpose: 'private-label volume growth against branded volume growth in the company\u2019s categories, eight quarters on one scale with the gap filled \u2014 the gap is the trade-down.',
     caution: 'Category volumes, not the company\u2019s own; it is a market read, not a result.' });
   add('consumer-staples', 'structure', 'staples-cash-cycle', 'tracks', { kicker: 'CASH CONVERSION CYCLE, FY25', head: 'Suppliers fund the business for 18 days',
     valueHead: 'DAYS', scale: [0, 120], ticks: ['0', '30', '60', '90', '120'],
