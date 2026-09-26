@@ -169,3 +169,101 @@ def gen_room_tone() -> None:
            "afade=t=in:st=0:d=1.5,afade=t=out:st=28.5:d=1.5",
            "-c:a", "pcm_s16le", "-ar", "44100")
     print("room tone: 1 written")
+
+
+def gen_machine_sfx() -> None:
+    """The cues the machine fires off structure (`pipeline/sound.py`).
+
+    The hit on a short's first frame, its payoff and a long's chapter change,
+    and one sound per design move. Each is one take; the fetch brings three.
+    """
+    out = ASSETS / "sfx"
+    out.mkdir(parents=True, exist_ok=True)
+    wav = ["-c:a", "pcm_s16le", "-ar", "44100"]
+    _lavfi(out / "impact.wav",
+           "-f", "lavfi", "-i", "sine=f=55:d=0.7",
+           "-f", "lavfi", "-i", "anoisesrc=d=0.08:color=brown:seed=41",
+           "-filter_complex",
+           "[0]volume=0.9[a];[1]lowpass=f=600,volume=0.8[b];"
+           "[a][b]amix=inputs=2:normalize=0,"
+           "afade=t=in:st=0:d=0.003,afade=t=out:st=0.05:d=0.65",
+           *wav)
+    _lavfi(out / "tick_roll.wav",
+           "-f", "lavfi", "-i", "sine=f=2200:d=0.55",
+           "-af", "tremolo=f=22:d=1.0,highpass=f=1200,volume=0.5,"
+                  "afade=t=out:st=0.45:d=0.1",
+           *wav)
+    _lavfi(out / "marker_draw.wav",
+           "-f", "lavfi", "-i", "anoisesrc=d=0.6:color=pink:seed=43",
+           "-af", "highpass=f=2800,tremolo=f=9:d=0.5,volume=0.45,"
+                  "afade=t=in:st=0:d=0.03,afade=t=out:st=0.45:d=0.15",
+           *wav)
+    _lavfi(out / "marker_circle.wav",
+           "-f", "lavfi", "-i", "anoisesrc=d=0.7:color=pink:seed=44",
+           "-af", "highpass=f=2600,tremolo=f=5:d=0.6,volume=0.45,"
+                  "afade=t=in:st=0:d=0.05,afade=t=out:st=0.5:d=0.2",
+           *wav)
+    _lavfi(out / "knock.wav",
+           "-f", "lavfi", "-i", "sine=f=180:d=0.14",
+           "-af", "afade=t=in:st=0:d=0.002,afade=t=out:st=0.01:d=0.13,volume=0.8",
+           *wav)
+    _lavfi(out / "pin_tap.wav",
+           "-f", "lavfi", "-i", "sine=f=1250:d=0.06",
+           "-f", "lavfi", "-i", "anoisesrc=d=0.04:color=white:seed=45",
+           "-filter_complex",
+           "[0]volume=0.6[a];[1]highpass=f=2000,volume=0.4[b];"
+           "[a][b]amix=inputs=2:normalize=0,afade=t=out:st=0.01:d=0.05",
+           *wav)
+    _lavfi(out / "flip.wav",
+           "-f", "lavfi", "-i", "anoisesrc=d=0.09:color=white:seed=46",
+           "-af", "bandpass=f=1500:width_type=h:w=900,volume=0.7,"
+                  "afade=t=out:st=0.02:d=0.07",
+           *wav)
+    print("machine sfx: 7 written")
+
+
+def gen_ambience() -> None:
+    """The room at each hour, and what plays under rain, snow or a screen.
+
+    Ten seconds each and looped by the renderer; the fetch replaces them with
+    real recordings cut to a seamless thirty.
+    """
+    out = ASSETS / "sfx"
+    out.mkdir(parents=True, exist_ok=True)
+    wav = ["-c:a", "pcm_s16le", "-ar", "44100"]
+    fade = "afade=t=in:st=0:d=0.5,afade=t=out:st=9.5:d=0.5"
+    _lavfi(out / "room_night.wav",
+           "-f", "lavfi", "-i", "anoisesrc=d=10:color=brown:seed=51",
+           "-f", "lavfi", "-i", "sine=f=50:d=10",
+           "-filter_complex",
+           f"[0]lowpass=f=300,volume=0.5[a];[1]volume=0.06[b];"
+           f"[a][b]amix=inputs=2:normalize=0,{fade}",
+           *wav)
+    _lavfi(out / "room_dusk.wav",
+           "-f", "lavfi", "-i", "anoisesrc=d=10:color=pink:seed=52",
+           "-af", f"lowpass=f=900,tremolo=f=0.15:d=0.4,volume=0.4,{fade}",
+           *wav)
+    _lavfi(out / "rain_window.wav",
+           "-f", "lavfi", "-i", "anoisesrc=d=10:color=white:seed=53",
+           "-af", f"highpass=f=2500,lowpass=f=9000,volume=0.3,{fade}",
+           *wav)
+    _lavfi(out / "winter_room.wav",
+           "-f", "lavfi", "-i", "anoisesrc=d=10:color=brown:seed=54",
+           "-af", f"lowpass=f=250,tremolo=f=0.2:d=0.6,volume=0.5,{fade}",
+           *wav)
+    _lavfi(out / "screen_buzz.wav",
+           "-f", "lavfi", "-i", "sine=f=60:d=10",
+           "-f", "lavfi", "-i", "sine=f=120:d=10",
+           "-filter_complex",
+           f"[0]volume=0.3[a];[1]volume=0.15[b];"
+           f"[a][b]amix=inputs=2:normalize=0,{fade}",
+           *wav)
+    print("ambience: 5 written")
+
+
+if __name__ == "__main__":
+    gen_sfx()
+    gen_dennis_sfx()
+    gen_room_tone()
+    gen_machine_sfx()
+    gen_ambience()

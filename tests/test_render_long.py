@@ -342,23 +342,24 @@ def _track(manifest, name):
 
 
 def test_every_chapter_opener_gets_its_cue(rendered):
-    """One cue per opener, ahead of the picture, above the bed.
+    """One cue per opener, at the lead its key asks for.
 
     The opener is otherwise visual only — the room plate held 1.6s — so a
-    viewer who looks away misses that a new argument started. The lead is the
-    point: audio arriving with the image reacts to it, audio arriving first
-    announces it.
+    viewer who looks away misses that a new argument started. A diegetic cue
+    leads the picture, because audio arriving first announces it; the hit the
+    operator chose lands on the frame, the way a short's first frame does.
     """
-    from pipeline.render_long import CHAPTER_CUE_LEAD_S
+    from pipeline.sound import cue_lead_s
 
     settings, script, tts, out, manifest = rendered
+    lead = cue_lead_s(settings.chapter_cue_sfx)
     cues = [a for a in manifest["audio"] if a["name"].startswith("chapter_cue@")]
     stingers = manifest["stingers"]
     assert len(cues) == len(stingers), "a chapter opener with no cue"
     filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
     for st, cue in zip(sorted(stingers, key=lambda s: s["t"]),
                        sorted(cues, key=lambda a: a["start"])):
-        assert cue["start"] == pytest.approx(st["t"] - CHAPTER_CUE_LEAD_S, abs=0.01)
+        assert cue["start"] == pytest.approx(st["t"] - lead, abs=0.01)
         assert cue["gain_db"] == pytest.approx(settings.sfx_gain_db + 2)
         assert f"adelay={int(cue['start'] * 1000)}" in filter_text
 

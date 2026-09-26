@@ -257,7 +257,7 @@ def test_the_dotenv_example_does_not_document_settings_that_are_gone():
 def test_the_chapter_cue_is_a_key_or_nothing():
     """Unknown keys are the renderer's problem, not startup's — same contract
     as `[SOUND: …]`, which warns and skips rather than stopping a render."""
-    assert Settings(_env_file=None).chapter_cue_sfx == "keyboard_clack"
+    assert Settings(_env_file=None).chapter_cue_sfx == "impact"
     assert Settings(CHAPTER_CUE_SFX="", _env_file=None).chapter_cue_sfx == ""
     assert Settings(CHAPTER_CUE_SFX="airhorn", _env_file=None).chapter_cue_sfx == "airhorn"
 

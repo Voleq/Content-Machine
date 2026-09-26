@@ -70,11 +70,7 @@ from typing import Callable
 from PIL import Image
 
 from config import Settings
-from pipeline.audio_assets import (
-    ROOM_TONE_GAIN_DB,
-    ROOM_TONE_NAME,
-    audio_banner,
-)
+from pipeline.audio_assets import audio_banner
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
 from pipeline.host import (build_host_clip, frame_shot, front_of, host_shot,
@@ -91,6 +87,9 @@ from pipeline.models import (
 )
 from pipeline.plate_frames import drawn_box, playback_seconds, render_clip
 from pipeline.plates import at_episode_hour, load_plates
+from pipeline.sound import (DEFAULT_LEAD_S, EFFECT_KEYS, Voicing, cue_lead_s,
+                            manifest_rows, measure_lufs, placeholders_played,
+                            room_track, sound_summary, theme_tracks)
 from pipeline.rasters import (
     build_phrase_ass,
     cover_fill_frame,
@@ -166,11 +165,12 @@ def _chapter_plan(script, duration: float,
 
 _INPUT_LABEL_RE = re.compile(r"\[(\d+):v\]")
 
-# How far AHEAD of the chapter opener its cue fires. Audio leading the visual
-# makes a cue ANNOUNCE the image rather than react to it — the same reasoning
-# as the record-scratch pre-roll on the first meme, which lands 0.35s before
-# the freeze it is rewinding into.
-CHAPTER_CUE_LEAD_S = 0.15
+# How far AHEAD of the chapter opener a diegetic cue fires. Audio leading the
+# visual makes a cue ANNOUNCE the image rather than react to it — the same
+# reasoning as the record-scratch pre-roll on the first meme, which lands
+# 0.35s before the freeze it is rewinding into. A hit lands on the frame
+# instead; `sound.cue_lead_s` says which is which.
+CHAPTER_CUE_LEAD_S = DEFAULT_LEAD_S
 
 
 def _globalise(chain: str, offset: int, index: int) -> str:
@@ -217,12 +217,19 @@ def _hold_still_chain(i: int, seg_len: float, W: int, H: int, tail: str) -> str:
     )
 
 
-def _chapter_cues(stingers: list[dict], settings: Settings) -> list[AudioTrack]:
+def _chapter_cues(stingers: list[dict], settings: Settings,
+                  voicing: "Voicing | None" = None) -> list[AudioTrack]:
     """One cue per chapter opener that actually landed, or none at all.
 
     `CHAPTER_CUE_SFX` blank turns the whole thing off, and an unknown key is a
     warning and nothing else — the same contract as `[SOUND: …]`, because the
     alternative is a forty-minute render dying over a typo'd effect name.
+
+    The default is `impact`, the hit a short lands on its first frame, which
+    the operator chose over chapter music (2026-09-25). A hit fires ON the
+    cut; the diegetic keys fire `CHAPTER_CUE_LEAD_S` ahead of it
+    (`sound.cue_lead_s`). With a `voicing` each opener plays a different
+    variant; the gain stays the staged one.
 
     Gain matches the meme boom (`sfx_gain_db + 2`). That number was chosen to
     sit ABOVE THE BED, and the bed is gone — the cue now lands in room tone
@@ -232,22 +239,26 @@ def _chapter_cues(stingers: list[dict], settings: Settings) -> list[AudioTrack]:
     key = (settings.chapter_cue_sfx or "").strip()
     if not key:
         return []
-    if key not in SFX_KEYS:
+    if key not in EFFECT_KEYS:
         log.warning("CHAPTER_CUE_SFX=%r is not in the sfx library (%s) — "
-                    "chapter openers get no cue", key, ", ".join(SFX_KEYS))
+                    "chapter openers get no cue", key, ", ".join(EFFECT_KEYS))
         return []
     path = settings.assets_dir / "sfx" / f"{key}.wav"
     if not path.exists():
         log.warning("CHAPTER_CUE_SFX=%r has no file at %s — chapter openers "
                     "get no cue", key, path)
         return []
-    return [
-        AudioTrack(path=path,
-                   start_s=max(float(s["t"]) - CHAPTER_CUE_LEAD_S, 0.0),
-                   gain_db=settings.sfx_gain_db + 2,
-                   name=f"chapter_cue@{s['t']:.2f}")
-        for s in stingers
-    ]
+    lead = cue_lead_s(key)
+    out: list[AudioTrack] = []
+    for s in stingers:
+        t = max(float(s["t"]) - lead, 0.0)
+        name = f"chapter_cue@{s['t']:.2f}"
+        tr = voicing.fire(key, t, settings.sfx_gain_db + 2, name=name) \
+            if voicing is not None else None
+        out.append(tr or AudioTrack(path=path, start_s=t,
+                                    gain_db=settings.sfx_gain_db + 2,
+                                    name=name))
+    return out
 
 
 # A plate file's identity, for cache filenames that have to notice new art.
@@ -1592,40 +1603,47 @@ def _render_long(
     audio = [AudioTrack(path=tts.audio_path, gain_db=0.0, voice=True,
                         name="voice")]
     # The room, under everything, and now the whole floor of the mix. It is
-    # diegetic — the desk at three in the morning he is sitting at.
-    room = settings.assets_dir / "sfx" / ROOM_TONE_NAME
-    if room.exists():
-        audio.append(AudioTrack(path=room, gain_db=ROOM_TONE_GAIN_DB,
-                                loop=True, name="room_tone"))
+    # diegetic — the desk at three in the morning he is sitting at — and it
+    # is the room at the hour the set is drawn at (`sound.room_track`).
+    room = room_track(settings, reg.hour)
+    if room is not None:
+        audio.append(room)
+    # NO EFFECT PLAYS THE SAME WAY TWICE: each firing is a different variant,
+    # a little off in pitch and level (`pipeline/sound.py`). Seeded by the
+    # script, so every pass of this video sounds the same.
+    voicing = Voicing(settings.assets_dir / "sfx", script.content_sha())
     # A chapter opener gets an audible cue. The opener is otherwise visual
     # only, held 1.6s, and a viewer who looks away misses that a new argument
     # started — so this is a navigation signpost, not atmosphere.
-    audio += _chapter_cues(stinger_meta, settings)
+    audio += _chapter_cues(stinger_meta, settings, voicing)
     banner = audio_banner(settings)
     if banner:
         log.warning("%s", banner)
     for c in cues:
         if c.kind is CueKind.SOUND and c.payload.get("value") in SFX_KEYS:
-            sfx = settings.assets_dir / "sfx" / f"{c.payload['value']}.wav"
-            if sfx.exists():
-                audio.append(AudioTrack(path=sfx, start_s=c.t,
-                                        gain_db=settings.sfx_gain_db,
-                                        name=f"{c.payload['value']}@{c.t:.2f}"))
+            key = c.payload["value"]
+            tr = voicing.fire(key, c.t, settings.sfx_gain_db,
+                              name=f"{key}@{c.t:.2f}")
+            if tr is not None:
+                audio.append(tr)
     # meme stings: boom on every meme; the FIRST meme gets the occasional
     # record-scratch rewind treatment
-    boom = settings.assets_dir / "sfx" / "vine_boom.wav"
-    scratch = settings.assets_dir / "sfx" / "record_scratch.wav"
     meme_segs = [s for s in segments if s.kind == "meme"]
     for j, seg in enumerate(meme_segs):
-        if boom.exists():
-            audio.append(AudioTrack(path=boom, start_s=seg.start,
-                                    gain_db=settings.sfx_gain_db + 2,
-                                    name=f"vine_boom@{seg.start:.2f}"))
-        if j == 0 and scratch.exists():
-            audio.append(AudioTrack(path=scratch,
-                                    start_s=max(seg.start - 0.35, 0.0),
-                                    gain_db=settings.sfx_gain_db,
-                                    name=f"record_scratch@{seg.start:.2f}"))
+        tr = voicing.fire("vine_boom", seg.start, settings.sfx_gain_db + 2,
+                          name=f"vine_boom@{seg.start:.2f}")
+        if tr is not None:
+            audio.append(tr)
+        if j == 0:
+            tr = voicing.fire("record_scratch", seg.start - 0.35,
+                              settings.sfx_gain_db,
+                              name=f"record_scratch@{seg.start:.2f}")
+            if tr is not None:
+                audio.append(tr)
+    # The channel theme: the intro under the cold open, the outro ending
+    # with the video, both dipped under the voice. Never under a chapter:
+    # the operator put a hit on the chapter change instead of music.
+    audio += theme_tracks(settings, duration)
 
     # ------------------------------------------------------------ encode
     spec = CompositeSpec(
@@ -1675,6 +1693,14 @@ def _render_long(
     attributions = sorted({m["attribution"] for m in seg_meta
                            if m.get("attribution")})
     price_provenance = _price_provenance(script, settings)
+    provenance = _provenance(script, settings, workspace, duration, seg_meta,
+                             tts, draft=draft, proof=proof)
+    audio_rows = manifest_rows(audio)
+    # WHAT THE MIX DID, on the delivery message. Measured off the file, not
+    # assumed from the graph; a draft is not worth the extra pass.
+    provenance.sound = sound_summary(
+        audio_rows, lufs=None if draft else measure_lufs(out_path),
+        placeholders=placeholders_played(settings, audio))
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "draft": draft,
@@ -1699,9 +1725,7 @@ def _render_long(
         # this and the shot-template path, and "which branch did that run
         # take" should be answerable from the artefact.
         "engine": "segments",
-        "provenance": _provenance(
-            script, settings, workspace, duration, seg_meta, tts,
-            draft=draft, proof=proof).to_json(),
+        "provenance": provenance.to_json(),
         "duration": duration,
         "resolution": [W, H],
         "cues": [c.model_dump() for c in cues],
@@ -1725,11 +1749,7 @@ def _render_long(
         # Named by SOURCE AND TIME, because the same file fires repeatedly: a
         # boom on every meme and a cue on every opener are several rows that
         # would otherwise be indistinguishable from one another.
-        "audio": [
-            {"name": a.name or a.path.stem, "start": round(a.start_s, 2),
-             "gain_db": round(a.gain_db, 1), "loop": a.loop}
-            for a in audio
-        ],
+        "audio": audio_rows,
         "marks": mark_solves,
         "marks_out_of_band": [m for m in mark_solves if m["warnings"]],
         "segment_warnings": seg_warnings,

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Does the audio in this checkout let a final render proceed? (P0b / P5)
 
-`assets/sfx/` ships fifteen ffmpeg oscillators built by `gen_assets.py`.
+`assets/sfx/` ships twenty-seven ffmpeg oscillators built by `gen_assets.py`.
 That is the right default for a repo that has to build and test offline, and
 it is not something to publish: `pipeline.gates.check_audio` reports every
 file with no provenance entry as a placeholder and BLOCKS any final render
 outside MOCK_MODE.
 
-The gate is PER FILE. Fetching the room bed alone leaves fourteen blockers,
+The gate is PER FILE. Fetching the room bed alone leaves twenty-six blockers,
 which is the thing most likely to be misread as "the fix did not work".
 
     python scripts/check_sfx.py

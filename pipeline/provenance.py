@@ -71,6 +71,12 @@ class Provenance:
     visuals: dict = field(default_factory=dict)
     filings: dict = field(default_factory=dict)
     audio: dict = field(default_factory=dict)
+    # WHAT THE MIX DID (`pipeline.sound.sound_summary`): measured loudness,
+    # how many effects fired, which loop and whether the theme played, and
+    # how many sound files are still placeholders. `audio` above is the
+    # voice; this is everything under it. A short shipped voice-only for six
+    # weeks with nothing anywhere that would have said so.
+    sound: dict = field(default_factory=dict)
     llm: dict = field(default_factory=dict)
     gates: str = ""
 
@@ -82,6 +88,7 @@ class Provenance:
             "render": self.render,
             "prices": self.prices, "visuals": self.visuals,
             "filings": self.filings, "audio": self.audio,
+            "sound": self.sound,
             "llm": self.llm, "gates": self.gates,
         }
 
@@ -97,6 +104,7 @@ class Provenance:
             visuals=dict(data.get("visuals") or {}),
             filings=dict(data.get("filings") or {}),
             audio=dict(data.get("audio") or {}),
+            sound=dict(data.get("sound") or {}),
             llm=dict(data.get("llm") or {}),
             gates=str(data.get("gates") or ""),
         )
@@ -118,6 +126,7 @@ class Provenance:
                             ("visuals", self._visuals_line()),
                             ("filings", self._filings_line()),
                             ("audio", self._audio_line()),
+                            ("sound", self._sound_line()),
                             ("llm", self._llm_line()),
                             ("gates", self.gates)):
             if body:
@@ -205,6 +214,23 @@ class Provenance:
             bits.append("cached — $0.00")
         elif a.get("cost_usd") is not None:
             bits.append(f"${float(a['cost_usd']):.2f}")
+        return " · ".join(bits)
+
+    def _sound_line(self) -> str:
+        s = self.sound or {}
+        if not s:
+            return ""
+        lufs = s.get("lufs")
+        bits = [f"{float(lufs):.1f} LUFS" if isinstance(lufs, (int, float))
+                else "loudness not measured"]
+        bits.append(f"{int(s.get('effects') or 0)} effects")
+        if s.get("bed"):
+            bits.append(f"loop {str(s['bed']).rsplit('.', 1)[0]}")
+        if s.get("theme"):
+            bits.append("theme")
+        n = int(s.get("placeholders") or 0)
+        bits.append(f"{n} PLACEHOLDER SOUND{'S' if n != 1 else ''}" if n
+                    else "all sounds real")
         return " · ".join(bits)
 
     def _llm_line(self) -> str:

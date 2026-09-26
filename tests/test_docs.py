@@ -238,6 +238,10 @@ def test_no_music_bed_survives_anywhere():
     dry finance monologue is the convention this channel exists to be the
     opposite of. `MUSIC_SILENT_CHAPTERS` went with it: with nothing to mute, a
     setting that does nothing is worse than no setting.
+
+    The loop under a SHORT (`sound.bed_track`) is a different thing: owned
+    music in `assets/score/`, chosen by the operator for the short's pace on
+    2026-09-25, and never under the LONG's voice.
     """
     assert _bed_hits() == []
 
@@ -261,8 +265,13 @@ def test_room_tone_stays():
     the real work: stopping the digital silence between words that gives an
     assembled cut away."""
     assert (ROOT / "assets" / "sfx" / "room_tone.wav").exists()
-    text = (ROOT / "pipeline" / "render_long.py").read_text(encoding="utf-8")
-    assert "ROOM_TONE_NAME" in text and "ROOM_TONE_GAIN_DB" in text
+    # Both formats take the room from `sound.room_track`, which falls back
+    # to room tone when the hour has no room of its own.
+    sound = (ROOT / "pipeline" / "sound.py").read_text(encoding="utf-8")
+    assert "ROOM_TONE_NAME" in sound and "ROOM_TONE_GAIN_DB" in sound
+    for renderer in ("render_long.py", "sound.py"):
+        text = (ROOT / "pipeline" / renderer).read_text(encoding="utf-8")
+        assert "room_track(" in text, f"{renderer} lost the room"
 
 
 # --------------------------------------------------------------------------
