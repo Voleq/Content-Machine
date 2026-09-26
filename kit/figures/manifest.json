@@ -8,7 +8,7 @@
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
  "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "assetCount": 133,
+ "assetCount": 135,
  "plates": {
   "figures/big-number-l1-16x9": {
    "key": "figures/big-number-l1-16x9",
@@ -10914,7 +10914,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "e7d9945a"
+      "hash": "c93049ea"
      },
      {
       "file": "guidance-raise-cut-9x16-night_f02.png",
@@ -10922,7 +10922,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "f534f0e2"
+      "hash": "bb0e2f62"
      },
      {
       "file": "guidance-raise-cut-9x16-night_f03.png",
@@ -10930,7 +10930,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "e7d9945a"
+      "hash": "c93049ea"
      }
     ]
    },
@@ -10945,7 +10945,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "e7d9945a"
+       "hash": "c93049ea"
       },
       {
        "file": "guidance-raise-cut-9x16-night_f02.png",
@@ -10953,7 +10953,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "f534f0e2"
+       "hash": "bb0e2f62"
       },
       {
        "file": "guidance-raise-cut-9x16-night_f03.png",
@@ -10961,7 +10961,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "e7d9945a"
+       "hash": "c93049ea"
       }
      ]
     },
@@ -10975,7 +10975,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "46173c9d"
+       "hash": "8686081e"
       },
       {
        "file": "guidance-raise-cut-9x16-dusk_f02.png",
@@ -10983,7 +10983,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "8dddce7a"
+       "hash": "4fb65b00"
       },
       {
        "file": "guidance-raise-cut-9x16-dusk_f03.png",
@@ -10991,12 +10991,12 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "46173c9d"
+       "hash": "8686081e"
       }
      ]
     }
    },
-   "slotCount": 10,
+   "slotCount": 41,
    "typeRoles": {
     "kicker": {
      "font": "Courier Prime",
@@ -11018,40 +11018,68 @@
      "maxChars": 56,
      "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
     },
-    "label": {
-     "font": "Archivo Narrow",
-     "size": 34,
-     "weight": 500,
-     "colour": "structure",
-     "maxChars": 28,
-     "budget": "derived from the slot boxes that set this role; 28 is the floor (narrowest of 2), was 48"
-    },
-    "axisTitle": {
+    "unit": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 28,
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 22,
-     "budget": "derived from the slot boxes that set this role; 22 is the floor (narrowest of 1), was 22"
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "legend": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 69,
+     "budget": "derived from the slot boxes that set this role; 69 is the floor (narrowest of 2), was 54"
     },
     "head": {
-     "font": "Archivo Narrow",
-     "size": 54,
-     "weight": 700,
-     "colour": "structure",
-     "tracking": "-.02em",
-     "maxLines": 3,
-     "maxCharsPerLine": 41,
-     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 22"
-    },
-    "figure": {
      "font": "Courier Prime",
-     "size": 48,
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 8), was 7"
+    },
+    "value": {
+     "font": "Courier Prime",
+     "size": 24,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 13,
-     "budget": "derived from the slot boxes that set this role; 13 is the floor (narrowest of 2), was 13"
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 8), was 7"
+    },
+    "calloutLabel": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 48,
+     "budget": "derived from the slot boxes that set this role; 48 is the floor (narrowest of 1), was 36"
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 144,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 1), was 6"
+    },
+    "calloutDetail": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 79,
+     "budget": "derived from the slot boxes that set this role; 79 is the floor (narrowest of 1), was 40"
     }
    },
    "slots": {
@@ -11064,90 +11092,417 @@
      "h": 32,
      "maxChars": 41
     },
-    "head": {
+    "unit": {
      "align": "left",
-     "role": "head",
+     "role": "unit",
      "x": 96,
-     "y": 330,
+     "y": 300,
      "w": 888,
-     "h": 190,
-     "maxChars": 60,
-     "wraps": 2,
-     "maxCharsPerLine": 41,
-     "maxLines": 3
+     "h": 32,
+     "maxChars": 52
     },
-    "row-axis": {
+    "legend-1": {
      "align": "left",
-     "role": "axisTitle",
-     "x": 96,
-     "y": 650,
-     "w": 355,
-     "h": 30,
-     "maxChars": 22
+     "role": "legend",
+     "ink": "quiet",
+     "x": 148,
+     "y": 350,
+     "w": 836,
+     "h": 35,
+     "maxChars": 69
     },
-    "band": {
+    "legend-2": {
+     "align": "left",
+     "role": "legend",
+     "ink": "attention",
+     "x": 148,
+     "y": 396,
+     "w": 836,
+     "h": 35,
+     "maxChars": 69
+    },
+    "plot-area": {
+     "role": "plot-area",
+     "container": true,
+     "note": "guide-N and actual-N are on ONE scale, the plate’s min–max; pass each as fractions of it",
+     "x": 96,
+     "y": 470,
+     "w": 888,
+     "h": 530
+    },
+    "guide-1": {
      "role": "band",
      "region": true,
-     "axis": "horizontal",
-     "note": "the prior range as an extent — engine/series.js historyBand draws it from low/high",
-     "x": 96,
-     "y": 720,
-     "w": 888,
-     "h": 120
+     "axis": "vertical",
+     "ink": "quiet",
+     "scale": "plot-area",
+     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
+     "x": 133,
+     "y": 470,
+     "w": 38,
+     "h": 530
     },
-    "marker": {
+    "actual-1": {
      "role": "marker",
      "region": true,
-     "axis": "horizontal",
-     "note": "the new guide as one position — engine/series.js axisMark draws it, and reports a clamp",
+     "axis": "vertical",
+     "ink": "attention",
+     "scale": "plot-area",
+     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
+     "x": 117,
+     "y": 470,
+     "w": 69,
+     "h": 530
+    },
+    "guide-2": {
+     "role": "band",
+     "region": true,
+     "axis": "vertical",
+     "ink": "quiet",
+     "scale": "plot-area",
+     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
+     "x": 244,
+     "y": 470,
+     "w": 38,
+     "h": 530
+    },
+    "actual-2": {
+     "role": "marker",
+     "region": true,
+     "axis": "vertical",
+     "ink": "attention",
+     "scale": "plot-area",
+     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
+     "x": 228,
+     "y": 470,
+     "w": 69,
+     "h": 530
+    },
+    "guide-3": {
+     "role": "band",
+     "region": true,
+     "axis": "vertical",
+     "ink": "quiet",
+     "scale": "plot-area",
+     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
+     "x": 355,
+     "y": 470,
+     "w": 38,
+     "h": 530
+    },
+    "actual-3": {
+     "role": "marker",
+     "region": true,
+     "axis": "vertical",
+     "ink": "attention",
+     "scale": "plot-area",
+     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
+     "x": 339,
+     "y": 470,
+     "w": 69,
+     "h": 530
+    },
+    "guide-4": {
+     "role": "band",
+     "region": true,
+     "axis": "vertical",
+     "ink": "quiet",
+     "scale": "plot-area",
+     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
+     "x": 466,
+     "y": 470,
+     "w": 38,
+     "h": 530
+    },
+    "actual-4": {
+     "role": "marker",
+     "region": true,
+     "axis": "vertical",
+     "ink": "attention",
+     "scale": "plot-area",
+     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
+     "x": 450,
+     "y": 470,
+     "w": 69,
+     "h": 530
+    },
+    "guide-5": {
+     "role": "band",
+     "region": true,
+     "axis": "vertical",
+     "ink": "quiet",
+     "scale": "plot-area",
+     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
+     "x": 577,
+     "y": 470,
+     "w": 38,
+     "h": 530
+    },
+    "actual-5": {
+     "role": "marker",
+     "region": true,
+     "axis": "vertical",
+     "ink": "attention",
+     "scale": "plot-area",
+     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
+     "x": 561,
+     "y": 470,
+     "w": 69,
+     "h": 530
+    },
+    "guide-6": {
+     "role": "band",
+     "region": true,
+     "axis": "vertical",
+     "ink": "quiet",
+     "scale": "plot-area",
+     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
+     "x": 688,
+     "y": 470,
+     "w": 38,
+     "h": 530
+    },
+    "actual-6": {
+     "role": "marker",
+     "region": true,
+     "axis": "vertical",
+     "ink": "attention",
+     "scale": "plot-area",
+     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
+     "x": 672,
+     "y": 470,
+     "w": 69,
+     "h": 530
+    },
+    "guide-7": {
+     "role": "band",
+     "region": true,
+     "axis": "vertical",
+     "ink": "quiet",
+     "scale": "plot-area",
+     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
+     "x": 799,
+     "y": 470,
+     "w": 38,
+     "h": 530
+    },
+    "actual-7": {
+     "role": "marker",
+     "region": true,
+     "axis": "vertical",
+     "ink": "attention",
+     "scale": "plot-area",
+     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
+     "x": 783,
+     "y": 470,
+     "w": 69,
+     "h": 530
+    },
+    "guide-8": {
+     "role": "band",
+     "region": true,
+     "axis": "vertical",
+     "ink": "quiet",
+     "scale": "plot-area",
+     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
+     "x": 910,
+     "y": 470,
+     "w": 38,
+     "h": 530
+    },
+    "actual-8": {
+     "role": "marker",
+     "region": true,
+     "axis": "vertical",
+     "ink": "attention",
+     "scale": "plot-area",
+     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
+     "x": 894,
+     "y": 470,
+     "w": 69,
+     "h": 530
+    },
+    "head-1": {
+     "align": "center",
+     "role": "head",
      "x": 96,
-     "y": 694,
+     "y": 1018,
+     "w": 111,
+     "h": 26,
+     "maxChars": 8
+    },
+    "head-2": {
+     "align": "center",
+     "role": "head",
+     "x": 207,
+     "y": 1018,
+     "w": 111,
+     "h": 26,
+     "maxChars": 8
+    },
+    "head-3": {
+     "align": "center",
+     "role": "head",
+     "x": 318,
+     "y": 1018,
+     "w": 111,
+     "h": 26,
+     "maxChars": 8
+    },
+    "head-4": {
+     "align": "center",
+     "role": "head",
+     "x": 429,
+     "y": 1018,
+     "w": 111,
+     "h": 26,
+     "maxChars": 8
+    },
+    "head-5": {
+     "align": "center",
+     "role": "head",
+     "x": 540,
+     "y": 1018,
+     "w": 111,
+     "h": 26,
+     "maxChars": 8
+    },
+    "head-6": {
+     "align": "center",
+     "role": "head",
+     "x": 651,
+     "y": 1018,
+     "w": 111,
+     "h": 26,
+     "maxChars": 8
+    },
+    "head-7": {
+     "align": "center",
+     "role": "head",
+     "x": 762,
+     "y": 1018,
+     "w": 111,
+     "h": 26,
+     "maxChars": 8
+    },
+    "head-8": {
+     "align": "center",
+     "role": "head",
+     "x": 873,
+     "y": 1018,
+     "w": 111,
+     "h": 26,
+     "maxChars": 8
+    },
+    "value-1": {
+     "align": "center",
+     "role": "value",
+     "x": 96,
+     "y": 1054,
+     "w": 111,
+     "h": 28,
+     "maxChars": 7
+    },
+    "value-2": {
+     "align": "center",
+     "role": "value",
+     "x": 207,
+     "y": 1054,
+     "w": 111,
+     "h": 28,
+     "maxChars": 7
+    },
+    "value-3": {
+     "align": "center",
+     "role": "value",
+     "x": 318,
+     "y": 1054,
+     "w": 111,
+     "h": 28,
+     "maxChars": 7
+    },
+    "value-4": {
+     "align": "center",
+     "role": "value",
+     "x": 429,
+     "y": 1054,
+     "w": 111,
+     "h": 28,
+     "maxChars": 7
+    },
+    "value-5": {
+     "align": "center",
+     "role": "value",
+     "x": 540,
+     "y": 1054,
+     "w": 111,
+     "h": 28,
+     "maxChars": 7
+    },
+    "value-6": {
+     "align": "center",
+     "role": "value",
+     "x": 651,
+     "y": 1054,
+     "w": 111,
+     "h": 28,
+     "maxChars": 7
+    },
+    "value-7": {
+     "align": "center",
+     "role": "value",
+     "x": 762,
+     "y": 1054,
+     "w": 111,
+     "h": 28,
+     "maxChars": 7
+    },
+    "value-8": {
+     "align": "center",
+     "role": "value",
+     "x": 873,
+     "y": 1054,
+     "w": 111,
+     "h": 28,
+     "maxChars": 7
+    },
+    "record-label": {
+     "align": "left",
+     "role": "calloutLabel",
+     "x": 96,
+     "y": 1220,
      "w": 888,
-     "h": 172
+     "h": 28,
+     "maxChars": 48
     },
-    "label-1": {
+    "record": {
      "align": "left",
-     "role": "label",
+     "role": "big",
      "x": 96,
-     "y": 894,
-     "w": 391,
-     "h": 39,
-     "maxChars": 28
+     "y": 1264,
+     "w": 888,
+     "h": 167,
+     "maxChars": 10
     },
-    "figure-1": {
+    "record-detail": {
      "align": "left",
-     "role": "figure",
+     "role": "calloutDetail",
      "x": 96,
-     "y": 950,
-     "w": 391,
-     "h": 56,
-     "maxChars": 13
-    },
-    "label-2": {
-     "align": "right",
-     "role": "label",
-     "x": 593,
-     "y": 894,
-     "w": 391,
-     "h": 39,
-     "maxChars": 28
-    },
-    "figure-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 593,
-     "y": 950,
-     "w": 391,
-     "h": 56,
-     "maxChars": 13
+     "y": 1443,
+     "w": 888,
+     "h": 112,
+     "maxChars": 176,
+     "wraps": 3,
+     "maxCharsPerLine": 79,
+     "maxLines": 2
     },
     "caption": {
      "align": "left",
      "role": "caption",
      "x": 96,
-     "y": 1720,
+     "y": 1760,
      "w": 888,
-     "h": 60,
+     "h": 30,
      "maxChars": 56
     }
    }
@@ -13699,6 +14054,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 212,
      "y": 166,
      "w": 428,
@@ -13708,6 +14064,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 732,
      "y": 166,
      "w": 428,
@@ -13717,6 +14074,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 160,
      "y": 240,
@@ -13727,6 +14085,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 160,
      "y": 240,
@@ -14174,6 +14533,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 148,
      "y": 310,
      "w": 836,
@@ -14183,6 +14543,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 148,
      "y": 356,
      "w": 836,
@@ -14192,6 +14553,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 96,
      "y": 450,
@@ -14202,6 +14564,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 96,
      "y": 450,
@@ -15577,6 +15940,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -15622,6 +15990,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -15667,6 +16040,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -15712,6 +16090,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -15757,6 +16140,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -16043,6 +16431,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -16088,6 +16481,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -16133,6 +16531,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -16178,6 +16581,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -16223,6 +16631,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -16509,6 +16922,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -16554,6 +16972,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -16599,6 +17022,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -16644,6 +17072,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -16689,6 +17122,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -16975,6 +17413,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -17020,6 +17463,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -17065,6 +17513,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -17110,6 +17563,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -17155,6 +17613,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -19851,6 +20314,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -19896,6 +20364,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -19941,6 +20414,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -19986,6 +20464,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -20031,6 +20514,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -20317,6 +20805,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -20362,6 +20855,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -20407,6 +20905,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -20452,6 +20955,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -20497,6 +21005,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -20783,6 +21296,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -20828,6 +21346,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -20873,6 +21396,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -20918,6 +21446,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -20963,6 +21496,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -21249,6 +21787,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -21294,6 +21837,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -21339,6 +21887,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -21384,6 +21937,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -21429,6 +21987,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -22479,6 +23042,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -22524,6 +23092,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -22569,6 +23142,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -22614,6 +23192,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -22659,6 +23242,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -22945,6 +23533,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -22990,6 +23583,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -23035,6 +23633,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -23080,6 +23683,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -23125,6 +23733,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -24234,6 +24847,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -24279,6 +24897,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -24324,6 +24947,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -24369,6 +24997,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -24414,6 +25047,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -24700,6 +25338,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -24745,6 +25388,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -24790,6 +25438,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -24835,6 +25488,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -24880,6 +25538,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -26812,6 +27475,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -26857,6 +27525,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -26902,6 +27575,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -26947,6 +27625,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -26992,6 +27675,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -27278,6 +27966,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -27323,6 +28016,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -27368,6 +28066,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -27413,6 +28116,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -27458,6 +28166,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -27698,6 +28411,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 212,
      "y": 166,
      "w": 428,
@@ -27707,6 +28421,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 732,
      "y": 166,
      "w": 428,
@@ -27716,6 +28431,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 160,
      "y": 240,
@@ -27726,6 +28442,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 160,
      "y": 240,
@@ -28173,6 +28890,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 148,
      "y": 310,
      "w": 836,
@@ -28182,6 +28900,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 148,
      "y": 356,
      "w": 836,
@@ -28191,6 +28910,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 96,
      "y": 450,
@@ -28201,6 +28921,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 96,
      "y": 450,
@@ -29471,6 +30192,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 212,
      "y": 166,
      "w": 428,
@@ -29480,6 +30202,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 732,
      "y": 166,
      "w": 428,
@@ -29489,6 +30212,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 160,
      "y": 240,
@@ -29499,6 +30223,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 160,
      "y": 240,
@@ -29946,6 +30671,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 148,
      "y": 310,
      "w": 836,
@@ -29955,6 +30681,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 148,
      "y": 356,
      "w": 836,
@@ -29964,6 +30691,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 96,
      "y": 450,
@@ -29974,6 +30702,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 96,
      "y": 450,
@@ -31290,6 +32019,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -31335,6 +32069,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -31380,6 +32119,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -31425,6 +32169,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -31470,6 +32219,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -31756,6 +32510,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -31801,6 +32560,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -31846,6 +32610,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -31891,6 +32660,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -31936,6 +32710,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -32999,6 +33778,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 212,
      "y": 166,
      "w": 428,
@@ -33008,6 +33788,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 732,
      "y": 166,
      "w": 428,
@@ -33017,6 +33798,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 160,
      "y": 240,
@@ -33027,6 +33809,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 160,
      "y": 240,
@@ -33474,6 +34257,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 148,
      "y": 310,
      "w": 836,
@@ -33483,6 +34267,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 148,
      "y": 356,
      "w": 836,
@@ -33492,6 +34277,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 96,
      "y": 450,
@@ -33502,6 +34288,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 96,
      "y": 450,
@@ -33995,6 +34782,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -34040,6 +34832,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -34085,6 +34882,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -34130,6 +34932,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -34175,6 +34982,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -34461,6 +35273,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -34506,6 +35323,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -34551,6 +35373,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -34596,6 +35423,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -34641,6 +35473,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -34881,6 +35718,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 212,
      "y": 166,
      "w": 428,
@@ -34890,6 +35728,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 732,
      "y": 166,
      "w": 428,
@@ -34899,6 +35738,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 160,
      "y": 240,
@@ -34909,6 +35749,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 160,
      "y": 240,
@@ -35356,6 +36197,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 148,
      "y": 310,
      "w": 836,
@@ -35365,6 +36207,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 148,
      "y": 356,
      "w": 836,
@@ -35374,6 +36217,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 96,
      "y": 450,
@@ -35384,6 +36228,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 96,
      "y": 450,
@@ -36700,6 +37545,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -36745,6 +37595,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -36790,6 +37645,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -36835,6 +37695,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -36880,6 +37745,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -37166,6 +38036,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -37211,6 +38086,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -37256,6 +38136,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -37301,6 +38186,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -37346,6 +38236,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -39278,6 +40173,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -39323,6 +40223,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -39368,6 +40273,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -39413,6 +40323,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -39458,6 +40373,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -39744,6 +40664,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -39789,6 +40714,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -39834,6 +40764,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -39879,6 +40814,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -39924,6 +40864,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -40164,6 +41109,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 212,
      "y": 166,
      "w": 428,
@@ -40173,6 +41119,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 732,
      "y": 166,
      "w": 428,
@@ -40182,6 +41129,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 160,
      "y": 240,
@@ -40192,6 +41140,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 160,
      "y": 240,
@@ -40639,6 +41588,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 148,
      "y": 310,
      "w": 836,
@@ -40648,6 +41598,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 148,
      "y": 356,
      "w": 836,
@@ -40657,6 +41608,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 96,
      "y": 450,
@@ -40667,6 +41619,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 96,
      "y": 450,
@@ -41160,6 +42113,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -41205,6 +42163,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -41250,6 +42213,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -41295,6 +42263,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -41340,6 +42313,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -41626,6 +42604,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -41671,6 +42654,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -41716,6 +42704,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -41761,6 +42754,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -41806,6 +42804,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -42915,6 +43918,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -42960,6 +43968,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -43005,6 +44018,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -43050,6 +44068,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -43095,6 +44118,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -43381,6 +44409,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -43426,6 +44459,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -43471,6 +44509,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -43516,6 +44559,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -43561,6 +44609,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -44624,6 +45677,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 212,
      "y": 166,
      "w": 428,
@@ -44633,6 +45687,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 732,
      "y": 166,
      "w": 428,
@@ -44642,6 +45697,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 160,
      "y": 240,
@@ -44652,6 +45708,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 160,
      "y": 240,
@@ -45099,6 +46156,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 148,
      "y": 310,
      "w": 836,
@@ -45108,6 +46166,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 148,
      "y": 356,
      "w": 836,
@@ -45117,6 +46176,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 96,
      "y": 450,
@@ -45127,6 +46187,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 96,
      "y": 450,
@@ -46384,6 +47445,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -46429,6 +47495,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -46474,6 +47545,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -46519,6 +47595,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -46564,6 +47645,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -46850,6 +47936,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -46895,6 +47986,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -46940,6 +48036,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -46985,6 +48086,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -47030,6 +48136,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -48139,6 +49250,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 334,
@@ -48184,6 +49300,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 450,
@@ -48229,6 +49350,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 566,
@@ -48274,6 +49400,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 682,
@@ -48319,6 +49450,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 1258,
      "y": 798,
@@ -48605,6 +49741,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 686,
@@ -48650,6 +49791,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 910,
@@ -48695,6 +49841,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1134,
@@ -48740,6 +49891,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1358,
@@ -48785,6 +49941,11 @@
      "role": "marker",
      "region": true,
      "axis": "horizontal",
+     "scale": [
+      -20,
+      20
+     ],
+     "clamp": true,
      "note": "growth on a rail centred on zero, -20% to +20% — axisMark draws it; pass (g + 20) / 40",
      "x": 114,
      "y": 1582,
@@ -49848,6 +51009,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 212,
      "y": 166,
      "w": 428,
@@ -49857,6 +51019,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 732,
      "y": 166,
      "w": 428,
@@ -49866,6 +51029,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 160,
      "y": 240,
@@ -49876,6 +51040,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 160,
      "y": 240,
@@ -50323,6 +51488,7 @@
     "legend-1": {
      "align": "left",
      "role": "legend",
+     "ink": "subject",
      "x": 148,
      "y": 310,
      "w": 836,
@@ -50332,6 +51498,7 @@
     "legend-2": {
      "align": "left",
      "role": "legend",
+     "ink": "attention",
      "x": 148,
      "y": 356,
      "w": 836,
@@ -50341,6 +51508,7 @@
     "plot-area": {
      "role": "plot-area",
      "container": true,
+     "tone": "subject",
      "note": "cumulative gross profit per customer, month 0 to 36 — linePath draws it through point-N",
      "x": 96,
      "y": 450,
@@ -50351,6 +51519,7 @@
      "role": "marker",
      "region": true,
      "axis": "vertical",
+     "ink": "attention",
      "note": "the acquisition cost on the SAME scale as the line — axisMark draws it level across the plot; the crossing is the payback month",
      "x": 96,
      "y": 450,
@@ -50572,6 +51741,992 @@
      "w": 888,
      "h": 42,
      "maxChars": 61
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "figures/reserve-development-16x9": {
+   "key": "figures/reserve-development-16x9",
+   "dir": "figures",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "reserve-development-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "reserve-development-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "ad6ca4e6"
+     },
+     {
+      "file": "reserve-development-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "e8d74f38"
+     },
+     {
+      "file": "reserve-development-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "ad6ca4e6"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "reserve-development-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "reserve-development-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ad6ca4e6"
+      },
+      {
+       "file": "reserve-development-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "e8d74f38"
+      },
+      {
+       "file": "reserve-development-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ad6ca4e6"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "reserve-development-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "reserve-development-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "46a51de8"
+      },
+      {
+       "file": "reserve-development-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "6e988bd0"
+      },
+      {
+       "file": "reserve-development-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "46a51de8"
+      }
+     ]
+    }
+   },
+   "slotCount": 31,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "legend": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 29,
+     "budget": "derived from the slot boxes that set this role; 29 is the floor (narrowest of 2), was 25"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 17,
+     "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 6), was 12"
+    },
+    "dev": {
+     "font": "Courier Prime",
+     "size": 32,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 9,
+     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 6), was 9"
+    },
+    "axisEnd": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 2), was 10"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "legend-1": {
+     "align": "left",
+     "role": "legend",
+     "ink": "quiet",
+     "x": 212,
+     "y": 166,
+     "w": 328,
+     "h": 32,
+     "maxChars": 29
+    },
+    "legend-2": {
+     "align": "left",
+     "role": "legend",
+     "ink": "attention",
+     "x": 612,
+     "y": 166,
+     "w": 328,
+     "h": 32,
+     "maxChars": 29
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 316,
+     "w": 220,
+     "h": 37,
+     "maxChars": 17
+    },
+    "dev-1": {
+     "align": "right",
+     "role": "dev",
+     "x": 1570,
+     "y": 316,
+     "w": 190,
+     "h": 37,
+     "maxChars": 9
+    },
+    "first-1": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 420,
+     "y": 320,
+     "w": 1120,
+     "h": 30
+    },
+    "now-1": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 420,
+     "y": 320,
+     "w": 1120,
+     "h": 30
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 420,
+     "w": 220,
+     "h": 37,
+     "maxChars": 17
+    },
+    "dev-2": {
+     "align": "right",
+     "role": "dev",
+     "x": 1570,
+     "y": 420,
+     "w": 190,
+     "h": 37,
+     "maxChars": 9
+    },
+    "first-2": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 420,
+     "y": 424,
+     "w": 1120,
+     "h": 30
+    },
+    "now-2": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 420,
+     "y": 424,
+     "w": 1120,
+     "h": 30
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 524,
+     "w": 220,
+     "h": 37,
+     "maxChars": 17
+    },
+    "dev-3": {
+     "align": "right",
+     "role": "dev",
+     "x": 1570,
+     "y": 524,
+     "w": 190,
+     "h": 37,
+     "maxChars": 9
+    },
+    "first-3": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 420,
+     "y": 528,
+     "w": 1120,
+     "h": 30
+    },
+    "now-3": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 420,
+     "y": 528,
+     "w": 1120,
+     "h": 30
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 628,
+     "w": 220,
+     "h": 37,
+     "maxChars": 17
+    },
+    "dev-4": {
+     "align": "right",
+     "role": "dev",
+     "x": 1570,
+     "y": 628,
+     "w": 190,
+     "h": 37,
+     "maxChars": 9
+    },
+    "first-4": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 420,
+     "y": 632,
+     "w": 1120,
+     "h": 30
+    },
+    "now-4": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 420,
+     "y": 632,
+     "w": 1120,
+     "h": 30
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 732,
+     "w": 220,
+     "h": 37,
+     "maxChars": 17
+    },
+    "dev-5": {
+     "align": "right",
+     "role": "dev",
+     "x": 1570,
+     "y": 732,
+     "w": 190,
+     "h": 37,
+     "maxChars": 9
+    },
+    "first-5": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 420,
+     "y": 736,
+     "w": 1120,
+     "h": 30
+    },
+    "now-5": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 420,
+     "y": 736,
+     "w": 1120,
+     "h": 30
+    },
+    "label-6": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 836,
+     "w": 220,
+     "h": 37,
+     "maxChars": 17
+    },
+    "dev-6": {
+     "align": "right",
+     "role": "dev",
+     "x": 1570,
+     "y": 836,
+     "w": 190,
+     "h": 37,
+     "maxChars": 9
+    },
+    "first-6": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 420,
+     "y": 840,
+     "w": 1120,
+     "h": 30
+    },
+    "now-6": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 420,
+     "y": 840,
+     "w": 1120,
+     "h": 30
+    },
+    "axis-low": {
+     "align": "left",
+     "role": "axisEnd",
+     "x": 420,
+     "y": 928,
+     "w": 140,
+     "h": 26,
+     "maxChars": 10
+    },
+    "axis-high": {
+     "align": "right",
+     "role": "axisEnd",
+     "x": 1400,
+     "y": 928,
+     "w": 140,
+     "h": 26,
+     "maxChars": 10
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "figures/reserve-development-9x16": {
+   "key": "figures/reserve-development-9x16",
+   "dir": "figures",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "reserve-development-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "reserve-development-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "8b9b4af8"
+     },
+     {
+      "file": "reserve-development-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "317b4f28"
+     },
+     {
+      "file": "reserve-development-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "8b9b4af8"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "reserve-development-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "reserve-development-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8b9b4af8"
+      },
+      {
+       "file": "reserve-development-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "317b4f28"
+      },
+      {
+       "file": "reserve-development-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8b9b4af8"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "reserve-development-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "reserve-development-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "076b91b0"
+      },
+      {
+       "file": "reserve-development-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "29e3dc52"
+      },
+      {
+       "file": "reserve-development-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "076b91b0"
+      }
+     ]
+    }
+   },
+   "slotCount": 31,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "legend": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 74,
+     "budget": "derived from the slot boxes that set this role; 74 is the floor (narrowest of 2), was 58"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 53,
+     "budget": "derived from the slot boxes that set this role; 53 is the floor (narrowest of 6), was 39"
+    },
+    "dev": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 6), was 10"
+    },
+    "axisEnd": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 2), was 10"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "legend-1": {
+     "align": "left",
+     "role": "legend",
+     "ink": "quiet",
+     "x": 148,
+     "y": 350,
+     "w": 836,
+     "h": 32,
+     "maxChars": 74
+    },
+    "legend-2": {
+     "align": "left",
+     "role": "legend",
+     "ink": "attention",
+     "x": 148,
+     "y": 396,
+     "w": 836,
+     "h": 32,
+     "maxChars": 74
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 560,
+     "w": 688,
+     "h": 37,
+     "maxChars": 53
+    },
+    "dev-1": {
+     "align": "right",
+     "role": "dev",
+     "x": 794,
+     "y": 560,
+     "w": 190,
+     "h": 35,
+     "maxChars": 10
+    },
+    "first-1": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 96,
+     "y": 616,
+     "w": 888,
+     "h": 32
+    },
+    "now-1": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 96,
+     "y": 616,
+     "w": 888,
+     "h": 32
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 730,
+     "w": 688,
+     "h": 37,
+     "maxChars": 53
+    },
+    "dev-2": {
+     "align": "right",
+     "role": "dev",
+     "x": 794,
+     "y": 730,
+     "w": 190,
+     "h": 35,
+     "maxChars": 10
+    },
+    "first-2": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 96,
+     "y": 786,
+     "w": 888,
+     "h": 32
+    },
+    "now-2": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 96,
+     "y": 786,
+     "w": 888,
+     "h": 32
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 900,
+     "w": 688,
+     "h": 37,
+     "maxChars": 53
+    },
+    "dev-3": {
+     "align": "right",
+     "role": "dev",
+     "x": 794,
+     "y": 900,
+     "w": 190,
+     "h": 35,
+     "maxChars": 10
+    },
+    "first-3": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 96,
+     "y": 956,
+     "w": 888,
+     "h": 32
+    },
+    "now-3": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 96,
+     "y": 956,
+     "w": 888,
+     "h": 32
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1070,
+     "w": 688,
+     "h": 37,
+     "maxChars": 53
+    },
+    "dev-4": {
+     "align": "right",
+     "role": "dev",
+     "x": 794,
+     "y": 1070,
+     "w": 190,
+     "h": 35,
+     "maxChars": 10
+    },
+    "first-4": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 96,
+     "y": 1126,
+     "w": 888,
+     "h": 32
+    },
+    "now-4": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 96,
+     "y": 1126,
+     "w": 888,
+     "h": 32
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1240,
+     "w": 688,
+     "h": 37,
+     "maxChars": 53
+    },
+    "dev-5": {
+     "align": "right",
+     "role": "dev",
+     "x": 794,
+     "y": 1240,
+     "w": 190,
+     "h": 35,
+     "maxChars": 10
+    },
+    "first-5": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 96,
+     "y": 1296,
+     "w": 888,
+     "h": 32
+    },
+    "now-5": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 96,
+     "y": 1296,
+     "w": 888,
+     "h": 32
+    },
+    "label-6": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1410,
+     "w": 688,
+     "h": 37,
+     "maxChars": 53
+    },
+    "dev-6": {
+     "align": "right",
+     "role": "dev",
+     "x": 794,
+     "y": 1410,
+     "w": 190,
+     "h": 35,
+     "maxChars": 10
+    },
+    "first-6": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "quiet",
+     "scale": "rail",
+     "note": "the first estimate for the accident year — axisMark, as a fraction of the plate’s rail scale, which need not start at zero (these are marks, not bars); axis-low and axis-high print its ends",
+     "x": 96,
+     "y": 1466,
+     "w": 888,
+     "h": 32
+    },
+    "now-6": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "rail",
+     "note": "the latest estimate for the same year, on the same rail",
+     "x": 96,
+     "y": 1466,
+     "w": 888,
+     "h": 32
+    },
+    "axis-low": {
+     "align": "left",
+     "role": "axisEnd",
+     "x": 96,
+     "y": 1584,
+     "w": 140,
+     "h": 26,
+     "maxChars": 10
+    },
+    "axis-high": {
+     "align": "right",
+     "role": "axisEnd",
+     "x": 844,
+     "y": 1584,
+     "w": 140,
+     "h": 26,
+     "maxChars": 10
     },
     "caption": {
      "align": "left",

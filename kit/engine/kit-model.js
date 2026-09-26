@@ -47,7 +47,7 @@ class KitModel {
       desk: ["#3E4759", "#6B4A32"], screen: ["#7FD4E8", "#4FA8BE"], glow: ["#3C7A8C", "#2A5866"],
       lamp: ["#F0B460", "#C4813A"], skin: ["#8FA8B8", "#D9A06B"], hair: ["#525E74", "#6B5247"],
       shirt: ["#46596E", "#2A3242"], trouser: ["#4E5A70", "#38404F"], paper: ["#C9D2D8", "#E0BC88"],
-      prop: ["#5A4A3E", "#38302A"],
+      prop: ["#5A4A3E", "#38302A"], foliage: ["#2E5A48", "#1C3A30"],
     },
     ink: { ground: "#171D2A", band: "#1F2634", rule: "#2C3444", axis: "#4A566A", quiet: "#8592A6", structure: "#C6D2E0", subject: "#7FD4E8", subject2: "#F0B460", attention: "#F07A5A" },
   };
@@ -59,7 +59,7 @@ class KitModel {
       desk: ["#D8A95F", "#6A5A70"], screen: ["#8FB8C4", "#5E8894"], glow: ["#F0D49A", "#C9A870"],
       lamp: ["#F5C981", "#C99A55"], skin: ["#F5C79A", "#B06A5E"], hair: ["#4A3A34", "#33283C"],
       shirt: ["#93AECE", "#3B4A72"], trouser: ["#6B6480", "#3E3850"], paper: ["#F2E8D4", "#B8A894"],
-      prop: ["#6E6478", "#453E55"],
+      prop: ["#6E6478", "#453E55"], foliage: ["#5E7A4E", "#3E5238"],
     },
     ink: { ground: "#F2E8D4", band: "#E6D8C0", rule: "#D8C8AC", axis: "#A08E74", quiet: "#685A48", structure: "#2A2036", subject: "#2F5FA8", subject2: "#D88A2F", attention: "#A8243C" },
   };
@@ -181,12 +181,44 @@ class KitModel {
   // Every pose that names this room in its `fits`, plus to-camera; the worst.
   clearanceOf(r) {
     if (!this.anchorOf(r)) return null;
-    const keys = Object.keys(KitModel.POSES).filter(k => k === "to-camera" || KitModel.POSES[k].fits.split(" · ").indexOf(r.id) >= 0);
+    const fid = r.fitsAs || r.id;
+    const keys = Object.keys(KitModel.POSES).filter(k => k === "to-camera" || KitModel.POSES[k].fits.split(" · ").indexOf(fid) >= 0);
     const rows = keys.map(k => this.clearance(r, k));
     const worst = f => rows.reduce((a, b) => (b[f] > a[f] ? b : a));
     const box = rows.reduce((a, r) => [Math.min(a[0], r.box[0]), Math.min(a[1], r.box[1]), Math.max(a[2], r.box[2]), Math.max(a[3], r.box[3])], [Infinity, Infinity, -Infinity, -Infinity]);
     const strip = r0 => ({ pose: r0.pose, headCover: r0.headCover, upperCover: r0.upperCover });
     return { poses: keys.length, head: strip(worst("headCover")), upper: strip(worst("upperCover")), figureBox: box };
+  }
+
+  /* THE FLOOR PLAN (rebuild-23). ONE room, so one of each thing in it. Every
+   * angle declares what it sees; audit rule 30 counts the drawn objects that are
+   * identifiable by role (the monitor's screen, the desk top, the desk lamp's
+   * shade, a lit opening) and fails any angle that draws more than the plan
+   * holds or disagrees with what it declares. The fourteen DRAWN angles are the
+   * room; any angle added after them must be PULLED from one (`pull()`), so a
+   * new angle can never add furniture. This is what the first cut of the
+   * openers broke: a second desk and monitor, drawn fresh. */
+  static PLAN = {
+    objects: { desk: "the one desk", monitor: "the one monitor, on the desk", deskLamp: "the desk lamp, on the desk",
+      window: "the one window", door: "the door to the corridor", board: "the index-card wall",
+      tree: "SEASONAL \u2014 the Christmas tree, at the window\u2019s left", lights: "SEASONAL \u2014 the string of lights along the window head" },
+    drawn: ["desk-front", "desk-wide", "desk-side", "turn-to-screen", "board", "window-wall", "doorway", "desk-top-down",
+      "desk-front-b", "desk-front-low", "read-close", "board-side", "doorway-wide", "panel-left"],
+    sees: {
+      "desk-front": ["desk", "monitor", "deskLamp", "window"], "desk-wide": ["desk", "monitor", "deskLamp", "window"],
+      "desk-side": ["desk", "monitor", "deskLamp"], "turn-to-screen": ["desk", "monitor", "deskLamp", "window"],
+      "board": ["board"], "window-wall": ["desk", "monitor", "window"], "doorway": ["desk", "monitor", "door"],
+      "desk-top-down": ["desk", "deskLamp"], "desk-front-b": ["desk", "monitor", "deskLamp", "window"],
+      "desk-front-low": ["desk", "monitor", "deskLamp", "window"], "read-close": ["desk", "deskLamp"],
+      "board-side": ["board"], "doorway-wide": ["desk", "monitor", "deskLamp", "door"], "panel-left": ["desk", "deskLamp"],
+    },
+  };
+  /* What an angle's shapes show, by the roles that identify an object. A lit
+   * glow is the one opening in frame (window, or the open door's corridor). */
+  static seen(r) {
+    const n = f => r.shapes.filter(s => !s.ink && f(s)).length;
+    return { monitor: n(s => s.role === "screen"), desk: n(s => s.role === "desk" && s.tone !== "shade"),
+      deskLamp: n(s => s.role === "lamp" && s.tone !== "shade"), opening: n(s => s.role === "glow" && s.tone !== "shade") };
   }
 
   static rect(x, y, w, h) { return "M" + x + "," + y + "h" + w + "v" + h + "h" + (-w) + "z"; }
@@ -214,6 +246,26 @@ class KitModel {
         R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 100, c.shR + 118], [c.cx + 44, c.shR + 170]],
       }),
       prop: c => ({ d: "M" + (c.cx - 46) + "," + (c.shL + 150) + "h92v74h-92z", role: "paper", front: true }) },
+    /* rebuild-31 · hand props. Each prop is a path in an existing material role,
+     * placed from the wrist it sits in, so it follows the arm and never floats. */
+    "holding-a-filing": { label: "holding the filing", origin: "new", fits: "desk-front · desk-wide", face: "lamp",
+      note: "The annual report held up to camera in both hands, taller than a page and bound down its left edge. For \u201cit says so on page 96\u201d.",
+      arms: c => ({
+        L: [[c.cx - c.sw * 0.9, c.shL + 14], [c.cx - 98, c.shL + 110], [c.cx - 46, c.shL + 150]],
+        R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 102, c.shR + 112], [c.cx + 50, c.shR + 152]],
+      }),
+      prop: c => ({ role: "paper", front: true, d: "M" + (c.cx - 58) + "," + (c.shL + 104) + "h116v132h-116z M" + (c.cx - 64) + "," + (c.shL + 100) + "h10v140h-10z" }) },
+    "holding-a-phone": { label: "holding a phone", origin: "new", fits: "desk-front · desk-wide", face: "lamp",
+      note: "Right hand up at the chest, looking at a phone and not at us. For the price alert, the message, the tweet read out.",
+      headRot: -6, headDy: 6,
+      arms: c => ({ R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 96, c.shR + 128], [c.cx + 40, c.shR + 128]] }),
+      /* In the SCREEN role: a lit phone reads as a phone; a dark one read as a patch on the shirt. */
+      prop: c => ({ role: "screen", front: true, d: "M" + (c.cx + 26) + "," + (c.shR + 84) + "h30v54h-30z" }) },
+    "holding-a-mug": { label: "holding a mug", origin: "new", fits: "desk-front · desk-wide · desk-side", face: "lamp",
+      note: "Right hand at the sternum with a mug in it, the three-in-the-morning prop. Between beats, never on a number.",
+      arms: c => ({ R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 104, c.shR + 140], [c.cx + 52, c.shR + 150]] }),
+      /* In the PAPER role, a pale mug, over the hand so the fingers wrap it. */
+      prop: c => ({ role: "paper", front: true, d: "M" + (c.cx + 32) + "," + (c.shR + 120) + "h40v44h-40z M" + (c.cx + 72) + "," + (c.shR + 128) + "h11v5h-11z M" + (c.cx + 78) + "," + (c.shR + 128) + "h5v24h-5z M" + (c.cx + 72) + "," + (c.shR + 147) + "h11v5h-11z" }) },
     "pointing-down-at-desk": { label: "pointing down at desk", origin: "drawn kit", fits: "desk-front · desk-side", face: "lamp",
       note: "Arm out and down to the surface. Carries every \"this number here\" beat without a graphic.",
       arms: c => ({ R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 126, c.shR + 104], [c.cx + 176, c.shR + 196]] }) },
@@ -270,7 +322,7 @@ class KitModel {
         L: [[c.cx - 34, c.hipL - 8], [c.cx - 72, c.knee], [c.cx - 94, c.floor - 16]],
         R: [[c.cx + 32, c.hipR - 8], [c.cx + 58, c.knee - 12], [c.cx + 80, c.floor - 16]],
       }) },
-    "arms-crossed": { label: "arms crossed", origin: "new", fits: "board · desk-wide",
+    "arms-crossed": { label: "arms crossed", origin: "new", fits: "board · desk-wide · board-wide",
       note: "Waiting. Reads as a man who has already worked out what the number means and is letting you catch up.",
       arms: c => ({
         L: [[c.cx - c.sw * 0.9, c.shL + 14], [c.cx - 102, c.shL + 122], [c.cx + 34, c.shL + 148]],
@@ -283,7 +335,7 @@ class KitModel {
      * three points and the shape list is unchanged. That is what makes a pose
      * cheap and a framing free.
      */
-    "considering": { label: "considering", origin: "new", fits: "read-close · desk-front-b · desk-wide",
+    "considering": { label: "considering", origin: "new", fits: "read-close · desk-front-b · desk-wide · window-wide",
       note: "NEW — the BEAT pose. Weight settled, one hand resting on the desk edge, the other loose. The role lost empty-chair and every chapter opener needs a shot that is not yet making a point: this is him between two sentences, not mid-argument.",
       arms: c => ({
         L: [[c.cx - c.sw * 0.9, c.shL + 16], [c.cx - 96, c.shL + 124], [c.cx - 78, c.shL + 236]],
@@ -299,6 +351,30 @@ class KitModel {
         R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 96, c.shR + 122], [c.cx + 74, c.shR + 230]],
       }),
       legs: c => ({ L: [[c.cx - 34, c.hipL - 6], [c.cx - 48, c.knee], [c.cx - 58, c.floor - 14]] }) },
+
+    /* ── rebuild-23: three poses for beats the ten could not carry ──────────
+     * Joint positions again, no new parts. Each stays inside the published
+     * 400-wide box (rule 13): the reach is the forearm, not a longer arm. */
+    "gesturing-at-plate": { label: "gesturing at plate", origin: "new", fits: "panel-left · board-side · board-wide",
+      note: "NEW — the PRESENT pose. Camera-right forearm raised, hand open at shoulder height toward the plate beside him, head turned with it. checking-a-figure is him reading the plate; this is him showing it to you.",
+      headDx: 12, headRot: 0.8,
+      arms: c => ({
+        R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 118, c.shR + 94], [c.cx + 172, c.shR + 22]],
+      }),
+      legs: c => ({ R: [[c.cx + 34, c.hipR - 6], [c.cx + 50, c.knee], [c.cx + 58, c.floor - 14]] }) },
+    "counting-on-fingers": { label: "counting on fingers", origin: "new", fits: "desk-front · desk-front-b · desk-wide · window-wide",
+      note: "NEW — the LIST pose. Both hands meet at the chest, camera-right hand tapping the camera-left palm. It carries 'three things' beats. At composite scale the hands read as hands meeting, not as separate fingers. The count is in the voice-over, not the drawing.",
+      arms: c => ({
+        L: [[c.cx - c.sw * 0.9, c.shL + 14], [c.cx - 94, c.shL + 120], [c.cx - 22, c.shL + 150]],
+        R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 96, c.shR + 110], [c.cx + 22, c.shR + 128]],
+      }) },
+    "shrug": { label: "shrug", origin: "new", fits: "desk-front · desk-front-b · desk-wide · window-wide",
+      note: "NEW — the NOBODY-KNOWS pose. Shoulders lifted, elbows at the waist, forearms out and open, head tipped. Use it for a guidance range wide enough to mean nothing, or a question the filing does not answer. Deadpan, not comic: the face does not change.",
+      shoulderDy: -10, headRot: -5.5, headDy: 4,
+      arms: c => ({
+        L: [[c.cx - c.sw * 0.9, c.shL + 14], [c.cx - 94, c.shL + 126], [c.cx - 164, c.shL + 152]],
+        R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 96, c.shR + 124], [c.cx + 166, c.shR + 148]],
+      }) },
   };
 
   // EIGHT ANGLES. Five signed off in v1 plus three the five could not cover:
@@ -316,7 +392,7 @@ class KitModel {
      * that sits behind him wherever it was authored. rooms() then orders each
      * room behind-then-front and the split is the first front shape. */
     const b = (...xs) => xs.map(x => Object.assign(x, { back: true }));
-    return KitModel.layered([
+    const raw = [
       { id: "desk-front", isNew: false, anchor: [178, 30, 110, 116], why: "The talk shot. Square to the wall, and most of every video.", shapes: [
         s(R(0, 0, 320, 146), "wall"), s(R(230, 0, 90, 146), "wall", "shade"),
         s(R(22, 16, 84, 54), "prop", "shade"), s(R(29, 23, 22, 15), "paper"), s(R(55, 23, 22, 15), "paper"),
@@ -647,7 +723,96 @@ class KitModel {
         s(Y([[0, 180], [0, 124], [44, 136], [50, 180]]), "prop", "shade"),
       ] },
 
-    ]);
+    ];
+    /* rebuild-23: THE OPENERS ARE THE SAME ROOM, PULLED BACK. A new opener
+     * drawn from scratch put a second desk and a second monitor in his room and
+     * lost every object the viewer already knows. So an opener is DERIVED: the
+     * shape list of an existing angle, scaled about the floor centre, so every
+     * object is the same object in the same place, just smaller in frame.
+     * Surfaces that bled off the frame edge still bleed off it. The only
+     * additions are the title card and its rule, on the wall above him. */
+    const pull = (srcId, id, sc, extra) => {
+      const src = raw.find(r => r.id === srcId), ox = 160, oy = 180;
+      const X = x => (x <= 0 ? 0 : x >= 320 ? 320 : Math.round((ox + (x - ox) * sc) * 10) / 10);
+      const Yy = y => (y <= 0 ? 0 : y >= 180 ? 180 : Math.round((oy + (y - oy) * sc) * 10) / 10);
+      const T = d => {
+        const m = String(d).match(/^M(-?[\d.]+),(-?[\d.]+)h(-?[\d.]+)v(-?[\d.]+)h-?[\d.]+z$/i);
+        if (m) { const [x, y, w, h] = m.slice(1, 5).map(Number); const x0 = X(x), y0 = Yy(y), x1 = X(x + w), y1 = Yy(y + h); return R(x0, y0, Math.round((x1 - x0) * 10) / 10, Math.round((y1 - y0) * 10) / 10); }
+        return String(d).replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_, x, y) => X(+x) + "," + Yy(+y));
+      };
+      const A = src.anchor;
+      return Object.assign({ id, isNew: true, opener: true, pulledFrom: srcId, pullScale: sc,
+        anchor: [X(A[0]), Yy(A[1]), Math.round(A[2] * sc * 10) / 10, Math.round(A[3] * sc * 10) / 10],
+        shapes: src.shapes.map(sh => Object.assign({}, sh, { d: T(sh.d) })).concat(extra.shapes) }, extra.fields);
+    };
+    const card = (x, y) => ({ title: { slot: [x + 4, y + 3, 84, 36], ground: [x, y, 92, 42] },
+      shapes: b(ink(R(x, y, 92, 42), "ground"), ink(R(x + 4, y + 38, 36, 2), "rule")) });
+    const withCard = (c, fields) => ({ shapes: c.shapes, fields: Object.assign({ title: c.title }, fields) });
+    raw.push(
+      pull("window-wall", "window-wide", 0.8, withCard(card(55, 10), { role: undefined,
+        why: "NEW — the HOUR opener: window-wall pulled back. The same window, desk, monitor, plant and pinboard, smaller in frame, and the title card on the wall above him." })),
+      pull("board-side", "board-wide", 0.8, withCard(card(55, 10), { role: "diagram", duskSafe: false,
+        why: "NEW — the DIAGRAM opener: board-side pulled back. The same card wall and the same things on the floor, with the title card on the wall above him. NOT dusk-safe, like board-side." })),
+    );
+    raw.forEach(r => { if (r.role === undefined) delete r.role; });
+    /* rebuild-25: THE CHRISTMAS SET. A seasonal layer on every angle that sees
+     * the window, derived from that angle's own window so the tree and lights
+     * are the same objects in every shot: the lights hang along the top of the
+     * window, and the tree stands on the floor at the window's LEFT, sized from
+     * the window, so it sits where the window says it must. Each dressed angle is
+     * its own asset (room/<id>-christmas), so the plain room is untouched and the
+     * season is switched by picking the asset, not by editing the room. Behind
+     * him, before the desk: furniture in front of the tree still covers it. */
+    const box = d => { const P = KitModel.polys(d)[0] || []; const xs = P.map(p => p[0]), ys = P.map(p => p[1]);
+      return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
+    const r1 = v => Math.round(v * 10) / 10;
+    const dress = r => {
+      /* A WINDOW, not the monitor's spill: a lit glow high on the wall and big
+       * enough to be a pane. desk-front's lit glow is the screen's cast on the
+       * desk, and the first cut hung lights on it. */
+      const win = r.shapes.find(sh => { if (sh.role !== "glow" || sh.tone === "shade" || sh.ink) return false;
+        const b = box(sh.d); return b[1] < 60 && b[2] - b[0] >= 40 && b[3] - b[1] >= 36; });
+      const flo = r.shapes.find(sh => sh.role === "floor" && sh.tone !== "shade");
+      if (!flo) return null;
+      const inkCycle = ["attention", "subject2", "subject"], out = [];
+      /* The picture-rail string: the lights run round the whole room just under
+       * the ceiling, so every angle with him in it shows them along its top. */
+      const rail = [], rn = 34;
+      for (let i = 0; i <= rn; i++) { const t = i / rn, seg = (i % 5) / 5; rail.push([Math.round(320 * t * 10) / 10, Math.round((5 + 2.6 * 4 * seg * (1 - seg)) * 10) / 10]); }
+      out.push(s(Y(rail.concat(rail.slice().reverse().map(p => [p[0], Math.round((p[1] + 1) * 10) / 10]))), "prop", "shade"));
+      rail.slice(1, -1).forEach((p, i) => out.push(ink(R(Math.round((p[0] - 1.2) * 10) / 10, Math.round((p[1] + 0.6) * 10) / 10, 2.4, 3), inkCycle[i % 3])));
+      if (!win) return out.map(o => Object.assign(o, { back: true, season: "christmas" }));
+      const [wx0, wy0, wx1, wy1] = box(win.d), fy = box(flo.d)[1], ww = wx1 - wx0;
+      /* the string: a sagging cable across the window head, a bulb every ~9 units */
+      const n = Math.max(6, Math.round(ww / 9)), sag = Math.max(3, ww * 0.05);
+      const pts = []; for (let i = 0; i <= n; i++) { const t = i / n; pts.push([r1(wx0 + ww * t), r1(wy0 + 1 + sag * 4 * t * (1 - t))]); }
+      out.push(s(Y(pts.concat(pts.slice().reverse().map(p => [p[0], r1(p[1] + 1.2)]))), "prop", "shade"));
+      pts.slice(1, -1).forEach((p, i) => out.push(ink(R(r1(p[0] - 1.4), r1(p[1] + 0.6), 2.8, 3.4), inkCycle[i % 3])));
+      /* the tree: three stacked tiers and a trunk, base on the floor line */
+      const th = Math.max(34, Math.min(70, (fy - wy0) * 0.62)), tw = th * 0.56;
+      const cx = r1(Math.max(tw * 0.5 - 6, wx0 - tw * 0.62)), base = r1(fy + 4), top = r1(base - th);
+      out.push(s(R(r1(cx - tw * 0.07), r1(base - th * 0.12), r1(tw * 0.14), r1(th * 0.12)), "prop", "shade"));
+      [[0.00, 0.42, 0.5], [0.26, 0.70, 0.78], [0.52, 0.90, 1.0]].forEach(([a, b2, wf]) => {
+        const y0 = top + th * a, y1 = top + th * b2, hw = tw * wf / 2;
+        out.push(s(Y([[cx, r1(y0)], [r1(cx + hw), r1(y1)], [r1(cx - hw), r1(y1)]]), "foliage"));
+        out.push(s(Y([[cx, r1(y0)], [r1(cx + hw), r1(y1)], [r1(cx + hw * 0.15), r1(y1)]]), "foliage", "shade"));
+      });
+      /* bulbs on the tree, in the same three inks as the string */
+      [[0.22, -0.08], [0.36, 0.12], [0.48, -0.2], [0.6, 0.18], [0.7, -0.05], [0.8, 0.3], [0.84, -0.3]].forEach(([f, dx], i) =>
+        out.push(ink(R(r1(cx + dx * tw - 1.4), r1(top + th * f), 2.8, 2.8), inkCycle[i % 3])));
+      out.push(ink(Y([[cx, r1(top - 4)], [r1(cx + 3), r1(top)], [cx, r1(top + 4)], [r1(cx - 3), r1(top)]]), "subject2"));
+      return out.map(o => Object.assign(o, { back: true, season: "christmas" }));
+    };
+    const plan = KitModel.PLAN.sees;
+    raw.slice().forEach(r => {
+      const src = r.pulledFrom || r.id;
+      if (!r.anchor) return;
+      const deco = dress(r); if (!deco) return;
+      raw.push(Object.assign({}, r, { id: r.id + "-christmas", isNew: true, season: "christmas", dressedFrom: r.id,
+        pulledFrom: src, fitsAs: r.fitsAs || r.id, shapes: r.shapes.concat(deco),
+        why: "SEASONAL \u2014 " + r.id + " with the Christmas set: lights along the picture rail" + (deco.some(o => o.role === "foliage") ? ", along the window head, and the tree at the window\u2019s left" : "") + ". December only." }));
+    });
+    return KitModel.layered(raw);
   }
 
   static layered(list) {
@@ -689,7 +854,7 @@ class KitModel {
     const bandL = kx > 0 ? [-1, -0.34] : [0.34, 1];
     const hcx = cx + (pose.headDx === undefined ? G.headDx : pose.headDx);
     const hcy = crown + (pose.headDy || 0);
-    const shL = shoulder + G.shoulderDropL, shR = shoulder + G.shoulderRiseR;
+    const shL = shoulder + G.shoulderDropL + (pose.shoulderDy || 0), shR = shoulder + G.shoulderRiseR + (pose.shoulderDy || 0);
     const hipL = hip + G.hipRaiseL, hipR = hip + G.hipDropR;
     const c = { cx, sw, shL, shR, hipL, hipR, knee, floor, HU, P };
 
@@ -790,6 +955,11 @@ class KitModel {
     const mouthClosed = "M" + (hcx - 12) + "," + my + " L" + (hcx + 12) + "," + (my + 3) + " L" + (hcx + 12) + "," + (my + 7) + " L" + (hcx - 12) + "," + (my + 4) + " Z";
     const mouthMid = this.roundRect(hcx - 10, my - 1, 21, 8, 3.5);
     const mouthWide = this.roundRect(hcx - 9, my - 3, 19, 15, 6);
+    /* rebuild-31 · three more visemes, so a long read does not loop three
+     * shapes: a round O (oo, w), a wide flat EE (ee, s, t) and a bitten F/V. */
+    const mouthO = this.roundRect(hcx - 6, my - 3, 12, 13, 6);
+    const mouthEE = this.roundRect(hcx - 13, my - 1, 27, 9, 4);
+    const mouthFV = "M" + (hcx - 11) + "," + (my + 1) + " L" + (hcx + 11) + "," + (my + 2) + " L" + (hcx + 11) + "," + (my + 8) + " L" + (hcx - 11) + "," + (my + 6) + " Z";
 
     // ── body. The collar is the stretched tee: a wide shallow shape, never a
     // neckline that fits.
@@ -869,7 +1039,7 @@ class KitModel {
         { name: "under-eye ×2", role: "skin", tone: faceSwap ? 0 : 1, d: pouchL + " " + pouchR, box: "164 112 72 24" },
       ],
       faceSwap,
-      glasses, eyes, mouthClosed, mouthMid, mouthWide,
+      glasses, eyes, mouthClosed, mouthMid, mouthWide, mouthO, mouthEE, mouthFV,
       headT: "rotate(" + (pose.headRot === undefined ? KitModel.RIG.headRot : pose.headRot) + " " + hcx + " " + (hcy + 60) + ")",
       glassesT: "rotate(" + KitModel.RIG.glassesRot + " " + hcx + " " + ey + ")",
       prop: pose.prop ? pose.prop(c) : null,

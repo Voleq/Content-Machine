@@ -8,7 +8,7 @@
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
  "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "assetCount": 31,
+ "assetCount": 41,
  "plates": {
   "tables/numbers-sheet-3r-16x9": {
    "key": "tables/numbers-sheet-3r-16x9",
@@ -16291,6 +16291,8340 @@
      "w": 120,
      "h": 39,
      "maxChars": 5
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "tables/segment-margin-grid-16x9": {
+   "key": "tables/segment-margin-grid-16x9",
+   "dir": "tables",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "segment-margin-grid-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "segment-margin-grid-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7ab62faa"
+     },
+     {
+      "file": "segment-margin-grid-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "daaca598"
+     },
+     {
+      "file": "segment-margin-grid-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7ab62faa"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "segment-margin-grid-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7ab62faa"
+      },
+      {
+       "file": "segment-margin-grid-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "daaca598"
+      },
+      {
+       "file": "segment-margin-grid-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7ab62faa"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "segment-margin-grid-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1fd9e6da"
+      },
+      {
+       "file": "segment-margin-grid-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "b065bfd8"
+      },
+      {
+       "file": "segment-margin-grid-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1fd9e6da"
+      }
+     ]
+    }
+   },
+   "slotCount": 63,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "col": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 17,
+     "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 5), was 17"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 27,
+     "budget": "derived from the slot boxes that set this role; 27 is the floor (narrowest of 5), was 20"
+    },
+    "cell": {
+     "font": "Courier Prime",
+     "size": 34,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 25), was 10"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "col-1": {
+     "align": "center",
+     "role": "col",
+     "x": 566,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-2": {
+     "align": "center",
+     "role": "col",
+     "x": 806,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-3": {
+     "align": "center",
+     "role": "col",
+     "x": 1046,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-4": {
+     "align": "center",
+     "role": "col",
+     "x": 1286,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-5": {
+     "align": "center",
+     "role": "col",
+     "x": 1526,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 334,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-1-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 446,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-2-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 558,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-3-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 670,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-4-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 782,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-5-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "tables/segment-margin-grid-9x16": {
+   "key": "tables/segment-margin-grid-9x16",
+   "dir": "tables",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "segment-margin-grid-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "segment-margin-grid-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0ce99478"
+     },
+     {
+      "file": "segment-margin-grid-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "c5b24d5a"
+     },
+     {
+      "file": "segment-margin-grid-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0ce99478"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "segment-margin-grid-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0ce99478"
+      },
+      {
+       "file": "segment-margin-grid-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "c5b24d5a"
+      },
+      {
+       "file": "segment-margin-grid-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0ce99478"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "segment-margin-grid-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "12baa588"
+      },
+      {
+       "file": "segment-margin-grid-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "489bed6a"
+      },
+      {
+       "file": "segment-margin-grid-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "12baa588"
+      }
+     ]
+    }
+   },
+   "slotCount": 63,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "col": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 5), was 8"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 21,
+     "budget": "derived from the slot boxes that set this role; 21 is the floor (narrowest of 5), was 16"
+    },
+    "cell": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 25), was 6"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "col-1": {
+     "align": "center",
+     "role": "col",
+     "x": 348,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-2": {
+     "align": "center",
+     "role": "col",
+     "x": 476,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-3": {
+     "align": "center",
+     "role": "col",
+     "x": 605,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-4": {
+     "align": "center",
+     "role": "col",
+     "x": 733,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-5": {
+     "align": "center",
+     "role": "col",
+     "x": 862,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 629,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-1-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 805,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-2-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 981,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-3-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1157,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-4-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1333,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-5-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "tables/segment-margin-grid-media-16x9": {
+   "key": "tables/segment-margin-grid-media-16x9",
+   "dir": "tables",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "segment-margin-grid-media-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "segment-margin-grid-media-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7ab62faa"
+     },
+     {
+      "file": "segment-margin-grid-media-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "daaca598"
+     },
+     {
+      "file": "segment-margin-grid-media-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7ab62faa"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "segment-margin-grid-media-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-media-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7ab62faa"
+      },
+      {
+       "file": "segment-margin-grid-media-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "daaca598"
+      },
+      {
+       "file": "segment-margin-grid-media-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7ab62faa"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "segment-margin-grid-media-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-media-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1fd9e6da"
+      },
+      {
+       "file": "segment-margin-grid-media-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "b065bfd8"
+      },
+      {
+       "file": "segment-margin-grid-media-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1fd9e6da"
+      }
+     ]
+    }
+   },
+   "slotCount": 63,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "col": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 17,
+     "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 5), was 17"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 27,
+     "budget": "derived from the slot boxes that set this role; 27 is the floor (narrowest of 5), was 20"
+    },
+    "cell": {
+     "font": "Courier Prime",
+     "size": 34,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 25), was 10"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "col-1": {
+     "align": "center",
+     "role": "col",
+     "x": 566,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-2": {
+     "align": "center",
+     "role": "col",
+     "x": 806,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-3": {
+     "align": "center",
+     "role": "col",
+     "x": 1046,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-4": {
+     "align": "center",
+     "role": "col",
+     "x": 1286,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-5": {
+     "align": "center",
+     "role": "col",
+     "x": 1526,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 334,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-1-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 446,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-2-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 558,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-3-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 670,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-4-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 782,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-5-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "tables/segment-margin-grid-media-9x16": {
+   "key": "tables/segment-margin-grid-media-9x16",
+   "dir": "tables",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "segment-margin-grid-media-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "segment-margin-grid-media-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0ce99478"
+     },
+     {
+      "file": "segment-margin-grid-media-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "c5b24d5a"
+     },
+     {
+      "file": "segment-margin-grid-media-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0ce99478"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "segment-margin-grid-media-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-media-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0ce99478"
+      },
+      {
+       "file": "segment-margin-grid-media-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "c5b24d5a"
+      },
+      {
+       "file": "segment-margin-grid-media-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0ce99478"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "segment-margin-grid-media-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-media-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "12baa588"
+      },
+      {
+       "file": "segment-margin-grid-media-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "489bed6a"
+      },
+      {
+       "file": "segment-margin-grid-media-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "12baa588"
+      }
+     ]
+    }
+   },
+   "slotCount": 63,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "col": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 5), was 8"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 21,
+     "budget": "derived from the slot boxes that set this role; 21 is the floor (narrowest of 5), was 16"
+    },
+    "cell": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 25), was 6"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "col-1": {
+     "align": "center",
+     "role": "col",
+     "x": 348,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-2": {
+     "align": "center",
+     "role": "col",
+     "x": 476,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-3": {
+     "align": "center",
+     "role": "col",
+     "x": 605,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-4": {
+     "align": "center",
+     "role": "col",
+     "x": 733,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-5": {
+     "align": "center",
+     "role": "col",
+     "x": 862,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 629,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-1-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 805,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-2-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 981,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-3-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1157,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-4-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1333,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-5-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "tables/segment-margin-grid-staples-16x9": {
+   "key": "tables/segment-margin-grid-staples-16x9",
+   "dir": "tables",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "segment-margin-grid-staples-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "segment-margin-grid-staples-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7ab62faa"
+     },
+     {
+      "file": "segment-margin-grid-staples-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "daaca598"
+     },
+     {
+      "file": "segment-margin-grid-staples-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7ab62faa"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "segment-margin-grid-staples-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-staples-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7ab62faa"
+      },
+      {
+       "file": "segment-margin-grid-staples-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "daaca598"
+      },
+      {
+       "file": "segment-margin-grid-staples-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7ab62faa"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "segment-margin-grid-staples-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-staples-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1fd9e6da"
+      },
+      {
+       "file": "segment-margin-grid-staples-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "b065bfd8"
+      },
+      {
+       "file": "segment-margin-grid-staples-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1fd9e6da"
+      }
+     ]
+    }
+   },
+   "slotCount": 63,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "col": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 17,
+     "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 5), was 17"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 27,
+     "budget": "derived from the slot boxes that set this role; 27 is the floor (narrowest of 5), was 20"
+    },
+    "cell": {
+     "font": "Courier Prime",
+     "size": 34,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 25), was 10"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "col-1": {
+     "align": "center",
+     "role": "col",
+     "x": 566,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-2": {
+     "align": "center",
+     "role": "col",
+     "x": 806,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-3": {
+     "align": "center",
+     "role": "col",
+     "x": 1046,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-4": {
+     "align": "center",
+     "role": "col",
+     "x": 1286,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-5": {
+     "align": "center",
+     "role": "col",
+     "x": 1526,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 334,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-1-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 446,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-2-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 558,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-3-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 670,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-4-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 782,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-5-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "cell-5-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 762,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-5-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 820,
+     "w": 212,
+     "h": 14
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "tables/segment-margin-grid-staples-9x16": {
+   "key": "tables/segment-margin-grid-staples-9x16",
+   "dir": "tables",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "segment-margin-grid-staples-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "segment-margin-grid-staples-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0ce99478"
+     },
+     {
+      "file": "segment-margin-grid-staples-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "c5b24d5a"
+     },
+     {
+      "file": "segment-margin-grid-staples-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0ce99478"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "segment-margin-grid-staples-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-staples-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0ce99478"
+      },
+      {
+       "file": "segment-margin-grid-staples-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "c5b24d5a"
+      },
+      {
+       "file": "segment-margin-grid-staples-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0ce99478"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "segment-margin-grid-staples-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-staples-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "12baa588"
+      },
+      {
+       "file": "segment-margin-grid-staples-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "489bed6a"
+      },
+      {
+       "file": "segment-margin-grid-staples-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "12baa588"
+      }
+     ]
+    }
+   },
+   "slotCount": 63,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "col": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 5), was 8"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 21,
+     "budget": "derived from the slot boxes that set this role; 21 is the floor (narrowest of 5), was 16"
+    },
+    "cell": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 25), was 6"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "col-1": {
+     "align": "center",
+     "role": "col",
+     "x": 348,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-2": {
+     "align": "center",
+     "role": "col",
+     "x": 476,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-3": {
+     "align": "center",
+     "role": "col",
+     "x": 605,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-4": {
+     "align": "center",
+     "role": "col",
+     "x": 733,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-5": {
+     "align": "center",
+     "role": "col",
+     "x": 862,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 629,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-1-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 805,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-2-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 981,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-3-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1157,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-4-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1333,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-5-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "cell-5-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 1278,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-5-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1400,
+     "w": 100,
+     "h": 14
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "tables/segment-margin-grid-health-16x9": {
+   "key": "tables/segment-margin-grid-health-16x9",
+   "dir": "tables",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "segment-margin-grid-health-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "segment-margin-grid-health-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7ab62faa"
+     },
+     {
+      "file": "segment-margin-grid-health-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "daaca598"
+     },
+     {
+      "file": "segment-margin-grid-health-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7ab62faa"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "segment-margin-grid-health-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-health-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7ab62faa"
+      },
+      {
+       "file": "segment-margin-grid-health-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "daaca598"
+      },
+      {
+       "file": "segment-margin-grid-health-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7ab62faa"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "segment-margin-grid-health-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-health-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1fd9e6da"
+      },
+      {
+       "file": "segment-margin-grid-health-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "b065bfd8"
+      },
+      {
+       "file": "segment-margin-grid-health-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1fd9e6da"
+      }
+     ]
+    }
+   },
+   "slotCount": 52,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "col": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 17,
+     "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 5), was 17"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 27,
+     "budget": "derived from the slot boxes that set this role; 27 is the floor (narrowest of 4), was 20"
+    },
+    "cell": {
+     "font": "Courier Prime",
+     "size": 34,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 20), was 10"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "col-1": {
+     "align": "center",
+     "role": "col",
+     "x": 566,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-2": {
+     "align": "center",
+     "role": "col",
+     "x": 806,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-3": {
+     "align": "center",
+     "role": "col",
+     "x": 1046,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-4": {
+     "align": "center",
+     "role": "col",
+     "x": 1286,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-5": {
+     "align": "center",
+     "role": "col",
+     "x": 1526,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 334,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-1-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 446,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-2-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 558,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-3-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 670,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-4-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "tables/segment-margin-grid-health-9x16": {
+   "key": "tables/segment-margin-grid-health-9x16",
+   "dir": "tables",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "segment-margin-grid-health-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "segment-margin-grid-health-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0ce99478"
+     },
+     {
+      "file": "segment-margin-grid-health-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "c5b24d5a"
+     },
+     {
+      "file": "segment-margin-grid-health-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0ce99478"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "segment-margin-grid-health-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-health-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0ce99478"
+      },
+      {
+       "file": "segment-margin-grid-health-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "c5b24d5a"
+      },
+      {
+       "file": "segment-margin-grid-health-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0ce99478"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "segment-margin-grid-health-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-health-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "12baa588"
+      },
+      {
+       "file": "segment-margin-grid-health-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "489bed6a"
+      },
+      {
+       "file": "segment-margin-grid-health-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "12baa588"
+      }
+     ]
+    }
+   },
+   "slotCount": 52,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "col": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 5), was 8"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 21,
+     "budget": "derived from the slot boxes that set this role; 21 is the floor (narrowest of 4), was 16"
+    },
+    "cell": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 20), was 6"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "col-1": {
+     "align": "center",
+     "role": "col",
+     "x": 348,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-2": {
+     "align": "center",
+     "role": "col",
+     "x": 476,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-3": {
+     "align": "center",
+     "role": "col",
+     "x": 605,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-4": {
+     "align": "center",
+     "role": "col",
+     "x": 733,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-5": {
+     "align": "center",
+     "role": "col",
+     "x": 862,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 629,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-1-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 805,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-2-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 981,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-3-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1157,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-4-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "tables/segment-margin-grid-materials-16x9": {
+   "key": "tables/segment-margin-grid-materials-16x9",
+   "dir": "tables",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "segment-margin-grid-materials-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "segment-margin-grid-materials-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7ab62faa"
+     },
+     {
+      "file": "segment-margin-grid-materials-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "daaca598"
+     },
+     {
+      "file": "segment-margin-grid-materials-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "7ab62faa"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "segment-margin-grid-materials-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-materials-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7ab62faa"
+      },
+      {
+       "file": "segment-margin-grid-materials-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "daaca598"
+      },
+      {
+       "file": "segment-margin-grid-materials-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "7ab62faa"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "segment-margin-grid-materials-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-materials-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1fd9e6da"
+      },
+      {
+       "file": "segment-margin-grid-materials-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "b065bfd8"
+      },
+      {
+       "file": "segment-margin-grid-materials-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "1fd9e6da"
+      }
+     ]
+    }
+   },
+   "slotCount": 52,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "col": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 17,
+     "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 5), was 17"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 27,
+     "budget": "derived from the slot boxes that set this role; 27 is the floor (narrowest of 4), was 20"
+    },
+    "cell": {
+     "font": "Courier Prime",
+     "size": 34,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 20), was 10"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "col-1": {
+     "align": "center",
+     "role": "col",
+     "x": 566,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-2": {
+     "align": "center",
+     "role": "col",
+     "x": 806,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-3": {
+     "align": "center",
+     "role": "col",
+     "x": 1046,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-4": {
+     "align": "center",
+     "role": "col",
+     "x": 1286,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "col-5": {
+     "align": "center",
+     "role": "col",
+     "x": 1526,
+     "y": 256,
+     "w": 228,
+     "h": 26,
+     "maxChars": 17
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 334,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-1-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "cell-1-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 314,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-1-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 372,
+     "w": 212,
+     "h": 14
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 446,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-2-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "cell-2-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 426,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-2-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 484,
+     "w": 212,
+     "h": 14
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 558,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-3-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "cell-3-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 538,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-3-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 596,
+     "w": 212,
+     "h": 14
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 160,
+     "y": 670,
+     "w": 360,
+     "h": 37,
+     "maxChars": 27
+    },
+    "cell-4-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 568,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 574,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 808,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 814,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 1048,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1054,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 1288,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1294,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "cell-4-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 1528,
+     "y": 650,
+     "w": 224,
+     "h": 39,
+     "maxChars": 10
+    },
+    "bar-4-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 1534,
+     "y": 708,
+     "w": 212,
+     "h": 14
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "tables/segment-margin-grid-materials-9x16": {
+   "key": "tables/segment-margin-grid-materials-9x16",
+   "dir": "tables",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "segment-margin-grid-materials-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "segment-margin-grid-materials-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0ce99478"
+     },
+     {
+      "file": "segment-margin-grid-materials-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "c5b24d5a"
+     },
+     {
+      "file": "segment-margin-grid-materials-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "0ce99478"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "segment-margin-grid-materials-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-materials-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0ce99478"
+      },
+      {
+       "file": "segment-margin-grid-materials-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "c5b24d5a"
+      },
+      {
+       "file": "segment-margin-grid-materials-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "0ce99478"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "segment-margin-grid-materials-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "segment-margin-grid-materials-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "12baa588"
+      },
+      {
+       "file": "segment-margin-grid-materials-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "489bed6a"
+      },
+      {
+       "file": "segment-margin-grid-materials-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "12baa588"
+      }
+     ]
+    }
+   },
+   "slotCount": 52,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "col": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 5), was 8"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 21,
+     "budget": "derived from the slot boxes that set this role; 21 is the floor (narrowest of 4), was 16"
+    },
+    "cell": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 20), was 6"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "col-1": {
+     "align": "center",
+     "role": "col",
+     "x": 348,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-2": {
+     "align": "center",
+     "role": "col",
+     "x": 476,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-3": {
+     "align": "center",
+     "role": "col",
+     "x": 605,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-4": {
+     "align": "center",
+     "role": "col",
+     "x": 733,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "col-5": {
+     "align": "center",
+     "role": "col",
+     "x": 862,
+     "y": 516,
+     "w": 116,
+     "h": 26,
+     "maxChars": 8
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 629,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-1-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "cell-1-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 574,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-1-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 696,
+     "w": 100,
+     "h": 14
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 805,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-2-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "cell-2-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 750,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-2-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 872,
+     "w": 100,
+     "h": 14
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 981,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-3-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "cell-3-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 926,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-3-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1048,
+     "w": 100,
+     "h": 14
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 96,
+     "y": 1157,
+     "w": 230,
+     "h": 30,
+     "maxChars": 21
+    },
+    "cell-4-1": {
+     "align": "center",
+     "role": "cell",
+     "x": 350,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-1": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 356,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-2": {
+     "align": "center",
+     "role": "cell",
+     "x": 478,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-2": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 484,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-3": {
+     "align": "center",
+     "role": "cell",
+     "x": 607,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-3": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 613,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-4": {
+     "align": "center",
+     "role": "cell",
+     "x": 735,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-4": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 741,
+     "y": 1224,
+     "w": 100,
+     "h": 14
+    },
+    "cell-4-5": {
+     "align": "center",
+     "role": "cell",
+     "x": 864,
+     "y": 1102,
+     "w": 112,
+     "h": 32,
+     "maxChars": 6
+    },
+    "bar-4-5": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": [
+      0,
+      40
+     ],
+     "note": "the cell’s margin on the fixed 0–40 scale — historyBand from 0; pass [0, margin/40, ink role]",
+     "x": 870,
+     "y": 1224,
+     "w": 100,
+     "h": 14
     },
     "caption": {
      "align": "left",

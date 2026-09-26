@@ -592,6 +592,36 @@ dropped for being over budget. The derivation is load-bearing and is not touched
 
 ---
 
+### 5.4b Opener rooms (rebuild-23)
+
+A chapter opens on a room with `opener: true`. There are three: `desk-wide`, `board-wide` and
+`window-wide`. **It is one room.** A new angle may not add furniture or lose it, so an
+opener is never drawn fresh. It is an existing angle's shape list pulled back (`pull()`,
+scale 0.8 about the floor centre), with the title card as the only addition.
+`window-wide` comes from `window-wall` and `board-wide` from `board-side`. Pulling back
+leaves wall above him for a 92×42 card inside the portrait window. The card is the same size
+in all three, so a title set once fits any of them.
+
+### 5.5 The data contract lives in the slot table (rebuild-22)
+
+A consumer drawing real data reads the slot table, not the drawing and not the prose.
+Four things were only in one or the other; each is now a field:
+
+- **`plot-area.spreadFill`** (two-line plots): `true` where the two lines are rates you
+  compare and the gap is a quantity (price against cost); `false` where they are parts
+  that add up to the headline (price plus volume), because the area between them is not
+  a quantity. The note says the same thing. Unfilled: `price-vs-volume`,
+  `net-price-vs-volume`, `traffic-vs-ticket`. **`brand-vs-private-label` fills**: the two
+  are compared, and the gap is its callout.
+- **`ink`** on every keyed `legend-N` / `row-N`, and **`tone` / `tone2`** on the
+  plot-area. The swatch and the field come from one palette key in `key()` /
+  `pairedYears`, so they cannot disagree. Ratio pairs key the second series in
+  `quiet`; payback plates key the cost line in `attention` (`cac-line.ink`).
+- **`scale`** on band slots is the plate's own range (`bandScale`), not the 0–180 default.
+- **`scale: [-20, 20]`** and `clamp: true` on every `growth-N` rail marker.
+
+`export.js` dataLayer defaults fill and `tone2` from these fields when the data omits them.
+
 ## 8 · Audit — run, with counts, never "as intended"
 
 In `audit.js`, reported with counts. Slice 6, but every rule above was written to be
@@ -634,6 +664,8 @@ that failed**, because a failure is at least information.
 | 26 | **Every exported file frames its own ink**, within a 10% bleed per edge. |
 | 27 | **He stands clear of the front layer, composited.** Every pose that fits the room, placed by the contract: no head under a front shape, at most 10% of him above the desk top (§4.5). |
 | 28 | **A chapter title has somewhere to land.** At least one opener room; every title inside its card, the card inside the portrait window and clear of him (§5.3). |
+| 30 | **One room: no angle adds furniture** (§5.4b). At most one desk, monitor, desk lamp and lit opening per angle; drawing agrees with `KitModel.PLAN.sees`; any angle outside the drawn fourteen is pulled from one. |
+| 29 | **The data contract is published, not implied** (§5.5). Every legend/row key publishes `ink`; a second series' `tone2` equals the ink its key shows; every two-line plot publishes a boolean `spreadFill` that its note agrees with; every band or marker region whose note names a scale carries that range in `scale`. |
 
 ---
 

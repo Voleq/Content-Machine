@@ -116,6 +116,11 @@
           "lit": "#5A4A3E",
           "shade": "#38302A",
           "_floor": "ΔE_ok 0.155 against wall.lit. At #333C4E it was 0.074 and his shoes read only as contour, which is itself 0.119. Lamp-warm because shoes and desk props sit where the lamp reaches. See DESIGN.md §2.2a."
+        },
+        "foliage": {
+          "lit": "#2E5A48",
+          "shade": "#1C3A30",
+          "_note": "SEASONAL ONLY (rebuild-25): the Christmas tree. Not a figure material; used in room/<id>-christmas assets only."
         }
       },
       "contour": "#0B0E16",
@@ -192,6 +197,11 @@
           "lit": "#6E6478",
           "shade": "#453E55",
           "_floor": "ΔE_ok 0.216 against wall.lit. At #A89078 it was 0.054 — a near-identical tan on a tan wall. Violet-leaning per this hour's ambient doctrine. See DESIGN.md §2.2a."
+        },
+        "foliage": {
+          "lit": "#5E7A4E",
+          "shade": "#3E5238",
+          "_note": "SEASONAL ONLY (rebuild-25): the Christmas tree. Not a figure material; used in room/<id>-christmas assets only."
         }
       },
       "contour": "#2A2036",

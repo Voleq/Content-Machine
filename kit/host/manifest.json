@@ -8,7 +8,7 @@
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
  "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "assetCount": 48,
+ "assetCount": 72,
  "plates": {
   "host/to-camera": {
    "key": "host/to-camera",
@@ -71,7 +71,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "to-camera-talk-night.png",
     "baseIsFrame": true,
@@ -108,6 +108,39 @@
        "eyes": "open"
       },
       "hash": "e201c356"
+     },
+     {
+      "file": "to-camera-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "95d65c1e"
+     },
+     {
+      "file": "to-camera-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "80849408"
+     },
+     {
+      "file": "to-camera-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "3eded866"
      }
     ]
    },
@@ -148,6 +181,39 @@
         "eyes": "open"
        },
        "hash": "e201c356"
+      },
+      {
+       "file": "to-camera-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "95d65c1e"
+      },
+      {
+       "file": "to-camera-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "80849408"
+      },
+      {
+       "file": "to-camera-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "3eded866"
       }
      ]
     },
@@ -187,6 +253,39 @@
         "eyes": "open"
        },
        "hash": "af91ddb6"
+      },
+      {
+       "file": "to-camera-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "81fb65a2"
+      },
+      {
+       "file": "to-camera-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "7e5a08b8"
+      },
+      {
+       "file": "to-camera-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "1691934e"
       }
      ]
     }
@@ -504,7 +603,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "leaning-on-desk-talk-night.png",
     "baseIsFrame": true,
@@ -541,6 +640,39 @@
        "eyes": "open"
       },
       "hash": "2162b2e2"
+     },
+     {
+      "file": "leaning-on-desk-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "57be25da"
+     },
+     {
+      "file": "leaning-on-desk-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "3fb9f1fe"
+     },
+     {
+      "file": "leaning-on-desk-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "48ece398"
      }
     ]
    },
@@ -581,6 +713,39 @@
         "eyes": "open"
        },
        "hash": "2162b2e2"
+      },
+      {
+       "file": "leaning-on-desk-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "57be25da"
+      },
+      {
+       "file": "leaning-on-desk-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "3fb9f1fe"
+      },
+      {
+       "file": "leaning-on-desk-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "48ece398"
       }
      ]
     },
@@ -620,6 +785,39 @@
         "eyes": "open"
        },
        "hash": "f9e6f276"
+      },
+      {
+       "file": "leaning-on-desk-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "1069a592"
+      },
+      {
+       "file": "leaning-on-desk-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "b70584c6"
+      },
+      {
+       "file": "leaning-on-desk-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "794a67c8"
       }
      ]
     }
@@ -937,7 +1135,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "hands-in-pockets-talk-night.png",
     "baseIsFrame": true,
@@ -974,6 +1172,39 @@
        "eyes": "open"
       },
       "hash": "3a5f549c"
+     },
+     {
+      "file": "hands-in-pockets-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "86b8b64a"
+     },
+     {
+      "file": "hands-in-pockets-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "8f33dff6"
+     },
+     {
+      "file": "hands-in-pockets-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "3793b52a"
      }
     ]
    },
@@ -1014,6 +1245,39 @@
         "eyes": "open"
        },
        "hash": "3a5f549c"
+      },
+      {
+       "file": "hands-in-pockets-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "86b8b64a"
+      },
+      {
+       "file": "hands-in-pockets-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "8f33dff6"
+      },
+      {
+       "file": "hands-in-pockets-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "3793b52a"
       }
      ]
     },
@@ -1053,6 +1317,39 @@
         "eyes": "open"
        },
        "hash": "a71f0ad0"
+      },
+      {
+       "file": "hands-in-pockets-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "fcdc3666"
+      },
+      {
+       "file": "hands-in-pockets-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "0969af12"
+      },
+      {
+       "file": "hands-in-pockets-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "df6d1200"
       }
      ]
     }
@@ -1370,7 +1667,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "holding-a-page-talk-night.png",
     "baseIsFrame": true,
@@ -1407,6 +1704,39 @@
        "eyes": "open"
       },
       "hash": "79e991ba"
+     },
+     {
+      "file": "holding-a-page-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "d26f2f1a"
+     },
+     {
+      "file": "holding-a-page-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "1490dd40"
+     },
+     {
+      "file": "holding-a-page-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "19c31406"
      }
     ]
    },
@@ -1447,6 +1777,39 @@
         "eyes": "open"
        },
        "hash": "79e991ba"
+      },
+      {
+       "file": "holding-a-page-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "d26f2f1a"
+      },
+      {
+       "file": "holding-a-page-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "1490dd40"
+      },
+      {
+       "file": "holding-a-page-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "19c31406"
       }
      ]
     },
@@ -1486,6 +1849,39 @@
         "eyes": "open"
        },
        "hash": "732027a6"
+      },
+      {
+       "file": "holding-a-page-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "fbfcb776"
+      },
+      {
+       "file": "holding-a-page-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "d15969c0"
+      },
+      {
+       "file": "holding-a-page-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "92bc36b6"
       }
      ]
     }
@@ -1742,6 +2138,1602 @@
     }
    }
   },
+  "host/holding-a-filing": {
+   "key": "host/holding-a-filing",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "files": {
+    "base": "holding-a-filing-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-filing-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "holding-a-filing-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "host/holding-a-filing-talk": {
+   "key": "host/holding-a-filing-talk",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 6,
+   "files": {
+    "base": "holding-a-filing-talk-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "holding-a-filing-talk-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "5caac510"
+     },
+     {
+      "file": "holding-a-filing-talk-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthMid",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "9a73b2a8"
+     },
+     {
+      "file": "holding-a-filing-talk-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthWide",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "18a0fa99"
+     },
+     {
+      "file": "holding-a-filing-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "934653b0"
+     },
+     {
+      "file": "holding-a-filing-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "47615a60"
+     },
+     {
+      "file": "holding-a-filing-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "a0ff9538"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-filing-talk-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-filing-talk-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5caac510"
+      },
+      {
+       "file": "holding-a-filing-talk-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "9a73b2a8"
+      },
+      {
+       "file": "holding-a-filing-talk-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "18a0fa99"
+      },
+      {
+       "file": "holding-a-filing-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "934653b0"
+      },
+      {
+       "file": "holding-a-filing-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "47615a60"
+      },
+      {
+       "file": "holding-a-filing-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "a0ff9538"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "holding-a-filing-talk-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-filing-talk-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "852ac648"
+      },
+      {
+       "file": "holding-a-filing-talk-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "cb5fee28"
+      },
+      {
+       "file": "holding-a-filing-talk-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "14707066"
+      },
+      {
+       "file": "holding-a-filing-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "9944e2e4"
+      },
+      {
+       "file": "holding-a-filing-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "ae679fe5"
+      },
+      {
+       "file": "holding-a-filing-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "1a814628"
+      }
+     ]
+    }
+   }
+  },
+  "host/holding-a-filing-idle": {
+   "key": "host/holding-a-filing-idle",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "files": {
+    "base": "holding-a-filing-idle-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "holding-a-filing-idle-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "5caac510"
+     },
+     {
+      "file": "holding-a-filing-idle-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "dfe9c5b6"
+     },
+     {
+      "file": "holding-a-filing-idle-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "54062e70"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-filing-idle-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-filing-idle-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5caac510"
+      },
+      {
+       "file": "holding-a-filing-idle-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "dfe9c5b6"
+      },
+      {
+       "file": "holding-a-filing-idle-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "54062e70"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "holding-a-filing-idle-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-filing-idle-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "852ac648"
+      },
+      {
+       "file": "holding-a-filing-idle-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "468c97e0"
+      },
+      {
+       "file": "holding-a-filing-idle-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "610962f8"
+      }
+     ]
+    }
+   }
+  },
+  "host/holding-a-filing-blink": {
+   "key": "host/holding-a-filing-blink",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "overlay",
+   "fps": 4,
+   "frameCount": 2,
+   "files": {
+    "base": "holding-a-filing-blink-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "holding-a-filing-blink-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "5caac510"
+     },
+     {
+      "file": "holding-a-filing-blink-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "closed"
+      },
+      "hash": "3912a878"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-filing-blink-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-filing-blink-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5caac510"
+      },
+      {
+       "file": "holding-a-filing-blink-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "3912a878"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "holding-a-filing-blink-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-filing-blink-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "852ac648"
+      },
+      {
+       "file": "holding-a-filing-blink-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "4f3bc87c"
+      }
+     ]
+    }
+   }
+  },
+  "host/holding-a-phone": {
+   "key": "host/holding-a-phone",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "files": {
+    "base": "holding-a-phone-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-phone-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "holding-a-phone-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "host/holding-a-phone-talk": {
+   "key": "host/holding-a-phone-talk",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 6,
+   "files": {
+    "base": "holding-a-phone-talk-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "holding-a-phone-talk-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "da22bde8"
+     },
+     {
+      "file": "holding-a-phone-talk-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthMid",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "936876f8"
+     },
+     {
+      "file": "holding-a-phone-talk-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthWide",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "036b2480"
+     },
+     {
+      "file": "holding-a-phone-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "9f9f8130"
+     },
+     {
+      "file": "holding-a-phone-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "b8600d8a"
+     },
+     {
+      "file": "holding-a-phone-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "44ce177e"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-phone-talk-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-phone-talk-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "da22bde8"
+      },
+      {
+       "file": "holding-a-phone-talk-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "936876f8"
+      },
+      {
+       "file": "holding-a-phone-talk-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "036b2480"
+      },
+      {
+       "file": "holding-a-phone-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "9f9f8130"
+      },
+      {
+       "file": "holding-a-phone-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "b8600d8a"
+      },
+      {
+       "file": "holding-a-phone-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "44ce177e"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "holding-a-phone-talk-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-phone-talk-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "319c2740"
+      },
+      {
+       "file": "holding-a-phone-talk-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "873378a0"
+      },
+      {
+       "file": "holding-a-phone-talk-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "1f1c7390"
+      },
+      {
+       "file": "holding-a-phone-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "b92c3666"
+      },
+      {
+       "file": "holding-a-phone-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "db29a0ac"
+      },
+      {
+       "file": "holding-a-phone-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "4efaaab6"
+      }
+     ]
+    }
+   }
+  },
+  "host/holding-a-phone-idle": {
+   "key": "host/holding-a-phone-idle",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "files": {
+    "base": "holding-a-phone-idle-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "holding-a-phone-idle-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "da22bde8"
+     },
+     {
+      "file": "holding-a-phone-idle-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "59e54398"
+     },
+     {
+      "file": "holding-a-phone-idle-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "dce877c8"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-phone-idle-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-phone-idle-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "da22bde8"
+      },
+      {
+       "file": "holding-a-phone-idle-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "59e54398"
+      },
+      {
+       "file": "holding-a-phone-idle-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "dce877c8"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "holding-a-phone-idle-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-phone-idle-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "319c2740"
+      },
+      {
+       "file": "holding-a-phone-idle-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "87259fde"
+      },
+      {
+       "file": "holding-a-phone-idle-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "65ff631e"
+      }
+     ]
+    }
+   }
+  },
+  "host/holding-a-phone-blink": {
+   "key": "host/holding-a-phone-blink",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "overlay",
+   "fps": 4,
+   "frameCount": 2,
+   "files": {
+    "base": "holding-a-phone-blink-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "holding-a-phone-blink-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "da22bde8"
+     },
+     {
+      "file": "holding-a-phone-blink-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "closed"
+      },
+      "hash": "30c36048"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-phone-blink-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-phone-blink-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "da22bde8"
+      },
+      {
+       "file": "holding-a-phone-blink-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "30c36048"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "holding-a-phone-blink-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-phone-blink-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "319c2740"
+      },
+      {
+       "file": "holding-a-phone-blink-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "f790ac38"
+      }
+     ]
+    }
+   }
+  },
+  "host/holding-a-mug": {
+   "key": "host/holding-a-mug",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "files": {
+    "base": "holding-a-mug-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-mug-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "holding-a-mug-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "host/holding-a-mug-talk": {
+   "key": "host/holding-a-mug-talk",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 6,
+   "files": {
+    "base": "holding-a-mug-talk-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "holding-a-mug-talk-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "d05b99d0"
+     },
+     {
+      "file": "holding-a-mug-talk-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthMid",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "b479e690"
+     },
+     {
+      "file": "holding-a-mug-talk-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthWide",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "97d9cd10"
+     },
+     {
+      "file": "holding-a-mug-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "5e772482"
+     },
+     {
+      "file": "holding-a-mug-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "d7093280"
+     },
+     {
+      "file": "holding-a-mug-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "90bee108"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-mug-talk-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-mug-talk-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "d05b99d0"
+      },
+      {
+       "file": "holding-a-mug-talk-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "b479e690"
+      },
+      {
+       "file": "holding-a-mug-talk-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "97d9cd10"
+      },
+      {
+       "file": "holding-a-mug-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5e772482"
+      },
+      {
+       "file": "holding-a-mug-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "d7093280"
+      },
+      {
+       "file": "holding-a-mug-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "90bee108"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "holding-a-mug-talk-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-mug-talk-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5e803ef8"
+      },
+      {
+       "file": "holding-a-mug-talk-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "71cd9880"
+      },
+      {
+       "file": "holding-a-mug-talk-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "aa61fd12"
+      },
+      {
+       "file": "holding-a-mug-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "4efddb70"
+      },
+      {
+       "file": "holding-a-mug-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "4b4b27b8"
+      },
+      {
+       "file": "holding-a-mug-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "1bbf6c54"
+      }
+     ]
+    }
+   }
+  },
+  "host/holding-a-mug-idle": {
+   "key": "host/holding-a-mug-idle",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "files": {
+    "base": "holding-a-mug-idle-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "holding-a-mug-idle-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "d05b99d0"
+     },
+     {
+      "file": "holding-a-mug-idle-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "65f8dd36"
+     },
+     {
+      "file": "holding-a-mug-idle-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "66b1357e"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-mug-idle-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-mug-idle-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "d05b99d0"
+      },
+      {
+       "file": "holding-a-mug-idle-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "65f8dd36"
+      },
+      {
+       "file": "holding-a-mug-idle-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "66b1357e"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "holding-a-mug-idle-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-mug-idle-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5e803ef8"
+      },
+      {
+       "file": "holding-a-mug-idle-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "5d123c57"
+      },
+      {
+       "file": "holding-a-mug-idle-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "edafdb78"
+      }
+     ]
+    }
+   }
+  },
+  "host/holding-a-mug-blink": {
+   "key": "host/holding-a-mug-blink",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "overlay",
+   "fps": 4,
+   "frameCount": 2,
+   "files": {
+    "base": "holding-a-mug-blink-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "holding-a-mug-blink-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "d05b99d0"
+     },
+     {
+      "file": "holding-a-mug-blink-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "closed"
+      },
+      "hash": "45412e68"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "holding-a-mug-blink-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-mug-blink-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "d05b99d0"
+      },
+      {
+       "file": "holding-a-mug-blink-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "45412e68"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "holding-a-mug-blink-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "holding-a-mug-blink-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5e803ef8"
+      },
+      {
+       "file": "holding-a-mug-blink-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "504b465c"
+      }
+     ]
+    }
+   }
+  },
   "host/pointing-down-at-desk": {
    "key": "host/pointing-down-at-desk",
    "dir": "host",
@@ -1803,7 +3795,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "pointing-down-at-desk-talk-night.png",
     "baseIsFrame": true,
@@ -1840,6 +3832,39 @@
        "eyes": "open"
       },
       "hash": "615fbfc0"
+     },
+     {
+      "file": "pointing-down-at-desk-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "adbe786a"
+     },
+     {
+      "file": "pointing-down-at-desk-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "d71cba56"
+     },
+     {
+      "file": "pointing-down-at-desk-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "48a41106"
      }
     ]
    },
@@ -1880,6 +3905,39 @@
         "eyes": "open"
        },
        "hash": "615fbfc0"
+      },
+      {
+       "file": "pointing-down-at-desk-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "adbe786a"
+      },
+      {
+       "file": "pointing-down-at-desk-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "d71cba56"
+      },
+      {
+       "file": "pointing-down-at-desk-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "48a41106"
       }
      ]
     },
@@ -1919,6 +3977,39 @@
         "eyes": "open"
        },
        "hash": "0410f13a"
+      },
+      {
+       "file": "pointing-down-at-desk-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "e52f6506"
+      },
+      {
+       "file": "pointing-down-at-desk-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "d0528810"
+      },
+      {
+       "file": "pointing-down-at-desk-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "207eb76e"
       }
      ]
     }
@@ -2236,7 +4327,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "head-in-hands-talk-night.png",
     "baseIsFrame": true,
@@ -2273,6 +4364,39 @@
        "eyes": "open"
       },
       "hash": "357afe44"
+     },
+     {
+      "file": "head-in-hands-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "5491a736"
+     },
+     {
+      "file": "head-in-hands-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "e40b1721"
+     },
+     {
+      "file": "head-in-hands-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "422b8108"
      }
     ]
    },
@@ -2313,6 +4437,39 @@
         "eyes": "open"
        },
        "hash": "357afe44"
+      },
+      {
+       "file": "head-in-hands-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5491a736"
+      },
+      {
+       "file": "head-in-hands-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "e40b1721"
+      },
+      {
+       "file": "head-in-hands-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "422b8108"
       }
      ]
     },
@@ -2352,6 +4509,39 @@
         "eyes": "open"
        },
        "hash": "94704df6"
+      },
+      {
+       "file": "head-in-hands-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5b8fa160"
+      },
+      {
+       "file": "head-in-hands-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "60f7d622"
+      },
+      {
+       "file": "head-in-hands-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "d539b7c0"
       }
      ]
     }
@@ -2669,7 +4859,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "sitting-at-desk-talk-night.png",
     "baseIsFrame": true,
@@ -2706,6 +4896,39 @@
        "eyes": "open"
       },
       "hash": "4e91bfec"
+     },
+     {
+      "file": "sitting-at-desk-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "337699d7"
+     },
+     {
+      "file": "sitting-at-desk-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "017c8fb0"
+     },
+     {
+      "file": "sitting-at-desk-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "4faaf866"
      }
     ]
    },
@@ -2746,6 +4969,39 @@
         "eyes": "open"
        },
        "hash": "4e91bfec"
+      },
+      {
+       "file": "sitting-at-desk-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "337699d7"
+      },
+      {
+       "file": "sitting-at-desk-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "017c8fb0"
+      },
+      {
+       "file": "sitting-at-desk-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "4faaf866"
       }
      ]
     },
@@ -2785,6 +5041,39 @@
         "eyes": "open"
        },
        "hash": "46e4c07e"
+      },
+      {
+       "file": "sitting-at-desk-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "4e117f28"
+      },
+      {
+       "file": "sitting-at-desk-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "b3b7e0ee"
+      },
+      {
+       "file": "sitting-at-desk-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "b2ef5346"
       }
      ]
     }
@@ -3102,7 +5391,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "turn-to-screen-talk-night.png",
     "baseIsFrame": true,
@@ -3139,6 +5428,39 @@
        "eyes": "open"
       },
       "hash": "4fc4b456"
+     },
+     {
+      "file": "turn-to-screen-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "7c6ba7ca"
+     },
+     {
+      "file": "turn-to-screen-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "3f04dcd0"
+     },
+     {
+      "file": "turn-to-screen-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "543395de"
      }
     ]
    },
@@ -3179,6 +5501,39 @@
         "eyes": "open"
        },
        "hash": "4fc4b456"
+      },
+      {
+       "file": "turn-to-screen-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "7c6ba7ca"
+      },
+      {
+       "file": "turn-to-screen-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "3f04dcd0"
+      },
+      {
+       "file": "turn-to-screen-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "543395de"
       }
      ]
     },
@@ -3218,6 +5573,39 @@
         "eyes": "open"
        },
        "hash": "9331c4e6"
+      },
+      {
+       "file": "turn-to-screen-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "174faf68"
+      },
+      {
+       "file": "turn-to-screen-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "82bc60fa"
+      },
+      {
+       "file": "turn-to-screen-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "93e90b68"
       }
      ]
     }
@@ -3535,7 +5923,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "walking-out-of-frame-talk-night.png",
     "baseIsFrame": true,
@@ -3572,6 +5960,39 @@
        "eyes": "open"
       },
       "hash": "42030ef6"
+     },
+     {
+      "file": "walking-out-of-frame-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "be78332c"
+     },
+     {
+      "file": "walking-out-of-frame-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "c63ba8e0"
+     },
+     {
+      "file": "walking-out-of-frame-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "1388ba08"
      }
     ]
    },
@@ -3612,6 +6033,39 @@
         "eyes": "open"
        },
        "hash": "42030ef6"
+      },
+      {
+       "file": "walking-out-of-frame-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "be78332c"
+      },
+      {
+       "file": "walking-out-of-frame-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "c63ba8e0"
+      },
+      {
+       "file": "walking-out-of-frame-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "1388ba08"
       }
      ]
     },
@@ -3651,6 +6105,39 @@
         "eyes": "open"
        },
        "hash": "613e1232"
+      },
+      {
+       "file": "walking-out-of-frame-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5ac67978"
+      },
+      {
+       "file": "walking-out-of-frame-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "cb8dfd98"
+      },
+      {
+       "file": "walking-out-of-frame-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "02920e8b"
       }
      ]
     }
@@ -3968,7 +6455,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "arms-crossed-talk-night.png",
     "baseIsFrame": true,
@@ -4005,6 +6492,39 @@
        "eyes": "open"
       },
       "hash": "0d84bf6e"
+     },
+     {
+      "file": "arms-crossed-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "adbdfdea"
+     },
+     {
+      "file": "arms-crossed-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "f9ed1c58"
+     },
+     {
+      "file": "arms-crossed-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "2a9d0438"
      }
     ]
    },
@@ -4045,6 +6565,39 @@
         "eyes": "open"
        },
        "hash": "0d84bf6e"
+      },
+      {
+       "file": "arms-crossed-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "adbdfdea"
+      },
+      {
+       "file": "arms-crossed-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "f9ed1c58"
+      },
+      {
+       "file": "arms-crossed-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "2a9d0438"
       }
      ]
     },
@@ -4084,6 +6637,39 @@
         "eyes": "open"
        },
        "hash": "3638a690"
+      },
+      {
+       "file": "arms-crossed-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5d8300b8"
+      },
+      {
+       "file": "arms-crossed-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "788722f8"
+      },
+      {
+       "file": "arms-crossed-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "2c227994"
       }
      ]
     }
@@ -4401,7 +6987,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "considering-talk-night.png",
     "baseIsFrame": true,
@@ -4438,6 +7024,39 @@
        "eyes": "open"
       },
       "hash": "7d30ca30"
+     },
+     {
+      "file": "considering-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "0e1905a1"
+     },
+     {
+      "file": "considering-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "677621ea"
+     },
+     {
+      "file": "considering-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "ac081c5e"
      }
     ]
    },
@@ -4478,6 +7097,39 @@
         "eyes": "open"
        },
        "hash": "7d30ca30"
+      },
+      {
+       "file": "considering-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "0e1905a1"
+      },
+      {
+       "file": "considering-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "677621ea"
+      },
+      {
+       "file": "considering-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "ac081c5e"
       }
      ]
     },
@@ -4517,6 +7169,39 @@
         "eyes": "open"
        },
        "hash": "537516ee"
+      },
+      {
+       "file": "considering-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5c0db560"
+      },
+      {
+       "file": "considering-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "93a1c860"
+      },
+      {
+       "file": "considering-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "cb0b67fe"
       }
      ]
     }
@@ -4834,7 +7519,7 @@
    "exportScale": 2,
    "playback": "loop",
    "fps": 8,
-   "frameCount": 3,
+   "frameCount": 6,
    "files": {
     "base": "checking-a-figure-talk-night.png",
     "baseIsFrame": true,
@@ -4871,6 +7556,39 @@
        "eyes": "open"
       },
       "hash": "48d7718c"
+     },
+     {
+      "file": "checking-a-figure-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "cfbf0472"
+     },
+     {
+      "file": "checking-a-figure-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "be243246"
+     },
+     {
+      "file": "checking-a-figure-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "58475f90"
      }
     ]
    },
@@ -4911,6 +7629,39 @@
         "eyes": "open"
        },
        "hash": "48d7718c"
+      },
+      {
+       "file": "checking-a-figure-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "cfbf0472"
+      },
+      {
+       "file": "checking-a-figure-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "be243246"
+      },
+      {
+       "file": "checking-a-figure-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "58475f90"
       }
      ]
     },
@@ -4950,6 +7701,39 @@
         "eyes": "open"
        },
        "hash": "941c5852"
+      },
+      {
+       "file": "checking-a-figure-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "5c68f348"
+      },
+      {
+       "file": "checking-a-figure-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "3657b4b2"
+      },
+      {
+       "file": "checking-a-figure-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "1efe94e8"
       }
      ]
     }
@@ -5201,6 +7985,1602 @@
         "eyes": "closed"
        },
        "hash": "a32cd058"
+      }
+     ]
+    }
+   }
+  },
+  "host/gesturing-at-plate": {
+   "key": "host/gesturing-at-plate",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "files": {
+    "base": "gesturing-at-plate-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "gesturing-at-plate-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "gesturing-at-plate-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "host/gesturing-at-plate-talk": {
+   "key": "host/gesturing-at-plate-talk",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 6,
+   "files": {
+    "base": "gesturing-at-plate-talk-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "gesturing-at-plate-talk-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "26de3102"
+     },
+     {
+      "file": "gesturing-at-plate-talk-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthMid",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "7d7b27f8"
+     },
+     {
+      "file": "gesturing-at-plate-talk-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthWide",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "f95d1ebc"
+     },
+     {
+      "file": "gesturing-at-plate-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "6ac965f0"
+     },
+     {
+      "file": "gesturing-at-plate-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "863c5869"
+     },
+     {
+      "file": "gesturing-at-plate-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "5445a022"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "gesturing-at-plate-talk-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "gesturing-at-plate-talk-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "26de3102"
+      },
+      {
+       "file": "gesturing-at-plate-talk-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "7d7b27f8"
+      },
+      {
+       "file": "gesturing-at-plate-talk-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "f95d1ebc"
+      },
+      {
+       "file": "gesturing-at-plate-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "6ac965f0"
+      },
+      {
+       "file": "gesturing-at-plate-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "863c5869"
+      },
+      {
+       "file": "gesturing-at-plate-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "5445a022"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "gesturing-at-plate-talk-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "gesturing-at-plate-talk-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "4d2569de"
+      },
+      {
+       "file": "gesturing-at-plate-talk-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "42068b08"
+      },
+      {
+       "file": "gesturing-at-plate-talk-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "56a473a0"
+      },
+      {
+       "file": "gesturing-at-plate-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "12da287e"
+      },
+      {
+       "file": "gesturing-at-plate-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "c38a42b8"
+      },
+      {
+       "file": "gesturing-at-plate-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "f025105a"
+      }
+     ]
+    }
+   }
+  },
+  "host/gesturing-at-plate-idle": {
+   "key": "host/gesturing-at-plate-idle",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "files": {
+    "base": "gesturing-at-plate-idle-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "gesturing-at-plate-idle-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "26de3102"
+     },
+     {
+      "file": "gesturing-at-plate-idle-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "b9c1588e"
+     },
+     {
+      "file": "gesturing-at-plate-idle-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "0ec0adaa"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "gesturing-at-plate-idle-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "gesturing-at-plate-idle-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "26de3102"
+      },
+      {
+       "file": "gesturing-at-plate-idle-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "b9c1588e"
+      },
+      {
+       "file": "gesturing-at-plate-idle-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "0ec0adaa"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "gesturing-at-plate-idle-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "gesturing-at-plate-idle-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "4d2569de"
+      },
+      {
+       "file": "gesturing-at-plate-idle-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "7f9ee4c8"
+      },
+      {
+       "file": "gesturing-at-plate-idle-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "f911cd40"
+      }
+     ]
+    }
+   }
+  },
+  "host/gesturing-at-plate-blink": {
+   "key": "host/gesturing-at-plate-blink",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "overlay",
+   "fps": 4,
+   "frameCount": 2,
+   "files": {
+    "base": "gesturing-at-plate-blink-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "gesturing-at-plate-blink-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "26de3102"
+     },
+     {
+      "file": "gesturing-at-plate-blink-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "closed"
+      },
+      "hash": "a10f2cda"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "gesturing-at-plate-blink-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "gesturing-at-plate-blink-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "26de3102"
+      },
+      {
+       "file": "gesturing-at-plate-blink-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "a10f2cda"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "gesturing-at-plate-blink-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "gesturing-at-plate-blink-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "4d2569de"
+      },
+      {
+       "file": "gesturing-at-plate-blink-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "81658288"
+      }
+     ]
+    }
+   }
+  },
+  "host/counting-on-fingers": {
+   "key": "host/counting-on-fingers",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "files": {
+    "base": "counting-on-fingers-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "counting-on-fingers-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "counting-on-fingers-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "host/counting-on-fingers-talk": {
+   "key": "host/counting-on-fingers-talk",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 6,
+   "files": {
+    "base": "counting-on-fingers-talk-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "counting-on-fingers-talk-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "f3a45ad8"
+     },
+     {
+      "file": "counting-on-fingers-talk-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthMid",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "c1e7ec18"
+     },
+     {
+      "file": "counting-on-fingers-talk-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthWide",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "2656e6be"
+     },
+     {
+      "file": "counting-on-fingers-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "49f5287a"
+     },
+     {
+      "file": "counting-on-fingers-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "6bbe9a18"
+     },
+     {
+      "file": "counting-on-fingers-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "97100416"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "counting-on-fingers-talk-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "counting-on-fingers-talk-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "f3a45ad8"
+      },
+      {
+       "file": "counting-on-fingers-talk-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "c1e7ec18"
+      },
+      {
+       "file": "counting-on-fingers-talk-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "2656e6be"
+      },
+      {
+       "file": "counting-on-fingers-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "49f5287a"
+      },
+      {
+       "file": "counting-on-fingers-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "6bbe9a18"
+      },
+      {
+       "file": "counting-on-fingers-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "97100416"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "counting-on-fingers-talk-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "counting-on-fingers-talk-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "bb84ee78"
+      },
+      {
+       "file": "counting-on-fingers-talk-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "b44eedc6"
+      },
+      {
+       "file": "counting-on-fingers-talk-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "af93ef18"
+      },
+      {
+       "file": "counting-on-fingers-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "773b90bc"
+      },
+      {
+       "file": "counting-on-fingers-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "5856fe50"
+      },
+      {
+       "file": "counting-on-fingers-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "061c49c4"
+      }
+     ]
+    }
+   }
+  },
+  "host/counting-on-fingers-idle": {
+   "key": "host/counting-on-fingers-idle",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "files": {
+    "base": "counting-on-fingers-idle-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "counting-on-fingers-idle-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "f3a45ad8"
+     },
+     {
+      "file": "counting-on-fingers-idle-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "dce69f30"
+     },
+     {
+      "file": "counting-on-fingers-idle-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "8e841233"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "counting-on-fingers-idle-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "counting-on-fingers-idle-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "f3a45ad8"
+      },
+      {
+       "file": "counting-on-fingers-idle-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "dce69f30"
+      },
+      {
+       "file": "counting-on-fingers-idle-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "8e841233"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "counting-on-fingers-idle-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "counting-on-fingers-idle-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "bb84ee78"
+      },
+      {
+       "file": "counting-on-fingers-idle-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "c933c808"
+      },
+      {
+       "file": "counting-on-fingers-idle-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "d31abfd6"
+      }
+     ]
+    }
+   }
+  },
+  "host/counting-on-fingers-blink": {
+   "key": "host/counting-on-fingers-blink",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "overlay",
+   "fps": 4,
+   "frameCount": 2,
+   "files": {
+    "base": "counting-on-fingers-blink-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "counting-on-fingers-blink-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "f3a45ad8"
+     },
+     {
+      "file": "counting-on-fingers-blink-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "closed"
+      },
+      "hash": "c1768f10"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "counting-on-fingers-blink-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "counting-on-fingers-blink-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "f3a45ad8"
+      },
+      {
+       "file": "counting-on-fingers-blink-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "c1768f10"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "counting-on-fingers-blink-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "counting-on-fingers-blink-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "bb84ee78"
+      },
+      {
+       "file": "counting-on-fingers-blink-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "156af1a0"
+      }
+     ]
+    }
+   }
+  },
+  "host/shrug": {
+   "key": "host/shrug",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "files": {
+    "base": "shrug-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "shrug-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "shrug-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "host/shrug-talk": {
+   "key": "host/shrug-talk",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 6,
+   "files": {
+    "base": "shrug-talk-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "shrug-talk-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "aecee2a8"
+     },
+     {
+      "file": "shrug-talk-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthMid",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "729a6a6e"
+     },
+     {
+      "file": "shrug-talk-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthWide",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "78d09c98"
+     },
+     {
+      "file": "shrug-talk-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "mouth": "mouthO",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "3d62fe42"
+     },
+     {
+      "file": "shrug-talk-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "mouth": "mouthEE",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "370404ca"
+     },
+     {
+      "file": "shrug-talk-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "mouth": "mouthFV",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "b968e626"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "shrug-talk-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "shrug-talk-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "aecee2a8"
+      },
+      {
+       "file": "shrug-talk-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "729a6a6e"
+      },
+      {
+       "file": "shrug-talk-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "78d09c98"
+      },
+      {
+       "file": "shrug-talk-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "3d62fe42"
+      },
+      {
+       "file": "shrug-talk-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "370404ca"
+      },
+      {
+       "file": "shrug-talk-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "b968e626"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "shrug-talk-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "shrug-talk-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "e4f65cd2"
+      },
+      {
+       "file": "shrug-talk-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthMid",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "394eaec0"
+      },
+      {
+       "file": "shrug-talk-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthWide",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "4b657be8"
+      },
+      {
+       "file": "shrug-talk-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "mouth": "mouthO",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "476b7fa4"
+      },
+      {
+       "file": "shrug-talk-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "mouth": "mouthEE",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "35444ab8"
+      },
+      {
+       "file": "shrug-talk-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "mouth": "mouthFV",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "e2ebb5ac"
+      }
+     ]
+    }
+   }
+  },
+  "host/shrug-idle": {
+   "key": "host/shrug-idle",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "files": {
+    "base": "shrug-idle-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "shrug-idle-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "aecee2a8"
+     },
+     {
+      "file": "shrug-idle-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 1.5,
+       "shoulderY": -1,
+       "eyes": "open"
+      },
+      "hash": "37b02fee"
+     },
+     {
+      "file": "shrug-idle-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": -1,
+       "shoulderY": 1,
+       "eyes": "open"
+      },
+      "hash": "c580190e"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "shrug-idle-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "shrug-idle-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "aecee2a8"
+      },
+      {
+       "file": "shrug-idle-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "37b02fee"
+      },
+      {
+       "file": "shrug-idle-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "c580190e"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "shrug-idle-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "shrug-idle-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "e4f65cd2"
+      },
+      {
+       "file": "shrug-idle-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 1.5,
+        "shoulderY": -1,
+        "eyes": "open"
+       },
+       "hash": "43c8cee6"
+      },
+      {
+       "file": "shrug-idle-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": -1,
+        "shoulderY": 1,
+        "eyes": "open"
+       },
+       "hash": "fd0825a8"
+      }
+     ]
+    }
+   }
+  },
+  "host/shrug-blink": {
+   "key": "host/shrug-blink",
+   "dir": "host",
+   "aspect": "any",
+   "canvas": [
+    400,
+    720
+   ],
+   "viewBox": [
+    0,
+    40,
+    400,
+    720
+   ],
+   "delivered": [
+    800,
+    1440
+   ],
+   "exportScale": 2,
+   "playback": "overlay",
+   "fps": 4,
+   "frameCount": 2,
+   "files": {
+    "base": "shrug-blink-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "shrug-blink-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "open"
+      },
+      "hash": "aecee2a8"
+     },
+     {
+      "file": "shrug-blink-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "mouth": "mouthClosed",
+       "headRotate": 0,
+       "shoulderY": 0,
+       "eyes": "closed"
+      },
+      "hash": "1c905418"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "shrug-blink-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "shrug-blink-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "aecee2a8"
+      },
+      {
+       "file": "shrug-blink-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "1c905418"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "shrug-blink-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "shrug-blink-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "open"
+       },
+       "hash": "e4f65cd2"
+      },
+      {
+       "file": "shrug-blink-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "mouth": "mouthClosed",
+        "headRotate": 0,
+        "shoulderY": 0,
+        "eyes": "closed"
+       },
+       "hash": "37d5f080"
       }
      ]
     }

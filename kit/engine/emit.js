@@ -185,6 +185,9 @@ function build(opts) {
         hostAnchor: anchor || undefined, portraitWindow: anchor ? win : undefined, occlusionSplit: split,
         clearance: clear || undefined,
         title: r.title ? { slot: r.title.slot, ground: r.title.ground } : undefined,
+        sees: (M.constructor.PLAN || M.PLAN || {}).sees ? ((M.constructor.PLAN || M.PLAN).sees[r.pulledFrom || r.id] || null) : undefined,
+        seen: (M.constructor.seen || M.seen) ? (M.constructor.seen || M.seen)(r) : undefined,
+        pulledFrom: r.pulledFrom || undefined, drawnAngle: ((M.constructor.PLAN || M.PLAN || {}).drawn || []).indexOf(r.id) >= 0,
       }));
       const stem = r.id + '-' + H.name;
       emitFile({ key: id, hour: H.name, aspect: 'any', frame: null, file: 'room/' + stem + '.svg', canvas: [320, 180],
@@ -208,6 +211,7 @@ function build(opts) {
   const R1 = new Set(g.PLATES_R1.LIB.map(x => x.key));
   const R2 = new Set(g.PLATES_R2.LIB.map(x => x.key));
   const R3 = new Set(g.PLATES_R3.LIB.map(x => x.key));
+  const R5 = new Set(((g.PLATES_R5 || {}).LIB || []).map(x => x.key));
   const offs = (tokens.motion && tokens.motion.dataRuleOffsets) || [0];
   const fps = (tokens.motion && tokens.motion.fps) || 3;
   let widest = 0, loose = 0;
@@ -223,7 +227,10 @@ function build(opts) {
      * WHOLE mark a unit on frame 2 while the answer said it holds. One frame,
      * still/1/1, so the manifest says what the answer says. */
     const still = it.dir === 'annotations';
-    const O = still ? [0] : offs;
+    /* rebuild-34: a transition's frames are its PROGRESS, one plate per frame
+     * (args.t), played once; not the breathing rule offsets. */
+    const TR5 = it.args && it.args.transition ? [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1] : null;
+    const O = still ? [0] : TR5 || offs;
     ['night', 'dusk'].forEach(hour => {
       const H = M.HOURS.find(x => x.name === hour);
       const P = g.PLATES[it.author](Object.assign({}, it.args, { key: it.key, seed: it.seed, pal: PORT.palFor(tokens, hour) }));
@@ -231,17 +238,20 @@ function build(opts) {
       /* Frames: the frame's rule lines take tokens.motion.dataRuleOffsets;
        * pinned ink (axes, baselines, references) and every value stay still. */
       const cache = {};
-      const svgs = O.map(dy => cache[dy] || (cache[dy] = P.toSVG({ ruleOffset: dy })));
+      const svgs = TR5
+        ? TR5.map(t => g.PLATES[it.author](Object.assign({}, it.args, { t, key: it.key, seed: it.seed, pal: PORT.palFor(tokens, hour) })).toSVG())
+        : O.map(dy => cache[dy] || (cache[dy] = P.toSVG({ ruleOffset: dy })));
       const extra = opts.decorate ? opts.decorate(it, m, hour) : '';
       const files = extra ? svgs.map(s => s.replace('</svg>', extra + '</svg>')) : svgs;
       const c = countsOf(svgs[0]);
       slotCount = Object.keys(m.slots || {}).length;
-      assets[id] = assets[id] || { role: 'plate', dir: it.dir, author: it.author, playback: still ? 'still' : 'loop', fps: still ? 1 : fps,
+      assets[id] = assets[id] || { role: TR5 ? 'transition' : 'plate', dir: it.dir, author: it.author, playback: still ? 'still' : TR5 ? 'once' : 'loop', fps: still ? 1 : TR5 ? 12 : fps,
         frameCount: O.length, drawn: PORT.DRAWN_FAMILIES.indexOf(it.dir) >= 0,
         gradients: 0, partialOpacity: 0, textNodes: 0, slots: slotCount };
       if (R1.has(it.key)) assets[id].round = 'r1';
       if (R2.has(it.key)) assets[id].round = 'r2';
       if (R3.has(it.key)) assets[id].round = 'r3';
+      if (R5.has(it.key)) assets[id].round = 'r5';
       assets[id].gradients = Math.max(assets[id].gradients, c.gradients);
       assets[id].partialOpacity = Math.max(assets[id].partialOpacity, c.partialOpacity);
       assets[id].textNodes = Math.max(assets[id].textNodes, c.textNodes);
@@ -290,7 +300,7 @@ function build(opts) {
     });
     slots[it.key] = slotRec;
     addFam(it.dir, it.key, Object.assign({ key: it.key, dir: it.dir, aspect, canvas: slotRec.canvas,
-      delivered: [slotRec.canvas[0] * 2, slotRec.canvas[1] * 2], exportScale: 2, playback: still ? 'still' : 'loop', fps: still ? 1 : fps,
+      delivered: [slotRec.canvas[0] * 2, slotRec.canvas[1] * 2], exportScale: 2, playback: still ? 'still' : (it.args && it.args.transition) ? 'once' : 'loop', fps: still ? 1 : (it.args && it.args.transition) ? 12 : fps,
       frameCount: O.length, files: byHour.night, filesByHour: byHour, slotCount,
       typeRoles: slotRec.typeRoles, slots: slotRec.slots }));
   });

@@ -8,7 +8,7 @@
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
  "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "assetCount": 68,
+ "assetCount": 81,
  "plates": {
   "structure/both-true-16x9": {
    "key": "structure/both-true-16x9",
@@ -15126,8 +15126,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "years of protection on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of 15 years, then an ink role",
      "x": 640,
@@ -15170,8 +15170,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "years of protection on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of 15 years, then an ink role",
      "x": 640,
@@ -15214,8 +15214,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "years of protection on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of 15 years, then an ink role",
      "x": 640,
@@ -15538,8 +15538,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "years of protection on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of 15 years, then an ink role",
      "x": 96,
@@ -15581,8 +15581,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "years of protection on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of 15 years, then an ink role",
      "x": 96,
@@ -15624,8 +15624,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "years of protection on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of 15 years, then an ink role",
      "x": 96,
@@ -15949,7 +15949,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      20
      ],
      "note": "an extent on the fixed 0–20 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -15993,7 +15993,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      20
      ],
      "note": "an extent on the fixed 0–20 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -16037,7 +16037,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      20
      ],
      "note": "an extent on the fixed 0–20 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -16352,7 +16352,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      20
      ],
      "note": "an extent on the fixed 0–20 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -16395,7 +16395,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      20
      ],
      "note": "an extent on the fixed 0–20 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -16438,7 +16438,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      20
      ],
      "note": "an extent on the fixed 0–20 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -16753,7 +16753,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      30
      ],
      "note": "an extent on the fixed 0–30 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -16797,7 +16797,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      30
      ],
      "note": "an extent on the fixed 0–30 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -16841,7 +16841,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      30
      ],
      "note": "an extent on the fixed 0–30 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -17147,7 +17147,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      30
      ],
      "note": "an extent on the fixed 0–30 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -17190,7 +17190,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      30
      ],
      "note": "an extent on the fixed 0–30 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -17233,7 +17233,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      30
      ],
      "note": "an extent on the fixed 0–30 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -18379,7 +18379,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      120
      ],
      "note": "an extent on the fixed 0–120 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -18423,7 +18423,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      120
      ],
      "note": "an extent on the fixed 0–120 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -18467,7 +18467,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      120
      ],
      "note": "an extent on the fixed 0–120 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -18782,7 +18782,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      120
      ],
      "note": "an extent on the fixed 0–120 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -18825,7 +18825,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      120
      ],
      "note": "an extent on the fixed 0–120 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -18868,7 +18868,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      120
      ],
      "note": "an extent on the fixed 0–120 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -19182,8 +19182,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2031
      ],
      "note": "an extent on the fixed 2025–2031 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -19226,8 +19226,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2031
      ],
      "note": "an extent on the fixed 2025–2031 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -19270,8 +19270,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2031
      ],
      "note": "an extent on the fixed 2025–2031 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -19576,8 +19576,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2031
      ],
      "note": "an extent on the fixed 2025–2031 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -19619,8 +19619,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2031
      ],
      "note": "an extent on the fixed 2025–2031 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -19662,8 +19662,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2031
      ],
      "note": "an extent on the fixed 2025–2031 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -19969,7 +19969,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      60
      ],
      "note": "an extent on the fixed 0–60 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -20013,7 +20013,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      60
      ],
      "note": "an extent on the fixed 0–60 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -20057,7 +20057,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      60
      ],
      "note": "an extent on the fixed 0–60 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -20381,7 +20381,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      60
      ],
      "note": "an extent on the fixed 0–60 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -20424,7 +20424,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      60
      ],
      "note": "an extent on the fixed 0–60 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -20467,7 +20467,7 @@
      "axis": "horizontal",
      "scale": [
       0,
-      180
+      60
      ],
      "note": "an extent on the fixed 0–60 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -20790,8 +20790,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2030
      ],
      "note": "an extent on the fixed 2025–2030 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -20834,8 +20834,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2030
      ],
      "note": "an extent on the fixed 2025–2030 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -20878,8 +20878,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2030
      ],
      "note": "an extent on the fixed 2025–2030 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -21202,8 +21202,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2030
      ],
      "note": "an extent on the fixed 2025–2030 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -21245,8 +21245,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2030
      ],
      "note": "an extent on the fixed 2025–2030 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -21288,8 +21288,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2030
      ],
      "note": "an extent on the fixed 2025–2030 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -21612,8 +21612,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "an extent on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -21656,8 +21656,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "an extent on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -21700,8 +21700,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "an extent on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 640,
@@ -22006,8 +22006,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "an extent on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -22049,8 +22049,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "an extent on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -22092,8 +22092,8 @@
      "region": true,
      "axis": "horizontal",
      "scale": [
-      0,
-      180
+      2025,
+      2040
      ],
      "note": "an extent on the fixed 2025–2040 scale — historyBand draws it; pass [start, end] as fractions of the scale, then an ink role",
      "x": 96,
@@ -22145,6 +22145,4740 @@
      "w": 888,
      "h": 30,
      "maxChars": 56
+    }
+   }
+  },
+  "structure/said-happened-guidance-16x9": {
+   "key": "structure/said-happened-guidance-16x9",
+   "dir": "structure",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "said-happened-guidance-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "said-happened-guidance-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "010230ac"
+     },
+     {
+      "file": "said-happened-guidance-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "010230ac"
+     },
+     {
+      "file": "said-happened-guidance-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "010230ac"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "said-happened-guidance-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-guidance-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "010230ac"
+      },
+      {
+       "file": "said-happened-guidance-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "010230ac"
+      },
+      {
+       "file": "said-happened-guidance-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "010230ac"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "said-happened-guidance-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-guidance-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "5f2e884e"
+      },
+      {
+       "file": "said-happened-guidance-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "5f2e884e"
+      },
+      {
+       "file": "said-happened-guidance-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "5f2e884e"
+      }
+     ]
+    }
+   },
+   "slotCount": 20,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 73,
+     "budget": "derived from the slot boxes that set this role; 73 is the floor (narrowest of 1), was 34"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 100,
+     "budget": "derived from the slot boxes that set this role; 100 is the floor (narrowest of 1), was 60"
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 20,
+     "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 4), was 8"
+    },
+    "said": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "otherParty",
+     "maxLines": 2,
+     "maxCharsPerLine": 30,
+     "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 4), was 24"
+    },
+    "happened": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "structure",
+     "maxLines": 2,
+     "maxCharsPerLine": 30,
+     "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 4), was 24"
+    },
+    "rail": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 700,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": "0.08em",
+     "maxChars": 61,
+     "budget": "derived from the slot boxes that set this role; 61 is the floor (narrowest of 2), was 16"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 200,
+     "y": 92,
+     "w": 1570,
+     "h": 32,
+     "maxChars": 73
+    },
+    "rail-said": {
+     "align": "left",
+     "role": "rail",
+     "x": 200,
+     "y": 256,
+     "w": 785,
+     "h": 30,
+     "maxChars": 61
+    },
+    "rail-happened": {
+     "align": "left",
+     "role": "rail",
+     "x": 200,
+     "y": 794,
+     "w": 785,
+     "h": 30,
+     "maxChars": 61
+    },
+    "date-1": {
+     "align": "center",
+     "role": "date",
+     "x": 223,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-1": {
+     "align": "center",
+     "role": "said",
+     "x": 223,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-1": {
+     "align": "center",
+     "role": "happened",
+     "x": 223,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-1": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 223,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "date-2": {
+     "align": "center",
+     "role": "date",
+     "x": 616,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-2": {
+     "align": "center",
+     "role": "said",
+     "x": 616,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-2": {
+     "align": "center",
+     "role": "happened",
+     "x": 616,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-2": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 616,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "date-3": {
+     "align": "center",
+     "role": "date",
+     "x": 1008,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-3": {
+     "align": "center",
+     "role": "said",
+     "x": 1008,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-3": {
+     "align": "center",
+     "role": "happened",
+     "x": 1008,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-3": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 1008,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "date-4": {
+     "align": "center",
+     "role": "date",
+     "x": 1401,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-4": {
+     "align": "center",
+     "role": "said",
+     "x": 1401,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-4": {
+     "align": "center",
+     "role": "happened",
+     "x": 1401,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-4": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 1401,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 200,
+     "y": 950,
+     "w": 1570,
+     "h": 30,
+     "maxChars": 100
+    }
+   }
+  },
+  "structure/said-happened-guidance-9x16": {
+   "key": "structure/said-happened-guidance-9x16",
+   "dir": "structure",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "said-happened-guidance-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "said-happened-guidance-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "bf530fec"
+     },
+     {
+      "file": "said-happened-guidance-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "bf530fec"
+     },
+     {
+      "file": "said-happened-guidance-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "bf530fec"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "said-happened-guidance-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-guidance-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bf530fec"
+      },
+      {
+       "file": "said-happened-guidance-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "bf530fec"
+      },
+      {
+       "file": "said-happened-guidance-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bf530fec"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "said-happened-guidance-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-guidance-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "10b64950"
+      },
+      {
+       "file": "said-happened-guidance-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "10b64950"
+      },
+      {
+       "file": "said-happened-guidance-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "10b64950"
+      }
+     ]
+    }
+   },
+   "slotCount": 20,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 43,
+     "budget": "derived from the slot boxes that set this role; 43 is the floor (narrowest of 1), was 34"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 59,
+     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 1), was 60"
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 25,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 13,
+     "budget": "derived from the slot boxes that set this role; 13 is the floor (narrowest of 4), was 8"
+    },
+    "said": {
+     "font": "Archivo Narrow",
+     "size": 25,
+     "weight": 600,
+     "colour": "otherParty",
+     "maxLines": 3,
+     "maxCharsPerLine": 19,
+     "budget": "derived from the slot boxes that set this role; 19 is the floor (narrowest of 4), was 20"
+    },
+    "happened": {
+     "font": "Archivo Narrow",
+     "size": 25,
+     "weight": 600,
+     "colour": "structure",
+     "maxLines": 3,
+     "maxCharsPerLine": 19,
+     "budget": "derived from the slot boxes that set this role; 19 is the floor (narrowest of 4), was 20"
+    },
+    "rail": {
+     "font": "Archivo Narrow",
+     "size": 24,
+     "weight": 700,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": "0.08em",
+     "maxChars": 39,
+     "budget": "derived from the slot boxes that set this role; 39 is the floor (narrowest of 2), was 16"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 80,
+     "y": 200,
+     "w": 928,
+     "h": 32,
+     "maxChars": 43
+    },
+    "rail-said": {
+     "align": "left",
+     "role": "rail",
+     "x": 80,
+     "y": 547,
+     "w": 464,
+     "h": 28,
+     "maxChars": 39
+    },
+    "rail-happened": {
+     "align": "left",
+     "role": "rail",
+     "x": 80,
+     "y": 1191,
+     "w": 464,
+     "h": 28,
+     "maxChars": 39
+    },
+    "date-1": {
+     "align": "center",
+     "role": "date",
+     "x": 94,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-1": {
+     "align": "center",
+     "role": "said",
+     "x": 94,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-1": {
+     "align": "center",
+     "role": "happened",
+     "x": 94,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-1": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 94,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "date-2": {
+     "align": "center",
+     "role": "date",
+     "x": 326,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-2": {
+     "align": "center",
+     "role": "said",
+     "x": 326,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-2": {
+     "align": "center",
+     "role": "happened",
+     "x": 326,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-2": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 326,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "date-3": {
+     "align": "center",
+     "role": "date",
+     "x": 558,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-3": {
+     "align": "center",
+     "role": "said",
+     "x": 558,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-3": {
+     "align": "center",
+     "role": "happened",
+     "x": 558,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-3": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 558,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "date-4": {
+     "align": "center",
+     "role": "date",
+     "x": 790,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-4": {
+     "align": "center",
+     "role": "said",
+     "x": 790,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-4": {
+     "align": "center",
+     "role": "happened",
+     "x": 790,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-4": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 790,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 80,
+     "y": 1720,
+     "w": 928,
+     "h": 30,
+     "maxChars": 59
+    }
+   }
+  },
+  "structure/said-happened-capital-16x9": {
+   "key": "structure/said-happened-capital-16x9",
+   "dir": "structure",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "said-happened-capital-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "said-happened-capital-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "010230ac"
+     },
+     {
+      "file": "said-happened-capital-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "010230ac"
+     },
+     {
+      "file": "said-happened-capital-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "010230ac"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "said-happened-capital-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-capital-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "010230ac"
+      },
+      {
+       "file": "said-happened-capital-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "010230ac"
+      },
+      {
+       "file": "said-happened-capital-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "010230ac"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "said-happened-capital-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-capital-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "5f2e884e"
+      },
+      {
+       "file": "said-happened-capital-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "5f2e884e"
+      },
+      {
+       "file": "said-happened-capital-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "5f2e884e"
+      }
+     ]
+    }
+   },
+   "slotCount": 20,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 73,
+     "budget": "derived from the slot boxes that set this role; 73 is the floor (narrowest of 1), was 34"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 100,
+     "budget": "derived from the slot boxes that set this role; 100 is the floor (narrowest of 1), was 60"
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 20,
+     "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 4), was 8"
+    },
+    "said": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "otherParty",
+     "maxLines": 2,
+     "maxCharsPerLine": 30,
+     "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 4), was 24"
+    },
+    "happened": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "structure",
+     "maxLines": 2,
+     "maxCharsPerLine": 30,
+     "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 4), was 24"
+    },
+    "rail": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 700,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": "0.08em",
+     "maxChars": 61,
+     "budget": "derived from the slot boxes that set this role; 61 is the floor (narrowest of 2), was 16"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 200,
+     "y": 92,
+     "w": 1570,
+     "h": 32,
+     "maxChars": 73
+    },
+    "rail-said": {
+     "align": "left",
+     "role": "rail",
+     "x": 200,
+     "y": 256,
+     "w": 785,
+     "h": 30,
+     "maxChars": 61
+    },
+    "rail-happened": {
+     "align": "left",
+     "role": "rail",
+     "x": 200,
+     "y": 794,
+     "w": 785,
+     "h": 30,
+     "maxChars": 61
+    },
+    "date-1": {
+     "align": "center",
+     "role": "date",
+     "x": 223,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-1": {
+     "align": "center",
+     "role": "said",
+     "x": 223,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-1": {
+     "align": "center",
+     "role": "happened",
+     "x": 223,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-1": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 223,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "date-2": {
+     "align": "center",
+     "role": "date",
+     "x": 616,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-2": {
+     "align": "center",
+     "role": "said",
+     "x": 616,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-2": {
+     "align": "center",
+     "role": "happened",
+     "x": 616,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-2": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 616,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "date-3": {
+     "align": "center",
+     "role": "date",
+     "x": 1008,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-3": {
+     "align": "center",
+     "role": "said",
+     "x": 1008,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-3": {
+     "align": "center",
+     "role": "happened",
+     "x": 1008,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-3": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 1008,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "date-4": {
+     "align": "center",
+     "role": "date",
+     "x": 1401,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-4": {
+     "align": "center",
+     "role": "said",
+     "x": 1401,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-4": {
+     "align": "center",
+     "role": "happened",
+     "x": 1401,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-4": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 1401,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 200,
+     "y": 950,
+     "w": 1570,
+     "h": 30,
+     "maxChars": 100
+    }
+   }
+  },
+  "structure/said-happened-capital-9x16": {
+   "key": "structure/said-happened-capital-9x16",
+   "dir": "structure",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "said-happened-capital-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "said-happened-capital-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "bf530fec"
+     },
+     {
+      "file": "said-happened-capital-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "bf530fec"
+     },
+     {
+      "file": "said-happened-capital-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "bf530fec"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "said-happened-capital-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-capital-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bf530fec"
+      },
+      {
+       "file": "said-happened-capital-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "bf530fec"
+      },
+      {
+       "file": "said-happened-capital-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bf530fec"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "said-happened-capital-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-capital-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "10b64950"
+      },
+      {
+       "file": "said-happened-capital-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "10b64950"
+      },
+      {
+       "file": "said-happened-capital-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "10b64950"
+      }
+     ]
+    }
+   },
+   "slotCount": 20,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 43,
+     "budget": "derived from the slot boxes that set this role; 43 is the floor (narrowest of 1), was 34"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 59,
+     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 1), was 60"
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 25,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 13,
+     "budget": "derived from the slot boxes that set this role; 13 is the floor (narrowest of 4), was 8"
+    },
+    "said": {
+     "font": "Archivo Narrow",
+     "size": 25,
+     "weight": 600,
+     "colour": "otherParty",
+     "maxLines": 3,
+     "maxCharsPerLine": 19,
+     "budget": "derived from the slot boxes that set this role; 19 is the floor (narrowest of 4), was 20"
+    },
+    "happened": {
+     "font": "Archivo Narrow",
+     "size": 25,
+     "weight": 600,
+     "colour": "structure",
+     "maxLines": 3,
+     "maxCharsPerLine": 19,
+     "budget": "derived from the slot boxes that set this role; 19 is the floor (narrowest of 4), was 20"
+    },
+    "rail": {
+     "font": "Archivo Narrow",
+     "size": 24,
+     "weight": 700,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": "0.08em",
+     "maxChars": 39,
+     "budget": "derived from the slot boxes that set this role; 39 is the floor (narrowest of 2), was 16"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 80,
+     "y": 200,
+     "w": 928,
+     "h": 32,
+     "maxChars": 43
+    },
+    "rail-said": {
+     "align": "left",
+     "role": "rail",
+     "x": 80,
+     "y": 547,
+     "w": 464,
+     "h": 28,
+     "maxChars": 39
+    },
+    "rail-happened": {
+     "align": "left",
+     "role": "rail",
+     "x": 80,
+     "y": 1191,
+     "w": 464,
+     "h": 28,
+     "maxChars": 39
+    },
+    "date-1": {
+     "align": "center",
+     "role": "date",
+     "x": 94,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-1": {
+     "align": "center",
+     "role": "said",
+     "x": 94,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-1": {
+     "align": "center",
+     "role": "happened",
+     "x": 94,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-1": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 94,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "date-2": {
+     "align": "center",
+     "role": "date",
+     "x": 326,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-2": {
+     "align": "center",
+     "role": "said",
+     "x": 326,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-2": {
+     "align": "center",
+     "role": "happened",
+     "x": 326,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-2": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 326,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "date-3": {
+     "align": "center",
+     "role": "date",
+     "x": 558,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-3": {
+     "align": "center",
+     "role": "said",
+     "x": 558,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-3": {
+     "align": "center",
+     "role": "happened",
+     "x": 558,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-3": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 558,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "date-4": {
+     "align": "center",
+     "role": "date",
+     "x": 790,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-4": {
+     "align": "center",
+     "role": "said",
+     "x": 790,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-4": {
+     "align": "center",
+     "role": "happened",
+     "x": 790,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-4": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 790,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 80,
+     "y": 1720,
+     "w": 928,
+     "h": 30,
+     "maxChars": 59
+    }
+   }
+  },
+  "structure/said-happened-strategy-16x9": {
+   "key": "structure/said-happened-strategy-16x9",
+   "dir": "structure",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "said-happened-strategy-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "said-happened-strategy-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "010230ac"
+     },
+     {
+      "file": "said-happened-strategy-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "010230ac"
+     },
+     {
+      "file": "said-happened-strategy-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "010230ac"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "said-happened-strategy-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-strategy-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "010230ac"
+      },
+      {
+       "file": "said-happened-strategy-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "010230ac"
+      },
+      {
+       "file": "said-happened-strategy-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "010230ac"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "said-happened-strategy-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-strategy-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "5f2e884e"
+      },
+      {
+       "file": "said-happened-strategy-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "5f2e884e"
+      },
+      {
+       "file": "said-happened-strategy-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "5f2e884e"
+      }
+     ]
+    }
+   },
+   "slotCount": 20,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 73,
+     "budget": "derived from the slot boxes that set this role; 73 is the floor (narrowest of 1), was 34"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 100,
+     "budget": "derived from the slot boxes that set this role; 100 is the floor (narrowest of 1), was 60"
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 20,
+     "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 4), was 8"
+    },
+    "said": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "otherParty",
+     "maxLines": 2,
+     "maxCharsPerLine": 30,
+     "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 4), was 24"
+    },
+    "happened": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "structure",
+     "maxLines": 2,
+     "maxCharsPerLine": 30,
+     "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 4), was 24"
+    },
+    "rail": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 700,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": "0.08em",
+     "maxChars": 61,
+     "budget": "derived from the slot boxes that set this role; 61 is the floor (narrowest of 2), was 16"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 200,
+     "y": 92,
+     "w": 1570,
+     "h": 32,
+     "maxChars": 73
+    },
+    "rail-said": {
+     "align": "left",
+     "role": "rail",
+     "x": 200,
+     "y": 256,
+     "w": 785,
+     "h": 30,
+     "maxChars": 61
+    },
+    "rail-happened": {
+     "align": "left",
+     "role": "rail",
+     "x": 200,
+     "y": 794,
+     "w": 785,
+     "h": 30,
+     "maxChars": 61
+    },
+    "date-1": {
+     "align": "center",
+     "role": "date",
+     "x": 223,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-1": {
+     "align": "center",
+     "role": "said",
+     "x": 223,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-1": {
+     "align": "center",
+     "role": "happened",
+     "x": 223,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-1": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 223,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "date-2": {
+     "align": "center",
+     "role": "date",
+     "x": 616,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-2": {
+     "align": "center",
+     "role": "said",
+     "x": 616,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-2": {
+     "align": "center",
+     "role": "happened",
+     "x": 616,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-2": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 616,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "date-3": {
+     "align": "center",
+     "role": "date",
+     "x": 1008,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-3": {
+     "align": "center",
+     "role": "said",
+     "x": 1008,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-3": {
+     "align": "center",
+     "role": "happened",
+     "x": 1008,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-3": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 1008,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "date-4": {
+     "align": "center",
+     "role": "date",
+     "x": 1401,
+     "y": 524,
+     "w": 345,
+     "h": 32,
+     "maxChars": 20
+    },
+    "said-4": {
+     "align": "center",
+     "role": "said",
+     "x": 1401,
+     "y": 293,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "happened-4": {
+     "align": "center",
+     "role": "happened",
+     "x": 1401,
+     "y": 690,
+     "w": 345,
+     "h": 97,
+     "maxCharsPerLine": 30,
+     "maxLines": 2
+    },
+    "diverge-4": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 1401,
+     "y": 410,
+     "w": 345,
+     "h": 260
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 200,
+     "y": 950,
+     "w": 1570,
+     "h": 30,
+     "maxChars": 100
+    }
+   }
+  },
+  "structure/said-happened-strategy-9x16": {
+   "key": "structure/said-happened-strategy-9x16",
+   "dir": "structure",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "said-happened-strategy-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "said-happened-strategy-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "bf530fec"
+     },
+     {
+      "file": "said-happened-strategy-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "bf530fec"
+     },
+     {
+      "file": "said-happened-strategy-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "bf530fec"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "said-happened-strategy-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-strategy-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bf530fec"
+      },
+      {
+       "file": "said-happened-strategy-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "bf530fec"
+      },
+      {
+       "file": "said-happened-strategy-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bf530fec"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "said-happened-strategy-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "said-happened-strategy-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "10b64950"
+      },
+      {
+       "file": "said-happened-strategy-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "10b64950"
+      },
+      {
+       "file": "said-happened-strategy-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "10b64950"
+      }
+     ]
+    }
+   },
+   "slotCount": 20,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 43,
+     "budget": "derived from the slot boxes that set this role; 43 is the floor (narrowest of 1), was 34"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 59,
+     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 1), was 60"
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 25,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 13,
+     "budget": "derived from the slot boxes that set this role; 13 is the floor (narrowest of 4), was 8"
+    },
+    "said": {
+     "font": "Archivo Narrow",
+     "size": 25,
+     "weight": 600,
+     "colour": "otherParty",
+     "maxLines": 3,
+     "maxCharsPerLine": 19,
+     "budget": "derived from the slot boxes that set this role; 19 is the floor (narrowest of 4), was 20"
+    },
+    "happened": {
+     "font": "Archivo Narrow",
+     "size": 25,
+     "weight": 600,
+     "colour": "structure",
+     "maxLines": 3,
+     "maxCharsPerLine": 19,
+     "budget": "derived from the slot boxes that set this role; 19 is the floor (narrowest of 4), was 20"
+    },
+    "rail": {
+     "font": "Archivo Narrow",
+     "size": 24,
+     "weight": 700,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": "0.08em",
+     "maxChars": 39,
+     "budget": "derived from the slot boxes that set this role; 39 is the floor (narrowest of 2), was 16"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 80,
+     "y": 200,
+     "w": 928,
+     "h": 32,
+     "maxChars": 43
+    },
+    "rail-said": {
+     "align": "left",
+     "role": "rail",
+     "x": 80,
+     "y": 547,
+     "w": 464,
+     "h": 28,
+     "maxChars": 39
+    },
+    "rail-happened": {
+     "align": "left",
+     "role": "rail",
+     "x": 80,
+     "y": 1191,
+     "w": 464,
+     "h": 28,
+     "maxChars": 39
+    },
+    "date-1": {
+     "align": "center",
+     "role": "date",
+     "x": 94,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-1": {
+     "align": "center",
+     "role": "said",
+     "x": 94,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-1": {
+     "align": "center",
+     "role": "happened",
+     "x": 94,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-1": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 94,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "date-2": {
+     "align": "center",
+     "role": "date",
+     "x": 326,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-2": {
+     "align": "center",
+     "role": "said",
+     "x": 326,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-2": {
+     "align": "center",
+     "role": "happened",
+     "x": 326,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-2": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 326,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "date-3": {
+     "align": "center",
+     "role": "date",
+     "x": 558,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-3": {
+     "align": "center",
+     "role": "said",
+     "x": 558,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-3": {
+     "align": "center",
+     "role": "happened",
+     "x": 558,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-3": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 558,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "date-4": {
+     "align": "center",
+     "role": "date",
+     "x": 790,
+     "y": 869,
+     "w": 204,
+     "h": 29,
+     "maxChars": 13
+    },
+    "said-4": {
+     "align": "center",
+     "role": "said",
+     "x": 790,
+     "y": 587,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "happened-4": {
+     "align": "center",
+     "role": "happened",
+     "x": 790,
+     "y": 1092,
+     "w": 204,
+     "h": 87,
+     "maxCharsPerLine": 19,
+     "maxLines": 3
+    },
+    "diverge-4": {
+     "role": "diverge",
+     "region": true,
+     "optional": true,
+     "note": "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+     "x": 790,
+     "y": 710,
+     "w": 204,
+     "h": 346
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 80,
+     "y": 1720,
+     "w": 928,
+     "h": 30,
+     "maxChars": 59
+    }
+   }
+  },
+  "structure/revision-trail-up-16x9": {
+   "key": "structure/revision-trail-up-16x9",
+   "dir": "structure",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "revision-trail-up-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "revision-trail-up-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "63499aca"
+     },
+     {
+      "file": "revision-trail-up-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "b066e7a8"
+     },
+     {
+      "file": "revision-trail-up-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "63499aca"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "revision-trail-up-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "revision-trail-up-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "63499aca"
+      },
+      {
+       "file": "revision-trail-up-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "b066e7a8"
+      },
+      {
+       "file": "revision-trail-up-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "63499aca"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "revision-trail-up-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "revision-trail-up-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e0ae3e12"
+      },
+      {
+       "file": "revision-trail-up-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "4791fada"
+      },
+      {
+       "file": "revision-trail-up-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e0ae3e12"
+      }
+     ]
+    }
+   },
+   "slotCount": 24,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 75,
+     "budget": "derived from the slot boxes that set this role; 75 is the floor (narrowest of 1), was 95"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 20,
+     "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 5), was 20"
+    },
+    "est": {
+     "font": "Courier Prime",
+     "size": 40,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 12,
+     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 5), was 12"
+    },
+    "move": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 20,
+     "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 5), was 20"
+    },
+    "note": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 1,
+     "maxCharsPerLine": 92,
+     "budget": "derived from the slot boxes that set this role; 92 is the floor (narrowest of 1), was 40"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 120,
+     "w": 1600,
+     "h": 32,
+     "maxChars": 75
+    },
+    "plot-area": {
+     "role": "plot-area",
+     "container": true,
+     "note": "code draws the revision path in here only",
+     "x": 160,
+     "y": 280,
+     "w": 1600,
+     "h": 411
+    },
+    "point-1": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 320,
+     "x": 160,
+     "y": 280,
+     "w": 320,
+     "h": 411
+    },
+    "date-1": {
+     "align": "center",
+     "role": "date",
+     "x": 170,
+     "y": 717,
+     "w": 300,
+     "h": 28,
+     "maxChars": 20
+    },
+    "est-1": {
+     "align": "center",
+     "role": "est",
+     "x": 170,
+     "y": 757,
+     "w": 300,
+     "h": 46,
+     "maxChars": 12
+    },
+    "move-1": {
+     "align": "center",
+     "role": "move",
+     "x": 170,
+     "y": 813,
+     "w": 300,
+     "h": 28,
+     "maxChars": 20
+    },
+    "point-2": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 640,
+     "x": 480,
+     "y": 280,
+     "w": 320,
+     "h": 411
+    },
+    "date-2": {
+     "align": "center",
+     "role": "date",
+     "x": 490,
+     "y": 717,
+     "w": 300,
+     "h": 28,
+     "maxChars": 20
+    },
+    "est-2": {
+     "align": "center",
+     "role": "est",
+     "x": 490,
+     "y": 757,
+     "w": 300,
+     "h": 46,
+     "maxChars": 12
+    },
+    "move-2": {
+     "align": "center",
+     "role": "move",
+     "x": 490,
+     "y": 813,
+     "w": 300,
+     "h": 28,
+     "maxChars": 20
+    },
+    "point-3": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 960,
+     "x": 800,
+     "y": 280,
+     "w": 320,
+     "h": 411
+    },
+    "date-3": {
+     "align": "center",
+     "role": "date",
+     "x": 810,
+     "y": 717,
+     "w": 300,
+     "h": 28,
+     "maxChars": 20
+    },
+    "est-3": {
+     "align": "center",
+     "role": "est",
+     "x": 810,
+     "y": 757,
+     "w": 300,
+     "h": 46,
+     "maxChars": 12
+    },
+    "move-3": {
+     "align": "center",
+     "role": "move",
+     "x": 810,
+     "y": 813,
+     "w": 300,
+     "h": 28,
+     "maxChars": 20
+    },
+    "point-4": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 1280,
+     "x": 1120,
+     "y": 280,
+     "w": 320,
+     "h": 411
+    },
+    "date-4": {
+     "align": "center",
+     "role": "date",
+     "x": 1130,
+     "y": 717,
+     "w": 300,
+     "h": 28,
+     "maxChars": 20
+    },
+    "est-4": {
+     "align": "center",
+     "role": "est",
+     "x": 1130,
+     "y": 757,
+     "w": 300,
+     "h": 46,
+     "maxChars": 12
+    },
+    "move-4": {
+     "align": "center",
+     "role": "move",
+     "x": 1130,
+     "y": 813,
+     "w": 300,
+     "h": 28,
+     "maxChars": 20
+    },
+    "point-5": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 1600,
+     "x": 1440,
+     "y": 280,
+     "w": 320,
+     "h": 411
+    },
+    "date-5": {
+     "align": "center",
+     "role": "date",
+     "x": 1450,
+     "y": 717,
+     "w": 300,
+     "h": 28,
+     "maxChars": 20
+    },
+    "est-5": {
+     "align": "center",
+     "role": "est",
+     "x": 1450,
+     "y": 757,
+     "w": 300,
+     "h": 46,
+     "maxChars": 12
+    },
+    "move-5": {
+     "align": "center",
+     "role": "move",
+     "x": 1450,
+     "y": 813,
+     "w": 300,
+     "h": 28,
+     "maxChars": 20
+    },
+    "note": {
+     "align": "left",
+     "role": "note",
+     "x": 160,
+     "y": 880,
+     "w": 960,
+     "h": 60,
+     "maxChars": 68,
+     "maxCharsPerLine": 92,
+     "maxLines": 1
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "structure/revision-trail-target-16x9": {
+   "key": "structure/revision-trail-target-16x9",
+   "dir": "structure",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "revision-trail-target-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "revision-trail-target-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "63499aca"
+     },
+     {
+      "file": "revision-trail-target-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "b066e7a8"
+     },
+     {
+      "file": "revision-trail-target-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "63499aca"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "revision-trail-target-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "revision-trail-target-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "63499aca"
+      },
+      {
+       "file": "revision-trail-target-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "b066e7a8"
+      },
+      {
+       "file": "revision-trail-target-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "63499aca"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "revision-trail-target-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "revision-trail-target-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e0ae3e12"
+      },
+      {
+       "file": "revision-trail-target-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "4791fada"
+      },
+      {
+       "file": "revision-trail-target-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e0ae3e12"
+      }
+     ]
+    }
+   },
+   "slotCount": 28,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 75,
+     "budget": "derived from the slot boxes that set this role; 75 is the floor (narrowest of 1), was 95"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 17,
+     "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 6), was 17"
+    },
+    "est": {
+     "font": "Courier Prime",
+     "size": 40,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 6), was 10"
+    },
+    "move": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 17,
+     "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 6), was 17"
+    },
+    "note": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 1,
+     "maxCharsPerLine": 92,
+     "budget": "derived from the slot boxes that set this role; 92 is the floor (narrowest of 1), was 40"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 120,
+     "w": 1600,
+     "h": 32,
+     "maxChars": 75
+    },
+    "plot-area": {
+     "role": "plot-area",
+     "container": true,
+     "note": "code draws the revision path in here only",
+     "x": 160,
+     "y": 280,
+     "w": 1600,
+     "h": 411
+    },
+    "point-1": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 293,
+     "x": 160,
+     "y": 280,
+     "w": 267,
+     "h": 411
+    },
+    "date-1": {
+     "align": "center",
+     "role": "date",
+     "x": 170,
+     "y": 717,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "est-1": {
+     "align": "center",
+     "role": "est",
+     "x": 170,
+     "y": 757,
+     "w": 247,
+     "h": 46,
+     "maxChars": 10
+    },
+    "move-1": {
+     "align": "center",
+     "role": "move",
+     "x": 170,
+     "y": 813,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "point-2": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 560,
+     "x": 427,
+     "y": 280,
+     "w": 267,
+     "h": 411
+    },
+    "date-2": {
+     "align": "center",
+     "role": "date",
+     "x": 437,
+     "y": 717,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "est-2": {
+     "align": "center",
+     "role": "est",
+     "x": 437,
+     "y": 757,
+     "w": 247,
+     "h": 46,
+     "maxChars": 10
+    },
+    "move-2": {
+     "align": "center",
+     "role": "move",
+     "x": 437,
+     "y": 813,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "point-3": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 827,
+     "x": 693,
+     "y": 280,
+     "w": 267,
+     "h": 411
+    },
+    "date-3": {
+     "align": "center",
+     "role": "date",
+     "x": 703,
+     "y": 717,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "est-3": {
+     "align": "center",
+     "role": "est",
+     "x": 703,
+     "y": 757,
+     "w": 247,
+     "h": 46,
+     "maxChars": 10
+    },
+    "move-3": {
+     "align": "center",
+     "role": "move",
+     "x": 703,
+     "y": 813,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "point-4": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 1093,
+     "x": 960,
+     "y": 280,
+     "w": 267,
+     "h": 411
+    },
+    "date-4": {
+     "align": "center",
+     "role": "date",
+     "x": 970,
+     "y": 717,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "est-4": {
+     "align": "center",
+     "role": "est",
+     "x": 970,
+     "y": 757,
+     "w": 247,
+     "h": 46,
+     "maxChars": 10
+    },
+    "move-4": {
+     "align": "center",
+     "role": "move",
+     "x": 970,
+     "y": 813,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "point-5": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 1360,
+     "x": 1227,
+     "y": 280,
+     "w": 267,
+     "h": 411
+    },
+    "date-5": {
+     "align": "center",
+     "role": "date",
+     "x": 1237,
+     "y": 717,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "est-5": {
+     "align": "center",
+     "role": "est",
+     "x": 1237,
+     "y": 757,
+     "w": 247,
+     "h": 46,
+     "maxChars": 10
+    },
+    "move-5": {
+     "align": "center",
+     "role": "move",
+     "x": 1237,
+     "y": 813,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "point-6": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 1627,
+     "x": 1493,
+     "y": 280,
+     "w": 267,
+     "h": 411
+    },
+    "date-6": {
+     "align": "center",
+     "role": "date",
+     "x": 1503,
+     "y": 717,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "est-6": {
+     "align": "center",
+     "role": "est",
+     "x": 1503,
+     "y": 757,
+     "w": 247,
+     "h": 46,
+     "maxChars": 10
+    },
+    "move-6": {
+     "align": "center",
+     "role": "move",
+     "x": 1503,
+     "y": 813,
+     "w": 247,
+     "h": 28,
+     "maxChars": 17
+    },
+    "note": {
+     "align": "left",
+     "role": "note",
+     "x": 160,
+     "y": 880,
+     "w": 960,
+     "h": 60,
+     "maxChars": 68,
+     "maxCharsPerLine": 92,
+     "maxLines": 1
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "structure/revision-trail-revenue-16x9": {
+   "key": "structure/revision-trail-revenue-16x9",
+   "dir": "structure",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "revision-trail-revenue-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "revision-trail-revenue-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "63499aca"
+     },
+     {
+      "file": "revision-trail-revenue-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "b066e7a8"
+     },
+     {
+      "file": "revision-trail-revenue-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "63499aca"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "revision-trail-revenue-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "revision-trail-revenue-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "63499aca"
+      },
+      {
+       "file": "revision-trail-revenue-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "b066e7a8"
+      },
+      {
+       "file": "revision-trail-revenue-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "63499aca"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "revision-trail-revenue-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "revision-trail-revenue-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e0ae3e12"
+      },
+      {
+       "file": "revision-trail-revenue-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "4791fada"
+      },
+      {
+       "file": "revision-trail-revenue-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e0ae3e12"
+      }
+     ]
+    }
+   },
+   "slotCount": 20,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 75,
+     "budget": "derived from the slot boxes that set this role; 75 is the floor (narrowest of 1), was 95"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 26,
+     "budget": "derived from the slot boxes that set this role; 26 is the floor (narrowest of 4), was 26"
+    },
+    "est": {
+     "font": "Courier Prime",
+     "size": 40,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 15,
+     "budget": "derived from the slot boxes that set this role; 15 is the floor (narrowest of 4), was 15"
+    },
+    "move": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 26,
+     "budget": "derived from the slot boxes that set this role; 26 is the floor (narrowest of 4), was 26"
+    },
+    "note": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 1,
+     "maxCharsPerLine": 92,
+     "budget": "derived from the slot boxes that set this role; 92 is the floor (narrowest of 1), was 40"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 120,
+     "w": 1600,
+     "h": 32,
+     "maxChars": 75
+    },
+    "plot-area": {
+     "role": "plot-area",
+     "container": true,
+     "note": "code draws the revision path in here only",
+     "x": 160,
+     "y": 280,
+     "w": 1600,
+     "h": 411
+    },
+    "point-1": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 360,
+     "x": 160,
+     "y": 280,
+     "w": 400,
+     "h": 411
+    },
+    "date-1": {
+     "align": "center",
+     "role": "date",
+     "x": 170,
+     "y": 717,
+     "w": 380,
+     "h": 28,
+     "maxChars": 26
+    },
+    "est-1": {
+     "align": "center",
+     "role": "est",
+     "x": 170,
+     "y": 757,
+     "w": 380,
+     "h": 46,
+     "maxChars": 15
+    },
+    "move-1": {
+     "align": "center",
+     "role": "move",
+     "x": 170,
+     "y": 813,
+     "w": 380,
+     "h": 28,
+     "maxChars": 26
+    },
+    "point-2": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 760,
+     "x": 560,
+     "y": 280,
+     "w": 400,
+     "h": 411
+    },
+    "date-2": {
+     "align": "center",
+     "role": "date",
+     "x": 570,
+     "y": 717,
+     "w": 380,
+     "h": 28,
+     "maxChars": 26
+    },
+    "est-2": {
+     "align": "center",
+     "role": "est",
+     "x": 570,
+     "y": 757,
+     "w": 380,
+     "h": 46,
+     "maxChars": 15
+    },
+    "move-2": {
+     "align": "center",
+     "role": "move",
+     "x": 570,
+     "y": 813,
+     "w": 380,
+     "h": 28,
+     "maxChars": 26
+    },
+    "point-3": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 1160,
+     "x": 960,
+     "y": 280,
+     "w": 400,
+     "h": 411
+    },
+    "date-3": {
+     "align": "center",
+     "role": "date",
+     "x": 970,
+     "y": 717,
+     "w": 380,
+     "h": 28,
+     "maxChars": 26
+    },
+    "est-3": {
+     "align": "center",
+     "role": "est",
+     "x": 970,
+     "y": 757,
+     "w": 380,
+     "h": 46,
+     "maxChars": 15
+    },
+    "move-3": {
+     "align": "center",
+     "role": "move",
+     "x": 970,
+     "y": 813,
+     "w": 380,
+     "h": 28,
+     "maxChars": 26
+    },
+    "point-4": {
+     "role": "point-column",
+     "container": true,
+     "anchorX": 1560,
+     "x": 1360,
+     "y": 280,
+     "w": 400,
+     "h": 411
+    },
+    "date-4": {
+     "align": "center",
+     "role": "date",
+     "x": 1370,
+     "y": 717,
+     "w": 380,
+     "h": 28,
+     "maxChars": 26
+    },
+    "est-4": {
+     "align": "center",
+     "role": "est",
+     "x": 1370,
+     "y": 757,
+     "w": 380,
+     "h": 46,
+     "maxChars": 15
+    },
+    "move-4": {
+     "align": "center",
+     "role": "move",
+     "x": 1370,
+     "y": 813,
+     "w": 380,
+     "h": 28,
+     "maxChars": 26
+    },
+    "note": {
+     "align": "left",
+     "role": "note",
+     "x": 160,
+     "y": 880,
+     "w": 960,
+     "h": 60,
+     "maxChars": 68,
+     "maxCharsPerLine": 92,
+     "maxLines": 1
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "structure/event-calendar-16x9": {
+   "key": "structure/event-calendar-16x9",
+   "dir": "structure",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "event-calendar-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "event-calendar-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "3ef830ee"
+     },
+     {
+      "file": "event-calendar-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "05173bdb"
+     },
+     {
+      "file": "event-calendar-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "3ef830ee"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "event-calendar-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "event-calendar-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3ef830ee"
+      },
+      {
+       "file": "event-calendar-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "05173bdb"
+      },
+      {
+       "file": "event-calendar-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "3ef830ee"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "event-calendar-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "event-calendar-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8e0612de"
+      },
+      {
+       "file": "event-calendar-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "8b3b7520"
+      },
+      {
+       "file": "event-calendar-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "8e0612de"
+      }
+     ]
+    }
+   },
+   "slotCount": 34,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 45,
+     "budget": "derived from the slot boxes that set this role; 45 is the floor (narrowest of 1), was 57"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 102"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 36"
+    },
+    "month": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 19,
+     "budget": "derived from the slot boxes that set this role; 19 is the floor (narrowest of 6), was 19"
+    },
+    "num": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 3,
+     "budget": "derived from the slot boxes that set this role; 3 is the floor (narrowest of 5), was 3"
+    },
+    "date": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 16,
+     "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 5), was 12"
+    },
+    "event": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 46,
+     "budget": "derived from the slot boxes that set this role; 46 is the floor (narrowest of 5), was 34"
+    },
+    "watch": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 50,
+     "budget": "derived from the slot boxes that set this role; 50 is the floor (narrowest of 5), was 48"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 160,
+     "y": 110,
+     "w": 960,
+     "h": 32,
+     "maxChars": 45
+    },
+    "unit": {
+     "align": "right",
+     "role": "unit",
+     "x": 1152,
+     "y": 110,
+     "w": 608,
+     "h": 32,
+     "maxChars": 36
+    },
+    "month-1": {
+     "align": "left",
+     "role": "month",
+     "x": 164,
+     "y": 312,
+     "w": 259,
+     "h": 26,
+     "maxChars": 19
+    },
+    "month-2": {
+     "align": "left",
+     "role": "month",
+     "x": 431,
+     "y": 312,
+     "w": 259,
+     "h": 26,
+     "maxChars": 19
+    },
+    "month-3": {
+     "align": "left",
+     "role": "month",
+     "x": 697,
+     "y": 312,
+     "w": 259,
+     "h": 26,
+     "maxChars": 19
+    },
+    "month-4": {
+     "align": "left",
+     "role": "month",
+     "x": 964,
+     "y": 312,
+     "w": 259,
+     "h": 26,
+     "maxChars": 19
+    },
+    "month-5": {
+     "align": "left",
+     "role": "month",
+     "x": 1231,
+     "y": 312,
+     "w": 259,
+     "h": 26,
+     "maxChars": 19
+    },
+    "month-6": {
+     "align": "left",
+     "role": "month",
+     "x": 1497,
+     "y": 312,
+     "w": 259,
+     "h": 26,
+     "maxChars": 19
+    },
+    "when-1": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "window",
+     "weight": 10,
+     "note": "event 1 — axisMark as a fraction of the plate’s window; num-1 carries its number",
+     "x": 160,
+     "y": 260,
+     "w": 1600,
+     "h": 40
+    },
+    "when-2": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": "window",
+     "weight": 10,
+     "note": "event 2 — axisMark as a fraction of the plate’s window; num-2 carries its number",
+     "x": 160,
+     "y": 260,
+     "w": 1600,
+     "h": 40
+    },
+    "when-3": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": "window",
+     "weight": 10,
+     "note": "event 3 — axisMark as a fraction of the plate’s window; num-3 carries its number",
+     "x": 160,
+     "y": 260,
+     "w": 1600,
+     "h": 40
+    },
+    "when-4": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": "window",
+     "weight": 10,
+     "note": "event 4 — axisMark as a fraction of the plate’s window; num-4 carries its number",
+     "x": 160,
+     "y": 260,
+     "w": 1600,
+     "h": 40
+    },
+    "when-5": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": "window",
+     "weight": 10,
+     "note": "event 5 — axisMark as a fraction of the plate’s window; num-5 carries its number",
+     "x": 160,
+     "y": 260,
+     "w": 1600,
+     "h": 40
+    },
+    "num-1": {
+     "align": "left",
+     "role": "num",
+     "x": 160,
+     "y": 370,
+     "w": 60,
+     "h": 32,
+     "maxChars": 3
+    },
+    "date-1": {
+     "align": "left",
+     "role": "date",
+     "x": 230,
+     "y": 370,
+     "w": 190,
+     "h": 32,
+     "maxChars": 16
+    },
+    "event-1": {
+     "align": "left",
+     "role": "event",
+     "x": 440,
+     "y": 370,
+     "w": 560,
+     "h": 35,
+     "maxChars": 46
+    },
+    "watch-1": {
+     "align": "left",
+     "role": "watch",
+     "x": 1040,
+     "y": 374,
+     "w": 720,
+     "h": 28,
+     "maxChars": 50
+    },
+    "num-2": {
+     "align": "left",
+     "role": "num",
+     "x": 160,
+     "y": 476,
+     "w": 60,
+     "h": 32,
+     "maxChars": 3
+    },
+    "date-2": {
+     "align": "left",
+     "role": "date",
+     "x": 230,
+     "y": 476,
+     "w": 190,
+     "h": 32,
+     "maxChars": 16
+    },
+    "event-2": {
+     "align": "left",
+     "role": "event",
+     "x": 440,
+     "y": 476,
+     "w": 560,
+     "h": 35,
+     "maxChars": 46
+    },
+    "watch-2": {
+     "align": "left",
+     "role": "watch",
+     "x": 1040,
+     "y": 480,
+     "w": 720,
+     "h": 28,
+     "maxChars": 50
+    },
+    "num-3": {
+     "align": "left",
+     "role": "num",
+     "x": 160,
+     "y": 582,
+     "w": 60,
+     "h": 32,
+     "maxChars": 3
+    },
+    "date-3": {
+     "align": "left",
+     "role": "date",
+     "x": 230,
+     "y": 582,
+     "w": 190,
+     "h": 32,
+     "maxChars": 16
+    },
+    "event-3": {
+     "align": "left",
+     "role": "event",
+     "x": 440,
+     "y": 582,
+     "w": 560,
+     "h": 35,
+     "maxChars": 46
+    },
+    "watch-3": {
+     "align": "left",
+     "role": "watch",
+     "x": 1040,
+     "y": 586,
+     "w": 720,
+     "h": 28,
+     "maxChars": 50
+    },
+    "num-4": {
+     "align": "left",
+     "role": "num",
+     "x": 160,
+     "y": 688,
+     "w": 60,
+     "h": 32,
+     "maxChars": 3
+    },
+    "date-4": {
+     "align": "left",
+     "role": "date",
+     "x": 230,
+     "y": 688,
+     "w": 190,
+     "h": 32,
+     "maxChars": 16
+    },
+    "event-4": {
+     "align": "left",
+     "role": "event",
+     "x": 440,
+     "y": 688,
+     "w": 560,
+     "h": 35,
+     "maxChars": 46
+    },
+    "watch-4": {
+     "align": "left",
+     "role": "watch",
+     "x": 1040,
+     "y": 692,
+     "w": 720,
+     "h": 28,
+     "maxChars": 50
+    },
+    "num-5": {
+     "align": "left",
+     "role": "num",
+     "x": 160,
+     "y": 794,
+     "w": 60,
+     "h": 32,
+     "maxChars": 3
+    },
+    "date-5": {
+     "align": "left",
+     "role": "date",
+     "x": 230,
+     "y": 794,
+     "w": 190,
+     "h": 32,
+     "maxChars": 16
+    },
+    "event-5": {
+     "align": "left",
+     "role": "event",
+     "x": 440,
+     "y": 794,
+     "w": 560,
+     "h": 35,
+     "maxChars": 46
+    },
+    "watch-5": {
+     "align": "left",
+     "role": "watch",
+     "x": 1040,
+     "y": 798,
+     "w": 720,
+     "h": 28,
+     "maxChars": 50
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 160,
+     "y": 960,
+     "w": 1600,
+     "h": 30,
+     "maxChars": 102
+    }
+   }
+  },
+  "structure/event-calendar-9x16": {
+   "key": "structure/event-calendar-9x16",
+   "dir": "structure",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "event-calendar-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "event-calendar-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "69aeaaba"
+     },
+     {
+      "file": "event-calendar-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "56042e55"
+     },
+     {
+      "file": "event-calendar-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "69aeaaba"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "event-calendar-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "event-calendar-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "69aeaaba"
+      },
+      {
+       "file": "event-calendar-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "56042e55"
+      },
+      {
+       "file": "event-calendar-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "69aeaaba"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "event-calendar-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "event-calendar-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ccfe83b8"
+      },
+      {
+       "file": "event-calendar-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "d53f0a90"
+      },
+      {
+       "file": "event-calendar-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "ccfe83b8"
+      }
+     ]
+    }
+   },
+   "slotCount": 34,
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 52"
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
+    },
+    "unit": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
+    },
+    "month": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 6), was 10"
+    },
+    "num": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 3,
+     "budget": "derived from the slot boxes that set this role; 3 is the floor (narrowest of 5), was 3"
+    },
+    "date": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 17,
+     "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 5), was 13"
+    },
+    "event": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 50,
+     "budget": "derived from the slot boxes that set this role; 50 is the floor (narrowest of 5), was 37"
+    },
+    "watch": {
+     "font": "Courier Prime",
+     "size": 24,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 42,
+     "budget": "derived from the slot boxes that set this role; 42 is the floor (narrowest of 5), was 42"
+    }
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 96,
+     "y": 250,
+     "w": 888,
+     "h": 32,
+     "maxChars": 41
+    },
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 96,
+     "y": 300,
+     "w": 888,
+     "h": 32,
+     "maxChars": 52
+    },
+    "month-1": {
+     "align": "left",
+     "role": "month",
+     "x": 100,
+     "y": 542,
+     "w": 140,
+     "h": 26,
+     "maxChars": 10
+    },
+    "month-2": {
+     "align": "left",
+     "role": "month",
+     "x": 248,
+     "y": 542,
+     "w": 140,
+     "h": 26,
+     "maxChars": 10
+    },
+    "month-3": {
+     "align": "left",
+     "role": "month",
+     "x": 396,
+     "y": 542,
+     "w": 140,
+     "h": 26,
+     "maxChars": 10
+    },
+    "month-4": {
+     "align": "left",
+     "role": "month",
+     "x": 544,
+     "y": 542,
+     "w": 140,
+     "h": 26,
+     "maxChars": 10
+    },
+    "month-5": {
+     "align": "left",
+     "role": "month",
+     "x": 692,
+     "y": 542,
+     "w": 140,
+     "h": 26,
+     "maxChars": 10
+    },
+    "month-6": {
+     "align": "left",
+     "role": "month",
+     "x": 840,
+     "y": 542,
+     "w": 140,
+     "h": 26,
+     "maxChars": 10
+    },
+    "when-1": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "attention",
+     "scale": "window",
+     "weight": 10,
+     "note": "event 1 — axisMark as a fraction of the plate’s window; num-1 carries its number",
+     "x": 96,
+     "y": 490,
+     "w": 888,
+     "h": 40
+    },
+    "when-2": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": "window",
+     "weight": 10,
+     "note": "event 2 — axisMark as a fraction of the plate’s window; num-2 carries its number",
+     "x": 96,
+     "y": 490,
+     "w": 888,
+     "h": 40
+    },
+    "when-3": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": "window",
+     "weight": 10,
+     "note": "event 3 — axisMark as a fraction of the plate’s window; num-3 carries its number",
+     "x": 96,
+     "y": 490,
+     "w": 888,
+     "h": 40
+    },
+    "when-4": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": "window",
+     "weight": 10,
+     "note": "event 4 — axisMark as a fraction of the plate’s window; num-4 carries its number",
+     "x": 96,
+     "y": 490,
+     "w": 888,
+     "h": 40
+    },
+    "when-5": {
+     "role": "marker",
+     "region": true,
+     "axis": "horizontal",
+     "ink": "subject",
+     "scale": "window",
+     "weight": 10,
+     "note": "event 5 — axisMark as a fraction of the plate’s window; num-5 carries its number",
+     "x": 96,
+     "y": 490,
+     "w": 888,
+     "h": 40
+    },
+    "num-1": {
+     "align": "left",
+     "role": "num",
+     "x": 96,
+     "y": 600,
+     "w": 60,
+     "h": 32,
+     "maxChars": 3
+    },
+    "date-1": {
+     "align": "left",
+     "role": "date",
+     "x": 166,
+     "y": 600,
+     "w": 200,
+     "h": 32,
+     "maxChars": 17
+    },
+    "event-1": {
+     "align": "left",
+     "role": "event",
+     "x": 376,
+     "y": 600,
+     "w": 608,
+     "h": 35,
+     "maxChars": 50
+    },
+    "watch-1": {
+     "align": "left",
+     "role": "watch",
+     "x": 376,
+     "y": 641,
+     "w": 608,
+     "h": 28,
+     "maxChars": 42
+    },
+    "num-2": {
+     "align": "left",
+     "role": "num",
+     "x": 96,
+     "y": 808,
+     "w": 60,
+     "h": 32,
+     "maxChars": 3
+    },
+    "date-2": {
+     "align": "left",
+     "role": "date",
+     "x": 166,
+     "y": 808,
+     "w": 200,
+     "h": 32,
+     "maxChars": 17
+    },
+    "event-2": {
+     "align": "left",
+     "role": "event",
+     "x": 376,
+     "y": 808,
+     "w": 608,
+     "h": 35,
+     "maxChars": 50
+    },
+    "watch-2": {
+     "align": "left",
+     "role": "watch",
+     "x": 376,
+     "y": 849,
+     "w": 608,
+     "h": 28,
+     "maxChars": 42
+    },
+    "num-3": {
+     "align": "left",
+     "role": "num",
+     "x": 96,
+     "y": 1016,
+     "w": 60,
+     "h": 32,
+     "maxChars": 3
+    },
+    "date-3": {
+     "align": "left",
+     "role": "date",
+     "x": 166,
+     "y": 1016,
+     "w": 200,
+     "h": 32,
+     "maxChars": 17
+    },
+    "event-3": {
+     "align": "left",
+     "role": "event",
+     "x": 376,
+     "y": 1016,
+     "w": 608,
+     "h": 35,
+     "maxChars": 50
+    },
+    "watch-3": {
+     "align": "left",
+     "role": "watch",
+     "x": 376,
+     "y": 1057,
+     "w": 608,
+     "h": 28,
+     "maxChars": 42
+    },
+    "num-4": {
+     "align": "left",
+     "role": "num",
+     "x": 96,
+     "y": 1224,
+     "w": 60,
+     "h": 32,
+     "maxChars": 3
+    },
+    "date-4": {
+     "align": "left",
+     "role": "date",
+     "x": 166,
+     "y": 1224,
+     "w": 200,
+     "h": 32,
+     "maxChars": 17
+    },
+    "event-4": {
+     "align": "left",
+     "role": "event",
+     "x": 376,
+     "y": 1224,
+     "w": 608,
+     "h": 35,
+     "maxChars": 50
+    },
+    "watch-4": {
+     "align": "left",
+     "role": "watch",
+     "x": 376,
+     "y": 1265,
+     "w": 608,
+     "h": 28,
+     "maxChars": 42
+    },
+    "num-5": {
+     "align": "left",
+     "role": "num",
+     "x": 96,
+     "y": 1432,
+     "w": 60,
+     "h": 32,
+     "maxChars": 3
+    },
+    "date-5": {
+     "align": "left",
+     "role": "date",
+     "x": 166,
+     "y": 1432,
+     "w": 200,
+     "h": 32,
+     "maxChars": 17
+    },
+    "event-5": {
+     "align": "left",
+     "role": "event",
+     "x": 376,
+     "y": 1432,
+     "w": 608,
+     "h": 35,
+     "maxChars": 50
+    },
+    "watch-5": {
+     "align": "left",
+     "role": "watch",
+     "x": 376,
+     "y": 1473,
+     "w": 608,
+     "h": 28,
+     "maxChars": 42
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 96,
+     "y": 1760,
+     "w": 888,
+     "h": 30,
+     "maxChars": 56
+    }
+   }
+  },
+  "structure/chapter-bumper-16x9": {
+   "key": "structure/chapter-bumper-16x9",
+   "dir": "structure",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "chapter-bumper-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "chapter-bumper-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "84d13f58"
+     },
+     {
+      "file": "chapter-bumper-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "84d13f58"
+     },
+     {
+      "file": "chapter-bumper-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "84d13f58"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "chapter-bumper-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "chapter-bumper-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "84d13f58"
+      },
+      {
+       "file": "chapter-bumper-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "84d13f58"
+      },
+      {
+       "file": "chapter-bumper-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "84d13f58"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "chapter-bumper-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "chapter-bumper-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e7ad9f08"
+      },
+      {
+       "file": "chapter-bumper-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "e7ad9f08"
+      },
+      {
+       "file": "chapter-bumper-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e7ad9f08"
+      }
+     ]
+    }
+   },
+   "slotCount": 4,
+   "typeRoles": {
+    "num": {
+     "font": "Courier Prime",
+     "size": 300,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 2,
+     "budget": "derived from the slot boxes that set this role; 2 is the floor (narrowest of 1), was 2"
+    },
+    "of": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 23,
+     "budget": "derived from the slot boxes that set this role; 23 is the floor (narrowest of 1), was 23"
+    },
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 84,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 31,
+     "maxLines": 2,
+     "maxCharsPerLine": 31,
+     "budget": "derived from the slot boxes that set this role; 31 is the floor (narrowest of 1), was 23"
+    },
+    "episode": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 95,
+     "budget": "derived from the slot boxes that set this role; 95 is the floor (narrowest of 1), was 95"
+    }
+   },
+   "slots": {
+    "num": {
+     "align": "left",
+     "role": "num",
+     "x": 160,
+     "y": 326,
+     "w": 420,
+     "h": 348,
+     "maxChars": 2
+    },
+    "of": {
+     "align": "left",
+     "role": "of",
+     "x": 160,
+     "y": 682,
+     "w": 420,
+     "h": 35,
+     "maxChars": 23
+    },
+    "title": {
+     "align": "left",
+     "role": "title",
+     "maxLines": 2,
+     "x": 680,
+     "y": 403,
+     "w": 1080,
+     "h": 195,
+     "maxChars": 31,
+     "maxCharsPerLine": 31
+    },
+    "episode": {
+     "align": "left",
+     "role": "episode",
+     "x": 160,
+     "y": 970,
+     "w": 1600,
+     "h": 32,
+     "maxChars": 95
+    }
+   }
+  },
+  "structure/chapter-bumper-9x16": {
+   "key": "structure/chapter-bumper-9x16",
+   "dir": "structure",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "chapter-bumper-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "chapter-bumper-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "eba0b2a8"
+     },
+     {
+      "file": "chapter-bumper-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "c1192188"
+     },
+     {
+      "file": "chapter-bumper-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "eba0b2a8"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "chapter-bumper-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "chapter-bumper-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "eba0b2a8"
+      },
+      {
+       "file": "chapter-bumper-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "c1192188"
+      },
+      {
+       "file": "chapter-bumper-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "eba0b2a8"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "chapter-bumper-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "chapter-bumper-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "f5a3a03a"
+      },
+      {
+       "file": "chapter-bumper-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "1de0e290"
+      },
+      {
+       "file": "chapter-bumper-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "f5a3a03a"
+      }
+     ]
+    }
+   },
+   "slotCount": 4,
+   "typeRoles": {
+    "num": {
+     "font": "Courier Prime",
+     "size": 320,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 4,
+     "budget": "derived from the slot boxes that set this role; 4 is the floor (narrowest of 1), was 4"
+    },
+    "of": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 50,
+     "budget": "derived from the slot boxes that set this role; 50 is the floor (narrowest of 1), was 50"
+    },
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 64,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 34,
+     "maxLines": 1,
+     "maxCharsPerLine": 34,
+     "budget": "derived from the slot boxes that set this role; 34 is the floor (narrowest of 1), was 26"
+    },
+    "episode": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 53,
+     "budget": "derived from the slot boxes that set this role; 53 is the floor (narrowest of 1), was 53"
+    }
+   },
+   "slots": {
+    "num": {
+     "align": "left",
+     "role": "num",
+     "x": 90,
+     "y": 560,
+     "w": 900,
+     "h": 371,
+     "maxChars": 4
+    },
+    "of": {
+     "align": "left",
+     "role": "of",
+     "x": 90,
+     "y": 939,
+     "w": 900,
+     "h": 35,
+     "maxChars": 50
+    },
+    "title": {
+     "align": "left",
+     "role": "title",
+     "maxLines": 1,
+     "x": 90,
+     "y": 1046,
+     "w": 900,
+     "h": 148,
+     "maxChars": 34,
+     "maxCharsPerLine": 34
+    },
+    "episode": {
+     "align": "left",
+     "role": "episode",
+     "x": 90,
+     "y": 1720,
+     "w": 900,
+     "h": 32,
+     "maxChars": 53
     }
    }
   }

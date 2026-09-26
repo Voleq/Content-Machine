@@ -135,7 +135,11 @@ function budgetOf(slot, roles) {
    * off this box with the real face. The derived number is only for slots that
    * publish none, and it is computed at the shrink floor so truncation stays
    * the last resort rather than the first. */
-  return slot.maxChars ? Math.min(slot.maxChars, derived) : derived;
+  /* rebuild-38: a WRAPPING slot's published budget is per line. maxChars is the
+   * one-line figure, so capping a 4-line quote at it cut the quote to one line
+   * of text in a four-line box. Where the slot wraps, the cap is per-line x lines. */
+  const published = slot.maxCharsPerLine && lines > 1 ? slot.maxCharsPerLine * lines : slot.maxChars;
+  return published ? Math.min(published, derived) : derived;
 }
 
 function fit(text, slot, roles) {
@@ -1004,6 +1008,8 @@ const R3D = {
 /* Round four's copy and data live beside their catalogue rows. */
 const SECTOR_COPY = (typeof require === 'function') ? (() => { try { return require('./sector-copy'); } catch (e) { return null; } })()
   : (typeof window !== 'undefined' ? window.SECTOR_COPY || null : null);
+const COPY_R5 = (typeof require === 'function') ? (() => { try { return require('./copy-r5'); } catch (e) { return null; } })()
+  : (typeof window !== 'undefined' ? window.COPY_R5 || null : null);
 const R2D = {
   'arr-bridge': () => ({ steps: [96, 71, -18, -44], open: 612, close: 717 }),
   'margin-walk': () => ({ steps: [1.6, -1.1, -0.4, -1.5, -0.4], open: 15.2, close: 13.4, float: true }),
@@ -1169,7 +1175,15 @@ function contentFor(key, manifest) {
   const r1 = (manifest && R1[manifest.type]) ? R1[manifest.type](slots)
     : (manifest && R2[manifest.type]) ? R2[manifest.type](slots)
     : (manifest && R3[manifest.type]) ? R3[manifest.type](slots)
-    : (manifest && SECTOR_COPY && SECTOR_COPY.text(manifest.type, slots)) || null;
+    : (manifest && SECTOR_COPY && SECTOR_COPY.text(manifest.type, slots))
+      || (manifest && COPY_R5 && (() => {
+        /* rebuild-37: round five's copy is complete by construction, so a text
+         * slot it does not fill is EMPTY, never generic sample copy (an unused
+         * quote-4 once printed an unrelated sentence). */
+        const t = COPY_R5.text(manifest.type); if (!t) return null;
+        Object.keys(slots || {}).forEach(k => { const sl = slots[k]; if (!(k in t) && sl && !sl.container && !sl.region && sl.role !== 'band' && sl.role !== 'marker') t[k] = ''; });
+        return t;
+      })()) || null;
   const ov = overridesFor(key);
   const over = Object.assign(
     FAMILY[family] ? FAMILY[family](slots, key) : {},
@@ -1222,7 +1236,8 @@ function contentFor(key, manifest) {
   if (family === 'structure' && /sensitivity|implied|both-true/.test(key)) { data.low = 0.28; data.high = 0.74; data.mark = 0.86; }
   /* A plate's own numbers beat the family rule, the same precedence as its words. */
   const own = manifest && (R1D[manifest.type] || R2D[manifest.type] || R3D[manifest.type]
-    || (SECTOR_COPY && SECTOR_COPY.data(manifest.type) ? () => SECTOR_COPY.data(manifest.type) : null));
+    || (SECTOR_COPY && SECTOR_COPY.data(manifest.type) ? () => SECTOR_COPY.data(manifest.type) : null)
+    || (COPY_R5 && COPY_R5.data(manifest.type) ? () => COPY_R5.data(manifest.type) : null));
   if (own) Object.assign(data, own());
   Object.assign(data, ov.data || {});
 

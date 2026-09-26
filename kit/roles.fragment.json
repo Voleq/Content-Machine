@@ -7202,5 +7202,1445 @@
   "purpose": "loan-to-value for eight quarters against a fixed 100% ceiling — how close falling values bring the debt to the buildings.",
   "caution": "Appraised values lag; a market-implied LTV is higher. The covenant level belongs in the detail line. Portrait: the callout sits under the chart, not beside it.",
   "round": "r4"
+ },
+ "host/gesturing-at-plate": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the PRESENT pose: camera-right hand open at shoulder height toward the plate beside him, head turned with it.",
+  "caution": "Only where a plate or card wall sits camera-right of him (panel-left, board-side, board-wide). With nothing there he is gesturing at a wall.",
+  "any_shot": true
+ },
+ "host/gesturing-at-plate-talk": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the PRESENT pose: camera-right hand open at shoulder height toward the plate beside him, head turned with it. (talk strip)",
+  "caution": "Only where a plate or card wall sits camera-right of him (panel-left, board-side, board-wide). With nothing there he is gesturing at a wall.",
+  "any_shot": true
+ },
+ "host/gesturing-at-plate-idle": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the PRESENT pose: camera-right hand open at shoulder height toward the plate beside him, head turned with it. (idle strip)",
+  "caution": "Only where a plate or card wall sits camera-right of him (panel-left, board-side, board-wide). With nothing there he is gesturing at a wall.",
+  "any_shot": true
+ },
+ "host/gesturing-at-plate-blink": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the PRESENT pose: camera-right hand open at shoulder height toward the plate beside him, head turned with it. (blink strip)",
+  "caution": "Only where a plate or card wall sits camera-right of him (panel-left, board-side, board-wide). With nothing there he is gesturing at a wall.",
+  "any_shot": true
+ },
+ "host/counting-on-fingers": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the LIST pose: hands meet at the chest for a \"three things\" beat.",
+  "caution": "The count is in the voice-over; the drawing does not show a number of fingers. Do not cut to it for one item.",
+  "any_shot": true
+ },
+ "host/counting-on-fingers-talk": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the LIST pose: hands meet at the chest for a \"three things\" beat. (talk strip)",
+  "caution": "The count is in the voice-over; the drawing does not show a number of fingers. Do not cut to it for one item.",
+  "any_shot": true
+ },
+ "host/counting-on-fingers-idle": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the LIST pose: hands meet at the chest for a \"three things\" beat. (idle strip)",
+  "caution": "The count is in the voice-over; the drawing does not show a number of fingers. Do not cut to it for one item.",
+  "any_shot": true
+ },
+ "host/counting-on-fingers-blink": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the LIST pose: hands meet at the chest for a \"three things\" beat. (blink strip)",
+  "caution": "The count is in the voice-over; the drawing does not show a number of fingers. Do not cut to it for one item.",
+  "any_shot": true
+ },
+ "host/shrug": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the NOBODY-KNOWS pose: shoulders up, forearms out and open. For a range too wide to mean anything, or a question the filing does not answer.",
+  "caution": "At most once an episode, like head-in-hands. Deadpan: never for a joke about the company.",
+  "any_shot": true
+ },
+ "host/shrug-talk": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the NOBODY-KNOWS pose: shoulders up, forearms out and open. For a range too wide to mean anything, or a question the filing does not answer. (talk strip)",
+  "caution": "At most once an episode, like head-in-hands. Deadpan: never for a joke about the company.",
+  "any_shot": true
+ },
+ "host/shrug-idle": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the NOBODY-KNOWS pose: shoulders up, forearms out and open. For a range too wide to mean anything, or a question the filing does not answer. (idle strip)",
+  "caution": "At most once an episode, like head-in-hands. Deadpan: never for a joke about the company.",
+  "any_shot": true
+ },
+ "host/shrug-blink": {
+  "chapter_types": [],
+  "reached_by": "host pose rotation, by seed and role",
+  "purpose": "the NOBODY-KNOWS pose: shoulders up, forearms out and open. For a range too wide to mean anything, or a question the filing does not answer. (blink strip)",
+  "caution": "At most once an episode, like head-in-hands. Deadpan: never for a joke about the company.",
+  "any_shot": true
+ },
+ "room/board-wide": {
+  "chapter_types": [],
+  "reached_by": "chapter opener rotation, by seed (opener: true)",
+  "shot_ids": [
+   "open"
+  ],
+  "purpose": "the DIAGRAM opener: board-side pulled back — the same card wall and floor, with the chapter title on the card above him.",
+  "caution": "NIGHT ONLY, like board-side. Open on it only when the chapter will be argued on the board."
+ },
+ "room/window-wide": {
+  "chapter_types": [],
+  "reached_by": "chapter opener rotation, by seed (opener: true)",
+  "shot_ids": [
+   "open"
+  ],
+  "purpose": "the HOUR opener: window-wall pulled back — the same window, desk, monitor and pinboard, with the chapter title on the card above him.",
+  "caution": "The window glow is keyed to the hour; check dusk before a dusk episode opens on it."
+ },
+ "charts/valuation-ev-ebitda": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "enterprise value to forward EBITDA over five years, against its own five-year range and average: cheap or dear against its own history, not a peer’s.",
+  "caution": "A multiple at the bottom of its range can be right: say what changed, because the voice-over, not the plate, has to argue it is cheap.",
+  "round": "r5"
+ },
+ "charts/valuation-pe-forward": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "forward P/E over five years against its own range and average.",
+  "caution": "Forward earnings are consensus estimates; if they are being cut, a falling P/E overstates how much cheaper the shares got.",
+  "round": "r5"
+ },
+ "charts/valuation-ev-sales": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "information-technology"
+  ],
+  "purpose": "enterprise value to forward sales over five years, against its own range and average: the multiple unprofitable software is priced on.",
+  "caution": "EV/Sales ignores margins. Show it beside rule-of-40 or operating-leverage, never alone.",
+  "round": "r5"
+ },
+ "charts/valuation-fcf-yield": {
+  "chapter_types": [
+   "valuation",
+   "capital-allocation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "free cash flow as a share of market value over five years, against its own range and average.",
+  "caution": "This one reads upside down: a HIGHER yield is a CHEAPER share. Say so in the voice-over every time.",
+  "round": "r5"
+ },
+ "charts/guidance-range": {
+  "chapter_types": [
+   "guidance-estimates",
+   "management"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "the guided range for each of eight quarters as a bar, the reported figure as a mark on it: the habit of a management team, not one quarter’s headline.",
+  "caution": "Use the range as first given, not as revised mid-quarter; say which in the voice-over if the company revised.",
+  "round": "r5"
+ },
+ "charts/small-multiples-4": {
+  "chapter_types": [
+   "the-numbers",
+   "how-the-money-is-made"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "four series in four panels on ONE shared scale: segments, regions or products that would be spaghetti on one plot.",
+  "caution": "The scale is shared on purpose. If one series dwarfs the rest, cut to it alone rather than rescaling its panel.",
+  "round": "r5"
+ },
+ "charts/small-multiples-6": {
+  "chapter_types": [
+   "the-numbers",
+   "sector-comps"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "six series in six panels on ONE shared scale.",
+  "caution": "Six is the most a viewer can hold. More than six and the plate becomes a table; use a table plate.",
+  "round": "r5"
+ },
+ "charts/earnings-vs-cash": {
+  "chapter_types": [
+   "the-numbers",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "net income and operating cash flow on one scale, the gap filled and printed as a row of accruals: earnings quality, as an area.",
+  "caution": "Accruals are not fraud. Growth companies run them honestly; the question is whether the gap closes, so say what is in it.",
+  "round": "r5"
+ },
+ "tables/segment-margin-grid": {
+  "chapter_types": [
+   "how-the-money-is-made",
+   "the-numbers"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "margin by segment and year, a figure in each cell and a bar under it on one fixed scale. Read across for a trend and down for which segment carries a year. A falling latest year is marked.",
+  "caution": "Segment margins before group costs. If the company allocates corporate costs, say whether these are before or after.",
+  "round": "r5"
+ },
+ "room/desk-front-christmas": {
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "purpose": "room/desk-front With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/desk-wide-christmas": {
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "purpose": "room/desk-wide With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/desk-side-christmas": {
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "purpose": "room/desk-side With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/turn-to-screen-christmas": {
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "purpose": "room/turn-to-screen With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/window-wall-christmas": {
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "purpose": "room/window-wall With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/doorway-christmas": {
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "purpose": "room/doorway With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/desk-front-b-christmas": {
+  "chapter_types": [],
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "shot_ids": [
+   "evidence"
+  ],
+  "purpose": "the second TALK angle — monitor off his shoulder rather than behind his head. Every short uses a talk room, and the role had one member. With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/desk-front-low-christmas": {
+  "chapter_types": [],
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "shot_ids": [
+   "evidence"
+  ],
+  "purpose": "the third TALK angle, camera at desk height so the surface is a foreground plane. For the beat where the paperwork matters as much as he does. With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/read-close-christmas": {
+  "chapter_types": [],
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "shot_ids": [
+   "evidence"
+  ],
+  "purpose": "the second READ angle — tighter than desk-side, page raised into the light, monitor out of frame. read carries the opening and closing shot of ten of the sixteen chapters. With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/board-side-christmas": {
+  "chapter_types": [],
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "shot_ids": [
+   "evidence"
+  ],
+  "purpose": "the second DIAGRAM angle, from the left, wall running away to the right with him at the near edge. With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/doorway-wide-christmas": {
+  "chapter_types": [],
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "shot_ids": [
+   "evidence"
+  ],
+  "purpose": "the second EXIT angle, pulled back so the whole door and the corridor light are in frame. One angle closes every long. With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/panel-left-christmas": {
+  "chapter_types": [],
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "shot_ids": [
+   "evidence"
+  ],
+  "purpose": "the PANEL angle with lateral room: he stands left and the right two-thirds of wall is clear, so a full data plate sits BESIDE him rather than behind his head. With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/window-wide-christmas": {
+  "chapter_types": [],
+  "reached_by": "chapter opener rotation, by seed (opener: true); SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "shot_ids": [
+   "open"
+  ],
+  "purpose": "the HOUR opener: window-wall pulled back — the same window, desk, monitor and pinboard, with the chapter title on the card above him. With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "room/board-wide-christmas": {
+  "chapter_types": [],
+  "reached_by": "chapter opener rotation, by seed (opener: true); SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "shot_ids": [
+   "open"
+  ],
+  "purpose": "the DIAGRAM opener: board-side pulled back — the same card wall and floor, with the chapter title on the card above him. With the Christmas set: lights along the picture rail and, where the window is in frame, along its head, with the tree at its left.",
+  "caution": "SEASONAL: December episodes only. Cut plain and dressed angles of the same room into one episode and the decorations flicker in and out, so dress every angle or none."
+ },
+ "charts/cet1-vs-minimum": {
+  "chapter_types": [
+   "risk",
+   "the-numbers"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "financials"
+  ],
+  "purpose": "a bank’s CET1 ratio quarter by quarter on a fixed 0–20% scale, against the legal minimum and the minimum plus buffers: capital as headroom over a line.",
+  "caution": "The buffer stack differs by bank and by country; name the buffers in the voice-over and use the bank’s own disclosed requirement.",
+  "round": "r5"
+ },
+ "charts/solvency-ratio": {
+  "chapter_types": [
+   "risk",
+   "capital-allocation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "financials"
+  ],
+  "purpose": "an insurer’s solvency ratio quarter by quarter on a fixed scale, against the 100% requirement and its own target range.",
+  "caution": "Solvency regimes differ (Solvency II, RBC, BSCR); say which, and never compare two insurers under different regimes on one plate.",
+  "round": "r5"
+ },
+ "charts/combined-ratio": {
+  "chapter_types": [
+   "the-numbers",
+   "how-the-money-is-made"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "financials"
+  ],
+  "purpose": "claims and costs as a share of premiums, stacked per year on a fixed scale, against the 100% line where underwriting stops making money.",
+  "caution": "Use the ratio excluding prior-year reserve releases if the company gives it, or say that releases flatter it; show reserve-development beside it.",
+  "round": "r5"
+ },
+ "figures/reserve-development": {
+  "chapter_types": [
+   "risk",
+   "the-numbers"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "financials"
+  ],
+  "purpose": "for each accident year, the first reserve estimate and today’s estimate as two marks on one rail: whether an insurer is finding out its claims cost more than it said.",
+  "caution": "Recent years always move most; say how many years of development each has had. Adverse development in a young year is an early warning, not yet a verdict.",
+  "round": "r5"
+ },
+ "charts/macro-rates": {
+  "chapter_types": [
+   "how-the-money-is-made",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "financials"
+  ],
+  "purpose": "the policy rate above, the bank’s net interest margin below, each on its own scale, with the bank’s own disclosed sensitivity: how rates reach the income statement.",
+  "caution": "Deposit costs lag rates; the margin can fall while rates are still high. Use the company’s sensitivity, never one computed from these panels.",
+  "round": "r5"
+ },
+ "charts/macro-inflation": {
+  "chapter_types": [
+   "moat",
+   "how-the-money-is-made"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "consumer-staples"
+  ],
+  "purpose": "inflation in the company’s inputs above, its own price increases below: pricing power as whether the second line follows the first.",
+  "caution": "Use the inflation series closest to the company’s costs (food, not headline CPI) and say which.",
+  "round": "r5"
+ },
+ "charts/macro-fx": {
+  "chapter_types": [
+   "the-numbers",
+   "guidance-estimates"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "industrials"
+  ],
+  "purpose": "the dollar above, the currency effect on reported growth below: the gap between reported and constant-currency growth, explained.",
+  "caution": "Constant-currency growth is the company’s own measure; quote its definition. Hedging can delay the effect by quarters.",
+  "round": "r5"
+ },
+ "charts/macro-commodity": {
+  "chapter_types": [
+   "how-the-money-is-made",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "materials"
+  ],
+  "purpose": "the commodity price above, the producer’s margin below: how much of the margin is the price and how much is the company.",
+  "caution": "A margin that stops following the price is a cost story; say which costs. Quote the company’s own sensitivity.",
+  "round": "r5"
+ },
+ "charts/macro-wages": {
+  "chapter_types": [
+   "how-the-money-is-made",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "consumer-discretionary"
+  ],
+  "purpose": "wage growth above, store costs as a share of sales below: operating leverage going the wrong way.",
+  "caution": "Costs as a share of sales rise when sales fall even if wages do not; show same-store sales alongside before blaming wages.",
+  "round": "r5"
+ },
+ "peers/sector-ranking": {
+  "chapter_types": [
+   "sector-comps",
+   "the-numbers"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "all eleven sectors’ returns over one period, ranked, as bars from zero on a fixed symmetric scale, with the market as one line down every row: where the episode’s sector ranked.",
+  "caution": "Name the index family (the sectors must come from one index) and the period in the unit line. Total return, with dividends, unless the voice-over says otherwise.",
+  "round": "r5"
+ },
+ "charts/sector-vs-market": {
+  "chapter_types": [
+   "sector-comps"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "one sector against the market over one period, both rebased to 100 on one scale, the gap NOT filled: the two are compared, not added, and the callout carries the gap.",
+  "caution": "Both lines from the same index family and both total return. Rebase at the start of the period the voice-over names, never at a low.",
+  "round": "r5"
+ },
+ "structure/said-happened-guidance": {
+  "chapter_types": [
+   "guidance-estimates",
+   "management"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "information-technology"
+  ],
+  "purpose": "four things management guided against what was reported, with a tie marked only where the two contradict: a guidance record.",
+  "caution": "Quote the guidance as given, with its date. Mark a contradiction only where the outcome is the opposite, not merely short.",
+  "round": "r5"
+ },
+ "structure/said-happened-capital": {
+  "chapter_types": [
+   "capital-allocation",
+   "management"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "industrials"
+  ],
+  "purpose": "four capital-allocation promises against what was done, contradictions tied.",
+  "caution": "A changed plan is not a broken promise if it was announced with reasons; say so where it was.",
+  "round": "r5"
+ },
+ "structure/said-happened-strategy": {
+  "chapter_types": [
+   "management",
+   "how-we-got-here"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "consumer-discretionary"
+  ],
+  "purpose": "a strategy as it was announced each year against what happened to it.",
+  "caution": "Use each year’s plan as announced that year, not as restated later.",
+  "round": "r5"
+ },
+ "structure/revision-trail-up": {
+  "chapter_types": [
+   "guidance-estimates"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "financials"
+  ],
+  "purpose": "how the consensus estimate moved across five dates, with the move called at each step, in the direction the market was being surprised.",
+  "caution": "Estimates rise into good news and fall after bad; say what each move followed, or the trail reads as momentum.",
+  "round": "r5"
+ },
+ "structure/revision-trail-target": {
+  "chapter_types": [
+   "guidance-estimates",
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "consumer-discretionary"
+  ],
+  "purpose": "the average analyst price target across six dates, with each cut called.",
+  "caution": "Targets trail the price; a falling target is often the price being described, not predicted. Say so.",
+  "round": "r5"
+ },
+ "structure/revision-trail-revenue": {
+  "chapter_types": [
+   "guidance-estimates"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "information-technology"
+  ],
+  "purpose": "how the revenue forecast for one year moved across four dates.",
+  "caution": "The same fiscal year throughout; when the year rolls, start a new trail.",
+  "round": "r5"
+ },
+ "charts/surprise-vs-reaction": {
+  "chapter_types": [
+   "guidance-estimates",
+   "the-numbers"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "each quarter’s earnings surprise against the next day’s share move, on two fixed scales: whether beating still moves the stock.",
+  "caution": "A day’s move has other causes (guidance, the market). Say what else was announced when a beat is followed by a fall.",
+  "round": "r5"
+ },
+ "peers/peer-rank": {
+  "chapter_types": [
+   "sector-comps",
+   "the-numbers"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "information-technology"
+  ],
+  "purpose": "one measure for the company and its peers, ranked, the company in attention and the peer median as a line: where it stands among the companies it is compared with.",
+  "caution": "Name how the peers were chosen. The line is the peer MEDIAN here, not the market; the legend must say so.",
+  "round": "r5"
+ },
+ "paper/risk-factor-diff": {
+  "chapter_types": [
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "the changes to a company’s risk factors between two filings, as lines marked added, removed or reworded: what the lawyers decided the company must now warn about.",
+  "caution": "Quote the filing’s words, not a paraphrase, in the reworded lines. Boilerplate changes are not news; leave them out.",
+  "round": "r5"
+ },
+ "paper/footnote-spotlight": {
+  "chapter_types": [
+   "risk",
+   "the-numbers"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "one footnote quoted, with the sentence that matters underlined and its figure pulled out: the thing an annual report says quietly.",
+  "caution": "Quote exactly and give the note and page. Pull out a figure only if the note states it.",
+  "round": "r5"
+ },
+ "charts/capital-returned": {
+  "chapter_types": [
+   "capital-allocation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "dividends and buybacks as a share of free cash flow, stacked per year, against the 100% line: above it, the returns are funded from the balance sheet.",
+  "caution": "Say how the excess over 100% was funded (debt, cash on hand, disposals). A year over the line is not wrong; a run of them is the story.",
+  "round": "r5"
+ },
+ "structure/event-calendar": {
+  "chapter_types": [
+   "what-to-watch",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "information-technology"
+  ],
+  "purpose": "the next dates that could move the shares on one rail over a fixed window, numbered, with the list saying what to watch at each: the episode’s closing checklist.",
+  "caution": "Only confirmed dates. An expected date the company has not announced goes in the voice-over, not on the rail.",
+  "round": "r5"
+ },
+ "structure/chapter-bumper": {
+  "chapter_types": [
+   "*"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "the frame between chapters: the chapter number large, its title and the episode. Two seconds over room tone.",
+  "caution": "The title is the chapter’s claim in five words or so, not its topic. “Where the cash goes”, not “Cash flow”.",
+  "round": "r5"
+ },
+ "overlays/source-tag": {
+  "chapter_types": [
+   "*"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "purpose": "where the figure on screen came from, as an alpha strip over a plate or the room: document, note and page.",
+  "caution": "Name the document and the page, never just “company filings”. One source per tag; two figures from two sources are two tags.",
+  "round": "r5"
+ },
+ "shorts/short-number": {
+  "chapter_types": [
+   "*"
+  ],
+  "reached_by": "the shorts writer names it; one per short",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "short"
+  ],
+  "purpose": "a short’s one number, set large in the safe area, with one line of context and its source.",
+  "caution": "One number. If the short needs two, it is two shorts or a long plate.",
+  "round": "r5"
+ },
+ "shorts/short-quote": {
+  "chapter_types": [
+   "*"
+  ],
+  "reached_by": "the shorts writer names it; one per short",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "short"
+  ],
+  "purpose": "a short’s one quote, large, with who said it and when, and the fact that makes it matter in the date line.",
+  "caution": "Quote exactly from a transcript and date it. The date line carries the irony; the quote is never edited to sharpen it.",
+  "round": "r5"
+ },
+ "shorts/short-chart": {
+  "chapter_types": [
+   "*"
+  ],
+  "reached_by": "the shorts writer names it; one per short",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "short"
+  ],
+  "purpose": "a three-second chart: one line, its last point, and the change as the big figure.",
+  "caution": "One line and no grid. If it takes more than three seconds to read, use a long plate.",
+  "round": "r5"
+ },
+ "overlays/wipe-sweep": {
+  "chapter_types": [
+   "*"
+  ],
+  "reached_by": "the assembler, between two shots; never the writer",
+  "shot_ids": [
+   "transition"
+  ],
+  "formats": [
+   "long",
+   "short"
+  ],
+  "purpose": "a hatched cover sweeps left to right; for moving on within a chapter. Eight frames, played once, alpha outside the cover.",
+  "caution": "Cut the two shots under frame 4, where the cover is full. At most one wipe a minute; the plain cut is the default.",
+  "round": "r5"
+ },
+ "overlays/wipe-page": {
+  "chapter_types": [
+   "*"
+  ],
+  "reached_by": "the assembler, between two shots; never the writer",
+  "shot_ids": [
+   "transition"
+  ],
+  "formats": [
+   "long",
+   "short"
+  ],
+  "purpose": "a sheet rises from the bottom edge and leaves at the top; for going to a document or a plate. Eight frames, played once, alpha outside the cover.",
+  "caution": "Cut the two shots under frame 4, where the cover is full. At most one wipe a minute; the plain cut is the default.",
+  "round": "r5"
+ },
+ "overlays/wipe-blinds": {
+  "chapter_types": [
+   "*"
+  ],
+  "reached_by": "the assembler, between two shots; never the writer",
+  "shot_ids": [
+   "transition"
+  ],
+  "formats": [
+   "long",
+   "short"
+  ],
+  "purpose": "slats close and reopen; for the cut into a new chapter, under the bumper. Eight frames, played once, alpha outside the cover.",
+  "caution": "Cut the two shots under frame 4, where the cover is full. At most one wipe a minute; the plain cut is the default.",
+  "round": "r5"
+ },
+ "charts/valuation-energy": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "energy"
+  ],
+  "purpose": "ev / ebitda for Ashby over five years against its own range and average: the sector’s usual multiple.",
+  "caution": "Use the multiple the sector is priced on and say why; compare it only with its own history or same-sector peers.",
+  "round": "r5-sector"
+ },
+ "charts/valuation-utilities": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "utilities"
+  ],
+  "purpose": "price to forward earnings for Norland over five years against its own range and average: the sector’s usual multiple.",
+  "caution": "Use the multiple the sector is priced on and say why; compare it only with its own history or same-sector peers.",
+  "round": "r5-sector"
+ },
+ "charts/valuation-reit": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "real-estate"
+  ],
+  "purpose": "price to ffo for Calder over five years against its own range and average: the sector’s usual multiple.",
+  "caution": "Use the multiple the sector is priced on and say why; compare it only with its own history or same-sector peers.",
+  "round": "r5-sector"
+ },
+ "charts/valuation-health": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "health-care"
+  ],
+  "purpose": "price to forward earnings for Vireo over five years against its own range and average: the sector’s usual multiple.",
+  "caution": "Use the multiple the sector is priced on and say why; compare it only with its own history or same-sector peers.",
+  "round": "r5-sector"
+ },
+ "charts/valuation-bank": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "financials"
+  ],
+  "purpose": "price to tangible book for Merrow over five years against its own range and average: the sector’s usual multiple.",
+  "caution": "Use the multiple the sector is priced on and say why; compare it only with its own history or same-sector peers.",
+  "round": "r5-sector"
+ },
+ "charts/valuation-insurer": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "financials"
+  ],
+  "purpose": "price to book for Pellam over five years against its own range and average: the sector’s usual multiple.",
+  "caution": "Use the multiple the sector is priced on and say why; compare it only with its own history or same-sector peers.",
+  "round": "r5-sector"
+ },
+ "charts/valuation-materials": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "materials"
+  ],
+  "purpose": "ev / ebitda for Corvane over five years against its own range and average: the sector’s usual multiple.",
+  "caution": "Use the multiple the sector is priced on and say why; compare it only with its own history or same-sector peers.",
+  "round": "r5-sector"
+ },
+ "charts/valuation-staples": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "consumer-staples"
+  ],
+  "purpose": "price to forward earnings for Fenwick over five years against its own range and average: the sector’s usual multiple.",
+  "caution": "Use the multiple the sector is priced on and say why; compare it only with its own history or same-sector peers.",
+  "round": "r5-sector"
+ },
+ "charts/valuation-media": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "communication-services"
+  ],
+  "purpose": "ev / ebitda for Brightline over five years against its own range and average: the sector’s usual multiple.",
+  "caution": "Use the multiple the sector is priced on and say why; compare it only with its own history or same-sector peers.",
+  "round": "r5-sector"
+ },
+ "charts/valuation-retail": {
+  "chapter_types": [
+   "valuation"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "consumer-discretionary"
+  ],
+  "purpose": "ev / ebitda for Larkin over five years against its own range and average: the sector’s usual multiple.",
+  "caution": "Use the multiple the sector is priced on and say why; compare it only with its own history or same-sector peers.",
+  "round": "r5-sector"
+ },
+ "charts/small-multiples-energy": {
+  "chapter_types": [
+   "the-numbers",
+   "how-the-money-is-made"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "energy"
+  ],
+  "purpose": "ashby output by basin, 4 panels on ONE shared scale.",
+  "caution": "The scale is shared on purpose; never rescale one panel.",
+  "round": "r5-sector"
+ },
+ "charts/small-multiples-utilities": {
+  "chapter_types": [
+   "the-numbers",
+   "how-the-money-is-made"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "utilities"
+  ],
+  "purpose": "norland demand by customer, 4 panels on ONE shared scale.",
+  "caution": "The scale is shared on purpose; never rescale one panel.",
+  "round": "r5-sector"
+ },
+ "charts/small-multiples-reit": {
+  "chapter_types": [
+   "the-numbers",
+   "how-the-money-is-made"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "real-estate"
+  ],
+  "purpose": "calder rent by property type, 4 panels on ONE shared scale.",
+  "caution": "The scale is shared on purpose; never rescale one panel.",
+  "round": "r5-sector"
+ },
+ "charts/small-multiples-health": {
+  "chapter_types": [
+   "the-numbers",
+   "how-the-money-is-made"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "health-care"
+  ],
+  "purpose": "vireo sales by drug, 6 panels on ONE shared scale.",
+  "caution": "The scale is shared on purpose; never rescale one panel.",
+  "round": "r5-sector"
+ },
+ "charts/earnings-vs-cash-software": {
+  "chapter_types": [
+   "the-numbers",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "information-technology"
+  ],
+  "purpose": "net income against operating cash flow for Tessera, the gap as accruals.",
+  "caution": "Say what is in the gap before calling it a warning.",
+  "round": "r5-sector"
+ },
+ "charts/earnings-vs-cash-industrials": {
+  "chapter_types": [
+   "the-numbers",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "industrials"
+  ],
+  "purpose": "net income against operating cash flow for Harrow, the gap as accruals.",
+  "caution": "Say what is in the gap before calling it a warning.",
+  "round": "r5-sector"
+ },
+ "charts/earnings-vs-cash-health": {
+  "chapter_types": [
+   "the-numbers",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "health-care"
+  ],
+  "purpose": "net income against operating cash flow for Vireo, the gap as accruals.",
+  "caution": "Say what is in the gap before calling it a warning.",
+  "round": "r5-sector"
+ },
+ "charts/earnings-vs-cash-reit": {
+  "chapter_types": [
+   "the-numbers",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "real-estate"
+  ],
+  "purpose": "net income against operating cash flow for Calder, the gap as accruals.",
+  "caution": "Say what is in the gap before calling it a warning.",
+  "round": "r5-sector"
+ },
+ "tables/segment-margin-grid-media": {
+  "chapter_types": [
+   "how-the-money-is-made"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "communication-services"
+  ],
+  "purpose": "margin by segment and year for Brightline, each bar on one fixed scale.",
+  "caution": "Before or after group costs: say which.",
+  "round": "r5-sector"
+ },
+ "tables/segment-margin-grid-staples": {
+  "chapter_types": [
+   "how-the-money-is-made"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "consumer-staples"
+  ],
+  "purpose": "margin by segment and year for Fenwick, each bar on one fixed scale.",
+  "caution": "Before or after group costs: say which.",
+  "round": "r5-sector"
+ },
+ "tables/segment-margin-grid-health": {
+  "chapter_types": [
+   "how-the-money-is-made"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "health-care"
+  ],
+  "purpose": "margin by segment and year for Vireo, each bar on one fixed scale.",
+  "caution": "Before or after group costs: say which.",
+  "round": "r5-sector"
+ },
+ "tables/segment-margin-grid-materials": {
+  "chapter_types": [
+   "how-the-money-is-made"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "materials"
+  ],
+  "purpose": "margin by segment and year for Corvane, each bar on one fixed scale.",
+  "caution": "Before or after group costs: say which.",
+  "round": "r5-sector"
+ },
+ "charts/guidance-range-energy": {
+  "chapter_types": [
+   "guidance-estimates",
+   "management"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "energy"
+  ],
+  "purpose": "Ashby’s guided range against what it reported, eight quarters.",
+  "caution": "Use the range as first given, not as revised.",
+  "round": "r5-sector"
+ },
+ "charts/guidance-range-utilities": {
+  "chapter_types": [
+   "guidance-estimates",
+   "management"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "utilities"
+  ],
+  "purpose": "Norland’s guided range against what it reported, eight quarters.",
+  "caution": "Use the range as first given, not as revised.",
+  "round": "r5-sector"
+ },
+ "charts/guidance-range-retail": {
+  "chapter_types": [
+   "guidance-estimates",
+   "management"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "consumer-discretionary"
+  ],
+  "purpose": "Larkin’s guided range against what it reported, eight quarters.",
+  "caution": "Use the range as first given, not as revised.",
+  "round": "r5-sector"
+ },
+ "charts/guidance-range-health": {
+  "chapter_types": [
+   "guidance-estimates",
+   "management"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "health-care"
+  ],
+  "purpose": "Vireo’s guided range against what it reported, eight quarters.",
+  "caution": "Use the range as first given, not as revised.",
+  "round": "r5-sector"
+ },
+ "charts/macro-oil": {
+  "chapter_types": [
+   "how-the-money-is-made",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "energy"
+  ],
+  "purpose": "the oil price above, the producer’s operating cash below, each on its own scale.",
+  "caution": "Hedging delays the effect; say how much is hedged.",
+  "round": "r5-sector"
+ },
+ "charts/macro-gas-power": {
+  "chapter_types": [
+   "how-the-money-is-made",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "utilities"
+  ],
+  "purpose": "the gas price above, fuel as a share of revenue below.",
+  "caution": "Recovery lags by a rate case; say the lag.",
+  "round": "r5-sector"
+ },
+ "charts/macro-rates-reit": {
+  "chapter_types": [
+   "valuation",
+   "risk"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "real-estate"
+  ],
+  "purpose": "bond yields above, the REIT’s net asset value below.",
+  "caution": "Valuers lag the market; NAV moves after yields do.",
+  "round": "r5-sector"
+ },
+ "charts/macro-fx-staples": {
+  "chapter_types": [
+   "the-numbers"
+  ],
+  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type and sector",
+  "shot_ids": [
+   "evidence"
+  ],
+  "formats": [
+   "long"
+  ],
+  "sectors": [
+   "consumer-staples"
+  ],
+  "purpose": "the euro above, the currency effect on reported growth below.",
+  "caution": "Quote organic growth beside it.",
+  "round": "r5-sector"
  }
 }

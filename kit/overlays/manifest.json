@@ -8,7 +8,7 @@
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
  "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
  "bakedText": false,
- "assetCount": 3,
+ "assetCount": 11,
  "plates": {
   "overlays/row-band": {
    "key": "overlays/row-band",
@@ -437,6 +437,1698 @@
      "maxChars": 59
     }
    }
+  },
+  "overlays/source-tag-16x9": {
+   "key": "overlays/source-tag-16x9",
+   "dir": "overlays",
+   "aspect": "16x9",
+   "canvas": [
+    900,
+    72
+   ],
+   "delivered": [
+    1800,
+    144
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "source-tag-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "source-tag-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "bc62fd6c"
+     },
+     {
+      "file": "source-tag-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "bc62fd6c"
+     },
+     {
+      "file": "source-tag-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "bc62fd6c"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "source-tag-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "source-tag-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bc62fd6c"
+      },
+      {
+       "file": "source-tag-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "bc62fd6c"
+      },
+      {
+       "file": "source-tag-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "bc62fd6c"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "source-tag-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "source-tag-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "60659f5a"
+      },
+      {
+       "file": "source-tag-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "60659f5a"
+      },
+      {
+       "file": "source-tag-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "60659f5a"
+      }
+     ]
+    }
+   },
+   "slotCount": 2,
+   "typeRoles": {
+    "label": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 11,
+     "budget": "derived from the slot boxes that set this role; 11 is the floor (narrowest of 1), was 11"
+    },
+    "source": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 44,
+     "budget": "derived from the slot boxes that set this role; 44 is the floor (narrowest of 1), was 44"
+    }
+   },
+   "slots": {
+    "label": {
+     "align": "left",
+     "role": "label",
+     "x": 30,
+     "y": 23,
+     "w": 150,
+     "h": 26,
+     "maxChars": 11
+    },
+    "source": {
+     "align": "left",
+     "role": "source",
+     "x": 190,
+     "y": 21,
+     "w": 690,
+     "h": 30,
+     "maxChars": 44
+    }
+   }
+  },
+  "overlays/source-tag-9x16": {
+   "key": "overlays/source-tag-9x16",
+   "dir": "overlays",
+   "aspect": "9x16",
+   "canvas": [
+    980,
+    92
+   ],
+   "delivered": [
+    1960,
+    184
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 3,
+   "frameCount": 3,
+   "files": {
+    "base": "source-tag-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "source-tag-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "2dc2c090"
+     },
+     {
+      "file": "source-tag-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "2dc2c090"
+     },
+     {
+      "file": "source-tag-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0
+      },
+      "hash": "2dc2c090"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "source-tag-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "source-tag-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "2dc2c090"
+      },
+      {
+       "file": "source-tag-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "2dc2c090"
+      },
+      {
+       "file": "source-tag-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "2dc2c090"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "source-tag-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "source-tag-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e6189aa0"
+      },
+      {
+       "file": "source-tag-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "e6189aa0"
+      },
+      {
+       "file": "source-tag-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0
+       },
+       "hash": "e6189aa0"
+      }
+     ]
+    }
+   },
+   "slotCount": 2,
+   "typeRoles": {
+    "label": {
+     "font": "Courier Prime",
+     "size": 22,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 11,
+     "budget": "derived from the slot boxes that set this role; 11 is the floor (narrowest of 1), was 11"
+    },
+    "source": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 49,
+     "budget": "derived from the slot boxes that set this role; 49 is the floor (narrowest of 1), was 49"
+    }
+   },
+   "slots": {
+    "label": {
+     "align": "left",
+     "role": "label",
+     "x": 30,
+     "y": 33,
+     "w": 150,
+     "h": 26,
+     "maxChars": 11
+    },
+    "source": {
+     "align": "left",
+     "role": "source",
+     "x": 190,
+     "y": 31,
+     "w": 770,
+     "h": 30,
+     "maxChars": 49
+    }
+   }
+  },
+  "overlays/wipe-sweep-16x9": {
+   "key": "overlays/wipe-sweep-16x9",
+   "dir": "overlays",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 8,
+   "files": {
+    "base": "wipe-sweep-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "wipe-sweep-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0.125
+      },
+      "hash": "7a26c200"
+     },
+     {
+      "file": "wipe-sweep-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 0.25
+      },
+      "hash": "b03ce868"
+     },
+     {
+      "file": "wipe-sweep-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0.375
+      },
+      "hash": "41256bda"
+     },
+     {
+      "file": "wipe-sweep-16x9-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "ruleOffset": 0.5
+      },
+      "hash": "7f0adec8"
+     },
+     {
+      "file": "wipe-sweep-16x9-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "ruleOffset": 0.625
+      },
+      "hash": "414f7158"
+     },
+     {
+      "file": "wipe-sweep-16x9-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "ruleOffset": 0.75
+      },
+      "hash": "3bcb5e14"
+     },
+     {
+      "file": "wipe-sweep-16x9-night_f07.png",
+      "tag": "_f07",
+      "args": {
+       "ruleOffset": 0.875
+      },
+      "hash": "184c4f90"
+     },
+     {
+      "file": "wipe-sweep-16x9-night_f08.png",
+      "tag": "_f08",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "be528660"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "wipe-sweep-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-sweep-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "7a26c200"
+      },
+      {
+       "file": "wipe-sweep-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "b03ce868"
+      },
+      {
+       "file": "wipe-sweep-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "41256bda"
+      },
+      {
+       "file": "wipe-sweep-16x9-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "7f0adec8"
+      },
+      {
+       "file": "wipe-sweep-16x9-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "414f7158"
+      },
+      {
+       "file": "wipe-sweep-16x9-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "3bcb5e14"
+      },
+      {
+       "file": "wipe-sweep-16x9-night_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "184c4f90"
+      },
+      {
+       "file": "wipe-sweep-16x9-night_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "be528660"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "wipe-sweep-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-sweep-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "ae0da460"
+      },
+      {
+       "file": "wipe-sweep-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "d9a76196"
+      },
+      {
+       "file": "wipe-sweep-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "00add8f8"
+      },
+      {
+       "file": "wipe-sweep-16x9-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "ce8ff110"
+      },
+      {
+       "file": "wipe-sweep-16x9-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "f41def70"
+      },
+      {
+       "file": "wipe-sweep-16x9-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "1a08659a"
+      },
+      {
+       "file": "wipe-sweep-16x9-dusk_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "35c514a2"
+      },
+      {
+       "file": "wipe-sweep-16x9-dusk_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "81d5fa7e"
+      }
+     ]
+    }
+   },
+   "slotCount": 0,
+   "typeRoles": {},
+   "slots": {}
+  },
+  "overlays/wipe-sweep-9x16": {
+   "key": "overlays/wipe-sweep-9x16",
+   "dir": "overlays",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 8,
+   "files": {
+    "base": "wipe-sweep-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "wipe-sweep-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0.125
+      },
+      "hash": "c8ae36de"
+     },
+     {
+      "file": "wipe-sweep-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 0.25
+      },
+      "hash": "3e901856"
+     },
+     {
+      "file": "wipe-sweep-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0.375
+      },
+      "hash": "20ed6430"
+     },
+     {
+      "file": "wipe-sweep-9x16-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "ruleOffset": 0.5
+      },
+      "hash": "08f4efe0"
+     },
+     {
+      "file": "wipe-sweep-9x16-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "ruleOffset": 0.625
+      },
+      "hash": "ed537e66"
+     },
+     {
+      "file": "wipe-sweep-9x16-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "ruleOffset": 0.75
+      },
+      "hash": "a2d8ad40"
+     },
+     {
+      "file": "wipe-sweep-9x16-night_f07.png",
+      "tag": "_f07",
+      "args": {
+       "ruleOffset": 0.875
+      },
+      "hash": "ea167226"
+     },
+     {
+      "file": "wipe-sweep-9x16-night_f08.png",
+      "tag": "_f08",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "30e495c0"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "wipe-sweep-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-sweep-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "c8ae36de"
+      },
+      {
+       "file": "wipe-sweep-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "3e901856"
+      },
+      {
+       "file": "wipe-sweep-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "20ed6430"
+      },
+      {
+       "file": "wipe-sweep-9x16-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "08f4efe0"
+      },
+      {
+       "file": "wipe-sweep-9x16-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "ed537e66"
+      },
+      {
+       "file": "wipe-sweep-9x16-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "a2d8ad40"
+      },
+      {
+       "file": "wipe-sweep-9x16-night_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "ea167226"
+      },
+      {
+       "file": "wipe-sweep-9x16-night_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "30e495c0"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "wipe-sweep-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-sweep-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "9bc1da62"
+      },
+      {
+       "file": "wipe-sweep-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "1a4926e8"
+      },
+      {
+       "file": "wipe-sweep-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "7dd65798"
+      },
+      {
+       "file": "wipe-sweep-9x16-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "0b0ccbe0"
+      },
+      {
+       "file": "wipe-sweep-9x16-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "930702c8"
+      },
+      {
+       "file": "wipe-sweep-9x16-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "41528058"
+      },
+      {
+       "file": "wipe-sweep-9x16-dusk_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "76ec5320"
+      },
+      {
+       "file": "wipe-sweep-9x16-dusk_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "0400672e"
+      }
+     ]
+    }
+   },
+   "slotCount": 0,
+   "typeRoles": {},
+   "slots": {}
+  },
+  "overlays/wipe-page-16x9": {
+   "key": "overlays/wipe-page-16x9",
+   "dir": "overlays",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 8,
+   "files": {
+    "base": "wipe-page-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "wipe-page-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0.125
+      },
+      "hash": "a40d9da0"
+     },
+     {
+      "file": "wipe-page-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 0.25
+      },
+      "hash": "c0311478"
+     },
+     {
+      "file": "wipe-page-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0.375
+      },
+      "hash": "9f923798"
+     },
+     {
+      "file": "wipe-page-16x9-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "ruleOffset": 0.5
+      },
+      "hash": "23b32180"
+     },
+     {
+      "file": "wipe-page-16x9-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "ruleOffset": 0.625
+      },
+      "hash": "3a33a050"
+     },
+     {
+      "file": "wipe-page-16x9-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "ruleOffset": 0.75
+      },
+      "hash": "9dc6e188"
+     },
+     {
+      "file": "wipe-page-16x9-night_f07.png",
+      "tag": "_f07",
+      "args": {
+       "ruleOffset": 0.875
+      },
+      "hash": "026ca776"
+     },
+     {
+      "file": "wipe-page-16x9-night_f08.png",
+      "tag": "_f08",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "f70df1f8"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "wipe-page-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-page-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "a40d9da0"
+      },
+      {
+       "file": "wipe-page-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "c0311478"
+      },
+      {
+       "file": "wipe-page-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "9f923798"
+      },
+      {
+       "file": "wipe-page-16x9-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "23b32180"
+      },
+      {
+       "file": "wipe-page-16x9-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "3a33a050"
+      },
+      {
+       "file": "wipe-page-16x9-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "9dc6e188"
+      },
+      {
+       "file": "wipe-page-16x9-night_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "026ca776"
+      },
+      {
+       "file": "wipe-page-16x9-night_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "f70df1f8"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "wipe-page-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-page-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "53500218"
+      },
+      {
+       "file": "wipe-page-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "ead323ae"
+      },
+      {
+       "file": "wipe-page-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "01a758c8"
+      },
+      {
+       "file": "wipe-page-16x9-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "40d94db6"
+      },
+      {
+       "file": "wipe-page-16x9-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "48d63160"
+      },
+      {
+       "file": "wipe-page-16x9-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "e4be1f78"
+      },
+      {
+       "file": "wipe-page-16x9-dusk_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "652f5156"
+      },
+      {
+       "file": "wipe-page-16x9-dusk_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "f70df1f8"
+      }
+     ]
+    }
+   },
+   "slotCount": 0,
+   "typeRoles": {},
+   "slots": {}
+  },
+  "overlays/wipe-page-9x16": {
+   "key": "overlays/wipe-page-9x16",
+   "dir": "overlays",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 8,
+   "files": {
+    "base": "wipe-page-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "wipe-page-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0.125
+      },
+      "hash": "4ffd07ce"
+     },
+     {
+      "file": "wipe-page-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 0.25
+      },
+      "hash": "869231a2"
+     },
+     {
+      "file": "wipe-page-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0.375
+      },
+      "hash": "2532eb88"
+     },
+     {
+      "file": "wipe-page-9x16-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "ruleOffset": 0.5
+      },
+      "hash": "e2d371d0"
+     },
+     {
+      "file": "wipe-page-9x16-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "ruleOffset": 0.625
+      },
+      "hash": "81cce016"
+     },
+     {
+      "file": "wipe-page-9x16-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "ruleOffset": 0.75
+      },
+      "hash": "7f15f4de"
+     },
+     {
+      "file": "wipe-page-9x16-night_f07.png",
+      "tag": "_f07",
+      "args": {
+       "ruleOffset": 0.875
+      },
+      "hash": "0428d94e"
+     },
+     {
+      "file": "wipe-page-9x16-night_f08.png",
+      "tag": "_f08",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "17e49462"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "wipe-page-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-page-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "4ffd07ce"
+      },
+      {
+       "file": "wipe-page-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "869231a2"
+      },
+      {
+       "file": "wipe-page-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "2532eb88"
+      },
+      {
+       "file": "wipe-page-9x16-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "e2d371d0"
+      },
+      {
+       "file": "wipe-page-9x16-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "81cce016"
+      },
+      {
+       "file": "wipe-page-9x16-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "7f15f4de"
+      },
+      {
+       "file": "wipe-page-9x16-night_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "0428d94e"
+      },
+      {
+       "file": "wipe-page-9x16-night_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "17e49462"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "wipe-page-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-page-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "d7e39fbc"
+      },
+      {
+       "file": "wipe-page-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "82641458"
+      },
+      {
+       "file": "wipe-page-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "9af6f8ac"
+      },
+      {
+       "file": "wipe-page-9x16-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "91d3f176"
+      },
+      {
+       "file": "wipe-page-9x16-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "3ac12112"
+      },
+      {
+       "file": "wipe-page-9x16-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "3ae730f0"
+      },
+      {
+       "file": "wipe-page-9x16-dusk_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "8e601c30"
+      },
+      {
+       "file": "wipe-page-9x16-dusk_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "17e49462"
+      }
+     ]
+    }
+   },
+   "slotCount": 0,
+   "typeRoles": {},
+   "slots": {}
+  },
+  "overlays/wipe-blinds-16x9": {
+   "key": "overlays/wipe-blinds-16x9",
+   "dir": "overlays",
+   "aspect": "16x9",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 8,
+   "files": {
+    "base": "wipe-blinds-16x9-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "wipe-blinds-16x9-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0.125
+      },
+      "hash": "28fa595e"
+     },
+     {
+      "file": "wipe-blinds-16x9-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 0.25
+      },
+      "hash": "2e709f6e"
+     },
+     {
+      "file": "wipe-blinds-16x9-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0.375
+      },
+      "hash": "22981000"
+     },
+     {
+      "file": "wipe-blinds-16x9-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "ruleOffset": 0.5
+      },
+      "hash": "eb8ab208"
+     },
+     {
+      "file": "wipe-blinds-16x9-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "ruleOffset": 0.625
+      },
+      "hash": "22981000"
+     },
+     {
+      "file": "wipe-blinds-16x9-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "ruleOffset": 0.75
+      },
+      "hash": "2e709f6e"
+     },
+     {
+      "file": "wipe-blinds-16x9-night_f07.png",
+      "tag": "_f07",
+      "args": {
+       "ruleOffset": 0.875
+      },
+      "hash": "28fa595e"
+     },
+     {
+      "file": "wipe-blinds-16x9-night_f08.png",
+      "tag": "_f08",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "f70df1f8"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "wipe-blinds-16x9-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-blinds-16x9-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "28fa595e"
+      },
+      {
+       "file": "wipe-blinds-16x9-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "2e709f6e"
+      },
+      {
+       "file": "wipe-blinds-16x9-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "22981000"
+      },
+      {
+       "file": "wipe-blinds-16x9-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "eb8ab208"
+      },
+      {
+       "file": "wipe-blinds-16x9-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "22981000"
+      },
+      {
+       "file": "wipe-blinds-16x9-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "2e709f6e"
+      },
+      {
+       "file": "wipe-blinds-16x9-night_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "28fa595e"
+      },
+      {
+       "file": "wipe-blinds-16x9-night_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "f70df1f8"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "wipe-blinds-16x9-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-blinds-16x9-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "28068cc2"
+      },
+      {
+       "file": "wipe-blinds-16x9-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "deea81c4"
+      },
+      {
+       "file": "wipe-blinds-16x9-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "01037557"
+      },
+      {
+       "file": "wipe-blinds-16x9-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "0b7e108c"
+      },
+      {
+       "file": "wipe-blinds-16x9-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "01037557"
+      },
+      {
+       "file": "wipe-blinds-16x9-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "deea81c4"
+      },
+      {
+       "file": "wipe-blinds-16x9-dusk_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "28068cc2"
+      },
+      {
+       "file": "wipe-blinds-16x9-dusk_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "f70df1f8"
+      }
+     ]
+    }
+   },
+   "slotCount": 0,
+   "typeRoles": {},
+   "slots": {}
+  },
+  "overlays/wipe-blinds-9x16": {
+   "key": "overlays/wipe-blinds-9x16",
+   "dir": "overlays",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 8,
+   "files": {
+    "base": "wipe-blinds-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "wipe-blinds-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0.125
+      },
+      "hash": "6e92c0a8"
+     },
+     {
+      "file": "wipe-blinds-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 0.25
+      },
+      "hash": "5d8e39be"
+     },
+     {
+      "file": "wipe-blinds-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0.375
+      },
+      "hash": "e9f378fa"
+     },
+     {
+      "file": "wipe-blinds-9x16-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "ruleOffset": 0.5
+      },
+      "hash": "fad3d006"
+     },
+     {
+      "file": "wipe-blinds-9x16-night_f05.png",
+      "tag": "_f05",
+      "args": {
+       "ruleOffset": 0.625
+      },
+      "hash": "e9f378fa"
+     },
+     {
+      "file": "wipe-blinds-9x16-night_f06.png",
+      "tag": "_f06",
+      "args": {
+       "ruleOffset": 0.75
+      },
+      "hash": "5d8e39be"
+     },
+     {
+      "file": "wipe-blinds-9x16-night_f07.png",
+      "tag": "_f07",
+      "args": {
+       "ruleOffset": 0.875
+      },
+      "hash": "6e92c0a8"
+     },
+     {
+      "file": "wipe-blinds-9x16-night_f08.png",
+      "tag": "_f08",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "17e49462"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "wipe-blinds-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-blinds-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "6e92c0a8"
+      },
+      {
+       "file": "wipe-blinds-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "5d8e39be"
+      },
+      {
+       "file": "wipe-blinds-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "e9f378fa"
+      },
+      {
+       "file": "wipe-blinds-9x16-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "fad3d006"
+      },
+      {
+       "file": "wipe-blinds-9x16-night_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "e9f378fa"
+      },
+      {
+       "file": "wipe-blinds-9x16-night_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "5d8e39be"
+      },
+      {
+       "file": "wipe-blinds-9x16-night_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "6e92c0a8"
+      },
+      {
+       "file": "wipe-blinds-9x16-night_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "17e49462"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "wipe-blinds-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-blinds-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.125
+       },
+       "hash": "4ff448c8"
+      },
+      {
+       "file": "wipe-blinds-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "25d3c6e0"
+      },
+      {
+       "file": "wipe-blinds-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.375
+       },
+       "hash": "360a9532"
+      },
+      {
+       "file": "wipe-blinds-9x16-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "e73f65be"
+      },
+      {
+       "file": "wipe-blinds-9x16-dusk_f05.png",
+       "tag": "_f05",
+       "args": {
+        "ruleOffset": 0.625
+       },
+       "hash": "360a9532"
+      },
+      {
+       "file": "wipe-blinds-9x16-dusk_f06.png",
+       "tag": "_f06",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "25d3c6e0"
+      },
+      {
+       "file": "wipe-blinds-9x16-dusk_f07.png",
+       "tag": "_f07",
+       "args": {
+        "ruleOffset": 0.875
+       },
+       "hash": "4ff448c8"
+      },
+      {
+       "file": "wipe-blinds-9x16-dusk_f08.png",
+       "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "17e49462"
+      }
+     ]
+    }
+   },
+   "slotCount": 0,
+   "typeRoles": {},
+   "slots": {}
   }
  }
 }

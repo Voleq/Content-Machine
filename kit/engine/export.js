@@ -61,6 +61,13 @@ function dataLayer(m, data, hour) {
   const pick = re => Object.keys(SL).filter(k => re.test(k))
     .sort((a, b) => +a.split('-').pop() - +b.split('-').pop()).map(k => SL[k]);
   const outs = [];
+  /* rebuild-23: a band that publishes `under: true` (a range behind a line)
+   * paints before the series, or it hides the line it frames. */
+  Object.keys(data.bands || {}).forEach(k => { const b = SL[k], v = data.bands[k]; if (b && v && b.under) outs.push(SERIES.historyBand({ box: b, low: v[0], high: v[1], tone: v[2], axis: b.axis || 'horizontal', ink })); });
+  /* rebuild-22: fill and second-series ink default to what the plate PUBLISHES
+   * on its plot-area, so real data drawn without them matches the legend. */
+  const PA = SL['plot-area'] || {};
+  data = Object.assign({}, data, { spread: data.spread != null ? data.spread : PA.spreadFill === true, tone2: data.tone2 || PA.tone2 || 'subject2' });
   const barCols = pick(/^bar-\d+$/), pairCols = pick(/^pair-\d+$/), pointCols = pick(/^point-\d+$/);
   /* A second series shares the first one's scale — two scales on one plot is
    * how a viewer reads a correlation the data does not contain. */
@@ -76,8 +83,17 @@ function dataLayer(m, data, hour) {
   if (data.points && SL['plot-area'] && SERIES.scatter) outs.push(SERIES.scatter({ box: SL['plot-area'], points: data.points, accent: data.accent, ink }));
   /* Named per-slot marks and extents: a plate with one rail per row publishes
    * marker-N / band-N regions, and the data names which value goes in which. */
-  Object.keys(data.marks || {}).forEach(k => { const b = SL[k]; if (b) outs.push(SERIES.axisMark({ box: b, value: data.marks[k], axis: b.axis || 'horizontal', ink })); });
-  Object.keys(data.bands || {}).forEach(k => { const b = SL[k], v = data.bands[k]; if (b && v) outs.push(SERIES.historyBand({ box: b, low: v[0], high: v[1], tone: v[2], axis: b.axis || 'horizontal', ink })); });
+  Object.keys(data.marks || {}).forEach(k => { const b = SL[k]; if (b) outs.push(SERIES.axisMark({ box: b, value: data.marks[k], axis: b.axis || 'horizontal', tone: b.ink, ink })); });
+  /* rebuild-30: the attention underline a slot publishes (footnote-spotlight). */
+  Object.keys(SL).forEach(k => { const b = SL[k]; if (b && b.underline) outs.push({ nodes: [{ tag: 'rect', attrs: { x: Math.round(b.x), y: Math.round(b.y + b.h + 2), width: Math.round(b.w * 0.8), height: 5, fill: ink[b.underline] } }] }); });
+  /* rebuild-29: said-happened's diverge-N. The slot note always promised "the
+   * renderer draws the tie in attention" and no renderer did. A tie is one
+   * attention bar down the middle of the named column's diverge box. */
+  (data.diverge || []).forEach(i => { const b = SL['diverge-' + i]; if (b) outs.push({ nodes: [{ tag: 'rect', attrs: { x: Math.round(b.x + b.w / 2 - 4), y: Math.round(b.y), width: 8, height: Math.round(b.h), fill: ink.attention } }] }); });
+  /* rebuild-23: small multiples. One series per published panel-N, all on the
+   * plate's ONE min-max, evenly spaced across the panel. */
+  Object.keys(data.panels || {}).forEach(k => { const b = SL[k], ps = (data.panelScale || {})[k] || [data.min, data.max]; if (b) outs.push(SERIES.linePath({ box: b, values: data.panels[k], min: ps[0], max: ps[1], zeroRule: data.zeroRule, accentLast: data.accentLast, tone: b.tone, ink })); });
+  Object.keys(data.bands || {}).forEach(k => { const b = SL[k], v = data.bands[k]; if (b && v && !b.under) outs.push(SERIES.historyBand({ box: b, low: v[0], high: v[1], tone: v[2], axis: b.axis || 'horizontal', ink })); });
   if (data.cycle && SL.path) outs.push(SERIES.cycleArc({ box: SL.path, values: data.cycle, troughBox: SL.trough, ink }));
   if (data.spark) pick(/^spark-\d+$/).forEach(box => outs.push(SERIES.sparkBars({ box, values: data.spark, ink })));
   if (data.low !== undefined && SL.band) outs.push(SERIES.historyBand({ box: SL.band, low: data.low, high: data.high, axis: SL.band.axis, ink }));

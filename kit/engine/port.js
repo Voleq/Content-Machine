@@ -67,11 +67,14 @@ g.PLATES_R2.install(g.PLATES, g.HAND);
 /* Round three — one set per sector — names round two's shapes. */
 g.PLATES_R3 = require('./plates-r3');
 g.PLATES_R3.install(g.PLATES, g.HAND);
+/* Round five — new shapes — reuses round two's furniture. */
+g.PLATES_R5 = require('./plates-r5');
+g.PLATES_R5.install(g.PLATES, g.HAND);
 
 /* The catalogue, read out of build.js rather than retyped (§8.1), with the
  * round-one entries appended. emit.js and export.js both read THIS, which is
  * what stops the manifest and the export disagreeing about what exists. */
-function catalogue() { return legacyCatalogue().concat(g.PLATES_R1.LIB, g.PLATES_R2.LIB, g.PLATES_R3.LIB); }
+function catalogue() { return legacyCatalogue().concat(g.PLATES_R1.LIB, g.PLATES_R2.LIB, g.PLATES_R3.LIB, g.PLATES_R5.LIB); }
 function legacyCatalogue() {
   const b = fs.readFileSync(path.join(__dirname, 'build.js'), 'utf8');
   const decls = b.slice(b.indexOf('const A = (dir, key, author'), b.indexOf('const LIB = [].concat('));
