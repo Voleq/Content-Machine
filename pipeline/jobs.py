@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Awaitable, Callable
 
 from config import Settings
+from pipeline import journal
 from pipeline.models import JobKind, JobRecord, JobStatus
 
 log = logging.getLogger(__name__)
@@ -33,8 +34,16 @@ class JobCancelled(Exception):
     pass
 
 
+def _journal(settings: Settings, job: JobRecord, what: str, **data) -> None:
+    """One journal line for a job changing state."""
+    journal.note(settings, "job", f"{job.kind.value} {what}",
+                 ticker=job.ticker, workdate=job.workdate, job_id=job.id,
+                 job_kind=job.kind.value, status=job.status.value, **data)
+
+
 class JobStore:
     def __init__(self, settings: Settings):
+        self.settings = settings
         self.dir = settings.state_dir / "jobs"
         self.dir.mkdir(parents=True, exist_ok=True)
 
@@ -67,6 +76,7 @@ class JobStore:
                 job.status = JobStatus.INTERRUPTED
                 job.detail = "process restarted mid-render; re-run to resume from caches"
                 self.save(job)
+                _journal(self.settings, job, "interrupted by a restart")
                 n += 1
         return n
 
@@ -146,6 +156,7 @@ class RenderJobQueue:
             workdate=workdate,
         )
         self.store.save(job)
+        _journal(self.settings, job, "queued")
         await self._queue.put(job.id)
         return job
 
@@ -156,6 +167,7 @@ class RenderJobQueue:
                 job.status = JobStatus.CANCELLED
                 job.detail = "cancelled by operator"
                 self.store.save(job)
+                _journal(self.settings, job, "cancelled by the operator")
                 cancelled.append(job)
         return cancelled
 
@@ -196,6 +208,7 @@ class RenderJobQueue:
                 continue  # cancelled while queued (or state file removed)
             job.status = JobStatus.RUNNING
             self.store.save(job)
+            _journal(self.settings, job, "started")
             await self._notify(f"🎬 {job.ticker}: {job.kind.value} started")
             try:
                 artifact = await asyncio.to_thread(self.executor, job)
@@ -206,6 +219,8 @@ class RenderJobQueue:
                 job.status = JobStatus.DONE
                 job.artifact = artifact
                 self.store.save(job)
+                _journal(self.settings, job, "finished", artifact=artifact,
+                         link=job.delivered_link)
                 # Success was the one outcome that sent nothing. A render
                 # started, failed or was cancelled all pushed; a render that
                 # WORKED had to be discovered by polling /status, which is how
@@ -215,6 +230,7 @@ class RenderJobQueue:
                 job = self.store.load(job_id) or job
                 job.status = JobStatus.CANCELLED
                 self.store.save(job)
+                _journal(self.settings, job, "cancelled mid-run")
                 await self._notify(f"🚫 {job.ticker}: cancelled")
             except Exception as e:  # report, never crash the worker
                 log.exception("job %s failed", job_id)
@@ -222,6 +238,7 @@ class RenderJobQueue:
                 job.status = JobStatus.FAILED
                 job.error = str(e)[:1500]
                 self.store.save(job)
+                _journal(self.settings, job, f"failed: {job.error[:200]}")
                 await self._notify(self._failed_text(job))
 
     def _done_text(self, job: JobRecord) -> str:

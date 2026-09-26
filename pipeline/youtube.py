@@ -572,9 +572,20 @@ class VideoLog:
         self.path.write_text(json.dumps(rows, indent=2, default=str), encoding="utf-8")
 
     def record(self, video: VideoRecord) -> None:
-        rows = [r for r in self._all() if r.get("video_id") != video.video_id]
+        existing = self._all()
+        rows = [r for r in existing if r.get("video_id") != video.video_id]
+        known = len(rows) < len(existing)
         rows.append(video.to_json())
         self._save(rows)
+        if not known:
+            from pipeline import journal
+
+            when = f" for {video.publish_at}" if video.publish_at else ""
+            journal.note(self.settings, "uploaded",
+                         f"uploaded to YouTube ({video.privacy}{when}): "
+                         f"{video.title}",
+                         ticker=video.ticker, workdate=video.workdate,
+                         video_id=video.video_id, privacy=video.privacy)
 
     def get(self, video_id: str) -> VideoRecord | None:
         for r in self._all():

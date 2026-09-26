@@ -32,6 +32,32 @@ OLLAMA = "ollama"
 GITHUB = "github"
 OPENAI = "openai"
 
+# WHAT EACH PASS IS FOR, keyed by the `purpose` its caller passes. The
+# journal records every call under this name, and `/ask` hands the list to
+# the model so it can say what it does inside the bot. A purpose used in the
+# code and missing here fails `tests/test_recall.py`, so the model's picture
+# of its own job cannot fall behind the code.
+PURPOSES: dict[str, str] = {
+    "filing-brief-section": "reads one section of a 10-K or 10-Q and notes "
+                            "its specific risks, numbers and wording changes",
+    "filing-brief-condense": "turns those section notes into the filing "
+                             "brief shown before a LONG's angle is picked",
+    "filing-brief-crosscheck": "lists where the filing and the workbook "
+                               "numbers disagree",
+    "filing-brief-grade": "grades what the last video claimed against the "
+                          "new filings, for /update",
+    "filings": "picks verbatim quotes from a 10-K to screenshot, and "
+               "summarises news articles",
+    "skeptic": "reads a script as a hostile investor and names its weakest "
+               "claims (advisory, never blocks)",
+    "broll query": "turns a visual cue in a script into a stock-footage "
+                   "search",
+    "ask-expand": "widens an /ask question into the words the bot's records "
+                  "would use",
+    "ask": "answers an /ask question from the bot's own records",
+    "llm": "an unnamed pass",
+}
+
 
 def provider_order(settings: Settings) -> list[str]:
     """Providers to try, in order. `llm_provider_order` overrides."""
@@ -168,7 +194,8 @@ def _try_openai_compatible(prompt: str, system: str, settings: Settings,
 
 
 def chat_result(prompt: str, settings: Settings, *, system: str = "",
-                purpose: str = "llm") -> LLMResult:
+                purpose: str = "llm",
+                providers: list[str] | None = None) -> LLMResult:
     """One completion from the first provider that answers, with its reason.
 
     `chat` is this, narrowed to the text — every existing caller keeps
@@ -184,6 +211,10 @@ def chat_result(prompt: str, settings: Settings, *, system: str = "",
 
     An empty result is a normal outcome, not an error: every gate that uses
     this degrades to "did not run" rather than blocking a render.
+
+    `providers` narrows the routing for one caller. `/ask` passes its own
+    order, local-only by default, so a question typed in passing never
+    becomes hosted spend.
     """
     if settings.mock_mode:
         log.info("%s: MOCK_MODE — LLM pass skipped", purpose)
@@ -198,7 +229,8 @@ def chat_result(prompt: str, settings: Settings, *, system: str = "",
         return out
 
     last = LLMResult(reason=NO_PROVIDER)
-    for provider in provider_order(settings):
+    for provider in (providers if providers is not None
+                     else provider_order(settings)):
         if provider == OLLAMA:
             out = _try_ollama(prompt, system, settings)
         elif provider == GITHUB:
@@ -310,6 +342,35 @@ def record_llm_call(settings: Settings, result: LLMResult, *,
         _CALLS.move_to_end(scope)
         while len(_CALLS) > _MAX_SCOPES:
             _CALLS.popitem(last=False)
+    # The tally above is per process and per video on purpose; the journal
+    # is the copy that survives a restart, so "what did the model work on
+    # yesterday" has an answer.
+    from pipeline import journal
+
+    ticker, _, workdate = scope.partition("/")
+    journal.note(settings, "ai", f"{purpose or 'llm'}: {_outcome(result)}",
+                 ticker=ticker, workdate=workdate, purpose=purpose,
+                 provider=result.provider, model=result.model,
+                 reason=result.reason)
+
+
+_OUTCOME_WORDS = {
+    OK: "answered",
+    NO_DAEMON: "no model answered",
+    TIMEOUT: "timed out",
+    EMPTY: "came back empty",
+    PARSE_ERROR: "came back unreadable",
+    MOCK: "skipped (MOCK_MODE)",
+    NO_PROVIDER: "no model configured",
+}
+
+
+def _outcome(result: LLMResult) -> str:
+    words = _OUTCOME_WORDS.get(result.reason, result.reason or "unknown")
+    if result.reason == OK:
+        where = "locally" if result.provider == OLLAMA else "HOSTED"
+        return f"{words} {where} ({result.provider}/{result.model})"
+    return words
 
 
 def reset_llm_calls(scope: str | None = None) -> None:
