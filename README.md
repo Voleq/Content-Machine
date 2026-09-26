@@ -219,6 +219,9 @@ pipeline/
   screener.py            Yahoo + StockTwits lanes + digest + move context
   alerts.py              intraday watch: moves, volume, earnings, filings
   standing.py            thesis book, confession ledger, ranked idea queue
+  journal.py             what the bot did, a line per event, across restarts
+  recall.py              search over everything saved + /ask on the local model
+  tally.py               counts and totals for /ask, worked out by code
 
   jobs.py                persisted async job queue (one render at a time)
   cost.py                spend ledger, gates, report builders
@@ -781,6 +784,17 @@ away.
 | `/watch [TICKER \| drop TICKER]` | Intraday watch, in `SCREEN_TIMEZONE` rather than the machine clock. Published names join automatically. `/watch drop` on its own prints usage instead of watching a stock called DROP. |
 | `/earnings TICKER YYYY-MM-DD [bmo\|amc]` | Records a print date so the bot flags it both sides. |
 
+### Asking the bot about itself
+
+Both commands read what the bot has already saved: every script, filing
+brief, check report, thesis, idea, job, upload and journal line, and this
+README. Neither spends, renders, or changes anything.
+
+| command | what it does |
+|---|---|
+| `/ask <question>` | The local model answers from the bot's own records, citing what it read, or says it has nothing on file. Counts and totals ("how many shorts this month", "what did voice cost in August", "what's in the queue") are worked out by code and never reach the model. Any number in an answer that appears in nothing it read is named underneath as a guess. Local only unless `ASK_PROVIDER_ORDER` says otherwise. |
+| `/find <words>` | Every saved record with those words, ranked, no AI involved. Works with Ollama off. |
+
 ### Housekeeping
 
 | command | what it does |
@@ -1126,10 +1140,37 @@ reconstructible:
 | `published.json` | what has already gone to YouTube, so `/upload` does not send it twice. |
 | `jobs/` | the queue, including anything QUEUED that a restart would otherwise re-enqueue. |
 | `last_digest.json`, `alerts.json`, `earnings_calendar.json` | the scheduler's memory of what it has already sent. |
+| `journal.jsonl` | the record of what the bot did and when, including every pass the local model ran. `/ask` can no longer say what happened last week. (`recall.sqlite` beside it is a cache and rebuilds itself.) |
 
 Deliberately **not** a scheduled job. A cron that silently stops is a backup
 you think you have; this is one command that is easy to run before a change
 you might want to undo.
+
+### The local AI, and what it remembers
+
+The model itself remembers nothing between calls, and it does not need to.
+The bot writes everything down: the workspaces, the `state/` files above, and
+`state/journal.jsonl`, which gets one line per event (a video started, a
+script checked, an approval, a job queued, started, finished or failed, a
+delivery, an upload, a thesis pinned, every pass the model ran, every `/ask`).
+`/ask` searches all of it, hands the model the best eight records plus the
+headline figures, and has it answer from those alone.
+
+- **The index** is `state/recall.sqlite`, a SQLite full-text table. It is
+  rebuilt whenever any file it reads has changed, so it is never stale, and
+  deleting it costs one rebuild.
+- **Searching by meaning** uses the same model: it rewrites the question into
+  the words the records would use, and both searches are merged. No second
+  model to install.
+- **Numbers never come from the model.** A count or a total is answered by
+  `pipeline/tally.py` from the job records, the video log, the spend ledger
+  and the journal. Any other number the model writes is checked against what
+  it was given, and one that appears nowhere is flagged under the answer.
+- **What it costs.** One short call to widen the search and one to answer,
+  on the GPU the renders use. `OLLAMA_KEEP_ALIVE=30m` keeps the model loaded
+  between questions.
+- **The journal starts the day this was installed.** Counts of what the
+  model did before then say so rather than reading as zero.
 
 ## Legal / safety
 

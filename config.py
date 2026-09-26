@@ -318,6 +318,11 @@ class Settings(BaseSettings):
     # has no rate limit and no quota, and is still $0. Hosted tiers are the
     # fallback. Comma-separated; empty means ollama,github,openai.
     llm_provider_order: str = Field(default="", alias="LLM_PROVIDER_ORDER")
+    # Where `/ask` and `/find`'s model calls go. Local only by default: a
+    # question typed in passing should never become hosted spend, and the
+    # records it reads are the bot's own. Add `github` to let a question fall
+    # back to the free hosted tier when Ollama is down.
+    ask_provider_order: str = Field(default="ollama", alias="ASK_PROVIDER_ORDER")
     # A render built on a stale snapshot states old numbers as current.
     #
     # Blocking by default (B5). The README's guarantee table has always
