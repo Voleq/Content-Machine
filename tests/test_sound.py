@@ -19,10 +19,11 @@ import pytest
 
 from pipeline.audio_assets import ROOM_TONE_GAIN_DB, ROOM_TONE_NAME
 from pipeline.render_common import AudioTrack, mix_under_picture, run_ffmpeg
-from pipeline.sound import (CUT_KEY, CUT_LEAD_S, DROP_S, HIT_KEY, RATE_SPREAD,
-                            TRIM_SPREAD_DB, Cut, Voicing, bed_track,
-                            manifest_rows, normalises, room_track, set_layers,
-                            short_mix, shot_tags, sound_summary,
+from pipeline.sound import (CUT_KEY, CUT_LEAD_S, DROP_S, HIT_KEY,
+                            MOVE_CUES, MOVE_GAP_S, RATE_SPREAD,
+                            TRIM_SPREAD_DB, Cut, Move, Voicing, bed_track,
+                            manifest_rows, move_cues, normalises, room_track,
+                            set_layers, short_mix, shot_tags, sound_summary,
                             structure_cues, theme_tracks, variants)
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -229,6 +230,71 @@ def test_a_chaptered_format_hits_on_each_chapter_and_nothing_else(assets):
     assert [t.name for t in tracks] == ["chapter_hit@0.00", "chapter_hit@9.00"]
     assert all(t.path.stem.startswith(HIT_KEY) for t in tracks)
     assert drops == []
+
+
+# ---------------------------------------------------------- design's moves
+
+# Design's rebuild-39 timing, in seconds from each move's first frame: the
+# frame the picture finishes on. Copied from the contract rather than read
+# from the table under test, so a slip in the table fails here.
+DESIGN_LANDS_S = {
+    "count-up": 0.500, "line-draw": 0.750, "highlight": 0.417,
+    "pen-circle": 0.583, "zoom-to-slot": 0.917, "slide-in": 0.417,
+    "bars-grow": 0.583, "card-pin": 0.583, "tick-over": 0.250,
+}
+
+
+def test_every_move_sounds_on_design_s_frames(assets):
+    """A drawn sound runs with the drawing and stops on the frame it finishes;
+    a struck one lands on the frame. One move at a time, well clear of any
+    cut, so nothing is thinned out."""
+    root, settings = assets
+    assert set(MOVE_CUES) == set(DESIGN_LANDS_S)
+    for move, lands in DESIGN_LANDS_S.items():
+        [tr] = move_cues([Move(move, 3.0)], settings,
+                         Voicing(root / "sfx", move), cuts=CUTS)
+        cue = MOVE_CUES[move]
+        assert tr.path.stem.split("-")[0] == cue.key, move
+        if cue.drawn:
+            assert tr.start_s == pytest.approx(3.0), move
+            assert tr.max_s == pytest.approx(lands), move
+        else:
+            assert tr.start_s == pytest.approx(3.0 + lands), move
+            assert tr.max_s == 0.0, move
+        assert tr.gain_db < settings.sfx_gain_db - 8.0, \
+            "a move is detail inside a shot: it sits under the cut's swish"
+
+
+def test_moves_make_fewer_sounds_than_moves(assets):
+    """What the picture plays is not all heard: a move that opens with its
+    shot is the cut's swish already, the payoff's half-second of nothing
+    stays nothing, a burst of moves is one sound, and a looping move is the
+    room's job."""
+    root, settings = assets
+    moves = [
+        Move("zoom-to-slot", 5.05),     # opens with the cut at 5.0
+        Move("count-up", 7.0),
+        Move("highlight", 7.3),         # inside MOVE_GAP_S of the count-up
+        Move("pen-circle", 12.4),       # runs into the payoff's drop
+        Move("window-rain", 14.0),      # a loop: set layer, not a cue
+        Move("tick-over", 15.0),
+    ]
+    _, drops = structure_cues(CUTS, settings, Voicing(root / "sfx", "s"),
+                              chapters=False)
+    tracks = move_cues(moves, settings, Voicing(root / "sfx", "s"),
+                       cuts=CUTS, drops=drops)
+    assert [t.name for t in tracks] == ["move:count-up@7.00",
+                                        "move:tick-over@15.25"]
+    assert 7.3 - 7.0 < MOVE_GAP_S
+
+
+def test_a_short_plays_its_moves_under_its_cuts(assets, tmp_path):
+    root, settings = assets
+    tracks = short_mix(FakeTTS(_voice(tmp_path / "v.m4a")), settings,
+                       cuts=CUTS, seed="s", moves=[Move("count-up", 7.0)])
+    assert "move:count-up@7.00" in [t.name for t in tracks]
+    assert not any(t.name.startswith("move:") for t in short_mix(
+        FakeTTS(_voice(tmp_path / "w.m4a")), settings, cuts=CUTS, seed="s"))
 
 
 # ---------------------------------------------------------- the variation

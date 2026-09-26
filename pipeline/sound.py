@@ -27,6 +27,11 @@ What a short gets, each decided by the operator (2026-09-25):
 What the LONG gets: a hit on every chapter change (not music), and the
 channel theme as the intro and the outro, dipped under the voice.
 
+Design's moves get a sound each, on design's own frames (`move_cues`): a
+ratchet under a count-up that stops on the final figure, a marker under a
+draw, a knock on the last bar. Built ahead of the renderer's record of which
+moves it played and when; until that record reaches `short_mix`, none plays.
+
 NO EFFECT PLAYS THE SAME WAY TWICE. Each firing picks one of the key's
 variants, never the one it picked last time, a few percent off in speed and a
 decibel or so off in level. Seeded by the script, so the draft, the proof and
@@ -60,21 +65,39 @@ log = logging.getLogger(__name__)
 CUT_KEY = "whoosh"          # every cut in a short
 HIT_KEY = "impact"          # the hook, the payoff, a chapter change
 
-# One sound per design move (kit/emit/motion.json). Fetched now so one run of
-# `scripts/fetch_sfx.py` gets everything; PLAYED once the visuals work says
-# how the bot plays the moves. A move with no entry gets no sound: a looping
-# move sits under the shot as a set layer instead (`SET_LAYERS`).
-MOVE_SOUNDS: dict[str, str] = {
-    "count-up": "tick_roll",
-    "line-draw": "marker_draw",
-    "highlight": "marker_draw",
-    "pen-circle": "marker_circle",
-    "bars-grow": "knock",
-    "card-pin": "pin_tap",
-    "tick-over": "flip",
-    "zoom-to-slot": CUT_KEY,
-    "slide-in": CUT_KEY,
+
+@dataclass(frozen=True)
+class MoveCue:
+    """The sound one design move makes, placed on the move's own frames.
+
+    `at_s` is seconds from the move's first frame. A DRAWN sound (a marker, a
+    ratchet, a swish through a zoom) starts with the move and is cut off at
+    `at_s`, the frame the drawing finishes on, so the sound stops when the
+    picture does. A STRUCK sound (a knock, a pin, a flip) lands on `at_s`.
+    """
+    key: str
+    at_s: float
+    drawn: bool
+
+
+# One sound per design move. The frames are design's, not ours: the rebuild-39
+# timing contract (`/mnt/project-files/visuals/motion-timing-rebuild-39.json`,
+# computed by running the kit's own motion.js at 12 fps) gives the frame each
+# move lands on. A move with no entry gets no sound: a looping move sits under
+# the shot as a set layer instead (`SET_LAYERS`), and lights-twinkle is left
+# to the picture.
+MOVE_CUES: dict[str, MoveCue] = {
+    "count-up": MoveCue("tick_roll", 0.500, drawn=True),       # final figure lands
+    "line-draw": MoveCue("marker_draw", 0.750, drawn=True),    # last point appears
+    "highlight": MoveCue("marker_draw", 0.417, drawn=True),    # underline complete
+    "pen-circle": MoveCue("marker_circle", 0.583, drawn=True),  # the tail finishes
+    "zoom-to-slot": MoveCue(CUT_KEY, 0.917, drawn=True),       # arrives on the slot
+    "slide-in": MoveCue(CUT_KEY, 0.417, drawn=True),           # settled at rest
+    "bars-grow": MoveCue("knock", 0.583, drawn=False),         # last column, the one that matters
+    "card-pin": MoveCue("pin_tap", 0.583, drawn=False),        # visually landed
+    "tick-over": MoveCue("flip", 0.250, drawn=False),          # the number switches
 }
+MOVE_SOUNDS: dict[str, str] = {m: c.key for m, c in MOVE_CUES.items()}
 
 MACHINE_KEYS: tuple[str, ...] = tuple(dict.fromkeys(
     (CUT_KEY, HIT_KEY, *MOVE_SOUNDS.values())))
@@ -118,7 +141,7 @@ THEME_GAIN_DB = -16.0
 # shot, so it peaks on the cut rather than starting on it. A hit lands ON the
 # frame; a clack or a rustle arrives just ahead and announces it.
 CUT_LEAD_S = 0.10
-_LEAD_S = {HIT_KEY: 0.0}
+_LEAD_S = {HIT_KEY: 0.0, "knock": 0.0, "pin_tap": 0.0, "flip": 0.0}
 DEFAULT_LEAD_S = 0.15
 
 # The swish is cut off at this share of the incoming shot, inside these
@@ -132,6 +155,14 @@ DROP_S = 0.5
 # Which shot is a format's payoff. Template JSON refuses keys the engine does
 # not read, and this is a fact about sound, so it lives with the sound.
 PAYOFF_SHOTS = frozenset({"payoff", "so-what"})
+
+# A move is detail inside a shot, so it sits under the cut's swish. It stays
+# out of the way of the cut (a zoom that opens a shot already has the cut's
+# swish), out of the payoff's silence, and never piles up: two moves inside
+# MOVE_GAP_S of each other make one sound, the first.
+MOVE_GAIN_REL_DB = -12.0
+MOVE_CLEAR_S = 0.30
+MOVE_GAP_S = 0.60
 
 # How far one firing may wander from the staged sound.
 RATE_SPREAD = 0.04          # about two thirds of a semitone
@@ -385,9 +416,56 @@ def structure_cues(cuts: Sequence[Cut], settings, voicing: Voicing, *,
     return tracks, drops
 
 
+@dataclass(frozen=True)
+class Move:
+    """One design move as the render played it: which move and when its first
+    frame showed, in programme seconds."""
+    move: str
+    start: float
+    shot_id: str = ""
+    slot: str = ""
+
+
+def move_cues(moves: Sequence[Move], settings, voicing: Voicing, *,
+              cuts: Sequence[Cut] = (),
+              drops: Sequence[tuple[float, float]] = ()) -> list[AudioTrack]:
+    """A sound on each move the picture plays, timed to design's frames.
+
+    Fewer sounds than moves, on purpose: a move that opens with the cut is
+    already carried by the cut's swish, the payoff's silence stays silent, and
+    a burst of moves makes one sound, not a clatter.
+    """
+    tracks: list[AudioTrack] = []
+    level = settings.sfx_gain_db + MOVE_GAIN_REL_DB
+    cut_times = [c.start for c in cuts]
+    last = float("-inf")
+    for mv in sorted(moves, key=lambda m: m.start):
+        cue = MOVE_CUES.get(mv.move)
+        if cue is None:
+            continue
+        if cue.drawn:
+            t, until = mv.start, mv.start + cue.at_s
+        else:
+            t = until = mv.start + cue.at_s - cue_lead_s(cue.key)
+        if any(abs(t - c) < MOVE_CLEAR_S for c in cut_times):
+            continue
+        if any(a <= until and t < b for a, b in drops):
+            continue
+        if t - last < MOVE_GAP_S:
+            continue
+        tr = voicing.fire(cue.key, t, level,
+                          max_s=cue.at_s if cue.drawn else 0.0,
+                          name=f"move:{mv.move}@{t:.2f}")
+        if tr:
+            tracks.append(tr)
+            last = t
+    return tracks
+
+
 def short_mix(tts, settings, *, cuts: Sequence[Cut] = (), hour: str = "",
               seed: str = "", chapters: bool = False, duration: float = 0.0,
-              workspace: "Path | str | None" = None) -> list[AudioTrack]:
+              workspace: "Path | str | None" = None,
+              moves: Sequence[Move] = ()) -> list[AudioTrack]:
     """Every track under a shots-engine render, or none when there is no voice.
 
     No voice file means no mix at all, the same as before: a proof run on a
@@ -411,6 +489,7 @@ def short_mix(tts, settings, *, cuts: Sequence[Cut] = (), hour: str = "",
     layers = set_layers(settings, [(c.start, c.end, set(c.tags)) for c in cuts])
     voicing = Voicing(settings.assets_dir / "sfx", seed)
     cues, drops = structure_cues(cuts, settings, voicing, chapters=chapters)
+    cues += move_cues(moves, settings, voicing, cuts=cuts, drops=drops)
     # The drop silences everything that is not the voice and not the hit.
     for tr in loops + layers:
         tr.gaps = tuple(drops)
