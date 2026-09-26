@@ -50,14 +50,13 @@ look like as you write to it — the frames a viewer will actually see:
 {{craft_rules}}
 
 ## THE FORMAT — "Noise or signal?"
-A trending stock gets ~60–75 seconds. **Dennis opens and closes ON CAMERA** — the first ~3–5 seconds and the last ~3–5 seconds are him talking to the viewer, lip-synced to your words. Everything between is the evidence. Five beats:
+A trending stock gets ~60–75 seconds. **The video opens on the hook card — your `hook_text`, the ticker and the move — and ends on the sign-off card, which prints your `conclusion`. Dennis is on camera for one shot in the middle, between the news and the numbers.** Everything else is the evidence. Your words run under all of it, so the first sentence IS the hook, heard from the first frame. Five beats:
 
-0. HOST OPEN (~3–5s) — the first sentence is Dennis on screen, saying the hook out loud. Write it as a spoken line, not a caption.
-1. HOOK — the price chart is the hero. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. `chart_style` defaults to "marker" — the hand-drawn napkin chart, which is the channel's own language and what the short holds for its longest single beat. Ask for "clean" (the polished branded card) only when the point of the beat is precision.
+1. HOOK — the first sentence, spoken over the hook card; then the price chart, which is the hero. Write it as a spoken line, not a caption. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. `chart_style` defaults to "marker" — the hand-drawn napkin chart, which is the channel's own language and what the short holds for its longest single beat. Ask for "clean" (the polished branded card) only when the point of the beat is precision.
 2. WHY — the headline(s) that caused the move get overlaid ON the chart; you say what each actually means for the stock (usually less than the crowd thinks; occasionally more).
 3. GUT CHECK — the MULTI-YEAR numbers appear on a designed numbers sheet, **held ~4–5 seconds so they can be read**. Comment on them AS A WHOLE: is the business actually going anywhere, or is this just a move? If the PEER PERCENTILES sharpen the read, you MAY drop a SINGLE percentile one-liner here — at most one, never a table.
 4. CHEAP OR TRAP — the value-trap beat, **also held ~4–5 seconds**. Is the multiple a bargain or a trap? Name the multiple, then say what would have to be true for it to be cheap. Cheap and trapped look identical from the front; this is the beat that separates them. Goes in `cheap_or_trap`.
-5. PAYOFF + HOST CLOSE — noise (just market activity) or signal (actually one to watch). Deadpan free text, spoken by Dennis back on camera. There is NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
+5. PAYOFF — noise (just market activity) or signal (actually one to watch). Deadpan free text, spoken over the payoff figure; the sign-off card then prints it. There is NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
 
 ## PACE — faster than long-form, but NOT machine-gun
 The extra runtime exists so the two data beats can breathe. The numbers sheet and the cheap-or-trap card each hold for four to five seconds — write enough narration over each to fill that. Do not write a script that needs a cut every two seconds; a viewer who cannot read the numbers has watched a screensaver.

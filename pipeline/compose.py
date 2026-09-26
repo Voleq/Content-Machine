@@ -703,20 +703,24 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 slot=spec.color, halign=spec.halign,
                 max_lines=spec.max_lines, z=60))
 
-        # -- marks land after the thing they mark
+        # -- marks land after the thing they mark. The template grammar is
+        #    `kind` and `target` (`shots.MarkSpec`); this read `style` and
+        #    `on`, so the first template to declare a mark would have been
+        #    an AttributeError mid-build.
         for spec in shot.marks:
             target = None
-            if plate is not None and plate.slot(spec.on) is not None:
-                target = _slot_in_frame(plate, spec.on, placed or (0, 0, fw, fh))
+            if plate is not None and plate.slot(spec.target) is not None:
+                target = _slot_in_frame(plate, spec.target,
+                                        placed or (0, 0, fw, fh))
             if target is None:
-                skipped.append(f"{shot.id}.mark:{spec.style} <- {spec.on}")
+                skipped.append(f"{shot.id}.mark:{spec.kind} <- {spec.target}")
                 continue
             layers.append(Layer(
-                name=f"{shot.id}:mark:{spec.style}", kind="mark",
+                name=f"{shot.id}:mark:{spec.name or spec.kind}", kind="mark",
                 shot_id=shot.id,
                 t_start=min(t0 + spec.after_s, t1), t_end=t1,
                 x=target[0], y=target[1], w=target[2], h=target[3],
-                slot=spec.style, z=70))
+                slot=spec.kind, z=70))
 
         # -- captions. Not under display type, whoever set it: the template's
         #    own large type or a figure the chosen plate sets at that size.

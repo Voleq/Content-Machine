@@ -13,7 +13,14 @@
     "consequences told over TIME rather than as cards in one frame. Three",
     "cards in a 9:16 column measure 33px type, under the readability floor.",
     "",
-    "A STATIC PLATE MAY HOLD. The ceiling was written when every plate in the kit boiled; 44 of the 140 are `playback: static` now, because a figure that moves is a figure being re-read. What keeps a data beat short is the ceiling itself, and it is set to what a seventy-second cut of ten beats actually gives each one."
+    "A STATIC PLATE MAY HOLD. The ceiling was written when every plate in the kit boiled; 44 of the 140 are `playback: static` now, because a figure that moves is a figure being re-read. What keeps a data beat short is the ceiling itself, and it is set to what a seventy-second cut of ten beats actually gives each one.",
+    "",
+    "NO ALTERNATE ORDER. `sign-off-first` put the closing card ahead of the hook,",
+    "and it could never have worked: the sign-off anchors nothing, so it took a",
+    "full even share of the opening (4.5-7 s) while the hook was spoken over it,",
+    "and the hook shot lost its anchor to the monotonic pass. The first second",
+    "is the ticker and the move. An order comes back when the narration says",
+    "where each beat starts, so a reordered cut still lands on its words."
   ],
   "shots": [
     {
@@ -212,22 +219,6 @@
           "notes": "ONE THING AT STATEMENT SIZE. The original close has three lines and a script has one conclusion, so two of them were always empty. The handle moves up to the kicker: this plate's date label sits inside the caption band, where the last spoken words would run over it. Its detail line stays empty — the plate's own caution is not to pad it."
         }
       ]
-    }
-  ],
-  "orders": [
-    {
-      "name": "sign-off-first",
-      "shots": [
-        "close",
-        "open",
-        "the-print",
-        "vs-expected",
-        "the-statement",
-        "the-mechanism",
-        "who-it-hits",
-        "so-what"
-      ],
-      "notes": "The sign-off card as a cold stamp before the hook. `close` is the one shot the narration does not pin."
     }
   ]
 }

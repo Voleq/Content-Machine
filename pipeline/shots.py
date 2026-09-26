@@ -60,7 +60,7 @@ ALT_KEYS = frozenset({"plate", "bind", "lit", "focus", "notes"})
 ORDER_KEYS = frozenset({"name", "shots", "notes"})
 TEXT_KEYS = frozenset({"name", "src", "size_fh", "align", "halign",
                        "max_lines", "draw_on_s", "color", "slot"})
-MARK_KEYS = frozenset({"kind", "target", "name"})
+MARK_KEYS = frozenset({"kind", "target", "name", "after_s"})
 REPEAT_KEYS = frozenset({"concept", "src", "max", "bind", "arrange",
                          "stagger_s", "lit", "connector", "within",
                          "focus"})
@@ -106,12 +106,15 @@ class MarkSpec:
     """A hand-drawn mark: a scribble ring, an underline, a strike.
 
     `target` names what it lands on. A ring goes round the thing itself — the
-    extreme candle, the row — never round a label describing it.
+    extreme candle, the row — never round a label describing it. `after_s` is
+    how long after the shot opens it lands: a mark is drawn on something the
+    viewer has already found.
     """
 
     kind: str
     target: str
     name: str = ""
+    after_s: float = 0.6
 
 
 @dataclass(frozen=True)
@@ -424,7 +427,8 @@ def parse_format(raw: dict, source: Path | None = None,
         for j, m in enumerate(s.get("marks") or ()):
             _reject_unknown(m, MARK_KEYS, f"{where} mark #{j}")
         marks = tuple(MarkSpec(kind=m["kind"], target=m["target"],
-                               name=m.get("name", m["kind"]))
+                               name=m.get("name", m["kind"]),
+                               after_s=float(m.get("after_s", 0.6)))
                       for m in (s.get("marks") or ()))
 
         rep_raw = s.get("repeat")
@@ -541,7 +545,8 @@ def _anchored_spine(shots: Sequence[Shot]) -> tuple[str, ...]:
 
     Until then an order may move the shots the narration does NOT pin — the
     sign-off, and any beat sharing its anchor with another — and must leave the
-    pinned ones in the sequence the voice puts them in.
+    pinned ones in the sequence the voice puts them in. Nothing goes ahead of
+    the opening shot, pinned or not: see `_parse_orders`.
     """
     return tuple(sh.id for sh in shots if sh.anchor)
 
@@ -592,6 +597,18 @@ def _parse_orders(raw: Any, fmt_name: str,
                 f"arrives out of that order is talking over the wrong "
                 f"sentence. Only shots with no anchor, or ones sharing an "
                 f"anchor with another, are free to move.")
+        # The opening is the one position an unpinned shot cannot take.
+        # `resolve_spans` puts whatever is first at 0.0 and drops the hook's
+        # anchor for landing on top of it, so an unanchored shot moved ahead
+        # of the hook holds an even share of the opening while the hook is
+        # spoken over it. `sign-off-first` did exactly that: the closing card
+        # for the first 4.5-7 s of every other earnings and macro short.
+        if oshots[0] != ids[0]:
+            raise TemplateError(
+                f"{where}: opens on {oshots[0]!r}. The cut opens on "
+                f"{ids[0]!r}, the shot the first words are spoken over, and "
+                f"nothing may go ahead of it: a shot placed first holds the "
+                f"opening seconds while the hook is spoken over it.")
         out.append(ShotOrder(name=oname, shots=tuple(oshots),
                              notes=o.get("notes", "")))
     return tuple(out)

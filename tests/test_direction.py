@@ -283,6 +283,36 @@ def test_captions_are_legible_on_their_own_box(settings):
     assert contrast(ink, box) >= 4.5, (ink, box)
 
 
+def test_a_caption_never_runs_into_a_shot_without_captions(settings):
+    """A line holds until the next one starts. With a captions-off shot in
+    between, that held "Cheap only counts…" over the whole payoff card, the
+    one shot that asked for none. It ends where its captioned stretch does,
+    and still runs on across a cut between two captioned shots."""
+    from pipeline.models import WordTimestamp
+    from pipeline.rasters import build_phrase_ass
+
+    def w(word, start):
+        return WordTimestamp(word=word, start=start, end=start + 0.25,
+                             char_start=0, char_end=0)
+
+    # Captioned 0-4 s and 4-6 s (two shots, one stretch), captions off 6-12 s
+    # while the payoff is spoken, captioned again from 12 s.
+    words = [w("Cheap", 5.0), w("only", 5.3), w("counts.", 5.6),
+             w("Noise.", 12.5)]
+    ass = build_phrase_ass(words, settings=settings, play_res=(1080, 1920),
+                           duration=20.0,
+                           windows=[(0.0, 4.0), (4.0, 6.0), (12.0, 20.0)])
+    ends = [l.split(",")[2] for l in ass.splitlines()
+            if l.startswith("Dialogue:")]
+    assert ends == ["0:00:06.00", "0:00:13.45"], ends
+
+    # Without windows the builder behaves as it always has: the long passes
+    # none, and its lines hold until the next one.
+    ass = build_phrase_ass(words, settings=settings, play_res=(1080, 1920),
+                           duration=20.0)
+    assert ass.splitlines()[-2].split(",")[2] == "0:00:12.50"
+
+
 def test_the_caption_pair_is_the_kit_paper_hour(monkeypatch, settings):
     """Dark ink in a paper box, per design's caption decision, whichever hour
     the registry calls its base; and on a kit with one dark hour, that hour's

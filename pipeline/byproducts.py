@@ -526,6 +526,27 @@ def longest_hold(video: Path, **kw) -> float:
     return max((b - a for a, b in spans), default=0.0)
 
 
+def holds_past(spans: Sequence[tuple[float, float]], cuts: Sequence[float],
+               ceiling: float) -> list[tuple[float, float]]:
+    """Every held composition longer than `ceiling`, split at the cuts.
+
+    `spans` is what `held_spans` measured and `cuts` the times the manifest
+    starts a shot. A measured hold that runs across a cut is two compositions
+    the metric could not tell apart: four sentences set on the same card move
+    fewer pixels than the threshold. So it is split at the cut and each piece
+    judged alone, which is the rule `test_short_holds` applies to the
+    committed samples. What is left over the ceiling is one shot holding.
+    """
+    marks = sorted({float(c) for c in cuts})
+    out: list[tuple[float, float]] = []
+    for a, b in spans:
+        inside = [c for c in marks if a < c < b]
+        for lo, hi in zip([a, *inside], [*inside, b]):
+            if hi - lo > ceiling + 1e-6:
+                out.append((lo, hi))
+    return out
+
+
 # --------------------------------------------------------------------------
 # The same ceiling, on the LAYER LIST.
 # --------------------------------------------------------------------------

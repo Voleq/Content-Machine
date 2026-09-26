@@ -343,6 +343,22 @@ def _tiny(**shot) -> dict:
             "shots": [base]}
 
 
+def test_a_declared_mark_lands_on_its_slot_after_the_shot_opens(reg):
+    """The template grammar says `kind` and `target`; compose read `style`
+    and `on`, so the first template to declare a mark would have stopped the
+    build with an AttributeError. A mark on a slot the plate lacks is skipped
+    and reported, like any other bind that finds nothing."""
+    fmt = parse_format(_tiny(marks=[
+        {"kind": "underline-swipe", "target": "body"},
+        {"kind": "scrawl-oval-wide", "target": "no-such-slot"}]))
+    _f, result, _plates = _cut(fmt, reg, "seed")
+    shot = result.spans[0]
+    marks = result.of_kind("mark")
+    assert [(m.slot, round(m.t_start - shot.start, 3)) for m in marks] == \
+        [("underline-swipe", 0.6)]
+    assert "a.mark:scrawl-oval-wide <- no-such-slot" in result.skipped
+
+
 def test_an_alternate_repeating_the_authored_plate_is_refused():
     """A duplicate is weight on the rotation, not another picture."""
     with pytest.raises(TemplateError, match="already names"):
@@ -413,11 +429,29 @@ def test_an_order_may_not_move_a_shot_the_narration_pins():
 
 
 def test_an_order_may_move_a_shot_the_narration_leaves_free():
-    """The sign-off listens for nothing, so it can go anywhere."""
+    """The sign-off listens for nothing, so it can go anywhere after the open."""
     fmt = parse_format(_ordered({"name": "b",
-                                 "shots": ["three", "one", "two"]}))
+                                 "shots": ["one", "three", "two"]}))
     assert [s.id for s in apply_order(fmt, "b").shots] == \
-        ["three", "one", "two"]
+        ["one", "three", "two"]
+
+
+def test_nothing_goes_ahead_of_the_opening_shot():
+    """`sign-off-first` put the closing card ahead of the hook on every other
+    earnings and macro short. The timing gave it a full even share of the
+    opening while the hook was spoken over it, and dropped the hook's anchor
+    for landing on top of it — the first seconds, spent on a sign-off."""
+    with pytest.raises(TemplateError, match="opens on 'three'"):
+        parse_format(_ordered({"name": "b",
+                               "shots": ["three", "one", "two"]}))
+
+
+@pytest.mark.parametrize("name", VERTICAL)
+def test_every_order_opens_on_the_hook(name):
+    fmt = load_format(name)
+    assert fmt.shots[0].anchor == "hook"
+    for order in order_names(fmt):
+        assert apply_order(fmt, order).shots[0].id == fmt.shots[0].id, order
 
 
 def test_two_shots_listening_for_the_same_words_may_swap():
