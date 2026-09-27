@@ -13,6 +13,7 @@ free-text conclusion and the viewer draws their own.
 from __future__ import annotations
 
 import hashlib
+import re
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
@@ -21,6 +22,10 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from pipeline.plates import PERIOD_COUNT
+
+# Design's source tag holds forty characters: "10-K filings, FY20-FY25", "BLS,
+# August CPI". Both lanes' writers are held to it before anything is drawn.
+SOURCE_MAX_CHARS = 40
 
 # Fixed SFX taxonomy (assets/sfx/<key>.wav). Unknown keys are skipped+warned.
 SFX_KEYS = (
@@ -494,11 +499,33 @@ class ShortScript(BaseModel):
     # order they were written. Model-populated, never authored in the JSON.
     # Empty is a script written without them, which renders as it always did.
     beat_marks: list[BeatMark] = Field(default_factory=list)
+    # WHERE A FIGURE ON SCREEN COMES FROM, keyed by the beat that shows it —
+    # `{"numbers": "10-K filings, FY20-FY25"}` — and slid in under that beat's
+    # plate on design's source tag once its figures land. The filing or the
+    # agency, never the data vendor. Optional: a beat with no entry has no tag.
+    sources: dict[str, str] = Field(default_factory=dict)
 
     @field_validator("ticker")
     @classmethod
     def _norm_ticker(cls, v: str) -> str:
         return v.strip().upper()
+
+    @field_validator("sources")
+    @classmethod
+    def _norm_sources(cls, v: dict[str, str]) -> dict[str, str]:
+        """Keys as `[BEAT: key]` spells them; each line as the tag sets it."""
+        out: dict[str, str] = {}
+        for key, text in v.items():
+            text = " ".join(str(text).split())
+            if not text:
+                continue
+            if len(text) > SOURCE_MAX_CHARS:
+                raise ValueError(
+                    f"sources[{key!r}] is {len(text)} characters and the tag "
+                    f"holds {SOURCE_MAX_CHARS}. Name the document, like "
+                    f"\"Q2 10-Q\" or \"BLS, August CPI\".")
+            out[re.sub(r"[\s-]+", "_", key.strip().lower())] = text
+        return out
 
     @model_validator(mode="after")
     def _cross_checks(self) -> "ShortScript":
@@ -556,7 +583,8 @@ class ShortScript(BaseModel):
         # approval is recorded against and what every render seed is drawn
         # from, so a new empty field changing it would un-approve every script
         # on disk and re-roll the plates of every video re-rendered from one.
-        exclude = None if self.beat_marks else {"beat_marks"}
+        exclude = {name for name in ("beat_marks", "sources")
+                   if not getattr(self, name)} or None
         return hashlib.sha256(
             self.model_dump_json(exclude=exclude).encode("utf-8")
         ).hexdigest()[:16]

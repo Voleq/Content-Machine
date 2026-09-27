@@ -293,6 +293,8 @@ draws and where the drawing reads it from.
                         Only what the data above says the figure is from; never a data vendor, and
                         no [SOURCE] at all when you do not know. One a plate. A plate that prints
                         its own source takes it in its own slot (source=…), not in this tag.
+                        Name the document, never just "company filings", and add the page or
+                        note ("FY24 10-K, note 7") when you read the figure there yourself.
 
 DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
 The full vocabulary is in DELIVERY DIRECTION near the top of this prompt, with

@@ -107,10 +107,11 @@ asks. Write the fields the template binds.
 5. `numbers_comment`: the holistic read of the trend, ≤ 300 chars.
 6. `conclusion`: free text, ≤ 220 chars, opening with the call the way you'd mutter it ("Noise." / "Signal, unfortunately." / "Mostly noise, one number worth watching."). NEVER a label from a taxonomy.
 7. `chart_style`: "marker" or "clean". Omit it and you get "marker", the napkin chart. Ask for "clean" when the beat needs a precise read of the line.
-8. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — source unnamed.
+8. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — the vendor unnamed, and `sources` names only the filing.
 9. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
 10. Both-ways honesty: if the numbers are genuinely good, the joke is the market ignoring five clean years — praise through gritted teeth, sarcasm aimed at the crowd's blindness, never manufactured doom.
 11. **EVERY FIGURE IN `audio_script` IS WRITTEN THE WAY IT IS SAID.** The spoken line is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to `audio_script`: `numbers` values, `move_summary` and every `[PLATE]` slot are ON SCREEN and stay as display strings ("$1.2B", "-18%").
+12. `sources` (optional): where the figures on screen come from, keyed by the beat that shows them, e.g. `{"numbers": "10-K filings, FY21–FY25"}`. ≤ 40 chars each. The filing or the public agency — never a data vendor, terminal or data product, and never a document the figure did not come from: leave a beat out rather than guess. Name the document, never just "company filings". It slides in under that beat's plate once its figures land.
 
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
 The operator ratifies or regenerates, so make your reasoning legible. Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:
@@ -152,6 +153,7 @@ Put the four prose sections in the chat and the JSON object in the `.txt` file.
   "numbers_comment": "<holistic read of the trend>",
   "cheap_or_trap": "<the value-trap beat: name the multiple, then what would have to be true for it to be cheap; <= 260 chars>",
   "conclusion": "<noise-or-signal, free text>",
+  "sources": {"numbers": "<the filing the rows are from, <= 40 chars>"},
   "meme": {"key": "<meme key>", "anchor_word": "<word>"},
   "broll": null,
   "annotations": [
@@ -183,6 +185,7 @@ Note how each fact is taught straight, then undercut flat; each beat opens on it
   "turn_line": "But here is the part nobody screenshots.",
   "cheap_or_trap": "Ninetieth percentile on price, twentieth on margins. Cheap needs the losses to stop.",
   "conclusion": "Noise. A press release and a squeeze, stapled to five years of drift.",
+  "sources": {"numbers": "10-K filings, FY21–FY25"},
   "meme": {"key": "stonks-man-up-only", "anchor_word": "vertical"},
   "broll": null,
   "annotations": [

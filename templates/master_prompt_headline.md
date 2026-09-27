@@ -103,10 +103,11 @@ the payoff is what turns a sentence into a joke.
 7. `annotations`: up to 4 scribbles. `target` "chart" or "numbers" with `row_index`; `anchor_word` must appear VERBATIM in `audio_script`; optional `note` ≤ 40 chars, lowercase, terse.
 8. `meme` / `broll` (optional, use ONLY if it genuinely lands): `{"key": "<from the keys above>", "anchor_word": "<word in audio_script>"}`.
 9. `chart_style`: "clean" or "marker". Default "clean".
-10. NEVER name any data vendor, terminal, or data product. A news `Source` (Reuters, Bloomberg, AP) is fine; a data terminal is not. On screen, filings are "from the 10-K" — source unnamed.
+10. NEVER name any data vendor, terminal, or data product. A news `Source` (Reuters, Bloomberg, AP) is fine; a data terminal is not. On screen, filings are "from the 10-K" — the vendor unnamed, and `sources` names only the filing or the agency.
 11. The kit is fixed — do NOT request custom assets; this is a SHORT.
 12. MODE-SPECIFIC: macro mode has NO company 10-K data and needs none — `ticker` is the index/sector proxy ({{ticker}}), the chart is that index, and the numbers beat is optional (index/macro figures only). company/earnings modes anchor on THIS ticker and its multi-year numbers.
 13. Both-ways honesty: let the facts pick the polarity — a real beat gets grudging credit, a nothingburger gets a shrug; never manufacture doom or hype.
+14. `sources` (optional): where the figures on screen come from, keyed by the beat that shows them — company `{"numbers": "10-K filings, FY21–FY25"}`, earnings `{"numbers": "Q3 release, Oct 2026"}`, macro `{"numbers": "BLS, August CPI"}`. ≤ 40 chars each. The filing, the company's release or the public agency — never a data vendor, terminal or data product, and never a document the figure did not come from: leave a beat out rather than guess. Name the document, never just "company filings". It slides in under that beat's plate once its figures land.
 
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
 
@@ -148,6 +149,7 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
   "numbers_comment": "<holistic read>",
   "cheap_or_trap": "<the value-trap beat: name the multiple, then what would have to be true for it to be cheap; <= 260 chars>",
   "conclusion": "<the verdict, free text>",
+  "sources": {"numbers": "<the filing, release or agency the rows are from, <= 40 chars>"},
   "meme": {"key": "<meme key>", "anchor_word": "<word>"},
   "broll": null,
   "annotations": [
@@ -174,6 +176,7 @@ A company-news example: each beat opens on its marker, in the company short's as
   ],
   "numbers_comment": "Revenue has been flat for three years and losses keep widening. A partnership with no terms doesn't touch either line.",
   "conclusion": "Priced in, and then some. A partnership to explore, stapled to five years of flat.",
+  "sources": {"numbers": "10-K filings, FY21–FY25"},
   "meme": null,
   "broll": null,
   "annotations": [

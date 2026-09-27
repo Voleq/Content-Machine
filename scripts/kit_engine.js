@@ -450,7 +450,13 @@ async function drawContent(ctx, items, emitWrite) {
             + ", and the data layer draws it in subject (up)");
         }
       }
+      /* THE KEY SAYS THE ASPECT, as the kit's own emit.js reads it. A plate's
+       * meta guesses it from its shape (wider than tall is 16:9), and a strip is
+       * wider than tall at both: the 9:16 source tag and lower third were filed
+       * as 16:9, so no short could find either. */
+      const suffix = /-(9x16|16x9)$/.exec(it.key);
       emitWrite(key, Object.assign({}, m, Object.keys(keys).length ? { keys } : {}, {
+        aspect: suffix ? suffix[1] : m.aspect,
         family: family,
         author: it.author,
         seed: it.seed,

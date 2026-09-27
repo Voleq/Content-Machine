@@ -581,6 +581,18 @@ def marked_beats(script, fmt: Format) -> list[str]:
     return [k for k in order() if k in keys]
 
 
+def shot_sources(script, fmt: Format) -> dict[str, str]:
+    """The writer's `sources`, from the beat each names to the shot playing it.
+
+    A beat's key is its shot's anchor, so `numbers_comment` is the shot
+    `the-comment`. A split beat's close-up finds its source through the wide
+    part it belongs to, and the tag goes under whichever part plays first.
+    """
+    got = getattr(script, "sources", None) or {}
+    return {sh.id: got[sh.anchor] for sh in fmt.shots
+            if sh.anchor and sh.anchor in got}
+
+
 def _part_fields(shot) -> dict:
     """`part` and `part_of` for a manifest entry, or nothing for a whole shot."""
     if not getattr(shot, "part", 0):
@@ -1183,7 +1195,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
 
     plan = plan_short(fmt, result, reg, words, seed=script.content_sha(),
                       settings=settings,
-                      sources=getattr(resolver, "sources", lambda: {})(),
+                      sources=shot_sources(script, fmt),
                       recent_circled=recent_circled(settings, exclude=workspace))
 
     silent = workdir / "video_silent.mp4"

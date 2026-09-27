@@ -45,6 +45,7 @@ from pipeline.models import (
     HISTORY_FIELDS,
     HOLDABLE_TAG_TYPES,
     SFX_KEYS,
+    SOURCE_MAX_CHARS,
     VISUAL_TAG_TYPES,
     Chapter,
     LongScript,
@@ -636,9 +637,6 @@ def move_problems(script: LongScript, reg, settings: Settings
 
 # Design's tag holds about this much in its source slot at its drawn size; a
 # longer line would be cut by the slot. A source is a citation, not a caption.
-SOURCE_MAX_CHARS = 40
-
-
 def source_problems(script: LongScript, reg, settings: Settings
                     ) -> tuple[list[str], list[str]]:
     """Every [SOURCE] checked against the plate it goes under.

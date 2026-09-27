@@ -156,6 +156,8 @@ def vendor_name_hits(script: ShortScript) -> list[str]:
         surfaces[f"headlines[{i}]"] = f"{h.text} {h.meaning}"
     for i, row in enumerate(script.numbers):
         surfaces[f"numbers[{i}]"] = f"{row.label} {' '.join(row.values)}"
+    for key, text in script.sources.items():
+        surfaces[f"sources[{key}]"] = text
     for name, text in surfaces.items():
         low = text.lower()
         if any(w in low for w in VENDOR_WORDS):
@@ -410,6 +412,26 @@ def _check_beat_marks(text: str, marks: list[dict],
     return []
 
 
+def _check_sources(script: ShortScript, settings: Settings) -> None:
+    """Refuse a source keyed to a beat no format has.
+
+    Refused rather than dropped for the reason an unknown marker is: the
+    writer believes a figure is sourced on screen, and it would not be.
+    """
+    if not script.sources:
+        return
+    formats = _known_beats(settings)
+    known = {k for keys in formats.values() for k in keys}
+    unknown = sorted(k for k in script.sources if k not in known)
+    if unknown:
+        listing = "; ".join(f"{name}: {', '.join(beats)}"
+                            for name, beats in sorted(formats.items()))
+        raise ScriptParseError(
+            f"sources names {unknown[0]!r}, which is no beat. A source goes "
+            f"under the plate of the beat that shows the figure, so its key "
+            f"is one of the shot template's beats — {listing}.")
+
+
 def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[str]]:
     """Parse + validate. Returns (script, warnings). Raises ScriptParseError.
 
@@ -504,6 +526,7 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             f"of {budget}. Trim the script and resend (no TTS was called)."
         )
 
+    _check_sources(script, settings)
     leaks = vendor_name_hits(script)
     if leaks:
         raise ScriptParseError(

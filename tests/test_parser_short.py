@@ -465,7 +465,7 @@ def test_an_unmarked_script_parses_as_it_always_did(short_valid_json,
     script, warnings = parse_short_script(short_valid_json, settings)
     assert script.beat_marks == []
     old = hashlib.sha256(script.model_dump_json(
-        exclude={"beat_marks"}).encode("utf-8")).hexdigest()[:16]
+        exclude={"beat_marks", "sources"}).encode("utf-8")).hexdigest()[:16]
     assert script.content_sha() == old
     assert any("no beat markers" in w for w in warnings)
 
