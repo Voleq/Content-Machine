@@ -79,8 +79,9 @@ CIRCLE_MAX_AREA = 0.10   # of its area
 # not named here is never circled, whatever its plate offers. The payoff and
 # the print set the figure at display size, so they almost always fail the
 # size rule; the circle's real home is the one cell of a full sheet that the
-# payoff is about to say, or the gap in a reported-against-expected pair.
-CIRCLE_SHOTS = ("the-sheet", "vs-expected", "payoff", "the-print")
+# payoff is about to say, or the gap in a reported-against-expected pair. The
+# full sheet is `numbers` in the stock short and `the-sheet` in earnings.
+CIRCLE_SHOTS = ("numbers", "the-sheet", "vs-expected", "payoff", "the-print")
 VERDICT_SHOTS = ("payoff", "the-print")
 
 # A push-in that barely moves is a wobble, and one that goes too far sets the
@@ -825,8 +826,13 @@ class MoveCompositor:
         sweeping = [(m, f) for m, f in live if m.move == "highlight" and is_band(m.slot)
                     and (f is None or f < m.frames - 1)]
         held = {m.slot for m, _ in sweeping}
-        bands = tuple(sorted(n for n, v in values.items()
-                             if is_band(n) and str(v).strip() and n not in held))
+        # A row lit as it is read (`lit: "read"`) is in no value: its band is
+        # on because its highlight has landed, and it stays on.
+        landed = {m.slot for m, f in live if m.move == "highlight" and is_band(m.slot)
+                  and f is not None and f >= m.frames - 1}
+        bands = tuple(sorted({n for n, v in values.items()
+                              if is_band(n) and str(v).strip() and n not in held}
+                             | landed))
         counting = {m.slot for m, _ in live if m.move == "count-up"}
         reveal = next(((m, f) for m, f in live if m.move in ("line-draw", "bars-grow")), None)
         # A chart's marks label points on the line ("15.42" at its end), so

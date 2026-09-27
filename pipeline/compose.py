@@ -320,14 +320,17 @@ def _fillable(variant, shot: Shot, plate: Plate, resolver: Resolver,
     # A lit band or a focus move that names nothing on this plate is not an
     # error — it just silently does not happen, which is a beat that reads as
     # a held frame. Reject the plate instead.
+    # `all` and `read` name every band rather than one, so they are not
+    # slots to look up.
     for name in (lit, focus):
-        if name and name != "all" and plate.slot(name) is None:
+        if name and name not in ("all", "read") and plate.slot(name) is None:
             return False
     return True
 
 
 def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
-                   *, seed: str = "", avoid: "Collection[str]" = ()):
+                   *, seed: str = "", avoid: "Collection[str]" = (),
+                   used: "Collection[str]" = ()):
     """Which of a beat's interchangeable plates this video draws.
 
     THE WRITER CHOOSES NOTHING HERE AND THAT IS DELIBERATE. A SHORT is
@@ -345,6 +348,12 @@ def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
     The authored plate is the floor. When every alternate is unresolvable in
     this kit or unfillable by this script it is what comes back, and its own
     failure to resolve stays the caller's error to raise.
+
+    `used` is what THIS video has already drawn, in cut order (item 7), and
+    it outranks `avoid`: the same layout twice in one short is sameness a
+    viewer sees in fifty seconds, where a plate from last week's short is one
+    they may never have seen. Both are preferences, so a beat with nothing
+    else still draws; when every option is used, the one used longest ago.
     """
     import random
 
@@ -375,9 +384,61 @@ def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
     if not usable:
         return primary
 
-    keys = _prefer_unused([k for k, _ in usable], reg.base_keys(avoid))
+    keys = [k for k, _ in usable]
+    if used:
+        # Unused in this video first; when every option has been drawn, the
+        # one drawn longest ago, so a layout never comes straight back.
+        last = {reg.base_key(k): i for i, k in enumerate(used)}
+        fresh = [k for k in keys if k not in last]
+        if fresh:
+            keys = fresh
+        else:
+            oldest = min(last[k] for k in keys)
+            keys = [k for k in keys if last[k] == oldest]
+    keys = _prefer_unused(keys, reg.base_keys(avoid))
     pick = random.Random(f"variant|{shot.id}|{seed}").choice(sorted(keys))
     return next(v for k, v in usable if k == pick)
+
+
+def plan_variants(reg: Registry, shots: Sequence[Shot], aspect: str,
+                  resolver: Resolver, *, seed: str = "",
+                  avoid: "Collection[str]" = ()) -> dict[str, Any]:
+    """Which drawing each shot with alternates gets, walking the cut in order.
+
+    NO LAYOUT TWICE IN ONE SHORT WHERE THE BEAT HAS ANOTHER (item 7). The
+    macro "who it hits" beat played the same quote card three times running,
+    20 s of one layout, and a closing card could pick the quote card the
+    comment had just used. Each pick here knows every drawing the shots
+    before it drew, alternates and fixed plates alike, and steers off them.
+
+    Worked out once for the whole cut, before the timing, so a long beat's
+    punch-in (`punch_in_slot`) is asked of the plate `build_layers` then
+    draws: both read this map rather than rolling the rotation themselves.
+    The second part of a split beat is not here; it is part 1's drawing.
+    """
+    picks: dict[str, Any] = {}
+    used: list[str] = []
+    begin = getattr(resolver, "begin_shot", None)
+    for shot in shots:
+        if getattr(shot, "part", 0) == 2 or not shot.plate or shot.host \
+                or shot.plate.startswith("room/"):
+            continue
+        name = shot.plate
+        if shot.alts:
+            if begin is not None:
+                begin(shot)
+            picked = choose_variant(reg, shot, aspect, resolver, seed=seed,
+                                    avoid=avoid, used=used)
+            picks[shot.id] = picked
+            if picked is not None:
+                name = picked.plate
+        try:
+            plate = resolve_plate(reg, name, aspect)
+        except TemplateError:
+            plate = None
+        if plate is not None:
+            used.append(reg.base_key(plate.key))
+    return picks
 
 
 def resolve_plate(reg: Registry, name: str, aspect: str) -> Plate | None:
@@ -497,7 +558,8 @@ PUNCH_MOVES = ("highlight", "count-up")
 
 def punch_in_slot(reg: Registry, shot: Shot, frame: tuple[int, int],
                   resolver: Resolver, *, aspect: str = "", seed: str = "",
-                  avoid: "Collection[str]" = ()) -> str | None:
+                  avoid: "Collection[str]" = (),
+                  variants: "dict[str, Any] | None" = None) -> str | None:
     """Which slot the second picture of a long beat moves in on, or None.
 
     `resolve_spans` asks this for a beat that runs past its ceiling. The
@@ -527,8 +589,10 @@ def punch_in_slot(reg: Registry, shot: Shot, frame: tuple[int, int],
     if begin is not None:
         begin(shot)
     if shot.alts:
-        picked = choose_variant(reg, shot, aspect, resolver, seed=seed,
-                                avoid=avoid)
+        picked = (variants.get(shot.id) if variants is not None
+                  and shot.id in variants
+                  else choose_variant(reg, shot, aspect, resolver, seed=seed,
+                                      avoid=avoid))
         if picked is not None and picked.plate != shot.plate:
             bind, lit, focus = picked.resolved(shot)
             shot = replace(shot, plate=picked.plate, alts=(), bind=bind,
@@ -614,7 +678,8 @@ def _settings():
 def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                  reg: Registry, *, aspect: str = "",
                  seed: str = "", avoid: "Collection[str]" = (),
-                 words: Sequence[Any] = ()) -> BuildResult:
+                 words: Sequence[Any] = (),
+                 variants: "dict[str, Any] | None" = None) -> BuildResult:
     """Turn the template and the script into the ordered layer list.
 
     `avoid` is what the last few renders already used. It steers the host and
@@ -627,10 +692,16 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
     pose that means something — a count, a citation, a shrug — is chosen by
     the words rather than by seed, on a room it was drawn for. Without them
     every host is picked by his role, as before.
+
+    `variants` is the cut's plan of which drawing each beat gets
+    (`plan_variants`); worked out here from the spans when not given.
     """
     frame = fmt.frame
     fw, fh = frame
     aspect = aspect or getattr(fmt, "aspect", "") or ""
+    if variants is None:
+        variants = plan_variants(reg, [sp.shot for sp in spans], aspect,
+                                 resolver, seed=seed, avoid=avoid)
     layers: list[Layer] = []
     unfilled: list[str] = []
     skipped: list[str] = []
@@ -694,8 +765,9 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                            bind=dict(first.bind),
                            lit="all" if first.lit == "read" else first.lit)
         elif shot.plate and shot.alts:
-            picked = choose_variant(reg, shot, aspect, resolver,
-                                    seed=seed, avoid=avoid)
+            picked = (variants.get(shot.id) if shot.id in variants
+                      else choose_variant(reg, shot, aspect, resolver,
+                                          seed=seed, avoid=avoid))
             if picked is not None and picked.plate != shot.plate:
                 bind, lit, focus = picked.resolved(shot)
                 shot = replace(shot, plate=picked.plate, alts=(),

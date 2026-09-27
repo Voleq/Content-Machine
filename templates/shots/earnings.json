@@ -113,9 +113,9 @@
       "id": "the-sheet",
       "plate": "tables/numbers-sheet-4r-9x16",
       "enter": "wipe",
-      "max_hold_s": 7,
+      "max_hold_s": 14,
       "anchor": "numbers",
-      "lit": "all",
+      "lit": "read",
       "bind": {
         "unit": "?numbers.unit",
         "head": "numbers.years",
@@ -128,7 +128,7 @@
         "label-4": "?numbers.label.3",
         "row-4": "?numbers.figures.3"
       },
-      "notes": "Every row up at once — an earnings cut has no time for a walk down them.",
+      "notes": "Every row up at once — an earnings cut has no time for a walk down them. ROWS LIGHT AS THEY ARE READ (item 10): each row's band comes up when its label is said and stays up, so the sheet is never a still while the voice walks it, and it ends with every row lit. That is why it may hold past the 7 s other beats take.",
       "alts": [
         {
           "plate": "tables/numbers-sheet-4r-spark-9x16"

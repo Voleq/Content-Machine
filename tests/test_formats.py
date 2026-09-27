@@ -409,9 +409,8 @@ def test_the_template_is_data_not_code():
         encoding="utf-8"))
     assert raw["format"] == "short"
     assert all("plate" in s for s in raw["shots"])
-    seq = [s for s in raw["shots"]
-           if s.get("repeat", {}).get("arrange") == "sequence"]
-    assert len(seq) == 1 and seq[0]["id"] == "numbers"
+    # The numbers beat is one sheet that moves now (item 7), not a repeat.
+    assert not [s for s in raw["shots"] if s.get("repeat")]
 
 
 def test_the_short_manifest_names_the_template_it_rendered(settings, tmp_path,

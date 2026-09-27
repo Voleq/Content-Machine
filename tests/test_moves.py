@@ -215,10 +215,10 @@ def test_every_ring_ever_drawn_is_a_small_part_of_its_plate(vertical, reg, setti
 def test_on_the_sheet_the_circle_rings_the_figure_the_payoff_says(short, reg, settings):
     fmt, result, words, _ = short
     payoff = MV.shot_plates(result)["payoff"]
-    sheet = MV.shot_plates(result)["the-sheet"]
+    sheet = MV.shot_plates(result)["numbers"]
     for plan in _plans(fmt, result, words, reg, settings, n=60):
         for m in plan.moves:
-            if m.move == "pen-circle" and m.shot_id == "the-sheet":
+            if m.move == "pen-circle" and m.shot_id == "numbers":
                 assert MV.figure_number(sheet.values[m.slot]) == \
                     MV.figure_number(payoff.values["value"])
 
@@ -249,7 +249,7 @@ def test_a_wipe_goes_only_on_a_cut_the_template_marks(short, reg, settings):
     by_id = {sp.shot.id: sp.shot for sp in result.spans}
     for w in MV.plan_wipes(fmt, result, reg, seed="x"):
         assert (by_id[w.shot_in].enter or "").startswith("wipe")
-    marked = ("the-news", "numbers-1", "the-comment", "payoff")
+    marked = ("the-news", "numbers", "the-comment", "payoff")
     spans = [replace(sp, shot=replace(sp.shot, enter="wipe")) if sp.shot.id in marked
              else replace(sp, shot=replace(sp.shot, enter=None)) for sp in result.spans]
     result2 = replace(result, spans=spans)
@@ -376,8 +376,8 @@ def test_a_row_band_sweeps_in_from_the_left(short, reg, settings):
     from pipeline.render_short import _Cache
 
     fmt, result, words, _ = short
-    layer = _layer(result, "numbers-1")
-    move = MV.Move("highlight", "numbers-1", layer.name, "band-1", layer.t_start, 6, "out")
+    layer = _layer(result, "numbers")
+    move = MV.Move("highlight", "numbers", layer.name, "band-1", layer.t_start, 6, "out")
     cache = _Cache(settings, reg)
     comp = MV.MoveCompositor(MV.MovePlan(moves=[move]), reg, settings, cache)
     plate = reg.get(layer.entry_key)
@@ -388,14 +388,20 @@ def test_a_row_band_sweeps_in_from_the_left(short, reg, settings):
         img = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))
         comp.draw_layer(img, layer, move.start + (f + 0.5) / 12, 0)
         frames.append(img)
+    # Landed, the row is lit: the sheet drawn with that band up.
     still = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))
-    still.alpha_composite(cache.plate(layer.entry_key, 0, layer.values, layer.w, layer.h),
+    still.alpha_composite(cache.plate(layer.entry_key, 0, {**layer.values, "band-1": "1"},
+                                      layer.w, layer.h),
                           (layer.x, layer.y))
     box = (int(layer.x + band.x * k), int(layer.y + band.y * k),
            int(layer.x + (band.x + band.w) * k), int(layer.y + (band.y + band.h) * k))
     diffs = [_diff(fr.crop(box), still.crop(box)) for fr in frames]
     assert diffs[0] > diffs[-1]
     assert diffs[-1] < 0.5
+    # And a row lit as it is read stays lit for the rest of the shot.
+    later = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))
+    comp.draw_layer(later, layer, move.start + 2.0, 0)
+    assert _diff(later.crop(box), still.crop(box)) < 0.5
 
 
 def test_the_ring_is_drawn_round_the_figure_not_the_slot(short, reg, settings):
@@ -404,9 +410,9 @@ def test_the_ring_is_drawn_round_the_figure_not_the_slot(short, reg, settings):
     from pipeline.render_short import _Cache
 
     fmt, result, words, _ = short
-    layer = _layer(result, "the-sheet")
+    layer = _layer(result, "numbers")
     slot = "cell-1-6"
-    move = MV.Move("pen-circle", "the-sheet", layer.name, slot, layer.t_start, 8, "inOut")
+    move = MV.Move("pen-circle", "numbers", layer.name, slot, layer.t_start, 8, "inOut")
     cache = _Cache(settings, reg)
     comp = MV.MoveCompositor(MV.MovePlan(moves=[move]), reg, settings, cache)
     still = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))

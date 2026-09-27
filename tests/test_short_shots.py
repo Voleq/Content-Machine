@@ -80,10 +80,9 @@ class StubResolver:
 def fmt():
     """The SHORT as it is CUT, not as it is authored.
 
-    Nine shots are authored; the numbers beat is one sequence repeat that
-    becomes one shot per metric. Four metrics is the fixture's shape and the
-    twelve-shot spec's shape, so every invariant below still reads against
-    twelve.
+    Nine shots are authored and nine are cut: the numbers beat is one sheet
+    whose rows light as they are read (item 7), so nothing repeats. The
+    expansion is still run, as the renderer runs it.
     """
     return expand_sequences(load_format("short"),
                             lambda src: ["m1", "m2", "m3", "m4"])
@@ -116,20 +115,18 @@ def _build(fmt, reg, chart: Path | None = None, duration: float = 70.0):
 # The template itself
 # ---------------------------------------------------------------------------
 
-def test_the_numbers_beat_is_authored_once_and_cut_many_times(fmt, authored):
-    """A beat is an idea the format has; a shot is a frame.
-
-    The walk down the sheet is one shot definition and as many cuts as the
-    script carries metrics — four metrics make four, two make two, and neither
-    case is authored twice.
-    """
-    assert len(authored) == 10
+def test_the_numbers_beat_is_one_sheet_whose_rows_light_as_read(fmt, authored):
+    """Item 7. The walk down the sheet was the 3-row sheet three times, one
+    row lit and moved in on each time, then the 4-row sheet all lit: four
+    near-identical frames of one layout. It is one shot now, its rows lighting
+    as they are read (`lit: "read"`), ending on every row lit."""
     assert [s.id for s in authored] == [
-        "hook", "the-move", "the-news", "the-turn", "numbers", "the-sheet",
+        "hook", "the-move", "the-news", "the-turn", "numbers",
         "the-comment", "cheap-or-trap", "payoff", "close"]
-    walk = [s.id for s in fmt if s.id.startswith("numbers-")]
-    assert walk == ["numbers-1", "numbers-2", "numbers-3"]
-    assert len(fmt) == len(authored) + len(walk) - 1
+    numbers = next(s for s in fmt if s.id == "numbers")
+    assert numbers.lit == "read" and numbers.repeat is None
+    assert not [s.id for s in fmt if s.id.startswith("numbers-")]
+    assert len(fmt) == len(authored)
 
 
 def test_every_plate_the_template_names_is_in_the_kit(fmt, reg):
@@ -361,11 +358,10 @@ def test_the_template_is_data_not_code():
     raw = json.loads(Path("templates/shots/short.json").read_text(
         encoding="utf-8"))
     assert raw["format"] == "short"
-    # Ten authored, twelve cut. The numbers beat is one declaration.
-    assert len(raw["shots"]) == 10
+    # Nine authored, nine cut: the numbers beat is one sheet that moves.
+    assert len(raw["shots"]) == 9
     assert all("plate" in s for s in raw["shots"])
-    seq = [s for s in raw["shots"] if s.get("repeat", {}).get("arrange") == "sequence"]
-    assert len(seq) == 1 and seq[0]["id"] == "numbers"
+    assert not [s for s in raw["shots"] if s.get("repeat")]
 
 
 # ---------------------------------------------------------------------------
@@ -559,8 +555,6 @@ def test_the_punch_in_is_the_shots_own_focus_then_where_the_kit_puts_the_eye(
         return punch_in_slot(reg, fmt.shot(shot_id), fmt.frame, resolver,
                              aspect=fmt.aspect, seed="test")
 
-    # A numbers step already names its row.
-    assert slot("numbers-2") == "band-2"
     # The comment card's highlight is its body.
     assert slot("the-comment") == "body"
     # He is never punched in on.

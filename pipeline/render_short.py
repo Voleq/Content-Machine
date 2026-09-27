@@ -31,7 +31,8 @@ from PIL import Image, ImageDraw
 from pipeline import marks as mk
 from pipeline.compose import (MEME_SRC, BuildResult, Layer, build_layers,
                               check_budgets, check_invariants,
-                              held_layer_spans, placed_meme, punch_in_slot)
+                              held_layer_spans, placed_meme, plan_variants,
+                              punch_in_slot)
 from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
 from pipeline.render_common import (RenderError, encode_profile,
@@ -176,6 +177,8 @@ class ShortResolver:
             return self._numbers(parts[1:])
         if parts[0] == "chart":
             return self._chart_source(parts[1:])
+        if parts[0] == "wrap":
+            return self._wrapped(parts[1:])
         if parts[0] != "script":
             return None
         obj: object = self.script
@@ -190,6 +193,28 @@ class ShortResolver:
             if obj is None:
                 return None
         return str(obj) if obj is not None else None
+
+    def _wrapped(self, rest: list[str]) -> str | None:
+        """`wrap.34.4.0.script.consequences.1`: line 0 of that text broken at
+        34 characters, for a plate that sets a passage as separate lines, one
+        slot a line (design's short-quote). None for a line past the end, and
+        for every line when the text needs more lines than the plate has: the
+        first line is a required bind, so the plate is then not fillable and
+        the rotation takes another rather than cutting the passage short."""
+        import textwrap
+
+        try:
+            width, most, i = int(rest[0]), int(rest[1]), int(rest[2])
+        except (IndexError, ValueError):
+            return None
+        text = self.text_for(".".join(rest[3:]))
+        if not text or not str(text).strip():
+            return None
+        lines = textwrap.wrap(" ".join(str(text).split()), width=width,
+                              break_long_words=False)
+        if not lines or len(lines) > most or i >= len(lines):
+            return None
+        return lines[i]
 
     def list_for(self, src: str) -> list[str] | None:
         """A list source, for a shot that places a repeat."""
@@ -1095,10 +1120,16 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # of the plate the rotation will draw, and asking with a different avoid
     # set would ask about a different plate.
     recent = recent_plates(settings, exclude=workspace)
+    # WHICH DRAWING EACH BEAT GETS, once for the cut, never one layout twice
+    # where a beat has another (item 7). The punch-ins and the composition
+    # both read it, so a long beat's punch-in is asked of the plate drawn.
+    variants = plan_variants(reg, fmt.shots, fmt.aspect, resolver,
+                             seed=seed, avoid=recent)
 
     def punch_in(shot):
         return punch_in_slot(reg, shot, fmt.frame, resolver,
-                             aspect=fmt.aspect, seed=seed, avoid=recent)
+                             aspect=fmt.aspect, seed=seed, avoid=recent,
+                             variants=variants)
 
     # A marked script's anchors are searched IN ORDER, each after the last:
     # the words after a marker can also be said earlier, and the first place
@@ -1118,7 +1149,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # director would use in a LONG.
     result = build_layers(fmt, spans, resolver, reg,
                           aspect=fmt.aspect, seed=seed, avoid=recent,
-                          words=words)
+                          words=words, variants=variants)
 
     # A composition that breaks its own rules never reaches an encoder. This
     # is the check that the last renderer did not have: it shipped a 12.5s

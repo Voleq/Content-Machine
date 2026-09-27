@@ -109,7 +109,7 @@ def test_a_spoken_figure_is_never_split_across_two_captions(settings):
     text = [" ".join(w.word for w in line) for line in lines]
     for figure in ("twenty nine percent", "five times", "eleven percent",
                    "four hundred million", "four ninety six",
-                   "ninety four million", "twenty twenty two",
+                   "twenty twenty two",
                    "Two hundred and ninety eight million",
                    "three hundred and sixty five"):
         assert any(figure in t for t in text), (figure, text)

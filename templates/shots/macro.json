@@ -172,7 +172,7 @@
         "max": 3,
         "arrange": "sequence"
       },
-      "notes": "One consequence per beat, full size. Three in a column measure 33px type, under the readability floor, so a chain at 9:16 has to be told over time. THREE, NOT FOUR. Every step of a sequence is a field on the writer's form, and a fourth consequence took the MACRO form to thirteen — past the dozen at which a form is a document again and gets filled in like one.",
+      "notes": "One consequence per beat, full size. Three in a column measure 33px type, under the readability floor, so a chain at 9:16 has to be told over time. THREE, NOT FOUR. Every step of a sequence is a field on the writer's form, and a fourth consequence took the MACRO form to thirteen — past the dozen at which a form is a document again and gets filled in like one. NEVER THE SAME CARD THREE TIMES RUNNING (item 7): each step is drawn on a layout the steps before it did not use, from the three here, `compose.plan_variants`.",
       "alts": [
         {
           "plate": "cards/definition-9x16",
@@ -182,6 +182,17 @@
             "kicker": "?compare.kicker"
           },
           "notes": "One consequence per beat as a term and its meaning. `$n-1` steps with the sequence exactly as the authored bind does."
+        },
+        {
+          "plate": "shorts/short-quote-9x16",
+          "bind": {
+            "quote-1": "wrap.34.4.0.script.consequences.$n-1",
+            "quote-2": "?wrap.34.4.1.script.consequences.$n-1",
+            "quote-3": "?wrap.34.4.2.script.consequences.$n-1",
+            "quote-4": "?wrap.34.4.3.script.consequences.$n-1",
+            "who": "?script.ticker"
+          },
+          "notes": "Design's shorts quote plate, a line a slot: the consequence is broken at the slot's 34 characters. One that needs more than its four lines leaves this plate unfillable and the rotation takes another."
         }
       ]
     },

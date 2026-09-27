@@ -505,16 +505,15 @@ def test_every_order_opens_on_the_hook(name):
         assert apply_order(fmt, order).shots[0].id == fmt.shots[0].id, order
 
 
-def test_two_shots_listening_for_the_same_words_may_swap():
-    """`the-sheet` and `the-comment` both anchor on the numbers comment.
-
-    They are interchangeable to the voice, which is what makes this the one
-    swap the SHORT's narration leaves free.
-    """
-    fmt = load_format("short")
-    assert "comment-first" in order_names(fmt)
-    moved = [s.id for s in apply_order(fmt, "comment-first").shots]
-    assert moved.index("the-comment") < moved.index("the-sheet")
+@pytest.mark.parametrize("name", VERTICAL)
+def test_no_order_is_the_authored_one_under_another_name(name):
+    """A rotation that changes nothing is sameness with a new label. Folding
+    the SHORT's numbers into one sheet (item 7) made `comment-first` exactly
+    the authored sequence, and it went with `the-sheet`."""
+    fmt = load_format(name)
+    authored = [s.id for s in fmt.shots]
+    for order in order_names(fmt)[1:]:
+        assert [s.id for s in apply_order(fmt, order).shots] != authored, order
 
 
 def test_the_authored_order_is_always_in_the_rotation_and_never_listed():
@@ -595,7 +594,7 @@ def test_the_markers_put_the_beats_where_the_narration_speaks_them():
     heard = ["hook", "headline", "move", "turn", "numbers",
              "numbers_comment", "cheap_or_trap", "conclusion"]
     assert [s.id for s in order_by_marks(fmt, heard).shots] == [
-        "hook", "the-news", "the-move", "the-turn", "numbers", "the-sheet",
+        "hook", "the-news", "the-move", "the-turn", "numbers",
         "the-comment", "cheap-or-trap", "payoff", "close"]
 
 
@@ -641,9 +640,11 @@ def test_a_sequence_repeat_steps_its_alternates_binds_too():
     for n, shot in enumerate(steps, 1):
         for variant in shot.variants:
             bind, _lit, _focus = variant.resolved(shot)
-            body = bind["body"]
-            assert "$n" not in body, (shot.id, variant.plate, body)
-            assert body.endswith(str(n - 1)), (shot.id, variant.plate, body)
+            placed = [v for v in bind.values() if "consequences" in v]
+            assert placed, (shot.id, variant.plate)
+            for body in placed:
+                assert "$n" not in body, (shot.id, variant.plate, body)
+                assert body.endswith(str(n - 1)), (shot.id, variant.plate, body)
 
 
 def test_the_manifest_records_which_order_the_video_was_cut_in(settings,
@@ -867,3 +868,44 @@ def test_before_and_after_is_only_drawn_against_a_real_expectation(name, reg):
     for i in range(12):
         _f, _result, plates = _cut(base, reg, f"s{i}", resolver=blind)
         assert plates["vs-expected"] != "structure/before-after-9x16"
+
+
+# ---------------------------------------------------------------------------
+# No layout twice in one short (item 7)
+# ---------------------------------------------------------------------------
+
+def test_a_sequence_never_draws_one_card_twice_where_it_has_another(reg):
+    """MACRO's "who it hits" played one quote card three times running, 20 s
+    of one layout. Each step now takes a layout the steps before it left."""
+    for i in range(12):
+        _fmt, _result, plates = _cut(load_format("macro"), reg, f"seed-{i}")
+        steps = [plates[k] for k in sorted(plates) if k.startswith("who-it-hits-")]
+        assert len(steps) == 3
+        assert len(set(steps)) == 3, (i, steps)
+
+
+def test_a_beat_steers_off_a_layout_an_earlier_beat_drew(reg):
+    """The SHORT's close may sign off on the quote card; not when the comment
+    has just been on it."""
+    for i in range(12):
+        _fmt, _result, plates = _cut(load_format("short"), reg, f"seed-{i}")
+        if plates.get("the-comment") == "cards/quote-pull-9x16":
+            assert plates.get("close") != "cards/quote-pull-9x16", i
+
+
+def test_a_line_a_slot_plate_takes_a_passage_broken_at_its_width(tmp_path):
+    """Design's short-quote sets a passage as four 34-character lines, one slot
+    each. A passage that needs a fifth leaves the plate unfillable, so the
+    rotation takes another card rather than cutting the passage short."""
+    from types import SimpleNamespace
+
+    from pipeline.render_short import ShortResolver
+
+    said = ("Regional banks that funded long bonds with short deposits "
+            "feel it first, and hardest")
+    r = ShortResolver(script=SimpleNamespace(consequences=[said, "x " * 90]),
+                      workdir=tmp_path, settings=None)
+    lines = [r.text_for(f"wrap.34.4.{i}.script.consequences.0") for i in range(4)]
+    assert all(l is None or len(l) <= 34 for l in lines)
+    assert " ".join(l for l in lines if l) == said
+    assert r.text_for("wrap.34.4.0.script.consequences.1") is None
