@@ -251,6 +251,10 @@
         "label": "?numbers.headline_label",
         "detail": "?script.verdict"
       },
+      "meme": {
+        "at": "end",
+        "notes": "The one place for a meme: the tail of the verdict, after the drop and the number have landed and before the close. Never the turn, which is him talking to camera."
+      },
       "notes": "The one figure the video is about, at the size it deserves."
     },
     {

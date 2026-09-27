@@ -29,9 +29,9 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from pipeline import marks as mk
-from pipeline.compose import (BuildResult, Layer, build_layers,
+from pipeline.compose import (MEME_SRC, BuildResult, Layer, build_layers,
                               check_budgets, check_invariants,
-                              held_layer_spans)
+                              held_layer_spans, placed_meme)
 from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
 from pipeline.render_common import (RenderError, encode_profile,
@@ -145,10 +145,16 @@ class ShortResolver:
     settings: object
     prices: object | None = None
     handle: str = ""
+    # Which format this resolver answers for. The meme picker reads a macro
+    # print differently from a company's day; the renderer sets it.
+    format_name: str = ""
 
     def __post_init__(self) -> None:
         self._images: dict[str, Path | list[Path] | None] = {}
         self._fracs: dict[str, tuple[float, float, float, float]] = {}
+        # The meme this short was given, once asked — kept so the manifest
+        # can say which one and why, not only that a still was drawn.
+        self.meme_choice = None
 
     @property
     def rows(self):
@@ -342,10 +348,37 @@ class ShortResolver:
         out = None
         if src == "chart.price":
             out = self._chart()
+        elif src == MEME_SRC:
+            out = self.meme().path
         elif src.startswith("plate."):
             out = None       # nested plates resolve through the kit, not here
         self._images[src] = out
         return out
+
+    def meme(self):
+        """The one meme this short gets from the owned library, or none.
+
+        Asked only when the template has a place for one, and answered once.
+        The proof and the final of a video seed the pick with the same
+        script hash, so they show the same meme unless another video went
+        out between them and used it.
+
+        The rotation reads every workspace but this one. `workdir` is this
+        workspace's `render_short/`, and a final that read the manifest its
+        own proof wrote would steer off the meme the proof showed.
+        """
+        if self.meme_choice is None:
+            from pipeline.memes import choose_for_short, recent_memes
+
+            lead = move_lead(getattr(self.script, "move_summary", "") or "")
+            self.meme_choice = choose_for_short(
+                self.script, self.settings,
+                fmt=self.format_name or "short",
+                direction=lead[0] if lead else "",
+                seed=self.script.content_sha(),
+                avoid=recent_memes(self.settings,
+                                   exclude=Path(self.workdir).parent))
+        return self.meme_choice
 
     def _chart_labels(self) -> dict[str, str]:
         """The period heads and the three marks the dense chart declares.
@@ -802,8 +835,39 @@ def render_frames(result: BuildResult, resolver, duration: float,
 # Entry point
 # ---------------------------------------------------------------------------
 
+def _meme_record(resolver, result: BuildResult) -> dict:
+    """The manifest's line for the meme: which, where, and on what — or why not."""
+    layer = placed_meme(result)
+    choice = getattr(resolver, "meme_choice", None)
+    if layer is None:
+        why = next((s.split(" <- ", 1)[1] for s in result.skipped
+                    if ".meme <- " in s), "")
+        if choice is not None and not choice and choice.why:
+            why = choice.why
+        out = {"key": None,
+               "why": why or "the format has no place for a meme"}
+        if choice:
+            out["picked"] = choice.key       # chosen, and then no room for it
+        return out
+    frame = next((l.entry_key for l in result.for_shot(layer.shot_id)
+                  if l.kind == "plate" and l.slot == MEME_SRC), "")
+    return {
+        "key": (choice.key if choice else "") or Path(layer.path).stem,
+        "file": (choice.file if choice else "") or Path(layer.path).name,
+        "source": "library",
+        "shot": layer.shot_id,
+        "start_s": round(layer.t_start, 3),
+        "end_s": round(layer.t_end, 3),
+        "frame": frame,
+        "score": choice.score if choice else None,
+        "matched": list(choice.matched) if choice else [],
+        "why": choice.why if choice else "",
+    }
+
+
 def _provenance(script, settings, workspace: Path, duration: float,
-                prices, tts, format_name: str, *, proof: bool):
+                prices, tts, format_name: str, *, proof: bool,
+                visual_sources: dict | None = None):
     """The render's provenance record (N3)."""
     from pipeline import provenance as prov
 
@@ -820,10 +884,11 @@ def _provenance(script, settings, workspace: Path, duration: float,
         # mileage. None of that was recoverable from the artefact.
         render={"engine": "shots", "format": format_name},
         prices=prices,
-        # A SHORT's visuals are the shot template's plates plus whatever the
-        # resolver fetched; the fetched half is what has provenance worth
-        # recording, and a SHORT fetches none today.
-        visual_sources={}, filings={}, tts=tts, settings=settings)
+        # A SHORT's visuals are the shot template's plates plus whatever came
+        # from outside the kit. It fetches nothing; the one thing from outside
+        # is the meme, and that is counted as the owned library it came from.
+        visual_sources=dict(visual_sources or {}), filings={}, tts=tts,
+        settings=settings)
 
 
 def held_over_ceiling(video: Path, spans,
@@ -934,6 +999,8 @@ def _render_short(script, tts, workspace: Path, settings, *,
     else:
         resolver.workdir, resolver.prices = workdir, prices
         resolver.handle = resolver.handle or handle0
+    if isinstance(resolver, ShortResolver):
+        resolver.format_name = resolver.format_name or format_name
 
     # A shot the script carries no words for is DROPPED, not rendered blank.
     # THE TURN is one sentence on bare ground; with no sentence it is a held
@@ -1090,8 +1157,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
         raise RenderError(f"the SHORT mux produced nothing at {part}")
     os.replace(part, out)
 
+    meme = _meme_record(resolver, result)
     provenance = _provenance(script, settings, Path(workspace), duration,
-                             prices, tts, fmt.name, proof=proof)
+                             prices, tts, fmt.name, proof=proof,
+                             visual_sources=({"library": 1} if meme.get("key")
+                                             else {}))
     audio_rows = manifest_rows(tracks)
     provenance.sound = sound_summary(
         audio_rows, lufs=measure_lufs(out) if tracks else None,
@@ -1154,6 +1224,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
         # covers. The sound's move hits are cut to this, and `recent_moves`
         # reads it back so the pen-circle never plays in two shorts running.
         "moves": plan.record(),
+        # THE ONE MEME, or why there is none. `memes.recent_memes` reads `key`
+        # back so the next short rotates off it, exactly as `recent_plates`
+        # reads `plates_used`; `key` is null whenever nothing went on screen,
+        # so a meme that was picked and then had no room is not counted.
+        "meme": meme,
         # WHAT THE MIX DID, in the LONG's shape. A short had no mix for six
         # weeks and no field that would have shown it (`pipeline/sound.py`).
         "audio": audio_rows,

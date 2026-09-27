@@ -213,8 +213,8 @@ def test_every_ring_ever_drawn_is_a_small_part_of_its_plate(vertical, reg, setti
 
 def test_on_the_sheet_the_circle_rings_the_figure_the_payoff_says(short, reg, settings):
     fmt, result, words, _ = short
-    payoff = next(l for l in result.layers if l.kind == "plate" and l.shot_id == "payoff")
-    sheet = next(l for l in result.layers if l.kind == "plate" and l.shot_id == "the-sheet")
+    payoff = MV.shot_plates(result)["payoff"]
+    sheet = MV.shot_plates(result)["the-sheet"]
     for plan in _plans(fmt, result, words, reg, settings, n=60):
         for m in plan.moves:
             if m.move == "pen-circle" and m.shot_id == "the-sheet":
@@ -323,7 +323,7 @@ def test_recent_moves_reads_the_last_render_and_never_its_own(tmp_path, settings
 # ---------------------------------------------------------------------------
 
 def _layer(result, shot_id):
-    return next(l for l in result.layers if l.kind == "plate" and l.shot_id == shot_id)
+    return MV.shot_plates(result)[shot_id]
 
 
 def _diff(a, b) -> float:

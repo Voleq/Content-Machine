@@ -456,6 +456,20 @@ class _Lane:
         return placed
 
 
+def shot_plates(result) -> dict:
+    """Each shot's own plate layer, by shot id.
+
+    Not every plate layer on a shot is the shot's: a meme is drawn in a
+    `frames/` plate laid over the end of the verdict, and a move played on
+    that frame would be a move on the wrong picture.
+    """
+    got: dict = {}
+    for l in result.layers:
+        if l.kind == "plate" and f"{l.shot_id}:plate:" in l.name:
+            got.setdefault(l.shot_id, l)
+    return got
+
+
 def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
                settings=None, sources: dict[str, str] | None = None,
                recent_circled: bool = False, max_wipes: int = 3) -> MovePlan:
@@ -468,7 +482,7 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
     plan = MovePlan()
     sources = sources or {}
     words = list(words or ())
-    plate_layers = {l.shot_id: l for l in result.layers if l.kind == "plate"}
+    plate_layers = shot_plates(result)
     circle_ok = _circle_this_video(seed, recent_circled)
     circled = False
     verdict = next((figure_number(plate_layers[s].values.get("value", ""))
