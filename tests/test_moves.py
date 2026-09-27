@@ -317,7 +317,8 @@ def test_recent_moves_reads_the_last_render_and_never_its_own(tmp_path, settings
     for ws, moves in ((a, ["pen-circle", "count-up"]), (b, ["count-up"])):
         ws.mkdir(parents=True)
         (ws / "short_final.manifest.json").write_text(json.dumps(
-            {"moves": {"moves": [{"move": m, "start": 1.0} for m in moves]}}))
+            {"moves": {"moves": [{"move": m, "start": 1.0} for m in moves]}}),
+            encoding="utf-8")
     import os
     os.utime(a / "short_final.manifest.json", (1, 1))
     assert recent_moves(s, window=1) == {"count-up"}
@@ -325,7 +326,7 @@ def test_recent_moves_reads_the_last_render_and_never_its_own(tmp_path, settings
     assert MV.recent_circled(s, exclude=b) is True
     assert MV.recent_circled(s) is False
     (tmp_path / "old" / "x").mkdir(parents=True)
-    (tmp_path / "old" / "x" / "a.manifest.json").write_text("{}")
+    (tmp_path / "old" / "x" / "a.manifest.json").write_text("{}", encoding="utf-8")
     assert "pen-circle" in recent_moves(s, window=3)
 
 

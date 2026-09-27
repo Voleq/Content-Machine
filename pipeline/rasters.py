@@ -264,7 +264,7 @@ def held_frames_to_alpha_clip(frames: list[tuple[Image.Image, float]],
         # picture, which is the landed state and harmless.
         lines += [f"file '{last.name}'", f"option framerate {fps}"]
         listing = Path(td) / "frames.ffconcat"
-        listing.write_text("\n".join(lines) + "\n")
+        listing.write_text("\n".join(lines) + "\n", encoding="utf-8")
         run_ffmpeg([
             "-f", "concat", "-safe", "0", "-i", str(listing),
             "-fps_mode", "vfr", "-c:v", "png", "-pix_fmt", "rgba", str(out_path),

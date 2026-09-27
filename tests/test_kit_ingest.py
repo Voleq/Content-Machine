@@ -387,7 +387,7 @@ def test_a_cast_pose_fits_the_rooms_design_drew_it_for():
     """`fits` is copied from kit-model.js, which the render path never reads.
     A drop that redraws a pose for another angle changes it there, and a copy
     left behind would cast him on the angle he was taken off."""
-    model = (ROOT / "kit" / "engine" / "kit-model.js").read_text()
+    model = (ROOT / "kit" / "engine" / "kit-model.js").read_text(encoding="utf-8")
     for pose in _NEW_POSES:
         m = re.search(rf'"{re.escape(pose)}":\s*{{[^}}]*?fits:\s*"([^"]+)"',
                       model)

@@ -117,7 +117,7 @@ def test_the_sheet_s_source_slides_in_once_its_rows_are_read(short_valid_json,
         assert reg.get(layers[t.shot_id].entry_key).slot("source") is None
     rows = [r for r in plan.record()["moves"] if r["move"] == "slide-in"]
     assert sorted((r["shot_id"], r["start"]) for r in rows) == \
-        sorted((t.shot_id, t.start) for t in plan.tags)
+        sorted((t.shot_id, round(t.start, 3)) for t in plan.tags)
 
 
 def test_both_short_prompts_teach_the_field():
