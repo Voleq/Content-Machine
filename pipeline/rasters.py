@@ -102,9 +102,44 @@ def caption_colours(settings: Settings) -> tuple[tuple[int, int, int],
     """
     from pipeline.plates import load_plates
 
-    reg = load_plates(settings.assets_dir)
-    paper = max(reg.palettes.values(), key=lambda p: luminance(_rgb(p["ground"])))
+    paper = _paper_palette(load_plates(settings.assets_dir))
     return _rgb(paper["structure"]), _rgb(paper["ground"])
+
+
+def _paper_palette(reg) -> dict[str, str]:
+    """The palette of the hour whose ground is the lightest: the kit's paper."""
+    return max(reg.palettes.values(), key=lambda p: luminance(_rgb(p["ground"])))
+
+
+# A key word has to read on the caption's box at least as well as the rest of
+# the caption does: `test_captions_are_legible_on_their_own_box` holds the
+# caption's own ink to 4.5:1, and a coloured word that is harder to read than
+# the words around it has made the one word that matters the faint one.
+CAPTION_KEY_CONTRAST = 4.5
+
+
+def caption_key_colour(settings: Settings) -> tuple[int, int, int] | None:
+    """The ink a caption's key word is set in: `attention`, drawn for the box.
+
+    The episode's own `attention` when it reads on the caption's box, and
+    otherwise `attention` from the hour whose paper the box IS. The box is the
+    kit's paper at every hour (`caption_colours`), and the night hour's
+    `attention` is a coral drawn for the dark wall: on the cream box it is
+    about 2.3:1, the pale-ink-on-cream failure the night-legibility fix
+    removed, back one word at a time. The paper hour's `attention` was drawn
+    for exactly this ground. At dusk the two are the same colour.
+
+    None when neither reads on the box, and the key word then stays in the
+    caption's ink: an emphasis nobody can read is worse than none.
+    """
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    _, box = caption_colours(settings)
+    for ink in (reg.colour("attention"), _rgb(_paper_palette(reg)["attention"])):
+        if contrast(ink, box) >= CAPTION_KEY_CONTRAST:
+            return ink
+    return None
 
 
 def load_font(settings: Settings, name: str, size: int) -> ImageFont.FreeTypeFont:
@@ -214,8 +249,8 @@ def flash_frames(w: int, h: int, *, fps: int = 30,
 
 
 # --------------------------------------------------------------------------
-# ASS karaoke captions (libass `subtitles` filter burns these in) — the
-# word-synced punch-in style, driven by the real audio timestamps.
+# Captions (libass burns these in), phrase by phrase, driven by the real audio
+# timestamps. Not karaoke: see `build_phrase_ass`.
 # --------------------------------------------------------------------------
 
 
@@ -236,6 +271,197 @@ _NEVER_LAST = {
     "than", "into", "over", "its", "it's", "their", "your", "our", "his",
 }
 
+# How far the caption's box reaches past its line of type, in script pixels:
+# the style's `Outline`, which under `BorderStyle 3` is the box's inset rather
+# than a stroke. Named because the SHORT places the BOX, not the type. What
+# covers a figure is the cream rectangle, and a placement that positioned the
+# type would land the box fourteen pixels lower than it asked for.
+CAPTION_BOX_PAD = 14
+
+
+def caption_box_height(font_size: int) -> int:
+    """How tall one caption's box is on screen, in script pixels.
+
+    libass sets a line at exactly its font size (measured: a 57-pixel line
+    burns an 85-pixel box) and the box adds its inset above and below. One
+    line only, because the style sets `WrapStyle 2` and a caption never wraps.
+    """
+    return int(font_size) + 2 * CAPTION_BOX_PAD
+
+
+# --------------------------------------------------------------------------
+# Key words.
+#
+# A FIGURE IS WHATEVER THE CAPTION SHOWS, AND THE CAPTION SHOWS WHAT WAS SAID.
+# The narration spells its numbers out for the voice, "twenty nine percent"
+# and "four ninety six" (`pipeline/spoken.py`), and a caption is the
+# narration's own words. So a figure on screen is almost always a run of
+# number words, and a digits-only test would colour nothing in a real script.
+# Both forms count: a typed token (29%, $4.2bn, 5×, 40bps) and a spoken run
+# with whatever unit is said after it.
+# --------------------------------------------------------------------------
+
+_NUMERALS = frozenset({
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+    "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+    "sixteen", "seventeen", "eighteen", "nineteen", "twenty", "thirty",
+    "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+    "hundred", "thousand", "million", "billion", "trillion",
+})
+_BIG_SCALES = frozenset({"thousand", "million", "billion", "trillion"})
+
+# Said after a figure, and part of it: "five TIMES", "forty BASIS POINTS".
+_UNIT_WORDS = frozenset({"percent", "times", "dollars", "dollar", "cents",
+                         "pounds", "pence", "euros", "points", "bps"})
+_UNIT_PAIRS = frozenset({("per", "cent"), ("basis", "points"),
+                         ("percentage", "points")})
+
+# A figure as it is typed: a sign, a currency, digits, and the units the
+# channel writes. 29%, -$15M, $4.2bn, 5×, 3x, 40bps, 2.5pt.
+_TYPED_FIGURE = re.compile(
+    r"[+\-−]?[$£€]?\d[\d,]*(?:\.\d+)?(?:%|×|x|bn|b|m|k|t|bps|pts?)?", re.I)
+
+# A token with its punctuation off. Quotes, brackets and clause marks go; a
+# sign, a currency and a trailing % or × stay, because those are the figure.
+_CORE = re.compile(r"^[^\w$£€+\-−]*(.*?)[^\w%×]*$", re.S)
+
+# A word that ends a clause ends a figure with it: "twenty nine percent," and
+# the "four" that opens the next clause are two figures, not one.
+_RUN_ENDS = re.compile(r"[.,;:!?…—–)\]\"”’]$")
+
+# THE KEY WORD WHEN THERE IS NO FIGURE: a word that reverses or narrows what
+# the line says. A caption is read in a glance, and "The business is not."
+# read without its "not" is the opposite sentence. Contractions ("isn't") are
+# the same word. "But" is left out on purpose: it says a turn is coming, and
+# the turn is the words after it. So is everything else, because colour on
+# every other line stops meaning "look here", which is all `attention` is for.
+_TURN_WORDS = frozenset({"not", "no", "never", "only"})
+
+
+def _core(token: str) -> str:
+    m = _CORE.match(token.strip())
+    return (m.group(1) if m else token.strip()).lower()
+
+
+def _is_numeral(core: str) -> bool:
+    return bool(core) and all(p in _NUMERALS for p in core.split("-"))
+
+
+def _unit_end(cores: list[str], tokens: Sequence[str], j: int) -> int:
+    """Past the unit said at `j`, straight after a figure, if one is."""
+    if (j + 1 < len(cores) and (cores[j], cores[j + 1]) in _UNIT_PAIRS
+            and not _RUN_ENDS.search(tokens[j].strip())):
+        return j + 2
+    if j < len(cores) and cores[j] in _UNIT_WORDS:
+        return j + 1
+    return j
+
+
+def figure_spans(tokens: Sequence[str]) -> list[tuple[int, int, bool]]:
+    """Where the figures are in a run of caption words: `(start, end, marked)`.
+
+    `end` is exclusive and takes in the unit said after the figure. `marked`
+    is a figure that carries its unit (a percent, a currency, a multiple, a
+    scale), which is what tells "four hundred million" apart from the "six"
+    in "six years". A lone "one" is not a figure: it is "one of them" far
+    more often than it is a number.
+    """
+    cores = [_core(t) for t in tokens]
+    ends = [bool(_RUN_ENDS.search(t.strip())) for t in tokens]
+    n = len(tokens)
+    out: list[tuple[int, int, bool]] = []
+    i = 0
+    while i < n:
+        c = cores[i]
+        if c and _TYPED_FIGURE.fullmatch(c):
+            end = i + 1 if ends[i] else _unit_end(cores, tokens, i + 1)
+            # A sign is a unit too: "+29" is a move, where "29" is a count.
+            bare = c.replace(",", "").replace(".", "").isdigit()
+            out.append((i, end, end > i + 1 or not bare))
+            i = end
+            continue
+        # A spoken run: a sign or an "a hundred", then numerals, with "and" and
+        # "point" taken only where a numeral follows them.
+        k = i
+        if c in ("minus", "negative", "a"):
+            nxt = cores[i + 1] if i + 1 < n and not ends[i] else ""
+            wanted = (nxt in _BIG_SCALES or nxt == "hundred") if c == "a" \
+                else _is_numeral(nxt)
+            if not wanted:
+                i += 1
+                continue
+            k = i + 1
+        count = 0
+        while k < n:
+            if _is_numeral(cores[k]):
+                count += 1
+                k += 1
+                if ends[k - 1]:
+                    break
+            elif (count and not ends[k] and cores[k] in ("and", "point")
+                  and k + 1 < n and _is_numeral(cores[k + 1])):
+                k += 1
+            else:
+                break
+        if not count:
+            i += 1
+            continue
+        end = k if ends[k - 1] else _unit_end(cores, tokens, k)
+        said = {p for w in cores[i:k] for p in w.split("-")}
+        marked = end > k or c in ("minus", "negative") or bool(said & _BIG_SCALES)
+        if not marked and cores[i:k] == ["one"]:
+            i = k
+            continue
+        out.append((i, end, marked))
+        i = end
+    return out
+
+
+def key_span(tokens: Sequence[str]) -> tuple[int, int] | None:
+    """The one term a caption line sets in `attention`, as `(start, end)`.
+
+    A figure wins, and of two figures the first that carries its unit. With no
+    figure, the first turn word (`_TURN_WORDS`). Never more than one: two
+    coloured words in a four-word line is a line with no emphasis at all. A
+    figure said in four words is still one term, coloured whole, because half
+    a number in colour reads as a different number.
+    """
+    figures = figure_spans(tokens)
+    if figures:
+        s, e, _ = next((f for f in figures if f[2]), figures[0])
+        return s, e
+    for i, t in enumerate(tokens):
+        c = _core(t).replace("’", "'")
+        if c in _TURN_WORDS or c.endswith("n't"):
+            return i, i + 1
+    return None
+
+
+def _keyed(tokens: Sequence[str], on: str, off: str) -> str:
+    """The line as ASS text, its key term in the `on` colour, if it has one.
+
+    The punctuation around the term stays in the line's ink: a comma in the
+    key colour reads as a stray mark beside the word rather than part of it.
+    """
+    parts = list(tokens)
+    span = key_span(parts)
+    if span is None:
+        return " ".join(parts)
+    s, e = span
+    lead = re.match(r"[\"'“‘(\[]*", parts[s]).group(0)
+    trail = re.search(r"[.,;:!?…—–)\]\"'”’]*$", parts[e - 1]).group(0)
+    first = parts[s][len(lead):]
+    if s == e - 1:
+        body = first[:len(first) - len(trail)] if trail else first
+        if not body:
+            return " ".join(parts)
+        parts[s] = f"{lead}{{\\1c{on}}}{body}{{\\1c{off}}}{trail}"
+    else:
+        last = parts[e - 1][:len(parts[e - 1]) - len(trail)] if trail else parts[e - 1]
+        parts[s] = f"{lead}{{\\1c{on}}}{first}"
+        parts[e - 1] = f"{last}{{\\1c{off}}}{trail}"
+    return " ".join(parts)
+
 
 def phrase_pages(
     words: list[WordTimestamp],
@@ -243,6 +469,7 @@ def phrase_pages(
     max_words: int = 6,
     max_chars: int = 30,
     max_gap: float = 0.45,
+    min_words: int = 1,
 ) -> list[list[WordTimestamp]]:
     """Group words into caption lines that break on phrase boundaries.
 
@@ -250,7 +477,16 @@ def phrase_pages(
     real pause in the delivery, and clause punctuation once the line is long
     enough to be worth breaking. The length caps are a backstop, and when one
     fires it walks back off a function word rather than stranding it.
+
+    `min_words` above one asks for lines of `min_words` to `max_words`, which
+    this walk cannot give: it only learns a line was short after it has ended
+    it. Those lines are chosen a sentence at a time instead
+    (`_balanced_pages`). The LONG asks for no minimum and gets this walk,
+    exactly as before.
     """
+    if min_words > 1:
+        return _balanced_pages(words, min_words=min_words, max_words=max_words,
+                               max_chars=max_chars, max_gap=max_gap)
     pages: list[list[WordTimestamp]] = []
     page: list[WordTimestamp] = []
 
@@ -287,6 +523,86 @@ def phrase_pages(
     return pages
 
 
+def _balanced_pages(words: list[WordTimestamp], *, min_words: int,
+                    max_words: int, max_chars: int,
+                    max_gap: float) -> list[list[WordTimestamp]]:
+    """Lines of `min_words` to `max_words`, every break in a sentence at once.
+
+    Four-and-flush does "Margins fell again this / quarter." to a five-word
+    sentence. This scores every way of breaking the sentence and keeps the
+    cheapest (`_line_cost`): three or four words to a line, a break on a
+    clause mark or a pause where there is one, never on a function word, and
+    never inside a figure, the one term in the sentence that has to arrive
+    whole. A figure counts as ONE word however many it is said in, as it would
+    if it were typed 29% rather than spoken. A sentence shorter than the
+    minimum ("Noise.") is a line of its own, because joining it to the next
+    one would caption across a full stop.
+    """
+    tokens = [w.word for w in words]
+    figures = {(s, e) for s, e, _ in figure_spans(tokens)}
+    pages: list[list[WordTimestamp]] = []
+    start = 0
+    for i, w in enumerate(words):
+        if i + 1 < len(words) and not re.search(r"[.!?…]$", w.word.strip()):
+            continue
+        a, b = start, i + 1
+        best = [0.0] + [math.inf] * (b - a)
+        back = [a] * (b - a + 1)
+        for end in range(a + 1, b + 1):
+            for cut in range(a, end):
+                if best[cut - a] == math.inf:
+                    continue
+                cost = best[cut - a] + _line_cost(
+                    words, cut, end, last=end == b, figures=figures,
+                    min_words=min_words, max_words=max_words,
+                    max_chars=max_chars, max_gap=max_gap)
+                if cost < best[end - a]:
+                    best[end - a], back[end - a] = cost, cut
+        lines: list[list[WordTimestamp]] = []
+        end = b
+        while end > a:
+            cut = back[end - a]
+            lines.append(words[cut:end])
+            end = cut
+        pages += reversed(lines)
+        start = b
+    return pages
+
+
+def _line_cost(words: list[WordTimestamp], j: int, i: int, *, last: bool,
+               figures: set[tuple[int, int]], min_words: int, max_words: int,
+               max_chars: int, max_gap: float) -> float:
+    """What it costs to make `words[j:i]` one caption line. Lower is better.
+
+    The weights are ordered, not tuned: cutting a figure in two outweighs
+    everything, a line over the cap outweighs a line under the minimum, a
+    one-word line outweighs a function word at the end, and a clause mark or
+    a pause at the break only ever decides between lines that are otherwise
+    both fine.
+    """
+    whole = (j, i) in figures
+    said = (i - j) - sum(e - s - 1 for s, e in figures if j <= s and e <= i)
+    cost = 0.25 if whole else (said - 3.5) ** 2
+    if said < min_words:
+        cost += 20.0
+    if said > max_words:
+        cost += 50.0 * (said - max_words)
+    chars = sum(len(w.word) for w in words[j:i]) + (i - j) - 1
+    if chars > max_chars and not whole:
+        cost += 0.5 * (chars - max_chars)
+    if any(s < i < e for s, e in figures):
+        cost += 100.0
+    if not last:
+        end = words[i - 1].word.strip()
+        if end.strip(".,;:!?").lower() in _NEVER_LAST:
+            cost += 8.0
+        if _PHRASE_END.search(end):
+            cost -= 3.0
+        if words[i].start - words[i - 1].end >= max_gap:
+            cost -= 3.0
+    return cost
+
+
 def build_phrase_ass(
     words: list[WordTimestamp],
     *,
@@ -297,11 +613,14 @@ def build_phrase_ass(
     margin_h: int = 70,
     max_words: int = 6,
     max_chars: int = 30,
+    min_words: int = 1,
+    key_words: bool = False,
     duration: float | None = None,
     punch: bool = True,
-    windows: Sequence[tuple[float, float]] | None = None,
+    windows: Sequence[tuple[float, float] | tuple[float, float, int | None]]
+    | None = None,
 ) -> str:
-    """The SHORT's captions: structure ink on the ground, phrase by phrase.
+    """The captions: structure ink on the ground, phrase by phrase.
 
     Not karaoke. The word-by-word red fill was doing two things at once —
     colouring text in the same red that means a down-move, and drawing the eye
@@ -316,6 +635,20 @@ def build_phrase_ass(
     with captions off that is the whole shot: "Cheap only counts…" stayed up
     for seven seconds over the payoff card, the one shot that asked for none.
     Each line now also ends where its window does.
+
+    A window may carry a third value: the y, in script pixels, where the
+    caption's BOX ends while that window is on screen. The SHORT places its
+    caption per shot, clear of what that shot is showing, and a subtitle file
+    has one style, so the place travels with the window and becomes each
+    line's own MarginV. A line that runs on across a cut into a window placed
+    somewhere else is split at the cut and moves with it: the picture changes
+    there anyway, and a caption left where the last shot put it sits over
+    whatever this one is showing.
+
+    `min_words` above one balances the lines (`phrase_pages`), and `key_words`
+    sets one term a line in `attention` (`key_span`, `caption_key_colour`).
+    Both are the SHORT's. The LONG passes neither, and its lines are exactly
+    what they were.
     """
     W, H = play_res
 
@@ -323,7 +656,19 @@ def build_phrase_ass(
         r, g, b = c
         return f"&H{alpha:02X}{b:02X}{g:02X}{r:02X}"
 
+    def rgb_tag(c) -> str:       # an override colour is &HBBGGRR&
+        r, g, b = c
+        return f"&H{b:02X}{g:02X}{r:02X}&"
+
     ink, box = caption_colours(settings)
+    key = caption_key_colour(settings) if key_words else None
+    # AN OPAQUE BOX UNDER A COLOURED WORD. libass draws a `BorderStyle 3` box
+    # per run of type, and a colour change starts a new run: the two boxes
+    # overlap by the width of a space, and at the style's 4% transparency the
+    # overlap is drawn twice, a pale seam down every line with a key word in
+    # it. Opaque, the overlap cannot show. Lines with no colour keep the box
+    # they have always had.
+    box_alpha = 0x00 if key is not None else 0x0A
 
     header = f"""[Script Info]
 ScriptType: v4.00+
@@ -334,42 +679,72 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caps,Archivo Narrow,{font_size},{bgr(ink)},{bgr(ink)},{bgr(box, 0x0A)},{bgr(box, 0x0A)},-1,0,0,0,100,100,0,0,3,14,0,2,{margin_h},{margin_h},{margin_v},1
+Style: Caps,Archivo Narrow,{font_size},{bgr(ink)},{bgr(ink)},{bgr(box, box_alpha)},{bgr(box, box_alpha)},-1,0,0,0,100,100,0,0,3,{CAPTION_BOX_PAD},0,2,{margin_h},{margin_h},{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     # Touching windows are one stretch: a line may run on across a cut
     # between two captioned shots, just not into a shot without captions.
-    merged: list[list[float]] = []
-    for a, b in sorted((float(a), float(b)) for a, b in (windows or ())):
-        if merged and a <= merged[-1][1] + 1e-6:
+    # Two touching windows placed differently stay two, and a line crossing
+    # from one to the other is split where they meet. A MarginV of 0 is the
+    # style's own, which is what a window with no place of its own gets.
+    merged: list[list] = []
+    for a, b, bottom in sorted(((float(w[0]), float(w[1]),
+                                 w[2] if len(w) > 2 else None)
+                                for w in (windows or ())),
+                               key=lambda w: (w[0], w[1])):
+        mv = 0 if bottom is None else max(int(H - bottom + CAPTION_BOX_PAD), 1)
+        if merged and a <= merged[-1][1] + 1e-6 and merged[-1][2] == mv:
             merged[-1][1] = max(merged[-1][1], b)
         else:
-            merged.append([a, b])
+            merged.append([a, b, mv])
 
     events: list[str] = []
-    pages = phrase_pages(words, max_words=max_words, max_chars=max_chars)
+    pages = phrase_pages(words, max_words=max_words, max_chars=max_chars,
+                         min_words=min_words)
     for i, page in enumerate(pages):
         start = page[0].start
         if i + 1 < len(pages):
             end = max(pages[i + 1][0].start, page[-1].end)
         else:
             end = page[-1].end + 0.7
-        for a, b in merged:
-            if a <= start < b:
-                end = min(end, b)
-                break
         if duration is not None:
             end = min(end, duration)
-        if end <= start:
-            continue
-        text = " ".join(w.word for w in page)
+        tokens = [w.word for w in page]
+        text = (_keyed(tokens, rgb_tag(key), rgb_tag(ink)) if key is not None
+                else " ".join(tokens))
         prefix = "{\\fscx92\\fscy92\\t(0,60,\\fscx100\\fscy100)}" if punch else ""
-        events.append(
-            f"Dialogue: 0,{_ass_time(start)},{_ass_time(end)},Caps,,0,0,0,,{prefix}{text}"
-        )
+        for n, (a, b, mv) in enumerate(_through_windows(start, end, merged)):
+            if b <= a:
+                continue
+            # The entry punch is the line ARRIVING. The rest of a line carried
+            # across a cut is the same line, and a second punch would read as
+            # a new caption with the same words.
+            events.append(
+                f"Dialogue: 0,{_ass_time(a)},{_ass_time(b)},Caps,,0,0,{mv},,"
+                f"{prefix if n == 0 else ''}{text}")
     return header + "\n".join(events) + "\n"
+
+
+def _through_windows(start: float, end: float,
+                     merged: list[list]) -> list[tuple[float, float, int]]:
+    """A line's stretch on screen, cut where its windows change: `(a, b, mv)`.
+
+    A line starting in no window runs as it always has, at the style's margin.
+    """
+    at = next((k for k, (a, b, _) in enumerate(merged) if a <= start < b), None)
+    if at is None:
+        return [(start, end, 0)]
+    out: list[tuple[float, float, int]] = []
+    a = start
+    while True:
+        _, b, mv = merged[at]
+        out.append((a, min(end, b), mv))
+        nxt = merged[at + 1] if at + 1 < len(merged) else None
+        if end <= b + 1e-9 or nxt is None or nxt[0] > b + 1e-6:
+            return out
+        a, at = b, at + 1
 
 
 # --------------------------------------------------------------------------

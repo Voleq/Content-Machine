@@ -92,10 +92,38 @@ TWO_SHOT_MAX_SLOTS = 10
 # hard-coded around.
 HOST_WHERE_NOBODY_STANDS = "to-camera"
 
-# Where a caption band sits, as a fraction of frame height, and how tall it is
-# allowed to be. Kept clear of the disclaimer and of the top strip so a long
-# line can never stack with the furniture.
-CAPTION_BAND = (0.78, 0.14)
+# THE BAND A SHORT'S CAPTION MAY SIT IN, top and bottom as fractions of frame
+# height, where the plate on screen publishes no `safe` band of its own. It is
+# design's shorts band, 260 to 1560 of 1920: on a phone the title, the channel
+# name and the buttons lie over the bottom of the frame and the search bar over
+# the top. The old band, 78% to 92% of the frame, sat wholly under the buttons,
+# so every caption in every short was partly covered.
+CAPTION_BAND = (260 / 1920, 1560 / 1920)
+
+# The caption's type as a fraction of frame height, and the margins it is
+# centred between as a fraction of frame width. The renderer burns the type at
+# this size and `build_layers` places the box it sits in, so both read these:
+# a box placed for one size and burned at another covers what it was kept off.
+CAPTION_TYPE_FH = 0.030
+CAPTION_SIDE_FW = 0.10
+
+# How far a caption's box stays off anything it must not cover, as a fraction
+# of frame height. Flush against a row of figures, a cream box reads as one
+# more row of the table.
+CAPTION_CLEARANCE_FH = 0.008
+
+# A LANDSCAPE FRAME KEEPS ITS CAPTION WHERE IT HAS ALWAYS BEEN, the foot of its
+# type this far up the frame. No phone lays buttons over a long's frame, and
+# the long's captions are another item's, so a 16:9 cut through this engine
+# gets a band with exactly one place in it.
+LANDSCAPE_CAPTION_MARGIN_FH = 0.13
+
+# How much of a standing figure's box his head can be in. He is seven heads
+# tall (`kit/design-tokens.json`, proportion) with his crown at the top of the
+# box; seated, the crown drops to about 1.9 heads down (seatedRatio 0.735).
+# The top three heads hold it in every pose the kit draws. A framing publishes
+# a `head` slot of its own and is read from that instead.
+HOST_HEAD_SHARE = 3 / 7
 
 # A row of type is never set below this fraction of the frame's height. Below
 # it a figure is present but not readable, which is worse than absent — it
@@ -724,12 +752,32 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
 
         # -- captions. Not under display type, whoever set it: the template's
         #    own large type or a figure the chosen plate sets at that size.
+        #
+        #    PLACED PER SHOT, inside the band the phone leaves clear and off
+        #    everything this shot is showing (`place_caption`). The layer's
+        #    box IS the caption's box, and the renderer burns each line where
+        #    its shot's layer says.
         if shot.captions and not shot.has_large_type and not plate_large:
+            from pipeline.rasters import caption_box_height
+
+            box_h = caption_box_height(int(fh * CAPTION_TYPE_FH))
+            side = int(fw * CAPTION_SIDE_FW)
+            band = caption_band(plate, frame, box_h)
+            cy, covers = place_caption(
+                band, caption_obstacles(
+                    reg, [l for l in layers if l.shot_id == shot.id]),
+                frame, box_h)
+            if covers:
+                log.warning(
+                    "%s: nothing in the caption band (%d-%d px) is clear, so "
+                    "the caption goes where it covers least, %d-%d px, over %s",
+                    shot.id, band[0], band[1], cy, cy + box_h,
+                    ", ".join(covers[:6]) + (f" and {len(covers) - 6} more"
+                                             if len(covers) > 6 else ""))
             layers.append(Layer(
                 name=f"{shot.id}:caption", kind="caption", shot_id=shot.id,
                 t_start=t0, t_end=t1,
-                x=int(fw * 0.06), y=int(fh * CAPTION_BAND[0]),
-                w=int(fw * 0.88), h=int(fh * CAPTION_BAND[1]), z=80))
+                x=side, y=cy, w=fw - 2 * side, h=box_h, z=80))
 
     layers.sort(key=lambda l: (l.t_start, l.z))
     return BuildResult(layers=layers, spans=list(spans), frame=frame,
@@ -1012,6 +1060,136 @@ def _front_layer(reg: Registry, shot: Shot, plate: Plate | None,
                  shot_id=shot.id, t_start=host.t_start, t_end=host.t_end,
                  x=placed[0], y=placed[1], w=placed[2], h=placed[3],
                  path=path, entry_key=plate.key, concept=plate.family, z=45)
+
+
+# ---------------------------------------------------------------------------
+# Placing the caption
+# ---------------------------------------------------------------------------
+
+def caption_band(plate: Plate | None, frame: tuple[int, int],
+                 box_h: int) -> tuple[int, int]:
+    """The rows a shot's caption box may occupy: `(top, bottom)`, frame pixels.
+
+    A plate's own `safe` band when it publishes one. That band is the
+    PLATFORM's, restated at the plate's canvas, which is the frame's size, so
+    it maps by the canvas's height and never through where the plate is
+    placed: moving in on a row does not move the phone's buttons. Otherwise
+    design's band on a vertical frame (`CAPTION_BAND`), and on a landscape one
+    the single place its caption has always had.
+    """
+    from pipeline.rasters import CAPTION_BOX_PAD
+
+    fw, fh = frame
+    safe = plate.safe if plate is not None else {}
+    top, bottom = safe.get("top"), safe.get("bottom")
+    if (isinstance(top, (int, float)) and isinstance(bottom, (int, float))
+            and plate is not None and plate.canvas[1] and bottom > top):
+        k = fh / plate.canvas[1]
+        return int(round(top * k)), int(round(bottom * k))
+    if fh > fw:
+        return int(round(CAPTION_BAND[0] * fh)), int(round(CAPTION_BAND[1] * fh))
+    foot = fh - int(fh * LANDSCAPE_CAPTION_MARGIN_FH) + CAPTION_BOX_PAD
+    return foot - box_h, foot
+
+
+def caption_obstacles(reg: Registry, shot_layers: Sequence[Layer]
+                      ) -> list[tuple[str, tuple[int, int, int, int]]]:
+    """What a shot's caption must not cover, by name, as frame boxes.
+
+    Every slot on the shot's plate that holds a value, as placed, a lit band
+    included because it is the row the beat is about; every data region the
+    plate draws a series into; every nested plate, photograph, line of type
+    and mark; and the host's head. A room's furniture and his body are not
+    here: the caption is allowed to cover the set, never what is being read.
+    """
+    out: list[tuple[str, tuple[int, int, int, int]]] = []
+    for l in shot_layers:
+        box = (l.x, l.y, l.w, l.h)
+        if l.kind == "plate":
+            plate = reg.get(l.entry_key)
+            if plate is None:
+                continue
+            for name, slot in plate.slots.items():
+                if slot.control or not (slot.w and slot.h):
+                    continue
+                if str(l.values.get(name, "")).strip() or (slot.renderer and l.values):
+                    out.append((name, _slot_in_frame(plate, name, box)))
+        elif l.kind in ("fill", "media", "text", "mark"):
+            out.append((l.name.split(":", 1)[-1], box))
+        elif l.kind == "host":
+            out.append(("the host's head", _head_box(reg, l)))
+    return out
+
+
+def _head_box(reg: Registry, host: Layer) -> tuple[int, int, int, int]:
+    """His head, in frame pixels: the pose's own `head` slot, or the top of him."""
+    pose = reg.get(host.entry_key)
+    box = (host.x, host.y, host.w, host.h)
+    if pose is not None and pose.slot("head") is not None:
+        return _slot_in_frame(pose, "head", box)
+    return (host.x, host.y, host.w, max(int(host.h * HOST_HEAD_SHARE), 1))
+
+
+def place_caption(band: tuple[int, int],
+                  obstacles: Sequence[tuple[str, tuple[int, int, int, int]]],
+                  frame: tuple[int, int], box_h: int) -> tuple[int, list[str]]:
+    """Where a caption's box goes inside `band`: its top row, and what it covers.
+
+    In order: the place that covers the least of the obstacles (nothing, when
+    anywhere is free), then the one that comes least inside
+    `CAPTION_CLEARANCE_FH` of them, then the lowest, since the bottom is where
+    a caption is looked for. So a shot with room gets the lowest place clear
+    by the full margin, a tight gap between two rows of figures gets the
+    caption with the space shared out, and a shot with nowhere free gets the
+    place that hides least. The names of what it covers come back so the
+    caller can say so; they are empty whenever the caption covers nothing.
+    Deterministic: a shot places its caption in the same place every time.
+
+    The box is taken at its widest, between the side margins. Which line of
+    the shot will be the widest is not known here, and a place that clears
+    the widest line clears them all.
+    """
+    fw, fh = frame
+    top, bottom = band
+    lo, hi = top, bottom - box_h
+    if hi <= lo:
+        # A band with no room to choose in is not a placement, and there is
+        # nothing to report about it.
+        return max(hi, 0), []
+    side = int(fw * CAPTION_SIDE_FW)
+    pad = int(round(fh * CAPTION_CLEARANCE_FH))
+
+    def rows(grow: int) -> list[tuple[int, int, int, int, str]]:
+        """The obstacles as row spans inside the caption's width, grown by `grow`."""
+        return [(oy - grow, oy + oh + grow, max(ox, side), min(ox + ow, fw - side),
+                 name) for name, (ox, oy, ow, oh) in obstacles
+                if oh > 0 and min(ox + ow, fw - side) > max(ox, side)]
+
+    def covered(spans: list, y: int) -> int:
+        """The area of the spans' union inside the box with its top at `y`."""
+        cuts = sorted({y, y + box_h,
+                       *(v for r in spans for v in r[:2] if y < v < y + box_h)})
+        area = 0
+        for s0, s1 in zip(cuts, cuts[1:]):
+            width, reach = 0, None
+            for a, b in sorted((a, b) for y0, y1, a, b, _ in spans
+                               if y0 < s1 and y1 > s0):
+                if reach is None or a > reach:
+                    width, reach = width + b - a, b
+                elif b > reach:
+                    width, reach = width + b - reach, b
+            area += width * (s1 - s0)
+        return area
+
+    hard, near = rows(0), rows(pad)
+    # Either area changes only where the box's top or foot crosses an edge, so
+    # the best place is at one of those or at an end of the band.
+    edges = {v for r in hard + near for v in r[:2]}
+    options = {lo, hi, *edges, *(v - box_h for v in edges)}
+    y = min((c for c in options if lo <= c <= hi),
+            key=lambda c: (covered(hard, c), covered(near, c), -c))
+    return y, sorted({name for y0, y1, _, _, name in hard
+                      if y0 < y + box_h and y1 > y})
 
 
 # ---------------------------------------------------------------------------
