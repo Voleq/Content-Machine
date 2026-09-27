@@ -173,6 +173,10 @@
       "plate": "structure/both-true-9x16",
       "max_hold_s": 7,
       "anchor": "cheap_or_trap",
+      "meme": {
+        "at": "end",
+        "notes": "The one place for a meme: the tail of the verdict, once both sides of it are on screen and before the close."
+      },
       "bind": {
         "kicker": "?compare.kicker",
         "statement-1": "compare.heavy",

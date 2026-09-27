@@ -121,7 +121,8 @@
    "derivatives",
    "held-to-expiry"
   ],
-  "use_when": "the joke of forgetting a long future settles in physical barrels"
+  "use_when": "the joke of forgetting a long future settles in physical barrels",
+  "shorts": false
  },
  "futures-physical-delivery-live-cattle": {
   "tags": [
@@ -131,7 +132,8 @@
    "derivatives",
    "held-to-expiry"
   ],
-  "use_when": "a long future held to expiry that settles in live cattle"
+  "use_when": "a long future held to expiry that settles in live cattle",
+  "shorts": false
  },
  "gemini-ai-open-the-strait-of-hormuz": {
   "tags": [

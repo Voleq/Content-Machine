@@ -18,6 +18,15 @@ timing. The same providers also answer the clip chain in `pipeline.broll`,
 where the ask is the opposite: `search(..., animated=True)` returns the moving
 form, because a clip of a shot going in reduced to one frame of a man mid-jump
 has lost the only thing that made it worth showing.
+
+A SHORT gets ONE meme, and it is picked here rather than asked for:
+`choose_for_short` reads the script's own fields for the situation the story
+is in — a beat that still sold off, a guidance cut, a hot print, a Fed day,
+dilution, a squeeze, a press-release pump, a value trap — and matches it
+against the index's tags and "use when". It reaches the OWNED LIBRARY AND
+NOTHING PAST IT: no cache of fetched memes, no provider, no filler. A short
+with nothing in the library that fits gets no meme, which is a better video
+than one with a meme that does not fit.
 """
 
 from __future__ import annotations
@@ -25,10 +34,12 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import random
+import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol
+from typing import Collection, Protocol
 
 import httpx
 
@@ -99,6 +110,36 @@ class MemeLibrary:
     def resolve(self, key: str) -> Path | None:
         stem = self.match(key)
         return self._file_for(stem) if stem else None
+
+
+# How an owned-library meme is credited, on the asset and so on the LONG's
+# manifest. Written in one place because it is also READ: `recent_memes` finds
+# the stems a long put on screen by parsing it back off the manifest, and a
+# second spelling of the same sentence is the day that stops matching.
+LIBRARY_ATTRIBUTION = "owned meme library ({stem})"
+_LIBRARY_ATTRIBUTION_RE = re.compile(r"^owned meme library \((?P<stem>[^()]+)\)$")
+
+
+def library_still(settings: Settings, src: Path) -> Path:
+    """An owned-library meme as the render-ready still: a PNG, frozen, cached.
+
+    One place for the library half of `MemeManager.resolve` and for the SHORT,
+    which reaches the library and nothing past it.
+
+    REDRAWN WHEN THE SOURCE IS NEWER. The cache is keyed on the stem, so a
+    meme re-exported under the same name — a better crop, a typo fixed in the
+    caption — would otherwise keep rendering the old file for as long as the
+    cache lived, and nothing on screen would say why.
+    """
+    norm = settings.cache_dir / "memes" / "library" / f"{src.stem}.png"
+    try:
+        stale = (not norm.exists()
+                 or norm.stat().st_mtime < src.stat().st_mtime)
+    except OSError:
+        stale = True
+    if stale:
+        normalize_meme(src, norm)
+    return norm
 
 
 # ---------------------------------------------------------------------------
@@ -364,12 +405,10 @@ class MemeManager:
         try:
             src = self.library.resolve(key)
             if src is not None:
-                stem = src.stem
-                norm = self.settings.cache_dir / "memes" / "library" / f"{stem}.png"
-                if not norm.exists():
-                    normalize_meme(src, norm)
-                return MemeAsset(key=key, path=norm, source="library",
-                                 attribution=f"owned meme library ({stem})")
+                return MemeAsset(
+                    key=key, path=library_still(self.settings, src),
+                    source="library",
+                    attribution=LIBRARY_ATTRIBUTION.format(stem=src.stem))
 
             cdir = self._cache_dir(key)
             norm = cdir / "normalized.png"
@@ -420,3 +459,499 @@ class MemeManager:
             d.text((40, 250), "( meme unavailable )", fill=(170, 176, 188))
             img.save(path)
         return MemeAsset(key=key, path=path, source="filler")
+
+
+# ---------------------------------------------------------------------------
+# The SHORT's one meme.
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Situation:
+    """A story the SHORT formats keep telling, and the tags that answer it.
+
+    `tag` is the word a meme carries in the index to say "I am FOR this".
+    `says` are phrases in the script's own fields that put a short in the
+    situation, and `shows` the facts about it that do: which way the move went
+    (`up`, `down`), the format (`earnings`, `macro`), a print above consensus
+    (`hot`), a share count that grew (`dilution`). Where `also_says` or
+    `also_shows` is set, one of those has to hold as well — "beat" alone is
+    half of a beat that still sold off.
+
+    `related` are tags the library ALREADY carries that answer the same story
+    less exactly. A meme drawn for the situation outscores one that happens to
+    fit it, which is what lets a new meme take over from the old ones the day
+    it lands in the index, with nobody editing this table.
+    """
+
+    tag: str
+    says: tuple[str, ...] = ()
+    shows: tuple[str, ...] = ()
+    also_says: tuple[str, ...] = ()
+    also_shows: tuple[str, ...] = ()
+    related: tuple[str, ...] = ()
+
+    def holds(self, text: str, facts: "Collection[str]") -> bool:
+        """Whether a script read as `text` and `facts` is in this situation."""
+        if not (any(_says(text, p) for p in self.says)
+                or any(f in facts for f in self.shows)):
+            return False
+        if not (self.also_says or self.also_shows):
+            return True
+        return (any(_says(text, p) for p in self.also_says)
+                or any(f in facts for f in self.also_shows))
+
+
+# THE STORIES, one row each: what the vertical formats keep hitting. The
+# library was thin on every one of them when this was written, so the tags are
+# also the list of memes worth making next, and the words to file them under.
+SITUATIONS: tuple[Situation, ...] = (
+    Situation(
+        "beat-sold-off",
+        says=("beat", "beats", "beat and raise", "topped estimates",
+              "ahead of estimates", "ahead of the estimate"),
+        also_says=("sold off", "sell off", "selloff", "fell", "slid", "sank",
+                   "dropped", "did not matter", "didnt matter", "gave back",
+                   "give back", "gives back", "shrugged", "priced in"),
+        also_shows=("down",),
+        related=("hiding-the-pain", "priced-in", "sell-the-news")),
+    Situation(
+        "guidance-cut",
+        says=("guided below", "guides below", "guided lower", "guides lower",
+              "guided down", "guides down", "cut guidance", "cuts guidance",
+              "cut its guidance", "guidance cut", "lowered guidance",
+              "lowers guidance", "lowered its guidance", "cut the guide",
+              "cuts the guide", "lowered the guide", "cut its outlook",
+              "cuts its outlook", "lowered its outlook", "lowers its outlook",
+              "weak guidance", "soft guidance"),
+        related=("hiding-the-pain", "reversal")),
+    Situation(
+        "hot-print",
+        says=("cpi", "inflation", "pce", "ppi", "consumer prices",
+              "price index"),
+        also_says=("hot", "hotter", "above expected", "above expectations",
+                   "above forecast", "higher than expected", "accelerated",
+                   "accelerating", "reaccelerated", "re accelerated"),
+        also_shows=("hot",),
+        related=("inflation", "rate-pain", "fed", "powell")),
+    Situation(
+        "fed-day",
+        says=("the fed", "fed chair", "fed funds", "fomc", "powell",
+              "federal reserve", "rate decision", "rate cut", "rate cuts",
+              "rate hike", "rate hikes", "basis points", "dot plot"),
+        related=("fed", "powell", "rate-pain")),
+    # "Diluted" is not here on its own: it is also the first word of
+    # "diluted EPS", which is every earnings sheet and no dilution at all.
+    Situation(
+        "dilution",
+        says=("dilution", "dilutive", "diluting", "got diluted",
+              "been diluted", "being diluted", "share count up",
+              "share count rose", "share count grew", "share count climbed",
+              "more shares", "new shares", "share issuance", "issued shares",
+              "issuing shares", "secondary offering", "stock offering",
+              "equity raise", "at the market offering", "atm offering",
+              "stock based comp", "stock based compensation"),
+        shows=("dilution",)),
+    Situation(
+        "short-squeeze",
+        says=("squeeze", "squeezed", "short interest", "of the float",
+              "short sellers", "shorts covering", "short covering"),
+        related=("vertical", "up-only", "chasing", "pump")),
+    Situation(
+        "press-release-pump",
+        says=("press release", "partnership", "partners with", "announces",
+              "announced", "announcement", "letter of intent",
+              "memorandum of understanding", "pilot program",
+              "collaboration", "strategic review"),
+        also_says=("pump", "pumped", "soared", "soars", "jumped", "jumps",
+                   "spiked", "ripped", "surged", "popped", "vertical"),
+        also_shows=("up",),
+        related=("pump", "vertical", "up-only", "bullish-signal",
+                 "noise-or-signal")),
+    Situation(
+        "value-trap",
+        says=("value trap", "is a trap", "its a trap", "looks like a trap",
+              "cheap for a reason", "cheap only", "falling knife",
+              "catching knives", "cheap on paper", "looks cheap",
+              "optically cheap", "sliding stops", "keeps sliding",
+              "still sliding"),
+        related=("bagholder", "catching-knives", "averaging-down",
+                 "buy-the-dip", "hiding-the-pain", "still-losing")),
+)
+
+# WHAT IS TRUE OF EVERY SHORT: which way it moved and which format it is. A
+# point each and never enough alone — not every up day is a FOMO joke, and a
+# meme that fits only the direction fits every other video that week too.
+CONTEXTS: tuple[Situation, ...] = (
+    Situation("rally", shows=("up",),
+              related=("up-only", "vertical", "pump", "fomo", "wish-i-bought",
+                       "chasing", "missed-it", "missed-the-rally",
+                       "left-out", "envy")),
+    Situation("selloff", shows=("down",),
+              related=("crash", "drawdown", "loss", "red", "market-drop",
+                       "wiped-out", "down-50", "down-99", "portfolio-halved",
+                       "bagholder", "blown-up", "daily-loss", "capitulation",
+                       "all-time-low", "loss-porn")),
+    Situation("earnings", shows=("earnings",),
+              related=("adjusted-earnings", "earnings-before", "non-gaap",
+                       "ebitda", "add-backs")),
+    Situation("macro", shows=("macro",),
+              related=("fed", "powell", "inflation", "rate-pain", "tariffs",
+                       "policy-risk", "geopolitics")),
+)
+
+# The points. A meme drawn FOR the story beats one that fits it, which beats a
+# word in common; three is the floor, so one of the first two, or a phrase the
+# script says in so many words plus anything else, is what it takes.
+SITUATION_POINTS = 3     # the meme carries the situation's own tag
+RELATED_POINTS = 2       # ... or a tag the library already files it under
+CONTEXT_POINTS = 1       # the move's direction, the format
+PHRASE_POINTS = 2        # a hyphenated tag the script says outright
+WORD_POINTS = 1          # a one-word tag the script says
+USE_WHEN_POINTS = 2      # at most, for words the script shares with "use when"
+MEME_FLOOR = 3
+
+# A JOKE IS REMEMBERED LONGER THAN A DRAWING. Plates rotate off the last three
+# renders, which is one week of the short lane; the same meme two weeks running
+# is a rerun somebody scrolling the channel page sees side by side. So memes
+# look further back, and unlike the plates the rotation is a RULE: when every
+# meme that fits was on screen recently the short gets none, because a repeated
+# joke is worse than no joke and — unlike a missing plate — costs the render
+# nothing.
+MEME_ROTATION_WINDOW = 6
+
+# THE SHAPE A MEME HAS TO BE TO READ IN A VERTICAL FRAME. It is fitted whole
+# into a frames/ plate's window, which at 9:16 is about square, so a meme wider
+# than two to one — a tweet screenshot, a chart strip — lands at under half the
+# window's height, with its type at a size nobody reads in a second and a half.
+# Square or 4:5 fills it.
+SHORT_ASPECT = (0.5, 2.0)
+
+# A share count this much higher in the last column than the first is dilution
+# whatever the writer called it: a tenth more shares is a tenth less company.
+SHARE_GROWTH = 0.10
+
+# THE FIELDS IT READS: the ones the writer states the story in — the hook, the
+# headline and what it means, the turn, the verdict and the call — plus the few
+# that carry a situation outright. NOT `audio_script`: two hundred words of
+# narration say "beat" and "the Fed" in passing, and a meme picked off a
+# passing word is a meme about something the video is not about. NOT the row
+# labels either: "Diluted EPS" is a metric's name, not a statement.
+_READ_FIELDS = ("hook_text", "move_summary", "turn_line", "verdict",
+                "cheap_or_trap", "conclusion", "guidance", "numbers_comment")
+
+# Words too common to say anything about which meme fits.
+_COMMON = frozenset("""
+a about after again against all also an and any are as at be been before being
+but by can could did do does down during each even every for from had has have
+having here how if in into is it its just like made make more most much no nor
+not now of off on once one only or other our out over own same should so some
+such than that the their them then there these they this those through to too
+two under until up very was we were what when where which while who why will
+with would you your yet still get got new day week year years today
+stock stocks share shares market markets price prices company portfolio
+investor investors money someone everyone something nothing everything
+""".split())
+
+_FIGURE_RE = re.compile(r"([-+−]?)\$?(\d[\d,]*(?:\.\d+)?)\s*([kmbt]?)",
+                        re.IGNORECASE)
+_MAGNITUDE = {"": 1.0, "k": 1e3, "m": 1e6, "b": 1e9, "t": 1e12}
+
+
+def _plain(text: str) -> str:
+    """Lower case, apostrophes dropped, everything else not a word a space."""
+    text = re.sub(r"['‘’`]", "", str(text or "").lower())
+    return " ".join(re.sub(r"[^a-z0-9%]+", " ", text).split())
+
+
+def _says(text: str, phrase: str) -> bool:
+    """Whether padded plain `text` contains `phrase` as whole words."""
+    want = _plain(phrase)
+    return bool(want) and f" {want} " in text
+
+
+def _stem(word: str) -> str:
+    """The plural off, and nothing cleverer: "consumers" meets "consumer"."""
+    if len(word) > 4 and word.endswith("ies"):
+        return word[:-3] + "y"
+    if len(word) > 3 and word.endswith("s") and not word.endswith("ss"):
+        return word[:-1]
+    return word
+
+
+def _words(text: str) -> frozenset[str]:
+    """The words of `text` that could say something about a meme."""
+    return frozenset(_stem(w) for w in _plain(text).split()
+                     if len(w) > 2 and w not in _COMMON)
+
+
+def _figure(value) -> float | None:
+    """The first figure written in `value`, magnitude applied, or None."""
+    m = _FIGURE_RE.search(str(value or ""))
+    if not m:
+        return None
+    try:
+        n = float(m.group(2).replace(",", ""))
+    except ValueError:
+        return None
+    n *= _MAGNITUDE.get(m.group(3).lower(), 1.0)
+    return -n if m.group(1) in ("-", "−") else n
+
+
+def _share_count_grew(rows) -> bool:
+    """A row naming the share count, ending at least a tenth above its start."""
+    for row in rows:
+        if " share" not in f" {_plain(getattr(row, 'label', ''))}":
+            continue
+        vals = [v for v in (getattr(row, "values", None) or ())
+                if str(v).strip()]
+        if len(vals) < 2:
+            continue
+        first, last = _figure(vals[0]), _figure(vals[-1])
+        if first and last and first > 0 and last >= first * (1 + SHARE_GROWTH):
+            return True
+    return False
+
+
+@dataclass(frozen=True)
+class Reading:
+    """A script as the picker reads it: its words and the facts about it."""
+
+    text: str                                   # padded plain text
+    words: frozenset[str]
+    facts: frozenset[str]
+    situations: tuple[Situation, ...] = ()
+    contexts: tuple[Situation, ...] = ()
+
+
+def read_script(script, *, fmt: str = "short", direction: str = "") -> Reading:
+    """Which situations a short is in, off its own fields and its format.
+
+    `direction` is the move's — "up", "down" or "" — as the renderer reads it
+    off `move_summary`, passed in rather than parsed twice. Duck-typed, so any
+    object with the SHORT's field names reads.
+    """
+    parts = [str(getattr(script, f, "") or "") for f in _READ_FIELDS]
+    for h in getattr(script, "headlines", None) or ():
+        parts += [str(getattr(h, "text", "") or ""),
+                  str(getattr(h, "meaning", "") or "")]
+    for name in ("mechanism", "consequences"):
+        parts += [str(x) for x in (getattr(script, name, None) or ())]
+    joined = " ".join(p for p in parts if p)
+    text = f" {_plain(joined)} "
+
+    facts: set[str] = set()
+    if direction in ("up", "down"):
+        facts.add(direction)
+    if fmt in ("earnings", "macro"):
+        facts.add(fmt)
+    # A PRINT ABOVE CONSENSUS IS HOT ONLY ON A MACRO PRINT. An earnings beat is
+    # also a reported figure over an expected one, and calling it "hot" would
+    # file every beat under inflation.
+    if fmt == "macro":
+        got = _figure(getattr(script, "reported", None))
+        want = _figure(getattr(script, "expected", None))
+        if got is not None and want is not None and got > want:
+            facts.add("hot")
+    if _share_count_grew(getattr(script, "numbers", None) or ()):
+        facts.add("dilution")
+
+    return Reading(
+        text=text, words=_words(joined), facts=frozenset(facts),
+        situations=tuple(s for s in SITUATIONS if s.holds(text, facts)),
+        contexts=tuple(c for c in CONTEXTS if c.holds(text, facts)))
+
+
+def _tags(entry: dict) -> set[str]:
+    return {str(t).strip().lower().replace(" ", "-").replace("_", "-")
+            for t in (entry.get("tags") or ()) if str(t).strip()}
+
+
+def score_meme(entry: dict, reading: Reading) -> tuple[int, tuple[str, ...]]:
+    """How well one index entry answers a script, and what it scored on.
+
+    Tags first, then "use when": a tag is the index saying what a meme is for,
+    and "use when" is the same thing in a sentence, so its words count for
+    less and only up to a ceiling — a long sentence must not outvote a tag.
+    """
+    tags = _tags(entry)
+    score, why = 0, []
+    credited: set[str] = set()
+    for sit in reading.situations:
+        if sit.tag in tags:
+            score += SITUATION_POINTS
+            why.append(sit.tag)
+            credited.add(sit.tag)
+            continue
+        hit = sorted(tags & set(sit.related))
+        if hit:
+            score += RELATED_POINTS
+            why.append(f"{sit.tag} ({hit[0]})")
+    for ctx in reading.contexts:
+        if ctx.tag in tags or tags & set(ctx.related):
+            score += CONTEXT_POINTS
+            why.append(ctx.tag)
+            credited.add(ctx.tag)
+    said: set[str] = set()
+    for tag in sorted(tags - credited):
+        phrase = tag.replace("-", " ")
+        if _says(reading.text, phrase):
+            score += PHRASE_POINTS if "-" in tag else WORD_POINTS
+            why.append(f'"{phrase}"')
+            said |= _words(phrase)
+    shared = sorted((_words(str(entry.get("use_when") or "")) & reading.words)
+                    - said)
+    if shared:
+        score += min(len(shared), USE_WHEN_POINTS)
+        why.append("use when: " + ", ".join(shared[:USE_WHEN_POINTS]))
+    return score, tuple(why)
+
+
+def _sits_in_a_vertical_frame(src: Path) -> bool:
+    """Whether a meme's shape reads in a 9:16 frame's window. See SHORT_ASPECT."""
+    from PIL import Image
+
+    try:
+        with Image.open(src) as im:
+            w, h = im.size
+    except (OSError, ValueError):
+        return False
+    return bool(w and h) and SHORT_ASPECT[0] <= w / h <= SHORT_ASPECT[1]
+
+
+@dataclass(frozen=True)
+class MemeChoice:
+    """The one meme a short gets — or, with no key, why it gets none."""
+
+    key: str = ""                       # the index stem
+    path: Path | None = None            # the render-ready still
+    file: str = ""                      # the library file it was made from
+    score: int = 0
+    matched: tuple[str, ...] = ()       # what it scored on
+    why: str = ""
+    candidates: tuple[str, ...] = field(default=(), compare=False)
+
+    def __bool__(self) -> bool:
+        return bool(self.key)
+
+
+def choose_for_short(script, settings: Settings, *, fmt: str = "short",
+                     direction: str = "", seed: str = "",
+                     avoid: "Collection[str]" = (),
+                     library: MemeLibrary | None = None) -> MemeChoice:
+    """The meme this short gets, from the OWNED LIBRARY, or none.
+
+    NEVER FETCHED. The LONG's chain falls back to the cache of fetched memes,
+    then to Giphy, Tenor and imgflip, then to a filler card; a short stops at
+    the library. A meme someone else drew, arriving unannounced in a
+    mass-produced format, is a licence question nobody asked, and the filler
+    card is a grey box with "meme unavailable" in it.
+
+    DETERMINISTIC PER SCRIPT. The best score wins and `seed` — the script's
+    content hash — breaks a tie, so the draft, the proof and the final of one
+    video put the same meme on screen. `avoid` is what recent videos used (see
+    `recent_memes`), and a meme in it is not picked however well it fits.
+    """
+    lib = library or MemeLibrary(settings)
+    index = lib.index()
+    if not index:
+        return MemeChoice(why="the meme library is empty")
+    reading = read_script(script, fmt=fmt, direction=direction)
+
+    fits: list[tuple[int, str, Path, tuple[str, ...]]] = []
+    for stem in sorted(index):
+        entry = index.get(stem)
+        # `"shorts": false` keeps a meme to the LONG: a screenshot of a whole
+        # page is a joke in a two-second hold with a voice reading it, and
+        # homework in a second and a half of a short.
+        if not isinstance(entry, dict) or entry.get("shorts") is False:
+            continue
+        score, matched = score_meme(entry, reading)
+        if score < MEME_FLOOR:
+            continue
+        src = lib._file_for(stem)
+        if src is None or not _sits_in_a_vertical_frame(src):
+            continue
+        fits.append((score, stem, src, matched))
+    if not fits:
+        return MemeChoice(why=f"nothing in the library scored {MEME_FLOOR} or "
+                              f"more for this script")
+
+    recent = set(avoid)
+    fresh = [f for f in fits if f[1] not in recent]
+    if not fresh:
+        return MemeChoice(
+            why=(f"every meme that fits was on screen in a recent video "
+                 f"({', '.join(f[1] for f in fits)})"),
+            candidates=tuple(f[1] for f in fits))
+    top = max(f[0] for f in fresh)
+    score, stem, src, matched = random.Random(f"meme|{seed}").choice(
+        [f for f in fresh if f[0] == top])
+    return MemeChoice(
+        key=stem, path=library_still(settings, src), file=src.name,
+        score=score, matched=matched,
+        why=f"scored {score} on {'; '.join(matched)}",
+        candidates=tuple(f[1] for f in fits))
+
+
+def memes_in_manifest(payload: dict) -> set[str]:
+    """The library memes one render manifest says it put on screen.
+
+    Both lanes, because a joke the long told on Monday is as stale in
+    Wednesday's short: a SHORT records its meme as `meme.key`, and a LONG
+    credits each library meme it froze on a segment's `attribution`.
+    """
+    out: set[str] = set()
+    meme = payload.get("meme")
+    if isinstance(meme, dict) and meme.get("key"):
+        out.add(str(meme["key"]))
+    for seg in payload.get("segments") or ():
+        if not isinstance(seg, dict) or seg.get("kind") != "meme":
+            continue
+        m = _LIBRARY_ATTRIBUTION_RE.match(str(seg.get("attribution") or ""))
+        if m:
+            out.add(m.group("stem"))
+    return out
+
+
+def recent_memes(settings: Settings, *, window: int = MEME_ROTATION_WINDOW,
+                 exclude: "Path | str | None" = None) -> set[str]:
+    """Every library meme the last few videos put on screen.
+
+    `reach.recent_plates` for jokes, off the same manifests and with the same
+    forgiveness: an unreadable manifest, a pruned workspace, a render from
+    before the field existed — each contributes nothing.
+
+    COUNTED IN VIDEOS, NOT MANIFESTS. A proof and its final are two manifests
+    in one workspace and one video on the channel; counted as two, they would
+    halve how far back the window looks.
+
+    `exclude` is the workspace being rendered and a renderer MUST pass it, for
+    the reason it must pass it to `recent_plates`: without it the final reads
+    the manifest its own proof wrote and steers off the meme the proof showed.
+    """
+    base = Path(settings.workspace_dir)
+    if not base.is_dir():
+        return set()
+    skip = Path(exclude).resolve() if exclude else None
+    videos: dict[Path, tuple[float, set[str]]] = {}
+    for manifest in base.glob("*/*/*manifest*.json"):
+        folder = manifest.parent.resolve()
+        if skip is not None and folder == skip:
+            continue
+        try:
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+            stamp = manifest.stat().st_mtime
+        except (OSError, json.JSONDecodeError, ValueError):
+            continue
+        # A RENDER's manifest, not the filings manifest that shares the folder
+        # and the glob: a folder with no render in it is not a video.
+        if not isinstance(payload, dict) or "plates_used" not in payload:
+            continue
+        when, used = videos.get(folder, (0.0, set()))
+        videos[folder] = (max(when, stamp), used | memes_in_manifest(payload))
+    newest = sorted(videos.values(), key=lambda v: v[0], reverse=True)
+    out: set[str] = set()
+    for _, used in newest[:window]:
+        out |= used
+    return out

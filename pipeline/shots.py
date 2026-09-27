@@ -49,7 +49,7 @@ CHAPTER_KEYS = frozenset({"chapter", "shots", "notes"})
 CHAPTER_DIR = Path("templates/chapters")
 SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
                        "lit", "anchor", "max_hold_s", "captions", "notes",
-                       "repeat", "stagger_s", "focus", "alts",
+                       "repeat", "stagger_s", "focus", "alts", "meme",
                        # set by chapter expansion, never authored
                        "_chapter", "_chapter_n"})
 # An ALTERNATE is the same beat drawn on a different plate. It carries its own
@@ -61,6 +61,12 @@ ORDER_KEYS = frozenset({"name", "shots", "notes"})
 TEXT_KEYS = frozenset({"name", "src", "size_fh", "align", "halign",
                        "max_lines", "draw_on_s", "color", "slot"})
 MARK_KEYS = frozenset({"kind", "target", "name", "after_s"})
+# `meme` marks the ONE place in a format where a still from the owned meme
+# library may go. `at` says which end of the shot's span it takes; nothing
+# else is authored, because what fits is the picker's job and how long it
+# holds is the compositor's. See `MemeSpec`.
+MEME_KEYS = frozenset({"at", "notes"})
+MEME_AT = ("start", "end")
 REPEAT_KEYS = frozenset({"concept", "src", "max", "bind", "arrange",
                          "stagger_s", "lit", "connector", "within",
                          "focus"})
@@ -209,6 +215,33 @@ class Variant:
 
 
 @dataclass(frozen=True)
+class MemeSpec:
+    """The one place in a format where a meme may go, and which end of it.
+
+    A SHORT gets at most one meme: a still from Valentin's own library, held
+    for about a second at the turn or the verdict, and none at all when
+    nothing in the library fits the story. The template says WHERE, because
+    where is a property of the format — which beat can take a joke without
+    losing its sentence. It says nothing about WHICH meme or HOW LONG. The
+    picker (`memes.choose_for_short`) reads the script for the first, and the
+    compositor (`compose._meme_layers`) fixes the second inside the shot's
+    audio span, so a template that authors a meme place still fixes no
+    durations.
+
+    `at` is `"start"` or `"end"`: the meme OVERLAYS that end of the shot's
+    span and never inserts time. A cut that pushed the next shot later would
+    move it off the words it is bound to, and the audio clock is the one
+    thing a template does not get to override.
+
+    A template without the key renders exactly as it did; the meme is an
+    addition to a beat, never a beat of its own.
+    """
+
+    at: str = "end"
+    notes: str = ""
+
+
+@dataclass(frozen=True)
 class HostSpec:
     """The host, as a concept name plus the plate slot they stand in."""
 
@@ -252,6 +285,9 @@ class Shot:
     # Other plates that can carry this beat. Empty is the old behaviour: one
     # plate, every time.
     alts: tuple[Variant, ...] = ()
+    # Where this format's one meme may go, if it has one. `None` everywhere
+    # but one shot at most.
+    meme: MemeSpec | None = None
 
     @property
     def variants(self) -> tuple[Variant, ...]:
@@ -335,6 +371,32 @@ def _text_specs(raw: Any, where: str) -> tuple[TextSpec, ...]:
         except KeyError as exc:
             raise TemplateError(f"{where}: text #{i} missing {exc}") from exc
     return tuple(out)
+
+
+def _meme_spec(raw: Any, where: str, *, repeat: Any) -> MemeSpec | None:
+    """`"meme": "end"` or `"meme": {"at": "end", "notes": ...}`, checked."""
+    if raw is None or raw is False:
+        return None
+    if isinstance(raw, str):
+        raw = {"at": raw}
+    if not isinstance(raw, dict):
+        raise TemplateError(f"{where}: meme is not \"start\", \"end\" or an "
+                            f"object")
+    _reject_unknown(raw, MEME_KEYS, f"{where} meme")
+    at = raw.get("at")
+    if at not in MEME_AT:
+        raise TemplateError(
+            f"{where} meme: \"at\" is {at!r}; it must be one of {MEME_AT}. "
+            f"The meme overlays one end of the shot's span, so it has to be "
+            f"told which.")
+    if repeat:
+        # A sequence repeat copies the shot once per item, and every copy
+        # would carry the place: four memes where the format allows one. A
+        # spatial repeat is cards entering on a stagger, and a still over
+        # them hides the cards the stagger exists to show arriving.
+        raise TemplateError(
+            f"{where}: a shot with a repeat cannot carry the meme place")
+    return MemeSpec(at=at, notes=str(raw.get("notes", "")))
 
 
 def _chapter_shots(names: list[str], fmt_name: str,
@@ -483,6 +545,7 @@ def parse_format(raw: dict, source: Path | None = None,
                 f"{where}: an alternate repeats a plate this shot already "
                 f"names ({sorted(alt_keys)}). A duplicate is weight on the "
                 f"rotation, not another picture.")
+        meme = _meme_spec(s.get("meme"), where, repeat=rep_raw)
 
         shots.append(Shot(
             id=sid, plate=plate, alts=tuple(alts),
@@ -495,7 +558,15 @@ def parse_format(raw: dict, source: Path | None = None,
             chapter=s.get("_chapter", ""), chapter_n=int(s.get("_chapter_n", 0)),
             max_hold_s=float(s.get("max_hold_s", 8.0)),
             captions=bool(s.get("captions", True)),
-            notes=s.get("notes", "")))
+            notes=s.get("notes", ""), meme=meme))
+
+    # ONE MEME PER VIDEO. Two places would let a short carry two jokes, and
+    # the second is the one that makes the channel read as a meme page.
+    meme_shots = [sh.id for sh in shots if sh.meme]
+    if len(meme_shots) > 1:
+        raise TemplateError(
+            f"{name}: {len(meme_shots)} shots name a meme place "
+            f"({meme_shots}). A format has one place for a meme at most.")
 
     fmt = Format(name=name, aspect=raw.get("aspect", "9:16"), frame=frame,
                  shots=tuple(shots), source=source,

@@ -731,9 +731,186 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 x=int(fw * 0.06), y=int(fh * CAPTION_BAND[0]),
                 w=int(fw * 0.88), h=int(fh * CAPTION_BAND[1]), z=80))
 
+    # -- THE ONE MEME, when the format has a place for it and the library had
+    #    something that fits. Built after every shot rather than inside the
+    #    loop, because whether it fits in time depends on where the payoff
+    #    falls, and that is usually another shot's span.
+    layers += _meme_layers(spans, resolver, reg, frame, aspect, seed=seed,
+                           avoid=avoid, skipped=skipped)
+
     layers.sort(key=lambda l: (l.t_start, l.z))
     return BuildResult(layers=layers, spans=list(spans), frame=frame,
                        aspect=aspect, unfilled=unfilled, skipped=skipped)
+
+
+# ---------------------------------------------------------------------------
+# The short's one meme
+# ---------------------------------------------------------------------------
+
+# What a template's meme place asks the resolver for. The resolver answers
+# with a still from the owned library or with nothing (`memes.choose_for_short`).
+MEME_SRC = "meme"
+
+# How long the meme holds. Under a second it is a flash nobody reads; past a
+# second and a half it has become a beat of its own, and the sentence under it
+# has moved on to something the meme is not about.
+MEME_HOLD_S = (1.0, 1.5)
+
+# At most this share of the span it overlays. The beat belongs to its own
+# plate: a meme taking half of the verdict is the verdict told as a joke.
+MEME_SHARE = 1 / 3
+
+# THE PAYOFF LANDS FIRST. `sound.DROP_S` of voice alone before the payoff cut,
+# the hit on the number at the cut, and then this long for the number to be
+# read before anything is allowed over it. A meme inside that window steps on
+# the one moment of the short the mix is built around.
+MEME_AFTER_PAYOFF_S = 1.5
+
+# Over everything the shot draws — the host (40), type (60), marks (70) —
+# because for its second and a half the meme IS the frame. Captions are
+# burned after the frames are drawn, so the line under it still reads.
+MEME_Z = 90
+
+
+def payoff_guards(spans: Sequence[Span]) -> list[tuple[float, float]]:
+    """The windows no meme may touch: each payoff's drop, hit and first read.
+
+    Read off `sound.PAYOFF_SHOTS` and `sound.DROP_S` rather than restated
+    here. The mix decides where the silence goes, and a second copy of the
+    rule is the one that goes stale when the mix changes.
+    """
+    from pipeline.sound import DROP_S, PAYOFF_SHOTS
+
+    return sorted((max(sp.start - DROP_S, 0.0), sp.start + MEME_AFTER_PAYOFF_S)
+                  for sp in spans if sp.shot.id in PAYOFF_SHOTS)
+
+
+def meme_window(span: Span, spans: Sequence[Span]
+                ) -> tuple[float, float] | None:
+    """When the meme is on screen inside `span`, or None when it cannot be.
+
+    OVERLAID, NEVER INSERTED. The meme takes the start or the end of an
+    existing span, so every other shot stays on the words it is bound to.
+    It never slides off the end it was placed at, and it never touches a
+    payoff guard: a meme that would land in the drop, on the hit or over
+    the number's first read is not drawn at all. Nor is one with under a
+    second to hold.
+    """
+    at = span.shot.meme.at if span.shot.meme else "end"
+    t0, t1 = span.start, span.end
+    hold = min(MEME_HOLD_S[1], (t1 - t0) * MEME_SHARE)
+    if hold < MEME_HOLD_S[0] - 1e-6:
+        return None
+    start, end = (t1 - hold, t1) if at == "end" else (t0, t0 + hold)
+    if any(a < end and b > start for a, b in payoff_guards(spans)):
+        return None
+    return start, end
+
+
+def _meme_frame(reg: Registry, aspect: str, *, seed: str,
+                avoid: "Collection[str]") -> Plate | None:
+    """Which media frame the meme sits in, rotating off recent videos.
+
+    A still from the library is foreign media, and foreign media never lands
+    on the ground bare (`media_frames`). The three treatments rotate the way
+    they do in a long, one step per video rather than per clip, because a
+    short carries one meme at most.
+    """
+    import random
+
+    from pipeline.media_frames import MEDIA_TREATMENTS
+
+    usable: dict[str, Plate] = {}
+    for treatment in MEDIA_TREATMENTS:
+        plate = reg.get(f"{treatment}-{aspect}") if aspect else None
+        if plate is not None and plate.slot("media") is not None:
+            usable[reg.base_key(plate.key)] = plate
+    if not usable:
+        return None
+    keys = _prefer_unused(sorted(usable), reg.base_keys(avoid))
+    return usable[random.Random(f"meme-frame|{seed}").choice(keys)]
+
+
+def _contain(size: tuple[int, int], box: tuple[int, int, int, int]
+             ) -> tuple[int, int, int, int]:
+    """`size` at its largest inside `box`, centred, never cropped.
+
+    The joke is usually a caption on a picture, and cover-fitting the way a
+    photograph goes into a frame cuts the caption off. A letterbox inside a
+    drawn frame is paper; a meme missing its punchline is nothing.
+    """
+    bx, by, bw, bh = box
+    mw, mh = max(size[0], 1), max(size[1], 1)
+    k = min(bw / mw, bh / mh)
+    w, h = max(int(mw * k), 1), max(int(mh * k), 1)
+    return bx + (bw - w) // 2, by + (bh - h) // 2, w, h
+
+
+def _meme_layers(spans: Sequence[Span], resolver: Resolver, reg: Registry,
+                 frame: tuple[int, int], aspect: str, *, seed: str,
+                 avoid: "Collection[str]", skipped: list[str]) -> list[Layer]:
+    """The frame plate and the still inside it, or nothing.
+
+    TWO LAYERS, NOT A COMPOSITE. A frames/ plate drawn full-frame, and the
+    meme as a media layer over its aperture, inset by the frame's edge band
+    so the drawn border and the tape stay visible. Both are kinds the
+    renderer already draws, so the meme costs the renderer nothing new.
+    """
+    span = next((sp for sp in spans if sp.shot.meme), None)
+    if span is None:
+        return []
+    shot = span.shot
+    path = resolver.image_for(MEME_SRC)
+    if path is None or isinstance(path, list):
+        # NOTHING FITS, WHICH IS ALLOWED. A short without a meme is the
+        # ordinary case; a meme that does not fit the story is the defect.
+        skipped.append(f"{shot.id}.meme <- nothing in the library fits")
+        return []
+    window = meme_window(span, spans)
+    if window is None:
+        skipped.append(
+            f"{shot.id}.meme <- no room: {span.end - span.start:.2f}s span, "
+            f"clear of the payoff, holds under {MEME_HOLD_S[0]:.1f}s")
+        return []
+    frame_plate = _meme_frame(reg, aspect, seed=seed, avoid=avoid)
+    if frame_plate is None:
+        skipped.append(f"{shot.id}.meme <- no media frame in the kit")
+        return []
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            size = im.size
+    except OSError:
+        skipped.append(f"{shot.id}.meme <- {Path(path).name} does not open")
+        return []
+
+    fw, fh = frame
+    w, h = _fit(frame_plate, frame)
+    placed = ((fw - w) // 2, (fh - h) // 2, w, h)
+    ax, ay, aw, ah = _slot_in_frame(frame_plate, "media", placed)
+    from pipeline.media_frames import _EDGE_BAND
+    band = max(int(min(aw, ah) * _EDGE_BAND), 2)
+    box = _contain(size, (ax + band, ay + band, aw - 2 * band, ah - 2 * band))
+    t_start, t_end = window
+    return [
+        Layer(name=f"{shot.id}:meme-frame:{frame_plate.key}", kind="plate",
+              shot_id=shot.id, t_start=t_start, t_end=t_end,
+              x=placed[0], y=placed[1], w=w, h=h,
+              entry_key=frame_plate.key, concept=frame_plate.family,
+              frame_count=frame_plate.frame_count, fps=frame_plate.fps or 0,
+              loops=frame_plate.animated and not frame_plate.plays_once,
+              slot=MEME_SRC, z=MEME_Z),
+        Layer(name=f"{shot.id}:meme:{Path(path).stem}", kind="media",
+              shot_id=shot.id, t_start=t_start, t_end=t_end,
+              x=box[0], y=box[1], w=box[2], h=box[3],
+              path=Path(path), slot=MEME_SRC, z=MEME_Z + 1),
+    ]
+
+
+def placed_meme(result: BuildResult) -> Layer | None:
+    """The meme's still, if this cut carries one."""
+    return next((l for l in result.layers
+                 if l.kind == "media" and l.slot == MEME_SRC), None)
 
 
 def _slot_budget(plate: Plate, slot_name: str) -> int:
@@ -1075,6 +1252,11 @@ def check_invariants(fmt: Format, result: BuildResult,
             if o.kind not in ("plate", "fill") or not o.w or not o.h:
                 continue
             if o.concept == "room":
+                continue
+            # DRAWN OVER HIM IS NOT STOOD OVER. The meme's frame is a
+            # full-frame plate above the host for a second and a half; he is
+            # not across it, it is across him, and that is the cutaway.
+            if o.z > h.z:
                 continue
             ox = max(0, min(h.x + h.w, o.x + o.w) - max(h.x, o.x))
             oy = max(0, min(h.y + h.h, o.y + o.h) - max(h.y, o.y))
