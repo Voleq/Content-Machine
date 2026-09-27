@@ -645,6 +645,24 @@ def _ink_box(plate, slot_name: str, value: str, settings, reg):
 TAG_MARGIN = 24
 
 
+def tag_rect(tag, plate, frame: tuple[int, int]) -> tuple[int, int, int, int]:
+    """Where the source tag rests over `plate` drawn at `frame`: (x, y, w, h).
+
+    Scaled with the plate, above its safe bottom (design's 1560 of 1920 on a
+    vertical frame), centred in the vertical frame's width, which leaves it
+    on the plates' own margin, and on that margin on a horizontal one.
+    """
+    fw, fh = frame
+    w, h = tag.canvas
+    k = fw / (1920 if fw > fh else 1080)
+    w, h = int(w * k), int(h * k)
+    safe_bottom = (plate.safe or {}).get("bottom") if isinstance(plate.safe, dict) else None
+    bottom = int((safe_bottom or (1560 if fh > fw else 1032)) * fh / (1920 if fh > fw else 1080))
+    x = (fw - w) // 2 if fh > fw else int(80 * k)
+    y = bottom - h - int(TAG_MARGIN * k)
+    return x, y, w, h
+
+
 def _source_tag(reg, fmt, plate, shot_id: str, text: str, lane: _Lane,
                 t0: float, t1: float, earliest: float) -> Tag | None:
     """The source tag for one shot, or None when the plate prints its own
@@ -656,14 +674,7 @@ def _source_tag(reg, fmt, plate, shot_id: str, text: str, lane: _Lane,
     tag = reg.get(key) if key else None
     if tag is None:
         return None
-    fw, fh = fmt.frame
-    w, h = tag.canvas
-    k = fw / (1920 if fw > fh else 1080)
-    w, h = int(w * k), int(h * k)
-    safe_bottom = (plate.safe or {}).get("bottom") if isinstance(plate.safe, dict) else None
-    bottom = int((safe_bottom or (1560 if fh > fw else 1032)) * fh / (1920 if fh > fw else 1080))
-    x = (fw - w) // 2 if fh > fw else int(80 * k)
-    y = bottom - h - int(TAG_MARGIN * k)
+    x, y, w, h = tag_rect(tag, plate, fmt.frame)
     figs = [m for m in lane.moves if m.move in ("count-up", "line-draw", "bars-grow")]
     start = max(earliest + 0.3, figs[0].end + MOVE_GAP_S if figs else earliest + 0.3)
     if start + 1.5 > t1:
@@ -1160,3 +1171,67 @@ def recent_circled(settings, exclude=None) -> bool:
     from pipeline.reach import recent_moves
 
     return "pen-circle" in recent_moves(settings, window=1, exclude=exclude)
+
+
+# ---------------------------------------------------------------------------
+# The LONG's source tag
+# ---------------------------------------------------------------------------
+
+# A tag needs this long on screen after it lands to be read at all.
+TAG_READ_S = 1.5
+
+
+@dataclass(frozen=True)
+class TagClip:
+    """A source tag sliding in, as a clip for the LONG's overlay stack.
+
+    The clip is a strip from the frame's left edge to the tag's landed right
+    edge (plus its overshoot), `y` down, so the tag slides in from off the
+    left edge the way design's slide-in does; its last frame is the tag at
+    rest, which the overlay holds for the rest of the beat.
+    """
+
+    path: Path
+    x: int
+    y: int
+    frames: int
+
+
+def source_tag_clip(reg, settings, out: Path, *, text: str, plate, aspect: str,
+                    panel: tuple[int, int, int, int]) -> TagClip | None:
+    """Design's source tag for a LONG beat, sliding in under `plate` as it is
+    placed on the frame (`panel` is its x, y, w, h), or None when the kit has
+    no tag at this aspect or the plate prints its own source."""
+    from PIL import Image
+
+    from pipeline.plate_frames import render_frame
+    from pipeline.rasters import held_frames_to_alpha_clip
+
+    if plate is None or plate.slot("source") is not None or not str(text).strip():
+        return None
+    key = reg.aspect_key("overlays/source-tag", aspect) if hasattr(reg, "aspect_key") else None
+    tag = reg.get(key) if key else None
+    if tag is None:
+        return None
+    px, py, pw, ph = panel
+    x, y, w, h = tag_rect(tag, plate, (pw, ph))
+    img = render_frame(tag, 0, {"label": "SOURCE", "source": str(text).strip()},
+                       settings, reg).convert("RGBA")
+    if img.size != (w, h):
+        img = img.resize((max(w, 1), max(h, 1)), Image.LANCZOS)
+    spec = (getattr(reg, "motion_moves", None) or {}).get("slide-in") or {}
+    frames = int(spec.get("frames") or 6)
+    left = px + x
+    over = int(math.ceil(0.25 * (w + 40)))
+    strip = (left + w + over, h)
+    out_frames = []
+    for f in range(frames):
+        dx = int(round(M.slide_x(w, M.t_of_frame(f, frames))))
+        canvas = Image.new("RGBA", strip, (0, 0, 0, 0))
+        at = left + dx
+        if at + w > 0:
+            canvas.alpha_composite(img, (at, 0)) if at >= 0 else \
+                canvas.alpha_composite(img.crop((-at, 0, w, h)), (0, 0))
+        out_frames.append((canvas, 1 / FPS))
+    held_frames_to_alpha_clip(out_frames, out, fps=FPS)
+    return TagClip(path=out, x=0, y=py + y, frames=frames)

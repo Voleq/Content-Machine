@@ -138,6 +138,9 @@ _TAG_TO_KIND = {
     # A timed instruction to the plate already on screen; it claims no frame.
     # plan_writer_moves turns these into the render's `writer_moves`.
     TagType.MOVE: CueKind.MOVE,
+    # The same kind of instruction: where the figure on that plate comes from.
+    # plan_writer_sources pairs it with its beat.
+    TagType.SOURCE: CueKind.SOURCE,
 }
 
 # Tag types that draw nothing on the LONG timeline BY DESIGN, and why.
@@ -202,18 +205,25 @@ FRAME_TAG_TYPES = frozenset(
     t for t, k in _TAG_TO_KIND.items() if k in VISUAL_CUE_KINDS)
 
 
-def move_targets(events: list[TagEvent]) -> dict[int, int | None]:
+# Tags that act on the plate already on screen rather than claiming a frame.
+PLATE_ACTION_TAG_TYPES = frozenset({TagType.MOVE, TagType.SOURCE})
+
+
+def move_targets(events: list[TagEvent],
+                 types: frozenset[TagType] = frozenset({TagType.MOVE}),
+                 ) -> dict[int, int | None]:
     """For every [MOVE] in `events`, the index of the tag holding the frame.
 
     `None` when nothing before it claims the frame (the move would open on
     Dennis). The caller decides what a target that is not a plate means.
+    `types` widens it to the other tags that act on the plate on screen.
     """
     out: dict[int, int | None] = {}
     last: int | None = None
     for i, e in enumerate(events):
         if e.type in FRAME_TAG_TYPES:
             last = i
-        elif e.type is TagType.MOVE:
+        elif e.type in types:
             out[i] = last
     return out
 
@@ -232,7 +242,7 @@ def build_long_timeline(
     """Resolve each TagEvent's clean-text char offset to its spoken time, so
     the ironic cut lands on the exact word it undercuts."""
     cues: list[Cue] = []
-    targets = move_targets(script.events)
+    targets = move_targets(script.events, PLATE_ACTION_TAG_TYPES)
     for idx, e in enumerate(script.events):
         # Not every tag draws. Delivery direction is audio and is filtered
         # against DELIVERY_TAG_TYPES so the intent stays readable here;
@@ -255,7 +265,7 @@ def build_long_timeline(
             payload["hold"] = e.hold
         if kind is CueKind.SCRIBBLE:
             payload["hold"] = SCRIBBLE_HOLD_S
-        if kind is CueKind.MOVE:
+        if kind in (CueKind.MOVE, CueKind.SOURCE):
             # WHICH PLATE, by the order of its tag. The parser recorded the
             # plate key the move was written after, and that plate may have
             # been dropped there; only when the tag holding the frame here is
@@ -755,4 +765,67 @@ def plan_writer_moves(
             move=move, plate=key, slot=slot, t=t, segment=seg_i,
             at=t - seg.start, box=move_box(plate, move), text=text,
             order=int(c.payload.get("order", 0))))
+    return out, warnings
+
+
+@dataclass(frozen=True)
+class WriterSource:
+    """One `[SOURCE]` the writer wrote, paired with the beat it is under.
+
+    `t` is programme time off the word timings, `at` the same moment from the
+    start of the plate's segment. The render slides the tag in at `t` or once
+    the beat's moves have landed, whichever is later.
+    """
+
+    text: str
+    plate: str
+    t: float
+    segment: int
+    at: float
+
+    def to_json(self) -> dict:
+        return {"text": self.text, "plate": self.plate, "t": round(self.t, 3),
+                "segment": self.segment, "at": round(self.at, 3)}
+
+
+def plan_writer_sources(
+    cues: list[Cue],
+    segments: list[Segment],
+) -> tuple[list[WriterSource], list[str]]:
+    """Pair each `[SOURCE]` cue with the plate segment it goes under.
+
+    The same pairing a `[MOVE]` gets, against the real clock: a deferred plate
+    takes its source with it, a source whose word comes after the plate has
+    cut back to Dennis has nothing to go under and is dropped with a warning,
+    and a beat carries one source — the first. Returns `(sources, warnings)`.
+    """
+    by_order = {s.payload.get("order"): i for i, s in enumerate(segments)
+                if s.kind == CueKind.PLATE.value}
+    out: list[WriterSource] = []
+    warnings: list[str] = []
+    taken: set[int] = set()
+    for c in sorted((c for c in cues if c.kind is CueKind.SOURCE),
+                    key=lambda c: (c.t, c.payload.get("order", 0))):
+        text = str(c.payload.get("value") or "").strip()
+        where = f"[SOURCE: {text}] at {c.t:.1f}s"
+        seg_i = by_order.get(c.payload.get("plate_order"))
+        if c.payload.get("plate_order") is None:
+            warnings.append(f"{where} has no plate on screen to go under — skipped")
+            continue
+        if seg_i is None:
+            warnings.append(f"{where}: its plate never reached the screen "
+                            f"(dropped from the plan) — skipped")
+            continue
+        seg = segments[seg_i]
+        t = max(c.t, seg.start)
+        if t >= seg.end:
+            warnings.append(f"{where}: the plate had cut back to Dennis at "
+                            f"{seg.end:.1f}s — skipped")
+            continue
+        if seg_i in taken:
+            warnings.append(f"{where}: this beat already has its source — skipped")
+            continue
+        taken.add(seg_i)
+        out.append(WriterSource(text=text, plate=str(seg.payload.get("value") or ""),
+                                t=t, segment=seg_i, at=t - seg.start))
     return out, warnings

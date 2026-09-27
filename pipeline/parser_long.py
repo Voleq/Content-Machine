@@ -17,6 +17,7 @@ The Dennis tag grammar:
     [SOUND: key]                      sfx palette
     [SCRIBBLE: mark -> target]        an annotations/ mark on a word or figure
     [MOVE: count-up]                  a design move on the plate on screen
+    [SOURCE: Q2 10-Q]                 where the figure on that plate comes from
 
 Unknown tag *types* are logged, stripped and skipped — never fatal, and never
 spoken.
@@ -273,6 +274,12 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
             # is still whole; whether that plate can do it is validation's.
             payload = normalize_slug(payload).replace("_", "-")
             values = {"plate": holder_plate, "on": holder_type}
+        elif rt.type is TagType.SOURCE:
+            # The words are the writer's and go on screen as written; only
+            # the spacing is tidied. Like a move, it is fixed to the plate
+            # holding the frame here, and checked against it in validation.
+            payload = " ".join(payload.split())
+            values = {"plate": holder_plate, "on": holder_type}
         if rt.type is TagType.SCREENGRAB:
             slug = normalize_slug(payload)
             if not _SLUG_RE.match(slug):
@@ -302,6 +309,15 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
             "The narration names the data vendor — it would be spoken and land "
             'in the captions. Data is "from the 10-K"; source stays unnamed.'
         )
+    # A [SOURCE] is not narration, so the check above never sees it — and it
+    # is the one tag whose whole job is to put a source's name on screen.
+    for e in events:
+        if e.type is TagType.SOURCE and any(w in e.payload.lower()
+                                            for w in VENDOR_WORDS):
+            raise LongScriptError(
+                f"[SOURCE: {e.payload}] names the data vendor — it would be on "
+                f'screen. Name the filing ("Q2 10-Q", "FY24 10-K") or the '
+                f"agency, never the vendor.")
 
     budget = settings.max_chars("long")
     if len(narration) > budget:
@@ -614,6 +630,91 @@ def move_problems(script: LongScript, reg, settings: Settings
     return warnings, blocking
 
 
+# ---------------------------------------------------------------------------
+# [SOURCE] — where the figure on screen comes from (item 14).
+# ---------------------------------------------------------------------------
+
+# Design's tag holds about this much in its source slot at its drawn size; a
+# longer line would be cut by the slot. A source is a citation, not a caption.
+SOURCE_MAX_CHARS = 40
+
+
+def source_problems(script: LongScript, reg, settings: Settings
+                    ) -> tuple[list[str], list[str]]:
+    """Every [SOURCE] checked against the plate it goes under.
+
+    BLOCKING: a source with no plate on screen, one longer than the tag holds,
+    two on one plate, and one on a plate that prints its own source in a slot
+    of its own (the source goes in that slot). A source written long after its
+    plate went up warns, the way a late move does. `(warnings, blocking)`.
+    """
+    from pipeline.models import CueKind
+    from pipeline.timeline import DEFAULT_HOLDS, move_targets
+
+    warnings: list[str] = []
+    blocking: list[str] = []
+    events = script.events
+    targets = move_targets(events, frozenset({TagType.SOURCE}))
+    if not targets:
+        return warnings, blocking
+    wps = max(float(getattr(settings, "mock_wps_long", 2.5) or 2.5), 0.1)
+    hold = DEFAULT_HOLDS[CueKind.PLATE]
+
+    def est(e: TagEvent) -> float:
+        return len(script.narration[:e.char_offset].split()) / wps
+
+    seen: set[int] = set()
+    for idx, holder in targets.items():
+        e = events[idx]
+        tag = f'[SOURCE: {e.payload}] before "{_spoken_after(script, e)}"'
+        if not e.payload.strip():
+            blocking.append(f"{tag} is empty — name the filing or the agency, "
+                            f"or cut the tag.")
+            continue
+        if len(e.payload) > SOURCE_MAX_CHARS:
+            blocking.append(
+                f"{tag} is {len(e.payload)} characters — the tag holds "
+                f"{SOURCE_MAX_CHARS}. Name the document, like \"Q2 10-Q\" or "
+                f"\"BLS, August CPI\".")
+            continue
+        plate_key = e.values.get("plate", "")
+        held_by = e.values.get("on", "")
+        if not plate_key:
+            if held_by == "PLATE":
+                blocking.append(f"{tag} follows a [PLATE] that did not resolve "
+                                f"— fix that plate and the source goes with it.")
+            elif held_by:
+                blocking.append(
+                    f"{tag} goes under the plate on screen, but the frame there "
+                    f"belongs to a [{held_by}]. Put it after the [PLATE] whose "
+                    f"figure it sources.")
+            else:
+                blocking.append(f"{tag} comes before any [PLATE] — a source goes "
+                                f"under the last plate before it.")
+            continue
+        plate = reg.get(plate_key)
+        if plate is None or holder is None:
+            continue   # the plate itself is refused by the PLATE check
+        if plate.slot("source") is not None:
+            blocking.append(
+                f"{tag}: {_short_name(plate_key)} prints its own source — put "
+                f"it in the plate's tag as source={e.payload} and cut the "
+                f"[SOURCE].")
+            continue
+        if holder in seen:
+            blocking.append(f"{tag}: {_short_name(plate_key)} already has a "
+                            f"source — one a plate. Cut the second.")
+            continue
+        seen.add(holder)
+        gap = est(e) - est(events[holder])
+        if gap > hold:
+            warnings.append(
+                f"{tag} lands about {gap:.0f}s after its plate goes up, and a "
+                f"plate holds {hold:.0f}s — by then he is back on screen and "
+                f"the source is dropped. Put it in the plate's first sentence.")
+    return warnings, blocking
+
+
 def validate_long_script(
     script: LongScript,
     palette_keys: Iterable[str],
@@ -634,6 +735,9 @@ def validate_long_script(
       SCRIBBLE mark not in the kit     -> warning (skipped at render)
       SCREENGRAB file missing         -> BLOCKING (operator drops it in custom/)
       PLATE unknown / slot undeclared -> BLOCKING (it would draw an empty box)
+      SOURCE with no plate, too long, -> BLOCKING (see source_problems)
+        twice on a plate, or on a plate
+        that prints its own source
       MOVE the plate cannot do        -> BLOCKING (see move_problems: quota,
                                          paper-only zoom, one-number slots)
       tagging density below the floor -> warning, naming the thin chapters
@@ -735,6 +839,9 @@ def validate_long_script(
     move_warnings, move_blocking = move_problems(script, reg, settings)
     warnings.extend(move_warnings)
     blocking.extend(move_blocking)
+    source_warnings, source_blocking = source_problems(script, reg, settings)
+    warnings.extend(source_warnings)
+    blocking.extend(source_blocking)
 
     warnings.extend(density_warnings(script, settings))
 
