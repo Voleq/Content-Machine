@@ -37,9 +37,9 @@ from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
 from pipeline.render_common import (RenderError, encode_profile,
                                     mix_under_picture, run_ffmpeg)
-from pipeline.sound import (Cut, manifest_rows, measure_lufs, normalises,
-                            placeholders_played, short_mix, shot_tags,
-                            sound_summary)
+from pipeline.sound import (Cut, Move, manifest_rows, measure_lufs,
+                            normalises, placeholders_played, short_mix,
+                            shot_tags, sound_summary)
 from pipeline.shots import (Format, apply_order, beat_keys, choose_order,
                             expand_sequences, load_format, order_by_marks,
                             resolve_spans, voice_keys)
@@ -591,6 +591,22 @@ def shot_sources(script, fmt: Format) -> dict[str, str]:
     got = getattr(script, "sources", None) or {}
     return {sh.id: got[sh.anchor] for sh in fmt.shots
             if sh.anchor and sh.anchor in got}
+
+
+def _sound_tags(result, reg, shot_id: str) -> set[str]:
+    """What the room under a shot should sound like: the room loops its
+    plates' frames play (rain in the window, the screen's flicker) and the
+    season they are dressed for."""
+    keys, loops, seasons = [], [], []
+    for layer in result.for_shot(shot_id):
+        if not layer.entry_key:
+            continue
+        keys.append(layer.entry_key)
+        plate = reg.get(layer.entry_key)
+        if plate is not None:
+            loops += list(getattr(plate, "loops", ()) or ())
+            seasons.append(getattr(plate, "season", "") or "")
+    return shot_tags(keys, loops, seasons)
 
 
 def _part_fields(shot) -> dict:
@@ -1279,16 +1295,21 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # Sound reads the spans AFTER composition, so whatever pacing the shots
     # land on, the swish lands on the cut. A chaptered format (the LONG
     # through this engine) gets chapter hits and the theme instead.
+    # The move record is what the sound is timed to: design's move ids and
+    # the programme time of each first frame, and the wipes with their cuts.
+    wiped = {round(w.cut, 3): (w.start, w.end) for w in plan.wipes}
     cuts = [Cut(shot_id=sp.shot.id, start=sp.start, end=sp.end,
                 chapter_n=int(getattr(sp.shot, "chapter_n", 0) or 0),
-                tags=frozenset(shot_tags(
-                    layer.entry_key for layer in result.for_shot(sp.shot.id)
-                    if layer.entry_key)))
+                tags=frozenset(_sound_tags(result, reg, sp.shot.id)),
+                part=int(getattr(sp.shot, "part", 0) or 0),
+                wipe=wiped.get(round(sp.start, 3)))
             for sp in result.spans]
+    moves = [Move(r["move"], r["start"], r["shot_id"], r["slot"])
+             for r in plan.record()["moves"]]
     tracks = short_mix(tts, settings, cuts=cuts, hour=reg.hour,
                        seed=script.content_sha(),
                        chapters=any(sh.chapter_n for sh in fmt.shots),
-                       duration=duration, workspace=workspace)
+                       duration=duration, workspace=workspace, moves=moves)
     if tracks:
         mix_under_picture(silent, tracks, part, duration=duration,
                           audio_bitrate=settings.audio_bitrate,
