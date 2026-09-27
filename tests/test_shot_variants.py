@@ -20,8 +20,9 @@ from pathlib import Path
 import pytest
 
 from pipeline.compose import build_layers, check_budgets, check_invariants
-from pipeline.shots import (AS_AUTHORED, apply_order, choose_order,
-                            expand_sequences, load_format, order_names,
+from pipeline.shots import (AS_AUTHORED, AS_MARKED, apply_order,
+                            choose_order, expand_sequences, load_format,
+                            order_by_marks, order_names, voice_keys,
                             parse_format, resolve_spans, TemplateError)
 
 VERTICAL = ("short", "earnings", "macro")
@@ -413,19 +414,69 @@ def test_an_order_must_name_every_shot_exactly_once():
         parse_format(_ordered({"name": "b", "shots": ["one", "two"]}))
 
 
-def test_an_order_may_not_move_a_shot_the_narration_pins():
-    """THE CEILING ON ALTERNATE ORDERS, AND IT IS NOT A CODE LIMIT.
+def _pinned(order: dict) -> dict:
+    """Four shots, three of them pinned to the narration."""
+    raw = _ordered(order)
+    raw["shots"].insert(2, {"id": "two-b", "plate": "cards/definition-9x16",
+                            "anchor": "numbers_comment",
+                            "bind": {"body": "script.numbers_comment"}})
+    return raw
 
-    A shot with an anchor starts where its own words are spoken, and the words
-    are one take written to the beat order the writing prompt states as fixed.
-    Swap two anchored beats and the picture is over the wrong sentence —
-    `resolve_spans` will not even let it try, because its monotonic pass drops
-    an anchor landing before one already fixed, so the shot stops being
-    anchored and interpolates to somewhere that matches nothing.
+
+def test_an_order_may_move_a_pinned_beat_once_the_narration_can_say_so():
+    """THE CEILING ON ALTERNATE ORDERS WAS THE WRITING PROMPT, AND IT MOVED.
+
+    A pinned shot starts where its own words are spoken, and the words used to
+    be one take written to a fixed beat order, so swapping two pinned beats put
+    the picture over the wrong sentence and the order was refused here. The
+    prompt now names the order before a word is written and the script marks
+    each beat, so the order parses — and `choose_order` is what keeps it off
+    any narration that does not say it is in that order.
     """
-    with pytest.raises(TemplateError, match="pins"):
-        parse_format(_ordered({"name": "b",
-                               "shots": ["two", "one", "three"]}))
+    fmt = parse_format(_pinned({"name": "b",
+                                "shots": ["one", "two-b", "two", "three"]}))
+    assert [s.id for s in apply_order(fmt, "b").shots] == \
+        ["one", "two-b", "two", "three"]
+
+
+def test_an_unmarked_narration_is_never_cut_in_an_order_that_moves_its_beats():
+    """An unmarked script was written to the authored order and is heard in it.
+
+    So the rotation it gets is the one it always had: the orders that keep
+    the pinned beats where the voice has them.
+    """
+    fmt = parse_format(_pinned({"name": "b",
+                                "shots": ["one", "two-b", "two", "three"]}))
+    authored = voice_keys(fmt.shots)
+    picked = {choose_order(fmt, seed=f"s{i}", heard=authored)
+              for i in range(40)}
+    assert picked == {AS_AUTHORED}
+    # And the writing prompt, which chooses before anything is heard, may
+    # hand out either.
+    assert {choose_order(fmt, seed=f"s{i}") for i in range(40)} == \
+        {AS_AUTHORED, "b"}
+
+
+def test_a_marked_narration_picks_the_order_its_markers_describe():
+    fmt = parse_format(_pinned({"name": "b",
+                                "shots": ["one", "two-b", "two", "three"]}))
+    assert choose_order(fmt, heard=["hook", "numbers_comment", "turn"]) == "b"
+    # Markers in a sequence nothing declares still cut; they have no name.
+    assert choose_order(fmt, heard=["turn", "hook"]) == AS_MARKED
+
+
+def test_an_order_may_not_part_two_shots_listening_for_the_same_words():
+    """They start on the same sentence. An order that puts another beat
+    between them asks the voice to say that sentence twice, and no script
+    can be marked to match it."""
+    raw = _ordered({"name": "b",
+                    "shots": ["one", "a1", "two", "a2", "three"]})
+    raw["shots"][1:1] = [
+        {"id": a, "plate": "cards/definition-9x16",
+         "anchor": "numbers_comment",
+         "bind": {"body": "script.numbers_comment"}} for a in ("a1", "a2")]
+    with pytest.raises(TemplateError, match="listen"):
+        parse_format(raw)
 
 
 def test_an_order_may_move_a_shot_the_narration_leaves_free():
@@ -493,6 +544,72 @@ def test_the_cut_order_rotates_off_the_recent_ones():
     # Everything recent puts everything back, the same preference the plates
     # take — a rotation must never fail for want of a fresh sequence.
     assert choose_order(fmt, seed="s", avoid=names) in names
+
+
+# The verdict each vertical format lands on, and the evidence it has to
+# follow. An order that put the verdict ahead of the numbers would be a call
+# made before the case.
+_VERDICT_AFTER = {"short": ("payoff", "numbers"),
+                  "earnings": ("so-what", "the-sheet"),
+                  "macro": ("so-what", "the-print")}
+
+
+@pytest.mark.parametrize("name", VERTICAL)
+def test_every_format_declares_an_order_that_moves_a_pinned_beat(name):
+    """The point of the markers. Until the narration could say where its
+    beats start, the SHORT had one legal swap and the other two formats none."""
+    fmt = load_format(name)
+    authored = voice_keys(fmt.shots)
+    moved = [n for n in order_names(fmt)
+             if voice_keys(apply_order(fmt, n).shots) != authored]
+    assert moved, f"{name} declares no order a marked script could pick"
+
+
+@pytest.mark.parametrize("name", VERTICAL)
+def test_every_declared_order_opens_on_the_hook_and_closes_on_the_sign_off(
+        name):
+    fmt = load_format(name)
+    verdict, evidence = _VERDICT_AFTER[name]
+    for order in order_names(fmt):
+        ids = [s.id for s in apply_order(fmt, order).shots]
+        assert ids[0] == fmt.shots[0].id, order
+        assert ids[-1] == "close", order
+        assert ids.index(verdict) > ids.index(evidence), order
+
+
+@pytest.mark.parametrize("name", VERTICAL)
+def test_a_narration_marked_in_a_declared_order_is_cut_in_it(name):
+    """What the writing prompt names is what the render picks back up off
+    the markers — or an order indistinguishable from it to the voice."""
+    fmt = load_format(name)
+    for order in order_names(fmt):
+        heard = voice_keys(apply_order(fmt, order).shots)
+        for i in range(10):
+            picked = choose_order(fmt, seed=f"s{i}", heard=heard)
+            assert voice_keys(apply_order(fmt, picked).shots) == heard, \
+                (order, picked)
+
+
+def test_the_markers_put_the_beats_where_the_narration_speaks_them():
+    fmt = load_format("short")
+    heard = ["hook", "headline", "move", "turn", "numbers",
+             "numbers_comment", "cheap_or_trap", "conclusion"]
+    assert [s.id for s in order_by_marks(fmt, heard).shots] == [
+        "hook", "the-news", "the-move", "the-turn", "numbers", "the-sheet",
+        "the-comment", "cheap-or-trap", "payoff", "close"]
+
+
+def test_a_shot_listening_for_nothing_stays_behind_the_beat_before_it():
+    """The sign-off follows the payoff wherever the payoff goes; an unmarked
+    beat rides with the marked one before it; the hook never moves."""
+    fmt = load_format("short")
+    ids = [s.id for s in order_by_marks(
+        fmt, ["numbers", "conclusion", "cheap_or_trap"]).shots]
+    assert ids[0] == "hook"
+    assert ids.index("close") == ids.index("payoff") + 1
+    assert ids.index("payoff") < ids.index("cheap-or-trap")
+    # The move, news and turn were not marked: they ride with the hook.
+    assert ids[:4] == ["hook", "the-move", "the-news", "the-turn"]
 
 
 @pytest.mark.parametrize("name", VERTICAL)

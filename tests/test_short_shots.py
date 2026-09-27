@@ -366,3 +366,202 @@ def test_the_template_is_data_not_code():
     assert all("plate" in s for s in raw["shots"])
     seq = [s for s in raw["shots"] if s.get("repeat", {}).get("arrange") == "sequence"]
     assert len(seq) == 1 and seq[0]["id"] == "numbers"
+
+
+# ---------------------------------------------------------------------------
+# Marked beats, and a beat that runs long
+# ---------------------------------------------------------------------------
+
+# Each beat's first two words, as a marked script's anchors would carry them.
+_BEAT_WORDS = {"hook": "alpha one", "move": "bravo two",
+               "headline": "charlie three", "turn": "delta four",
+               "numbers": "echo five", "numbers_comment": "foxtrot six",
+               "cheap_or_trap": "golf seven", "conclusion": "hotel eight"}
+
+
+def _narration(lengths: dict[str, int], step: float = 0.4):
+    """A narration in which each beat is `lengths[key]` words long.
+
+    Every fourth word ends a sentence, so a long beat has boundaries to cut
+    on. Returns `(words, duration, anchors)`.
+    """
+    tokens: list[str] = []
+    for key, phrase in _BEAT_WORDS.items():
+        filler = [f"{key[:3]}{i}" for i in range(max(lengths.get(key, 6), 2) - 2)]
+        beat = phrase.split() + filler
+        beat = [w + "." if (i + 1) % 4 == 0 else w for i, w in enumerate(beat)]
+        tokens += beat
+    words = [FakeWord(w, i * step, i * step + step * 0.9)
+             for i, w in enumerate(tokens)]
+    return words, len(tokens) * step, dict(_BEAT_WORDS)
+
+
+def _start_of(words, phrase: str) -> float:
+    first = phrase.split()[0]
+    return next(w.start for w in words if w.word.rstrip(".") == first)
+
+
+def test_a_marked_beat_is_looked_for_after_the_beat_before_it(fmt):
+    """The words after a marker can be said earlier too, and the first place
+    they are said is not where that beat starts. Searched from the top, the
+    payoff's words found in the hook pinned nothing — the monotonic pass
+    dropped them — and the payoff was shared out evenly instead."""
+    words, duration, anchors = _narration({})
+    # The payoff's first words, said once in passing at the very start.
+    words[1].word = "eight"
+    words[0].word = "hotel"
+    anchors["hook"] = "one bravo"   # not spoken; the hook opens at 0 anyway
+    loose = resolve_spans(fmt, words, duration, anchors)
+    ordered = resolve_spans(fmt, words, duration, anchors, ordered=True)
+    pay_loose = next(s for s in loose if s.shot.id == "payoff")
+    pay = next(s for s in ordered if s.shot.id == "payoff")
+    assert not pay_loose.anchored
+    assert pay.anchored
+    assert pay.start == pytest.approx(
+        [w for w in words if w.word == "hotel"][-1].start)
+
+
+def test_the_next_shot_starts_on_its_own_words_when_the_beat_before_runs_long(
+        fmt):
+    """THE CEILING NO LONGER PULLS THE NEXT SHOT EARLY.
+
+    A span over its ceiling used to be ended at the ceiling and the next shot
+    started there — the picture for the next beat up while the voice was still
+    on this one. Without anything to move in on, the long beat now holds, and
+    the next shot waits for its words.
+    """
+    words, duration, anchors = _narration({"headline": 50})
+    spans = resolve_spans(fmt, words, duration, anchors, ordered=True)
+    news = next(s for s in spans if s.shot.id == "the-news")
+    turn = next(s for s in spans if s.shot.id == "the-turn")
+    assert news.dur > news.shot.max_hold_s
+    assert turn.anchored
+    assert turn.start == pytest.approx(_start_of(words, "delta four"))
+    assert news.end == pytest.approx(turn.start)
+
+
+def test_a_long_beat_becomes_the_same_drawing_wide_and_then_moved_in(fmt):
+    words, duration, anchors = _narration({"headline": 50})
+    spans = resolve_spans(
+        fmt, words, duration, anchors, ordered=True,
+        punch_in=lambda sh: "headline" if sh.id == "the-news" else None)
+    ids = [s.shot.id for s in spans]
+    assert ids[ids.index("the-news") + 1] == "the-news-in"
+    wide = spans[ids.index("the-news")]
+    close = spans[ids.index("the-news-in")]
+    turn = spans[ids.index("the-turn")]
+    assert (wide.shot.part, close.shot.part) == (1, 2)
+    assert close.shot.part_of == "the-news"
+    assert close.shot.focus == "headline"
+    assert close.shot.anchor is None and not close.anchored
+    # The beat's own start and the next beat's start are both where the
+    # words are: splitting moved nothing but the cut inside the beat.
+    assert wide.anchored
+    assert wide.start == pytest.approx(_start_of(words, "charlie three"))
+    assert close.end == pytest.approx(turn.start)
+    assert turn.start == pytest.approx(_start_of(words, "delta four"))
+    assert wide.end == pytest.approx(close.start)
+
+
+def test_the_cut_inside_a_long_beat_lands_on_a_sentence_boundary(fmt):
+    words, duration, anchors = _narration({"headline": 50})
+    spans = resolve_spans(
+        fmt, words, duration, anchors, ordered=True,
+        punch_in=lambda sh: "headline" if sh.id == "the-news" else None)
+    wide = next(s for s in spans if s.shot.id == "the-news")
+    close = next(s for s in spans if s.shot.id == "the-news-in")
+    beat = close.end - wide.start
+    i = next(i for i, w in enumerate(words)
+             if w.start == pytest.approx(close.start))
+    assert words[i - 1].word.endswith(".")
+    assert min(wide.dur, close.dur) >= 0.25 * beat - 1e-6
+
+
+def test_with_no_sentence_to_cut_on_a_long_beat_is_cut_in_the_middle(fmt):
+    words, duration, anchors = _narration({"headline": 50})
+    for w in words:
+        w.word = w.word.rstrip(".")
+    spans = resolve_spans(
+        fmt, words, duration, anchors, ordered=True,
+        punch_in=lambda sh: "headline" if sh.id == "the-news" else None)
+    wide = next(s for s in spans if s.shot.id == "the-news")
+    close = next(s for s in spans if s.shot.id == "the-news-in")
+    assert wide.dur == pytest.approx(close.dur)
+
+
+def test_a_host_shot_holds_and_is_never_split(fmt):
+    """He talks, he blinks, the room boils behind him: a long turn is still
+    a moving frame, and cutting it would cut him mid-sentence."""
+    words, duration, anchors = _narration({"turn": 50})
+    spans = resolve_spans(fmt, words, duration, anchors, ordered=True,
+                          punch_in=lambda sh: "anything")
+    turn = next(s for s in spans if s.shot.id == "the-turn")
+    assert turn.dur > turn.shot.max_hold_s
+    assert "the-turn-in" not in {s.shot.id for s in spans}
+
+
+def test_a_run_too_long_for_its_evidence_gives_the_slack_to_the_host():
+    """With nothing anchored, the whole cut is one run. An even share of 72
+    seconds puts every earnings plate over its ceiling; the host shot is the
+    frame that is alive at any length, so it takes the difference."""
+    fmt = load_format("earnings")
+    spans = resolve_spans(fmt, _words(72.0), 72.0, {})
+    for sp in spans:
+        if sp.shot.host:
+            assert sp.dur > sp.shot.max_hold_s
+        else:
+            assert sp.dur <= sp.shot.max_hold_s + 1e-6, sp.shot.id
+    assert spans[-1].end == pytest.approx(72.0)
+    for a, b in zip(spans, spans[1:]):
+        assert a.end == pytest.approx(b.start)
+
+
+def test_a_split_beat_keeps_every_invariant_and_moves_in_on_its_own_plate(
+        fmt, reg):
+    from pipeline.compose import punch_in_slot
+
+    words, duration, anchors = _narration({"headline": 50, "cheap_or_trap": 12,
+                                           "numbers_comment": 40})
+    resolver = StubResolver()
+
+    def punch(sh):
+        return punch_in_slot(reg, sh, fmt.frame, resolver, aspect=fmt.aspect,
+                             seed="test")
+
+    spans = resolve_spans(fmt, words, duration, anchors, ordered=True,
+                          punch_in=punch)
+    assert any(s.shot.part == 2 for s in spans)
+    result = build_layers(fmt, spans, resolver, reg, aspect=fmt.aspect,
+                          seed="test")
+    problems = check_invariants(
+        fmt, result, host_shots=[sh.id for sh in fmt.shots if sh.host])
+    assert problems == [], "\n".join(problems)
+    names = [l.name for l in result.layers]
+    assert len(names) == len(set(names))
+    for sp in spans:
+        if sp.shot.part != 2:
+            continue
+        first = next(l for l in result.for_shot(sp.shot.part_of)
+                     if l.kind == "plate")
+        second = next(l for l in result.for_shot(sp.shot.id)
+                      if l.kind == "plate")
+        assert second.entry_key == first.entry_key, sp.shot.id
+        assert second.w > first.w, f"{sp.shot.id} did not move in"
+
+
+def test_the_punch_in_is_the_shots_own_focus_then_where_the_kit_puts_the_eye(
+        fmt, reg):
+    from pipeline.compose import punch_in_slot
+
+    resolver = StubResolver()
+
+    def slot(shot_id):
+        return punch_in_slot(reg, fmt.shot(shot_id), fmt.frame, resolver,
+                             aspect=fmt.aspect, seed="test")
+
+    # A numbers step already names its row.
+    assert slot("numbers-2") == "band-2"
+    # The comment card's highlight is its body.
+    assert slot("the-comment") == "body"
+    # He is never punched in on.
+    assert slot("the-turn") is None

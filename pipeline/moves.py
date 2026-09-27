@@ -494,8 +494,16 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
     wiped_in = {w.shot_in: w for w in plan.wipes}
 
     first = next(iter(result.spans), None)
+    # A BEAT SPLIT FOR RUNNING LONG is one drawing seen twice, wide then
+    # close (`resolve_spans`). Its data drew on, its rows lit and its figures
+    # counted in the wide part; the close part opens on all of that landed,
+    # and plays only an emphasis or a source the wide part did not have.
+    emphasised: set[str] = set()
+    tagged: set[str] = set()
     for span in result.spans:
         shot = span.shot
+        beat = getattr(shot, "part_of", "") or shot.id
+        closer = getattr(shot, "part", 0) == 2
         layer = plate_layers.get(shot.id)
         if layer is None:
             continue
@@ -516,7 +524,7 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
 
         # 1. THE DATA DRAWS ON, on the cut: a chart's line left to right, a
         #    bar chart's columns up from the baseline.
-        kind = _data_kind(plate, values)
+        kind = _data_kind(plate, values) if not closer else None
         if kind == "line" and motion.get("line-draw"):
             lane.place(new("line-draw", "plot-area"), earliest)
         elif kind == "bars" and motion.get("bars-grow"):
@@ -526,7 +534,9 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
         #    each row's band when its label is spoken, and they stay lit, so
         #    the shot ends with every row up. A shot that lights one row
         #    sweeps that row's band in on the cut.
-        if lit == "read":
+        if closer:
+            pass
+        elif lit == "read":
             rows = _sheet_rows(plate, values)
             if rows:
                 usable = max(t1 - END_MARGIN_S - earliest, 0.0)
@@ -544,13 +554,13 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
         #    the first half-second belongs to the ticker and the move (item 6),
         #    whenever the hook gets round to saying it.
         opening = span is first
-        for slot in _figure_slots(plate, values, lit):
+        for slot in (_figure_slots(plate, values, lit) if not closer else ()):
             at = None if opening else _heard(words, _said_forms(values[slot]), t0, t1)
             lane.place(new("count-up", slot, text=values[slot]),
                        at if at is not None else earliest)
 
         # 4. ONE EMPHASIS AT MOST: the circle, a push-in, or an underline.
-        done = False
+        done = beat in emphasised
         target = _circle_slot(shot.id, plate, values, verdict) if not circled else None
         if target is not None and settings is not None:
             box = circle_box(plate, target, values.get(target, ""), settings, reg)
@@ -569,6 +579,7 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
                 want = fig.end if fig else (at if at is not None else earliest + 0.35)
                 if lane.place(new("pen-circle", target), want) is not None:
                     circled = done = True
+                    emphasised.add(beat)
         hl = (motion.get("highlight") or {}).get("slot")
         text = values.get(hl, "") if hl else ""
         if not done and hl and str(text).strip() and plate.slot(hl) is not None \
@@ -581,17 +592,21 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
                 done = lane.place(new("zoom-to-slot", hl),
                                   at if at is not None else earliest + 0.6) is not None
             if not done:
-                lane.place(new("highlight", hl),
-                           at if at is not None else earliest + 0.35)
+                done = lane.place(new("highlight", hl),
+                                  at if at is not None else earliest + 0.35) is not None
+            if done:
+                emphasised.add(beat)
 
         plan.moves += lane.moves
 
         # 5. THE SOURCE SLIDES IN under the figure once it has landed.
-        src = sources.get(shot.id) or sources.get(shot.id.rsplit("-", 1)[0])
-        if src:
+        src = sources.get(shot.id) or sources.get(beat) \
+            or sources.get(beat.rsplit("-", 1)[0])
+        if src and beat not in tagged:
             tag = _source_tag(reg, fmt, plate, shot.id, src, lane, t0, t1, earliest)
             if tag is not None:
                 plan.tags.append(tag)
+                tagged.add(beat)
     return plan
 
 

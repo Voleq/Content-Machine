@@ -451,6 +451,139 @@ def _slot_in_frame(plate: Plate, slot_name: str,
             max(int(sw * kx), 1), max(int(sh * ky), 1))
 
 
+def _focus_placement(plate: Plate, slot_name: str,
+                     stage: tuple[int, int, int, int],
+                     placed: tuple[int, int, int, int],
+                     ) -> tuple[int, int, int, int]:
+    """The plate moved in on one of its slots — and never past the edges of
+    what it has to show.
+
+    The zoom is bounded by the frame's WIDTH, not only by the target height. A
+    vertical sheet's row band is 1044 of 1080 canvas units wide: scaled until
+    it filled 62% of the frame's height it came out at 1.4x, and the last three
+    columns of every row went off the right-hand edge. A row you cannot see the
+    figures on is not a row anybody moved in on. Where the slot is already full
+    width the move is a PAN — the composition still changes, and every figure
+    stays on screen.
+    """
+    gx, gy, gw2, gh2 = stage
+    w, h = placed[2], placed[3]
+    sx, sy, sw, sh_px = _slot_in_frame(plate, slot_name, placed)
+    by_height = (gh2 * FOCUS_FILL) / max(sh_px, 1)
+    by_width = gw2 / max(sw, 1)
+    k = max(min(by_height, by_width, FOCUS_MAX_SCALE), 1.0)
+    nw, nh = int(w * k), int(h * k)
+    base = (gx + (gw2 - nw) // 2, gy + (gh2 - nh) // 2, nw, nh)
+    sx, sy, sw, sh_px = _slot_in_frame(plate, slot_name, base)
+    nx = base[0] + (gx + gw2 // 2 - (sx + sw // 2))
+    ny = base[1] + (gy + gh2 // 2 - (sy + sh_px // 2))
+    # Never open a gap at an edge: a plate larger than its stage covers it,
+    # and one that is not stays centred on that axis.
+    nx = (min(gx, max(nx, gx + gw2 - nw)) if nw >= gw2
+          else gx + (gw2 - nw) // 2)
+    ny = (min(gy, max(ny, gy + gh2 - nh)) if nh >= gh2
+          else gy + (gh2 - nh) // 2)
+    return (nx, ny, nw, nh)
+
+
+# A punch-in smaller than this barely changes the picture, so the beat would
+# still read as one held composition — the thing the split exists to end.
+PUNCH_MIN_SCALE = 1.1
+
+# Where the kit says the eye goes on a plate, in the order a punch-in asks:
+# the passage a reader is on, then the figure that counts up.
+PUNCH_MOVES = ("highlight", "count-up")
+
+
+def punch_in_slot(reg: Registry, shot: Shot, frame: tuple[int, int],
+                  resolver: Resolver, *, aspect: str = "", seed: str = "",
+                  avoid: "Collection[str]" = ()) -> str | None:
+    """Which slot the second picture of a long beat moves in on, or None.
+
+    `resolve_spans` asks this for a beat that runs past its ceiling. The
+    answer is the shot's own `focus` when it has one — a numbers step already
+    names its row — and otherwise where the kit's own motion anchors put the
+    eye: the `highlight` slot, then the `count-up` one. None means the beat
+    holds.
+
+    ASKED OF THE PLATE THIS VIDEO WILL ACTUALLY DRAW. The rotation is run the
+    way `build_layers` runs it — same seed, same recent plates — because the
+    authored plate's slots are not the alternate's, and a focus naming a slot
+    the drawn plate lacks is a punch-in that silently does not happen.
+
+    A motion anchor is a hint, not a promise, so it is refused where the move
+    would make things worse than the hold it replaces:
+
+    * the slot carries nothing for this script — an unbound date box on the
+      sign-off card would fill the frame with an empty rectangle;
+    * the move barely moves — under `PUNCH_MIN_SCALE` it is the same picture;
+    * the move cuts a filled slot in half at the frame's edge — the first
+      figure of a table at 2.4x leaves every other figure sliced. A slot moved
+      wholly out of frame is fine: that is what moving in means.
+    """
+    if not shot.plate or shot.host or shot.plate.startswith("room/"):
+        return None
+    begin = getattr(resolver, "begin_shot", None)
+    if begin is not None:
+        begin(shot)
+    if shot.alts:
+        picked = choose_variant(reg, shot, aspect, resolver, seed=seed,
+                                avoid=avoid)
+        if picked is not None and picked.plate != shot.plate:
+            bind, lit, focus = picked.resolved(shot)
+            shot = replace(shot, plate=picked.plate, alts=(), bind=bind,
+                           lit=lit, focus=focus)
+    try:
+        plate = resolve_plate(reg, shot.plate, aspect)
+    except TemplateError:
+        return None
+    if plate is None:
+        return None
+    if shot.focus and plate.slot(shot.focus) is not None:
+        return shot.focus
+    try:
+        values, _unfilled, _skipped = _bound_values(shot, plate, resolver, reg)
+    except Exception:                              # noqa: BLE001
+        return None
+    fw, fh = frame
+    w, h = _fit(plate, frame)
+    wide = ((fw - w) // 2, (fh - h) // 2, w, h)
+    for move in PUNCH_MOVES:
+        name = (plate.motion.get(move) or {}).get("slot")
+        if not name or plate.slot(name) is None:
+            continue
+        if not str(values.get(name, "")).strip():
+            continue
+        close = _focus_placement(plate, name, (0, 0, fw, fh), wide)
+        if close[2] < wide[2] * PUNCH_MIN_SCALE:
+            continue
+        if _cuts_a_filled_slot(plate, values, close, frame):
+            continue
+        return name
+    return None
+
+
+def _cuts_a_filled_slot(plate: Plate, values: dict,
+                        placed: tuple[int, int, int, int],
+                        frame: tuple[int, int]) -> bool:
+    """Does this placement leave a filled slot part on and part off the frame?
+
+    A band is left out: it is the lit row's highlight, drawn edge to edge, and
+    the figures in it are slots of their own that this checks one by one.
+    """
+    fw, fh = frame
+    for name, value in values.items():
+        slot = plate.slot(name)
+        if slot is None or slot.is_band or not str(value).strip():
+            continue
+        x, y, w, h = _slot_in_frame(plate, name, placed)
+        inside = x >= 0 and y >= 0 and x + w <= fw and y + h <= fh
+        outside = x + w <= 0 or y + h <= 0 or x >= fw or y >= fh
+        if not inside and not outside:
+            return True
+    return False
+
+
 def _arrange(n: int, how: str, frame: tuple[int, int],
              box: tuple[int, int, int, int] | None = None
              ) -> list[tuple[int, int, int, int]]:
@@ -511,6 +644,8 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
     host_used: dict[str, int] = {}
     last_host = ""
     closing = next((sp.shot.id for sp in reversed(spans) if sp.shot.host), "")
+    # Part 1 of each split beat as drawn, for its part 2 to be drawn from.
+    drawn: dict[str, Shot] = {}
 
     for span_index, span in enumerate(spans):
         shot = span.shot
@@ -545,13 +680,32 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
         #    here rather than threading a variant through twenty lines is what
         #    keeps a plate with differently-named slots from being a special
         #    case in each of them.
-        if shot.plate and shot.alts:
+        #
+        #    THE SECOND PART OF A SPLIT BEAT IS THE SAME DRAWING, CLOSER. It is
+        #    its own shot with its own id, and the rotation seeds on the id, so
+        #    left to itself it would roll again and could cut from one headline
+        #    band to a different one mid-sentence. It takes the plate, binds
+        #    and lit band part 1 was drawn with, and keeps only its own focus.
+        first = drawn.get(shot.part_of) if shot.part == 2 else None
+        if first is not None:
+            # A sheet that lit its rows as they were read ends part 1 with
+            # every row up, so the close-up opens on all of them lit.
+            shot = replace(shot, plate=first.plate, alts=(),
+                           bind=dict(first.bind),
+                           lit="all" if first.lit == "read" else first.lit)
+        elif shot.plate and shot.alts:
             picked = choose_variant(reg, shot, aspect, resolver,
                                     seed=seed, avoid=avoid)
             if picked is not None and picked.plate != shot.plate:
                 bind, lit, focus = picked.resolved(shot)
                 shot = replace(shot, plate=picked.plate, alts=(),
                                bind=bind, lit=lit, focus=focus)
+        # Part 1 is the WIDE picture: the move in is what part 2 is for, and
+        # a part 1 already moved in would make the cut between them a cut to
+        # the same frame.
+        if shot.part == 1:
+            drawn[shot.id] = shot
+            shot = replace(shot, focus=None)
 
         # -- the plate. `None` is a real value: a bare-ground shot.
         if shot.plate:
@@ -609,38 +763,12 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             placed = (stage[0] + (stage[2] - w) // 2,
                       stage[1] + (stage[3] - h) // 2, w, h)
 
-            # MOVING IN ON A SLOT — AND NEVER PAST THE EDGES OF WHAT IT
-            # HAS TO SHOW. Without this a walk down a list is one wide shot
-            # with a rectangle migrating down it, which a viewer reads as a
-            # single held composition.
-            #
-            # The zoom is bounded by the frame's WIDTH, not only by the target
-            # height. A vertical sheet's row band is 1044 of 1080 canvas units
-            # wide: scaled until it filled 62% of the frame's height it came
-            # out at 1.4x, and the last three columns of every row went off
-            # the right-hand edge. A row you cannot see the figures on is not
-            # a row anybody moved in on. Where the slot is already full width
-            # the move is a PAN — the composition still changes, and every
-            # figure stays on screen.
+            # MOVING IN ON A SLOT. Without this a walk down a list is one wide
+            # shot with a rectangle migrating down it, which a viewer reads as
+            # a single held composition. The geometry is `_focus_placement`.
             if shot.focus and plate.slot(shot.focus) is not None:
-                gx, gy, gw2, gh2 = stage
-                sx, sy, sw, sh_px = _slot_in_frame(plate, shot.focus, placed)
-                by_height = (gh2 * FOCUS_FILL) / max(sh_px, 1)
-                by_width = gw2 / max(sw, 1)
-                k = max(min(by_height, by_width, FOCUS_MAX_SCALE), 1.0)
-                nw, nh = int(w * k), int(h * k)
-                base = (gx + (gw2 - nw) // 2, gy + (gh2 - nh) // 2, nw, nh)
-                sx, sy, sw, sh_px = _slot_in_frame(plate, shot.focus, base)
-                nx = base[0] + (gx + gw2 // 2 - (sx + sw // 2))
-                ny = base[1] + (gy + gh2 // 2 - (sy + sh_px // 2))
-                # Never open a gap at an edge: a plate larger than its stage
-                # covers it, and one that is not stays centred on that axis.
-                nx = (min(gx, max(nx, gx + gw2 - nw)) if nw >= gw2
-                      else gx + (gw2 - nw) // 2)
-                ny = (min(gy, max(ny, gy + gh2 - nh)) if nh >= gh2
-                      else gy + (gh2 - nh) // 2)
-                placed = (nx, ny, nw, nh)
-                w, h = nw, nh
+                placed = _focus_placement(plate, shot.focus, stage, placed)
+                w, h = placed[2], placed[3]
 
             # -- what goes in its slots. The renderer draws the plate WITH
             #    these; nothing here sets type.

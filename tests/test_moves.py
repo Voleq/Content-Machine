@@ -269,7 +269,7 @@ def test_every_short_wipes_two_or_three_changes_of_subject(vertical, reg, settin
     fmt, result, words, _ = vertical
     wipes = MV.plan_wipes(fmt, result, reg, seed="x")
     assert 2 <= len(wipes) <= 3, [w.shot_in for w in wipes]
-    beat = lambda shot_id: re.sub(r"-\d+$", "", shot_id)  # noqa: E731
+    beat = lambda shot_id: re.sub(r"(-\d+)?(-in)?$", "", shot_id)  # noqa: E731
     for w in wipes:
         assert beat(w.shot_out) != beat(w.shot_in), f"{w.shot_in}: a wipe inside a sequence"
 

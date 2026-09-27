@@ -1,4 +1,4 @@
-# MASTER PROMPT — HEADLINE SHORT ("What does this actually mean?" · 9:16 · ~60–75s)
+# MASTER PROMPT — HEADLINE SHORT ("What does this actually mean?" · 9:16 · ~45–55s)
 # The bot fills every {{placeholder}} and hands you this ready to paste into Claude/GPT.
 # You paste the model's JSON output back to the bot. Same kit + JSON schema as
 # the trending short — only the FRAMING changes: a specific piece of news, not
@@ -46,7 +46,7 @@ Chartable metrics present in THIS data — every company/earnings `numbers` row 
 {{craft_rules}}
 
 ## THE FORMAT — fixed beats (the render kit is fixed — you only supply the rotating content)
-**The video opens on the hook card and ends on the sign-off card, which prints your `conclusion`. Dennis is on camera for one shot in the middle of a company or earnings video, and not at all in a macro one.** Everything else is the evidence. Your words run under all of it, so the first sentence IS the hook, heard from the first frame.
+**The video opens on the hook card and ends on the sign-off card, which prints your `conclusion`. Dennis is on camera for one shot in the middle of a company or earnings video, and not at all in a macro one.** Everything else is the evidence. Your words run under all of it, so the first sentence IS the hook, heard from the first frame. These are what each part of the short does; the ORDER this video is cut in is under THE CUT below.
 
 1. HOOK — the branded chart is the hero (the {{ticker}} price/index, rendered from our own data — never a screenshot). `hook_text` states the news and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. Choose `chart_style`: "clean" or "marker" (the crude napkin look, for the extra-deadpan takes).
 2. WHAT IT SAYS vs WHAT THEY'LL ASSUME — the headline is overlaid ON the chart; you say what it literally reports, then what the crowd will read into it (usually more than it says; occasionally less).
@@ -54,13 +54,18 @@ Chartable metrics present in THIS data — every company/earnings `numbers` row 
 4. CHEAP OR TRAP — **also held ~4–5 seconds**. company/earnings: is the multiple a bargain or a trap after this news? Name it, then say what would have to be true for it to be cheap. macro: what the release would have to keep doing for the market's reaction to make sense. Goes in `cheap_or_trap`.
 5. PAYOFF — the deadpan verdict: priced in · nothingburger · actually matters (macro: what it does to your holdings), spoken over the closing beats; the sign-off card then prints it. Free text. NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
 
-## PACE — faster than long-form, but NOT machine-gun
-The extra runtime exists so the two data beats can breathe. The numbers sheet and the cheap-or-trap card each hold four to five seconds — write enough narration over each to fill that. A viewer who cannot read the numbers has watched a screensaver.
+## THE CUT — THIS VIDEO'S BEATS, IN ORDER, AND WHERE EACH STARTS
+{{beat_order}}
 
-## RETENTION — the ~60–75s buys attention, not filler
-The beats are fixed; the runtime goes to keeping the viewer, never more talking:
+A marker is `[BEAT: key]`, the key exactly as listed, written in `audio_script` immediately before the first word of that beat. It is never spoken and never shown: the bot takes it out before the voice, the captions and the character count. The shot for that beat starts on the word after the marker, so put it where the beat really begins — not a sentence early, not mid-thought. Every key above, once each, in that order; the script opens on `[BEAT: hook]`. A bare `[BEAT]` with no key is still a pause and means exactly what it always did.
+
+## PACE — faster than long-form, but NOT machine-gun
+The runtime is spent so the two data beats can breathe. The numbers sheet and the cheap-or-trap card each hold four to five seconds — write enough narration over each to fill that. A viewer who cannot read the numbers has watched a screensaver.
+
+## RETENTION — the ~45–55s buys attention, not filler
+The beats are set above; the runtime goes to keeping the viewer, never more talking:
 1. FRONT-LOAD THE HOOK. The first ~3 seconds decide scroll-through — open on the sharpest version of the news and the doubt, no wind-up. `hook_text` ≤ 90 chars, mute-safe.
-2. ONE MID-POINT RE-HOOK (~30s, the WHAT-IT-SAYS → GUT-CHECK seam): a single line that re-opens the question so nobody drops at the halfway point — e.g. "but here's the part the headline skips". Exactly one; a turn, not a tangent.
+2. ONE MID-POINT RE-HOOK (~20–25s, the WHAT-IT-SAYS → GUT-CHECK seam): a single line that re-opens the question so nobody drops at the halfway point — e.g. "but here's the part the headline skips". Exactly one; a turn, not a tangent.
 3. The CHEAP-OR-TRAP beat carries the counter-observation — the strongest point against the read you're about to give — so the payoff lands as considered, not reflexive.
 4. Room for ONE more number IF it changes the read — a number, not more narration.
 
@@ -89,7 +94,7 @@ DIRECTION above, generated from the code that performs them. A [BEAT] before
 the payoff is what turns a sentence into a joke.
 
 ## HARD RULES
-1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts SPOKEN words only — delivery tags are stripped before counting.
+1. `audio_script`: 140–160 spoken words, ≤ 1100 characters, first sentence = the hook, a `[BEAT: key]` marker at the start of every beat in the order under THE CUT, ONE mid-point re-hook (~20–25s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts SPOKEN words only — delivery tags and beat markers are stripped before counting.
 2. `move_summary`: one line of context for the news, e.g. "Q3 print · guide raised" or "CPI 3.4% vs 3.1% expected". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the headline as reported (short). `meaning` = what it actually means, in your voice.
 4. `numbers`: 1–6 rows. company/earnings: from the history table above (each with 2–6 values OLDEST → NEWEST as display strings, matching a chartable metric). macro: OPTIONAL/index-based — index levels or a macro series (e.g. "CPI YoY": ["3.7%","3.2%","3.1%","3.4%"]); set `years` to the matching period labels. One extra row is fine IF it changes the read; don't pad.
@@ -121,7 +126,7 @@ Emit these four sections as plain prose FIRST (no JSON, no braces), then the str
 
 1. READ — one line on the news and which MODE it is, then the 1–5 `numbers` rows you'll feature (or "macro — numbers optional") and one clause each on WHY.
 2. HOOK OPTIONS — 2–3 muted-safe `hook_text` candidates (≤ 90 chars each); mark the one you'll use with ★.
-3. SCRIPT — the `audio_script` (180–210 words), the ★ hook as its first sentence, ONE mid-point re-hook, and — optionally — a single second-look line right before the verbatim conclusion.
+3. SCRIPT — the `audio_script` (140–160 words), the ★ hook as its first sentence, a `[BEAT: key]` marker where each beat starts in the order under THE CUT, ONE mid-point re-hook, and — optionally — a single second-look line right before the verbatim conclusion.
 4. TAGS — one line noting the doodle/scribble/meme keys you placed and why (all from the catalogs).
 
 THEN, as the final block, the strict JSON object below — keys exactly as shown, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
@@ -130,7 +135,7 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
   "ticker": "{{ticker}}",
   "format": "short",
   "hook_text": "<= 90 chars, mute-safe>",
-  "audio_script": "<180-210 spoken words, <= 1400 chars, one mid-point re-hook, ends with the conclusion verbatim; may embed [PLATE:]/[SCRIBBLE:] inline>",
+  "audio_script": "<140-160 spoken words, <= 1100 chars, a [BEAT: key] marker at the start of each beat in the order under THE CUT, one mid-point re-hook, ends with the conclusion verbatim; may embed [PLATE:]/[SCRIBBLE:] inline>",
   "move_summary": "<one line of news context>",
   "chart_style": "clean",
   "headlines": [
@@ -151,12 +156,12 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
 }
 
 ## STRUCTURE EXAMPLE — illustrative only, replace every value (do not reuse these numbers)
-A company-news example: the headline is taught straight, then undercut flat; one mid-point re-hook re-opens the question; a self-deprecating line lands mid-script; the verdict closes it. (In macro mode, `ticker` is the index and `numbers` would be a macro series instead.)
+A company-news example: each beat opens on its marker, in the company short's as-authored order (yours is under THE CUT); the headline is taught straight, then undercut flat; one mid-point re-hook re-opens the question; a self-deprecating line lands mid-script; the verdict closes it. (In macro mode, `ticker` is the index and `numbers` would be a macro series instead.)
 {
   "ticker": "EXMPL",
   "format": "short",
   "hook_text": "EXMPL signed an AI partnership. Read the second sentence.",
-  "audio_script": "EXMPL announced an AI partnership this morning, and the stock did the thing where it goes up before anyone reads the release. What it literally says is that two companies will explore opportunities together. What the crowd hears is revenue. Those are not the same sentence. There is no dollar figure, no timeline, and the word explore is doing a lot of work. But here's the part the headline skips. Revenue went four hundred million to four ninety six in five years, which is a plateau wearing a growth costume, and a press release does not move a plateau. Losses got wider [SCRIBBLE: circle -> Net income] every one of those years. I have owned a press release before; my account went from twenty five k to zero dollars waiting for the follow-through. In fairness, partnerships sometimes become contracts, and if this one does I will say so. Today it is a sentence about exploring. Priced in, and then some. A partnership to explore, stapled to five years of flat.",
+  "audio_script": "[BEAT: hook] EXMPL announced an AI partnership this morning, and the stock went up before anyone read the release. [BEAT: move] Up eleven percent by lunch, on one sentence nobody finished reading. [BEAT: headline] What it literally says is that two companies will explore opportunities together. What the crowd hears is revenue. There is no dollar figure and no timeline. [BEAT: turn] But here's the part the headline skips. [BEAT: numbers] Revenue went four hundred million to four ninety six in five years. Losses got wider every one of those years. [BEAT: numbers_comment] A plateau wearing a growth costume, and a press release does not move a plateau. [BEAT: cheap_or_trap] I have owned a press release before; my account went to zero waiting for the follow-through. In fairness, partnerships sometimes become contracts. [BEAT: conclusion] Today it is a sentence about exploring. Priced in, and then some. A partnership to explore, stapled to five years of flat.",
   "move_summary": "AI partnership announced · no terms disclosed",
   "chart_style": "marker",
   "headlines": [
