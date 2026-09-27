@@ -73,8 +73,8 @@ from config import Settings
 from pipeline.audio_assets import audio_banner
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
-from pipeline.host import (build_host_clip, frame_shot, front_of, host_shot,
-                           pick_shot, place_on_room, stands_on)
+from pipeline.host import (build_host_clip, cast_pose, frame_shot, front_of,
+                           host_shot, pick_shot, place_on_room, stands_on)
 from pipeline.chart import declared_layer, draw_declared
 from pipeline.media_frames import FrameRotation, composite as frame_media
 from pipeline.models import (
@@ -763,6 +763,27 @@ def _render_long(
         if inside:
             lands_a_chapter.add(inside[-1])
 
+    # THE CLOSE, as far as casting him goes: the last beat of the final
+    # chapter he STANDS in. The line the chapter rests on is the close-up
+    # above, and a framing is never cast — so the sign-off pose goes on the
+    # standing beat before it, which is the last time he is seen whole.
+    _last_from = chapters[-1][0] if chapters else 0.0
+    closing_beat = max((i for i, sg in enumerate(segments)
+                        if sg.kind == "host" and sg.start >= _last_from
+                        and i not in lands_a_chapter), default=-1)
+
+    def _words_in(seg) -> list:
+        """The words said during a segment: what casts the pose he stands in."""
+        return [w for w in tts.words if seg.start <= w.start < seg.end]
+
+    def _shown_before(seg_i: int) -> str:
+        """The pose the last beat before this one showed him in, if any."""
+        shown = {int(m["segment"]): str(m.get("pose", ""))
+                 for m in host_motion if "segment" in m}
+        shown.update(panel_hosts)
+        earlier = [k for k in shown if k < seg_i]
+        return shown[max(earlier)] if earlier else ""
+
     # What the face did, per segment. Over forty minutes the host is the
     # most-viewed element in the channel and the easiest to leave static
     # without noticing, so the manifest records it.
@@ -785,10 +806,20 @@ def _render_long(
         role_name = ("panel" if panel
                      else "rests-on" if seg_i in lands_a_chapter
                      else "beat")
+        # A STANDING BEAT MAY BE CAST BY ITS WORDS — a count on his fingers,
+        # a shrug on the "but", the filing held up — where the room is one
+        # the pose was drawn for. The close-up is a camera distance and is
+        # never cast; with no cast the role picks, exactly as before.
+        cast = (cast_pose(reg, _words_in(seg), room=room,
+                          closing=seg_i == closing_beat, used=host_used,
+                          avoid=_avoid_recent, previous=_shown_before(seg_i),
+                          seed=f"{script.ticker}|{seg_i}")
+                if role_name == "beat" else None)
         # He is composited per output frame, so he is loaded at the size he
         # will be SHOWN at rather than at his delivered 2160x3840. Without
         # this every frame of every host beat is a 4K RGBA resize.
-        shot_probe = pick_shot(reg, role_name, seg_i, used=host_used)
+        shot_probe = ((host_shot(reg, cast.pose) if cast else None)
+                      or pick_shot(reg, role_name, seg_i, used=host_used))
         target_h = H
         if shot_probe is not None and shot_probe.is_framing:
             spot_probe = frame_shot(shot_probe, (W, H))
@@ -803,10 +834,15 @@ def _render_long(
             tts.words, seg.start, seg.end, rdir / f"host_{seg_i}.mov",
             reg=reg, settings=settings, fps=fps, display_h=target_h,
             role=role_name, shot_index=seg_i, used=host_used, report=motion,
+            pose=cast.pose if cast else None,
         )
         if built is None:
             return None
         if motion:
+            # Which cue cast him, when one did and the cast pose is what was
+            # built — so a count that never reaches the screen is findable.
+            motion["cast"] = (cast.cue if cast and reg.base_key(
+                motion.get("pose", "")) == cast.pose else "")
             host_motion.append({"segment": seg_i, **motion})
             plates_used.add(motion.get("pose", ""))
             host_used[motion.get("pose", "")] = (
@@ -939,7 +975,26 @@ def _render_long(
         # which side that is depends on the angle rather than on a flag.
         left_w = box[0] - px(120)
         right_w = W - (box[0] + box[2]) - px(120)
-        return (shot, box, "right" if right_w >= left_w else "left")
+        side = "right" if right_w >= left_w else "left"
+        # THE WORDS MAY CAST HIM HERE TOO — above all the hand held out to
+        # the plate, which is only drawn reaching camera-right and so is cast
+        # only when the evidence landed on that side of him. The evidence
+        # column was sized against the role's pose, so a cast that would not
+        # stand in exactly the same box is left out rather than re-solved.
+        cast = cast_pose(reg, _words_in(segments[seg_i]), room=room,
+                         plate_on=f"camera-{side}", used=host_used,
+                         avoid=_avoid_recent, previous=_shown_before(seg_i),
+                         seed=f"{script.ticker}|panel|{seg_i}")
+        cast_shot = host_shot(reg, cast.pose) if cast else None
+        if cast_shot is not None and stands_on(room, cast_shot):
+            again = place_on_room(room, cast_shot)
+            if (again.x, again.y, again.width, again.height) == (
+                    placed.x, placed.y, placed.width, placed.height):
+                shot = cast_shot
+                # A cast pose keeps its `limit` across stills and talking
+                # beats alike: the shrug is once a video, wherever it lands.
+                host_used[shot.key] = host_used.get(shot.key, 0) + 1
+        return (shot, box, side)
 
     def _evidence_box(room, seg_i: int, two_shot: bool) -> tuple[int, int, int, int]:
         """(x, y, max width, max height) for the evidence, beside the host."""
