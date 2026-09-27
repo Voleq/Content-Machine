@@ -2015,7 +2015,10 @@ def reachable_plates(reg) -> dict[str, set[str]]:
                 # not, and its other hours go wherever the episode does.
                 for hour in (reg.hour_rotation or ("",)):
                     for a in ("16x9", "9x16"):
-                        by_template.update(reg.angles_for(role, a, hour))
+                        for key in reg.angles_for(role, a, hour):
+                            # And its seasonal twin, which December shoots
+                            # in its place (`Registry.at`).
+                            by_template.update((key, *reg.twins_of(key)))
                 return
         got = resolve_plate(reg, name, aspect)
         if got is not None:

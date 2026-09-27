@@ -590,12 +590,16 @@ class _Cache:
     def plate(self, key: str, frame_i: int, values: dict[str, str],
               w: int, h: int) -> Image.Image | None:
         vkey = tuple(sorted(values.items()))
-        sized_key = (key, frame_i, vkey, w, h)
+        # BY THE PICTURE, NOT THE INDEX. A room's twelve-frame loop shows two
+        # or three pictures, and keyed by index it held twelve decoded 4K
+        # copies of them — half a gigabyte for one room shot.
+        frame = self._frame_file(key, frame_i)
+        sized_key = (key, frame, vkey, w, h)
         hit = self._sized.get(sized_key)
         if hit is not None:
             return hit
 
-        drawn_key = (key, frame_i, vkey)
+        drawn_key = (key, frame, vkey)
         img = self._drawn.get(drawn_key)
         if img is None:
             plate = self.reg.get(key)
@@ -614,6 +618,13 @@ class _Cache:
             (max(w, 1), max(h, 1)), Image.LANCZOS)
         self._sized[sized_key] = out
         return out
+
+    def _frame_file(self, key: str, frame_i: int):
+        """The file frame `frame_i` of `key` shows; the index if there is none."""
+        plate = self.reg.get(key)
+        if plate is None or not 0 <= frame_i < len(plate.frames):
+            return frame_i
+        return plate.frames[frame_i].png
 
     def file(self, path: Path, w: int, h: int) -> Image.Image:
         key = ("file", str(path), 0, (), w, h)
