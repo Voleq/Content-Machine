@@ -37,6 +37,7 @@ import random
 import re
 from collections import OrderedDict
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Iterable, Sequence
 
 from pipeline import motion as M
@@ -736,11 +737,11 @@ class MoveCompositor:
             plate, frame_i, {**{b: "1" for b in bands}, **dict(text)},
             self.settings, self.reg))
 
-    def _data(self, plate, values: tuple):
+    def _data(self, plate, values: tuple, seed: str = ""):
         from pipeline.chart import declared_layer
 
-        return self._part(("data", plate.key, values), lambda: declared_layer(
-            self.reg, plate, dict(values), plate.pixel_size, seed=plate.key))
+        return self._part(("data", plate.key, values, seed), lambda: declared_layer(
+            self.reg, plate, dict(values), plate.pixel_size, seed=seed or plate.key))
 
     def _ink(self, plate, name: str) -> tuple[int, int, int, int]:
         from pipeline import series as S
@@ -750,9 +751,14 @@ class MoveCompositor:
         return S._rgba(inks.get(name) or inks.get("attention") or "#F07A5A")
 
     # -- one layer --------------------------------------------------------------
-    def draw_layer(self, canvas, layer, t: float, frame_i: int) -> None:
+    def state(self, layer, t: float) -> tuple:
+        """Which frame of each of the layer's moves shows at `t`."""
+        return tuple(m.frame_at(t) for m in self._by_layer.get(layer.name, []))
+
+    def frame(self, layer, t: float, frame_i: int):
+        """The layer as it looks at `t` on boil frame `frame_i`, at its size."""
         moves = self._by_layer.get(layer.name, [])
-        state = tuple(m.frame_at(t) for m in moves)
+        state = self.state(layer, t)
         key = (layer.name, frame_i, state)
         img = self._composed.get(key)
         if img is None:
@@ -762,6 +768,10 @@ class MoveCompositor:
                 self._composed.popitem(last=False)
         else:
             self._composed.move_to_end(key)
+        return img
+
+    def draw_layer(self, canvas, layer, t: float, frame_i: int) -> None:
+        img = self.frame(layer, t, frame_i)
         if img is not None:
             canvas.alpha_composite(img, (layer.x, layer.y))
 
@@ -815,7 +825,8 @@ class MoveCompositor:
                 fill_slot(img, plate, plate.slots[m.slot],
                           M.count_text(m.text, M.t_of_frame(f, m.frames)),
                           self.settings, self.reg)
-        data = self._data(plate, tuple(sorted(values.items())))
+        data = self._data(plate, tuple(sorted(values.items())),
+                          getattr(layer, "seed", "") or "")
         if data is not None:
             if reveal is not None:
                 data = self._reveal(data, plate, *reveal)
@@ -956,6 +967,139 @@ class MoveCompositor:
             img = self.cache.plate(w.key, f, {}, canvas.width, canvas.height)
             if img is not None:
                 canvas.alpha_composite(img)
+
+
+# ---------------------------------------------------------------------------
+# The LONG: one plate beat at a time
+# ---------------------------------------------------------------------------
+
+def plan_segment(plate, values: dict, rows: Sequence[dict], *, seg_len: float,
+                 shot_id: str, layer: str = "plate", earliest: float = 0.0,
+                 settings=None, reg=None) -> tuple[list[Move], list[str]]:
+    """The moves one LONG plate beat plays, timed from the beat's first frame.
+
+    Nothing is picked here: the writer called these (`rows`, the beat's
+    `[MOVE]`s as `plan_writer_moves` placed them), each on the word it was
+    written on. The only move added is the data drawing on as the plate
+    arrives, which every chart in the kit is built for. They play one after
+    another on the beat, as on a short, and a move that cannot land before
+    the beat cuts is not started.
+
+    A pen-circle is dropped here if the figure's ink would make the ring a
+    ring round the plate: the writer is not offered the circle on a slot that
+    big, but the ink of what they wrote is only known now.
+
+    `earliest` is when the beat is first seen, for one that opens under a
+    chapter bumper or a wipe: nothing moves before it.
+    """
+    lane = _Lane(0.0, float(seg_len), max(float(earliest), 0.0))
+    skipped: list[str] = []
+    motion = plate.motion or {}
+
+    def new(move: str, slot: str, text: str = "") -> Move:
+        frames, ease = _catalogue(reg, move)
+        return Move(move, shot_id, layer, slot, 0.0, frames, ease, text=text)
+
+    kind = _data_kind(plate, values)
+    if kind == "line" and motion.get("line-draw"):
+        lane.place(new("line-draw", "plot-area"), 0.0)
+    elif kind == "bars" and motion.get("bars-grow"):
+        lane.place(new("bars-grow", "plot-area"), 0.0)
+
+    for r in sorted(rows, key=lambda r: (float(r.get("at") or 0.0), int(r.get("order") or 0))):
+        move, slot = str(r.get("move") or ""), str(r.get("slot") or "")
+        text = str(r.get("text") or values.get(slot, ""))
+        where = f"{shot_id}: {move} on {slot}"
+        if plate.slot(slot) is None or move not in _CATALOGUE:
+            skipped.append(f"{where}: the plate has nothing there to act on")
+            continue
+        if move == "count-up" and not is_one_figure(text):
+            skipped.append(f"{where}: {text!r} is not one figure to count to")
+            continue
+        if move == "pen-circle" and (
+                settings is None or circle_box(plate, slot, text, settings, reg) is None):
+            skipped.append(f"{where}: {text!r} is too big a part of the plate to "
+                           f"ring without ringing the plate")
+            continue
+        if move == "zoom-to-slot":
+            box = _ink_box(plate, slot, text, settings, reg) if settings is not None else None
+            if box is None or _zoom_factor(plate, box) < ZOOM_MIN:
+                # A push-in of a few percent reads as a wobble, not a zoom:
+                # the line is underlined instead, which is what it was for.
+                skipped.append(f"{where}: too big to push in on; underlined instead")
+                move = "highlight"
+        if lane.place(new(move, slot, text), float(r.get("at") or 0.0)) is None:
+            skipped.append(f"{where}: no room to land before the beat cuts")
+    return lane.moves, skipped
+
+
+@dataclass(frozen=True)
+class SegmentClips:
+    """A LONG plate beat with its moves, as the cut plays it.
+
+    `moving` plays from the beat's first frame until every move has landed.
+    A still plate then holds that clip's last frame; a boiling one goes on in
+    `landed`, the plate's own boil with every move landed on it, looped, from
+    `landed_at` (the moving clip's last frame, which already shows it).
+    """
+
+    moving: Path
+    landed: Path | None
+    landed_at: float
+    fps: int
+
+
+def render_segment(plate, values: dict, moves: Sequence[Move], *, seg_len: float,
+                   size: tuple[int, int], settings, reg, out_dir: Path, stem: str,
+                   seed: str = "") -> SegmentClips | None:
+    """Draw one LONG plate beat's moves into clips, or None when it has none."""
+    from types import SimpleNamespace
+
+    from pipeline.rasters import frames_to_alpha_clip, held_frames_to_alpha_clip
+
+    moves = list(moves)
+    if not moves:
+        return None
+    values = dict(values)
+    for m in moves:
+        # A band the writer highlights stays lit once it has drawn on.
+        if m.move == "highlight" and plate.slot(m.slot) is not None \
+                and plate.slots[m.slot].is_band:
+            values[m.slot] = str(values.get(m.slot) or "").strip() or "1"
+    layer = SimpleNamespace(kind="plate", name=moves[0].layer, entry_key=plate.key,
+                            values=values, x=0, y=0, w=int(size[0]), h=int(size[1]),
+                            seed=seed)
+    comp = MoveCompositor(MovePlan(moves=moves), reg, settings, None, memory=8)
+    boils = max(int(plate.frame_count or 1), 1) if plate.animated else 1
+    boil_fps = max(int(plate.fps or 2), 1)
+
+    def boil(t: float) -> int:
+        return int(math.floor(t * boil_fps + 1e-9)) % boils if boils > 1 else 0
+
+    landed = max(m.end for m in moves)
+    count = int(math.ceil(min(landed, seg_len) * FPS)) + 1
+    held: list[tuple[object, float]] = []
+    last = None
+    for k in range(count):
+        t = k / FPS
+        key = (comp.state(layer, t), boil(t))
+        if key == last:
+            img, secs = held[-1]
+            held[-1] = (img, secs + 1 / FPS)
+            continue
+        img = comp.frame(layer, t, key[1])
+        if img is None:
+            return None
+        held.append((img.copy(), 1 / FPS))
+        last = key
+    out_dir.mkdir(parents=True, exist_ok=True)
+    moving = held_frames_to_alpha_clip(held, out_dir / f"{stem}_moves.mov", fps=FPS)
+    if boils <= 1:
+        return SegmentClips(moving, None, count / FPS, FPS)
+    done = 1e9
+    loop = [comp.frame(layer, done, b) for b in range(boils)]
+    landed_clip = frames_to_alpha_clip(loop, boil_fps, out_dir / f"{stem}_landed.mov")
+    return SegmentClips(moving, landed_clip, (count - 1) / FPS, FPS)
 
 
 def stroke(img, pts: list[tuple[float, float]], width: float,

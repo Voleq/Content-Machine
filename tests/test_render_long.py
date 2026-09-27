@@ -332,6 +332,34 @@ def test_a_chapter_opener_is_the_room_with_the_title_in_its_slot(rendered):
     assert manifest["chapter_warnings"] == []
 
 
+def test_later_chapters_open_on_the_bumper_under_the_blinds(rendered):
+    """Items 22 and 23: the count turns over on every chapter after the first,
+    the blinds' full cover sits on its cut, and both are in the move record."""
+    settings, script, tts, out, manifest = rendered
+    layers = {l["name"]: l for l in manifest["layers"]}
+    record = manifest["moves"]
+    assert set(record) == {"moves", "wipes", "skipped"}
+    rows = record["moves"]
+    assert rows == sorted(rows, key=lambda r: (r["start"], r["move"]))
+    assert all(set(r) == {"move", "start", "shot_id", "slot"} for r in rows)
+    ticks = {r["shot_id"]: r for r in rows if r["move"] == "tick-over"}
+    blinds = [w for w in record["wipes"] if w["transition"] == "wipe-blinds"]
+    assert ticks, "no chapter opened on the bumper"
+    assert len(blinds) == len(ticks)
+    for shot, tick in ticks.items():
+        bumper = layers[shot]
+        assert tick["slot"] == "num"
+        assert bumper["t_start"] < tick["start"] < bumper["t_end"]
+        assert any(abs(w["cut"] - bumper["t_start"]) < 1e-3 for w in blinds)
+    # The cold open and the end are wiped with a sweep or a page.
+    others = [w["transition"] for w in record["wipes"] if w["transition"] != "wipe-blinds"]
+    assert others and set(others) <= {"wipe-sweep", "wipe-page"}
+    # Every wipe is the last layer over its cut, the bumper included.
+    names = [l["name"] for l in manifest["layers"]]
+    wipes = [n for n in names if n.startswith("wipe-")]
+    assert names[-len(wipes):] == wipes
+
+
 # --------------------------------------------------------------------------
 # The mix reacts to structure: a cue on every opener, and a bed that leaves.
 # --------------------------------------------------------------------------

@@ -235,6 +235,43 @@ def frames_to_alpha_clip(frames: list[Image.Image], fps: int, out_path: Path) ->
             "-c:v", "png", "-pix_fmt", "rgba", str(out_path),
         ])
     return out_path
+
+
+def held_frames_to_alpha_clip(frames: list[tuple[Image.Image, float]],
+                              out_path: Path, *, fps: int = 12) -> Path:
+    """As `frames_to_alpha_clip`, but each frame is held for its own time.
+
+    For a clip that mostly stands still: a plate whose moves land seconds
+    apart is the same picture for most of its twelve frames a second, and
+    every one of them written out is a full PNG. Here a picture that holds is
+    stored once, with how long it holds. Times are on the `fps` grid; each
+    image is read at that rate, or the demuxer's default 25 would round every
+    twelfth of a second to a multiple of 0.04.
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="held_") as td:
+        lines = ["ffconcat version 1.0"]
+        last = None
+        for i, (frame, seconds) in enumerate(frames):
+            last = Path(td) / f"f_{i:05d}.png"
+            frame.save(last)
+            lines += [f"file '{last.name}'", f"option framerate {fps}",
+                      f"duration {max(seconds, 1e-3):.6f}"]
+        if last is None:
+            raise ValueError("no frames to encode")
+        # The concat demuxer only honours the last duration when the last
+        # file is named once more after it; that adds one frame of the last
+        # picture, which is the landed state and harmless.
+        lines += [f"file '{last.name}'", f"option framerate {fps}"]
+        listing = Path(td) / "frames.ffconcat"
+        listing.write_text("\n".join(lines) + "\n")
+        run_ffmpeg([
+            "-f", "concat", "-safe", "0", "-i", str(listing),
+            "-fps_mode", "vfr", "-c:v", "png", "-pix_fmt", "rgba", str(out_path),
+        ])
+    return out_path
+
+
 def flash_frames(w: int, h: int, *, fps: int = 30,
                  flash_seconds: float = 0.14) -> list[Image.Image]:
     """A white flash stinger for beat transitions."""

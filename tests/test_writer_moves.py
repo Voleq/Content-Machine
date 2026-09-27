@@ -38,6 +38,10 @@ BIG = ("[PLATE: big-number-l1-16x9 | kicker=FREE CASH FLOW | value={v} | "
        "label=LTM]")
 QUOTE = ("[PLATE: quote-pull-16x9 | body=We remain confident in the long "
          "term. | attribution=The CEO]")
+# A figure called out beside its chart: a small part of the plate, so the
+# pen may ring it. The big number's figure IS its plate and is never ringed.
+CALLOUT = ("[PLATE: earnings-vs-cash-16x9 | kicker=EARNINGS VS CASH | "
+           "gap={v}]")
 FILING = ("[PLATE: filing-page-16x9 | kicker=10-K | docref=p. 41 | "
           "passage=We may not be able to refinance the notes on acceptable "
           "terms.]")
@@ -76,7 +80,13 @@ def test_one_number_is_a_single_figure_and_nothing_else():
 
 def test_a_plate_offers_only_the_moves_its_kit_anchors_publish(reg):
     big = writer_moves(reg.get("figures/big-number-l1-16x9"))
-    assert big == {"count-up": "value", "pen-circle": "value"}
+    assert big == {"count-up": "value"}, "the big figure is never ringed"
+    assert writer_moves(reg.get("charts/earnings-vs-cash-16x9")) == {
+        "count-up": "gap", "pen-circle": "gap"}
+    assert "count-up" not in writer_moves(reg.get("charts/bars-6y-16x9")), \
+        "the first bar is the oldest year"
+    assert not {"count-up", "pen-circle"} & set(
+        writer_moves(reg.get("tables/numbers-sheet-4r-16x9")))
     quote = writer_moves(reg.get("cards/quote-pull-16x9"))
     assert quote["highlight"] == "body"
     assert "zoom-to-slot" not in quote, "zoom is for paper only"
@@ -182,7 +192,7 @@ def test_the_same_move_twice_on_one_plate_blocks(settings, tmp_path):
 
 def test_a_move_written_after_its_plate_has_gone_warns(settings, tmp_path):
     filler = " ".join(["and then he keeps on talking"] * 12)
-    raw = (f"Cash. {BIG.format(v='$3.1bn')} It made a lot {filler}. "
+    raw = (f"Cash. {CALLOUT.format(v='$3.1bn')} It made a lot {filler}. "
            f"Later [MOVE: pen-circle] that number.")
     warnings, blocking, _ = _check(raw, settings, tmp_path)
     assert blocking == []
@@ -191,7 +201,7 @@ def test_a_move_written_after_its_plate_has_gone_warns(settings, tmp_path):
 
 def _circles(n: int, gap_words: int = 0) -> str:
     gap = " ".join(["word"] * gap_words)
-    return " ".join(f"{BIG.format(v=f'${i + 1}bn')} It made [MOVE: pen-circle] "
+    return " ".join(f"{CALLOUT.format(v=f'${i + 1}bn')} It made [MOVE: pen-circle] "
                     f"that. {gap}" for i in range(n))
 
 
@@ -295,8 +305,8 @@ def test_a_move_on_a_deferred_plate_plays_when_the_plate_arrives(reg):
 
 
 def test_a_move_spoken_after_its_plate_has_gone_is_dropped(reg):
-    big = "figures/big-number-l1-16x9"
-    cues = [_cue(2.0, CueKind.PLATE, 0, value=big, values={"value": "$1bn"}),
+    big = "charts/earnings-vs-cash-16x9"
+    cues = [_cue(2.0, CueKind.PLATE, 0, value=big, values={"gap": "$1bn"}),
             _cue(20.0, CueKind.MOVE, 1, value="pen-circle", plate=big,
                  plate_order=0)]
     segments, _ = plan_long_segments(cues, 30.0)
@@ -306,14 +316,14 @@ def test_a_move_spoken_after_its_plate_has_gone_is_dropped(reg):
 
 
 def test_pen_circle_keeps_one_a_chapter_and_three_a_video_by_real_time(reg):
-    big = "figures/big-number-l1-16x9"
+    big = "charts/earnings-vs-cash-16x9"
     segments = [Segment(start=0.0, end=1.0, kind="host")]
     cues = []
     for k in range(5):
         a = 1.0 + k * 10.0
         segments.append(Segment(start=a, end=a + 7.0, kind="plate",
                                 payload={"order": 2 * k, "value": big,
-                                         "values": {"value": f"${k}bn"}}))
+                                         "values": {"gap": f"${k}bn"}}))
         segments.append(Segment(start=a + 7.0, end=a + 10.0, kind="host"))
         cues.append(_cue(a + 1.0, CueKind.MOVE, 2 * k + 1, value="pen-circle",
                          plate=big, plate_order=2 * k))

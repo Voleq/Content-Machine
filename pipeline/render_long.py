@@ -85,6 +85,7 @@ from pipeline.models import (
     TTSResult,
     parse_scribble_payload,
 )
+from pipeline.bumper import bumper_clip, tick_start, wipe_clip
 from pipeline.plate_frames import drawn_box, playback_seconds, render_clip
 from pipeline.plates import _prefer_unused, at_episode_hour, load_plates
 from pipeline.sound import (DEFAULT_LEAD_S, EFFECT_KEYS, Voicing, cue_lead_s,
@@ -152,6 +153,36 @@ def _chapter_plan(script, duration: float,
              "openers will be drawn. The titles are the only place a section "
              "name appears on screen, so the cut will have none.")
     return out
+
+
+def _chapter_cuts(chapters: list[tuple[float, str, str]], seg_starts: list[float],
+                  *, intro_dur: float, duration: float) -> list[float | None]:
+    """The cut each chapter's opener lands on, or None where it has none:
+    the first cut at or after the chapter's own time, each cut used once."""
+    used: set[float] = set()
+    out: list[float | None] = []
+    for target, _title, _type in chapters:
+        t = next((s for s in seg_starts
+                  if s >= max(target, intro_dur) and s not in used), None)
+        if t is None or t < 0.6 or t > duration - 1.2:
+            out.append(None)
+            continue
+        used.add(t)
+        out.append(t)
+    return out
+
+
+def _cleared(t: float, covers: list[tuple[float, float]]) -> float:
+    """The first moment at or after `t` that no full-frame cover is on.
+
+    A move played under the opening title, a chapter bumper or a wipe's cover
+    is a move nobody sees, so a beat that opens under one starts its moves
+    when it lifts.
+    """
+    for a, b in sorted(covers):
+        if a <= t + 1e-6 < b:
+            t = b
+    return t
 
 
 # How long the opening title holds over the first frames. It is opaque, so
@@ -598,6 +629,32 @@ def _render_long(
         log.warning("moves: %s", w)
     for m in writer_moves:
         segments[m.segment].payload.setdefault("moves", []).append(m.to_json())
+    # WHAT PLAYED, AND WHEN: every move the render drew, in programme time,
+    # with the beat and the slot — the same record a short writes, which is
+    # what the sound is timed to. Filled as the beats are drawn.
+    long_moves: list[dict] = []
+    moves_skipped: list[str] = []
+
+    # WHERE THE FRAME IS COVERED: the opening title, each chapter's bumper
+    # (or the room opener on chapter one), and the wipes on the cold open and
+    # the end. Worked out before the beats are drawn, so a beat that opens
+    # under one holds its moves until it lifts.
+    intro_dur = min(INTRO_CARD_S, duration * 0.5)
+    chapter_cuts = _chapter_cuts(chapters, [s.start for s in segments],
+                                 intro_dur=intro_dur, duration=duration)
+    end_cut = max((s.start for s in segments if s.start > intro_dur + 2.0),
+                  default=None)
+    _bumper = reg.get(reg.aspect_key("structure/chapter-bumper", aspect) or "")
+    _wipe_on, _wipe_off = 3 / 12, 4 / 12      # design's cut is under frame 4 of 8
+    covers: list[tuple[float, float]] = [(0.0, intro_dur + _wipe_off)]
+    if end_cut is not None:
+        covers.append((end_cut - _wipe_on, end_cut + _wipe_off))
+    for k, t in enumerate(chapter_cuts, start=1):
+        if t is None:
+            continue
+        hold = (float(_bumper.hold_s or 2.0) if k > 1 and _bumper is not None
+                else 1.6)
+        covers.append((t - _wipe_on, t + hold))
 
     px = lambda v: int(round(v * W / 1920))  # noqa: E731  (1920-wide design)
 
@@ -1012,6 +1069,58 @@ def _render_long(
             f"{tail}"
         )
 
+    def _moving_plate_chain(bg_i: int, mv_i: int, ld_i: int | None, x: int, y: int,
+                            w: int, h: int, seg_len: float, tail: str,
+                            landed_at: float) -> str:
+        """A plate beat with its moves: the moves until they land, then the
+        landed plate — held if it is a still, its boil looped if it boils.
+
+        The landed loop is switched on under the moves' last frame, which
+        already shows everything landed, so there is no frame between them.
+        """
+        bg = (f"[{bg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+              f"scale={W}:{H}[hbg];")
+        mv = f"[{mv_i}:v]setpts=PTS-STARTPTS,scale={w}:{h}[hmv];"
+        if ld_i is None:
+            return (bg + mv + f"[hbg][hmv]overlay={x}:{y}:eof_action=repeat{tail}")
+        ld = (f"[{ld_i}:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,"
+              f"trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,scale={w}:{h}[hld];")
+        return (bg + ld + mv
+                + f"[hbg][hld]overlay={x}:{y}:eof_action=repeat:"
+                  f"enable='gte(t,{landed_at:.4f})'[hmid];"
+                + f"[hmid][hmv]overlay={x}:{y}:eof_action=pass{tail}")
+
+    def _plate_moves(seg, seg_i: int, key: str | None, seg_len: float):
+        """The beat's moves drawn into clips, or None when it has none.
+
+        The writer's `[MOVE]`s on this beat, and the chart's data drawing on
+        as it arrives. Recorded in programme time for the manifest.
+        """
+        from pipeline.moves import plan_segment, render_segment
+
+        plate = reg.get(key) if key else None
+        if plate is None:
+            return None
+        values = dict(seg.payload.get("values") or {})
+        rows = list(seg.payload.get("moves") or [])
+        shot_id = f"segment_{seg_i}"
+        moves, skipped = plan_segment(
+            plate, values, rows, seg_len=seg_len, shot_id=shot_id, layer=shot_id,
+            earliest=_cleared(seg.start, covers) - seg.start,
+            settings=settings, reg=reg)
+        moves_skipped.extend(skipped)
+        for w in skipped:
+            log.info("moves: %s", w)
+        if not moves:
+            return None
+        clips = render_segment(plate, values, moves, seg_len=seg_len, size=(W, H),
+                               settings=settings, reg=reg, out_dir=rdir,
+                               stem=f"plate_{seg_i}", seed=f"{plate.key}|{seg_i}")
+        if clips is not None:
+            long_moves.extend({**m.row(), "start": round(seg.start + m.start, 3)}
+                              for m in moves)
+        return clips
+
     # ----------------------------------------------- the two-shot, on the room
     # A two-shot is the ROOM, the evidence, and Dennis standing beside it. It
     # used to be three finished designs stacked in one frame: a filler backdrop
@@ -1299,12 +1408,31 @@ def _render_long(
             # composition gives way, not the ink.
             two_shot = (seg.payload.get("layout") == "two-shot"
                         and not _annotated(seg))
-            if is_video:
+            moving = _plate_moves(seg, i, key, seg_len) if size is not None else None
+            if moving is not None:
+                # The same composition as the plate without its moves: the
+                # moves are drawn at the frame's size and scaled into the
+                # evidence box exactly as the plate itself is.
+                ew, eh = _fit_evidence(W, H, i, two_shot=two_shot)
+                bg, ex, ey = _panel_plate((ew, eh), i, rdir / f"bg_{i}.png",
+                                          two_shot=two_shot)
+                panel_rects[i] = (ex, ey, ew, eh)
+                bg_i = _still_input(bg)
+                mv_i = _add_input(["-i", str(moving.moving)])
+                ld_i = (_add_input(["-i", str(moving.landed)])
+                        if moving.landed is not None else None)
+                chain = _moving_plate_chain(bg_i, mv_i, ld_i, ex, ey, ew, eh,
+                                            seg_len, tail, moving.landed_at)
+                seg_animation = {"asset": key, "moves": True,
+                                 "landed_at": round(moving.landed_at, 3),
+                                 "boils": moving.landed is not None}
+            elif is_video:
                 # A boiling plate is an alpha clip, so the background it plays
                 # on is the same composition a still gets pasted into.
                 ew, eh = _fit_evidence(size[0], size[1], i, two_shot=two_shot)
                 bg, ex, ey = _panel_plate((ew, eh), i, rdir / f"bg_{i}.png",
                                           two_shot=two_shot)
+                panel_rects[i] = (ex, ey, ew, eh)
                 bg_i = _still_input(bg)
                 fg_i = _add_input(["-i", str(art)])
                 chain = _scaled_overlay_chain(bg_i, fg_i, ex, ey, ew, eh,
@@ -1391,7 +1519,10 @@ def _render_long(
         # filter shape, same declared inputs. Then the cut silently keeps
         # serving the frozen version.
         identity: tuple[str, ...] = ()
-        if seg_animation:
+        if seg_animation and seg_animation.get("moves"):
+            identity = (f"moves:{seg_animation['asset']}:{seg_animation['landed_at']}:"
+                        f"{'boils' if seg_animation['boils'] else 'held'}",)
+        elif seg_animation:
             identity = (f"anim:{seg_animation['asset']}:"
                         f"{seg_animation['frames']}x{seg_animation['distinct']}",)
         seg_specs.append(SegmentSpec(
@@ -1451,7 +1582,6 @@ def _render_long(
     # the one frame everybody sees first.
     from pipeline.plate_frames import render_still as _render_still
 
-    intro_dur = min(INTRO_CARD_S, duration * 0.5)
     intro_path = rdir / "intro_card.png"
     intro_plate = reg.get(reg.aspect_key("paper/headline-band-t3", aspect) or "")
     if intro_plate is not None:
@@ -1474,30 +1604,72 @@ def _render_long(
     # to space six hardcoded titles evenly across the runtime and ignore both
     # the trailer's times and its words, so every video announced sections it
     # did not have.
-    seg_starts = [s.start for s in segments]
-    used_ch: set[float] = set()
     stinger_meta: list[dict] = []
     transition_meta: list[dict] = []
-    for k, (target, title, ctype) in enumerate(chapters, start=1):
-        t = next((s for s in seg_starts
-                  if s >= max(target, intro_dur) and s not in used_ch), None)
-        if t is None or t < 0.6 or t > duration - 1.2:
+    wipe_layers: list[OverlayLayer] = []
+
+    def _wipe_at(cut: float, name: str, why: str) -> None:
+        """A wipe with its full cover on `cut` (item 23), recorded."""
+        clip = wipe_clip(reg, rdir / f"{name}_{len(transition_meta)}.mov",
+                         name=name, aspect=aspect, cut=cut, size=(W, H))
+        if clip is None or clip.end > duration:
+            return
+        # On top of everything, the bumper it opens on included: a wipe
+        # that another layer cut across would show two shots at once.
+        wipe_layers.append(OverlayLayer(path=clip.path, x=0, y=0,
+                                        t_start=clip.start, t_end=clip.end,
+                                        is_video=True, name=clip.name))
+        transition_meta.append({"transition": name, "cut": round(cut, 3),
+                                "start": round(clip.start, 3), "at": why})
+
+    # THE COLD OPEN AND THE END ARE WIPED, sweep or page (item 23): the cut
+    # off the opening title, and the cut into the video's last beat. Which of
+    # the two is seeded per video, so the pair is not the same every time.
+    import random as _random
+
+    _pair = ["wipe-sweep", "wipe-page"]
+    if _random.Random(f"wipes|{script.ticker}|{duration:.1f}").random() < 0.5:
+        _pair.reverse()
+    if intro_dur < duration - 1.0:
+        _wipe_at(intro_dur, _pair[0], "cold open")
+    if end_cut is not None and end_cut < duration - 1.0:
+        _wipe_at(end_cut, _pair[1], "end")
+    for k, ((target, title, ctype), t) in enumerate(zip(chapters, chapter_cuts), start=1):
+        if t is None:
             log.warning("chapters: %r at %.0fs has no cut to land on — skipped",
                         title, target)
             continue
-        used_ch.add(t)
 
-        # A CHAPTER OPENER IS THE ROOM WITH THE TITLE IN ITS SLOT.
-        #
-        # There is no stinger family any more, and no ordinal. The old card
-        # printed "01"…"14" into the artwork, which is why a chapter could not
-        # be moved, repeated or cut without the card lying about it — and a
-        # TYPE may legitimately appear twice in one video under two titles.
-        cs_path = _chapter_opener(title, k)
-        layers.append(OverlayLayer(
-            path=cs_path, x=0, y=0, t_start=t, t_end=min(t + 1.6, duration),
-            fade_in=0.2, name=f"chapter_{k}",
-        ))
+        # EVERY CHAPTER AFTER THE FIRST OPENS ON DESIGN'S BUMPER (item 22):
+        # the number large and turning over from the last one, "OF SEVEN",
+        # the title and the episode, held for the two seconds the plate
+        # publishes, with the blinds closing over the cut into it (item 23).
+        # Its number is counted off the script's own chapter list, so a
+        # chapter moved or cut renumbers the rest; nothing is baked.
+        # The first chapter keeps the room with its title in the slot: the
+        # kit places the bumper between chapters, and the cold open has none.
+        # Nothing fades in either, as design's rule 2 has it.
+        bumper = None
+        if k > 1:
+            bumper = bumper_clip(
+                reg, settings, rdir / f"bumper_{k}.mov", aspect=aspect, at=t,
+                n=k, total=len(chapters), title=title,
+                episode=f"{script.ticker.upper()} · {settings.brand_tagline.upper()}",
+                size=(W, H))
+        if bumper is not None:
+            layers.append(OverlayLayer(
+                path=bumper.path, x=0, y=0, t_start=t,
+                t_end=min(bumper.end, duration), is_video=True, hold=True,
+                name=f"chapter_{k}"))
+            long_moves.append({"move": "tick-over", "start": round(tick_start(bumper), 3),
+                               "shot_id": f"chapter_{k}", "slot": "num"})
+            _wipe_at(t, "wipe-blinds", f"chapter_{k}")
+        else:
+            cs_path = _chapter_opener(title, k)
+            layers.append(OverlayLayer(
+                path=cs_path, x=0, y=0, t_start=t, t_end=min(t + 1.6, duration),
+                name=f"chapter_{k}",
+            ))
         stinger_meta.append({"type": ctype, "title": title,
                              "script_t": round(target, 2), "t": round(t, 2)})
 
@@ -1774,6 +1946,8 @@ def _render_long(
     # the operator put a hit on the chapter change instead of music.
     audio += theme_tracks(settings, duration)
 
+    layers += wipe_layers
+
     # ------------------------------------------------------------ encode
     spec = CompositeSpec(
         base_input_args=inputs,
@@ -1909,6 +2083,15 @@ def _render_long(
         "kit_reach": _rendered_kit_reach(sorted(plates_used), settings),
         "stingers": stinger_meta,
         "transitions": transition_meta,
+        # EVERY MOVE THE LONG PLAYED, in the short's shape: design's move id,
+        # the programme time of its first frame, the beat or chapter it was on
+        # and the slot. The bumper's tick-over is here; the wipes list their
+        # cut. This is what the sound is timed to.
+        "moves": {"moves": sorted(long_moves, key=lambda r: (r["start"], r["move"])),
+                  "wipes": [{"transition": w["transition"], "cut": w["cut"],
+                             "start": w["start"]} for w in transition_meta
+                            if "transition" in w],
+                  "skipped": moves_skipped},
         # The motion that reached the cut. Zero here means the long is back to
         # holding every drawing on frame 1.
         "animated_segments": sum(1 for m in seg_meta if m.get("animation")),

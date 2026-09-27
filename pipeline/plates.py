@@ -42,6 +42,8 @@ Three things here are contracts rather than conveniences:
 
 from __future__ import annotations
 
+import re
+
 import json
 import logging
 import random
@@ -660,8 +662,39 @@ def writer_moves(plate: "Plate | None") -> dict[str, str]:
             continue
         if move == "zoom-to-slot" and plate.family not in ZOOM_FAMILIES:
             continue
+        if move == "pen-circle" and not _ringable(plate, plate.slot(str(slot))):
+            continue
+        # On a sheet or a row of bars the anchor is the FIRST column, the
+        # oldest year. The tag cannot name another, so the pen and the
+        # count-up would land on the one figure nobody is talking about;
+        # they are not offered there at all.
+        if move in ("count-up", "pen-circle") and _first_of_series(plate, str(slot)):
+            continue
         out[move] = str(slot)
     return out
+
+
+def _first_of_series(plate: "Plate", name: str) -> bool:
+    """`value-1` beside a `value-2`, `cell-1-1` beside a `cell-1-2`."""
+    m = re.match(r"^(.+)-1$", name)
+    return bool(m) and plate.slot(f"{m.group(1)}-2") is not None
+
+
+def _ringable(plate: "Plate", slot) -> bool:
+    """Whether a ring round this slot would still be a ring round ONE figure.
+
+    Valentin, 26 Sep 2026: never circle the whole plate. Design anchors the
+    pen on the big figure of a big-number plate, a box three quarters of the
+    frame wide, so a ring there is a ring round the picture. The renderer
+    rings the figure's ink and refuses a big one (`pipeline.moves.circle_box`);
+    this refuses the same plates up front, off the slot, so the writer is never
+    offered a circle the render would drop.
+    """
+    from pipeline.moves import CIRCLE_MAX_AREA, CIRCLE_MAX_H, CIRCLE_MAX_W
+
+    cw, ch = plate.canvas
+    return (slot.w <= cw * CIRCLE_MAX_W and slot.h <= ch * CIRCLE_MAX_H
+            and slot.w * slot.h <= cw * ch * CIRCLE_MAX_AREA)
 
 
 def move_box(plate: "Plate | None", move: str) -> dict:
