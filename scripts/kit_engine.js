@@ -22,6 +22,9 @@
  * rule lines move a unit and its axes and values stay where they are. A host
  * strip's frames are `figure.svg` for each of `figure.framesOf(strip)`: the
  * talk strip cycles the six mouths, idle moves the head, blink closes the eyes.
+ * A room's frames are its shape list redrawn for each frame of the room loops
+ * in `motion.js` that have something in it to act on: a screen that dips, a
+ * lamp that flickers, Christmas bulbs that twinkle, snow in the window.
  *
  * AGAINST THE KIT'S EXPORT, BYTE FOR BYTE. Since rebuild-17 `engine/export.js`
  * writes BLANK files, every one of them through the same `emit.build()` that
@@ -35,6 +38,9 @@
  *   <out>/<family>/<name>_fNN.png     every other frame that differs from one
  *   <out>/<family>/<name>_back.png    rooms with a host anchor: everything
  *   <out>/<family>/<name>_front.png   behind him, and everything in front
+ *   <out>/room/<name>_front_fNN.png   a looping room's front, where it moves
+ *   <out>/room/<name>_rain_fNN.png    a room's frames in the rain, where it
+ *   <out>/room/<name>_front_rain_fNN.png  has a window pane in shot
  *   <out>/<family>/<name>.svg         only with --svg; the engine IS the source
  *
  * and, on stdout, the registry entries for all of it.
@@ -43,11 +49,14 @@
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 /* Required as CommonJS modules, because that is how the kit wrote them.
- * port.js loads the plate engine, kit-model.js draws the rooms, and figure.js
- * draws the host. */
-const ENGINE_MODULES = ["port.js", "kit-model.js", "figure.js"];
+ * port.js loads the plate engine, kit-model.js draws the rooms, figure.js
+ * draws the host, and motion.js says how a room keeps moving behind him: its
+ * four room loops are content-free, so they are baked into the room's frames
+ * here rather than played by the renderer (see ROOM LOOPS below). */
+const ENGINE_MODULES = ["port.js", "kit-model.js", "figure.js", "motion.js"];
 
 /* Loaded BY port.js, not by this driver, each with what it adds. They are named
  * because a round that port.js stops installing is a family of plates that
@@ -79,7 +88,6 @@ const ENGINE_NOT_LOADED = {
   "export.js": "writes the kit's blank files; ingest_kit.py runs it on a staged copy and passes --against",
   "kit-plates.js": "eleven flat-model exemplars the audit reads; sample type, no slots, not plates a shot can cut to",
   "series.js": "draws the review set's data layer; the bot draws every series itself (pipeline/chart.py)",
-  "motion.js": "the thirteen moves as per-frame functions, played over a plate's slots by the renderer rather than drawn here; the data half, emit/motion.json, is read by ingest_kit.py",
 };
 
 /* THE HOUR THE KEYS DO NOT NAME. Every other hour is a suffix on the key,
@@ -174,6 +182,28 @@ function loadPort(engineDir) {
   if (!g.BUDGET) die("port.js loaded but BUDGET is not defined; every slot would lose its maxChars");
   if (!g.PLATES || !g.HAND) die("port.js loaded but PLATES/HAND are not defined");
   return PORT;
+}
+
+/* THE ROOM LOOPS COME OFF THE KIT OR NOT AT ALL. motion.js's loop tables and
+ * the plan of what each angle sees are required by name, and a drop that
+ * renames one stops the build here: a missing table read as undefined draws
+ * every room still, which passes every check and is the loop quietly gone. */
+const ROOM_LOOP_MOVES = ["screen-flicker", "lights-twinkle", "window-snow", "window-rain"];
+function loadMotion(engineDir, M, F) {
+  const MO = require(path.join(engineDir, "motion.js"));
+  const need = ["FPS", "MOVES", "SCREEN_PULSE", "LAMP_FLICKER", "snow", "RAIN", "TWINKLE", "twinkleInk"];
+  const missing = need.filter((k) => MO[k] === undefined);
+  if (missing.length) die("motion.js exports no " + missing.join(", ") + "; the room loops have to come off the kit");
+  const moves = {};
+  for (const mv of MO.MOVES) moves[mv.id] = mv;
+  for (const id of ROOM_LOOP_MOVES) {
+    const mv = moves[id];
+    if (!mv || mv.playback !== "loop" || !(mv.frames > 0)) die("motion.js publishes no looping " + id + "; a room cannot play it");
+  }
+  const plan = M.constructor && M.constructor.PLAN && M.constructor.PLAN.sees;
+  if (!plan) die("kit-model.js publishes no PLAN.sees, so nothing says which angles see a window");
+  if (typeof F.pathBox !== "function") die("figure.js exports no pathBox(); a window pane cannot be measured");
+  return { MO, plan, moves };
 }
 
 /* The rasteriser. resvg is a pure vector renderer and that is exactly what this
@@ -482,6 +512,137 @@ function headCovered(ctx, r, e) {
   return head ? +(covered / head).toFixed(3) : null;
 }
 
+/* ROOM LOOPS: THE ROOM KEEPS MOVING BEHIND HIM (item 19). A screen dips to
+ * its shade tone twice a loop, a lamp flickers, the Christmas set's bulbs step
+ * through three inks, snow falls past the window. motion.js publishes each as
+ * a loop of frames at the move rate, and every one of them is content-free —
+ * it depends on the room, the hour and the frame, never on the episode — so
+ * each is BAKED here into the room's own frames, and the renderer plays a
+ * room as it plays any looping plate. Played live, a room would have to be
+ * redrawn from a shape list the render path is not allowed to read.
+ *
+ * AS PUBLISHED, SEAMS AND ALL. Every fill and speck is the kit's own rule, as
+ * the Motion Review page draws it frame for frame: the snow jumps when the
+ * loop restarts, and the twinkle repeats every nine frames inside a loop of
+ * twelve. Both are design's to fix in motion.js, and nothing below restates a
+ * number motion.js owns, so their fix is a re-ingest and not a change here.
+ *
+ * NO BOIL TO COMBINE THEM WITH. The rooms have been drawn still since the
+ * kit stopped boiling them (every room installed static, one frame), so these
+ * loops are a room's only motion and play at the move rate. A room boil that
+ * came back would have to be drawn into these same frames at that rate: a
+ * plate plays one frame rate, and two loops at two rates on one room would
+ * be one of them dropped.
+ *
+ * What a room carries, per aspect:
+ *   screen-flicker  a room with a screen, a glow or a lit lamp in it
+ *   lights-twinkle  a Christmas twin, whose bulbs are its season's inks
+ *   window-snow     a Christmas twin with its window pane in the crop
+ * and one WEATHER, which an episode chooses rather than a room always plays:
+ *   rain            window-rain, on a plain room with its pane in the crop.
+ * The snow is December's and comes with the twin; rain on a twin would be
+ * snow and rain in one window, so the twins carry none. */
+const ROOM_WEATHER = { rain: "window-rain" };
+
+/* THE WINDOW PANE, by the review page's own rule: the first lit glow high on
+ * the wall (its top above y 60) at least 40 x 36 units. Only on an angle whose
+ * plan SEES a window: doorway-wide's lit door is a glow the same size in the
+ * same place, and snow through a doorway is snow indoors. A derived angle and
+ * a twin see what the angle they were pulled from sees. */
+function windowPane(ctx, r) {
+  const sees = ctx.plan[r.pulledFrom || r.id];
+  if (!Array.isArray(sees) || sees.indexOf("window") < 0) return null;
+  for (let i = 0; i < r.shapes.length; i++) {
+    const s = r.shapes[i];
+    if (s.role !== "glow" || s.tone === "shade" || s.ink) continue;
+    const [x0, y0, x1, y1] = ctx.F.pathBox(s.d);
+    const box = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    if (box.y < 60 && box.w >= 40 && box.h >= 36) return { index: i, d: s.d, box: box };
+  }
+  return null;
+}
+
+const isBulb = (ctx, s) => !!(s.season && s.ink && ctx.MO.TWINKLE.indexOf(s.role) >= 0);
+const flickers = (s) => !s.ink && (s.role === "screen" || s.role === "glow" || (s.role === "lamp" && s.tone !== "shade"));
+
+/* The loops a room plays at one aspect: those with something in the room to
+ * act on. `view` is the aspect's box in room units, and a pane outside it is
+ * not in shot. A lamp outside the crop is still listed, and draws the same
+ * pixels on every frame; the store below keeps one file for them. */
+function roomLoops(ctx, r, pane, view) {
+  const loops = [];
+  if (r.shapes.some(flickers)) loops.push("screen-flicker");
+  const xmas = r.season === "christmas";
+  if (xmas && r.shapes.some((s) => isBulb(ctx, s))) loops.push("lights-twinkle");
+  const inShot = !!pane && pane.box.x < view[0] + view[2] && pane.box.x + pane.box.w > view[0]
+    && pane.box.y < view[1] + view[3] && pane.box.y + pane.box.h > view[1];
+  if (xmas && inShot) loops.push("window-snow");
+  return { loops: loops, weather: !r.season && inShot ? Object.keys(ROOM_WEATHER) : [] };
+}
+
+/* How many frames play before a set of loops lines up again. */
+function loopLength(ctx, loops) {
+  const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+  return loops.reduce((n, id) => n * ctx.moves[id].frames / gcd(n, ctx.moves[id].frames), 1);
+}
+
+/* The room's shape list at frame `f` of `loops`, as [d, fill, extra] nodes.
+ * The fills are the Motion Review page's, rule for rule. The snow and rain are
+ * drawn straight after the pane and clipped to it, which is the catalogue's
+ * "inside the pane, drawn behind the frame bars": the review page lays them
+ * over the whole room instead, and a speck over a bar is a speck on the
+ * glass's frame. */
+function roomFrame(ctx, r, H, loops, f, pane) {
+  const MO = ctx.MO;
+  const at = (id) => (loops.indexOf(id) >= 0 ? f % ctx.moves[id].frames : -1);
+  const flick = at("screen-flicker"), twinkle = at("lights-twinkle");
+  let bulb = 0;
+  const nodes = r.shapes.map((s) => {
+    let fill = s.ink ? H.ink[s.role] : H.m[s.role][s.tone === "shade" ? 1 : 0];
+    if (flick >= 0 && !s.ink) {
+      if ((s.role === "screen" || s.role === "glow") && MO.SCREEN_PULSE[flick]) fill = H.m[s.role][1];
+      else if (s.role === "lamp" && s.tone !== "shade" && MO.LAMP_FLICKER[flick]) fill = H.m.lamp[1];
+    }
+    if (twinkle >= 0 && isBulb(ctx, s)) fill = H.ink[MO.twinkleInk(bulb++, twinkle)];
+    return [s.d, fill];
+  });
+  const snow = at("window-snow"), rain = at("window-rain");
+  if (pane && (snow >= 0 || rain >= 0)) {
+    const rect = (x, y, w, h, fill) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + fill + '"/>';
+    const specks = (snow >= 0 ? MO.snow(pane.box, snow).map((q) =>
+      rect(q.x.toFixed(1), q.y.toFixed(1), q.r.toFixed(1), q.r.toFixed(1), H.m.paper[0])) : [])
+      .concat(rain >= 0 ? MO.RAIN(pane.box, rain).map((q) =>
+        rect(q.x.toFixed(1), q.y.toFixed(1), q.w, q.h, H.m.glow[1])) : []);
+    nodes[pane.index] = nodes[pane.index].concat(['<defs><clipPath id="pane"><path d="' + pane.d +
+      '"/></clipPath></defs><g clip-path="url(#pane)">' + specks.join("") + "</g>"]);
+  }
+  return nodes;
+}
+
+/* ONE FILE PER DISTINCT PICTURE, however many frames show it. A twelve-frame
+ * flicker is three pictures, and a loop whose flicker is out of the portrait
+ * crop is one: drawn twelve times, the same pixels would be installed twelve
+ * times. Same SVG is the same file without drawing it again; a different SVG
+ * that rasterises to the same bytes (a speck outside the crop) is too. The
+ * file is named after the first frame that drew it. */
+function pictureStore(ctx, famDir) {
+  const bySvg = new Map(), byPng = new Map();
+  return async function store(svg, name) {
+    if (bySvg.has(svg)) return bySvg.get(svg);
+    const png = await ctx.raster(svg, 2);
+    const sum = crypto.createHash("sha1").update(png).digest("hex");
+    let f = byPng.get(sum);
+    if (!f) {
+      f = name;
+      byPng.set(sum, f);
+      fs.writeFileSync(path.join(famDir, f + ".png"), png);
+      if (ctx.args.svg) fs.writeFileSync(path.join(famDir, f + ".svg"), svg);
+    }
+    bySvg.set(svg, f);
+    return f;
+  };
+}
+
 async function drawRooms(ctx, emitWrite) {
   const { M, hours, raster, args, problems, emitted } = ctx;
   let checked = 0;
@@ -489,6 +650,7 @@ async function drawRooms(ctx, emitWrite) {
   mkdirp(famDir);
   for (const r of M.rooms()) {
     const covered = headCovered(ctx, r, emitted["room/" + r.id + "@" + BASE_HOUR + ".16x9"]);
+    const pane = windowPane(ctx, r);
     for (const hour of hours) {
       const H = M.HOURS.find((h) => h.name === hour);
       if (!H) { problems.push("kit-model.js draws no " + hour + " hour for the rooms"); continue; }
@@ -520,24 +682,69 @@ async function drawRooms(ctx, emitWrite) {
         const name = key.split("/").pop();
         const svgOf = (list) => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + box.join(" ") +
           '" width="' + cw + '" height="' + ch + '">' +
-          list.map((n) => '<path d="' + n[0] + '" fill="' + n[1] + '"/>').join("") + "</svg>";
+          list.map((n) => '<path d="' + n[0] + '" fill="' + n[1] + '"/>' + (n[2] || "")).join("") + "</svg>";
+        const split = e.hostAnchor && typeof e.occlusionSplit === "number" && e.occlusionSplit > 0
+          && e.occlusionSplit <= nodes.length ? e.occlusionSplit : null;
+        const hasFront = split !== null && split < nodes.length;
 
-        const files = { png: name + ".png", svg: args.svg ? name + ".svg" : null, baseIsFrame: null };
-        const whole = svgOf(nodes);
-        fs.writeFileSync(path.join(famDir, files.png), await raster(whole, 2));
-        if (args.svg) fs.writeFileSync(path.join(famDir, files.svg), whole);
+        /* The loop, drawn: every frame whole, and the front layer he stands
+         * behind with it where there is one, because the screens and lamps
+         * that flicker are mostly ON the desk in front of him. A static front
+         * over a flickering room would paint the flicker out exactly where it
+         * shows. The back layer is frame one's; nothing composites it. */
+        const store = pictureStore(ctx, famDir);
+        const tag = (i) => "_f" + pad(i + 1);
+        const drawLoop = async (loops, stem) => {
+          const out = [];
+          for (let f = 0; f < loopLength(ctx, loops); f++) {
+            const fnodes = roomFrame(ctx, r, H, loops, f, pane);
+            const png = await store(svgOf(fnodes), stem.whole(f));
+            const front = hasFront ? await store(svgOf(fnodes.slice(split)), stem.front(f)) : null;
+            out.push({ png: png, front: front, nodes: fnodes });
+          }
+          return out;
+        };
+        const plan = roomLoops(ctx, r, pane, box);
+        const loop = await drawLoop(plan.loops, {
+          whole: (f) => (f ? name + tag(f) : name),
+          front: (f) => name + "_front" + (f ? tag(f) : ""),
+        });
+        const moves = loop.some((fr) => fr.png !== loop[0].png || fr.front !== loop[0].front);
+        const asFrames = (drawn) => drawn.map((fr, i) => Object.assign(
+          { tag: tag(i), png: fr.png + ".png", svg: args.svg ? fr.png + ".svg" : null },
+          fr.front ? { front: fr.front + ".png" } : {}));
+        const files = { png: name + ".png", svg: args.svg ? name + ".svg" : null, baseIsFrame: moves ? "_f01" : null };
 
         const entry = {
           canvas: [cw, ch], exportScale: 2, delivered: [cw * 2, ch * 2], aspect: aspect,
           family: "room", author: "kit-model.rooms", seed: null, surface: "set",
           hour: hour, atBaseHour: "room/" + r.id + "-" + aspect, angle: r.id,
-          playback: "static", fps: 0, frameCount: 1,
-          frames: [{ tag: "", png: files.png, svg: files.svg }],
+          playback: moves ? "loop" : "static", fps: moves ? ctx.MO.FPS : 0, frameCount: moves ? loop.length : 1,
+          frames: moves ? asFrames(loop) : [{ tag: "", png: files.png, svg: files.svg }],
           files: files, slots: {}, typeRoles: {}, dir: "room/",
           duskSafe: r.duskSafe === undefined ? null : !!r.duskSafe,
           hostAnchor: false,
           opener: !!r.opener,
         };
+        if (moves) entry.loops = plan.loops;
+        /* A TWIN IS THE SAME ANGLE DRESSED, not another angle: December swaps
+         * every angle an episode shoots for its twin, or none of them. */
+        if (r.season) {
+          entry.season = r.season;
+          entry.dressedFrom = "room/" + r.dressedFrom + "-" + aspect;
+        }
+        /* THE WEATHER, drawn as a second loop over the same room: the room's
+         * own loops plus the weather's. Kept only where it shows. */
+        for (const w of plan.weather) {
+          const loops = plan.loops.concat([ROOM_WEATHER[w]]);
+          const drawn = await drawLoop(loops, {
+            whole: (f) => name + "_" + w + tag(f),
+            front: (f) => name + "_front_" + w + tag(f),
+          });
+          if (drawn.every((fr, i) => fr.png === loop[i % loop.length].png)) continue;
+          entry.weathers = entry.weathers || {};
+          entry.weathers[w] = { loops: loops, playback: "loop", fps: ctx.MO.FPS, frameCount: drawn.length, frames: asFrames(drawn) };
+        }
 
         /* THE TITLE SLOT (rebuild-21). A chapter opener is the room with the
          * chapter's title set in the room's `title` slot, and the card under it
@@ -573,16 +780,14 @@ async function drawRooms(ctx, emitWrite) {
           entry.floorLineY = slot.y + slot.h;
           entry.hostAnchor = { targetHeight: slot.h, scales: "host.floorLineY - host.slots.figure.y" };
           if (covered !== null) entry.occlusion = { pose: COVER_POSE, headCovered: covered };
-          if (typeof e.occlusionSplit === "number" && e.occlusionSplit > 0 && e.occlusionSplit <= nodes.length) {
+          if (split !== null) {
             /* A split AT the shape count is a room with nothing in front of
              * him — board-side, where he stands at the near edge of the wall.
-             * Its front layer is empty and is not drawn. */
-            entry.layers = { back: name + "_back.png", split: e.occlusionSplit };
-            fs.writeFileSync(path.join(famDir, entry.layers.back), await raster(svgOf(nodes.slice(0, e.occlusionSplit)), 2));
-            if (e.occlusionSplit < nodes.length) {
-              entry.layers.front = name + "_front.png";
-              fs.writeFileSync(path.join(famDir, entry.layers.front), await raster(svgOf(nodes.slice(e.occlusionSplit)), 2));
-            }
+             * Its front layer is empty and is not drawn. The front named here
+             * is frame one's, the layer a still of the room stands him in. */
+            entry.layers = { back: name + "_back.png", split: split };
+            fs.writeFileSync(path.join(famDir, entry.layers.back), await raster(svgOf(loop[0].nodes.slice(0, split)), 2));
+            if (hasFront) entry.layers.front = loop[0].front + ".png";
           } else {
             // Anchored and no split. Drawn, and said: the kit's own audit fails
             // a room like this (rule 15), so it is design's to decide, not
@@ -907,6 +1112,7 @@ async function main() {
   const g = PORT.engine;
   const M = require(path.join(engineDir, "kit-model.js"));
   const F = require(path.join(engineDir, "figure.js"));
+  const { MO, plan, moves } = loadMotion(engineDir, M, F);
   const tokens = JSON.parse(fs.readFileSync(path.join(kitDir, "design-tokens.json"), "utf8"));
   const hours = Object.keys(tokens.hours || {}).filter((h) => !h.startsWith("_"));
   if (hours[0] !== BASE_HOUR) die("design-tokens.json lists hours " + JSON.stringify(hours) + "; the keys assume " + BASE_HOUR + " comes first");
@@ -914,7 +1120,7 @@ async function main() {
   const emitted = {};
   for (const p of JSON.parse(fs.readFileSync(args.emit, "utf8")).plates || []) emitted[p.id] = p;
 
-  const ctx = { g, M, F, tokens, hours, palFor: PORT.palFor, raster: loadRasteriser(), args, problems: [], emitted };
+  const ctx = { g, M, F, MO, plan, moves, tokens, hours, palFor: PORT.palFor, raster: loadRasteriser(), args, problems: [], emitted };
 
   /* THE CATALOGUE is the kit's own — the list emit.js and export.js walk —
    * without the drawn kit's host and rooms, which are rebuilt flat. It has to

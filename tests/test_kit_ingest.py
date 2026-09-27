@@ -379,14 +379,19 @@ def test_the_six_new_poses_are_known_and_cast_by_nobody_yet():
 def test_the_new_rooms_are_each_either_used_or_held_back_with_a_reason():
     """rebuild-39's two wide openers and fourteen Christmas twins. window-wide
     opens chapters beside desk-wide; board-wide waits for a chapter argued on
-    the board, and the Christmas set for a switch that dresses a whole
-    episode, since one dressed angle among plain ones flickers."""
+    the board. The Christmas set is reached by the December switch, which
+    dresses every angle of an episode at once, so a twin is in no role (one
+    dressed angle among plain ones flickers) and is held back only with the
+    angle it dresses."""
     roles = _roles()
     assert roles["roomRoles"]["opener"] == ["room/desk-wide", "room/window-wide"]
     held = roles["heldBack"]["rooms"]
     assert "room/board-wide" in held
-    twins = [k for k in held if k.endswith("-christmas")]
-    assert len(twins) == 14
+    assert [k for k in held if k.endswith("-christmas")] == ["room/board-wide-christmas"]
+    in_roles = {stem for stems in roles["roomRoles"].values()
+                if isinstance(stems, list) for stem in stems}
+    assert not [s for s in in_roles if s.endswith("-christmas")], \
+        "a twin in a role is cut among plain angles"
     assert all(held[k] for k in held), "a room held back with no reason"
 
 

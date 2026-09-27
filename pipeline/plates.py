@@ -48,7 +48,7 @@ import random
 import re as _re
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Collection, Any, Iterator
 
@@ -371,6 +371,29 @@ class Frame:
     # How far through a move this frame is, 0 to 1, on a strip that plays once
     # (a wipe's eight frames run 0.125 to 1). None on a loop.
     t: float | None = None
+    # A LOOPING ROOM'S FRONT LAYER AT THIS FRAME: the desk he stands behind,
+    # with its screen and lamp as they are on this frame. The flicker is mostly
+    # on the desk, so a front held on frame one paints it out over the very
+    # shapes that move. Empty on everything but a layered room that loops.
+    front: str = ""
+
+
+@dataclass(frozen=True)
+class Weather:
+    """A room's loop in one weather: the same angle, with rain in its window.
+
+    Drawn by the ingest as a second loop over the room, on the angles whose
+    window pane is in shot, and chosen per EPISODE (`weather_of_episode`),
+    never per shot: rain that starts and stops between two cuts of one room
+    is two rooms.
+    """
+
+    name: str
+    loops: tuple[str, ...]
+    playback: str
+    fps: float
+    frame_count: int
+    frames: tuple[Frame, ...]
 
 
 @dataclass(frozen=True)
@@ -500,6 +523,22 @@ class Plate:
     # in canvas units, for the moves that land here at all. A move absent from
     # it has nothing on this plate to act on, and is skipped.
     motion: dict = field(default_factory=dict)
+    # THE ROOM LOOPS BAKED INTO THIS ROOM'S FRAMES (item 19): which of the
+    # kit's content-free room moves — `screen-flicker`, `lights-twinkle`,
+    # `window-snow`, and in the rain `window-rain` — its frames play. The
+    # frames ARE the loop; this says what is in them, for a report or a sound
+    # that follows the picture. Empty on a room that holds still.
+    loops: tuple[str, ...] = ()
+    # A SEASONAL TWIN: `christmas` on the fourteen dressed rooms, with the
+    # key of the plain angle it dresses. An episode in the season shoots every
+    # angle in its twin, or none of them (`Registry.at`).
+    season: str = ""
+    dressed_from: str = ""
+    # The weathers this room can be shot in, by name, and the one it IS shot
+    # in on this plate: a room in the rain is the room with the weather's loop
+    # as its frames (`in_weather`), so every renderer plays it unchanged.
+    weathers: dict = field(default_factory=dict)
+    weather: str = ""
 
     @property
     def base_key(self) -> str:
@@ -551,6 +590,37 @@ class Plate:
     def animated(self) -> bool:
         return (self.playback not in ("static", "overlay")
                 and self.frame_count > 1)
+
+    def in_weather(self, name: str) -> "Plate":
+        """This room with `name`'s loop as its frames; itself without one.
+
+        The key does not change: it is the same drawing of the same angle, and
+        a renderer that asks the registry for it again by key gets it in the
+        same weather, because the registry it asks is the episode's.
+        """
+        w = self.weathers.get(name)
+        if w is None or not w.frames:
+            return self
+        front = w.frames[0].front
+        layers = dict(self.layers)
+        if front and "front" in layers:
+            layers["front"] = front
+        return replace(
+            self, weather=name, loops=w.loops, playback=w.playback, fps=w.fps,
+            frame_count=w.frame_count, frames=w.frames,
+            files_png=w.frames[0].png, base_is_frame=w.frames[0].tag,
+            layers=layers)
+
+    def front_path(self, frame_index: int = 0) -> Path | None:
+        """The front layer as it is on frame `frame_index`, or None.
+
+        A room whose front does not move names one file for every frame, which
+        is the layer `layer_path("front")` has always named.
+        """
+        if self.frames and 0 <= frame_index < len(self.frames) \
+                and self.frames[frame_index].front:
+            return self.root / self.family / self.frames[frame_index].front
+        return self.layer_path("front")
 
     @property
     def plays_once(self) -> bool:
@@ -703,15 +773,27 @@ class Registry:
         for p in self._everything.values():
             if p.hour and p.hour != self.base_hour:
                 self._variants.setdefault(p.hour, {})[p.base_key] = p
+        # THE SEASONAL TWINS, season -> plain angle's base key -> the twin's.
+        # A twin is its plain angle dressed, so it is found through the angle
+        # and never offered beside it: a role that listed both would cut a
+        # dressed angle against a plain one, and the decorations would flicker
+        # in and out between two shots of one room.
+        self._twins: dict[str, dict[str, str]] = {}
+        for k, p in self._library.items():
+            if p.season and p.dressed_from:
+                self._twins.setdefault(p.season, {})[p.dressed_from] = k
         # Keyed by the base-hour key always; the VALUES are the art at the hour
         # this registry is viewed at. So a caller holding `reg.assets[key]`
         # gets the episode's hour exactly as one calling `reg.get(key)` does,
         # and no route to a plate is left drawing night into a dusk video.
         self.assets: dict[str, Plate] = self._library
         # The hour this registry is VIEWED at, set only by `at`. Empty is the
-        # base library, with the base palette.
+        # base library, with the base palette. The season and the weather are
+        # the episode's too, and set the same way.
         self._hour: str = ""
-        self._views: dict[str, "Registry"] = {}
+        self._season: str = ""
+        self._weather: str = ""
+        self._views: dict[tuple[str, str, str], "Registry"] = {}
 
         self.host_roles: dict[str, tuple[str, ...]] = {
             k: tuple(v) for k, v in (raw.get("hostRoles") or {}).items()}
@@ -759,9 +841,25 @@ class Registry:
                 bob=int(f.get("bob") or 0),
                 eyes=str(f.get("eyes") or "open"),
                 t=_opt_float(f.get("t")),
+                front=str(f.get("front") or ""),
             )
             for f in e.get("frames", [])
         )
+        weathers: dict[str, Weather] = {}
+        for wname, w in (e.get("weathers") or {}).items():
+            if not isinstance(w, dict) or not w.get("frames"):
+                continue
+            wframes = tuple(
+                Frame(tag=str(f.get("tag", "")), png=str(f["png"]),
+                      svg=str(f.get("svg") or ""),
+                      front=str(f.get("front") or ""))
+                for f in w["frames"])
+            weathers[str(wname)] = Weather(
+                name=str(wname), loops=tuple(str(x) for x in w.get("loops") or ()),
+                playback=str(w.get("playback") or "loop"),
+                fps=float(w.get("fps") or 0.0),
+                frame_count=int(w.get("frameCount") or len(wframes)),
+                frames=wframes)
         files = e.get("files") or {}
         # The typeRoles table goes in with the slots: whether a slot takes type
         # is the kit's answer, and the kit gives it here.
@@ -859,6 +957,10 @@ class Registry:
             hold_s=(_opt_float(e["hold"].get("seconds"))
                     if isinstance(e.get("hold"), dict) else None),
             motion=dict(self._motion_anchors.get(str(e.get("atBaseHour") or key)) or {}),
+            loops=tuple(str(x) for x in e.get("loops") or ()),
+            season=str(e.get("season") or ""),
+            dressed_from=str(e.get("dressedFrom") or ""),
+            weathers=weathers,
         )
 
     # ---------------------------------------------------------------- basics
@@ -918,45 +1020,97 @@ class Registry:
         """The hour this registry is viewed at; the base hour when it is not."""
         return self._hour or self.base_hour
 
-    def at(self, hour: str) -> "Registry":
+    @property
+    def season(self) -> str:
+        """The season this registry dresses its rooms for; "" when none."""
+        return self._season
+
+    @property
+    def weather(self) -> str:
+        """The weather this registry shoots its rooms in; "" when none."""
+        return self._weather
+
+    def at(self, hour: str, *, season: str = "",
+           weather: str = "") -> "Registry":
         """This registry viewed at one hour: its plates, its palette, its rooms.
 
         THE HOUR IS A PROPERTY OF THE EPISODE, applied once. A view returns the
         hour's art for every key and the hour's palette for every colour, and
         answers `hour_for` with its own hour whatever it is asked, so nothing
         downstream can choose a second one and cut dusk against night.
+
+        THE SEASON AND THE WEATHER ARE THE EPISODE'S IN THE SAME WAY. In a
+        season every room angle with a twin is its twin — every one, so no
+        video cuts a dressed angle against a plain one — and in a weather
+        every room that can show it plays it. A season or weather the kit
+        draws nothing for changes nothing.
         """
         if hour not in self.hour_suffixes:
             raise PlateError(
                 f"the kit draws no {hour!r} hour — it draws "
                 f"{', '.join(self.hour_suffixes) or '(none)'}")
-        view = self._views.get(hour)
+        at = (hour, season or "", weather or "")
+        view = self._views.get(at)
         if view is not None:
             return view
         import copy
 
         view = copy.copy(self)
         view._hour = hour
+        view._season, view._weather = at[1], at[2]
         view.palette = self.palettes.get(hour, self.palette)
         view.hour_rotation = (hour,)
         swap = self._variants.get(hour, {})
-        view.assets = {k: swap.get(k, p) for k, p in self._library.items()}
-        self._views[hour] = view
+        view.assets = {k: view._dress(swap.get(k, p))
+                       for k, p in self._library.items()}
+        self._views[at] = view
         return view
+
+    def _dress(self, p: Plate) -> Plate:
+        """`p` as this view's episode shoots it: in its twin, in its weather.
+
+        The twin is taken at the plate's own hour, so a dusk angle dresses as
+        the dusk twin. Only a plain room dresses; a twin asked for by its own
+        key is already dressed.
+        """
+        if self._season and p.family == "room" and not p.season:
+            twin = self._twins.get(self._season, {}).get(p.base_key)
+            if twin is not None:
+                hour = p.hour or self.base_hour
+                p = (self._variants.get(hour, {}).get(twin)
+                     if hour != self.base_hour else None) \
+                    or self._library[twin]
+        if self._weather and self._weather in p.weathers:
+            p = p.in_weather(self._weather)
+        return p
+
+    def twins_of(self, key: str) -> tuple[str, ...]:
+        """The base keys of every seasonal twin of a room angle's base key."""
+        base = self.base_key(key)
+        return tuple(t[base] for _season, t in sorted(self._twins.items())
+                     if base in t)
+
+    def undressed_key(self, key: str) -> str:
+        """The plain angle's base key for any key, a twin's included."""
+        base = self.base_key(key)
+        p = self._library.get(base)
+        return p.dressed_from if p is not None and p.dressed_from else base
 
     def plate_at(self, key: str, hour: str) -> Plate | None:
         """The plate `key` names, drawn at `hour`. None when the key is unknown.
 
         Falls back to the base-hour plate when the kit draws no variant at that
         hour, which is a single-hour registry or a plate that has no hour.
+        Dressed for this view's season and weather, which is how a room picked
+        by role reaches the episode's twin.
         """
         p = self._everything.get(key)
         if p is None:
             return None
         base = self._library.get(p.base_key, p)
-        if not hour or hour == self.base_hour:
-            return base
-        return self._variants.get(hour, {}).get(p.base_key) or base
+        if hour and hour != self.base_hour:
+            base = self._variants.get(hour, {}).get(p.base_key) or base
+        return self._dress(base) if (self._season or self._weather) else base
 
     def base_key(self, key: str) -> str:
         """The base-hour key of any plate key, including one this kit retired.
@@ -1209,7 +1363,10 @@ class Registry:
         hour = self.hour_for(episode, avoid=avoid)
         options = self.angles_for(role, aspect, hour)
         if options:
-            options = _prefer_unused(options, self.base_keys(avoid))
+            # By the ANGLE: a December video recorded the twins it shot, and
+            # a twin is its plain angle, so it steers the rotation the same.
+            options = _prefer_unused(
+                options, {self.undressed_key(k) for k in avoid})
         if not options:
             known = ", ".join(sorted(self.room_roles)) or "(none)"
             raise PlateError(
@@ -1257,6 +1414,20 @@ class Registry:
             for fr, fp in zip(p.frames, p.frame_paths()):
                 if not fp.exists():
                     problems.append(f"{key}: missing frame {fr.tag or '(base)'} {fp}")
+            for i, fr in enumerate(p.frames):
+                if fr.front and not p.front_path(i).exists():
+                    problems.append(f"{key}: missing front layer of {fr.tag} {p.front_path(i)}")
+            for w in p.weathers.values():
+                seen = p.in_weather(w.name)
+                for i, fr in enumerate(seen.frames):
+                    for f in (seen.root / seen.family / fr.png,
+                              seen.front_path(i) if fr.front else None):
+                        if f is not None and not f.exists():
+                            problems.append(f"{key}: missing {w.name} frame {fr.tag} {f}")
+            if p.season and p.dressed_from not in self._library:
+                problems.append(
+                    f"{key}: dresses {p.dressed_from!r} for {p.season}, and "
+                    f"the kit draws no such angle")
 
             # A ROOM SAYS WHETHER ANYONE STANDS IN IT, ONE WAY OR THE OTHER.
             #
@@ -1415,6 +1586,77 @@ def episode_hour(hour: str) -> Iterator[str]:
         _EPISODE_HOUR.reset(token)
 
 
+# THE SEASON AND THE WEATHER, the episode's like the hour and carried the
+# same way, as (season, weather). Set by `at_episode_hour` beside the hour.
+_EPISODE_DRESSING: ContextVar[tuple[str, str]] = ContextVar(
+    "episode_dressing", default=("", ""))
+
+
+@contextmanager
+def episode_dressing(season: str, weather: str) -> Iterator[tuple[str, str]]:
+    """Every registry loaded inside this block dresses its rooms so."""
+    token = _EPISODE_DRESSING.set((season or "", weather or ""))
+    try:
+        yield (season or "", weather or "")
+    finally:
+        _EPISODE_DRESSING.reset(token)
+
+
+def current_episode_dressing() -> tuple[str, str]:
+    """(season, weather) of the render in progress, or ("", "") outside one."""
+    return _EPISODE_DRESSING.get()
+
+
+def episode_date(workspace) -> "date | None":
+    """The day a video is for, off its workspace: `workspace/<TICKER>/<date>/`.
+
+    The workspace is where the render reads its hour from as well, so the
+    date and the hour are one video's. None for a directory not named for a
+    day, which is a test or a scratch render.
+    """
+    from datetime import date
+
+    name = Path(workspace).name if workspace else ""
+    try:
+        return date.fromisoformat(name) if _re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}", name) else None
+    except ValueError:
+        return None
+
+
+# THE SEASON A MONTH IS DRESSED FOR. December, and the Christmas set design
+# drew for it: every angle, from the first to the last day of the month.
+SEASONS: dict[int, str] = {12: "christmas"}
+
+# HOW OFTEN IT RAINS OUTSIDE DECEMBER. design's rain is for "a gloomy
+# episode", and nothing in the bot measures gloom — a script carries no mood,
+# and a fall on the day is not the same thing as a gloomy story. So the rule
+# is a lot drawn per video: one in four, seeded on the ticker and the day, so
+# the draft, the proof and the final of one video agree and two videos on one
+# day need not. A signal worth reading replaces it in `weather_of_episode`.
+RAIN_SHARE = 0.25
+
+
+def season_of_episode(workspace) -> str:
+    """The season a video's rooms are dressed for: `christmas` in December."""
+    day = episode_date(workspace)
+    return SEASONS.get(day.month, "") if day is not None else ""
+
+
+def weather_of_episode(workspace, episode: str) -> str:
+    """The weather a video's windows show: `rain`, or "" for none.
+
+    NEVER IN A SEASON. December's window is snowing (`window-snow` comes with
+    the twins), and snow and rain in one pane is neither. Never on a video
+    with no day either: the lot needs one to be the same lot at every pass.
+    """
+    day = episode_date(workspace)
+    if day is None or season_of_episode(workspace):
+        return ""
+    lot = random.Random(f"weather|{episode}|{day.isoformat()}").random()
+    return "rain" if lot < RAIN_SHARE else ""
+
+
 def recorded_hour(workspace) -> str:
     """The hour an earlier pass of this video recorded, newest first, or ""."""
     try:
@@ -1464,12 +1706,18 @@ def at_episode_hour(settings, workspace, episode: str) -> Iterator[str]:
     names the ingest.
     """
     hour = _EPISODE_HOUR.get()
+    dressing = _EPISODE_DRESSING.get()
     if not hour:
         try:
             hour = hour_of_episode(settings, workspace, episode)
         except PlateError:
             hour = ""
-    with episode_hour(hour):
+        # The season and the weather are the episode's as the hour is, and
+        # chosen with it: decided here, they reach every plate the render
+        # loads, and nested they stay the outer render's.
+        dressing = (season_of_episode(workspace),
+                    weather_of_episode(workspace, episode))
+    with episode_hour(hour), episode_dressing(*dressing):
         yield hour
 
 
@@ -1481,7 +1729,8 @@ def load_registry(root: Path) -> Registry:
     notice is a bot rendering the kit before last. See `_CACHE`.
 
     Inside a render it is the registry VIEWED AT THE EPISODE'S HOUR (see
-    `_EPISODE_HOUR`), which is how the hour reaches every plate at once.
+    `_EPISODE_HOUR`), in the episode's season and weather, which is how all
+    three reach every plate at once.
     """
     root = Path(root)
     path = root / REGISTRY_NAME
@@ -1499,7 +1748,8 @@ def load_registry(root: Path) -> Registry:
         reg = Registry(root)
         _CACHE[root] = (stamp, reg)
     hour = _EPISODE_HOUR.get()
-    return reg.at(hour) if hour else reg
+    season, weather = _EPISODE_DRESSING.get()
+    return reg.at(hour, season=season, weather=weather) if hour else reg
 
 
 def load_plates(assets_dir: Path) -> Registry:

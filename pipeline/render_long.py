@@ -85,7 +85,8 @@ from pipeline.models import (
     TTSResult,
     parse_scribble_payload,
 )
-from pipeline.plate_frames import drawn_box, playback_seconds, render_clip
+from pipeline.plate_frames import (drawn_box, frame_indices, playback_seconds,
+                                   render_clip)
 from pipeline.plates import at_episode_hour, load_plates
 from pipeline.sound import (DEFAULT_LEAD_S, EFFECT_KEYS, Voicing, cue_lead_s,
                             manifest_rows, measure_lufs, placeholders_played,
@@ -282,6 +283,33 @@ def _plate_fingerprint(path: Path) -> str:
                 h.update(block)
         got = _PLATE_FINGERPRINTS[ck] = h.hexdigest()[:8]
     return got
+
+
+def _played_clip(indices: list[int], frame_of: Callable[[int], Image.Image],
+                 fps: int, dest: Path, *, reuse: bool = True) -> Path:
+    """The frames `indices` name, each drawn once however often it shows.
+
+    A room loop shows three pictures across twelve frames and a clip at 30 fps
+    shows each of them ten times: drawing per output frame would resize the
+    same 4K file thirty times a second of it. Written beside `dest` and moved
+    into place, so a render stopped mid-encode leaves no clip for the next one
+    to reuse half of.
+    """
+    if reuse and dest.exists():
+        return dest
+    drawn: dict[int, Image.Image] = {}
+    for i in indices:
+        if i not in drawn:
+            drawn[i] = frame_of(i)
+    part = dest.with_name(dest.stem + ".part" + dest.suffix)
+    frames_to_alpha_clip([drawn[i] for i in indices], fps, part)
+    os.replace(part, dest)
+    return dest
+
+
+# HOW LONG A CHAPTER OPENER IS ON SCREEN. A looping opener room is encoded to
+# cover all of it, because a clip overlay that runs out mid-window vanishes.
+CHAPTER_OPENER_S = 1.6
 
 
 def _provenance(script, settings, workspace: Path, duration: float,
@@ -559,6 +587,57 @@ def _render_long(
             room_cache[key] = dest
         return room_cache[key]
 
+    def _loop_of(plate, files: list[Path], kind: str, mode: str) -> Path:
+        """One pass of a looping room's `files` at the frame's size and rate.
+
+        One pass is `frame_count / fps` seconds — one second for the kit's
+        twelve frames at twelve — and the segment demuxer-loops it for as
+        long as the beat holds, so no frame is decoded twice or held in
+        memory. Keyed on the frames' content, like `_room_file`, so a new
+        ingest is a new clip, and on the weather, which shares the key.
+        """
+        import hashlib
+
+        plates_used.add(plate.key)
+        key = (plate.key, f"{kind}-loop-{plate.weather}")
+        if key not in room_cache:
+            stamp = hashlib.sha256("|".join(
+                _plate_fingerprint(f) for f in files).encode()).hexdigest()[:8]
+            weather = f"_{plate.weather}" if plate.weather else ""
+            dest = rdir / f"{kind}loop_{plate.name}{weather}_{stamp}_{fps}.mov"
+            room_cache[key] = _played_clip(
+                frame_indices(plate, playback_seconds(plate), fps),
+                lambda i: Image.open(files[i]).convert(mode).resize(
+                    (W, H), Image.LANCZOS),
+                fps, dest)
+        return room_cache[key]
+
+    def _room_loop(plate) -> Path | None:
+        """A room that keeps moving behind him, as a clip; None if it is still.
+
+        THE ROOM LOOPS ARE BAKED INTO THE ROOM'S FRAMES (item 19): a screen
+        that dips, a lamp that flickers, bulbs, snow or rain in the window.
+        Held on its base file the room is frame one of that loop, frozen.
+        """
+        if not plate.animated or plate.plays_once:
+            return None
+        return _loop_of(plate, plate.frame_paths(), "room", "RGB")
+
+    def _front_loop(room) -> Path | None:
+        """The room's front layer as a clip, where its frames differ; or None.
+
+        The flicker is mostly on the desk in front of him — the monitor and
+        the lamp — so a front held still over a moving room paints the
+        flicker out exactly where it shows.
+        """
+        if not room.animated or room.plays_once:
+            return None
+        fronts = [room.front_path(i) for i in range(len(room.frames))]
+        if any(f is None or not f.exists() for f in fronts) \
+                or len({str(f) for f in fronts}) < 2:
+            return None
+        return _loop_of(room, fronts, "front", "RGBA")
+
     def _front_file(room) -> Path | None:
         """The room's FRONT layer at the frame's size, or None.
 
@@ -599,6 +678,20 @@ def _render_long(
                         "screen", plate.key, title)
             return _room_still(seg_i, role_name)
         plates_used.add(plate.key)
+        if plate.animated and not plate.plays_once:
+            # A LOOPING OPENER IS A CLIP, the title set on each picture of
+            # the loop once. The opener angles are the wide ones, with the
+            # window in shot, so this is where the snow and the rain are
+            # seen; held on a still they would stop for the one shot that
+            # shows them best.
+            from pipeline.plate_frames import render_frame
+
+            values = {"title": title}
+            return _played_clip(
+                frame_indices(plate, CHAPTER_OPENER_S + 0.5, fps),
+                lambda i: render_frame(plate, i, values, settings, reg)
+                .convert("RGB").resize((W, H), Image.LANCZOS),
+                fps, rdir / f"chapter_{seg_i}.mov", reuse=False)
         dest = rdir / f"chapter_{seg_i}.png"
         img = render_still(plate, {"title": title}, settings, reg)
         img.convert("RGB").resize((W, H), Image.LANCZOS).save(dest)
@@ -1094,6 +1187,24 @@ def _render_long(
             args = ["-stream_loop", "-1"] if visual.loops else []
             return _add_input([*args, "-i", str(visual.path)])
 
+        def _room_input(room) -> int:
+            """The room as an input: its loop where it moves, else its still.
+
+            Demuxer-looped like a gif, and trimmed to the beat by the chain
+            that reads it, exactly as the still is.
+            """
+            loop = _room_loop(room)
+            if loop is None:
+                return _still_input(_room_file(room))
+            return _add_input(["-stream_loop", "-1", "-i", str(loop)])
+
+        def _front_input(room, still: Path) -> int:
+            """The desk in front of him, moving with the room behind him."""
+            loop = _front_loop(room)
+            if loop is None:
+                return _still_input(still)
+            return _add_input(["-stream_loop", "-1", "-i", str(loop)])
+
         if seg.kind == "host":
             # Dennis is the default base frame: the room, then the talking rig
             # lip-synced to this segment's slice of the voice-over.
@@ -1102,13 +1213,14 @@ def _render_long(
             # ONE ROOM FOR THE BEAT: the one drawn behind him is the one he is
             # placed on, and the one whose desk is drawn in front of him.
             room = _room_plate("talk", seed=f"{script.ticker}|{variant % 3}")
-            bg_i = _still_input(_room_file(room))
+            bg_i = _room_input(room)
             host = _host_input(i, seg, seg_len, room=room)
             if host is None:
                 chain = _still_chain(bg_i, seg, seg_len, i, tail)
             else:
                 host_i, hx, hy, hw, hh, front = host
-                front_i = _still_input(front) if front is not None else None
+                front_i = (_front_input(room, front)
+                           if front is not None else None)
                 chain = _scaled_overlay_chain(bg_i, host_i, hx, hy, hw, hh,
                                               seg_len, tail, front_i=front_i)
         elif seg.kind == "clip":
@@ -1367,7 +1479,9 @@ def _render_long(
         # TYPE may legitimately appear twice in one video under two titles.
         cs_path = _chapter_opener(title, k)
         layers.append(OverlayLayer(
-            path=cs_path, x=0, y=0, t_start=t, t_end=min(t + 1.6, duration),
+            path=cs_path, x=0, y=0, t_start=t,
+            t_end=min(t + CHAPTER_OPENER_S, duration),
+            is_video=cs_path.suffix == ".mov",
             fade_in=0.2, name=f"chapter_{k}",
         ))
         stinger_meta.append({"type": ctype, "title": title,
