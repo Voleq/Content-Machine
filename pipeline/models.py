@@ -64,6 +64,12 @@ class TagType(str, Enum):
     SCREENGRAB = "SCREENGRAB"    # operator-supplied app/screen capture (blocks if missing)
     SOUND = "SOUND"              # sfx palette
     SCRIBBLE = "SCRIBBLE"        # an annotations/ mark on a number or a word
+    # A DESIGN MOVE ON THE PLATE ALREADY ON SCREEN — [MOVE: count-up], placed
+    # before the word it lands on. It claims no frame and names no plate: it
+    # acts on the last [PLATE] before it, in the slot that plate's motion
+    # anchors publish for that move. LONG only; what each plate can do is in
+    # pipeline/plates.py (writer_moves) and the writer is shown it in the menu.
+    MOVE = "MOVE"
     # DELIVERY DIRECTION — stripped from captions, passed to TTS.
     #
     # What each one becomes is in pipeline/direction.py, one table, per model
@@ -699,6 +705,9 @@ class CueKind(str, Enum):
     SOUND = "sound"
     # hand-drawn overlays (both formats) — composited on top, no segment
     SCRIBBLE = "scribble"
+    # A writer's [MOVE] on the plate on screen. No segment either: it is a
+    # timed instruction to the plate that already holds the frame.
+    MOVE = "move"
 
 
 class Cue(BaseModel):

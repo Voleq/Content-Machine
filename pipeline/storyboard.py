@@ -18,6 +18,7 @@ from __future__ import annotations
 import logging
 import subprocess
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -40,6 +41,115 @@ COLS = 4
 # search — which is the whole change: the storyboard shows what the director
 # chose, not what the resolver would have picked.
 _PLATE_KINDS = {"plate", "chapter"}
+
+
+# ---------------------------------------------------------------------------
+# How much of each chapter is the host.
+# ---------------------------------------------------------------------------
+
+# THE LINE ABOVE WHICH A CHAPTER IS FLAGGED. The long test script had Dennis on
+# screen for about 80% of a 22-minute cut, in beats of about ten seconds — a
+# talking head with pictures, which is the thing the format is not. The flag
+# is a report and nothing else: whether a chapter earns its talking is the
+# writer's call, and a planner that "fixed" it would be inventing visuals.
+HOST_SHARE_FLAG = 0.70
+
+# Telegram refuses a caption past this, and main.py cuts it there blind.
+CAPTION_LIMIT = 1024
+
+
+@dataclass(frozen=True)
+class ChapterShare:
+    """One chapter's host time: seconds he is the whole frame, of its length."""
+
+    title: str
+    type: str
+    start: float
+    end: float
+    host_s: float
+
+    @property
+    def seconds(self) -> float:
+        return max(self.end - self.start, 0.0)
+
+    @property
+    def share(self) -> float:
+        return self.host_s / self.seconds if self.seconds > 0 else 0.0
+
+    @property
+    def flagged(self) -> bool:
+        return self.share > HOST_SHARE_FLAG
+
+
+def host_share(segments, chapters, duration: float) -> list[ChapterShare]:
+    """Host seconds per chapter, off the segment plan.
+
+    HOST MEANS THE `host` BEATS: Dennis talking with nothing else in frame. A
+    two-shot has him beside the evidence and is counted as evidence, because
+    the question is how much of the chapter shows the viewer something other
+    than his face. Chapters sit where the render draws their openers
+    (`timeline.chapter_windows`); a script with no trailer is one chapter.
+    """
+    from pipeline.timeline import chapter_windows
+
+    windows = chapter_windows(chapters, duration) if chapters else \
+        [(0.0, duration)]
+    named = list(chapters) or [None]
+    out: list[ChapterShare] = []
+    for ch, (a, b) in zip(named, windows):
+        host = sum(max(0.0, min(s.end, b) - max(s.start, a))
+                   for s in segments if s.kind == "host")
+        out.append(ChapterShare(
+            title=getattr(ch, "title", "") or "the whole video",
+            type=getattr(ch, "type", "") or "", start=a, end=b, host_s=host))
+    return out
+
+
+def host_share_lines(segments, chapters, duration: float) -> list[str]:
+    """The host share as report lines: the video, then one per chapter."""
+    shares = host_share(segments, chapters, duration)
+    host_beats = [s for s in segments if s.kind == "host"]
+    total = sum(s.length for s in host_beats)
+    mean = total / len(host_beats) if host_beats else 0.0
+    lines = [f"host on screen {total / max(duration, 1e-6):.0%} of the cut, "
+             f"in beats of {mean:.1f}s on average"]
+    for c in shares:
+        mark = "⚠" if c.flagged else "·"
+        title = c.title if len(c.title) <= 32 else c.title[:31] + "…"
+        lines.append(f"{mark} {c.share:4.0%}  {title}  "
+                     f"({c.host_s:.0f}/{c.seconds:.0f}s)")
+    flagged = [c for c in shares if c.flagged]
+    if flagged:
+        lines.append(
+            f"⚠ = over {HOST_SHARE_FLAG:.0%} host. Nothing is changed — a "
+            f"plate or a clip where the argument has something to show, or "
+            f"leave it: the writer's call.")
+    return lines
+
+
+def storyboard_caption(head: str, problems: list[str],
+                       share_lines: list[str] | None = None) -> str:
+    """The message that goes with the sheet, inside Telegram's limit.
+
+    The host share goes first because it is short and always there; the
+    problems follow, as many as fit, and the rest are counted rather than cut
+    off mid-line — every one of them is also drawn in red on the sheet.
+    """
+    out = head
+    if share_lines:
+        out += "\n" + "\n".join(share_lines)
+    shown = 0
+    for p in problems[:6]:
+        line = "\n⚠ " + p
+        tail = len(problems) - shown - 1
+        room = CAPTION_LIMIT - len(out) - len(line) - (40 if tail else 0)
+        if room < 0:
+            break
+        out += line
+        shown += 1
+    if shown < len(problems):
+        out += f"\n⚠ …and {len(problems) - shown} more on the sheet"
+    return out[:CAPTION_LIMIT]
 
 
 def spoken_between(words: list[WordTimestamp], start: float, end: float,
@@ -199,20 +309,27 @@ def build_storyboard(
     workspace: Path | None = None,
     title: str = "",
     cols: int = COLS,
+    chapters=None,
 ) -> tuple[Path, list[str]]:
     """Write the contact sheet. Returns (path, problems).
 
     `problems` lists beats whose asset did not resolve — the thing worth
     fixing before spending an encode on it.
+
+    `chapters` (the script's `chapter_list`) adds each chapter's host share
+    to the header, the ones over HOST_SHARE_FLAG in `attention`.
     """
     out_path.parent.mkdir(parents=True, exist_ok=True)
     rows = (len(segments) + cols - 1) // cols
     header_h = 78
+    total = sum(s.length for s in segments)
+    shares = host_share(segments, chapters, total) if chapters else []
+    share_rows = (len(shares) + cols - 1) // cols
+    header_h += share_rows * 24 + (12 if shares else 0)
     sheet = Image.new("RGBA", (cols * TILE_W, header_h + rows * TILE_H),
                       (*role(settings, "ground"), 255))
     d = ImageDraw.Draw(sheet)
 
-    total = sum(s.length for s in segments)
     head_font = load_font(settings, ARCHIVO, 28)
     sub_font = load_font(settings, COURIER, 18)
     d.text((PAD + 4, 16), title or "storyboard", font=head_font,
@@ -224,6 +341,17 @@ def build_storyboard(
     d.text((PAD + 4, 50),
            f"{len(segments)} beats · {total / 60:.1f} min · {mix}",
            font=sub_font, fill=role(settings, "neutral-data"))
+    # One chip per chapter: its host share and its title, left to right in
+    # chapter order, so the talking-head stretch is where the eye lands.
+    chip_font = load_font(settings, COURIER_BOLD, 16)
+    for k, c in enumerate(shares):
+        x = (k % cols) * TILE_W + PAD + 4
+        y = 84 + (k // cols) * 24
+        label = f"{c.share:4.0%} {c.title}"
+        for line in _fit(d, label, chip_font, TILE_W - 2 * PAD, 1):
+            d.text((x, y), line, font=chip_font,
+                   fill=role(settings, "attention" if c.flagged
+                             else "neutral-data"))
 
     problems: list[str] = []
     with tempfile.TemporaryDirectory(prefix="storyboard_") as td:

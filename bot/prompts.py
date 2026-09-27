@@ -237,6 +237,11 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long",
     gics = fold_sector(sector)
     held = _held_stems(reg)
     lines: list[str] = []
+    # THE MOVES, marked on the slot each one lands in. A long only: [MOVE] is
+    # long grammar, and a short's plates are driven by its shot template.
+    moves = fmt != "short"
+    if moves:
+        lines.extend(_MOVE_LEGEND)
     elsewhere = 0
     for family in reg.families():
         if family in ("host", "room", "overlays"):
@@ -267,7 +272,8 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long",
                 lines.append(f"      caution: {plate.caution}")
             slots = _slot_summary(plate)
             if slots:
-                lines.append(f"      slots: {slots}")
+                lines.append(f"      slots: {slots}"
+                             + (_move_marks(plate) if moves else ""))
             # What the plate DRAWS and where from: the printed figures it
             # reads, or the data keys the tag names (`series=`, `steps=` …).
             data = data_menu(plate) if plate.slots else ""
@@ -286,6 +292,34 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long",
         lines.append(f"({elsewhere} sector plates drawn for other industries "
                      f"than {gics} are not offered.)")
     return "\n".join(lines).strip() or "(no plates in the registry)"
+
+
+# How the catalogue marks the moves. Two symbols on the slot line rather than
+# a "moves:" line per plate: the catalogue is already the largest block in the
+# prompt, and a mark costs a few characters where a line costs forty.
+_MOVE_LEGEND = (
+    "MOVES — `[MOVE: name]` right before the word it lands on, acting on the",
+    "[PLATE] already on screen (the last one before it). The slot each move",
+    "acts on is marked on the plate's slots line:",
+    "  ◆slot  count-up (counts up to the figure) and pen-circle (rings it) —",
+    "         only when that slot holds exactly one number: $3.1bn, −12%, 14x.",
+    "  ▭slot  highlight (marks the passage); zoom-to-slot (pushes into it) on",
+    "         paper/ plates only, once a beat.",
+    "pen-circle is for the single figure a chapter turns on: at most one a",
+    "chapter and three a video. line-draw and bars-grow play by themselves on",
+    "every chart — never tag them. No mark, no move.",
+)
+
+
+def _move_marks(plate) -> str:
+    """`  ◆value  ▭passage` — where this plate's writer moves land."""
+    from pipeline.plates import NUMBER_MOVES, writer_moves
+
+    can = writer_moves(plate)
+    number = {can[m] for m in NUMBER_MOVES if m in can}
+    passage = {can[m] for m in ("highlight", "zoom-to-slot") if m in can}
+    marks = [f"◆{s}" for s in sorted(number)] + [f"▭{s}" for s in sorted(passage)]
+    return ("  " + "  ".join(marks)) if marks else ""
 
 
 def chapter_type_catalogue(settings: Settings, *, fmt: str = "long",
@@ -324,6 +358,14 @@ def chapter_type_catalogue(settings: Settings, *, fmt: str = "long",
     lines.append("  Every type may also use: "
                  + ", ".join(sorted({k.split('/', 1)[0]
                                      for k in reg.universal_plates()})))
+    if fmt != "short":
+        from pipeline.plates import (PEN_CIRCLES_PER_CHAPTER,
+                                     PEN_CIRCLES_PER_VIDEO)
+        lines.append(
+            "  Every type may also use the moves its plates are marked with "
+            "(◆ count-up, pen-circle; ▭ highlight, zoom-to-slot on paper/). "
+            f"pen-circle: at most {PEN_CIRCLES_PER_CHAPTER} a chapter, "
+            f"{PEN_CIRCLES_PER_VIDEO} a video.")
     return "\n".join(lines)
 
 

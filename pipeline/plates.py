@@ -592,6 +592,84 @@ class Plate:
         return (self.delivered[0], self.delivered[1])
 
 
+# THE MOVES THE WRITER MAY CALL, with `[MOVE: name]` before the word it lands
+# on. The kit ships thirteen; these four are the ones a line of the script
+# decides. The room's moves (flicker, weather, lights) belong to the room, the
+# overlay moves (card-pin, slide-in, tick-over) to the plate's own entrance,
+# and line-draw and bars-grow play by themselves on every chart — a writer who
+# is asked to tag them tags some charts and not others, and the untagged ones
+# arrive fully drawn for no reason anyone chose.
+WRITER_MOVES = ("count-up", "highlight", "pen-circle", "zoom-to-slot")
+AUTOMATIC_MOVES = ("line-draw", "bars-grow")
+# The two that act on the plate's one figure. Both need the slot they land on
+# to hold exactly one number: a count-up over "4–6%" has two ends to count to,
+# and a ring around "40% of sales" circles the words as much as the figure.
+NUMBER_MOVES = frozenset({"count-up", "pen-circle"})
+# PEN-CIRCLE IS RATIONED. Valentin, on the first cuts: "please make it that he
+# doesn't abuse circling the whole plate, make it less frequent." A ring is the
+# video pointing at the one figure the chapter turns on; on every plate it is
+# decoration, and after the third it no longer points at anything.
+PEN_CIRCLES_PER_CHAPTER = 1
+PEN_CIRCLES_PER_VIDEO = 3
+# Zoom pushes into a passage of a document. On a card or a chart the anchor is
+# a sentence the viewer can already read at full frame, so the push adds
+# nothing but motion; on paper it is the difference between a page and a line.
+ZOOM_FAMILIES = ("paper",)
+
+# One figure, as a writer types it into a plate: an optional approximation
+# mark and sign, an optional currency (a country prefix like US$ included),
+# digits with thousands separators and a decimal part, and an optional short
+# unit. Anchored at both ends, so a second number or trailing words fail it.
+_ONE_NUMBER = _re.compile(
+    r"^\s*[~≈]?\s*[+\-−–]?\s*(?:[A-Z]{0,3}[$€£¥₹])?\s*[+\-−–]?\s*"
+    r"(?:\d{1,3}(?:[,  ]\d{3})+|\d+)(?:\.\d+)?\s*"
+    r"(?:%|pp|pts?|bps?|x|×|bn|b|mn|m|k|tn|t|billion|million|thousand|"
+    r"trillion|days?|d|yrs?|years?|months?|mo|wks?|weeks?)?\s*$",
+    _re.IGNORECASE)
+
+
+def one_number(text: str) -> bool:
+    """Whether `text` is exactly one figure — `$3.1bn`, `−12%`, `1,240`, `14x`.
+
+    Not `Q3` (a period), not `4–6%` (a range: two ends to count to), not
+    `40% of sales` (a figure and a sentence). The count-up and the pen-circle
+    both act on the plate's one number, and either of them on something that
+    is not one number draws a figure the writer never wrote.
+    """
+    return bool(text) and bool(_ONE_NUMBER.match(text))
+
+
+def writer_moves(plate: "Plate | None") -> dict[str, str]:
+    """Which of the writer's moves this plate can do, as {move: slot}.
+
+    Read off the kit's own anchors (`Plate.motion`) and nothing else: a move
+    the kit gives this plate no anchor for has nothing to act on here, and a
+    slot the anchor names but the plate does not declare would land the move
+    on a box nobody drew. Zoom is offered on paper only (see ZOOM_FAMILIES).
+
+    What the slot HOLDS is the parser's question, not this one's — whether
+    the count-up slot carries one number is known only once the tag is filled.
+    """
+    if plate is None:
+        return {}
+    out: dict[str, str] = {}
+    for move in WRITER_MOVES:
+        anchor = plate.motion.get(move)
+        slot = (anchor or {}).get("slot") if isinstance(anchor, dict) else None
+        if not slot or plate.slot(str(slot)) is None:
+            continue
+        if move == "zoom-to-slot" and plate.family not in ZOOM_FAMILIES:
+            continue
+        out[move] = str(slot)
+    return out
+
+
+def move_box(plate: "Plate | None", move: str) -> dict:
+    """Where `move` lands on `plate`, `{x, y, w, h}` in canvas units, or {}."""
+    anchor = (plate.motion.get(move) if plate is not None else None) or {}
+    box = anchor.get("box") if isinstance(anchor, dict) else None
+    return dict(box) if isinstance(box, dict) else {}
+
 
 def _prefer_unused(options: list[str],
                    avoid: "Collection[str]") -> list[str]:

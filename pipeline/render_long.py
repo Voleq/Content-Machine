@@ -86,7 +86,7 @@ from pipeline.models import (
     parse_scribble_payload,
 )
 from pipeline.plate_frames import drawn_box, playback_seconds, render_clip
-from pipeline.plates import at_episode_hour, load_plates
+from pipeline.plates import _prefer_unused, at_episode_hour, load_plates
 from pipeline.sound import (DEFAULT_LEAD_S, EFFECT_KEYS, Voicing, cue_lead_s,
                             manifest_rows, measure_lufs, placeholders_played,
                             room_track, sound_summary, theme_tracks)
@@ -120,9 +120,11 @@ from pipeline.segments import (
 )
 from pipeline.timeline import (
     LONG_FILLER_LOOKS,
+    MIN_SEGMENT_S,
     build_long_timeline,
     chapter_start_times,
     plan_long_segments,
+    plan_writer_moves,
     unrenderable_long_tags,
 )
 
@@ -150,6 +152,98 @@ def _chapter_plan(script, duration: float,
              "openers will be drawn. The titles are the only place a section "
              "name appears on screen, so the cut will have none.")
     return out
+
+
+# How long the opening title holds over the first frames. It is opaque, so
+# whatever the first host beat is shot in is not seen until it lifts.
+INTRO_CARD_S = 2.6
+
+# THE COLD OPEN STARTS WIDE. A long opened on the same talking-head angle as
+# the hundred host beats after it, so its first frame said nothing about
+# where we are. The kit ships wide angles for exactly this (the `opener`
+# role: desk-wide, and window-wide since rebuild-39), and window-wide was
+# drawn as the establishing shot — so it is preferred, and desk-wide takes
+# its turn when the last few videos all opened on the window. board-wide is
+# held back by the curation and never reaches the role, so it is not here.
+COLD_OPEN_PREFERRED = "room/window-wide"
+
+
+def cold_open_room(reg, aspect: str, *, recent=(), kept: str = "") -> str:
+    """The base key of the room the cold open's first shot is in, or "".
+
+    `kept` is what an earlier pass of THIS video opened on, and wins while
+    the kit still offers it: a proof that opens on the window and a final
+    that opens on the desk are two different videos. `recent` is what the
+    last few videos opened on, newest first; it is a preference to move off,
+    never a constraint, exactly as `_prefer_unused` is for every other room.
+
+    Only angles someone can stand in: the first shot is Dennis talking.
+    """
+    role_name = "opener" if reg.room_roles.get("opener") else "establish"
+    options = [k for k in reg.angles_for(role_name, aspect, reg.hour)
+               if (p := reg.get(k)) is not None and not p.refuses_host]
+    if not options:
+        return ""
+    base = {k: reg.base_key(k) for k in options}
+    if kept and kept in base.values():
+        return next(k for k in options if base[k] == kept)
+    options.sort(key=lambda k: not base[k].startswith(COLD_OPEN_PREFERRED))
+    return _prefer_unused(options, reg.base_keys(recent))[0]
+
+
+def _recorded_cold_opens(settings, workspace: Path) -> tuple[list[str], str]:
+    """`(recent, kept)`: the rooms recent videos opened on, and this one's.
+
+    Off the manifests' own `cold_open_room`, and NOT off `plates_used`: every
+    long draws both wide rooms somewhere as chapter openers, so "used
+    recently" is true of both on every video and would never turn. Forgiving
+    in the way the other rotation readers are — a manifest that cannot be
+    read, or predates the field, contributes nothing.
+    """
+    from pipeline.reach import ROTATION_WINDOW
+
+    here = Path(workspace).resolve()
+    paths = {m.resolve() for m in here.glob("*manifest*.json")}
+    base = Path(settings.workspace_dir)
+    if base.is_dir():
+        # This video's own workspace is read for `kept` even when a CLI
+        # render put it outside `workspace_dir`.
+        paths |= {m.resolve() for m in base.glob("*/*/*manifest*.json")}
+    mine: list[tuple[float, str]] = []
+    others: list[tuple[float, str]] = []
+    for manifest in paths:
+        try:
+            room = json.loads(manifest.read_text(encoding="utf-8")).get(
+                "cold_open_room")
+            if not isinstance(room, str) or not room:
+                continue
+            row = (manifest.stat().st_mtime, room)
+        except (OSError, ValueError, AttributeError):
+            continue
+        (mine if manifest.parent == here else others).append(row)
+    others.sort(reverse=True)
+    mine.sort(reverse=True)
+    return ([r for _, r in others[:ROTATION_WINDOW]],
+            mine[0][1] if mine else "")
+
+
+def cold_open_segment(segments, duration: float,
+                      until: float | None = None) -> int | None:
+    """Index of the cold open's first shot of Dennis, or None.
+
+    The first host beat still on screen once the opening title lifts — the
+    title is opaque, so a wide room entirely under it is not a wide opening,
+    and the first beat the viewer SEES him in is the one that establishes the
+    room. Only inside the cold open (before `until`, the next chapter's
+    start); None when he does not appear there at all.
+    """
+    title_end = min(INTRO_CARD_S, duration * 0.5)
+    for i, seg in enumerate(segments):
+        if until is not None and seg.start >= until:
+            return None
+        if seg.kind == "host" and seg.end - title_end > MIN_SEGMENT_S:
+            return i
+    return None
 
 
 # NOTHING PANS OR ZOOMS. Dennis carries the motion — the mouth flap, the boil
@@ -494,6 +588,17 @@ def _render_long(
     reg = load_plates(settings.assets_dir)
     aspect = "16x9"
 
+    # THE WRITER'S MOVES, on the real clock. Each `[MOVE]` is paired with the
+    # plate segment it acts on and timed off the spoken word; the list goes on
+    # the manifest as `writer_moves` and on each plate segment's payload as
+    # `moves`, which is where the move engine reads it while drawing the beat.
+    writer_moves, move_warnings = plan_writer_moves(
+        cues, segments, reg, chapter_starts=[t for t, _, _ in chapters])
+    for w in move_warnings:
+        log.warning("moves: %s", w)
+    for m in writer_moves:
+        segments[m.segment].payload.setdefault("moves", []).append(m.to_json())
+
     px = lambda v: int(round(v * W / 1920))  # noqa: E731  (1920-wide design)
 
     def progress(done: int, total: int) -> None:
@@ -522,6 +627,27 @@ def _render_long(
     # `exclude` is this video's own workspace: a resumed or re-run render
     # must not read its own last manifest and rotate away from itself.
     _avoid_recent = recent_plates(settings, exclude=workspace)
+
+    # The cold open's first shot, and the wide room it is in (see
+    # `cold_open_room`). Chosen once here so every pass of this video, and the
+    # manifest, agree on it.
+    cold_i = cold_open_segment(
+        segments, duration,
+        until=chapters[1][0] if len(chapters) > 1 else None)
+    cold_room = None
+    if cold_i is not None:
+        _recent_opens, _kept_open = _recorded_cold_opens(settings, workspace)
+        _opening = cold_open_room(reg, aspect, recent=_recent_opens,
+                                  kept=_kept_open)
+        if _opening:
+            # THROUGH `room_for`, with every other angle of the role avoided,
+            # so whatever else decides a room — the hour, the season — decides
+            # this one too, rather than a second path that forgets to ask.
+            _role = "opener" if reg.room_roles.get("opener") else "establish"
+            cold_room = reg.room_for(
+                _role, aspect, seed=script.ticker, episode=script.ticker,
+                avoid=[k for k in reg.angles_for(_role, aspect, reg.hour)
+                       if reg.base_key(k) != reg.base_key(_opening)])
 
     def _room_plate(role_name: str = "talk", seed: str = ""):
         # THE TICKER IS THE EPISODE, and it is passed separately from the seed
@@ -1101,7 +1227,9 @@ def _render_long(
             variant = seg.payload.get("variant", 0)
             # ONE ROOM FOR THE BEAT: the one drawn behind him is the one he is
             # placed on, and the one whose desk is drawn in front of him.
-            room = _room_plate("talk", seed=f"{script.ticker}|{variant % 3}")
+            room = (cold_room if i == cold_i and cold_room is not None
+                    else _room_plate("talk",
+                                     seed=f"{script.ticker}|{variant % 3}"))
             bg_i = _still_input(_room_file(room))
             host = _host_input(i, seg, seg_len, room=room)
             if host is None:
@@ -1323,7 +1451,7 @@ def _render_long(
     # the one frame everybody sees first.
     from pipeline.plate_frames import render_still as _render_still
 
-    intro_dur = min(2.6, duration * 0.5)
+    intro_dur = min(INTRO_CARD_S, duration * 0.5)
     intro_path = rdir / "intro_card.png"
     intro_plate = reg.get(reg.aspect_key("paper/headline-band-t3", aspect) or "")
     if intro_plate is not None:
@@ -1760,6 +1888,16 @@ def _render_long(
         # be six hardcoded titles spaced evenly, and every test passed.
         "chapters": [{"t": round(t, 2), "title": ti, "type": ct}
                      for t, ti, ct in chapters],
+        # THE WRITER'S [MOVE]s as the render should play them: move, plate
+        # key, the kit's slot and box for it, programme time `t` and the time
+        # `at` into its plate `segment`. See `timeline.WriterMove`.
+        "writer_moves": [m.to_json() for m in writer_moves],
+        "move_warnings": move_warnings,
+        # The wide room the cold open's first shot was in, as a base key.
+        # The next video reads it to take its turn on the other one, and the
+        # next pass of THIS video reads it to open on the same one.
+        "cold_open_room": (reg.base_key(cold_room.key)
+                           if cold_room is not None else ""),
         # WHAT THIS RENDER ACTUALLY REACHED. The doctor diffs the library
         # against this across recent renders to answer "what have we drawn and
         # never used" — which is the gap list the next design batch is drawn
