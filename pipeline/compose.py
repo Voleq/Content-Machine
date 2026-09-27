@@ -480,13 +480,20 @@ def _settings():
 
 def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                  reg: Registry, *, aspect: str = "",
-                 seed: str = "", avoid: "Collection[str]" = ()) -> BuildResult:
+                 seed: str = "", avoid: "Collection[str]" = (),
+                 words: Sequence[Any] = ()) -> BuildResult:
     """Turn the template and the script into the ordered layer list.
 
     `avoid` is what the last few renders already used. It steers the host and
     framing picks off those where the kit offers an alternative, so two
     consecutive videos do not open on the same pose — a preference the
     registry drops the moment a role has nothing else to give.
+
+    `words` is the voice-over's word timings, when the caller has them. A
+    host shot is then cast from what is said during it (`host.cast_pose`): a
+    pose that means something — a count, a citation, a shrug — is chosen by
+    the words rather than by seed, on a room it was drawn for. Without them
+    every host is picked by his role, as before.
     """
     frame = fmt.frame
     fw, fh = frame
@@ -498,6 +505,12 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
     # room shot was in — `resolve_room` rotates on both.
     room_uses: dict[str, int] = {}
     last_room = ""
+    # Who has stood in the cut so far, and in the shot before: a cast pose
+    # keeps to its `limit` across the video and is never cut to twice running.
+    # The CLOSE is the last shot that puts him on screen.
+    host_used: dict[str, int] = {}
+    last_host = ""
+    closing = next((sp.shot.id for sp in reversed(spans) if sp.shot.host), "")
 
     for span_index, span in enumerate(spans):
         shot = span.shot
@@ -709,8 +722,15 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
         if shot.host:
             host_layer = _host_layer(reg, shot, plate, placed, frame, t0, t1,
                                      seed=seed, column=host_column,
-                                     avoid=avoid)
+                                     avoid=avoid,
+                                     words=[w for w in words
+                                            if t0 <= w.start < t1],
+                                     closing=shot.id == closing,
+                                     used=host_used, previous=last_host)
             if host_layer is not None:
+                host_used[host_layer.entry_key] = (
+                    host_used.get(host_layer.entry_key, 0) + 1)
+                last_host = host_layer.entry_key
                 layers.append(host_layer)
                 front = _front_layer(reg, shot, plate, placed, host_layer)
                 if front is not None:
@@ -1097,7 +1117,10 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
                 frame: tuple[int, int], t0: float, t1: float, *,
                 seed: str,
                 column: tuple[int, int, int, int] | None = None,
-                avoid: "Collection[str]" = ()) -> Layer | None:
+                avoid: "Collection[str]" = (),
+                words: Sequence[Any] = (), closing: bool = False,
+                used: dict[str, int] | None = None,
+                previous: str = "") -> Layer | None:
     """The host, solved onto the room's anchor.
 
     THE ANCHOR'S HEIGHT IS HIS TARGET HEIGHT — never its width, which the
@@ -1111,7 +1134,8 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
     the robe (DESIGN §2.5). What a two-shot does to him is the column he is
     framed in, not which way he looks.
     """
-    from pipeline.host import frame_shot, host_shot, place_on_room, stands_on
+    from pipeline.host import (cast_pose, frame_shot, host_shot,
+                               place_on_room, stands_on)
 
     role = shot.host.pose
     # THE SEED IS PER SHOT, NOT PER VIDEO. Hashed on the video's seed alone,
@@ -1120,6 +1144,22 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
     pose = (reg.get(role) if role in reg
             else reg.host_for(role, seed=f"{seed}|{shot.id}",
                               avoid=avoid))
+
+    # THE WORDS MAY CAST HIM, but only where the template left it to a ROLE,
+    # the role stood him up as a figure, and there is a room under him. A
+    # template that names a pose by key chose it; a framing is a camera
+    # distance; and a two-shot's column has no floor, so a count or a shrug
+    # cut there would stand on nothing. Every pose is drawn in the same
+    # standing box, so the cast lands exactly where the role's pose would have.
+    if (role not in reg and pose is not None and pose.floor_line_y
+            and plate is not None and plate.family == "room"):
+        cast = cast_pose(reg, words, room=plate, closing=closing, used=used,
+                         avoid=avoid, previous=previous,
+                         seed=f"{seed}|{shot.id}")
+        if cast is not None:
+            log.debug("%s: %r cast %s over %s", shot.id, cast.cue, cast.pose,
+                      pose.key)
+            pose = reg.get(cast.pose) or pose
 
     # A ROOM THAT REFUSES A CUT-OUT STILL TAKES A SHOT OF HIS FACE. A room
     # with no floor in shot says so in the field (`hostAnchor: false`) rather

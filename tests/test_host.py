@@ -26,22 +26,33 @@ from config import Settings
 from pipeline.host import (
     BEAT_GAP_S,
     BLINK_S,
+    CLOSE_CUE,
+    CUES,
     IDLE_MIN_SPAN_S,
+    MOUTH_CLOSED,
+    MOUTH_HZ,
     available,
     beat_times,
     build_host_clip,
+    cast_pose,
+    cues_in,
     face_plan,
     frame_shot,
     host_shot,
+    letter_mouth,
+    mouth_frames,
     mouth_schedule,
     pick_framing,
     pick_shot,
     place_on_room,
+    room_stem,
     shots,
     speaking_spans,
+    word_mouths,
 )
 from pipeline.models import WordTimestamp
 from pipeline.plates import Registry, load_plates
+from pipeline.tts import mock_words
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -73,6 +84,19 @@ def words(*spans: tuple[float, float]) -> list[WordTimestamp]:
         WordTimestamp(word=f"w{i}", start=a, end=b, char_start=i * 3, char_end=i * 3 + 2)
         for i, (a, b) in enumerate(spans)
     ]
+
+
+def said(text: str, seconds: float = 4.0) -> list[WordTimestamp]:
+    """A line read by the proof voice: real words, timed wall to wall."""
+    return mock_words(text, seconds)
+
+
+# Twelve seconds of the kind of thing he says, for the face: every mouth the
+# strip draws, lips that meet on m, b and p, and no pause long enough to idle.
+READ = ("The company sells software to hospitals, and it has done so for "
+        "twenty years without once raising its prices. Last quarter that "
+        "changed. Revenue grew faster than it has in a decade, and the filing "
+        "says why in a single sentence that most people will never read.")
 
 
 # --------------------------------------------------------------------------
@@ -381,7 +405,7 @@ def test_a_registry_with_no_wardrobe_block_is_refused(tmp_path):
 
 
 # --------------------------------------------------------------------------
-# The flap.
+# The mouth.
 # --------------------------------------------------------------------------
 
 
@@ -401,11 +425,46 @@ def test_mouth_is_open_on_words_and_closed_in_gaps():
 
 
 def test_the_mouth_works_rather_than_gaping():
-    """Open for a whole sentence is a puppet. It alternates at FLAP_HZ."""
-    plan = mouth_schedule(words((0.0, 3.0)), 0.0, 3.0, 30)
-    assert any(plan) and not all(plan)
-    flips = sum(1 for a, b in zip(plan, plan[1:]) if a != b)
-    assert flips >= 6, f"only {flips} mouth changes across three seconds"
+    """Open for a whole sentence is a puppet. The words move it: it changes
+    shape with the letters and shuts on the m, b and p in them."""
+    mouths = mouth_frames(said("Maybe the business will be fine, but maybe "
+                               "not.", 3.0), 0.0, 3.0, 30)
+    assert MOUTH_CLOSED in mouths[5:-5], "his lips never met mid-sentence"
+    shapes = sum(1 for a, b in zip(mouths, mouths[1:]) if a != b)
+    assert shapes >= 12, f"only {shapes} mouth changes across three seconds"
+
+
+def test_each_letter_is_said_with_its_mouth():
+    for letters, mouth in (("ouw", "mouthO"), ("eiy", "mouthEE"),
+                           ("fv", "mouthFV"), ("mbp", MOUTH_CLOSED),
+                           ("a", "mouthWide"), ("cdghjklnqrstxz", "mouthMid")):
+        for ch in letters:
+            assert letter_mouth(ch) == mouth, ch
+
+
+def test_a_word_is_mouthed_as_it_is_said_rather_than_spelled():
+    """A doubled letter is one sound, "ph" is an f, a final e after a
+    consonant is silent, and a figure is said as the word it is."""
+    assert word_mouths("moo") == [MOUTH_CLOSED, "mouthO"]
+    assert word_mouths("phone") == ["mouthFV", "mouthO", "mouthMid"]
+    assert word_mouths("move") == [MOUTH_CLOSED, "mouthO", "mouthFV"]
+    assert word_mouths("Naïve,") == ["mouthMid", "mouthWide", "mouthEE",
+                                     "mouthFV"]
+    assert word_mouths("4%") == word_mouths("fourpercent")
+    assert word_mouths("—") == [], "a dash is not said"
+
+
+def test_a_word_that_starts_on_its_lips_shuts_them_and_then_says_the_rest(reg):
+    """"moo" is lips together, then round: the talk strip's closed frame and
+    then its O — found by the name each frame carries."""
+    shot = host_shot(reg, "host/to-camera")
+    moo = [WordTimestamp(word="moo", start=0.0, end=0.5, char_start=0,
+                         char_end=3)]
+    plan, did = face_plan(shot, moo, 0.0, 0.5, 30, seed="m")
+    mouths = [shot.talk.frames[f.index].mouth for f in plan
+              if f.key == shot.talk.key]
+    assert mouths[0] == MOUTH_CLOSED and mouths[-1] == "mouthO", mouths
+    assert did["mouths"] == [MOUTH_CLOSED, "mouthO"]
 
 
 def test_a_silent_segment_never_opens_the_mouth():
@@ -549,13 +608,100 @@ def test_the_mouth_is_read_off_the_frame_not_its_position(reg):
 
 def test_a_long_read_plays_every_open_mouth_the_strip_draws(reg):
     """rebuild-31 drew six mouths so that a long read no longer loops three
-    shapes. The player walks the open ones in the kit's phrase order."""
+    shapes. The words reach every one of them, and none has to stand in."""
     shot = host_shot(reg, "host/to-camera")
     drawn = {i for i, f in enumerate(shot.talk.frames) if f.mouth_open}
-    plan, _did = face_plan(shot, words((0.0, 6.0)), 0.0, 6.0, 30, seed="t")
+    plan, did = face_plan(shot, said(READ, 12.0), 0.0, 12.0, 30, seed="t")
     played = {f.index for f in plan if f.key == shot.talk.key
               and shot.talk.frames[f.index].mouth_open}
     assert played == drawn
+    assert did["mouths_stood_in"] == []
+
+
+def _mouth_on(shot, face) -> str:
+    """What his mouth is doing on one frame: a talk frame's own mouth, shut
+    on the still and in a blink (both draw it closed), or the idle."""
+    if shot.talk is not None and face.key == shot.talk.key:
+        return shot.talk.frames[face.index].mouth
+    if face.key in (shot.pose.key, shot.blink.key):
+        return MOUTH_CLOSED
+    return "idle"
+
+
+def _runs(seq: list) -> list[tuple[object, int]]:
+    out: list[tuple[object, int]] = []
+    for x in seq:
+        if out and out[-1][0] == x:
+            out[-1] = (x, out[-1][1] + 1)
+        else:
+            out.append((x, 1))
+    return out
+
+
+@pytest.mark.parametrize("key", ("host/to-camera", "host/close-up"))
+def test_no_mouth_is_held_for_less_than_a_strip_frame(reg, key):
+    """Letters come far faster than a drawn mouth can change — "strengths" is
+    nine of them in a third of a second — and a mouth swapped on each is a
+    buzz. So every mouth, the blink's shut one included, stays up for at
+    least one frame of the strip's own 8fps."""
+    shot = host_shot(reg, key)
+    fps = 30
+    plan, did = face_plan(shot, said(READ, 12.0), 0.0, 12.0, fps, seed="h")
+    assert did["blinks"] >= 1
+    least = int(fps / MOUTH_HZ)
+    runs = _runs([_mouth_on(shot, f) for f in plan])
+    brief = [r for r in runs[1:-1] if r[1] < least]
+    assert not brief, f"{key}: mouths held under a strip frame: {brief[:5]}"
+
+
+def test_silence_shuts_the_mouth(reg):
+    """Between sentences the mouth is shut or idling — never left open on
+    the last letter said."""
+    shot = host_shot(reg, "host/to-camera")
+    line = said("Revenue fell.", 1.0) + [
+        WordTimestamp(word=w.word, start=w.start + 3.0, end=w.end + 3.0,
+                      char_start=0, char_end=0)
+        for w in said("Then it rose.", 1.0)]
+    plan, _did = face_plan(shot, line, 0.0, 4.0, 30, seed="s")
+    for face in plan[int(1.3 * 30):int(2.9 * 30)]:
+        assert _mouth_on(shot, face) in (MOUTH_CLOSED, "idle")
+
+
+def _without(shot, *mouths: str):
+    """The same pose with a talk strip that does not draw `mouths`."""
+    import dataclasses
+
+    talk = dataclasses.replace(
+        shot.talk, frames=tuple(f for f in shot.talk.frames
+                                if f.mouth not in mouths))
+    return dataclasses.replace(shot, talk=talk)
+
+
+def test_a_mouth_the_strip_does_not_draw_goes_to_the_nearest_one_it_does(reg):
+    """A drop that loses the O must not stop him talking or cut to the
+    still: the round mouth goes to the wide one, and the report says so."""
+    shot = _without(host_shot(reg, "host/to-camera"), "mouthO")
+    plan, did = face_plan(shot, said("Who owns you now?", 2.0), 0.0, 2.0, 30,
+                          seed="o")
+    assert did["mouths_stood_in"] == ["mouthO"]
+    assert "mouthO" not in did["mouths"] and "mouthWide" in did["mouths"]
+    assert did["talk_frames"] > 0
+
+
+def test_a_close_up_missing_its_closed_mouth_never_shows_the_still(reg):
+    """A figure's closed mouth IS his pose, so a figure whose strip lost it
+    shuts on the still. A close-up may not — the still is the dash design
+    says never to hold — so it takes the nearest drawn mouth instead."""
+    line = said("Maybe the bump helps, maybe the problem is bigger.", 3.0)
+    framed = _without(host_shot(reg, "host/close-up"), MOUTH_CLOSED)
+    plan, did = face_plan(framed, line, 0.0, 3.0, 30, seed="c")
+    assert MOUTH_CLOSED in did["mouths_stood_in"]
+    assert all(f.key != framed.pose.key for f in plan)
+
+    figure = _without(host_shot(reg, "host/to-camera"), MOUTH_CLOSED)
+    plan, did = face_plan(figure, line, 0.0, 3.0, 30, seed="c")
+    assert any(f.key == figure.pose.key for f in plan[5:-5]), \
+        "a figure's m, b and p did not shut on his pose"
 
 
 def test_a_long_silence_plays_the_idle_and_a_short_one_holds(reg):
@@ -591,18 +737,26 @@ def test_a_close_up_never_holds_its_still(reg):
 def test_he_blinks_and_never_mid_word(reg):
     """Every three to six seconds, for a tenth of a second, on the blink
     strip's shut-eyes drawing — and only over a closed mouth, where people do
-    blink, never on an open one, where it reads as a dropped frame."""
+    blink, never on an open one, where it reads as a dropped frame: an open
+    mouth, snapped shut for three frames, and the same mouth open again."""
     shot = host_shot(reg, "host/to-camera")
     fps = 30
-    plan, did = face_plan(shot, words((0.0, 12.0)), 0.0, 12.0, fps,
-                          seed="b")
+    plan, did = face_plan(shot, said(READ, 12.0), 0.0, 12.0, fps, seed="b")
     assert 2 <= did["blinks"] <= 4, f"{did['blinks']} blinks in twelve seconds"
     shut = [i for i, f in enumerate(plan) if f.key == shot.blink.key]
     assert shut, "no frame closed his eyes"
     for i in shut:
         assert _strip_frame(reg, plan[i]).eyes == "closed"
-    is_open = mouth_schedule(words((0.0, 12.0)), 0.0, 12.0, fps)
-    assert not any(is_open[i] for i in shut), "he blinked over an open mouth"
+    mouths = [_mouth_on(shot, f) for f in plan]
+    for i in shut:
+        if i + 1 < len(plan) and plan[i + 1].key != shot.blink.key:
+            start = i
+            while start > 0 and plan[start - 1].key == shot.blink.key:
+                start -= 1
+            before, after = mouths[start - 1] if start else "", mouths[i + 1]
+            assert not (before == after and before not in (MOUTH_CLOSED,
+                                                           "idle")), \
+                f"he blinked mid-{before} at frame {start}"
     runs, run = [], 1
     for a, b in zip(shut, shut[1:]):
         if b == a + 1:
@@ -616,8 +770,8 @@ def test_he_blinks_and_never_mid_word(reg):
 
 def test_two_shots_do_not_blink_in_lockstep(reg):
     shot = host_shot(reg, "host/to-camera")
-    a, _ = face_plan(shot, words((0.0, 12.0)), 0.0, 12.0, 30, seed="one")
-    b, _ = face_plan(shot, words((0.0, 12.0)), 0.0, 12.0, 30, seed="two")
+    a, _ = face_plan(shot, said(READ, 12.0), 0.0, 12.0, 30, seed="one")
+    b, _ = face_plan(shot, said(READ, 12.0), 0.0, 12.0, 30, seed="two")
     blink = shot.blink.key
     assert ([i for i, f in enumerate(a) if f.key == blink]
             != [i for i, f in enumerate(b) if f.key == blink])
@@ -682,3 +836,222 @@ def test_a_still_two_shot_never_takes_a_framing(reg):
     for i in range(len(shots(reg, "panel")) + 2):
         got = pick_shot(reg, "panel", i, figures_only=True)
         assert got is not None and not got.is_framing
+
+
+# --------------------------------------------------------------------------
+# Casting — six poses the words choose, on the angles design drew them for.
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def cast_reg() -> Registry:
+    """The installed kit with roles.json's hostPoses, as the next ingest
+    stamps them. A registry of its own, because the cached one is shared by
+    every test in the run and casting reads fields an older install lacks."""
+    import json
+
+    fresh = Registry(Settings(_env_file=None).assets_dir / "plates")
+    fresh.host_poses = json.loads(
+        (ROOT / "kit" / "roles.json").read_text(encoding="utf-8"))["hostPoses"]
+    return fresh
+
+
+def _cast(cast_reg, text, room="room/desk-front-16x9", **kw):
+    got = cast_pose(cast_reg, said(text), room=cast_reg.require(room),
+                    seed=kw.pop("seed", "t"), **kw)
+    return got.pose if got is not None else None
+
+
+def test_three_reasons_count_on_his_fingers_where_design_drew_it(cast_reg):
+    line = "There are three reasons this matters."
+    assert _cast(cast_reg, line) == "host/counting-on-fingers"
+    assert _cast(cast_reg, line, "room/window-wide-16x9") == \
+        "host/counting-on-fingers"
+    assert _cast(cast_reg, line, "room/desk-front-low-16x9") is None, \
+        "design did not draw the count for the low desk angle"
+
+
+def test_one_reason_or_three_percent_is_not_a_list(cast_reg):
+    """design's caution: never for one item. And a count of a unit is a
+    figure — the one thing a list pose must never be cut to."""
+    for line in ("There is one reason this matters.",
+                 "Margins rose three percent.",
+                 "It took four years and two billion dollars."):
+        assert "list" not in cues_in(said(line)), line
+        assert _cast(cast_reg, line) is None, line
+
+
+def test_a_clause_that_opens_on_but_shrugs_and_only_once_a_video(cast_reg):
+    assert _cast(cast_reg, "Sales rose. But nobody knows why.") == "host/shrug"
+    assert _cast(cast_reg, "Who knows what they will do next?") == "host/shrug"
+    assert _cast(cast_reg, "Sales rose. But nobody knows why.",
+                 used={"host/shrug-dusk": 1}) is None, \
+        "the shrug is limit 1, at whichever hour it stood"
+
+
+def test_small_but_growing_is_not_a_shrug(cast_reg):
+    assert "doubt" not in cues_in(said("The business is small but growing."))
+
+
+def test_a_citation_holds_up_the_filing(cast_reg):
+    for line in ("It says so on page 96.", "Read the 10-K.",
+                 "The annual report is blunter than the call."):
+        assert _cast(cast_reg, line) == "host/holding-a-filing", line
+
+
+def test_a_news_hook_takes_out_the_phone(cast_reg):
+    for line in ("The price alert went off at four.",
+                 "The headline said record quarter."):
+        assert _cast(cast_reg, line) == "host/holding-a-phone", line
+
+
+def test_the_close_takes_the_mug_and_never_on_a_number(cast_reg):
+    line = "That is the whole story. Go to bed."
+    assert _cast(cast_reg, line, closing=True) == "host/holding-a-mug"
+    assert _cast(cast_reg, line, "room/desk-side-16x9",
+                 closing=True) == "host/holding-a-mug"
+    assert _cast(cast_reg, line) is None, "the mug is for the close only"
+    assert _cast(cast_reg, "The stock trades at 14 times earnings.",
+                 closing=True) is None, "a figure said over a sip of coffee"
+
+
+def test_he_gestures_at_the_plate_only_when_it_is_camera_right_of_him(
+        cast_reg):
+    line = "Look at this chart."
+    for room in ("room/panel-left-16x9", "room/board-side-16x9"):
+        assert _cast(cast_reg, line, room, plate_on="camera-right") == \
+            "host/gesturing-at-plate"
+        assert _cast(cast_reg, line, room, plate_on="camera-left") is None
+        assert _cast(cast_reg, line, room) is None, "gesturing at a wall"
+    assert _cast(cast_reg, line, plate_on="camera-right") is None, \
+        "design did not draw the gesture for the desk"
+
+
+def test_a_pose_is_never_cast_on_an_angle_it_was_not_drawn_for(cast_reg):
+    """Every cue at once, on every room the kit ships, at every seed: what
+    comes back fits the room or nothing does."""
+    line = ("Three reasons, but nobody knows. Page 96 of the filing. The "
+            "alert. Look at this chart.")
+    spoken = said(line, 8.0)
+    fits = {k: set(v["fits"]) for k, v in cast_reg.host_poses.items()
+            if v.get("castBy")}
+    for key in cast_reg.family("room"):
+        room = cast_reg.require(key)
+        for seed in ("a", "b", "c"):
+            got = cast_pose(cast_reg, spoken, room=room, closing=True,
+                            plate_on="camera-right", seed=seed)
+            if got is not None:
+                assert room_stem(room) in fits[got.pose], (key, got)
+                assert not room.refuses_host
+
+
+def test_a_pose_from_a_recent_video_or_the_last_beat_is_not_cast_again(
+        cast_reg):
+    line = "There are three reasons this matters."
+    assert _cast(cast_reg, line,
+                 avoid={"host/counting-on-fingers-dusk"}) is None, \
+        "back-to-back videos counted on the same fingers"
+    assert _cast(cast_reg, line,
+                 previous="host/counting-on-fingers") is None, \
+        "two beats in a row cast the same pose"
+
+
+def test_casting_reads_the_hour_the_episode_is_shot_at(cast_reg):
+    dusk = cast_reg.at("dusk")
+    got = cast_pose(dusk, said("There are three reasons."),
+                    room=dusk.get("room/desk-front-16x9"), seed="d")
+    assert got is not None and got.pose == "host/counting-on-fingers"
+    assert dusk.get(got.pose).key.endswith("-dusk")
+
+
+def test_nothing_said_or_nowhere_to_stand_casts_nothing(cast_reg):
+    """Every refusal is today's casting, never a missing host."""
+    room = cast_reg.require("room/desk-front-16x9")
+    assert cast_pose(cast_reg, [], room=room, closing=True) is None, \
+        "no words cannot vouch the close carries no number"
+    line = said("There are three reasons.")
+    assert cast_pose(cast_reg, line, room=None) is None
+    assert cast_pose(cast_reg, line,
+                     room=cast_reg.require("room/board-16x9")) is None
+    assert cast_pose(cast_reg, line,
+                     room=cast_reg.require("tables/numbers-sheet-6r-16x9")) \
+        is None
+
+
+def test_every_cast_pose_names_a_cue_this_module_reads_and_rooms_it_ships(
+        cast_reg):
+    rooms = {room_stem(cast_reg.require(k)) for k in cast_reg.family("room")}
+    cast = {k: v for k, v in cast_reg.host_poses.items() if v.get("castBy")}
+    assert len(cast) == 6
+    for key, spec in cast.items():
+        assert spec["castBy"] in {*CUES, CLOSE_CUE}, key
+        assert set(spec["fits"]) <= rooms, f"{key} fits a room the kit lacks"
+        assert cast_reg.get(key) is not None and cast_reg.get(key).floor_line_y
+
+
+def _one_host_shot(pose: str, plate: str, aspect: str = "16x9"):
+    from pipeline.shots import parse_format
+
+    w, h = (1920, 1080) if aspect == "16x9" else (1080, 1920)
+    return parse_format({
+        "format": "cast", "aspect": aspect, "frame": {"w": w, "h": h},
+        "shots": [{"id": "the-beat", "plate": plate,
+                   "host": {"pose": pose, "slot": "host-anchor"}}]})
+
+
+class _NoText:
+    def text_for(self, src):
+        return None
+
+    def image_for(self, src):
+        return None
+
+    def list_for(self, src):
+        return []
+
+
+def _host_in(result) -> str:
+    return next(layer.entry_key for layer in result.layers
+                if layer.kind == "host")
+
+
+def test_compose_casts_a_role_from_its_words_and_keeps_the_role_without(
+        cast_reg):
+    from pipeline.compose import build_layers
+    from pipeline.shots import resolve_spans
+
+    fmt = _one_host_shot("beat", "room/desk-front-16x9")
+    line = said("There are three reasons this matters.")
+    spans = resolve_spans(fmt, line, 4.0, {})
+    cast = build_layers(fmt, spans, _NoText(), cast_reg, aspect="16x9",
+                        seed="s", words=line)
+    assert _host_in(cast) == "host/counting-on-fingers"
+    plain = build_layers(fmt, spans, _NoText(), cast_reg, aspect="16x9",
+                         seed="s")
+    assert _host_in(plain) in cast_reg.host_roles["beat"], \
+        "without words he is cast by his role, as before"
+
+    named = _one_host_shot("host/to-camera", "room/desk-front-16x9")
+    got = build_layers(named, resolve_spans(named, line, 4.0, {}), _NoText(),
+                       cast_reg, aspect="16x9", seed="s", words=line)
+    assert _host_in(got) == "host/to-camera", "a pose named by key is chosen"
+
+
+def test_no_vertical_template_stands_him_where_a_pose_could_be_cast(
+        cast_reg):
+    """The 9:16 finding. A short's only host is the turn, which names the
+    close-up by key: a framing, and a pose the template chose. So nothing in
+    a vertical video is cast; a template that stands him up by role is where
+    that changes, and this test with it."""
+    from pipeline.shots import available_formats, load_format
+
+    for name in available_formats():
+        fmt = load_format(name)
+        if fmt.aspect != "9x16":
+            continue
+        for shot in fmt.shots:
+            if shot.host:
+                pose = cast_reg.get(shot.host.pose)
+                assert pose is not None and not pose.floor_line_y, (
+                    f"{name}/{shot.id} stands him up by role — casting now "
+                    f"reaches the {name}")

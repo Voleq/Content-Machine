@@ -1036,7 +1036,8 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # inline tags a director would use in a LONG.
     result = build_layers(fmt, spans, resolver, reg,
                           aspect=fmt.aspect, seed=script.content_sha(),
-                          avoid=recent_plates(settings, exclude=workspace))
+                          avoid=recent_plates(settings, exclude=workspace),
+                          words=words)
 
     # A composition that breaks its own rules never reaches an encoder. This
     # is the check that the last renderer did not have: it shipped a 12.5s

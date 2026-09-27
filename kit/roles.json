@@ -37,22 +37,32 @@
    "a video because design has not reviewed it at 1:1.",
    "",
    "THE SIX POSES rebuild-30 AND rebuild-31 ADDED ARE IN NO ROLE, ON PURPOSE. A",
-   "role is picked by seed, and each of the six is chosen by what is being said:",
-   "counting-on-fingers for a list and never for one item, shrug for a range too",
-   "wide to mean anything, holding-a-filing for a page citation, holding-a-phone",
-   "for an alert read out, holding-a-mug between beats and never on a number",
-   "(design's cautions, roles.fragment.json and kit-model.js). gesturing-at-plate",
-   "also needs the plate on camera-right, and only the long's two-shot knows",
-   "which side the evidence lands on, after it has placed him. Put in a role",
-   "today, a seed would count on his fingers over a single number. So they are",
-   "installed, drawn and described in hostPoses, and casting them from the",
-   "script's words is its own change.",
+   "role is picked by seed, and each of the six means something: put in a role,",
+   "a seed would count on his fingers over a single number. So each is CAST by",
+   "what is being said, and says in hostPoses what casts it, which",
+   "pipeline/host.py `cast_pose` reads:",
    "",
-   "Design fits each of them to certain rooms (kit-model.js `fits`, which the",
-   "render path never reads), and casting them has to keep to it: the holding",
-   "poses to desk-front and desk-wide, the mug also to desk-side;",
-   "gesturing-at-plate to panel-left, board-side and board-wide; counting-on-",
-   "fingers and shrug to desk-front, desk-front-b, desk-wide and window-wide."
+   "  castBy   the cue: list (\"three reasons\", never one item), doubt (a clause",
+   "           that opens on \"but\", or nobody knowing), citation (a filing, a",
+   "           page), alert (the price alert, the headline, the post), present",
+   "           (\"look at this chart\"), or close (the sign-off beat, and never",
+   "           on a number). What counts as each is language and lives in",
+   "           host.py's CUES; which pose answers it is curation and lives here.",
+   "  fits     the room angles design drew it for (kit-model.js `fits`, by",
+   "           stem, both aspects and every hour). A pose is never cast on any",
+   "           other angle; the beat keeps the pose its role picked instead.",
+   "  plateOn  gesturing-at-plate holds his camera-right hand out, so it is cast",
+   "           only in the long's two-shot, and only when the evidence landed",
+   "           on camera-right of him.",
+   "",
+   "A cast pose keeps its `limit` (the shrug is once a video), is never cut to",
+   "twice running, and is not cast at all if one of the last few videos showed",
+   "it. The Christmas twins fit as their plain angle and are not listed, because",
+   "they are held back; list them the day they come back.",
+   "",
+   "NO 9:16 SHOT CASTS HIM TODAY. A short's only host is the turn, which names",
+   "host/close-up by key: a framing, and a pose the template chose. So casting",
+   "is the long's alone until a vertical template stands him up by role."
   ],
   "open": [
    "host/to-camera",
@@ -143,27 +153,64 @@
   },
   "host/gesturing-at-plate": {
    "talks": true,
+   "castBy": "present",
+   "plateOn": "camera-right",
+   "fits": [
+    "room/panel-left",
+    "room/board-side",
+    "room/board-wide"
+   ],
    "purpose": "the PRESENT pose: his camera-right hand open toward the plate beside him. checking-a-figure is him reading the plate; this is him showing it to you. Only with a plate or the card wall on camera-right"
   },
   "host/counting-on-fingers": {
    "talks": true,
+   "castBy": "list",
+   "fits": [
+    "room/desk-front",
+    "room/desk-front-b",
+    "room/desk-wide",
+    "room/window-wide"
+   ],
    "purpose": "the LIST pose: hands meet at the chest for a three-things beat. The count is in the voice-over, so never for one item"
   },
   "host/shrug": {
    "talks": true,
    "limit": 1,
+   "castBy": "doubt",
+   "fits": [
+    "room/desk-front",
+    "room/desk-front-b",
+    "room/desk-wide",
+    "room/window-wide"
+   ],
    "purpose": "the NOBODY-KNOWS pose: a range too wide to mean anything, or a question the filing does not answer. Deadpan, never a joke about the company; once a video, like head-in-hands"
   },
   "host/holding-a-filing": {
    "talks": true,
+   "castBy": "citation",
+   "fits": [
+    "room/desk-front",
+    "room/desk-wide"
+   ],
    "purpose": "the annual report held up to camera in both hands: for 'it says so on page 96'"
   },
   "host/holding-a-phone": {
    "talks": true,
+   "castBy": "alert",
+   "fits": [
+    "room/desk-front",
+    "room/desk-wide"
+   ],
    "purpose": "reading a phone, not looking at us: the price alert, the message, the post read out"
   },
   "host/holding-a-mug": {
    "talks": true,
+   "castBy": "close",
+   "fits": [
+    "room/desk-front",
+    "room/desk-wide",
+    "room/desk-side"
+   ],
    "purpose": "the three-in-the-morning prop: between beats, never on a number"
   },
   "host/close-up": {
