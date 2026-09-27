@@ -541,6 +541,45 @@ def _motion(delivery: Path, built: dict) -> tuple[dict, list[str]]:
     return {"fps": int(raw.get("fps") or 0), "moves": moves, "anchors": anchors}, remarks
 
 
+def _room_loops(motion: dict, built: dict) -> list[str]:
+    """Every room loop the engine baked is a loop the kit publishes, at its rate.
+
+    THE ROOM LOOPS ARE DRAWN FROM `engine/motion.js` AND DESCRIBED BY
+    `emit/motion.json`, two halves of one delivery. A room baked at one frame
+    count or rate and a catalogue that says another is a loop that stutters
+    at its seam or plays at the wrong speed, and nothing in a frame of it
+    looks wrong. So each room's loops are asked of the published moves: the
+    move exists and loops, the room's frames are whole passes of it, and the
+    room plays at the kit's move rate.
+    """
+    problems: list[str] = []
+    moves, fps = (motion or {}).get("moves") or {}, (motion or {}).get("fps") or 0
+    for key, e in sorted(built.items()):
+        if e.get("family") != "room":
+            continue
+        plays = [(key, e)] + [(f"{key} in the {w}", v)
+                              for w, v in (e.get("weathers") or {}).items()]
+        for at, loop in plays:
+            if not loop.get("loops"):
+                continue
+            if not moves:
+                problems.append(f"{at}: bakes {', '.join(loop['loops'])} and the "
+                                f"kit publishes no emit/motion.json to say what they are")
+                continue
+            for move in loop["loops"]:
+                mv = moves.get(move)
+                if mv is None or mv.get("playback") != "loop":
+                    problems.append(f"{at}: bakes {move}, which emit/motion.json "
+                                    f"does not publish as a loop")
+                elif int(loop.get("frameCount") or 0) % max(int(mv.get("frames") or 0), 1):
+                    problems.append(f"{at}: {loop.get('frameCount')} frames is not a whole "
+                                    f"number of {move}'s {mv.get('frames')}")
+            if fps and float(loop.get("fps") or 0) != float(fps):
+                problems.append(f"{at}: loops at {loop.get('fps')} fps and the kit's "
+                                f"moves play at {fps}")
+    return problems
+
+
 def _held_back(roles: dict) -> tuple[dict, dict]:
     """(plates, rooms) roles.json holds back, stem -> the reason."""
     block = roles.get("heldBack") or {}
@@ -696,14 +735,16 @@ def _host_contract(reg) -> list[str]:
                     f"holds it back; it is one or the other")
                 continue
             for aspect in ("16x9", "9x16"):
-                room = reg.get(f"{stem}-{aspect}")
-                if room is None or room.refuses_host or room.head_covered is None:
-                    continue
-                if room.head_covered > _HEAD_COVER_LIMIT:
-                    problems.append(
-                        f"{room.key}: the {role!r} room role stands him here "
-                        f"and the room's front layer covers "
-                        f"{room.head_covered:.0%} of his head")
+                # AND IN ITS TWIN, which December stands him in instead: a
+                # decoration hung after the desk is in front of his face.
+                for room in _with_twins(reg, f"{stem}-{aspect}"):
+                    if room.refuses_host or room.head_covered is None:
+                        continue
+                    if room.head_covered > _HEAD_COVER_LIMIT:
+                        problems.append(
+                            f"{room.key}: the {role!r} room role stands him here "
+                            f"and the room's front layer covers "
+                            f"{room.head_covered:.0%} of his head")
 
     # A CHAPTER OPENS IN A ROOM WITH SOMEWHERE TO PUT ITS TITLE. The opener is
     # the room with the chapter's title set in its `title` slot; a member with
@@ -711,13 +752,23 @@ def _host_contract(reg) -> list[str]:
     # which is what every chapter was until rebuild-21 published one.
     for stem in reg.room_roles.get(_OPENER_ROLE, ()):
         for aspect in ("16x9", "9x16"):
-            room = reg.get(f"{stem}-{aspect}")
-            if room is not None and room.slot("title") is None:
-                problems.append(
-                    f"{room.key}: the {_OPENER_ROLE!r} room role opens chapters "
-                    f"here and the room publishes no `title` slot, so the "
-                    f"chapter's title would have nowhere to land")
+            for room in _with_twins(reg, f"{stem}-{aspect}"):
+                if room.slot("title") is None:
+                    problems.append(
+                        f"{room.key}: the {_OPENER_ROLE!r} room role opens chapters "
+                        f"here and the room publishes no `title` slot, so the "
+                        f"chapter's title would have nowhere to land")
     return problems
+
+
+def _with_twins(reg, key: str) -> list:
+    """The room `key` names and every seasonal twin that stands in for it."""
+    room = reg.get(key)
+    if room is None:
+        return []
+    twins_of = getattr(reg, "twins_of", None)
+    twins = [reg.get(t) for t in (twins_of(key) if twins_of else ())]
+    return [room] + [t for t in twins if t is not None]
 
 
 # The room role a chapter opens in. `pipeline/render_long.py` names the same one.
@@ -764,6 +815,22 @@ def _verify(repo: Path) -> int:
             expect(key, d / fr.png, delivered, "frame")
             if fr.svg:
                 expect(key, d / fr.svg, None, "SVG source")
+            # A LOOPING ROOM'S FRONT MOVES WITH IT, one file per frame, and
+            # every one is at the delivered size or he is framed by a desk
+            # that jumps.
+            if fr.front:
+                expect(key, d / fr.front, delivered, "front layer frame")
+        for w in a.weathers.values():
+            for fr in w.frames:
+                expect(key, d / fr.png, delivered, f"{w.name} frame")
+                if fr.front:
+                    expect(key, d / fr.front, delivered, f"{w.name} front layer frame")
+        # The layer a still of the room stands him in is frame one's front,
+        # the same file: another drawing there would change the desk when a
+        # still cuts to the loop.
+        if a.frames and a.frames[0].front and a.layers.get("front") != a.frames[0].front:
+            problems.append(f"{key}: its front layer is not frame one's front "
+                            f"({a.layers.get('front')} vs {a.frames[0].front})")
         base = d / a.files_png
         expect(key, base, delivered, "base file")
         if a.files_svg:
@@ -886,6 +953,7 @@ def build(delivery: Path, only: str = "") -> int:
         notes, note_problems, remarks = _plate_notes(delivery, built.get("assets") or {})
         motion, motion_remarks = _motion(delivery, built.get("assets") or {})
         remarks += motion_remarks
+        problems += _room_loops(motion, built.get("assets") or {})
         if not only:
             problems += note_problems
         if problems:

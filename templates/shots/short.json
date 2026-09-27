@@ -34,9 +34,11 @@
     "",
     "ALTERNATES: a beat may name other plates that can carry it, and code picks between them, rotating off what the last few videos used. The writer still chooses nothing — that is the point of a format that exists to be mass-produced. An alternate restates `bind` when it names its slots differently, and inherits when it does not.",
     "",
-    "ORDERS: an alternate sequence may only move shots the NARRATION does not pin. A shot with an `anchor` starts where its own words are spoken, and the words are one take written to the beat order in the writing prompt, so moving an anchored beat puts the picture over the wrong sentence. Only unanchored shots, and ones sharing an anchor with another, are free — which today is one swap. Reordering beats properly means the prompt stating the order it picked and the script carrying it back.",
+    "ORDERS: a shot with an `anchor` starts where its own words are spoken. An unmarked script is one take written to the authored beat order, so it is only offered the orders that keep that sequence. A script whose narration carries [BEAT: key] markers says where each beat starts, and the cut follows its markers, so the orders that move anchored beats are open to it (item 2).",
     "",
-    "THE ROUND-ONE PHONE PLATES that a short script can fill are alternates here: the fifth hook card, the move on the day in both directions, and the one-line close. Placing a figure the size of the move's on a shot with captions switches the captions off for that shot, in code, because the template's `captions` flag cannot know which plate the rotation will pick."
+    "THE ROUND-ONE PHONE PLATES that a short script can fill are alternates here: the fifth hook card, the move on the day in both directions, and the one-line close. Placing a figure the size of the move's on a shot with captions switches the captions off for that shot, in code, because the template's `captions` flag cannot know which plate the rotation will pick.",
+    "",
+    "WIPES MARK A CHANGE OF SUBJECT (item 13): a shot with `enter: wipe` is wiped in, sweep and page alternating, at most three a short; every other cut stays hard. A wipe on every cut would be a signpost on every cut, which is none."
   ],
   "shots": [
     {
@@ -47,10 +49,11 @@
       "max_hold_s": 7,
       "bind": {
         "hook": "script.hook_text",
-        "sub": "?script.move_summary",
+        "move": "?chart.move",
+        "sub": "?chart.move_rest",
         "ticker": "script.ticker"
       },
-      "notes": "The hook card is the format's own opener — three treatments, and which one a video gets is a property of the script, not of this file.",
+      "notes": "The hook card is the format's own opener — three treatments, and which one a video gets is a property of the script, not of this file. THE TICKER AND THE MOVE IN FRAME ONE (item 6): `move` takes the day's signed move and counts up over the first half second while the hook is spoken; `sub` takes the rest of the summary. A summary that does not lead with a signed move leaves `move` empty and keeps the whole summary in `sub`.",
       "alts": [
         {
           "plate": "shorts/hook-card-t2",
@@ -58,11 +61,16 @@
         },
         {
           "plate": "shorts/hook-card-t3",
+          "bind": {
+            "hook": "script.hook_text",
+            "sub": "?script.move_summary",
+            "ticker": "script.ticker"
+          },
           "notes": "The third treatment. `huge` goes unfilled, which is the drawing, not a gap."
         },
         {
           "plate": "shorts/hook-card-t5",
-          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same three slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
+          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
         }
       ]
     },
@@ -103,6 +111,7 @@
     {
       "id": "the-news",
       "plate": "paper/headline-band-t1-9x16",
+      "enter": "wipe",
       "anchor": "headline",
       "max_hold_s": 7,
       "bind": {
@@ -143,44 +152,10 @@
     },
     {
       "id": "numbers",
-      "plate": "tables/numbers-sheet-3r-9x16",
-      "anchor": "numbers",
-      "max_hold_s": 7,
-      "bind": {
-        "unit": "?numbers.unit",
-        "head": "numbers.years",
-        "label-1": "numbers.label.0",
-        "row-1": "numbers.figures.0",
-        "label-2": "?numbers.label.1",
-        "row-2": "?numbers.figures.1",
-        "label-3": "?numbers.label.2",
-        "row-3": "?numbers.figures.2"
-      },
-      "repeat": {
-        "src": "script.numbers",
-        "max": 3,
-        "arrange": "sequence",
-        "lit": "band-$n",
-        "focus": "band-$n"
-      },
-      "notes": "One row per shot: the band lights and the frame moves to it. Steps that differ only by which row carries a rectangle are one shot with extra runtime — but a vertical sheet's row is already the width of the frame, so the move is a pan rather than a zoom past the figures. No host: there is no room for a figure in front of a wall-sized sheet, and he returns at the payoff.",
-      "alts": [
-        {
-          "plate": "tables/numbers-sheet-4r-spark-9x16",
-          "notes": "The same sheet with a sparkline column. `head-spark` is the kit's own label and takes no binding."
-        },
-        {
-          "plate": "tables/numbers-sheet-5r-9x16",
-          "notes": "A taller sheet: three rows lit against five bands rather than three."
-        }
-      ]
-    },
-    {
-      "id": "the-sheet",
       "plate": "tables/numbers-sheet-4r-9x16",
-      "anchor": "numbers_comment",
-      "max_hold_s": 7,
-      "lit": "all",
+      "enter": "wipe",
+      "anchor": "numbers",
+      "max_hold_s": 14,
       "bind": {
         "unit": "?numbers.unit",
         "head": "numbers.years",
@@ -193,7 +168,7 @@
         "label-4": "?numbers.label.3",
         "row-4": "?numbers.figures.3"
       },
-      "notes": "Pull back: every row up at once, after the walk down them.",
+      "notes": "THE NUMBERS ARE ONE SHEET THAT MOVES (items 7 and 10). This beat was the 3-row sheet three times, one row lit and moved in on each time, and then the 4-row sheet with every row lit: four near-identical frames of one layout. Now the rows light as they are read, each band coming up on its label and staying up, and the shot ends on the whole sheet lit, which is the pull-back `the-sheet` used to be. It may hold past the 7 s other beats take because it is never still while the voice walks it.",
       "alts": [
         {
           "plate": "tables/numbers-sheet-4r-spark-9x16"
@@ -201,7 +176,8 @@
         {
           "plate": "tables/numbers-sheet-5r-9x16"
         }
-      ]
+      ],
+      "lit": "read"
     },
     {
       "id": "the-comment",
@@ -229,6 +205,7 @@
     {
       "id": "cheap-or-trap",
       "plate": "structure/both-true-9x16",
+      "enter": "wipe",
       "anchor": "cheap_or_trap",
       "max_hold_s": 7,
       "bind": {
@@ -250,6 +227,10 @@
         "value": "numbers.headline_figure",
         "label": "?numbers.headline_label",
         "detail": "?script.verdict"
+      },
+      "meme": {
+        "at": "end",
+        "notes": "The one place for a meme: the tail of the verdict, after the drop and the number have landed and before the close. Never the turn, which is him talking to camera."
       },
       "notes": "The one figure the video is about, at the size it deserves."
     },
@@ -286,20 +267,34 @@
   ],
   "orders": [
     {
-      "name": "comment-first",
+      "name": "news-first",
       "shots": [
         "hook",
-        "the-move",
         "the-news",
+        "the-move",
         "the-turn",
         "numbers",
         "the-comment",
-        "the-sheet",
         "cheap-or-trap",
         "payoff",
         "close"
       ],
-      "notes": "The read before the pull-back instead of after it. `the-sheet` and `the-comment` both listen for `numbers_comment`, so the voice does not care which lands first — which is what makes this the one swap the narration leaves free."
+      "notes": "Why before how much: the headline straight after the hook, then the chart it moved. Moves two pinned beats, so it is cut only for a script whose markers put `headline` before `move` — the writing prompt names this order before a word is written."
+    },
+    {
+      "name": "turn-after-numbers",
+      "shots": [
+        "hook",
+        "the-move",
+        "the-news",
+        "numbers",
+        "the-comment",
+        "the-turn",
+        "cheap-or-trap",
+        "payoff",
+        "close"
+      ],
+      "notes": "The evidence first and the pivot after it: Dennis turns the story once the numbers are on the table, straight into cheap-or-trap. Moves the pinned `turn`, so it is cut only for a script marked in this order."
     }
   ]
 }

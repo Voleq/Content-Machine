@@ -279,6 +279,22 @@ draws and where the drawing reads it from.
                             marks: {{scribble_styles}}
                             An annotation is drawn in ATTENTION and SPENDS the frame's one attention.
                             A plate that already carries an attention mark cannot also be annotated.
+[MOVE: name]            a move on the [PLATE] already on screen, right before the word it lands on:
+                        [PLATE: big-number-l1-16x9 | kicker=FREE CASH FLOW | value=$3.1bn | label=LTM] It made [MOVE: count-up] three point one billion dollars.
+                        count-up · pen-circle act on the plate's ◆ slot, and only on one number there.
+                        highlight · zoom-to-slot act on its ▭ slot; zoom on paper/ plates only.
+                        Which plate does which is marked in the catalogue. pen-circle is the rare one:
+                        the single figure a chapter turns on, at most one a chapter and three a video.
+                        A refused move blocks approval and says why.
+[SOURCE: document]      where the figure on the [PLATE] on screen comes from, slid in under it once
+                        its moves land: the filing or the agency, as short as it reads on a source
+                        line, 40 characters at most. "Q2 10-Q", "FY24 10-K", "BLS, August CPI".
+                        [PLATE: bars-6y-16x9 | …] [SOURCE: 10-K filings, FY20–FY25] Revenue grew in five of six years.
+                        Only what the data above says the figure is from; never a data vendor, and
+                        no [SOURCE] at all when you do not know. One a plate. A plate that prints
+                        its own source takes it in its own slot (source=…), not in this tag.
+                        Name the document, never just "company filings", and add the page or
+                        note ("FY24 10-K, note 7") when you read the figure there yourself.
 
 DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
 The full vocabulary is in DELIVERY DIRECTION near the top of this prompt, with
@@ -331,7 +347,7 @@ This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidenc
 - Let the numbers pick the tone. A genuinely good business gets grudging respect — the irony aims at the market's neglect, not the company.
 - Short sentences. Deadpan reads better clipped. No hype adjectives, no "folks", no exclamation marks.
 - **EVERY FIGURE IN THE NARRATION IS WRITTEN THE WAY IT IS SAID.** The narration is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to the spoken line: values you write INTO a `[PLATE]`, `[CHART]` or `[SCRIBBLE]` are typography and stay as figures — "$1.2B" on the plate, "one point two billion dollars" in the sentence about it.
-- NEVER name any data vendor, terminal, or data product — it would be spoken and captioned. "The filing", "the 10-K", "the numbers" are the only sources on screen.
+- NEVER name any data vendor, terminal, or data product — it would be spoken and captioned. "The filing", "the 10-K", "the numbers" are the sources on screen, and a [SOURCE] names only the filing or the public agency a figure is from.
 - Close resigned, not conclusive — on "you don't have to swing at every pitch". A pass is a considered position, not indecision.
 
 ## OUTPUT

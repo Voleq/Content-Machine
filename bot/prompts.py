@@ -237,6 +237,11 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long",
     gics = fold_sector(sector)
     held = _held_stems(reg)
     lines: list[str] = []
+    # THE MOVES, marked on the slot each one lands in. A long only: [MOVE] is
+    # long grammar, and a short's plates are driven by its shot template.
+    moves = fmt != "short"
+    if moves:
+        lines.extend(_MOVE_LEGEND)
     elsewhere = 0
     for family in reg.families():
         if family in ("host", "room", "overlays"):
@@ -267,7 +272,8 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long",
                 lines.append(f"      caution: {plate.caution}")
             slots = _slot_summary(plate)
             if slots:
-                lines.append(f"      slots: {slots}")
+                lines.append(f"      slots: {slots}"
+                             + (_move_marks(plate) if moves else ""))
             # What the plate DRAWS and where from: the printed figures it
             # reads, or the data keys the tag names (`series=`, `steps=` …).
             data = data_menu(plate) if plate.slots else ""
@@ -286,6 +292,34 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long",
         lines.append(f"({elsewhere} sector plates drawn for other industries "
                      f"than {gics} are not offered.)")
     return "\n".join(lines).strip() or "(no plates in the registry)"
+
+
+# How the catalogue marks the moves. Two symbols on the slot line rather than
+# a "moves:" line per plate: the catalogue is already the largest block in the
+# prompt, and a mark costs a few characters where a line costs forty.
+_MOVE_LEGEND = (
+    "MOVES — `[MOVE: name]` right before the word it lands on, acting on the",
+    "[PLATE] already on screen (the last one before it). The slot each move",
+    "acts on is marked on the plate's slots line:",
+    "  ◆slot  count-up (counts up to the figure) and pen-circle (rings it) —",
+    "         only when that slot holds exactly one number: $3.1bn, −12%, 14x.",
+    "  ▭slot  highlight (marks the passage); zoom-to-slot (pushes into it) on",
+    "         paper/ plates only, once a beat.",
+    "pen-circle is for the single figure a chapter turns on: at most one a",
+    "chapter and three a video. line-draw and bars-grow play by themselves on",
+    "every chart — never tag them. No mark, no move.",
+)
+
+
+def _move_marks(plate) -> str:
+    """`  ◆value  ▭passage` — where this plate's writer moves land."""
+    from pipeline.plates import NUMBER_MOVES, writer_moves
+
+    can = writer_moves(plate)
+    number = {can[m] for m in NUMBER_MOVES if m in can}
+    passage = {can[m] for m in ("highlight", "zoom-to-slot") if m in can}
+    marks = [f"◆{s}" for s in sorted(number)] + [f"▭{s}" for s in sorted(passage)]
+    return ("  " + "  ".join(marks)) if marks else ""
 
 
 def chapter_type_catalogue(settings: Settings, *, fmt: str = "long",
@@ -324,6 +358,14 @@ def chapter_type_catalogue(settings: Settings, *, fmt: str = "long",
     lines.append("  Every type may also use: "
                  + ", ".join(sorted({k.split('/', 1)[0]
                                      for k in reg.universal_plates()})))
+    if fmt != "short":
+        from pipeline.plates import (PEN_CIRCLES_PER_CHAPTER,
+                                     PEN_CIRCLES_PER_VIDEO)
+        lines.append(
+            "  Every type may also use the moves its plates are marked with "
+            "(◆ count-up, pen-circle; ▭ highlight, zoom-to-slot on paper/). "
+            f"pen-circle: at most {PEN_CIRCLES_PER_CHAPTER} a chapter, "
+            f"{PEN_CIRCLES_PER_VIDEO} a video.")
     return "\n".join(lines)
 
 
@@ -793,6 +835,96 @@ def _sector(ctx: "_Ctx") -> str:
         return ""
 
 
+# WHAT EACH BEAT COVERS, by the shot templates' anchor keys. The key is what
+# the writer types in a marker; the line is the beat in the prompt's own
+# words, naming the field whose words the shot is drawn from. A key missing
+# here still lists — as its own name — so a beat added to a template reaches
+# the writer before anyone writes it a line.
+BEAT_BRIEFS: dict[str, dict[str, str]] = {
+    "short": {
+        "hook": "the first sentence: the move and the doubt, over the hook card",
+        "move": "how far it moved and on what volume, over the price chart",
+        "headline": "the news behind the move and what it actually means "
+                    "(`headlines`)",
+        "turn": "the one line the short pivots on (`turn_line`), Dennis on "
+                "camera",
+        "numbers": "the multi-year figures, a row at a time (`numbers`)",
+        "numbers_comment": "the read on those figures as a whole "
+                           "(`numbers_comment`)",
+        "cheap_or_trap": "the multiple: bargain or value trap "
+                         "(`cheap_or_trap`)",
+        "conclusion": "the payoff, ending on `conclusion` spoken verbatim",
+    },
+    "earnings": {
+        "hook": "the first sentence: the print and the doubt, over the hook "
+                "card",
+        "reported": "what they reported (`reported`)",
+        "expected": "what was expected, and the gap (`expected`)",
+        "numbers": "the multi-year figures behind the quarter (`numbers`)",
+        "guidance": "the guide and what changed in it (`guidance`)",
+        "turn": "the one line the video pivots on (`turn_line`), Dennis on "
+                "camera",
+        "cheap_or_trap": "so what: bargain or trap after this print "
+                         "(`cheap_or_trap`), ending on `conclusion` spoken "
+                         "verbatim",
+    },
+    "macro": {
+        "hook": "the first sentence: the release and the doubt, over the hook "
+                "card",
+        "reported": "the figure as released (`reported`)",
+        "expected": "what was expected, and the gap (`expected`)",
+        "headline": "what the statement actually says (`headlines`)",
+        "turn": "the mechanism: how this reaches prices (`mechanism`)",
+        "consequences": "who it hits, one consequence at a time "
+                        "(`consequences`)",
+        "cheap_or_trap": "so what: what the release would have to keep doing "
+                         "(`cheap_or_trap`), ending on `conclusion` spoken "
+                         "verbatim",
+    },
+}
+
+
+def _shot_format(ctx: "_Ctx") -> str:
+    """The shot template this prompt's script will render through.
+
+    The same mapping `handlers.short_format_name` makes off the workspace, made
+    here off the mode the prompt is being filled for.
+    """
+    if ctx.fmt == "headline" and ctx.headline_mode in ("earnings", "macro"):
+        return ctx.headline_mode
+    return "short"
+
+
+def beat_order_block(ctx: "_Ctx") -> str:
+    """The beats in the order THIS video will be cut in, as markers to write.
+
+    THE ORDER IS CHOSEN BEFORE A WORD IS WRITTEN. A cut can only move a beat
+    the narration moves, so a rotation run at render time could never reorder
+    a beat the voice pinned. The pick is made here, off the same recent orders
+    the render rotates off, and the writer is told it; the render reads the
+    order back off the markers the script carries.
+    """
+    from pipeline.reach import recent_orders
+    from pipeline.shots import (apply_order, choose_order, load_format,
+                                voice_keys)
+
+    name = _shot_format(ctx)
+    fmt = load_format(name, Path(ctx.settings.templates_dir).parent)
+    order = choose_order(
+        fmt, seed=f"prompt|{ctx.ticker.upper()}|{Path(ctx.workspace).name}",
+        avoid=recent_orders(ctx.settings, exclude=ctx.workspace))
+    briefs = BEAT_BRIEFS.get(name, {})
+    lines = [f"This video is cut as `{name}`, in the order `{order}`. Write "
+             f"the beats in exactly this order and put each marker right "
+             f"before the first word of its beat:"]
+    for n, key in enumerate(voice_keys(apply_order(fmt, order).shots), 1):
+        lines.append(f"{n}. [BEAT: {key}] — "
+                     f"{briefs.get(key, key.replace('_', ' '))}")
+    lines.append("The sign-off card takes no marker; it follows the last "
+                 "beat.")
+    return "\n".join(lines)
+
+
 PAYLOAD: tuple[PayloadBlock, ...] = (
     # --- subject
     PayloadBlock("{{ticker}}", _ALL, lambda c: c.ticker.upper()),
@@ -887,6 +1019,9 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{chapter_types}}", _LONG_FORM,
                  lambda c: chapter_type_catalogue(c.settings, fmt=c.fmt,
                                                   sector=_sector(c))),
+
+    # --- the cut: which beats, in which order, marked where
+    PayloadBlock("{{beat_order}}", ("short", "headline"), beat_order_block),
 
     # --- craft rules
     PayloadBlock("{{tagging_density}}", ("short", "long_write", "update"),

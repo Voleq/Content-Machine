@@ -332,6 +332,34 @@ def test_a_chapter_opener_is_the_room_with_the_title_in_its_slot(rendered):
     assert manifest["chapter_warnings"] == []
 
 
+def test_later_chapters_open_on_the_bumper_under_the_blinds(rendered):
+    """Items 22 and 23: the count turns over on every chapter after the first,
+    the blinds' full cover sits on its cut, and both are in the move record."""
+    settings, script, tts, out, manifest = rendered
+    layers = {l["name"]: l for l in manifest["layers"]}
+    record = manifest["moves"]
+    assert set(record) == {"moves", "wipes", "skipped"}
+    rows = record["moves"]
+    assert rows == sorted(rows, key=lambda r: (r["start"], r["move"]))
+    assert all(set(r) == {"move", "start", "shot_id", "slot"} for r in rows)
+    ticks = {r["shot_id"]: r for r in rows if r["move"] == "tick-over"}
+    blinds = [w for w in record["wipes"] if w["transition"] == "wipe-blinds"]
+    assert ticks, "no chapter opened on the bumper"
+    assert len(blinds) == len(ticks)
+    for shot, tick in ticks.items():
+        bumper = layers[shot]
+        assert tick["slot"] == "num"
+        assert bumper["t_start"] < tick["start"] < bumper["t_end"]
+        assert any(abs(w["cut"] - bumper["t_start"]) < 1e-3 for w in blinds)
+    # The cold open and the end are wiped with a sweep or a page.
+    others = [w["transition"] for w in record["wipes"] if w["transition"] != "wipe-blinds"]
+    assert others and set(others) <= {"wipe-sweep", "wipe-page"}
+    # Every wipe is the last layer over its cut, the bumper included.
+    names = [l["name"] for l in manifest["layers"]]
+    wipes = [n for n in names if n.startswith("wipe-")]
+    assert names[-len(wipes):] == wipes
+
+
 # --------------------------------------------------------------------------
 # The mix reacts to structure: a cue on every opener, and a bed that leaves.
 # --------------------------------------------------------------------------
@@ -1119,3 +1147,104 @@ def test_the_manifest_names_the_engine_that_drew_it(rendered):
     text = Provenance.from_json(manifest["provenance"]).render_text()
     assert "segments" in next(ln for ln in text.splitlines()
                               if ln.startswith("render"))
+
+
+# ------------------------------------------------------ the cold open is wide
+#
+# A long opened on the same talking-head angle as every host beat after it.
+# The kit's wide angles (the `opener` role) exist for the establishing shot;
+# window-wide is preferred and desk-wide takes its turn.
+
+WINDOW, DESK = "room/window-wide-16x9", "room/desk-wide-16x9"
+
+
+def test_the_cold_open_prefers_the_window(settings):
+    from pipeline.plates import load_plates
+    from pipeline.render_long import cold_open_room
+
+    assert cold_open_room(load_plates(settings.assets_dir), "16x9") == WINDOW
+
+
+def test_the_cold_open_takes_its_turn_off_what_recent_videos_opened_on(settings):
+    from pipeline.plates import load_plates
+    from pipeline.render_long import cold_open_room
+
+    reg = load_plates(settings.assets_dir)
+    assert cold_open_room(reg, "16x9", recent=[WINDOW]) == DESK
+    # Both used recently: rotation is a preference, so the window is back.
+    assert cold_open_room(reg, "16x9", recent=[DESK, WINDOW]) == WINDOW
+    # A held-back room never opens a video, whatever else was used.
+    for recent in ([], [WINDOW], [DESK], [WINDOW, DESK]):
+        assert "board-wide" not in cold_open_room(reg, "16x9", recent=recent)
+
+
+def test_a_second_pass_opens_on_the_room_its_first_pass_did(settings):
+    from pipeline.plates import load_plates
+    from pipeline.render_long import cold_open_room
+
+    reg = load_plates(settings.assets_dir)
+    assert cold_open_room(reg, "16x9", recent=[DESK], kept=DESK) == DESK
+
+
+def test_the_recorded_cold_opens_are_read_off_the_manifests(settings):
+    import os
+
+    from pipeline.render_long import _recorded_cold_opens
+
+    def manifest(ticker: str, room: str, mtime: float):
+        ws = settings.workspace_dir / ticker / "2026-09-01"
+        ws.mkdir(parents=True, exist_ok=True)
+        path = ws / "render_long_manifest.json"
+        path.write_text(json.dumps({"cold_open_room": room}), encoding="utf-8")
+        os.utime(path, (mtime, mtime))
+        return ws
+
+    manifest("AAA", WINDOW, 1_000)
+    manifest("BBB", DESK, 2_000)
+    manifest("CCC", WINDOW, 3_000)
+    manifest("DDD", DESK, 4_000)
+    mine = manifest("EXMPL", DESK, 5_000)
+    # an older manifest with no field contributes nothing
+    (settings.workspace_dir / "AAA" / "2026-09-01" / "old_manifest.json"
+     ).write_text("{}", encoding="utf-8")
+
+    recent, kept = _recorded_cold_opens(settings, mine)
+    assert kept == DESK
+    assert recent == [DESK, WINDOW, DESK], "newest three others, newest first"
+
+
+def test_the_cold_open_shot_is_the_first_host_beat_seen_after_the_title():
+    from pipeline.render_long import INTRO_CARD_S, cold_open_segment
+    from pipeline.timeline import Segment
+
+    def plan(*spec):
+        return [Segment(start=a, end=b, kind=k) for k, a, b in spec]
+
+    # The first beat outlasts the opening title: it is the establishing shot.
+    assert cold_open_segment(plan(("host", 0, 8), ("clip", 8, 13)), 60.0) == 0
+    # Entirely under the title: the next time he is seen is the one.
+    assert cold_open_segment(
+        plan(("host", 0, INTRO_CARD_S), ("plate", INTRO_CARD_S, 9),
+             ("host", 9, 20)), 60.0) == 2
+    # Not seen at all before the next chapter: nothing is forced.
+    assert cold_open_segment(
+        plan(("host", 0, 2), ("plate", 2, 9), ("host", 9, 20)), 60.0,
+        until=9.0) is None
+
+
+def test_the_long_opens_on_a_wide_room(rendered):
+    settings, script, tts, out, manifest = rendered
+    assert manifest["cold_open_room"] == WINDOW
+    # The talking angles never include the window-wide shot, so a still of it
+    # in the render's room cache is the cold open's beat having been shot there.
+    # Its window has weather now, so what is cached is its loop (item 19).
+    rdir = out.parent / "render_long"
+    assert (list(rdir.glob("room_window-wide-16x9_*.png"))
+            or list(rdir.glob("roomloop_window-wide-16x9_*.mov")))
+
+
+def test_the_manifest_carries_the_writer_moves_for_the_renderer(rendered):
+    settings, script, tts, out, manifest = rendered
+    # RAW names no [MOVE]; the field is there, empty, rather than absent.
+    assert manifest["writer_moves"] == []
+    assert manifest["move_warnings"] == []

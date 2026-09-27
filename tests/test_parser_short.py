@@ -365,3 +365,143 @@ def test_a_landscape_plate_is_refused_in_a_vertical_cut(
         + data["audio_script"])
     _, warnings = parse_short_script(json.dumps(data), settings)
     assert any("16x9" in w and "9x16" in w for w in warnings), warnings
+
+
+# ---------------------------------------------------------------------------
+# Beat markers: `[BEAT: key]`
+# ---------------------------------------------------------------------------
+
+# Where each beat of the fixture starts, as a writer would mark it.
+_MARKS = (
+    ("EXMPL is up twenty nine", "hook"),
+    ("The news is an AI", "headline"),
+    ("A press release, not", "turn"),
+    ("Revenue went four hundred", "numbers"),
+    ("Then the share count.", "numbers_comment"),
+    ("Eleven times earnings", "cheap_or_trap"),
+    ("Noise. A press release", "conclusion"),
+)
+
+
+def _marked(short_valid_json: str, marks=_MARKS) -> str:
+    data = json.loads(short_valid_json)
+    text = data["audio_script"]
+    for words, key in marks:
+        assert text.count(words) == 1, words
+        text = text.replace(words, f"[BEAT: {key}] {words}")
+    data["audio_script"] = text
+    return json.dumps(data)
+
+
+def test_a_beat_marker_is_taken_out_and_never_reaches_the_voice(
+        short_valid_json, settings):
+    """The narration a marked script speaks is character for character the
+    narration of the same script unmarked — the same TTS request, the same
+    cache key, the same count against the budget."""
+    plain, _ = parse_short_script(short_valid_json, settings)
+    marked, _ = parse_short_script(_marked(short_valid_json), settings)
+    assert "[BEAT:" not in marked.audio_script
+    assert marked.audio_script == plain.audio_script
+    assert marked.char_count == plain.char_count
+
+
+def test_a_marker_is_not_a_pause(short_valid_json, settings):
+    """A bare [BEAT] is performed; a keyed one would stop the voice at every
+    beat boundary if it were filed beside the pauses."""
+    plain, _ = parse_short_script(short_valid_json, settings)
+    marked, _ = parse_short_script(_marked(short_valid_json), settings)
+    assert ([(e.type, e.char_offset) for e in marked.delivery_events()]
+            == [(e.type, e.char_offset) for e in plain.delivery_events()])
+    assert ([(e.type, e.char_offset) for e in marked.inline_events]
+            == [(e.type, e.char_offset) for e in plain.inline_events])
+
+
+def test_each_marker_points_at_the_first_word_of_its_beat(
+        short_valid_json, settings):
+    marked, _ = parse_short_script(_marked(short_valid_json), settings)
+    assert marked.beat_order() == [key for _w, key in _MARKS]
+    for words, key in _MARKS:
+        n = len(words.split())
+        assert marked.words_after_mark(key, n).startswith(words)
+
+
+def test_a_key_is_read_however_the_writer_spaced_it(short_valid_json,
+                                                    settings):
+    raw = _marked(short_valid_json, (("Eleven times earnings", "Cheap or trap"),
+                                     ("Then the share count.", "numbers-comment")))
+    script, _ = parse_short_script(raw, settings)
+    assert script.beat_order() == ["numbers_comment", "cheap_or_trap"]
+
+
+@pytest.mark.parametrize("marks,refusal", [
+    ((("The news is an AI", "the-news"),), "names no beat"),
+    ((("The news is an AI", "headline"), ("Revenue went four", "headline")),
+     "more than once"),
+    ((("EXMPL is up twenty nine", "move"),), "opens on"),
+    ((("The news is an AI", "move"), ("Revenue went four", "hook")),
+     "hook] comes after"),
+])
+def test_a_marker_the_render_could_not_act_on_is_refused_by_name(
+        short_valid_json, settings, marks, refusal):
+    with pytest.raises(ScriptParseError, match=refusal):
+        parse_short_script(_marked(short_valid_json, marks), settings)
+
+
+def test_a_beat_with_nothing_spoken_in_it_is_refused(short_valid_json,
+                                                     settings):
+    data = json.loads(short_valid_json)
+    data["audio_script"] = data["audio_script"].replace(
+        "The news is", "[BEAT: move] [BEAT: headline] The news is")
+    with pytest.raises(ScriptParseError, match="nothing spoken after it"):
+        parse_short_script(json.dumps(data), settings)
+
+
+def test_an_unmarked_script_parses_as_it_always_did(short_valid_json,
+                                                    settings):
+    """Same narration, same events, and the same content hash — the hash is
+    what an approval is recorded against and every render seed comes from."""
+    import hashlib
+
+    script, warnings = parse_short_script(short_valid_json, settings)
+    assert script.beat_marks == []
+    old = hashlib.sha256(script.model_dump_json(
+        exclude={"beat_marks", "sources"}).encode("utf-8")).hexdigest()[:16]
+    assert script.content_sha() == old
+    assert any("no beat markers" in w for w in warnings)
+
+
+def test_a_marked_script_hashes_differently_from_the_same_script_unmarked(
+        short_valid_json, settings):
+    plain, _ = parse_short_script(short_valid_json, settings)
+    marked, warnings = parse_short_script(_marked(short_valid_json), settings)
+    assert marked.content_sha() != plain.content_sha()
+    assert not any("no beat markers" in w for w in warnings)
+
+
+def test_markers_from_two_formats_are_named_as_a_mix(short_valid_json,
+                                                     settings):
+    """`numbers_comment` is a short beat and `consequences` a macro one. Each
+    is a real key, so neither is refused — but no render can follow both."""
+    raw = _marked(short_valid_json, (("Then the share count.",
+                                      "numbers_comment"),
+                                     ("Eleven times earnings",
+                                      "consequences")))
+    _, warnings = parse_short_script(raw, settings)
+    assert any("mix formats" in w for w in warnings), warnings
+
+
+def test_the_word_band_is_the_shorter_shorts(short_valid_json, settings):
+    data = json.loads(short_valid_json)
+    data["audio_script"] += " " + " ".join(["so"] * 20)
+    _, warnings = parse_short_script(json.dumps(data), settings)
+    assert any("target ~140–160 for 45–55s" in w for w in warnings), warnings
+    _, warnings = parse_short_script(short_valid_json, settings)
+    assert not any("target ~140–160" in w for w in warnings), warnings
+
+
+def test_the_character_budget_is_eleven_hundred(short_valid_json, settings):
+    assert settings.max_chars("short") == 1100
+    data = json.loads(short_valid_json)
+    data["audio_script"] += " " + "x" * 400
+    with pytest.raises(ScriptParseError, match="over the SHORT budget of 1100"):
+        parse_short_script(json.dumps(data), settings)

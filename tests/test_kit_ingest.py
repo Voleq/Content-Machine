@@ -359,34 +359,60 @@ _NEW_POSES = ("gesturing-at-plate", "counting-on-fingers", "shrug",
               "holding-a-filing", "holding-a-phone", "holding-a-mug")
 
 
-def test_the_six_new_poses_are_known_and_cast_by_nobody_yet():
+def test_the_six_new_poses_are_cast_by_their_words_and_rotated_by_no_role():
     """Each of rebuild-30 and rebuild-31's poses is chosen by what is being
-    said — a list, a shrug, a citation, an alert, a pause — and a role picks
-    by seed. So they are described, not rotated: in a role today a seed would
-    count on his fingers over a single number."""
+    said — a list, a shrug, a citation, an alert, the sign-off — and a role
+    picks by seed. So they are cast, not rotated: in a role a seed would
+    count on his fingers over a single number. Each says what casts it and
+    which angles it was drawn for, or `host.cast_pose` never reaches it."""
+    from pipeline.host import CLOSE_CUE, CUES
+
     roles = _roles()
     for pose in _NEW_POSES:
         entry = roles["hostPoses"].get(f"host/{pose}")
         assert entry and entry.get("purpose"), pose
         assert entry.get("talks") is True, pose
+        assert entry.get("castBy") in {*CUES, CLOSE_CUE}, pose
+        assert entry.get("fits"), f"{pose} fits no room, so it is cast nowhere"
         for role, keys in roles["hostRoles"].items():
             if not role.startswith("_"):
                 assert f"host/{pose}" not in keys, f"{pose} is rotated into {role}"
     assert roles["hostPoses"]["host/shrug"].get("limit") == 1, (
         "design: at most once an episode, like head-in-hands")
+    assert roles["hostPoses"]["host/gesturing-at-plate"].get("plateOn") == (
+        "camera-right"), "his camera-right hand is the one held out"
+
+
+def test_a_cast_pose_fits_the_rooms_design_drew_it_for():
+    """`fits` is copied from kit-model.js, which the render path never reads.
+    A drop that redraws a pose for another angle changes it there, and a copy
+    left behind would cast him on the angle he was taken off."""
+    model = (ROOT / "kit" / "engine" / "kit-model.js").read_text(encoding="utf-8")
+    for pose in _NEW_POSES:
+        m = re.search(rf'"{re.escape(pose)}":\s*{{[^}}]*?fits:\s*"([^"]+)"',
+                      model)
+        assert m, f"kit-model.js has no fits for {pose}"
+        drawn = {f"room/{r.strip()}" for r in m.group(1).split("·")}
+        fits = set(_roles()["hostPoses"][f"host/{pose}"]["fits"])
+        assert fits == drawn, f"{pose}: roles.json {fits} != kit-model {drawn}"
 
 
 def test_the_new_rooms_are_each_either_used_or_held_back_with_a_reason():
     """rebuild-39's two wide openers and fourteen Christmas twins. window-wide
     opens chapters beside desk-wide; board-wide waits for a chapter argued on
-    the board, and the Christmas set for a switch that dresses a whole
-    episode, since one dressed angle among plain ones flickers."""
+    the board. The Christmas set is reached by the December switch, which
+    dresses every angle of an episode at once, so a twin is in no role (one
+    dressed angle among plain ones flickers) and is held back only with the
+    angle it dresses."""
     roles = _roles()
     assert roles["roomRoles"]["opener"] == ["room/desk-wide", "room/window-wide"]
     held = roles["heldBack"]["rooms"]
     assert "room/board-wide" in held
-    twins = [k for k in held if k.endswith("-christmas")]
-    assert len(twins) == 14
+    assert [k for k in held if k.endswith("-christmas")] == ["room/board-wide-christmas"]
+    in_roles = {stem for stems in roles["roomRoles"].values()
+                if isinstance(stems, list) for stem in stems}
+    assert not [s for s in in_roles if s.endswith("-christmas")], \
+        "a twin in a role is cut among plain angles"
     assert all(held[k] for k in held), "a room held back with no reason"
 
 

@@ -447,6 +447,26 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
     else:
         y = y0 + (bh - block_h) // 2 - ink_top
 
+    # TYPE WITH A PUBLISHED OPACITY IS LAID OVER THE PLATE, not punched into
+    # it. PIL draws a translucent fill by REPLACING the pixels under the
+    # glyphs, alpha included, so a 60% kicker left a 60%-opaque hole in the
+    # plate: over the short's ground it took the ground's colour, flattened
+    # to RGB for the long it came out at full strength, and over a clip it
+    # showed the clip through the letters. Set on its own layer and
+    # composited, it reads as design's review page draws it.
+    target, dx, dy = img, 0, 0
+    if fill[3] < 255:
+        from PIL import Image
+
+        pad = size
+        rx0, ry0 = max(int(x0 - pad), 0), max(int(y - pad), 0)
+        rx1 = min(int(x0 + bw + pad), img.width)
+        ry1 = min(int(y + len(lines) * line_h + pad), img.height)
+        if rx1 <= rx0 or ry1 <= ry0:
+            return warnings
+        target = Image.new("RGBA", (rx1 - rx0, ry1 - ry0), (*rgb, 0))
+        dx, dy = rx0, ry0
+    tdraw = ImageDraw.Draw(target)
     for line in lines:
         lw = _tracked_width(draw, line, font, tracking_px)
         if slot.align == "right":
@@ -455,8 +475,10 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
             x = x0 + (bw - lw) / 2
         else:
             x = x0
-        _draw_tracked(draw, (x, y), line, font, fill, tracking_px)
+        _draw_tracked(tdraw, (x - dx, y - dy), line, font, fill, tracking_px)
         y += line_h
+    if target is not img:
+        img.alpha_composite(target, (dx, dy))
     return warnings
 
 

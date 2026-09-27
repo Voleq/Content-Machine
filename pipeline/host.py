@@ -1,18 +1,20 @@
-"""Dennis on screen — a cut-out placed on the room, flapped to the voice-over.
+"""Dennis on screen — a cut-out placed on the room, lip-synced to the voice-over.
 
 The kit draws eighteen poses and one framing, and each is four strips: the
 pose itself (one frame, a hold); ``-talk``, six frames whose mouths are closed,
 mid, wide, O, EE and F/V (three until rebuild-31); ``-idle``, three frames that
 settle his weight a canvas unit up and down; and ``-blink``, open eyes then
 closed. The frames say what they are
-— ``mouthOpen``, ``eyes``, ``bob`` — and this module reads that rather than a
-frame's position, because the rebuild reordered the talk strip: its FIRST
-frame is the closed mouth now, where the kit before it put the open one there,
-and a player that took ``talk[0]`` as "open" would have mouthed every word
-shut. Talking is frame swapping, and the swap schedule comes from the
-voice-over word timestamps — ``tts.words``, the same master clock every other
-cue reads. :func:`face_plan` is the one place that decides which frame of
-which strip is on screen, and both lanes ask it.
+— ``mouth``, ``mouthOpen``, ``eyes``, ``bob`` — and this module reads that
+rather than a frame's position, because the rebuild reordered the talk strip:
+its FIRST frame is the closed mouth now, where the kit before it put the open
+one there, and a player that took ``talk[0]`` as "open" would have mouthed
+every word shut. Talking is frame swapping, and the swap schedule comes from
+the voice-over word timestamps — ``tts.words``, the same master clock every
+other cue reads — letter by letter: each word's letters are spread over the
+time it is said and each is drawn with the mouth that says it
+(:func:`mouth_track`). :func:`face_plan` is the one place that decides which
+frame of which strip is on screen, and both lanes ask it.
 
 WHICH POSE SERVES WHICH SHOT COMES OFF THE REGISTRY, not out of a list here.
 ``kit/roles.json`` declares the roles (open, beat, panel, close) and which poses
@@ -20,7 +22,9 @@ fill them, and ingest stamps that into the registry. A new kit with a different
 set of poses drops in by shipping its own ``roles.json`` and no Python changes —
 which is the test the previous version failed: ``HOST_BANKS`` named twenty
 specific v1 asset paths, so the kit could not be replaced without editing this
-file.
+file. The poses no role holds are cast the same way: each declares there the
+cue in the words that calls for it and the room angles it was drawn for, and
+:func:`cast_pose` reads the cue off what is said during the shot.
 
 The registry also carries what a pose may DO. ``head-in-hands`` and
 ``walking-out-of-frame`` ship talk frames for continuity of the file set and
@@ -61,17 +65,48 @@ from __future__ import annotations
 
 import logging
 import random
+import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Collection, Sequence
 
 from pipeline.plates import Plate, Registry
 from pipeline.models import WordTimestamp
 
 log = logging.getLogger(__name__)
 
-# Frames per second the mouth is allowed to change. Real speech flaps at
-# roughly this rate; faster reads as a buzz, slower as a puppet.
-FLAP_HZ = 7.0
+# How often the mouth may change: the talk strip's own rate, which is 8fps
+# in the rebuild, and the rate a strip that publishes none is read at. A
+# mouth held for less than one of the strip's frames is a flicker, so the
+# letters are read at this rate and never faster.
+MOUTH_HZ = 8.0
+
+# THE SIX MOUTHS, by the name each talk frame carries (`Frame.mouth`).
+MOUTH_CLOSED = "mouthClosed"
+# The open five in the kit's phrase order, which is also the order an
+# unnamed strip's open frames stand in for them.
+OPEN_MOUTHS = ("mouthMid", "mouthWide", "mouthO", "mouthEE", "mouthFV")
+
+# Which mouth wins a window its letters split evenly. The lips meeting on m,
+# b and p and the lip on the teeth for f and v are what a viewer checks a
+# mouth against, so they win a tie; the shape every other consonant shares
+# loses one.
+_MOUTH_RANK = {MOUTH_CLOSED: 5, "mouthFV": 4, "mouthO": 3, "mouthEE": 2,
+               "mouthWide": 1, "mouthMid": 0}
+
+# WHERE A MOUTH GOES WHEN A STRIP DOES NOT DRAW IT: to the nearest shape the
+# strip does draw, by how the lips sit. Every talk strip in rebuild-39 draws
+# all six, so this is the rule for the drop that does not, and it is never
+# the still on a close-up (see `face_plan`).
+NEAREST_MOUTH = {
+    "mouthO": ("mouthWide", "mouthMid", "mouthEE", "mouthFV"),
+    "mouthWide": ("mouthO", "mouthMid", "mouthEE", "mouthFV"),
+    "mouthEE": ("mouthMid", "mouthWide", "mouthFV", "mouthO"),
+    "mouthFV": ("mouthMid", "mouthEE", "mouthWide", "mouthO"),
+    "mouthMid": ("mouthEE", "mouthWide", "mouthO", "mouthFV"),
+    MOUTH_CLOSED: ("mouthFV", "mouthMid", "mouthEE", "mouthWide", "mouthO"),
+}
 
 # A gap this long between words reads as a sentence break — where the shot is
 # allowed to settle without looking twitchy.
@@ -264,6 +299,206 @@ def pick_framing(reg: Registry, role: str = "to-camera", index: int = 0, *,
 def available(reg: Registry, role: str = "open") -> bool:
     """True when the registry can supply a pose for this role."""
     return bool(shots(reg, role))
+
+
+# --------------------------------------------------------------------------
+# Casting — the poses the WORDS choose.
+#
+# A ROLE IS PICKED BY SEED, which is right for a pose that can stand under any
+# line and wrong for one that means something. Six of the kit's poses mean
+# something — a count, a shrug, a document held up, an alert read off a phone,
+# a mug at the sign-off, a hand held out to the plate — and in a role a seed
+# would count on his fingers over a single number. So they are in no role, and
+# each declares in `kit/roles.json` what casts it:
+#
+#   castBy    the cue in the words, or in the beat, that calls for it
+#   fits      the room angles design drew it for (kit-model.js `fits`)
+#   plateOn   for the pose that presents a plate, the side it must be on
+#
+# Which pose answers which cue is curation and lives in that file, so a kit
+# that adds a pose adds a line there and no Python. What counts as a list or a
+# citation is LANGUAGE, and lives here, in one table.
+# --------------------------------------------------------------------------
+
+# How many things may be counted on his fingers: two to ten, said as a word or
+# a figure. Never one — the drawing shows no number of fingers, the count is in
+# the voice-over, and "do not cut to it for one item" is design's caution.
+_COUNT = r"(?:two|three|four|five|six|seven|eight|nine|ten|[2-9]|10)"
+# What a count is OF when it is a list. Closed, because "three billion" and
+# "four years" are figures, and the figure is what a list pose must never be
+# cut to.
+_LIST_OF = (r"(?:reasons|things|ways|problems|questions|points|risks|lessons|"
+            r"steps|parts|pieces|options|drivers|facts|signs|bets|mistakes|"
+            r"answers|choices|levers|rules|ideas|scenarios|outcomes|caveats|"
+            r"takeaways|factors|issues|headwinds|tailwinds|pillars|buckets|"
+            r"categories|stages|phases|kinds|types|sources|flags|catches|"
+            r"warnings|possibilities|explanations|theories|arguments)")
+
+CUES: dict[str, re.Pattern] = {
+    # A LIST, COUNTED ALOUD: "three reasons", "two separate problems".
+    "list": re.compile(rf"\b{_COUNT}\s+(?:[a-z'-]+\s+)?{_LIST_OF}\b"),
+    # THE TURN, OR NOBODY KNOWING. A clause that opens on "but" is where the
+    # deadpan shrugs — the whole clause, so "small but growing" is not one.
+    # The rest is design's own reading of the pose: a range too wide to mean
+    # anything, a question the filing does not answer.
+    "doubt": re.compile(
+        r"(?:^|[.,;:!?–—-]\s*[\"'(]?)but\b"
+        r"|\b(?:nobody|no one) (?:knows|can say|can tell)\b|\bwho knows\b"
+        r"|\banyone'?s guess\b|\b(?:hard|impossible) to (?:say|know|tell)\b"
+        r"|\b(?:does not|doesn't|did not|didn't|will not|won't) say\b"
+        r"|\bno idea\b|\bunclear\b|\banywhere (?:between|from)\b"),
+    # THE DOCUMENT, CITED: "it says so on page 96", "the 10-K".
+    "citation": re.compile(
+        r"\b(?:10-?k|10-?q|8-?k|20-?f|s-1)s?\b|\b(?:annual|quarterly) report\b"
+        r"|\bproxy statement\b|\bprospectus\b|\bfootnotes?\b|\bpage \d+\b"
+        r"|\b(?:the|this|that|its|their|latest|last) filing\b"),
+    # THE NEWS HOOK: the price alert, the headline, the post read out.
+    "alert": re.compile(
+        r"\balerts?\b|\bheadlines?\b|\bbreaking\b|\btweet(?:s|ed)?\b"
+        r"|\bnotifications?\b|\bpress release\b|\bnews\b|\bgroup chat\b"
+        r"|\btexted\b"),
+    # SHOWING IT TO YOU: words that point at the thing beside him.
+    "present": re.compile(
+        r"\blook at\b|\bhere(?:'s| is| are)\b|\byou can see\b"
+        r"|\bsee (?:how|what|where)\b|\bright here\b|\bnotice\b"
+        r"|\b(?:this|that|these|those) (?:chart|table|line|bars?|column|row|"
+        r"number|figure|graph|card|sheet)\b"),
+}
+
+# THE CLOSE is a cue of position, not of words: the caller says which beat is
+# the sign-off. What the words can still veto is a number, because the mug is
+# "never on a number" (design's caution) — a figure said over a man sipping
+# coffee reads as not caring about it. "one" is not counted as a number here:
+# "no one" and "the one thing" would bar the mug from most sign-offs.
+CLOSE_CUE = "close"
+_A_NUMBER = re.compile(
+    r"\d|%|\$|£|€|\b(?:zero|two|three|four|five|six|seven|eight|nine|ten|"
+    r"eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|"
+    r"nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
+    r"hundred|thousand|million|billion|trillion|percent|half|dozen)\b")
+
+
+@dataclass(frozen=True)
+class Cast:
+    """A pose the words chose, and the cue that chose it."""
+
+    pose: str        # the base key, as roles.json names it
+    cue: str
+
+
+def _spoken(words: Sequence) -> str:
+    """The words of a shot as one lower-case line, quotes made plain."""
+    text = " ".join(str(getattr(w, "word", "") or "") for w in words).lower()
+    return (text.replace("’", "'").replace("‘", "'")
+                .replace("“", '"').replace("”", '"'))
+
+
+def cues_in(words: Sequence, *, closing: bool = False) -> set[str]:
+    """Every cue the words spoken during a shot give: a list, a doubt, ...
+
+    `closing` says the shot is the sign-off, which no word can say; the words
+    can only take it back, by carrying a number.
+    """
+    text = _spoken(words)
+    found = {name for name, pattern in CUES.items() if pattern.search(text)}
+    if closing and not _A_NUMBER.search(text):
+        found.add(CLOSE_CUE)
+    return found
+
+
+def castable(reg: Registry) -> dict[str, dict]:
+    """Every pose the curation casts by cue, by key: roles.json's `castBy`."""
+    return {k: v for k, v in (getattr(reg, "host_poses", None) or {}).items()
+            if isinstance(v, dict) and v.get("castBy")}
+
+
+def room_stem(room: Plate) -> str:
+    """`room/desk-front-dusk-16x9` -> `room/desk-front`: the ANGLE, as `fits`
+    names it — the same drawing at every hour and either aspect."""
+    key = room.base_key
+    for suffix in ("-16x9", "-9x16"):
+        if key.endswith(suffix):
+            return key[: -len(suffix)]
+    return key
+
+
+def _times_used(reg: Registry, used: dict[str, int] | None, key: str) -> int:
+    """How often a pose has stood in this video, at whichever hour."""
+    return sum(n for k, n in (used or {}).items() if reg.base_key(k) == key)
+
+
+def cast_pose(reg: Registry, words: Sequence, *, room: Plate | None,
+              plate_on: str = "", closing: bool = False,
+              used: dict[str, int] | None = None,
+              avoid: Collection[str] = (), previous: str = "",
+              seed: str = "") -> Cast | None:
+    """The pose the words spoken during a shot call for, or None.
+
+    None means TODAY'S CASTING: the caller keeps the pose its role picked,
+    which is always a correct shot. So every rule here only ever takes a cast
+    away, and none of them can cost a render its host:
+
+    * NEVER ON AN ANGLE THE POSE WAS NOT DRAWN FOR. `fits` is design's list
+      of the rooms each pose was drawn to stand in (kit-model.js), and a pose
+      that names none is cast nowhere. A figure stands in a room here, so a
+      room that refuses him, or a shot with no room, casts nothing either.
+    * `plateOn`: gesturing-at-plate holds his camera-right hand out to the
+      plate, so it is cast only where the plate landed on that side of him
+      (`plate_on`, "camera-right" or "camera-left"). With nothing there he is
+      gesturing at a wall.
+    * A pose's `limit` holds across the video (`used`): the shrug is once an
+      episode, like head-in-hands.
+    * NEVER THE SAME CAST TWICE RUNNING. `previous` is the pose the last beat
+      with him in it showed; two in a row is a tic, not an emphasis.
+    * ROTATED OFF RECENT VIDEOS. `avoid` is what the last few renders put on
+      screen (`reach.recent_plates`), and a cast pose among them is dropped
+      outright rather than preferred against. Unlike a role, a cast always
+      has somewhere to fall back to, so it can afford to be strict — and the
+      shrug on the first "but" of every video is exactly the sameness that
+      rotation exists to stop.
+    * NOTHING SAID, NOTHING CAST — not even at the close, the one cue that
+      is not in the words. A caller with no words cannot vouch that the
+      sign-off carries no number, and one that passes none has asked for
+      today's casting.
+
+    Where the words call for more than one pose, the seed picks, so a beat
+    that cites a filing AND counts three reasons does not always do the same.
+    A framing is never cast: a close-up is a camera distance the caller chose.
+    """
+    if room is None or room.family != "room" or room.refuses_host \
+            or room.slot("host-anchor") is None:
+        return None
+    if not _spoken(words).strip():
+        return None
+    cues = cues_in(words, closing=closing)
+    if not cues:
+        return None
+    stem = room_stem(room)
+    recent = reg.base_keys(avoid) if avoid else set()
+    last = reg.base_key(previous) if previous else ""
+    options: list[tuple[str, str]] = []
+    for key, spec in sorted(castable(reg).items()):
+        cue = str(spec.get("castBy"))
+        if cue not in cues or stem not in (spec.get("fits") or ()):
+            continue
+        side = str(spec.get("plateOn") or "")
+        if side and side != plate_on:
+            continue
+        pose = reg.get(key)
+        if pose is None or not pose.floor_line_y or not pose.frames:
+            continue
+        if not spec.get("talks", True):
+            continue
+        cap = reg.host_limit(key)
+        if cap is not None and _times_used(reg, used, key) >= cap:
+            continue
+        if key == last or key in recent:
+            continue
+        options.append((key, cue))
+    if not options:
+        return None
+    key, cue = random.Random(f"cast|{seed}").choice(options)
+    return Cast(pose=key, cue=cue)
 
 
 # --------------------------------------------------------------------------
@@ -500,23 +735,173 @@ def speaking_spans(words: list[WordTimestamp], start: float,
     return spans
 
 
-def mouth_schedule(words: list[WordTimestamp], start: float, end: float,
-                   fps: int) -> list[bool]:
-    """True on every output frame where the mouth should be open.
+# --------------------------------------------------------------------------
+# The mouth, off the letters.
+#
+# THE FLAP IS GONE. The talk strip used to open and shut at a fixed seven a
+# second whatever was said, walking its open mouths in the kit's phrase
+# order, so an "mmm" gaped and an "ooh" came out as a grin. rebuild-31 drew
+# six mouths that each stand for a sound, and every talk frame says which it
+# is, so the words can drive the mouth instead.
+#
+# LETTERS, NOT PHONEMES, because letters are all the voice gives us: a word
+# comes back with its text, a start and an end, and nothing inside it. That
+# is wrong in detail — "though" is not six sounds — and right where a viewer
+# looks: lips that meet on m, b and p, a round mouth on o, teeth on f and v.
+# --------------------------------------------------------------------------
 
-    Open while a word is sounding, alternating with closed at :data:`FLAP_HZ`
-    so the mouth *works* rather than gaping through a sentence. The talk strip
-    draws five open mouths (mid, wide, O, EE, F/V), and which of them an open
-    frame shows is :func:`face_plan`'s business: this only says open or shut.
+def letter_mouth(ch: str) -> str:
+    """The mouth a letter is said with: o, u and w round; e, i and y spread;
+    f and v on the teeth; m, b and p shut; a open wide; every other consonant
+    the half-open mouth they all share."""
+    if ch in "ouw":
+        return "mouthO"
+    if ch in "eiy":
+        return "mouthEE"
+    if ch in "fv":
+        return "mouthFV"
+    if ch in "mbp":
+        return MOUTH_CLOSED
+    if ch == "a":
+        return "mouthWide"
+    return "mouthMid"
+
+
+# A figure or a sign is SAID, so it is mouthed as the word it is said as. Read
+# as letters it has none, and "$4.2bn" would be spoken with the mouth shut.
+_SAID_AS = {"0": "zero", "1": "one", "2": "two", "3": "three", "4": "four",
+            "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine",
+            "%": "percent", "$": "dollars", "£": "pounds", "€": "euros",
+            "&": "and", "+": "plus"}
+
+
+def word_mouths(word: str) -> list[str]:
+    """The mouths a word is said with, one per letter that is sounded.
+
+    Three spellings are read as the sound rather than the letters, because
+    each would otherwise put a mouth on screen that nobody makes: a doubled
+    letter is one sound ("ll", "ee"), "ph" is an f, and a final e after a
+    consonant is silent ("make", "price"). Accents are dropped ("é" is an e).
     """
-    spans = speaking_spans(words, start, end)
-    n = max(int(round((end - start) * fps)), 1)
-    out: list[bool] = []
+    text = unicodedata.normalize("NFKD", str(word).lower())
+    text = "".join(_SAID_AS.get(ch, ch) for ch in text)
+    letters = "".join(ch for ch in text if "a" <= ch <= "z")
+    letters = re.sub(r"(.)\1+", r"\1", letters.replace("ph", "f"))
+    if len(letters) > 3 and letters.endswith("e") and letters[-2] not in "aeiouy":
+        letters = letters[:-1]
+    return [letter_mouth(ch) for ch in letters]
+
+
+def mouth_track(words: Sequence, start: float, end: float, *,
+                hold: float = 1.0 / MOUTH_HZ) -> list[tuple[float, float, str]]:
+    """Which mouth is on, window by window: `(from, to, mouth)` in [start, end).
+
+    Each word's letters are spread evenly over the time it is said, and each
+    letter is said with one mouth (:func:`letter_mouth`).
+
+    READ AT THE STRIP'S RATE, NEVER FASTER. Letters come far faster than a
+    drawn mouth can change — "strengths" is nine of them in a third of a
+    second, and a mouth swapped on each is a buzz. So speech is cut into
+    windows `hold` long (one talk-strip frame, an eighth of a second at the
+    kit's 8fps) and each window shows the mouth its letters spend the most
+    time in. Nothing is held for less than one window:
+
+    * a gap between words shorter than a window belongs to the phrase — there
+      is no time to shut the mouth and open it again — and the phrase runs
+      through it on the shapes either side;
+    * a phrase that ends mid-window gives the remainder to its last window
+      rather than leaving a sliver;
+    * a word said on its own, shorter than a window, holds its mouth for a
+      whole one, into the silence after it.
+
+    Silence is not in the track at all: the caller shuts the mouth there, or
+    plays the idle.
+    """
+    if end <= start or hold <= 0:
+        return []
+    sounds: list[tuple[float, float, str]] = []
+    for w in words:
+        a, b = float(w.start), float(w.end)
+        if b <= a or b <= start or a >= end:
+            continue
+        said = word_mouths(getattr(w, "word", "") or "")
+        if not said:
+            continue                  # a dash, an ellipsis: nothing is said
+        step = (b - a) / len(said)
+        for k, m in enumerate(said):
+            lo, hi = max(a + k * step, start), min(a + (k + 1) * step, end)
+            if hi > lo:
+                sounds.append((lo, hi, m))
+    sounds.sort()
+
+    phrases: list[list[float]] = []
+    for a, b in speaking_spans(list(words), start, end):
+        if phrases and a - phrases[-1][1] < hold:
+            phrases[-1][1] = b
+        else:
+            phrases.append([a, b])
+
+    track: list[tuple[float, float, str]] = []
+    first = 0                         # the earliest sound still in reach
+    for a, b in phrases:
+        if b - a < hold:
+            b = min(a + hold, end)
+        n = max(int((b - a) / hold + 1e-9), 1)
+        edges = [a + i * hold for i in range(n)] + [b]
+        for lo, hi in zip(edges, edges[1:]):
+            while first < len(sounds) and sounds[first][1] <= lo:
+                first += 1
+            cover: dict[str, float] = {}
+            k = first
+            while k < len(sounds) and sounds[k][0] < hi:
+                s0, s1, m = sounds[k]
+                overlap = min(s1, hi) - max(s0, lo)
+                if overlap > 0:
+                    cover[m] = cover.get(m, 0.0) + overlap
+                k += 1
+            mouth = (max(cover, key=lambda m: (round(cover[m], 9), _MOUTH_RANK[m]))
+                     if cover else MOUTH_CLOSED)
+            if track and track[-1][2] == mouth and track[-1][1] == lo:
+                track[-1] = (track[-1][0], hi, mouth)
+            else:
+                track.append((lo, hi, mouth))
+    return track
+
+
+def _on_frames(track: list[tuple[float, float, str]], start: float, n: int,
+               fps: int) -> tuple[list[str], list[int]]:
+    """The track sampled on the output frames: `(mouth, window)` per frame.
+
+    The mouth is "" and the window -1 where nothing is being said.
+    """
+    said, window = [""] * n, [-1] * n
+    j = 0
     for i in range(n):
         t = start + i / fps
-        speaking = any(a <= t < b for a, b in spans)
-        out.append(bool(speaking and int(t * FLAP_HZ) % 2 == 0))
-    return out
+        while j < len(track) and track[j][1] <= t:
+            j += 1
+        if j < len(track) and track[j][0] <= t:
+            said[i], window[i] = track[j][2], j
+    return said, window
+
+
+def mouth_frames(words: Sequence, start: float, end: float, fps: int, *,
+                 hold: float = 1.0 / MOUTH_HZ) -> list[str]:
+    """The mouth on every output frame of [start, end); "" in a silence."""
+    n = max(int(round((end - start) * fps)), 1)
+    return _on_frames(mouth_track(words, start, end, hold=hold), start, n, fps)[0]
+
+
+def mouth_schedule(words: list[WordTimestamp], start: float, end: float,
+                   fps: int, *, hold: float = 1.0 / MOUTH_HZ) -> list[bool]:
+    """True on every output frame where the mouth is open.
+
+    The same track :func:`face_plan` draws, read as open or shut: open on a
+    word's open letters, shut on m, b and p and in every silence. Which open
+    mouth a frame shows is the track's business; this only says whether.
+    """
+    return [bool(m) and m != MOUTH_CLOSED
+            for m in mouth_frames(words, start, end, fps, hold=hold)]
 
 
 def beat_times(words: list[WordTimestamp], start: float, end: float) -> list[float]:
@@ -559,12 +944,15 @@ def blink_intervals(start: float, end: float, *, seed: str) -> list[float]:
 
 
 def blink_schedule(plan: list[bool], fps: int, *, seed: str,
-                   length: int = 3) -> list[int]:
-    """Output-frame indices where a blink starts. Never mid-flap.
+                   length: int = 3,
+                   spare: Sequence[tuple[int, int]] = ()) -> list[int]:
+    """Output-frame indices where a blink starts. Never over an open mouth.
 
-    A blink needs `length` consecutive CLOSED-mouth frames. That is what "not
-    mid-flap" means and it is checkable frame by frame, which "in a gap
-    between words" is not:
+    A blink needs `length` consecutive CLOSED-mouth frames: the blink strip's
+    shut-eyes drawing is the pose with its eyes shut, mouth and all, and
+    dropped on an open mouth it snaps the mouth shut for a tenth of a second,
+    which reads as a dropped frame. That is checkable frame by frame, which
+    "in a gap between words" is not:
 
     word timings arrive WALL TO WALL. Measured on the fixture short, every
     single gap between consecutive words is 0.000s, so a shot has no acoustic
@@ -572,10 +960,18 @@ def blink_schedule(plan: list[bool], fps: int, *, seed: str,
     speaking" a face talking for fourteen seconds blinks exactly zero times,
     which is the static face this whole thing exists to fix.
 
-    The mouth alternates at :data:`FLAP_HZ`, so a closed run is about four
-    frames at 30fps and a three-frame blink fits inside one even mid-sentence
-    — where people do in fact blink. A candidate that cannot find a closed run
-    within :data:`BLINK_SEARCH_S` is dropped rather than forced.
+    The mouth shuts on its own on m, b and p and in every pause, for at least
+    one talk-strip frame, so a closed run is usually near and a three-frame
+    blink fits inside one mid-sentence — where people do in fact blink. One
+    within :data:`BLINK_SEARCH_S` is taken.
+
+    WHERE NONE IS — a long run of speech with no lip closure in it, which a
+    wall-to-wall voice produces for twelve seconds at a time — `spare` offers
+    mouth windows the blink may CLOSE, as (first frame, frame count). The
+    caller offers the ones on the generic consonant shape and shuts the whole
+    window the blink lands on, so the mouth still changes on the strip's own
+    beat. The blink lands inside the window, as near its moment as it fits.
+    A candidate that finds neither is dropped rather than forced.
     """
     if not plan or length <= 0:
         return []
@@ -591,6 +987,16 @@ def blink_schedule(plan: list[bool], fps: int, *, seed: str,
                     break
             if landed is not None:
                 break
+        if landed is None:
+            near = []
+            for a, count in spare:
+                if count < length:
+                    continue
+                j = min(max(want, a), a + count - length)
+                if abs(j - want) <= reach and 0 <= j <= len(plan) - length:
+                    near.append((abs(j - want), j))
+            if near:
+                landed = min(near)[1]
         # Two blinks on top of each other is a flutter, not a blink.
         if landed is not None and (not out or landed - out[-1] >= length * 2):
             out.append(landed)
@@ -609,6 +1015,30 @@ def _frames_where(plate: Plate | None, test) -> list[int]:
     return [i for i, f in enumerate(plate.frames) if test(f)] if plate else []
 
 
+def talk_mouths(talk: Plate | None) -> dict[str, int]:
+    """Which frame of a talk strip draws each mouth, by the name it carries.
+
+    A strip whose frames carry no mouth names — every kit before rebuild-31 —
+    still says which of them are open: its first shut frame is the closed
+    mouth, and its open frames stand in for the five open mouths in the kit's
+    phrase order, so the mouth still moves with the words, if not in shape.
+    """
+    if talk is None:
+        return {}
+    named: dict[str, int] = {}
+    for i, f in enumerate(talk.frames):
+        if f.mouth in _MOUTH_RANK and f.mouth not in named:
+            named[f.mouth] = i
+    if named:
+        return named
+    opens = _frames_where(talk, lambda f: f.mouth_open)
+    shuts = _frames_where(talk, lambda f: not f.mouth_open)
+    out = {MOUTH_CLOSED: shuts[0]} if shuts else {}
+    if opens:
+        out.update({m: opens[k % len(opens)] for k, m in enumerate(OPEN_MOUTHS)})
+    return out
+
+
 def face_plan(shot: HostShot, words: list[WordTimestamp], start: float,
               end: float, fps: int, *, seed: str) -> tuple[list[FaceFrame], dict]:
     """Which frame of which strip shows on every output frame of [start, end).
@@ -617,14 +1047,21 @@ def face_plan(shot: HostShot, words: list[WordTimestamp], start: float,
     this list and the short draws it frame by frame, and before this they each
     had their own idea of a face — and neither ever blinked.
 
-    Under a word the mouth flaps at :data:`FLAP_HZ`: shut on the off-beats,
-    and on the beats the strip's OPEN mouths in the kit's phrase order (mid,
-    wide, O, EE, F/V), so a sentence is not the same two drawings swapped forty
-    times. The frames are found by what they say they are (`mouthOpen`), never
-    by position.
+    UNDER A WORD, THE MOUTH SAYS IT. :func:`mouth_track` reads each word's
+    letters as the mouths that say them, at the talk strip's own rate and
+    never faster, and each window shows the talk frame that draws that mouth
+    — found by the name the frame carries (`mouth`), never by its position.
+    The closed mouth on m, b and p is the talk strip's own shut frame, which
+    is the same drawing as the pose, so a sentence never cuts to another file.
+
+    A MOUTH THE STRIP DOES NOT DRAW goes to the nearest one it does
+    (:data:`NEAREST_MOUTH`). A figure's closed mouth is his pose, so a figure
+    whose strip draws none shuts his mouth on the still; a framing never does
+    (below), and takes the nearest drawn shape instead. The report lists what
+    had to stand in, so a strip that loses a mouth in some drop says so.
 
     In a silence long enough to register (:data:`IDLE_MIN_SPAN_S`) the idle
-    strip plays at its own rate. Anywhere else he holds the pose.
+    strip plays at its own rate. Anywhere else he holds the pose, mouth shut.
 
     A FRAMING NEVER HOLDS THE POSE. design's crop review (ANSWERS.md §4,
     finding 2): the closed mouth is a filled bar, which at full figure is a
@@ -635,16 +1072,17 @@ def face_plan(shot: HostShot, words: list[WordTimestamp], start: float,
 
     A blink replaces a run of closed-mouth frames with the blink strip's
     shut-eyes drawing for :data:`BLINK_S`, every three to six seconds
-    (:func:`blink_schedule`). The report says what happened, so the manifest
-    can say whether the face moved rather than somebody having to watch.
+    (:func:`blink_schedule`); in a long run of speech with no closed mouth
+    near, it shuts one generic-consonant window to land in. The report says
+    what happened, so the manifest can say whether the face moved rather than
+    somebody having to watch.
     """
     n = max(int(round((end - start) * fps)), 1)
     talk = shot.talk
-    opens = _frames_where(talk, lambda f: f.mouth_open)
-    shuts = _frames_where(talk, lambda f: not f.mouth_open)
-    if talk is not None and not opens:
+    drawn = talk_mouths(talk)
+    if talk is not None and not any(m in drawn for m in OPEN_MOUTHS):
         log.warning("%s draws no open mouth — he will not talk", talk.key)
-        talk = None
+        talk, drawn = None, {}
     idle = shot.idle if shot.idle is not None and shot.idle.frames else None
     idle_fps = float(idle.fps or IDLE_HZ) if idle else IDLE_HZ
     framing = shot.is_framing
@@ -652,41 +1090,77 @@ def face_plan(shot: HostShot, words: list[WordTimestamp], start: float,
         log.warning("%s is a framing with no idle strip — its silences hold "
                     "the still, which the kit says never to do", shot.key)
 
-    is_open = mouth_schedule(words, start, end, fps) if talk else [False] * n
+    track = (mouth_track(words, start, end,
+                         hold=1.0 / float(talk.fps or MOUTH_HZ))
+             if talk is not None else [])
+    said, window = _on_frames(track, start, n, fps)
     quiet = ([(a, b) for a, b in quiet_spans(words, start, end)
               if framing or b - a >= IDLE_MIN_SPAN_S] if idle else [])
-    speaking = speaking_spans(words, start, end)
 
     hold = FaceFrame(shot.pose.key, 0)
-    shut = FaceFrame(talk.key, shuts[0]) if talk and shuts else hold
+    stood_in: set[str] = set()
+
+    def mouth(name: str) -> FaceFrame:
+        """The talk frame that draws a mouth, or the nearest one there is."""
+        if name in drawn:
+            return FaceFrame(talk.key, drawn[name])
+        stood_in.add(name)
+        if name == MOUTH_CLOSED and not framing:
+            return hold
+        near = next(m for m in NEAREST_MOUTH[name] if m in drawn)
+        return FaceFrame(talk.key, drawn[near])
+
+    def is_open(face: FaceFrame) -> bool:
+        return (talk is not None and face.key == talk.key
+                and talk.frames[face.index].mouth_open)
+
     plan: list[FaceFrame] = []
-    talk_frames = idle_frames = 0
+    idle_frames = 0
     for i in range(n):
         t = start + i / fps
-        if talk is not None and is_open[i]:
-            beat = int(t * FLAP_HZ) // 2
-            plan.append(FaceFrame(talk.key, opens[beat % len(opens)]))
-            talk_frames += 1
+        if said[i]:
+            plan.append(mouth(said[i]))
             continue
-        if idle is not None and any(a <= t < b for a, b in quiet):
+        if idle is not None and (framing or any(a <= t < b for a, b in quiet)):
             plan.append(FaceFrame(idle.key,
                                   int((t - start) * idle_fps) % len(idle.frames)))
             idle_frames += 1
             continue
-        # Between two words: the talk strip's own shut mouth, which is the
-        # same drawing as the pose, so a sentence never cuts to another file.
-        in_word = any(a <= t < b for a, b in speaking)
-        plan.append(shut if in_word else hold)
+        plan.append(hold)
+    opened = [is_open(f) for f in plan]
 
     blinks = 0
     shut_eyes = _frames_where(shot.blink, lambda f: f.eyes == "closed")
     if shut_eyes:
         length = max(int(round(BLINK_S * fps)), 1)
-        for j in blink_schedule(is_open, fps, seed=seed, length=length):
+        # The spare windows are cut on the strip's own beat: a mouth held
+        # longer than one strip frame is several beats of one shape, and a
+        # blink shuts only the beat it lands in, not two seconds of him.
+        beat = 1.0 / float(talk.fps or MOUTH_HZ) if talk is not None else 1.0
+        frames_of: dict[tuple[int, int], list[int]] = {}
+        for i, w in enumerate(window):
+            if w >= 0:
+                a, b, _m = track[w]
+                last = max(int((b - a) / beat + 1e-9), 1) - 1
+                k = min(int((start + i / fps - a) / beat + 1e-9), last)
+                frames_of.setdefault((w, k), []).append(i)
+        chunk_of = {i: key for key, got in frames_of.items() for i in got}
+        spare = [(got[0], len(got)) for (w, _k), got in frames_of.items()
+                 if track[w][2] == "mouthMid" and len(got) >= length]
+        for j in blink_schedule(opened, fps, seed=seed, length=length,
+                                spare=spare):
+            if opened[j]:
+                # It landed on a spare window: the whole window shuts, so the
+                # mouth still changes only on the strip's own beat.
+                for m in frames_of[chunk_of[j]]:
+                    plan[m] = mouth(MOUTH_CLOSED)
+                    opened[m] = is_open(plan[m])
             for m in range(j, min(j + length, n)):
                 plan[m] = FaceFrame(shot.blink.key, shut_eyes[0])
+                opened[m] = False
             blinks += 1
 
+    talk_frames = sum(opened)
     report = {
         "pose": shot.key,
         "spoke": talk_frames > 0,
@@ -695,7 +1169,14 @@ def face_plan(shot: HostShot, words: list[WordTimestamp], start: float,
         "blinks": blinks,
         "has_talk": talk is not None,
         "has_idle": idle is not None,
+        "has_blink": bool(shut_eyes),
         "held_frames": sum(1 for f in plan if f == hold),
+        # Which of the six mouths the words reached, and which of them the
+        # strip does not draw and had to stand in for.
+        "mouths": sorted({talk.frames[f.index].mouth for f in plan
+                          if talk is not None and f.key == talk.key
+                          and talk.frames[f.index].mouth}),
+        "mouths_stood_in": sorted(stood_in),
     }
     return plan, report
 
@@ -715,11 +1196,15 @@ def build_host_clip(
     shot_index: int = 0,
     used: dict[str, int] | None = None,
     report: dict | None = None,
+    pose: str | None = None,
 ) -> tuple[Path, tuple[int, int]] | None:
     """Composite a talking Dennis into an alpha clip for [start, end).
 
     Returns (clip_path, (w, h)) so the caller can place him, or None when the
     registry has no usable pose for the role.
+
+    `pose` is one the words cast (:func:`cast_pose`), taken as given; the
+    role is what the beat falls back to when that pose cannot be drawn.
 
     There is no furniture to strip any more. The v1 host shots were full-frame
     chapter cards with a ticker chip and a disclaimer painted into them, so a
@@ -738,7 +1223,10 @@ def build_host_clip(
     from pipeline.rasters import frames_to_alpha_clip
 
     speaking = any(start <= w.start < end for w in words)
-    shot = pick_shot(reg, role, shot_index, speaking=speaking, used=used)
+    shot = host_shot(reg, pose) if pose else None
+    if shot is None or not shot.pose.frames \
+            or not shot.pose.frame_paths()[0].exists():
+        shot = pick_shot(reg, role, shot_index, speaking=speaking, used=used)
     if shot is None or end <= start:
         return None
     if not shot.pose.frames or not shot.pose.frame_paths()[0].exists():

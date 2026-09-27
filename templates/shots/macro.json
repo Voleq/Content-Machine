@@ -15,12 +15,9 @@
     "",
     "A STATIC PLATE MAY HOLD. The ceiling was written when every plate in the kit boiled; 44 of the 140 are `playback: static` now, because a figure that moves is a figure being re-read. What keeps a data beat short is the ceiling itself, and it is set to what a seventy-second cut of ten beats actually gives each one.",
     "",
-    "NO ALTERNATE ORDER. `sign-off-first` put the closing card ahead of the hook,",
-    "and it could never have worked: the sign-off anchors nothing, so it took a",
-    "full even share of the opening (4.5-7 s) while the hook was spoken over it,",
-    "and the hook shot lost its anchor to the monotonic pass. The first second",
-    "is the ticker and the move. An order comes back when the narration says",
-    "where each beat starts, so a reordered cut still lands on its words."
+    "ALTERNATE ORDERS CAME BACK WITH THE BEAT MARKERS (items 2 and 26). `sign-off-first` put the closing card ahead of the hook and stays retired: the first second is the ticker and the move. The orders below may move anchored beats, because a marked script says where each beat starts and the cut follows its markers; an unmarked script is only offered the orders that keep the beat sequence it was written to.",
+    "",
+    "WIPES MARK A CHANGE OF SUBJECT (item 13): a shot with `enter: wipe` is wiped in, sweep and page alternating, at most three a short; every other cut stays hard. A wipe on every cut would be a signpost on every cut, which is none."
   ],
   "shots": [
     {
@@ -36,14 +33,32 @@
       },
       "alts": [
         {
-          "plate": "shorts/hook-card-t1"
+          "plate": "shorts/hook-card-t1",
+          "bind": {
+            "hook": "script.hook_text",
+            "move": "?chart.move",
+            "sub": "?chart.move_rest",
+            "ticker": "script.ticker"
+          }
         },
         {
-          "plate": "shorts/hook-card-t2"
+          "plate": "shorts/hook-card-t2",
+          "bind": {
+            "hook": "script.hook_text",
+            "move": "?chart.move",
+            "sub": "?chart.move_rest",
+            "ticker": "script.ticker"
+          }
         },
         {
           "plate": "shorts/hook-card-t5",
-          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same three slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
+          "bind": {
+            "hook": "script.hook_text",
+            "move": "?chart.move",
+            "sub": "?chart.move_rest",
+            "ticker": "script.ticker"
+          },
+          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
         }
       ]
     },
@@ -102,6 +117,7 @@
     {
       "id": "the-statement",
       "plate": "paper/headline-band-t2-9x16",
+      "enter": "wipe",
       "max_hold_s": 7,
       "anchor": "headline",
       "bind": {
@@ -144,6 +160,7 @@
     {
       "id": "who-it-hits",
       "plate": "cards/quote-pull-9x16",
+      "enter": "wipe",
       "max_hold_s": 7,
       "anchor": "consequences",
       "bind": {
@@ -155,7 +172,7 @@
         "max": 3,
         "arrange": "sequence"
       },
-      "notes": "One consequence per beat, full size. Three in a column measure 33px type, under the readability floor, so a chain at 9:16 has to be told over time. THREE, NOT FOUR. Every step of a sequence is a field on the writer's form, and a fourth consequence took the MACRO form to thirteen — past the dozen at which a form is a document again and gets filled in like one.",
+      "notes": "One consequence per beat, full size. Three in a column measure 33px type, under the readability floor, so a chain at 9:16 has to be told over time. THREE, NOT FOUR. Every step of a sequence is a field on the writer's form, and a fourth consequence took the MACRO form to thirteen — past the dozen at which a form is a document again and gets filled in like one. NEVER THE SAME CARD THREE TIMES RUNNING (item 7): each step is drawn on a layout the steps before it did not use, from the three here, `compose.plan_variants`.",
       "alts": [
         {
           "plate": "cards/definition-9x16",
@@ -165,14 +182,30 @@
             "kicker": "?compare.kicker"
           },
           "notes": "One consequence per beat as a term and its meaning. `$n-1` steps with the sequence exactly as the authored bind does."
+        },
+        {
+          "plate": "shorts/short-quote-9x16",
+          "bind": {
+            "quote-1": "wrap.34.4.0.script.consequences.$n-1",
+            "quote-2": "?wrap.34.4.1.script.consequences.$n-1",
+            "quote-3": "?wrap.34.4.2.script.consequences.$n-1",
+            "quote-4": "?wrap.34.4.3.script.consequences.$n-1",
+            "who": "?script.ticker"
+          },
+          "notes": "Design's shorts quote plate, a line a slot: the consequence is broken at the slot's 34 characters. One that needs more than its four lines leaves this plate unfillable and the rotation takes another."
         }
       ]
     },
     {
       "id": "so-what",
       "plate": "structure/both-true-9x16",
+      "enter": "wipe",
       "max_hold_s": 7,
       "anchor": "cheap_or_trap",
+      "meme": {
+        "at": "end",
+        "notes": "The one place for a meme: the tail of the verdict, once both sides of it are on screen and before the close."
+      },
       "bind": {
         "kicker": "?compare.kicker",
         "statement-1": "compare.heavy",
@@ -219,6 +252,36 @@
           "notes": "ONE THING AT STATEMENT SIZE. The original close has three lines and a script has one conclusion, so two of them were always empty. The handle moves up to the kicker: this plate's date label sits inside the caption band, where the last spoken words would run over it. Its detail line stays empty — the plate's own caution is not to pad it."
         }
       ]
+    }
+  ],
+  "orders": [
+    {
+      "name": "statement-first",
+      "shots": [
+        "open",
+        "the-statement",
+        "the-print",
+        "vs-expected",
+        "the-mechanism",
+        "who-it-hits",
+        "so-what",
+        "close"
+      ],
+      "notes": "What was said before what was printed: the statement straight after the hook, then the figure and the estimate. Cut only for a script whose markers put `headline` second."
+    },
+    {
+      "name": "hits-before-mechanism",
+      "shots": [
+        "open",
+        "the-print",
+        "vs-expected",
+        "the-statement",
+        "who-it-hits",
+        "the-mechanism",
+        "so-what",
+        "close"
+      ],
+      "notes": "Who it hurts before why: the consequences land first and the mechanism explains them. Cut only for a script marked in this order."
     }
   ]
 }

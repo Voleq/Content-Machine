@@ -29,9 +29,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from pipeline import marks as mk
-from pipeline.compose import (BuildResult, Layer, build_layers,
+from pipeline.compose import (MEME_SRC, BuildResult, Layer, build_layers,
                               check_budgets, check_invariants,
-                              held_layer_spans)
+                              held_layer_spans, placed_meme, plan_variants,
+                              punch_in_slot)
 from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
 from pipeline.render_common import (RenderError, encode_profile,
@@ -39,9 +40,9 @@ from pipeline.render_common import (RenderError, encode_profile,
 from pipeline.sound import (Cut, manifest_rows, measure_lufs, normalises,
                             placeholders_played, short_mix, shot_tags,
                             sound_summary)
-from pipeline.shots import (Format, apply_order, choose_order,
-                            expand_sequences, load_format,
-                            resolve_spans)
+from pipeline.shots import (Format, apply_order, beat_keys, choose_order,
+                            expand_sequences, load_format, order_by_marks,
+                            resolve_spans, voice_keys)
 
 log = logging.getLogger(__name__)
 
@@ -145,10 +146,16 @@ class ShortResolver:
     settings: object
     prices: object | None = None
     handle: str = ""
+    # Which format this resolver answers for. The meme picker reads a macro
+    # print differently from a company's day; the renderer sets it.
+    format_name: str = ""
 
     def __post_init__(self) -> None:
         self._images: dict[str, Path | list[Path] | None] = {}
         self._fracs: dict[str, tuple[float, float, float, float]] = {}
+        # The meme this short was given, once asked — kept so the manifest
+        # can say which one and why, not only that a still was drawn.
+        self.meme_choice = None
 
     @property
     def rows(self):
@@ -170,6 +177,8 @@ class ShortResolver:
             return self._numbers(parts[1:])
         if parts[0] == "chart":
             return self._chart_source(parts[1:])
+        if parts[0] == "wrap":
+            return self._wrapped(parts[1:])
         if parts[0] != "script":
             return None
         obj: object = self.script
@@ -184,6 +193,28 @@ class ShortResolver:
             if obj is None:
                 return None
         return str(obj) if obj is not None else None
+
+    def _wrapped(self, rest: list[str]) -> str | None:
+        """`wrap.34.4.0.script.consequences.1`: line 0 of that text broken at
+        34 characters, for a plate that sets a passage as separate lines, one
+        slot a line (design's short-quote). None for a line past the end, and
+        for every line when the text needs more lines than the plate has: the
+        first line is a required bind, so the plate is then not fillable and
+        the rotation takes another rather than cutting the passage short."""
+        import textwrap
+
+        try:
+            width, most, i = int(rest[0]), int(rest[1]), int(rest[2])
+        except (IndexError, ValueError):
+            return None
+        text = self.text_for(".".join(rest[3:]))
+        if not text or not str(text).strip():
+            return None
+        lines = textwrap.wrap(" ".join(str(text).split()), width=width,
+                              break_long_words=False)
+        if not lines or len(lines) > most or i >= len(lines):
+            return None
+        return lines[i]
 
     def list_for(self, src: str) -> list[str] | None:
         """A list source, for a shot that places a repeat."""
@@ -275,6 +306,17 @@ class ShortResolver:
             if field == "move_detail":
                 return detail or None
             return figure if field == f"move_{way}" else None
+        # THE MOVE IN FRAME ONE (item 6): the hook card's own `move` slot takes
+        # the signed figure in either direction, where it counts up while the
+        # first sentence is spoken, and its `sub` line takes the rest of the
+        # summary. A summary that does not open on a signed move leaves the
+        # slot empty and keeps the whole summary in the sub line, as before.
+        if field in ("move", "move_rest"):
+            summary = str(getattr(self.script, "move_summary", "") or "").strip()
+            lead = move_lead(summary)
+            if field == "move":
+                return lead[1] if lead else None
+            return (lead[2] if lead else summary) or None
         if self.prices is None:
             return None
         series = _legible(self.prices)
@@ -342,10 +384,37 @@ class ShortResolver:
         out = None
         if src == "chart.price":
             out = self._chart()
+        elif src == MEME_SRC:
+            out = self.meme().path
         elif src.startswith("plate."):
             out = None       # nested plates resolve through the kit, not here
         self._images[src] = out
         return out
+
+    def meme(self):
+        """The one meme this short gets from the owned library, or none.
+
+        Asked only when the template has a place for one, and answered once.
+        The proof and the final of a video seed the pick with the same
+        script hash, so they show the same meme unless another video went
+        out between them and used it.
+
+        The rotation reads every workspace but this one. `workdir` is this
+        workspace's `render_short/`, and a final that read the manifest its
+        own proof wrote would steer off the meme the proof showed.
+        """
+        if self.meme_choice is None:
+            from pipeline.memes import choose_for_short, recent_memes
+
+            lead = move_lead(getattr(self.script, "move_summary", "") or "")
+            self.meme_choice = choose_for_short(
+                self.script, self.settings,
+                fmt=self.format_name or "short",
+                direction=lead[0] if lead else "",
+                seed=self.script.content_sha(),
+                avoid=recent_memes(self.settings,
+                                   exclude=Path(self.workdir).parent))
+        return self.meme_choice
 
     def _chart_labels(self) -> dict[str, str]:
         """The period heads and the three marks the dense chart declares.
@@ -486,6 +555,51 @@ def build_anchors(script: ShortScript) -> dict[str, str]:
         out["statement"] = script.headlines[0].text
     if script.cheap_or_trap:
         out["priced"] = script.cheap_or_trap
+    # A MARKED BEAT LISTENS FOR THE WORDS SPOKEN RIGHT AFTER ITS MARKER. A
+    # field is what goes ON the plate, and the writer rarely says it aloud
+    # word for word — `move_summary` is "+29% today · 5x average volume",
+    # which no narration contains — so a shot listening for its field found
+    # nothing and was shared out evenly with its neighbours. The marker is the
+    # writer saying where the beat starts; what follows it is what is heard.
+    for mark in getattr(script, "beat_marks", None) or ():
+        heard = script.words_after_mark(mark.key)
+        if len(heard.split()) >= 2:
+            out[mark.key] = heard
+    return out
+
+
+def marked_beats(script, fmt: Format) -> list[str]:
+    """The beats the script marks that this format can cut, in spoken order.
+
+    A marker for a beat this format does not have — a macro key in a script
+    rendered as a plain short — orders nothing and is left out.
+    """
+    order = getattr(script, "beat_order", None)
+    if order is None:
+        return []
+    keys = set(beat_keys(fmt))
+    return [k for k in order() if k in keys]
+
+
+def shot_sources(script, fmt: Format) -> dict[str, str]:
+    """The writer's `sources`, from the beat each names to the shot playing it.
+
+    A beat's key is its shot's anchor, so `numbers_comment` is the shot
+    `the-comment`. A split beat's close-up finds its source through the wide
+    part it belongs to, and the tag goes under whichever part plays first.
+    """
+    got = getattr(script, "sources", None) or {}
+    return {sh.id: got[sh.anchor] for sh in fmt.shots
+            if sh.anchor and sh.anchor in got}
+
+
+def _part_fields(shot) -> dict:
+    """`part` and `part_of` for a manifest entry, or nothing for a whole shot."""
+    if not getattr(shot, "part", 0):
+        return {}
+    out = {"part": shot.part}
+    if shot.part_of:
+        out["part_of"] = shot.part_of
     return out
 
 
@@ -557,12 +671,16 @@ class _Cache:
     def plate(self, key: str, frame_i: int, values: dict[str, str],
               w: int, h: int) -> Image.Image | None:
         vkey = tuple(sorted(values.items()))
-        sized_key = (key, frame_i, vkey, w, h)
+        # BY THE PICTURE, NOT THE INDEX. A room's twelve-frame loop shows two
+        # or three pictures, and keyed by index it held twelve decoded 4K
+        # copies of them — half a gigabyte for one room shot.
+        frame = self._frame_file(key, frame_i)
+        sized_key = (key, frame, vkey, w, h)
         hit = self._sized.get(sized_key)
         if hit is not None:
             return hit
 
-        drawn_key = (key, frame_i, vkey)
+        drawn_key = (key, frame, vkey)
         img = self._drawn.get(drawn_key)
         if img is None:
             plate = self.reg.get(key)
@@ -581,6 +699,13 @@ class _Cache:
             (max(w, 1), max(h, 1)), Image.LANCZOS)
         self._sized[sized_key] = out
         return out
+
+    def _frame_file(self, key: str, frame_i: int):
+        """The file frame `frame_i` of `key` shows; the index if there is none."""
+        plate = self.reg.get(key)
+        if plate is None or not 0 <= frame_i < len(plate.frames):
+            return frame_i
+        return plate.frames[frame_i].png
 
     def file(self, path: Path, w: int, h: int) -> Image.Image:
         key = ("file", str(path), 0, (), w, h)
@@ -717,18 +842,27 @@ def _type_floor(canvas: Image.Image) -> int:
 
 
 def render_frames(result: BuildResult, resolver, duration: float,
-                  out_video: Path, settings, *, reg, words=()) -> Path:
+                  out_video: Path, settings, *, reg, words=(), plan=None) -> Path:
     """Compose every frame and pipe it into the encoder.
 
     Frames are composed in memory and go straight into ffmpeg — 2,000
     uncompressed 1080x1920 frames is not something to put on a disk on the
     way past.
+
+    `plan` is the move plan (`pipeline.moves.plan_short`): a plate with
+    moves on it is drawn by the move compositor, and its source tags and
+    wipes go over everything else on the frame. Without one, every plate is
+    the still it always was.
     """
     from pipeline.host import face_plan, host_shot
+    from pipeline.moves import MoveCompositor
 
     w, h = result.frame
     n = max(int(round(duration * FPS)), 1)
     cache = _Cache(settings, reg)
+    mover = (MoveCompositor(plan, reg, settings, cache)
+             if plan is not None and (plan.moves or plan.wipes or plan.tags)
+             else None)
     profile = encode_profile(settings, "short")
     paper = reg.colour("ground")
 
@@ -768,12 +902,17 @@ def render_frames(result: BuildResult, resolver, duration: float,
             for layer in ordered:
                 if not (layer.t_start - 1e-6 <= t < layer.t_end):
                     continue
+                if mover is not None and mover.owns(layer):
+                    mover.draw_layer(canvas, layer, t, _frame_index(layer, t))
+                    continue
                 face = None
                 if layer.name in faces:
-                    first, plan = faces[layer.name]
-                    face = plan[min(max(i - first, 0), len(plan) - 1)]
+                    first, strip = faces[layer.name]
+                    face = strip[min(max(i - first, 0), len(strip) - 1)]
                 _draw_layer(canvas, layer, t, cache, reg=reg, settings=settings,
                             face=face, lost=lost)
+            if mover is not None:
+                mover.draw_overlays(canvas, t)
             proc.stdin.write(canvas.tobytes())
     finally:
         proc.stdin.close()
@@ -788,8 +927,39 @@ def render_frames(result: BuildResult, resolver, duration: float,
 # Entry point
 # ---------------------------------------------------------------------------
 
+def _meme_record(resolver, result: BuildResult) -> dict:
+    """The manifest's line for the meme: which, where, and on what — or why not."""
+    layer = placed_meme(result)
+    choice = getattr(resolver, "meme_choice", None)
+    if layer is None:
+        why = next((s.split(" <- ", 1)[1] for s in result.skipped
+                    if ".meme <- " in s), "")
+        if choice is not None and not choice and choice.why:
+            why = choice.why
+        out = {"key": None,
+               "why": why or "the format has no place for a meme"}
+        if choice:
+            out["picked"] = choice.key       # chosen, and then no room for it
+        return out
+    frame = next((l.entry_key for l in result.for_shot(layer.shot_id)
+                  if l.kind == "plate" and l.slot == MEME_SRC), "")
+    return {
+        "key": (choice.key if choice else "") or Path(layer.path).stem,
+        "file": (choice.file if choice else "") or Path(layer.path).name,
+        "source": "library",
+        "shot": layer.shot_id,
+        "start_s": round(layer.t_start, 3),
+        "end_s": round(layer.t_end, 3),
+        "frame": frame,
+        "score": choice.score if choice else None,
+        "matched": list(choice.matched) if choice else [],
+        "why": choice.why if choice else "",
+    }
+
+
 def _provenance(script, settings, workspace: Path, duration: float,
-                prices, tts, format_name: str, *, proof: bool):
+                prices, tts, format_name: str, *, proof: bool,
+                visual_sources: dict | None = None):
     """The render's provenance record (N3)."""
     from pipeline import provenance as prov
 
@@ -806,10 +976,11 @@ def _provenance(script, settings, workspace: Path, duration: float,
         # mileage. None of that was recoverable from the artefact.
         render={"engine": "shots", "format": format_name},
         prices=prices,
-        # A SHORT's visuals are the shot template's plates plus whatever the
-        # resolver fetched; the fetched half is what has provenance worth
-        # recording, and a SHORT fetches none today.
-        visual_sources={}, filings={}, tts=tts, settings=settings)
+        # A SHORT's visuals are the shot template's plates plus whatever came
+        # from outside the kit. It fetches nothing; the one thing from outside
+        # is the meme, and that is counted as the owned library it came from.
+        visual_sources=dict(visual_sources or {}), filings={}, tts=tts,
+        settings=settings)
 
 
 def held_over_ceiling(video: Path, spans,
@@ -920,6 +1091,8 @@ def _render_short(script, tts, workspace: Path, settings, *,
     else:
         resolver.workdir, resolver.prices = workdir, prices
         resolver.handle = resolver.handle or handle0
+    if isinstance(resolver, ShortResolver):
+        resolver.format_name = resolver.format_name or format_name
 
     # A shot the script carries no words for is DROPPED, not rendered blank.
     # THE TURN is one sentence on bare ground; with no sentence it is a held
@@ -932,30 +1105,63 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # pruned, because an order names the shots the template was AUTHORED with
     # and a sequence repeat renames them. Rotating off the recent orders the
     # same way the plates rotate off the recent plates.
+    #
+    # THE NARRATION DECIDES WHICH ORDERS ARE OPEN. A marked script says where
+    # each beat starts, so the cut follows its markers: the rotation picks
+    # among the declared orders that put the beats where the voice does, and
+    # `order_by_marks` puts them there whatever it picks. An unmarked script
+    # was written to the authored beat order and is heard in it, so only the
+    # orders that keep that sequence are open to it — the same choice, from
+    # the same list, that it always had.
     from pipeline.reach import recent_orders, recent_plates
 
-    shot_order = choose_order(fmt, seed=script.content_sha(),
-                              avoid=recent_orders(settings, exclude=workspace))
+    seed = script.content_sha()
+    marks = marked_beats(script, fmt)
+    shot_order = choose_order(fmt, seed=seed,
+                              avoid=recent_orders(settings, exclude=workspace),
+                              heard=marks or voice_keys(fmt.shots))
     fmt = apply_order(fmt, shot_order)
+    if marks:
+        fmt = order_by_marks(fmt, marks)
 
     fmt = expand_sequences(fmt, probe.list_for)
     fmt, dropped = prune_empty_shots(fmt, probe)
 
+    # WHAT THE LAST FEW VIDEOS ALREADY LOOKED LIKE (02). Read once and handed
+    # to both the timing and the composition: a long beat's punch-in is asked
+    # of the plate the rotation will draw, and asking with a different avoid
+    # set would ask about a different plate.
+    recent = recent_plates(settings, exclude=workspace)
+    # WHICH DRAWING EACH BEAT GETS, once for the cut, never one layout twice
+    # where a beat has another (item 7). The punch-ins and the composition
+    # both read it, so a long beat's punch-in is asked of the plate drawn.
+    variants = plan_variants(reg, fmt.shots, fmt.aspect, resolver,
+                             seed=seed, avoid=recent)
+
+    def punch_in(shot):
+        return punch_in_slot(reg, shot, fmt.frame, resolver,
+                             aspect=fmt.aspect, seed=seed, avoid=recent,
+                             variants=variants)
+
+    # A marked script's anchors are searched IN ORDER, each after the last:
+    # the words after a marker can also be said earlier, and the first place
+    # they are said is not where that beat starts.
     spans = resolve_spans(fmt, words, duration,
                           anchors if anchors is not None
-                          else build_anchors(script))
+                          else build_anchors(script),
+                          ordered=bool(marks), punch_in=punch_in)
 
-    # WHAT THE LAST FEW VIDEOS ALREADY LOOKED LIKE (02). The seed alone makes
-    # two videos differ by chance; nothing stopped three in a row opening on
-    # the same pose in the same room. This steers off what is recent where
-    # the kit has an alternative, and is silently empty on a fresh install.
-    # It also decides which of a beat's interchangeable plates this video
-    # draws — the rotation the vertical formats never had, because a fixed
-    # shot list names one drawing per beat and `parser_short` ignores the
-    # inline tags a director would use in a LONG.
+    # The recent plates (02). The seed alone makes two videos differ by
+    # chance; nothing stopped three in a row opening on the same pose in the
+    # same room. This steers off what is recent where the kit has an
+    # alternative, and is silently empty on a fresh install. It also decides
+    # which of a beat's interchangeable plates this video draws — the
+    # rotation the vertical formats never had, because a fixed shot list
+    # names one drawing per beat and `parser_short` ignores the inline tags a
+    # director would use in a LONG.
     result = build_layers(fmt, spans, resolver, reg,
-                          aspect=fmt.aspect, seed=script.content_sha(),
-                          avoid=recent_plates(settings, exclude=workspace))
+                          aspect=fmt.aspect, seed=seed, avoid=recent,
+                          words=words, variants=variants)
 
     # A composition that breaks its own rules never reaches an encoder. This
     # is the check that the last renderer did not have: it shipped a 12.5s
@@ -982,9 +1188,19 @@ def _render_short(script, tts, workspace: Path, settings, *,
             "the script does not fit the shots it is written for:\n  "
             + "\n  ".join(over))
 
+    # WHAT MOVES, AND WHEN (items 8-14 of the motion plan). Planned off the
+    # finished composition and the words, before a frame is drawn, so the
+    # manifest records what the frames play and the sound is cut to it.
+    from pipeline.moves import plan_short, recent_circled
+
+    plan = plan_short(fmt, result, reg, words, seed=script.content_sha(),
+                      settings=settings,
+                      sources=shot_sources(script, fmt),
+                      recent_circled=recent_circled(settings, exclude=workspace))
+
     silent = workdir / "video_silent.mp4"
     render_frames(result, resolver, duration, silent, settings, reg=reg,
-                  words=words)
+                  words=words, plan=plan)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}
     faces = getattr(render_frames, "last_faces", {}) or {}
     # THE CEILING, MEASURED ON THE FRAMES the shots drew, before captions
@@ -1004,6 +1220,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # same ink as everything else on the frame, from the same builder the LONG
     # uses. Drawing them into every one of two thousand frames sets the same
     # line thirty times a second for no reason.
+    from pipeline.compose import CAPTION_SIDE_FW, CAPTION_TYPE_FH
     from pipeline.rasters import build_phrase_ass
 
     W, H = result.frame
@@ -1012,14 +1229,26 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # at 18 characters a line, and a caption of the same sentence underneath is
     # the same words twice. Burning the whole track ignored the flag, because
     # the flag lives per shot and a subtitle file does not.
-    bands = [(l.t_start, l.t_end) for l in result.of_kind("caption")]
+    #
+    # AND WHERE EACH SHOT PUT THEM. `build_layers` placed every caption inside
+    # the band the phone leaves clear and off whatever its shot is showing,
+    # and the layer's box is the caption's box. Each window carries the foot
+    # of that box, so a line burns where its own shot placed it, and a line
+    # that runs on across a cut moves with the cut.
+    bands = [(l.t_start, l.t_end, l.y + l.h) for l in result.of_kind("caption")]
     spoken = [w for w in words
-              if any(a <= float(getattr(w, "start", 0.0)) < b for a, b in bands)]
+              if any(a <= float(getattr(w, "start", 0.0)) < b
+                     for a, b, _ in bands)]
     ass = workdir / "captions.ass"
+    # TWO TO FOUR WORDS A LINE, ONE OF THEM IN `attention`. On-screen text that
+    # repeats the narration word for word can hurt understanding, and five
+    # words at a time was most of the sentence; a figure or a turn word in
+    # colour is what the eye takes from a line it only glances at.
     ass.write_text(build_phrase_ass(
         spoken, settings=settings, play_res=(W, H),
-        font_size=int(H * 0.030), margin_v=int(H * 0.13),
-        margin_h=int(W * 0.10), max_words=5, max_chars=24,
+        font_size=int(H * CAPTION_TYPE_FH), margin_v=int(H * 0.13),
+        margin_h=int(W * CAPTION_SIDE_FW), max_words=4, min_words=2,
+        max_chars=24, key_words=True,
         duration=duration, windows=bands), encoding="utf-8")
     if spoken:
         burned = workdir / "video_captioned.mp4"
@@ -1027,7 +1256,13 @@ def _render_short(script, tts, workspace: Path, settings, *,
         # workspace name is a filtergraph separator. Escaped the way libavfilter
         # asks rather than by hoping the path is plain.
         spec = str(ass).replace("\\", "/").replace(":", "\\:")
-        run_ffmpeg(["-i", str(silent), "-vf", f"ass='{spec}'",
+        # THE KIT'S FONTS, BY DIRECTORY. The style names Archivo Narrow, which
+        # no install puts on the system, and without `fontsdir` libass fell
+        # back to DejaVu Sans: every short's captions were set in a face that
+        # runs a line nearly twice as wide as the one they were placed for.
+        # The LONG has always passed it (`render_common`).
+        fonts = str(settings.fonts_dir).replace("\\", "/").replace(":", "\\:")
+        run_ffmpeg(["-i", str(silent), "-vf", f"ass='{spec}':fontsdir='{fonts}'",
                     "-c:v", "libx264", "-preset", "medium",
                     "-crf", "20", "-pix_fmt", "yuv420p", str(burned)])
         silent = burned
@@ -1066,8 +1301,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
         raise RenderError(f"the SHORT mux produced nothing at {part}")
     os.replace(part, out)
 
+    meme = _meme_record(resolver, result)
     provenance = _provenance(script, settings, Path(workspace), duration,
-                             prices, tts, fmt.name, proof=proof)
+                             prices, tts, fmt.name, proof=proof,
+                             visual_sources=({"library": 1} if meme.get("key")
+                                             else {}))
     audio_rows = manifest_rows(tracks)
     provenance.sound = sound_summary(
         audio_rows, lufs=measure_lufs(out) if tracks else None,
@@ -1105,6 +1343,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
         "provenance": provenance.to_json(),
         "duration_s": round(duration, 3),
         "frame": {"w": result.frame[0], "h": result.frame[1]},
+        # A beat split for running long shows as both its parts: `part` 1 is
+        # the wide picture under the beat's own id, `part` 2 the move in,
+        # under `<id>-in` with `part_of` naming the beat. Unsplit shots carry
+        # neither key, so a manifest reader that knows nothing of parts reads
+        # every shot as it always did.
         "shots": [{
             "id": s.shot.id,
             "plate": s.shot.plate,
@@ -1113,6 +1356,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
             "anchored": s.anchored,
             "max_hold_s": s.shot.max_hold_s,
             "layers": [l.name for l in result.for_shot(s.shot.id)],
+            **_part_fields(s.shot),
         } for s in result.spans],
         "layers": len(result.layers),
         # What the render actually reached. Under the tag model this was an
@@ -1125,6 +1369,19 @@ def _render_short(script, tts, workspace: Path, settings, *,
         # `plates_used`; a manifest from before the field existed simply
         # contributes nothing.
         "shot_order": shot_order,
+        # EVERY MOVE THE FRAMES PLAYED: design's move id, the programme time
+        # of its first frame, the shot and the slot; each wipe with the cut it
+        # covers. The sound's move hits are cut to this, and `recent_moves`
+        # reads it back so the pen-circle never plays in two shorts running.
+        "moves": plan.record(),
+        # THE ONE MEME, or why there is none. `memes.recent_memes` reads `key`
+        # back so the next short rotates off it, exactly as `recent_plates`
+        # reads `plates_used`; `key` is null whenever nothing went on screen,
+        # so a meme that was picked and then had no room is not counted.
+        "meme": meme,
+        # And the beats as the narration marked them, which is what put them
+        # in that order. Empty for an unmarked script.
+        "beat_order": marks,
         # WHAT THE MIX DID, in the LONG's shape. A short had no mix for six
         # weeks and no field that would have shown it (`pipeline/sound.py`).
         "audio": audio_rows,

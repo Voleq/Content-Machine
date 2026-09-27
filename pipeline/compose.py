@@ -92,10 +92,38 @@ TWO_SHOT_MAX_SLOTS = 10
 # hard-coded around.
 HOST_WHERE_NOBODY_STANDS = "to-camera"
 
-# Where a caption band sits, as a fraction of frame height, and how tall it is
-# allowed to be. Kept clear of the disclaimer and of the top strip so a long
-# line can never stack with the furniture.
-CAPTION_BAND = (0.78, 0.14)
+# THE BAND A SHORT'S CAPTION MAY SIT IN, top and bottom as fractions of frame
+# height, where the plate on screen publishes no `safe` band of its own. It is
+# design's shorts band, 260 to 1560 of 1920: on a phone the title, the channel
+# name and the buttons lie over the bottom of the frame and the search bar over
+# the top. The old band, 78% to 92% of the frame, sat wholly under the buttons,
+# so every caption in every short was partly covered.
+CAPTION_BAND = (260 / 1920, 1560 / 1920)
+
+# The caption's type as a fraction of frame height, and the margins it is
+# centred between as a fraction of frame width. The renderer burns the type at
+# this size and `build_layers` places the box it sits in, so both read these:
+# a box placed for one size and burned at another covers what it was kept off.
+CAPTION_TYPE_FH = 0.030
+CAPTION_SIDE_FW = 0.10
+
+# How far a caption's box stays off anything it must not cover, as a fraction
+# of frame height. Flush against a row of figures, a cream box reads as one
+# more row of the table.
+CAPTION_CLEARANCE_FH = 0.008
+
+# A LANDSCAPE FRAME KEEPS ITS CAPTION WHERE IT HAS ALWAYS BEEN, the foot of its
+# type this far up the frame. No phone lays buttons over a long's frame, and
+# the long's captions are another item's, so a 16:9 cut through this engine
+# gets a band with exactly one place in it.
+LANDSCAPE_CAPTION_MARGIN_FH = 0.13
+
+# How much of a standing figure's box his head can be in. He is seven heads
+# tall (`kit/design-tokens.json`, proportion) with his crown at the top of the
+# box; seated, the crown drops to about 1.9 heads down (seatedRatio 0.735).
+# The top three heads hold it in every pose the kit draws. A framing publishes
+# a `head` slot of its own and is read from that instead.
+HOST_HEAD_SHARE = 3 / 7
 
 # A row of type is never set below this fraction of the frame's height. Below
 # it a figure is present but not readable, which is worse than absent — it
@@ -292,14 +320,17 @@ def _fillable(variant, shot: Shot, plate: Plate, resolver: Resolver,
     # A lit band or a focus move that names nothing on this plate is not an
     # error — it just silently does not happen, which is a beat that reads as
     # a held frame. Reject the plate instead.
+    # `all` and `read` name every band rather than one, so they are not
+    # slots to look up.
     for name in (lit, focus):
-        if name and name != "all" and plate.slot(name) is None:
+        if name and name not in ("all", "read") and plate.slot(name) is None:
             return False
     return True
 
 
 def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
-                   *, seed: str = "", avoid: "Collection[str]" = ()):
+                   *, seed: str = "", avoid: "Collection[str]" = (),
+                   used: "Collection[str]" = ()):
     """Which of a beat's interchangeable plates this video draws.
 
     THE WRITER CHOOSES NOTHING HERE AND THAT IS DELIBERATE. A SHORT is
@@ -317,6 +348,12 @@ def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
     The authored plate is the floor. When every alternate is unresolvable in
     this kit or unfillable by this script it is what comes back, and its own
     failure to resolve stays the caller's error to raise.
+
+    `used` is what THIS video has already drawn, in cut order (item 7), and
+    it outranks `avoid`: the same layout twice in one short is sameness a
+    viewer sees in fifty seconds, where a plate from last week's short is one
+    they may never have seen. Both are preferences, so a beat with nothing
+    else still draws; when every option is used, the one used longest ago.
     """
     import random
 
@@ -347,9 +384,61 @@ def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
     if not usable:
         return primary
 
-    keys = _prefer_unused([k for k, _ in usable], reg.base_keys(avoid))
+    keys = [k for k, _ in usable]
+    if used:
+        # Unused in this video first; when every option has been drawn, the
+        # one drawn longest ago, so a layout never comes straight back.
+        last = {reg.base_key(k): i for i, k in enumerate(used)}
+        fresh = [k for k in keys if k not in last]
+        if fresh:
+            keys = fresh
+        else:
+            oldest = min(last[k] for k in keys)
+            keys = [k for k in keys if last[k] == oldest]
+    keys = _prefer_unused(keys, reg.base_keys(avoid))
     pick = random.Random(f"variant|{shot.id}|{seed}").choice(sorted(keys))
     return next(v for k, v in usable if k == pick)
+
+
+def plan_variants(reg: Registry, shots: Sequence[Shot], aspect: str,
+                  resolver: Resolver, *, seed: str = "",
+                  avoid: "Collection[str]" = ()) -> dict[str, Any]:
+    """Which drawing each shot with alternates gets, walking the cut in order.
+
+    NO LAYOUT TWICE IN ONE SHORT WHERE THE BEAT HAS ANOTHER (item 7). The
+    macro "who it hits" beat played the same quote card three times running,
+    20 s of one layout, and a closing card could pick the quote card the
+    comment had just used. Each pick here knows every drawing the shots
+    before it drew, alternates and fixed plates alike, and steers off them.
+
+    Worked out once for the whole cut, before the timing, so a long beat's
+    punch-in (`punch_in_slot`) is asked of the plate `build_layers` then
+    draws: both read this map rather than rolling the rotation themselves.
+    The second part of a split beat is not here; it is part 1's drawing.
+    """
+    picks: dict[str, Any] = {}
+    used: list[str] = []
+    begin = getattr(resolver, "begin_shot", None)
+    for shot in shots:
+        if getattr(shot, "part", 0) == 2 or not shot.plate or shot.host \
+                or shot.plate.startswith("room/"):
+            continue
+        name = shot.plate
+        if shot.alts:
+            if begin is not None:
+                begin(shot)
+            picked = choose_variant(reg, shot, aspect, resolver, seed=seed,
+                                    avoid=avoid, used=used)
+            picks[shot.id] = picked
+            if picked is not None:
+                name = picked.plate
+        try:
+            plate = resolve_plate(reg, name, aspect)
+        except TemplateError:
+            plate = None
+        if plate is not None:
+            used.append(reg.base_key(plate.key))
+    return picks
 
 
 def resolve_plate(reg: Registry, name: str, aspect: str) -> Plate | None:
@@ -423,6 +512,142 @@ def _slot_in_frame(plate: Plate, slot_name: str,
             max(int(sw * kx), 1), max(int(sh * ky), 1))
 
 
+def _focus_placement(plate: Plate, slot_name: str,
+                     stage: tuple[int, int, int, int],
+                     placed: tuple[int, int, int, int],
+                     ) -> tuple[int, int, int, int]:
+    """The plate moved in on one of its slots — and never past the edges of
+    what it has to show.
+
+    The zoom is bounded by the frame's WIDTH, not only by the target height. A
+    vertical sheet's row band is 1044 of 1080 canvas units wide: scaled until
+    it filled 62% of the frame's height it came out at 1.4x, and the last three
+    columns of every row went off the right-hand edge. A row you cannot see the
+    figures on is not a row anybody moved in on. Where the slot is already full
+    width the move is a PAN — the composition still changes, and every figure
+    stays on screen.
+    """
+    gx, gy, gw2, gh2 = stage
+    w, h = placed[2], placed[3]
+    sx, sy, sw, sh_px = _slot_in_frame(plate, slot_name, placed)
+    by_height = (gh2 * FOCUS_FILL) / max(sh_px, 1)
+    by_width = gw2 / max(sw, 1)
+    k = max(min(by_height, by_width, FOCUS_MAX_SCALE), 1.0)
+    nw, nh = int(w * k), int(h * k)
+    base = (gx + (gw2 - nw) // 2, gy + (gh2 - nh) // 2, nw, nh)
+    sx, sy, sw, sh_px = _slot_in_frame(plate, slot_name, base)
+    nx = base[0] + (gx + gw2 // 2 - (sx + sw // 2))
+    ny = base[1] + (gy + gh2 // 2 - (sy + sh_px // 2))
+    # Never open a gap at an edge: a plate larger than its stage covers it,
+    # and one that is not stays centred on that axis.
+    nx = (min(gx, max(nx, gx + gw2 - nw)) if nw >= gw2
+          else gx + (gw2 - nw) // 2)
+    ny = (min(gy, max(ny, gy + gh2 - nh)) if nh >= gh2
+          else gy + (gh2 - nh) // 2)
+    return (nx, ny, nw, nh)
+
+
+# A punch-in smaller than this barely changes the picture, so the beat would
+# still read as one held composition — the thing the split exists to end.
+PUNCH_MIN_SCALE = 1.1
+
+# Where the kit says the eye goes on a plate, in the order a punch-in asks:
+# the passage a reader is on, then the figure that counts up.
+PUNCH_MOVES = ("highlight", "count-up")
+
+
+def punch_in_slot(reg: Registry, shot: Shot, frame: tuple[int, int],
+                  resolver: Resolver, *, aspect: str = "", seed: str = "",
+                  avoid: "Collection[str]" = (),
+                  variants: "dict[str, Any] | None" = None) -> str | None:
+    """Which slot the second picture of a long beat moves in on, or None.
+
+    `resolve_spans` asks this for a beat that runs past its ceiling. The
+    answer is the shot's own `focus` when it has one — a numbers step already
+    names its row — and otherwise where the kit's own motion anchors put the
+    eye: the `highlight` slot, then the `count-up` one. None means the beat
+    holds.
+
+    ASKED OF THE PLATE THIS VIDEO WILL ACTUALLY DRAW. The rotation is run the
+    way `build_layers` runs it — same seed, same recent plates — because the
+    authored plate's slots are not the alternate's, and a focus naming a slot
+    the drawn plate lacks is a punch-in that silently does not happen.
+
+    A motion anchor is a hint, not a promise, so it is refused where the move
+    would make things worse than the hold it replaces:
+
+    * the slot carries nothing for this script — an unbound date box on the
+      sign-off card would fill the frame with an empty rectangle;
+    * the move barely moves — under `PUNCH_MIN_SCALE` it is the same picture;
+    * the move cuts a filled slot in half at the frame's edge — the first
+      figure of a table at 2.4x leaves every other figure sliced. A slot moved
+      wholly out of frame is fine: that is what moving in means.
+    """
+    if not shot.plate or shot.host or shot.plate.startswith("room/"):
+        return None
+    begin = getattr(resolver, "begin_shot", None)
+    if begin is not None:
+        begin(shot)
+    if shot.alts:
+        picked = (variants.get(shot.id) if variants is not None
+                  and shot.id in variants
+                  else choose_variant(reg, shot, aspect, resolver, seed=seed,
+                                      avoid=avoid))
+        if picked is not None and picked.plate != shot.plate:
+            bind, lit, focus = picked.resolved(shot)
+            shot = replace(shot, plate=picked.plate, alts=(), bind=bind,
+                           lit=lit, focus=focus)
+    try:
+        plate = resolve_plate(reg, shot.plate, aspect)
+    except TemplateError:
+        return None
+    if plate is None:
+        return None
+    if shot.focus and plate.slot(shot.focus) is not None:
+        return shot.focus
+    try:
+        values, _unfilled, _skipped = _bound_values(shot, plate, resolver, reg)
+    except Exception:                              # noqa: BLE001
+        return None
+    fw, fh = frame
+    w, h = _fit(plate, frame)
+    wide = ((fw - w) // 2, (fh - h) // 2, w, h)
+    for move in PUNCH_MOVES:
+        name = (plate.motion.get(move) or {}).get("slot")
+        if not name or plate.slot(name) is None:
+            continue
+        if not str(values.get(name, "")).strip():
+            continue
+        close = _focus_placement(plate, name, (0, 0, fw, fh), wide)
+        if close[2] < wide[2] * PUNCH_MIN_SCALE:
+            continue
+        if _cuts_a_filled_slot(plate, values, close, frame):
+            continue
+        return name
+    return None
+
+
+def _cuts_a_filled_slot(plate: Plate, values: dict,
+                        placed: tuple[int, int, int, int],
+                        frame: tuple[int, int]) -> bool:
+    """Does this placement leave a filled slot part on and part off the frame?
+
+    A band is left out: it is the lit row's highlight, drawn edge to edge, and
+    the figures in it are slots of their own that this checks one by one.
+    """
+    fw, fh = frame
+    for name, value in values.items():
+        slot = plate.slot(name)
+        if slot is None or slot.is_band or not str(value).strip():
+            continue
+        x, y, w, h = _slot_in_frame(plate, name, placed)
+        inside = x >= 0 and y >= 0 and x + w <= fw and y + h <= fh
+        outside = x + w <= 0 or y + h <= 0 or x >= fw or y >= fh
+        if not inside and not outside:
+            return True
+    return False
+
+
 def _arrange(n: int, how: str, frame: tuple[int, int],
              box: tuple[int, int, int, int] | None = None
              ) -> list[tuple[int, int, int, int]]:
@@ -452,17 +677,31 @@ def _settings():
 
 def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                  reg: Registry, *, aspect: str = "",
-                 seed: str = "", avoid: "Collection[str]" = ()) -> BuildResult:
+                 seed: str = "", avoid: "Collection[str]" = (),
+                 words: Sequence[Any] = (),
+                 variants: "dict[str, Any] | None" = None) -> BuildResult:
     """Turn the template and the script into the ordered layer list.
 
     `avoid` is what the last few renders already used. It steers the host and
     framing picks off those where the kit offers an alternative, so two
     consecutive videos do not open on the same pose — a preference the
     registry drops the moment a role has nothing else to give.
+
+    `words` is the voice-over's word timings, when the caller has them. A
+    host shot is then cast from what is said during it (`host.cast_pose`): a
+    pose that means something — a count, a citation, a shrug — is chosen by
+    the words rather than by seed, on a room it was drawn for. Without them
+    every host is picked by his role, as before.
+
+    `variants` is the cut's plan of which drawing each beat gets
+    (`plan_variants`); worked out here from the spans when not given.
     """
     frame = fmt.frame
     fw, fh = frame
     aspect = aspect or getattr(fmt, "aspect", "") or ""
+    if variants is None:
+        variants = plan_variants(reg, [sp.shot for sp in spans], aspect,
+                                 resolver, seed=seed, avoid=avoid)
     layers: list[Layer] = []
     unfilled: list[str] = []
     skipped: list[str] = []
@@ -470,6 +709,14 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
     # room shot was in — `resolve_room` rotates on both.
     room_uses: dict[str, int] = {}
     last_room = ""
+    # Who has stood in the cut so far, and in the shot before: a cast pose
+    # keeps to its `limit` across the video and is never cut to twice running.
+    # The CLOSE is the last shot that puts him on screen.
+    host_used: dict[str, int] = {}
+    last_host = ""
+    closing = next((sp.shot.id for sp in reversed(spans) if sp.shot.host), "")
+    # Part 1 of each split beat as drawn, for its part 2 to be drawn from.
+    drawn: dict[str, Shot] = {}
 
     for span_index, span in enumerate(spans):
         shot = span.shot
@@ -504,13 +751,33 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
         #    here rather than threading a variant through twenty lines is what
         #    keeps a plate with differently-named slots from being a special
         #    case in each of them.
-        if shot.plate and shot.alts:
-            picked = choose_variant(reg, shot, aspect, resolver,
-                                    seed=seed, avoid=avoid)
+        #
+        #    THE SECOND PART OF A SPLIT BEAT IS THE SAME DRAWING, CLOSER. It is
+        #    its own shot with its own id, and the rotation seeds on the id, so
+        #    left to itself it would roll again and could cut from one headline
+        #    band to a different one mid-sentence. It takes the plate, binds
+        #    and lit band part 1 was drawn with, and keeps only its own focus.
+        first = drawn.get(shot.part_of) if shot.part == 2 else None
+        if first is not None:
+            # A sheet that lit its rows as they were read ends part 1 with
+            # every row up, so the close-up opens on all of them lit.
+            shot = replace(shot, plate=first.plate, alts=(),
+                           bind=dict(first.bind),
+                           lit="all" if first.lit == "read" else first.lit)
+        elif shot.plate and shot.alts:
+            picked = (variants.get(shot.id) if shot.id in variants
+                      else choose_variant(reg, shot, aspect, resolver,
+                                          seed=seed, avoid=avoid))
             if picked is not None and picked.plate != shot.plate:
                 bind, lit, focus = picked.resolved(shot)
                 shot = replace(shot, plate=picked.plate, alts=(),
                                bind=bind, lit=lit, focus=focus)
+        # Part 1 is the WIDE picture: the move in is what part 2 is for, and
+        # a part 1 already moved in would make the cut between them a cut to
+        # the same frame.
+        if shot.part == 1:
+            drawn[shot.id] = shot
+            shot = replace(shot, focus=None)
 
         # -- the plate. `None` is a real value: a bare-ground shot.
         if shot.plate:
@@ -568,38 +835,12 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             placed = (stage[0] + (stage[2] - w) // 2,
                       stage[1] + (stage[3] - h) // 2, w, h)
 
-            # MOVING IN ON A SLOT — AND NEVER PAST THE EDGES OF WHAT IT
-            # HAS TO SHOW. Without this a walk down a list is one wide shot
-            # with a rectangle migrating down it, which a viewer reads as a
-            # single held composition.
-            #
-            # The zoom is bounded by the frame's WIDTH, not only by the target
-            # height. A vertical sheet's row band is 1044 of 1080 canvas units
-            # wide: scaled until it filled 62% of the frame's height it came
-            # out at 1.4x, and the last three columns of every row went off
-            # the right-hand edge. A row you cannot see the figures on is not
-            # a row anybody moved in on. Where the slot is already full width
-            # the move is a PAN — the composition still changes, and every
-            # figure stays on screen.
+            # MOVING IN ON A SLOT. Without this a walk down a list is one wide
+            # shot with a rectangle migrating down it, which a viewer reads as
+            # a single held composition. The geometry is `_focus_placement`.
             if shot.focus and plate.slot(shot.focus) is not None:
-                gx, gy, gw2, gh2 = stage
-                sx, sy, sw, sh_px = _slot_in_frame(plate, shot.focus, placed)
-                by_height = (gh2 * FOCUS_FILL) / max(sh_px, 1)
-                by_width = gw2 / max(sw, 1)
-                k = max(min(by_height, by_width, FOCUS_MAX_SCALE), 1.0)
-                nw, nh = int(w * k), int(h * k)
-                base = (gx + (gw2 - nw) // 2, gy + (gh2 - nh) // 2, nw, nh)
-                sx, sy, sw, sh_px = _slot_in_frame(plate, shot.focus, base)
-                nx = base[0] + (gx + gw2 // 2 - (sx + sw // 2))
-                ny = base[1] + (gy + gh2 // 2 - (sy + sh_px // 2))
-                # Never open a gap at an edge: a plate larger than its stage
-                # covers it, and one that is not stays centred on that axis.
-                nx = (min(gx, max(nx, gx + gw2 - nw)) if nw >= gw2
-                      else gx + (gw2 - nw) // 2)
-                ny = (min(gy, max(ny, gy + gh2 - nh)) if nh >= gh2
-                      else gy + (gh2 - nh) // 2)
-                placed = (nx, ny, nw, nh)
-                w, h = nw, nh
+                placed = _focus_placement(plate, shot.focus, stage, placed)
+                w, h = placed[2], placed[3]
 
             # -- what goes in its slots. The renderer draws the plate WITH
             #    these; nothing here sets type.
@@ -681,8 +922,15 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
         if shot.host:
             host_layer = _host_layer(reg, shot, plate, placed, frame, t0, t1,
                                      seed=seed, column=host_column,
-                                     avoid=avoid)
+                                     avoid=avoid,
+                                     words=[w for w in words
+                                            if t0 <= w.start < t1],
+                                     closing=shot.id == closing,
+                                     used=host_used, previous=last_host)
             if host_layer is not None:
+                host_used[host_layer.entry_key] = (
+                    host_used.get(host_layer.entry_key, 0) + 1)
+                last_host = host_layer.entry_key
                 layers.append(host_layer)
                 front = _front_layer(reg, shot, plate, placed, host_layer)
                 if front is not None:
@@ -724,16 +972,213 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
 
         # -- captions. Not under display type, whoever set it: the template's
         #    own large type or a figure the chosen plate sets at that size.
+        #
+        #    PLACED PER SHOT, inside the band the phone leaves clear and off
+        #    everything this shot is showing (`place_caption`). The layer's
+        #    box IS the caption's box, and the renderer burns each line where
+        #    its shot's layer says.
         if shot.captions and not shot.has_large_type and not plate_large:
+            from pipeline.rasters import caption_box_height
+
+            box_h = caption_box_height(int(fh * CAPTION_TYPE_FH))
+            side = int(fw * CAPTION_SIDE_FW)
+            band = caption_band(plate, frame, box_h)
+            cy, covers = place_caption(
+                band, caption_obstacles(
+                    reg, [l for l in layers if l.shot_id == shot.id]),
+                frame, box_h)
+            if covers:
+                log.warning(
+                    "%s: nothing in the caption band (%d-%d px) is clear, so "
+                    "the caption goes where it covers least, %d-%d px, over %s",
+                    shot.id, band[0], band[1], cy, cy + box_h,
+                    ", ".join(covers[:6]) + (f" and {len(covers) - 6} more"
+                                             if len(covers) > 6 else ""))
             layers.append(Layer(
                 name=f"{shot.id}:caption", kind="caption", shot_id=shot.id,
                 t_start=t0, t_end=t1,
-                x=int(fw * 0.06), y=int(fh * CAPTION_BAND[0]),
-                w=int(fw * 0.88), h=int(fh * CAPTION_BAND[1]), z=80))
+                x=side, y=cy, w=fw - 2 * side, h=box_h, z=80))
+
+    # -- THE ONE MEME, when the format has a place for it and the library had
+    #    something that fits. Built after every shot rather than inside the
+    #    loop, because whether it fits in time depends on where the payoff
+    #    falls, and that is usually another shot's span.
+    layers += _meme_layers(spans, resolver, reg, frame, aspect, seed=seed,
+                           avoid=avoid, skipped=skipped)
 
     layers.sort(key=lambda l: (l.t_start, l.z))
     return BuildResult(layers=layers, spans=list(spans), frame=frame,
                        aspect=aspect, unfilled=unfilled, skipped=skipped)
+
+
+# ---------------------------------------------------------------------------
+# The short's one meme
+# ---------------------------------------------------------------------------
+
+# What a template's meme place asks the resolver for. The resolver answers
+# with a still from the owned library or with nothing (`memes.choose_for_short`).
+MEME_SRC = "meme"
+
+# How long the meme holds. Under a second it is a flash nobody reads; past a
+# second and a half it has become a beat of its own, and the sentence under it
+# has moved on to something the meme is not about.
+MEME_HOLD_S = (1.0, 1.5)
+
+# At most this share of the span it overlays. The beat belongs to its own
+# plate: a meme taking half of the verdict is the verdict told as a joke.
+MEME_SHARE = 1 / 3
+
+# THE PAYOFF LANDS FIRST. `sound.DROP_S` of voice alone before the payoff cut,
+# the hit on the number at the cut, and then this long for the number to be
+# read before anything is allowed over it. A meme inside that window steps on
+# the one moment of the short the mix is built around.
+MEME_AFTER_PAYOFF_S = 1.5
+
+# Over everything the shot draws — the host (40), type (60), marks (70) —
+# because for its second and a half the meme IS the frame. Captions are
+# burned after the frames are drawn, so the line under it still reads.
+MEME_Z = 90
+
+
+def payoff_guards(spans: Sequence[Span]) -> list[tuple[float, float]]:
+    """The windows no meme may touch: each payoff's drop, hit and first read.
+
+    Read off `sound.PAYOFF_SHOTS` and `sound.DROP_S` rather than restated
+    here. The mix decides where the silence goes, and a second copy of the
+    rule is the one that goes stale when the mix changes.
+    """
+    from pipeline.sound import DROP_S, PAYOFF_SHOTS
+
+    return sorted((max(sp.start - DROP_S, 0.0), sp.start + MEME_AFTER_PAYOFF_S)
+                  for sp in spans if sp.shot.id in PAYOFF_SHOTS)
+
+
+def meme_window(span: Span, spans: Sequence[Span]
+                ) -> tuple[float, float] | None:
+    """When the meme is on screen inside `span`, or None when it cannot be.
+
+    OVERLAID, NEVER INSERTED. The meme takes the start or the end of an
+    existing span, so every other shot stays on the words it is bound to.
+    It never slides off the end it was placed at, and it never touches a
+    payoff guard: a meme that would land in the drop, on the hit or over
+    the number's first read is not drawn at all. Nor is one with under a
+    second to hold.
+    """
+    at = span.shot.meme.at if span.shot.meme else "end"
+    t0, t1 = span.start, span.end
+    hold = min(MEME_HOLD_S[1], (t1 - t0) * MEME_SHARE)
+    if hold < MEME_HOLD_S[0] - 1e-6:
+        return None
+    start, end = (t1 - hold, t1) if at == "end" else (t0, t0 + hold)
+    if any(a < end and b > start for a, b in payoff_guards(spans)):
+        return None
+    return start, end
+
+
+def _meme_frame(reg: Registry, aspect: str, *, seed: str,
+                avoid: "Collection[str]") -> Plate | None:
+    """Which media frame the meme sits in, rotating off recent videos.
+
+    A still from the library is foreign media, and foreign media never lands
+    on the ground bare (`media_frames`). The three treatments rotate the way
+    they do in a long, one step per video rather than per clip, because a
+    short carries one meme at most.
+    """
+    import random
+
+    from pipeline.media_frames import MEDIA_TREATMENTS
+
+    usable: dict[str, Plate] = {}
+    for treatment in MEDIA_TREATMENTS:
+        plate = reg.get(f"{treatment}-{aspect}") if aspect else None
+        if plate is not None and plate.slot("media") is not None:
+            usable[reg.base_key(plate.key)] = plate
+    if not usable:
+        return None
+    keys = _prefer_unused(sorted(usable), reg.base_keys(avoid))
+    return usable[random.Random(f"meme-frame|{seed}").choice(keys)]
+
+
+def _contain(size: tuple[int, int], box: tuple[int, int, int, int]
+             ) -> tuple[int, int, int, int]:
+    """`size` at its largest inside `box`, centred, never cropped.
+
+    The joke is usually a caption on a picture, and cover-fitting the way a
+    photograph goes into a frame cuts the caption off. A letterbox inside a
+    drawn frame is paper; a meme missing its punchline is nothing.
+    """
+    bx, by, bw, bh = box
+    mw, mh = max(size[0], 1), max(size[1], 1)
+    k = min(bw / mw, bh / mh)
+    w, h = max(int(mw * k), 1), max(int(mh * k), 1)
+    return bx + (bw - w) // 2, by + (bh - h) // 2, w, h
+
+
+def _meme_layers(spans: Sequence[Span], resolver: Resolver, reg: Registry,
+                 frame: tuple[int, int], aspect: str, *, seed: str,
+                 avoid: "Collection[str]", skipped: list[str]) -> list[Layer]:
+    """The frame plate and the still inside it, or nothing.
+
+    TWO LAYERS, NOT A COMPOSITE. A frames/ plate drawn full-frame, and the
+    meme as a media layer over its aperture, inset by the frame's edge band
+    so the drawn border and the tape stay visible. Both are kinds the
+    renderer already draws, so the meme costs the renderer nothing new.
+    """
+    span = next((sp for sp in spans if sp.shot.meme), None)
+    if span is None:
+        return []
+    shot = span.shot
+    path = resolver.image_for(MEME_SRC)
+    if path is None or isinstance(path, list):
+        # NOTHING FITS, WHICH IS ALLOWED. A short without a meme is the
+        # ordinary case; a meme that does not fit the story is the defect.
+        skipped.append(f"{shot.id}.meme <- nothing in the library fits")
+        return []
+    window = meme_window(span, spans)
+    if window is None:
+        skipped.append(
+            f"{shot.id}.meme <- no room: {span.end - span.start:.2f}s span, "
+            f"clear of the payoff, holds under {MEME_HOLD_S[0]:.1f}s")
+        return []
+    frame_plate = _meme_frame(reg, aspect, seed=seed, avoid=avoid)
+    if frame_plate is None:
+        skipped.append(f"{shot.id}.meme <- no media frame in the kit")
+        return []
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            size = im.size
+    except OSError:
+        skipped.append(f"{shot.id}.meme <- {Path(path).name} does not open")
+        return []
+
+    fw, fh = frame
+    w, h = _fit(frame_plate, frame)
+    placed = ((fw - w) // 2, (fh - h) // 2, w, h)
+    ax, ay, aw, ah = _slot_in_frame(frame_plate, "media", placed)
+    from pipeline.media_frames import _EDGE_BAND
+    band = max(int(min(aw, ah) * _EDGE_BAND), 2)
+    box = _contain(size, (ax + band, ay + band, aw - 2 * band, ah - 2 * band))
+    t_start, t_end = window
+    return [
+        Layer(name=f"{shot.id}:meme-frame:{frame_plate.key}", kind="plate",
+              shot_id=shot.id, t_start=t_start, t_end=t_end,
+              x=placed[0], y=placed[1], w=w, h=h,
+              entry_key=frame_plate.key, concept=frame_plate.family,
+              frame_count=frame_plate.frame_count, fps=frame_plate.fps or 0,
+              loops=frame_plate.animated and not frame_plate.plays_once,
+              slot=MEME_SRC, z=MEME_Z),
+        Layer(name=f"{shot.id}:meme:{Path(path).stem}", kind="media",
+              shot_id=shot.id, t_start=t_start, t_end=t_end,
+              x=box[0], y=box[1], w=box[2], h=box[3],
+              path=Path(path), slot=MEME_SRC, z=MEME_Z + 1),
+    ]
+
+
+def placed_meme(result: BuildResult) -> Layer | None:
+    """The meme's still, if this cut carries one."""
+    return next((l for l in result.layers
+                 if l.kind == "media" and l.slot == MEME_SRC), None)
 
 
 def _slot_budget(plate: Plate, slot_name: str) -> int:
@@ -872,7 +1317,10 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
                 frame: tuple[int, int], t0: float, t1: float, *,
                 seed: str,
                 column: tuple[int, int, int, int] | None = None,
-                avoid: "Collection[str]" = ()) -> Layer | None:
+                avoid: "Collection[str]" = (),
+                words: Sequence[Any] = (), closing: bool = False,
+                used: dict[str, int] | None = None,
+                previous: str = "") -> Layer | None:
     """The host, solved onto the room's anchor.
 
     THE ANCHOR'S HEIGHT IS HIS TARGET HEIGHT — never its width, which the
@@ -886,7 +1334,8 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
     the robe (DESIGN §2.5). What a two-shot does to him is the column he is
     framed in, not which way he looks.
     """
-    from pipeline.host import frame_shot, host_shot, place_on_room, stands_on
+    from pipeline.host import (cast_pose, frame_shot, host_shot,
+                               place_on_room, stands_on)
 
     role = shot.host.pose
     # THE SEED IS PER SHOT, NOT PER VIDEO. Hashed on the video's seed alone,
@@ -895,6 +1344,22 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
     pose = (reg.get(role) if role in reg
             else reg.host_for(role, seed=f"{seed}|{shot.id}",
                               avoid=avoid))
+
+    # THE WORDS MAY CAST HIM, but only where the template left it to a ROLE,
+    # the role stood him up as a figure, and there is a room under him. A
+    # template that names a pose by key chose it; a framing is a camera
+    # distance; and a two-shot's column has no floor, so a count or a shrug
+    # cut there would stand on nothing. Every pose is drawn in the same
+    # standing box, so the cast lands exactly where the role's pose would have.
+    if (role not in reg and pose is not None and pose.floor_line_y
+            and plate is not None and plate.family == "room"):
+        cast = cast_pose(reg, words, room=plate, closing=closing, used=used,
+                         avoid=avoid, previous=previous,
+                         seed=f"{seed}|{shot.id}")
+        if cast is not None:
+            log.debug("%s: %r cast %s over %s", shot.id, cast.cue, cast.pose,
+                      pose.key)
+            pose = reg.get(cast.pose) or pose
 
     # A ROOM THAT REFUSES A CUT-OUT STILL TAKES A SHOT OF HIS FACE. A room
     # with no floor in shot says so in the field (`hostAnchor: false`) rather
@@ -1015,6 +1480,136 @@ def _front_layer(reg: Registry, shot: Shot, plate: Plate | None,
 
 
 # ---------------------------------------------------------------------------
+# Placing the caption
+# ---------------------------------------------------------------------------
+
+def caption_band(plate: Plate | None, frame: tuple[int, int],
+                 box_h: int) -> tuple[int, int]:
+    """The rows a shot's caption box may occupy: `(top, bottom)`, frame pixels.
+
+    A plate's own `safe` band when it publishes one. That band is the
+    PLATFORM's, restated at the plate's canvas, which is the frame's size, so
+    it maps by the canvas's height and never through where the plate is
+    placed: moving in on a row does not move the phone's buttons. Otherwise
+    design's band on a vertical frame (`CAPTION_BAND`), and on a landscape one
+    the single place its caption has always had.
+    """
+    from pipeline.rasters import CAPTION_BOX_PAD
+
+    fw, fh = frame
+    safe = plate.safe if plate is not None else {}
+    top, bottom = safe.get("top"), safe.get("bottom")
+    if (isinstance(top, (int, float)) and isinstance(bottom, (int, float))
+            and plate is not None and plate.canvas[1] and bottom > top):
+        k = fh / plate.canvas[1]
+        return int(round(top * k)), int(round(bottom * k))
+    if fh > fw:
+        return int(round(CAPTION_BAND[0] * fh)), int(round(CAPTION_BAND[1] * fh))
+    foot = fh - int(fh * LANDSCAPE_CAPTION_MARGIN_FH) + CAPTION_BOX_PAD
+    return foot - box_h, foot
+
+
+def caption_obstacles(reg: Registry, shot_layers: Sequence[Layer]
+                      ) -> list[tuple[str, tuple[int, int, int, int]]]:
+    """What a shot's caption must not cover, by name, as frame boxes.
+
+    Every slot on the shot's plate that holds a value, as placed, a lit band
+    included because it is the row the beat is about; every data region the
+    plate draws a series into; every nested plate, photograph, line of type
+    and mark; and the host's head. A room's furniture and his body are not
+    here: the caption is allowed to cover the set, never what is being read.
+    """
+    out: list[tuple[str, tuple[int, int, int, int]]] = []
+    for l in shot_layers:
+        box = (l.x, l.y, l.w, l.h)
+        if l.kind == "plate":
+            plate = reg.get(l.entry_key)
+            if plate is None:
+                continue
+            for name, slot in plate.slots.items():
+                if slot.control or not (slot.w and slot.h):
+                    continue
+                if str(l.values.get(name, "")).strip() or (slot.renderer and l.values):
+                    out.append((name, _slot_in_frame(plate, name, box)))
+        elif l.kind in ("fill", "media", "text", "mark"):
+            out.append((l.name.split(":", 1)[-1], box))
+        elif l.kind == "host":
+            out.append(("the host's head", _head_box(reg, l)))
+    return out
+
+
+def _head_box(reg: Registry, host: Layer) -> tuple[int, int, int, int]:
+    """His head, in frame pixels: the pose's own `head` slot, or the top of him."""
+    pose = reg.get(host.entry_key)
+    box = (host.x, host.y, host.w, host.h)
+    if pose is not None and pose.slot("head") is not None:
+        return _slot_in_frame(pose, "head", box)
+    return (host.x, host.y, host.w, max(int(host.h * HOST_HEAD_SHARE), 1))
+
+
+def place_caption(band: tuple[int, int],
+                  obstacles: Sequence[tuple[str, tuple[int, int, int, int]]],
+                  frame: tuple[int, int], box_h: int) -> tuple[int, list[str]]:
+    """Where a caption's box goes inside `band`: its top row, and what it covers.
+
+    In order: the place that covers the least of the obstacles (nothing, when
+    anywhere is free), then the one that comes least inside
+    `CAPTION_CLEARANCE_FH` of them, then the lowest, since the bottom is where
+    a caption is looked for. So a shot with room gets the lowest place clear
+    by the full margin, a tight gap between two rows of figures gets the
+    caption with the space shared out, and a shot with nowhere free gets the
+    place that hides least. The names of what it covers come back so the
+    caller can say so; they are empty whenever the caption covers nothing.
+    Deterministic: a shot places its caption in the same place every time.
+
+    The box is taken at its widest, between the side margins. Which line of
+    the shot will be the widest is not known here, and a place that clears
+    the widest line clears them all.
+    """
+    fw, fh = frame
+    top, bottom = band
+    lo, hi = top, bottom - box_h
+    if hi <= lo:
+        # A band with no room to choose in is not a placement, and there is
+        # nothing to report about it.
+        return max(hi, 0), []
+    side = int(fw * CAPTION_SIDE_FW)
+    pad = int(round(fh * CAPTION_CLEARANCE_FH))
+
+    def rows(grow: int) -> list[tuple[int, int, int, int, str]]:
+        """The obstacles as row spans inside the caption's width, grown by `grow`."""
+        return [(oy - grow, oy + oh + grow, max(ox, side), min(ox + ow, fw - side),
+                 name) for name, (ox, oy, ow, oh) in obstacles
+                if oh > 0 and min(ox + ow, fw - side) > max(ox, side)]
+
+    def covered(spans: list, y: int) -> int:
+        """The area of the spans' union inside the box with its top at `y`."""
+        cuts = sorted({y, y + box_h,
+                       *(v for r in spans for v in r[:2] if y < v < y + box_h)})
+        area = 0
+        for s0, s1 in zip(cuts, cuts[1:]):
+            width, reach = 0, None
+            for a, b in sorted((a, b) for y0, y1, a, b, _ in spans
+                               if y0 < s1 and y1 > s0):
+                if reach is None or a > reach:
+                    width, reach = width + b - a, b
+                elif b > reach:
+                    width, reach = width + b - reach, b
+            area += width * (s1 - s0)
+        return area
+
+    hard, near = rows(0), rows(pad)
+    # Either area changes only where the box's top or foot crosses an edge, so
+    # the best place is at one of those or at an end of the band.
+    edges = {v for r in hard + near for v in r[:2]}
+    options = {lo, hi, *edges, *(v - box_h for v in edges)}
+    y = min((c for c in options if lo <= c <= hi),
+            key=lambda c: (covered(hard, c), covered(near, c), -c))
+    return y, sorted({name for y0, y1, _, _, name in hard
+                      if y0 < y + box_h and y1 > y})
+
+
+# ---------------------------------------------------------------------------
 # The invariants — a composition that breaks its own rules never reaches an
 # encoder.
 # ---------------------------------------------------------------------------
@@ -1075,6 +1670,11 @@ def check_invariants(fmt: Format, result: BuildResult,
             if o.kind not in ("plate", "fill") or not o.w or not o.h:
                 continue
             if o.concept == "room":
+                continue
+            # DRAWN OVER HIM IS NOT STOOD OVER. The meme's frame is a
+            # full-frame plate above the host for a second and a half; he is
+            # not across it, it is across him, and that is the cutaway.
+            if o.z > h.z:
                 continue
             ox = max(0, min(h.x + h.w, o.x + o.w) - max(h.x, o.x))
             oy = max(0, min(h.y + h.h, o.y + o.h) - max(h.y, o.y))

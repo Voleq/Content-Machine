@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 
 import logging
 
@@ -36,6 +37,13 @@ from pipeline.tagging import parse_hold, tokenize_tags
 log = logging.getLogger(__name__)
 
 VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "workspace.refinitiv")
+
+# The spoken length a SHORT is written to: 140–160 words, which is 45–55
+# seconds at the short voice's pace. It was 180–210 for a 60–75 second short.
+# The warning band sits ten words either side, so a script a few words off
+# target is not nagged about.
+SHORT_WORDS_MIN = 130
+SHORT_WORDS_MAX = 170
 
 
 class ScriptParseError(Exception):
@@ -148,6 +156,8 @@ def vendor_name_hits(script: ShortScript) -> list[str]:
         surfaces[f"headlines[{i}]"] = f"{h.text} {h.meaning}"
     for i, row in enumerate(script.numbers):
         surfaces[f"numbers[{i}]"] = f"{row.label} {' '.join(row.values)}"
+    for key, text in script.sources.items():
+        surfaces[f"sources[{key}]"] = text
     for name, text in surfaces.items():
         low = text.lower()
         if any(w in low for w in VENDOR_WORDS):
@@ -282,6 +292,146 @@ def _reach_warning(script: ShortScript, settings: Settings) -> list[str]:
                   "situation — pick a different one for each beat."]
 
 
+# ---------------------------------------------------------------------------
+# Beat markers: `[BEAT: numbers]`.
+# ---------------------------------------------------------------------------
+#
+# A bare `[BEAT]` is a pause. `[BEAT: key]` is the writer saying the beat named
+# `key` starts on the next word, and it is never spoken: it is taken out here,
+# before the narration reaches the budget, the voice or the captions, and kept
+# on the script as `beat_marks`.
+
+
+def _beat_key(payload: str) -> str:
+    """`Cheap or trap`, `cheap-or-trap` and `cheap_or_trap` are one key."""
+    return re.sub(r"[\s-]+", "_", payload.strip().lower())
+
+
+def _known_beats(settings: Settings) -> dict[str, tuple[str, ...]]:
+    """Every format a short renders through, with the beats it can mark."""
+    from pipeline.shots import marker_formats
+
+    return marker_formats(Path(settings.templates_dir).parent)
+
+
+def _lift_beat_marks(clean: str, events: list[dict], marks: list,
+                     ) -> tuple[str, list[dict], list[dict]]:
+    """Take the markers out of the narration without leaving a trace in it.
+
+    The tokenizer strips a tag and keeps the spaces either side of it, so
+    "sentence. [BEAT: move] It fell" came out as "sentence.  It fell". For a
+    delivery tag that is harmless; for a marker it would make a marked script
+    differ from the same script unmarked — another TTS cache key, another
+    character against the budget — over a character nobody hears. The space a
+    marker leaves is taken out, and every offset after it moves back by one.
+    """
+    removed: list[int] = []
+    text = clean
+    # Right to left, so a removal never moves a position still to be checked.
+    for c in sorted({m.char_offset for m in marks}, reverse=True):
+        if (c < len(text) and text[c].isspace()
+                and (c == 0 or text[c - 1].isspace())):
+            text = text[:c] + text[c + 1:]
+            removed.append(c)
+
+    def moved(offset: int) -> int:
+        return offset - sum(1 for c in removed if offset > c)
+
+    for e in events:
+        e["char_offset"] = moved(int(e["char_offset"]))
+    lifted = [{"key": _beat_key(m.payload), "char_offset": moved(m.char_offset)}
+              for m in marks]
+    return text, events, lifted
+
+
+def _check_beat_marks(text: str, marks: list[dict],
+                      settings: Settings) -> list[str]:
+    """Refuse a marker the renderer could not act on; warn on a mixed set.
+
+    Refused rather than dropped, each for the failure it would otherwise be:
+
+    * an UNKNOWN key would be a shot that silently fell back to searching for
+      its field, while the writer believes the beat is pinned;
+    * a key written TWICE would start the same shot at two places;
+    * a beat with NOTHING SPOKEN in it has no word to start on, and its shot
+      would land on the next beat's first word, on top of that beat's shot;
+    * the HOOK anywhere but first, or another beat before the first spoken
+      word, would open the cut on a picture that is not the hook card — the
+      first words are always spoken over it.
+    """
+    if not marks:
+        return []
+    formats = _known_beats(settings)
+    known = sorted({k for keys in formats.values() for k in keys})
+    keys = [m["key"] for m in marks]
+
+    unknown = [k for k in keys if k not in known]
+    if unknown:
+        listing = "; ".join(f"{name}: {', '.join(beats)}"
+                            for name, beats in sorted(formats.items()))
+        raise ScriptParseError(
+            f"[BEAT: {unknown[0]}] names no beat. A marker says which beat "
+            f"starts on the next word, so its key is one of the shot "
+            f"template's beats — {listing}. A bare [BEAT] is a pause and "
+            f"takes no key.")
+    twice = sorted({k for k in keys if keys.count(k) > 1})
+    if twice:
+        raise ScriptParseError(
+            f"[BEAT: {twice[0]}] is written more than once. Each beat starts "
+            f"once; a second marker would start the same shot twice. Mark "
+            f"the place the beat begins and nowhere else.")
+    for i, m in enumerate(marks):
+        end = marks[i + 1]["char_offset"] if i + 1 < len(marks) else len(text)
+        if not re.search(r"\w", text[m["char_offset"]:end]):
+            after = (f"before [BEAT: {marks[i + 1]['key']}]"
+                     if i + 1 < len(marks) else "at the end of the script")
+            raise ScriptParseError(
+                f"[BEAT: {m['key']}] has nothing spoken after it {after}. A "
+                f"beat starts on the word after its marker, so a marker with "
+                f"no words behind it has nowhere to start.")
+    if "hook" in keys and keys[0] != "hook":
+        raise ScriptParseError(
+            f"[BEAT: hook] comes after [BEAT: {keys[0]}]. The cut opens on the "
+            f"hook card and the first words are spoken over it, so the hook "
+            f"is always the first beat.")
+    if keys[0] != "hook" and not re.search(r"\w", text[:marks[0]["char_offset"]]):
+        raise ScriptParseError(
+            f"the narration opens on [BEAT: {keys[0]}]. The first words are "
+            f"spoken over the hook card, so the script opens on "
+            f"[BEAT: hook] — or on the hook's sentence with no marker.")
+
+    fits = [name for name, beats in formats.items() if set(keys) <= set(beats)]
+    if not fits:
+        return [
+            f"the beat markers mix formats — "
+            + "; ".join(f"{name} knows "
+                        f"{', '.join(k for k in keys if k in beats) or 'none'}"
+                        for name, beats in sorted(formats.items()))
+            + ". A render follows only the markers its own format knows; "
+              "the rest are ignored."]
+    return []
+
+
+def _check_sources(script: ShortScript, settings: Settings) -> None:
+    """Refuse a source keyed to a beat no format has.
+
+    Refused rather than dropped for the reason an unknown marker is: the
+    writer believes a figure is sourced on screen, and it would not be.
+    """
+    if not script.sources:
+        return
+    formats = _known_beats(settings)
+    known = {k for keys in formats.values() for k in keys}
+    unknown = sorted(k for k in script.sources if k not in known)
+    if unknown:
+        listing = "; ".join(f"{name}: {', '.join(beats)}"
+                            for name, beats in sorted(formats.items()))
+        raise ScriptParseError(
+            f"sources names {unknown[0]!r}, which is no beat. A source goes "
+            f"under the plate of the beat that shows the figure, so its key "
+            f"is one of the shot template's beats — {listing}.")
+
+
 def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[str]]:
     """Parse + validate. Returns (script, warnings). Raises ScriptParseError.
 
@@ -307,6 +457,12 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             data["audio_script"], allowed=SHORT_TAG_TYPES
         )
         inline_warnings.extend(tok_warnings)
+        # A [BEAT] WITH A KEY IS A MARKER, NOT A PAUSE. Kept apart from the
+        # events, because every event of a delivery type is performed: filed
+        # beside the pauses, each beat boundary would stop the voice.
+        marks = [rt for rt in raw_tags
+                 if rt.type is TagType.BEAT and rt.payload.strip()]
+        raw_tags = [rt for rt in raw_tags if rt not in marks]
         events: list[dict] = []
         for rt in raw_tags:
             if rt.type is TagType.SCRIBBLE and parse_scribble_payload(rt.payload) is None:
@@ -345,8 +501,18 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
                 hold=hold,
                 char_offset=rt.char_offset, raw_offset=rt.raw_offset,
             ).model_dump())
+        clean, events, lifted = _lift_beat_marks(clean, events, marks)
+        inline_warnings.extend(_check_beat_marks(clean, lifted, settings))
+        if not lifted:
+            inline_warnings.append(
+                "no beat markers in audio_script — each shot starts where its "
+                "own field is heard, and the beats keep the template's order. "
+                "Writing [BEAT: key] where each beat starts puts every cut on "
+                "the sentence it belongs to; the keys are in the writing "
+                "prompt.")
         data["audio_script"] = clean
         data["inline_events"] = events
+        data["beat_marks"] = lifted
 
     try:
         script = ShortScript.model_validate(data)
@@ -360,6 +526,7 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             f"of {budget}. Trim the script and resend (no TTS was called)."
         )
 
+    _check_sources(script, settings)
     leaks = vendor_name_hits(script)
     if leaks:
         raise ScriptParseError(
@@ -375,10 +542,10 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             f'anchor_word "{anchor}" not found in audio_script — the cue will '
             f"use a proportional fallback position"
         )
-    if not 170 <= script.word_count <= 220:
+    if not SHORT_WORDS_MIN <= script.word_count <= SHORT_WORDS_MAX:
         warnings.append(
-            f"audio_script is {script.word_count} words (target ~180–210 for "
-            f"60–75s) — pacing may be off"
+            f"audio_script is {script.word_count} words (target ~140–160 for "
+            f"45–55s) — pacing may be off"
         )
     # Every row is six wide — the model enforces that — so what matters here is
     # how many of those six carry a FIGURE. An empty cell means NO DATA and is

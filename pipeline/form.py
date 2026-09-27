@@ -30,6 +30,7 @@ advertised at a length the frame will refuse.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -151,6 +152,14 @@ def form_for(name: str, root: Path | str = ".") -> list[Field]:
     def note(src: str, dest: str, shot: str) -> None:
         if not src:
             return
+        # A PASSAGE SET ONE LINE A SLOT (`wrap.34.4.0.script.consequences.0`)
+        # is the writer's field, broken at the plate's width. The line slots
+        # say nothing about how long the field may be: a passage that needs
+        # more lines than the plate has makes the plate unfillable, and the
+        # rotation draws another, so the ask is never narrowed to one line.
+        wrapped = re.match(r"^wrap\.\d+\.\d+\.\d+\.(.+)$", src)
+        if wrapped:
+            src, dest = wrapped.group(1), "wrap:" + dest.split(":", 1)[-1]
         dests, shots = seen.setdefault(src, ([], []))
         if dest not in dests:
             dests.append(dest)

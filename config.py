@@ -170,14 +170,17 @@ class Settings(BaseSettings):
     eleven_similarity_long: float = 0.75
     eleven_style_long: float = 0.05
     eleven_speed_long: float = 0.95
-    eleven_speed_short: float = 0.97
+    # Quicker than the long's read: the short is the tight format, 140–160
+    # words in 45–55 seconds, and it was 0.97 when it had 60–75 to fill.
+    eleven_speed_short: float = 1.05
 
     # ------------------------------------------------------- character budgets
-    # SHORT is 60–75s of retention-first "Noise or signal?": ~180–210 spoken
-    # words at the mock ~2.7 w/s. 210 words of ordinary English runs right at
-    # 1200 chars, which left the budget with no headroom at all — 1400 is the
-    # ceiling (not a target) so a script at the top of the word range fits.
-    short_max_chars: int = Field(default=1400, alias="SHORT_MAX_CHARS")
+    # SHORT is 45–55s of retention-first "Noise or signal?": ~140–160 spoken
+    # words. 160 words of ordinary English runs to roughly 900–950 chars, and
+    # figures spelled out the way they are said run longer — 1100 is the
+    # ceiling (not a target) so a script at the top of the word range still
+    # fits. It was 1400 for the 180–210 word, 60–75s short.
+    short_max_chars: int = Field(default=1100, alias="SHORT_MAX_CHARS")
     # LONG length is complexity-driven, not fixed: a clean thesis is a few
     # chapters (~12 min), a messy one is 7+ (~40 min). The budget is the
     # ceiling for the longest cut (~36k chars ≈ 40 min at deadpan pace), not a
@@ -480,7 +483,7 @@ class Settings(BaseSettings):
     short_height: int = 1920
     long_width: int = 1920
     long_height: int = 1080
-    short_target_seconds: float = 70.0  # 60–75s "Noise or signal?" band midpoint
+    short_target_seconds: float = 50.0  # 45–55s "Noise or signal?" band midpoint
     # Deliberate pacing (§editing): Dennis holds the frame and cuts away to
     # evidence that stays up long enough to read. `long_min_readable_s` is the
     # floor for data visuals — a later cut is deferred rather than truncating
@@ -984,7 +987,7 @@ _SETTING_EXAMPLES: dict[str, str] = {
     "DELIVERY_BACKEND": "DELIVERY_BACKEND=gdrive   (gdrive | s3 | telegram | local)",
     "MONTHLY_SPEND_CAP": "MONTHLY_SPEND_CAP=50.0",
     "WEEKLY_SPEND_WARN": "WEEKLY_SPEND_WARN=15.0  (0 disables the weekly warning)",
-    "SHORT_MAX_CHARS": "SHORT_MAX_CHARS=1400",
+    "SHORT_MAX_CHARS": "SHORT_MAX_CHARS=1100",
     "LONG_MAX_CHARS": "LONG_MAX_CHARS=36000",
     "OPERATOR_CHAT_ID": 'OPERATOR_CHAT_IDS=["123456789"]   (note the S)',
     # The SEC refuses a generic agent, so a placeholder here is worse than

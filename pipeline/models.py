@@ -13,6 +13,7 @@ free-text conclusion and the viewer draws their own.
 from __future__ import annotations
 
 import hashlib
+import re
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
@@ -21,6 +22,10 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from pipeline.plates import PERIOD_COUNT
+
+# Design's source tag holds forty characters: "10-K filings, FY20-FY25", "BLS,
+# August CPI". Both lanes' writers are held to it before anything is drawn.
+SOURCE_MAX_CHARS = 40
 
 # Fixed SFX taxonomy (assets/sfx/<key>.wav). Unknown keys are skipped+warned.
 SFX_KEYS = (
@@ -64,6 +69,17 @@ class TagType(str, Enum):
     SCREENGRAB = "SCREENGRAB"    # operator-supplied app/screen capture (blocks if missing)
     SOUND = "SOUND"              # sfx palette
     SCRIBBLE = "SCRIBBLE"        # an annotations/ mark on a number or a word
+    # A DESIGN MOVE ON THE PLATE ALREADY ON SCREEN — [MOVE: count-up], placed
+    # before the word it lands on. It claims no frame and names no plate: it
+    # acts on the last [PLATE] before it, in the slot that plate's motion
+    # anchors publish for that move. LONG only; what each plate can do is in
+    # pipeline/plates.py (writer_moves) and the writer is shown it in the menu.
+    MOVE = "MOVE"
+    # WHERE THE FIGURE ON SCREEN COMES FROM — [SOURCE: Q2 10-Q], placed after
+    # the [PLATE] it is for. Like a [MOVE] it claims no frame: design's source
+    # tag slides in under that plate once its moves have landed. LONG only; a
+    # SHORT's sources are a field on its script.
+    SOURCE = "SOURCE"
     # DELIVERY DIRECTION — stripped from captions, passed to TTS.
     #
     # What each one becomes is in pipeline/direction.py, one table, per model
@@ -381,6 +397,30 @@ class CutawayTag(BaseModel):
     anchor_word: str = ""
 
 
+class BeatMark(BaseModel):
+    """Where the writer said a beat starts: `[BEAT: numbers]` in the narration.
+
+    A shot used to start wherever its FIELD's words turned up in the voice —
+    the first four words of `numbers_comment`, searched for in the audio. That
+    works only when the writer happens to say the field aloud, and it pins the
+    beats to one order, because the search cannot tell a beat that moved from
+    a beat that is missing. A marker says both things outright: this beat
+    starts on the next word, and it comes after the one marked before it.
+
+    It is never spoken. The parser takes it out of `audio_script` and keeps it
+    here, apart from `inline_events`, because a bare `[BEAT]` in that list IS
+    a pause — the voice would stop at every beat boundary if a marker were
+    filed beside it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # The shot template's anchor key: `hook`, `numbers`, `cheap_or_trap`.
+    key: str = Field(min_length=1, max_length=40)
+    # Offset into the CLEAN audio_script of the first word spoken in the beat.
+    char_offset: int = Field(ge=0)
+
+
 class ShortScript(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -455,11 +495,37 @@ class ShortScript(BaseModel):
     # (never spoken); offsets index the CLEAN audio_script. Model-populated,
     # never authored directly in the JSON.
     inline_events: list[TagEvent] = Field(default_factory=list)
+    # The `[BEAT: key]` markers the parser took out of audio_script, in the
+    # order they were written. Model-populated, never authored in the JSON.
+    # Empty is a script written without them, which renders as it always did.
+    beat_marks: list[BeatMark] = Field(default_factory=list)
+    # WHERE A FIGURE ON SCREEN COMES FROM, keyed by the beat that shows it —
+    # `{"numbers": "10-K filings, FY20-FY25"}` — and slid in under that beat's
+    # plate on design's source tag once its figures land. The filing or the
+    # agency, never the data vendor. Optional: a beat with no entry has no tag.
+    sources: dict[str, str] = Field(default_factory=dict)
 
     @field_validator("ticker")
     @classmethod
     def _norm_ticker(cls, v: str) -> str:
         return v.strip().upper()
+
+    @field_validator("sources")
+    @classmethod
+    def _norm_sources(cls, v: dict[str, str]) -> dict[str, str]:
+        """Keys as `[BEAT: key]` spells them; each line as the tag sets it."""
+        out: dict[str, str] = {}
+        for key, text in v.items():
+            text = " ".join(str(text).split())
+            if not text:
+                continue
+            if len(text) > SOURCE_MAX_CHARS:
+                raise ValueError(
+                    f"sources[{key!r}] is {len(text)} characters and the tag "
+                    f"holds {SOURCE_MAX_CHARS}. Name the document, like "
+                    f"\"Q2 10-Q\" or \"BLS, August CPI\".")
+            out[re.sub(r"[\s-]+", "_", key.strip().lower())] = text
+        return out
 
     @model_validator(mode="after")
     def _cross_checks(self) -> "ShortScript":
@@ -500,9 +566,27 @@ class ShortScript(BaseModel):
     def delivery_events(self) -> list[TagEvent]:
         return [e for e in self.inline_events if e.type in DELIVERY_TAG_TYPES]
 
+    def beat_order(self) -> list[str]:
+        """The marked beats' keys, in the order the narration reaches them."""
+        return [m.key for m in sorted(self.beat_marks,
+                                      key=lambda m: m.char_offset)]
+
+    def words_after_mark(self, key: str, n: int = 8) -> str:
+        """The first `n` words spoken after `[BEAT: key]`, or "" if unmarked."""
+        for m in self.beat_marks:
+            if m.key == key:
+                return " ".join(self.audio_script[m.char_offset:].split()[:n])
+        return ""
+
     def content_sha(self) -> str:
+        # AN UNMARKED SCRIPT KEEPS THE HASH IT HAD. The sha is what an
+        # approval is recorded against and what every render seed is drawn
+        # from, so a new empty field changing it would un-approve every script
+        # on disk and re-roll the plates of every video re-rendered from one.
+        exclude = {name for name in ("beat_marks", "sources")
+                   if not getattr(self, name)} or None
         return hashlib.sha256(
-            self.model_dump_json().encode("utf-8")
+            self.model_dump_json(exclude=exclude).encode("utf-8")
         ).hexdigest()[:16]
 
 
@@ -699,6 +783,11 @@ class CueKind(str, Enum):
     SOUND = "sound"
     # hand-drawn overlays (both formats) — composited on top, no segment
     SCRIBBLE = "scribble"
+    # A writer's [MOVE] on the plate on screen. No segment either: it is a
+    # timed instruction to the plate that already holds the frame.
+    MOVE = "move"
+    # A writer's [SOURCE] under the plate on screen. No segment either.
+    SOURCE = "source"
 
 
 class Cue(BaseModel):

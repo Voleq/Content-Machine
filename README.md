@@ -7,7 +7,7 @@ Funny on purpose (never merely bored), a disappointed realist rather than
 a hater.
 Two formats:
 
-- **SHORT** — 9:16 vertical, ~60–75s **"Noise or signal?"** on a trending
+- **SHORT** — 9:16 vertical, ~45–55s **"Noise or signal?"** on a trending
   stock. Branded price chart rendered by the pipeline from its own price
   data (never a screenshot), driver headlines overlaid on the chart, a
   multi-year numbers sheet, hand-drawn scribbles, a deadpan free-text
@@ -691,7 +691,7 @@ this section failing.
 
 | command | what it does |
 |---|---|
-| `/short TICKER` | Opens a SHORT (9:16, 60–75s), pulls a live quote for the move context, and asks for the refreshed workbook. `prompt_short.md` follows the upload. |
+| `/short TICKER` | Opens a SHORT (9:16, 45–55s), pulls a live quote for the move context, and asks for the refreshed workbook. `prompt_short.md` follows the upload. |
 | `/long TICKER` | Opens a LONG (16:9 deep dive) **and starts reading the filings immediately** — the latest 10-K, the prior year's and the quarterly pair, in parallel with you refreshing the workbook. Two steps: Step 1 returns ranked angles (with that filing brief in front of the model, cross-checked against your numbers once the workbook lands), you reply with a number, Step 2 is the writing prompt. |
 | `/update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Gets the same filing brief, additionally **graded against what the last video claimed** — which is what this format is. Refuses (and points at `/long`) when no thesis is on file. |
 | `/headline TICKER <text or URL>` | A SHORT about one specific headline. `/headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `a:`, `b:` or `c:`. The mode sets the lane and picks the shot template, so an earnings script renders through the earnings beat order rather than the plain short's. |

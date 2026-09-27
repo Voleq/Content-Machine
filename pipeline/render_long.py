@@ -73,8 +73,8 @@ from config import Settings
 from pipeline.audio_assets import audio_banner
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
-from pipeline.host import (build_host_clip, frame_shot, front_of, host_shot,
-                           pick_shot, place_on_room, stands_on)
+from pipeline.host import (build_host_clip, cast_pose, frame_shot, front_of,
+                           host_shot, pick_shot, place_on_room, stands_on)
 from pipeline.chart import declared_layer, draw_declared
 from pipeline.media_frames import FrameRotation, composite as frame_media
 from pipeline.models import (
@@ -85,8 +85,10 @@ from pipeline.models import (
     TTSResult,
     parse_scribble_payload,
 )
-from pipeline.plate_frames import drawn_box, playback_seconds, render_clip
-from pipeline.plates import at_episode_hour, load_plates
+from pipeline.bumper import bumper_clip, tick_start, wipe_clip
+from pipeline.plate_frames import (drawn_box, frame_indices, playback_seconds,
+                                   render_clip)
+from pipeline.plates import _prefer_unused, at_episode_hour, load_plates
 from pipeline.sound import (DEFAULT_LEAD_S, EFFECT_KEYS, Voicing, cue_lead_s,
                             manifest_rows, measure_lufs, placeholders_played,
                             room_track, sound_summary, theme_tracks)
@@ -120,9 +122,12 @@ from pipeline.segments import (
 )
 from pipeline.timeline import (
     LONG_FILLER_LOOKS,
+    MIN_SEGMENT_S,
     build_long_timeline,
     chapter_start_times,
     plan_long_segments,
+    plan_writer_moves,
+    plan_writer_sources,
     unrenderable_long_tags,
 )
 
@@ -150,6 +155,128 @@ def _chapter_plan(script, duration: float,
              "openers will be drawn. The titles are the only place a section "
              "name appears on screen, so the cut will have none.")
     return out
+
+
+def _chapter_cuts(chapters: list[tuple[float, str, str]], seg_starts: list[float],
+                  *, intro_dur: float, duration: float) -> list[float | None]:
+    """The cut each chapter's opener lands on, or None where it has none:
+    the first cut at or after the chapter's own time, each cut used once."""
+    used: set[float] = set()
+    out: list[float | None] = []
+    for target, _title, _type in chapters:
+        t = next((s for s in seg_starts
+                  if s >= max(target, intro_dur) and s not in used), None)
+        if t is None or t < 0.6 or t > duration - 1.2:
+            out.append(None)
+            continue
+        used.add(t)
+        out.append(t)
+    return out
+
+
+def _cleared(t: float, covers: list[tuple[float, float]]) -> float:
+    """The first moment at or after `t` that no full-frame cover is on.
+
+    A move played under the opening title, a chapter bumper or a wipe's cover
+    is a move nobody sees, so a beat that opens under one starts its moves
+    when it lifts.
+    """
+    for a, b in sorted(covers):
+        if a <= t + 1e-6 < b:
+            t = b
+    return t
+
+
+# How long the opening title holds over the first frames. It is opaque, so
+# whatever the first host beat is shot in is not seen until it lifts.
+INTRO_CARD_S = 2.6
+
+# THE COLD OPEN STARTS WIDE. A long opened on the same talking-head angle as
+# the hundred host beats after it, so its first frame said nothing about
+# where we are. The kit ships wide angles for exactly this (the `opener`
+# role: desk-wide, and window-wide since rebuild-39), and window-wide was
+# drawn as the establishing shot — so it is preferred, and desk-wide takes
+# its turn when the last few videos all opened on the window. board-wide is
+# held back by the curation and never reaches the role, so it is not here.
+COLD_OPEN_PREFERRED = "room/window-wide"
+
+
+def cold_open_room(reg, aspect: str, *, recent=(), kept: str = "") -> str:
+    """The base key of the room the cold open's first shot is in, or "".
+
+    `kept` is what an earlier pass of THIS video opened on, and wins while
+    the kit still offers it: a proof that opens on the window and a final
+    that opens on the desk are two different videos. `recent` is what the
+    last few videos opened on, newest first; it is a preference to move off,
+    never a constraint, exactly as `_prefer_unused` is for every other room.
+
+    Only angles someone can stand in: the first shot is Dennis talking.
+    """
+    role_name = "opener" if reg.room_roles.get("opener") else "establish"
+    options = [k for k in reg.angles_for(role_name, aspect, reg.hour)
+               if (p := reg.get(k)) is not None and not p.refuses_host]
+    if not options:
+        return ""
+    base = {k: reg.base_key(k) for k in options}
+    if kept and kept in base.values():
+        return next(k for k in options if base[k] == kept)
+    options.sort(key=lambda k: not base[k].startswith(COLD_OPEN_PREFERRED))
+    return _prefer_unused(options, reg.base_keys(recent))[0]
+
+
+def _recorded_cold_opens(settings, workspace: Path) -> tuple[list[str], str]:
+    """`(recent, kept)`: the rooms recent videos opened on, and this one's.
+
+    Off the manifests' own `cold_open_room`, and NOT off `plates_used`: every
+    long draws both wide rooms somewhere as chapter openers, so "used
+    recently" is true of both on every video and would never turn. Forgiving
+    in the way the other rotation readers are — a manifest that cannot be
+    read, or predates the field, contributes nothing.
+    """
+    from pipeline.reach import ROTATION_WINDOW
+
+    here = Path(workspace).resolve()
+    paths = {m.resolve() for m in here.glob("*manifest*.json")}
+    base = Path(settings.workspace_dir)
+    if base.is_dir():
+        # This video's own workspace is read for `kept` even when a CLI
+        # render put it outside `workspace_dir`.
+        paths |= {m.resolve() for m in base.glob("*/*/*manifest*.json")}
+    mine: list[tuple[float, str]] = []
+    others: list[tuple[float, str]] = []
+    for manifest in paths:
+        try:
+            room = json.loads(manifest.read_text(encoding="utf-8")).get(
+                "cold_open_room")
+            if not isinstance(room, str) or not room:
+                continue
+            row = (manifest.stat().st_mtime, room)
+        except (OSError, ValueError, AttributeError):
+            continue
+        (mine if manifest.parent == here else others).append(row)
+    others.sort(reverse=True)
+    mine.sort(reverse=True)
+    return ([r for _, r in others[:ROTATION_WINDOW]],
+            mine[0][1] if mine else "")
+
+
+def cold_open_segment(segments, duration: float,
+                      until: float | None = None) -> int | None:
+    """Index of the cold open's first shot of Dennis, or None.
+
+    The first host beat still on screen once the opening title lifts — the
+    title is opaque, so a wide room entirely under it is not a wide opening,
+    and the first beat the viewer SEES him in is the one that establishes the
+    room. Only inside the cold open (before `until`, the next chapter's
+    start); None when he does not appear there at all.
+    """
+    title_end = min(INTRO_CARD_S, duration * 0.5)
+    for i, seg in enumerate(segments):
+        if until is not None and seg.start >= until:
+            return None
+        if seg.kind == "host" and seg.end - title_end > MIN_SEGMENT_S:
+            return i
+    return None
 
 
 # NOTHING PANS OR ZOOMS. Dennis carries the motion — the mouth flap, the boil
@@ -282,6 +409,33 @@ def _plate_fingerprint(path: Path) -> str:
                 h.update(block)
         got = _PLATE_FINGERPRINTS[ck] = h.hexdigest()[:8]
     return got
+
+
+def _played_clip(indices: list[int], frame_of: Callable[[int], Image.Image],
+                 fps: int, dest: Path, *, reuse: bool = True) -> Path:
+    """The frames `indices` name, each drawn once however often it shows.
+
+    A room loop shows three pictures across twelve frames and a clip at 30 fps
+    shows each of them ten times: drawing per output frame would resize the
+    same 4K file thirty times a second of it. Written beside `dest` and moved
+    into place, so a render stopped mid-encode leaves no clip for the next one
+    to reuse half of.
+    """
+    if reuse and dest.exists():
+        return dest
+    drawn: dict[int, Image.Image] = {}
+    for i in indices:
+        if i not in drawn:
+            drawn[i] = frame_of(i)
+    part = dest.with_name(dest.stem + ".part" + dest.suffix)
+    frames_to_alpha_clip([drawn[i] for i in indices], fps, part)
+    os.replace(part, dest)
+    return dest
+
+
+# HOW LONG A CHAPTER OPENER IS ON SCREEN. A looping opener room is encoded to
+# cover all of it, because a clip overlay that runs out mid-window vanishes.
+CHAPTER_OPENER_S = 1.6
 
 
 def _provenance(script, settings, workspace: Path, duration: float,
@@ -494,6 +648,51 @@ def _render_long(
     reg = load_plates(settings.assets_dir)
     aspect = "16x9"
 
+    # THE WRITER'S MOVES, on the real clock. Each `[MOVE]` is paired with the
+    # plate segment it acts on and timed off the spoken word; the list goes on
+    # the manifest as `writer_moves` and on each plate segment's payload as
+    # `moves`, which is where the move engine reads it while drawing the beat.
+    writer_moves, move_warnings = plan_writer_moves(
+        cues, segments, reg, chapter_starts=[t for t, _, _ in chapters])
+    for w in move_warnings:
+        log.warning("moves: %s", w)
+    for m in writer_moves:
+        segments[m.segment].payload.setdefault("moves", []).append(m.to_json())
+    # WHAT PLAYED, AND WHEN: every move the render drew, in programme time,
+    # with the beat and the slot — the same record a short writes, which is
+    # what the sound is timed to. Filled as the beats are drawn.
+    long_moves: list[dict] = []
+    moves_skipped: list[str] = []
+    # When each plate beat's moves have all landed, in programme time: the
+    # source slides in after them, not over a figure still counting.
+    seg_landed: dict[int, float] = {}
+    # THE WRITER'S SOURCES, paired with their beats the same way (item 14).
+    writer_sources, source_warnings = plan_writer_sources(cues, segments)
+    for w in source_warnings:
+        log.warning("sources: %s", w)
+    moves_skipped.extend(source_warnings)
+
+    # WHERE THE FRAME IS COVERED: the opening title, each chapter's bumper
+    # (or the room opener on chapter one), and the wipes on the cold open and
+    # the end. Worked out before the beats are drawn, so a beat that opens
+    # under one holds its moves until it lifts.
+    intro_dur = min(INTRO_CARD_S, duration * 0.5)
+    chapter_cuts = _chapter_cuts(chapters, [s.start for s in segments],
+                                 intro_dur=intro_dur, duration=duration)
+    end_cut = max((s.start for s in segments if s.start > intro_dur + 2.0),
+                  default=None)
+    _bumper = reg.get(reg.aspect_key("structure/chapter-bumper", aspect) or "")
+    _wipe_on, _wipe_off = 3 / 12, 4 / 12      # design's cut is under frame 4 of 8
+    covers: list[tuple[float, float]] = [(0.0, intro_dur + _wipe_off)]
+    if end_cut is not None:
+        covers.append((end_cut - _wipe_on, end_cut + _wipe_off))
+    for k, t in enumerate(chapter_cuts, start=1):
+        if t is None:
+            continue
+        hold = (float(_bumper.hold_s or 2.0) if k > 1 and _bumper is not None
+                else CHAPTER_OPENER_S)
+        covers.append((t - _wipe_on, t + hold))
+
     px = lambda v: int(round(v * W / 1920))  # noqa: E731  (1920-wide design)
 
     def progress(done: int, total: int) -> None:
@@ -522,6 +721,27 @@ def _render_long(
     # `exclude` is this video's own workspace: a resumed or re-run render
     # must not read its own last manifest and rotate away from itself.
     _avoid_recent = recent_plates(settings, exclude=workspace)
+
+    # The cold open's first shot, and the wide room it is in (see
+    # `cold_open_room`). Chosen once here so every pass of this video, and the
+    # manifest, agree on it.
+    cold_i = cold_open_segment(
+        segments, duration,
+        until=chapters[1][0] if len(chapters) > 1 else None)
+    cold_room = None
+    if cold_i is not None:
+        _recent_opens, _kept_open = _recorded_cold_opens(settings, workspace)
+        _opening = cold_open_room(reg, aspect, recent=_recent_opens,
+                                  kept=_kept_open)
+        if _opening:
+            # THROUGH `room_for`, with every other angle of the role avoided,
+            # so whatever else decides a room — the hour, the season — decides
+            # this one too, rather than a second path that forgets to ask.
+            _role = "opener" if reg.room_roles.get("opener") else "establish"
+            cold_room = reg.room_for(
+                _role, aspect, seed=script.ticker, episode=script.ticker,
+                avoid=[k for k in reg.angles_for(_role, aspect, reg.hour)
+                       if reg.base_key(k) != reg.base_key(_opening)])
 
     def _room_plate(role_name: str = "talk", seed: str = ""):
         # THE TICKER IS THE EPISODE, and it is passed separately from the seed
@@ -558,6 +778,57 @@ def _render_long(
                     (W, H), Image.LANCZOS).save(dest)
             room_cache[key] = dest
         return room_cache[key]
+
+    def _loop_of(plate, files: list[Path], kind: str, mode: str) -> Path:
+        """One pass of a looping room's `files` at the frame's size and rate.
+
+        One pass is `frame_count / fps` seconds — one second for the kit's
+        twelve frames at twelve — and the segment demuxer-loops it for as
+        long as the beat holds, so no frame is decoded twice or held in
+        memory. Keyed on the frames' content, like `_room_file`, so a new
+        ingest is a new clip, and on the weather, which shares the key.
+        """
+        import hashlib
+
+        plates_used.add(plate.key)
+        key = (plate.key, f"{kind}-loop-{plate.weather}")
+        if key not in room_cache:
+            stamp = hashlib.sha256("|".join(
+                _plate_fingerprint(f) for f in files).encode()).hexdigest()[:8]
+            weather = f"_{plate.weather}" if plate.weather else ""
+            dest = rdir / f"{kind}loop_{plate.name}{weather}_{stamp}_{fps}.mov"
+            room_cache[key] = _played_clip(
+                frame_indices(plate, playback_seconds(plate), fps),
+                lambda i: Image.open(files[i]).convert(mode).resize(
+                    (W, H), Image.LANCZOS),
+                fps, dest)
+        return room_cache[key]
+
+    def _room_loop(plate) -> Path | None:
+        """A room that keeps moving behind him, as a clip; None if it is still.
+
+        THE ROOM LOOPS ARE BAKED INTO THE ROOM'S FRAMES (item 19): a screen
+        that dips, a lamp that flickers, bulbs, snow or rain in the window.
+        Held on its base file the room is frame one of that loop, frozen.
+        """
+        if not plate.animated or plate.plays_once:
+            return None
+        return _loop_of(plate, plate.frame_paths(), "room", "RGB")
+
+    def _front_loop(room) -> Path | None:
+        """The room's front layer as a clip, where its frames differ; or None.
+
+        The flicker is mostly on the desk in front of him — the monitor and
+        the lamp — so a front held still over a moving room paints the
+        flicker out exactly where it shows.
+        """
+        if not room.animated or room.plays_once:
+            return None
+        fronts = [room.front_path(i) for i in range(len(room.frames))]
+        if any(f is None or not f.exists() for f in fronts) \
+                or len({str(f) for f in fronts}) < 2:
+            return None
+        return _loop_of(room, fronts, "front", "RGBA")
 
     def _front_file(room) -> Path | None:
         """The room's FRONT layer at the frame's size, or None.
@@ -599,6 +870,20 @@ def _render_long(
                         "screen", plate.key, title)
             return _room_still(seg_i, role_name)
         plates_used.add(plate.key)
+        if plate.animated and not plate.plays_once:
+            # A LOOPING OPENER IS A CLIP, the title set on each picture of
+            # the loop once. The opener angles are the wide ones, with the
+            # window in shot, so this is where the snow and the rain are
+            # seen; held on a still they would stop for the one shot that
+            # shows them best.
+            from pipeline.plate_frames import render_frame
+
+            values = {"title": title}
+            return _played_clip(
+                frame_indices(plate, CHAPTER_OPENER_S + 0.5, fps),
+                lambda i: render_frame(plate, i, values, settings, reg)
+                .convert("RGB").resize((W, H), Image.LANCZOS),
+                fps, rdir / f"chapter_{seg_i}.mov", reuse=False)
         dest = rdir / f"chapter_{seg_i}.png"
         img = render_still(plate, {"title": title}, settings, reg)
         img.convert("RGB").resize((W, H), Image.LANCZOS).save(dest)
@@ -763,6 +1048,27 @@ def _render_long(
         if inside:
             lands_a_chapter.add(inside[-1])
 
+    # THE CLOSE, as far as casting him goes: the last beat of the final
+    # chapter he STANDS in. The line the chapter rests on is the close-up
+    # above, and a framing is never cast — so the sign-off pose goes on the
+    # standing beat before it, which is the last time he is seen whole.
+    _last_from = chapters[-1][0] if chapters else 0.0
+    closing_beat = max((i for i, sg in enumerate(segments)
+                        if sg.kind == "host" and sg.start >= _last_from
+                        and i not in lands_a_chapter), default=-1)
+
+    def _words_in(seg) -> list:
+        """The words said during a segment: what casts the pose he stands in."""
+        return [w for w in tts.words if seg.start <= w.start < seg.end]
+
+    def _shown_before(seg_i: int) -> str:
+        """The pose the last beat before this one showed him in, if any."""
+        shown = {int(m["segment"]): str(m.get("pose", ""))
+                 for m in host_motion if "segment" in m}
+        shown.update(panel_hosts)
+        earlier = [k for k in shown if k < seg_i]
+        return shown[max(earlier)] if earlier else ""
+
     # What the face did, per segment. Over forty minutes the host is the
     # most-viewed element in the channel and the easiest to leave static
     # without noticing, so the manifest records it.
@@ -785,10 +1091,20 @@ def _render_long(
         role_name = ("panel" if panel
                      else "rests-on" if seg_i in lands_a_chapter
                      else "beat")
+        # A STANDING BEAT MAY BE CAST BY ITS WORDS — a count on his fingers,
+        # a shrug on the "but", the filing held up — where the room is one
+        # the pose was drawn for. The close-up is a camera distance and is
+        # never cast; with no cast the role picks, exactly as before.
+        cast = (cast_pose(reg, _words_in(seg), room=room,
+                          closing=seg_i == closing_beat, used=host_used,
+                          avoid=_avoid_recent, previous=_shown_before(seg_i),
+                          seed=f"{script.ticker}|{seg_i}")
+                if role_name == "beat" else None)
         # He is composited per output frame, so he is loaded at the size he
         # will be SHOWN at rather than at his delivered 2160x3840. Without
         # this every frame of every host beat is a 4K RGBA resize.
-        shot_probe = pick_shot(reg, role_name, seg_i, used=host_used)
+        shot_probe = ((host_shot(reg, cast.pose) if cast else None)
+                      or pick_shot(reg, role_name, seg_i, used=host_used))
         target_h = H
         if shot_probe is not None and shot_probe.is_framing:
             spot_probe = frame_shot(shot_probe, (W, H))
@@ -803,10 +1119,15 @@ def _render_long(
             tts.words, seg.start, seg.end, rdir / f"host_{seg_i}.mov",
             reg=reg, settings=settings, fps=fps, display_h=target_h,
             role=role_name, shot_index=seg_i, used=host_used, report=motion,
+            pose=cast.pose if cast else None,
         )
         if built is None:
             return None
         if motion:
+            # Which cue cast him, when one did and the cast pose is what was
+            # built — so a count that never reaches the screen is findable.
+            motion["cast"] = (cast.cue if cast and reg.base_key(
+                motion.get("pose", "")) == cast.pose else "")
             host_motion.append({"segment": seg_i, **motion})
             plates_used.add(motion.get("pose", ""))
             host_used[motion.get("pose", "")] = (
@@ -886,6 +1207,59 @@ def _render_long(
             f"{tail}"
         )
 
+    def _moving_plate_chain(bg_i: int, mv_i: int, ld_i: int | None, x: int, y: int,
+                            w: int, h: int, seg_len: float, tail: str,
+                            landed_at: float) -> str:
+        """A plate beat with its moves: the moves until they land, then the
+        landed plate — held if it is a still, its boil looped if it boils.
+
+        The landed loop is switched on under the moves' last frame, which
+        already shows everything landed, so there is no frame between them.
+        """
+        bg = (f"[{bg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+              f"scale={W}:{H}[hbg];")
+        mv = f"[{mv_i}:v]setpts=PTS-STARTPTS,scale={w}:{h}[hmv];"
+        if ld_i is None:
+            return (bg + mv + f"[hbg][hmv]overlay={x}:{y}:eof_action=repeat{tail}")
+        ld = (f"[{ld_i}:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,"
+              f"trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,scale={w}:{h}[hld];")
+        return (bg + ld + mv
+                + f"[hbg][hld]overlay={x}:{y}:eof_action=repeat:"
+                  f"enable='gte(t,{landed_at:.4f})'[hmid];"
+                + f"[hmid][hmv]overlay={x}:{y}:eof_action=pass{tail}")
+
+    def _plate_moves(seg, seg_i: int, key: str | None, seg_len: float):
+        """The beat's moves drawn into clips, or None when it has none.
+
+        The writer's `[MOVE]`s on this beat, and the chart's data drawing on
+        as it arrives. Recorded in programme time for the manifest.
+        """
+        from pipeline.moves import plan_segment, render_segment
+
+        plate = reg.get(key) if key else None
+        if plate is None:
+            return None
+        values = dict(seg.payload.get("values") or {})
+        rows = list(seg.payload.get("moves") or [])
+        shot_id = f"segment_{seg_i}"
+        moves, skipped = plan_segment(
+            plate, values, rows, seg_len=seg_len, shot_id=shot_id, layer=shot_id,
+            earliest=_cleared(seg.start, covers) - seg.start,
+            settings=settings, reg=reg)
+        moves_skipped.extend(skipped)
+        for w in skipped:
+            log.info("moves: %s", w)
+        if not moves:
+            return None
+        clips = render_segment(plate, values, moves, seg_len=seg_len, size=(W, H),
+                               settings=settings, reg=reg, out_dir=rdir,
+                               stem=f"plate_{seg_i}", seed=f"{plate.key}|{seg_i}")
+        if clips is not None:
+            long_moves.extend({**m.row(), "start": round(seg.start + m.start, 3)}
+                              for m in moves)
+            seg_landed[seg_i] = seg.start + max(m.end for m in moves)
+        return clips
+
     # ----------------------------------------------- the two-shot, on the room
     # A two-shot is the ROOM, the evidence, and Dennis standing beside it. It
     # used to be three finished designs stacked in one frame: a filler backdrop
@@ -939,7 +1313,26 @@ def _render_long(
         # which side that is depends on the angle rather than on a flag.
         left_w = box[0] - px(120)
         right_w = W - (box[0] + box[2]) - px(120)
-        return (shot, box, "right" if right_w >= left_w else "left")
+        side = "right" if right_w >= left_w else "left"
+        # THE WORDS MAY CAST HIM HERE TOO — above all the hand held out to
+        # the plate, which is only drawn reaching camera-right and so is cast
+        # only when the evidence landed on that side of him. The evidence
+        # column was sized against the role's pose, so a cast that would not
+        # stand in exactly the same box is left out rather than re-solved.
+        cast = cast_pose(reg, _words_in(segments[seg_i]), room=room,
+                         plate_on=f"camera-{side}", used=host_used,
+                         avoid=_avoid_recent, previous=_shown_before(seg_i),
+                         seed=f"{script.ticker}|panel|{seg_i}")
+        cast_shot = host_shot(reg, cast.pose) if cast else None
+        if cast_shot is not None and stands_on(room, cast_shot):
+            again = place_on_room(room, cast_shot)
+            if (again.x, again.y, again.width, again.height) == (
+                    placed.x, placed.y, placed.width, placed.height):
+                shot = cast_shot
+                # A cast pose keeps its `limit` across stills and talking
+                # beats alike: the shrug is once a video, wherever it lands.
+                host_used[shot.key] = host_used.get(shot.key, 0) + 1
+        return (shot, box, side)
 
     def _evidence_box(room, seg_i: int, two_shot: bool) -> tuple[int, int, int, int]:
         """(x, y, max width, max height) for the evidence, beside the host."""
@@ -1094,6 +1487,24 @@ def _render_long(
             args = ["-stream_loop", "-1"] if visual.loops else []
             return _add_input([*args, "-i", str(visual.path)])
 
+        def _room_input(room) -> int:
+            """The room as an input: its loop where it moves, else its still.
+
+            Demuxer-looped like a gif, and trimmed to the beat by the chain
+            that reads it, exactly as the still is.
+            """
+            loop = _room_loop(room)
+            if loop is None:
+                return _still_input(_room_file(room))
+            return _add_input(["-stream_loop", "-1", "-i", str(loop)])
+
+        def _front_input(room, still: Path) -> int:
+            """The desk in front of him, moving with the room behind him."""
+            loop = _front_loop(room)
+            if loop is None:
+                return _still_input(still)
+            return _add_input(["-stream_loop", "-1", "-i", str(loop)])
+
         if seg.kind == "host":
             # Dennis is the default base frame: the room, then the talking rig
             # lip-synced to this segment's slice of the voice-over.
@@ -1101,14 +1512,17 @@ def _render_long(
             variant = seg.payload.get("variant", 0)
             # ONE ROOM FOR THE BEAT: the one drawn behind him is the one he is
             # placed on, and the one whose desk is drawn in front of him.
-            room = _room_plate("talk", seed=f"{script.ticker}|{variant % 3}")
-            bg_i = _still_input(_room_file(room))
+            room = (cold_room if i == cold_i and cold_room is not None
+                    else _room_plate("talk",
+                                     seed=f"{script.ticker}|{variant % 3}"))
+            bg_i = _room_input(room)
             host = _host_input(i, seg, seg_len, room=room)
             if host is None:
                 chain = _still_chain(bg_i, seg, seg_len, i, tail)
             else:
                 host_i, hx, hy, hw, hh, front = host
-                front_i = _still_input(front) if front is not None else None
+                front_i = (_front_input(room, front)
+                           if front is not None else None)
                 chain = _scaled_overlay_chain(bg_i, host_i, hx, hy, hw, hh,
                                               seg_len, tail, front_i=front_i)
         elif seg.kind == "clip":
@@ -1171,12 +1585,31 @@ def _render_long(
             # composition gives way, not the ink.
             two_shot = (seg.payload.get("layout") == "two-shot"
                         and not _annotated(seg))
-            if is_video:
+            moving = _plate_moves(seg, i, key, seg_len) if size is not None else None
+            if moving is not None:
+                # The same composition as the plate without its moves: the
+                # moves are drawn at the frame's size and scaled into the
+                # evidence box exactly as the plate itself is.
+                ew, eh = _fit_evidence(W, H, i, two_shot=two_shot)
+                bg, ex, ey = _panel_plate((ew, eh), i, rdir / f"bg_{i}.png",
+                                          two_shot=two_shot)
+                panel_rects[i] = (ex, ey, ew, eh)
+                bg_i = _still_input(bg)
+                mv_i = _add_input(["-i", str(moving.moving)])
+                ld_i = (_add_input(["-i", str(moving.landed)])
+                        if moving.landed is not None else None)
+                chain = _moving_plate_chain(bg_i, mv_i, ld_i, ex, ey, ew, eh,
+                                            seg_len, tail, moving.landed_at)
+                seg_animation = {"asset": key, "moves": True,
+                                 "landed_at": round(moving.landed_at, 3),
+                                 "boils": moving.landed is not None}
+            elif is_video:
                 # A boiling plate is an alpha clip, so the background it plays
                 # on is the same composition a still gets pasted into.
                 ew, eh = _fit_evidence(size[0], size[1], i, two_shot=two_shot)
                 bg, ex, ey = _panel_plate((ew, eh), i, rdir / f"bg_{i}.png",
                                           two_shot=two_shot)
+                panel_rects[i] = (ex, ey, ew, eh)
                 bg_i = _still_input(bg)
                 fg_i = _add_input(["-i", str(art)])
                 chain = _scaled_overlay_chain(bg_i, fg_i, ex, ey, ew, eh,
@@ -1263,7 +1696,10 @@ def _render_long(
         # filter shape, same declared inputs. Then the cut silently keeps
         # serving the frozen version.
         identity: tuple[str, ...] = ()
-        if seg_animation:
+        if seg_animation and seg_animation.get("moves"):
+            identity = (f"moves:{seg_animation['asset']}:{seg_animation['landed_at']}:"
+                        f"{'boils' if seg_animation['boils'] else 'held'}",)
+        elif seg_animation:
             identity = (f"anim:{seg_animation['asset']}:"
                         f"{seg_animation['frames']}x{seg_animation['distinct']}",)
         seg_specs.append(SegmentSpec(
@@ -1323,7 +1759,6 @@ def _render_long(
     # the one frame everybody sees first.
     from pipeline.plate_frames import render_still as _render_still
 
-    intro_dur = min(2.6, duration * 0.5)
     intro_path = rdir / "intro_card.png"
     intro_plate = reg.get(reg.aspect_key("paper/headline-band-t3", aspect) or "")
     if intro_plate is not None:
@@ -1346,30 +1781,75 @@ def _render_long(
     # to space six hardcoded titles evenly across the runtime and ignore both
     # the trailer's times and its words, so every video announced sections it
     # did not have.
-    seg_starts = [s.start for s in segments]
-    used_ch: set[float] = set()
     stinger_meta: list[dict] = []
     transition_meta: list[dict] = []
-    for k, (target, title, ctype) in enumerate(chapters, start=1):
-        t = next((s for s in seg_starts
-                  if s >= max(target, intro_dur) and s not in used_ch), None)
-        if t is None or t < 0.6 or t > duration - 1.2:
+    wipe_layers: list[OverlayLayer] = []
+
+    def _wipe_at(cut: float, name: str, why: str) -> None:
+        """A wipe with its full cover on `cut` (item 23), recorded."""
+        clip = wipe_clip(reg, rdir / f"{name}_{len(transition_meta)}.mov",
+                         name=name, aspect=aspect, cut=cut, size=(W, H))
+        if clip is None or clip.end > duration:
+            return
+        # On top of everything, the bumper it opens on included: a wipe
+        # that another layer cut across would show two shots at once.
+        wipe_layers.append(OverlayLayer(path=clip.path, x=0, y=0,
+                                        t_start=clip.start, t_end=clip.end,
+                                        is_video=True, name=clip.name))
+        transition_meta.append({"transition": name, "cut": round(cut, 3),
+                                "start": round(clip.start, 3), "at": why})
+
+    # THE COLD OPEN AND THE END ARE WIPED, sweep or page (item 23): the cut
+    # off the opening title, and the cut into the video's last beat. Which of
+    # the two is seeded per video, so the pair is not the same every time.
+    import random as _random
+
+    _pair = ["wipe-sweep", "wipe-page"]
+    if _random.Random(f"wipes|{script.ticker}|{duration:.1f}").random() < 0.5:
+        _pair.reverse()
+    if intro_dur < duration - 1.0:
+        _wipe_at(intro_dur, _pair[0], "cold open")
+    if end_cut is not None and end_cut < duration - 1.0:
+        _wipe_at(end_cut, _pair[1], "end")
+    for k, ((target, title, ctype), t) in enumerate(zip(chapters, chapter_cuts), start=1):
+        if t is None:
             log.warning("chapters: %r at %.0fs has no cut to land on — skipped",
                         title, target)
             continue
-        used_ch.add(t)
 
-        # A CHAPTER OPENER IS THE ROOM WITH THE TITLE IN ITS SLOT.
-        #
-        # There is no stinger family any more, and no ordinal. The old card
-        # printed "01"…"14" into the artwork, which is why a chapter could not
-        # be moved, repeated or cut without the card lying about it — and a
-        # TYPE may legitimately appear twice in one video under two titles.
-        cs_path = _chapter_opener(title, k)
-        layers.append(OverlayLayer(
-            path=cs_path, x=0, y=0, t_start=t, t_end=min(t + 1.6, duration),
-            fade_in=0.2, name=f"chapter_{k}",
-        ))
+        # EVERY CHAPTER AFTER THE FIRST OPENS ON DESIGN'S BUMPER (item 22):
+        # the number large and turning over from the last one, "OF SEVEN",
+        # the title and the episode, held for the two seconds the plate
+        # publishes, with the blinds closing over the cut into it (item 23).
+        # Its number is counted off the script's own chapter list, so a
+        # chapter moved or cut renumbers the rest; nothing is baked.
+        # The first chapter keeps the room with its title in the slot: the
+        # kit places the bumper between chapters, and the cold open has none.
+        # Nothing fades in either, as design's rule 2 has it.
+        bumper = None
+        if k > 1:
+            bumper = bumper_clip(
+                reg, settings, rdir / f"bumper_{k}.mov", aspect=aspect, at=t,
+                n=k, total=len(chapters), title=title,
+                episode=f"{script.ticker.upper()} · {settings.brand_tagline.upper()}",
+                size=(W, H))
+        if bumper is not None:
+            layers.append(OverlayLayer(
+                path=bumper.path, x=0, y=0, t_start=t,
+                t_end=min(bumper.end, duration), is_video=True, hold=True,
+                name=f"chapter_{k}"))
+            long_moves.append({"move": "tick-over", "start": round(tick_start(bumper), 3),
+                               "shot_id": f"chapter_{k}", "slot": "num"})
+            _wipe_at(t, "wipe-blinds", f"chapter_{k}")
+        else:
+            # A chapter opener is the room with the title in its slot, and a
+            # room that loops (snow, rain, flicker) is a clip.
+            cs_path = _chapter_opener(title, k)
+            layers.append(OverlayLayer(
+                path=cs_path, x=0, y=0, t_start=t,
+                t_end=min(t + CHAPTER_OPENER_S, duration),
+                is_video=cs_path.suffix == ".mov", name=f"chapter_{k}",
+            ))
         stinger_meta.append({"type": ctype, "title": title,
                              "script_t": round(target, 2), "t": round(t, 2)})
 
@@ -1388,6 +1868,41 @@ def _render_long(
                     t_start=seg.start, t_end=min(seg.start + 0.5, duration),
                     is_video=True, name=f"glitch@{seg.start:.2f}",
                 ))
+
+    # THE SOURCE SLIDES IN UNDER THE FIGURE (item 14): design's tag, off the
+    # frame's left edge with its small overshoot, where the writer's
+    # [SOURCE] says, once the beat's moves have landed and nothing covers
+    # the frame, held to the end of the beat. A beat too short to read it
+    # after all that gets none, and the manifest says so.
+    from pipeline.moves import TAG_READ_S, Move as _Move, source_tag_clip
+
+    source_meta: list[dict] = []
+    for src in writer_sources:
+        seg = segments[src.segment]
+        where = f"[SOURCE: {src.text}] at {src.t:.1f}s"
+        start = max(src.t, seg.start)
+        if src.segment in seg_landed:
+            start = max(start, seg_landed[src.segment] + 0.15)
+        start = _cleared(start, covers)
+        end = min(seg.end, duration)
+        if start + TAG_READ_S > end:
+            moves_skipped.append(f"{where}: the beat cuts at {end:.1f}s, too soon "
+                                 f"after its moves land to read a source — skipped")
+            continue
+        clip = source_tag_clip(reg, settings, rdir / f"source_{src.segment}.mov",
+                               text=src.text, plate=reg.get(src.plate),
+                               aspect=aspect,
+                               panel=panel_rects.get(src.segment, (0, 0, W, H)))
+        if clip is None:
+            moves_skipped.append(f"{where}: no source tag for {src.plate} — skipped")
+            continue
+        layers.append(OverlayLayer(
+            path=clip.path, x=clip.x, y=clip.y, t_start=start, t_end=end,
+            is_video=True, hold=True, name=f"source_{src.segment}"))
+        long_moves.append(_Move("slide-in", f"segment_{src.segment}", "", "source",
+                                start, clip.frames, "land").row())
+        source_meta.append({**src.to_json(), "start": round(start, 3),
+                            "end": round(end, 3)})
 
     # Annotations (TOP layer, riding over whatever segment shows).
     #
@@ -1646,6 +2161,8 @@ def _render_long(
     # the operator put a hit on the chapter change instead of music.
     audio += theme_tracks(settings, duration)
 
+    layers += wipe_layers
+
     # ------------------------------------------------------------ encode
     spec = CompositeSpec(
         base_input_args=inputs,
@@ -1752,6 +2269,8 @@ def _render_long(
         # would otherwise be indistinguishable from one another.
         "audio": audio_rows,
         "marks": mark_solves,
+        # Each [SOURCE] the writer wrote and when its tag slid in.
+        "sources": source_meta,
         "marks_out_of_band": [m for m in mark_solves if m["warnings"]],
         "segment_warnings": seg_warnings,
         "chapter_warnings": chapter_warnings,
@@ -1760,6 +2279,16 @@ def _render_long(
         # be six hardcoded titles spaced evenly, and every test passed.
         "chapters": [{"t": round(t, 2), "title": ti, "type": ct}
                      for t, ti, ct in chapters],
+        # THE WRITER'S [MOVE]s as the render should play them: move, plate
+        # key, the kit's slot and box for it, programme time `t` and the time
+        # `at` into its plate `segment`. See `timeline.WriterMove`.
+        "writer_moves": [m.to_json() for m in writer_moves],
+        "move_warnings": move_warnings,
+        # The wide room the cold open's first shot was in, as a base key.
+        # The next video reads it to take its turn on the other one, and the
+        # next pass of THIS video reads it to open on the same one.
+        "cold_open_room": (reg.base_key(cold_room.key)
+                           if cold_room is not None else ""),
         # WHAT THIS RENDER ACTUALLY REACHED. The doctor diffs the library
         # against this across recent renders to answer "what have we drawn and
         # never used" — which is the gap list the next design batch is drawn
@@ -1771,6 +2300,15 @@ def _render_long(
         "kit_reach": _rendered_kit_reach(sorted(plates_used), settings),
         "stingers": stinger_meta,
         "transitions": transition_meta,
+        # EVERY MOVE THE LONG PLAYED, in the short's shape: design's move id,
+        # the programme time of its first frame, the beat or chapter it was on
+        # and the slot. The bumper's tick-over is here; the wipes list their
+        # cut. This is what the sound is timed to.
+        "moves": {"moves": sorted(long_moves, key=lambda r: (r["start"], r["move"])),
+                  "wipes": [{"transition": w["transition"], "cut": w["cut"],
+                             "start": w["start"]} for w in transition_meta
+                            if "transition" in w],
+                  "skipped": moves_skipped},
         # The motion that reached the cut. Zero here means the long is back to
         # holding every drawing on frame 1.
         "animated_segments": sum(1 for m in seg_meta if m.get("animation")),
