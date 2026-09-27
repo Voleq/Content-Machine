@@ -29,8 +29,10 @@ channel theme as the intro and the outro, dipped under the voice.
 
 Design's moves get a sound each, on design's own frames (`move_cues`): a
 ratchet under a count-up that stops on the final figure, a marker under a
-draw, a knock on the last bar. Built ahead of the renderer's record of which
-moves it played and when; until that record reaches `short_mix`, none plays.
+draw, a knock on the last bar. Timed to the render's own record of which
+moves it played and when (`manifest["moves"]`), in both lanes. A wiped cut's
+swish runs with the wipe and lands on the cut under its cover; the punch-in
+half of a split beat is one subject and makes no sound of its own.
 
 NO EFFECT PLAYS THE SAME WAY TWICE. Each firing picks one of the key's
 variants, never the one it picked last time, a few percent off in speed and a
@@ -149,6 +151,11 @@ DEFAULT_LEAD_S = 0.15
 CUT_SHARE = 0.5
 CUT_MIN_S, CUT_MAX_S = 0.15, 0.45
 
+# Design's wipes: eight frames at 12 fps, the two shots cut under the fourth
+# (rebuild-39 contract, `transitions`).
+WIPE_S = 8 / 12
+WIPE_CUT_S = 3 / 12
+
 # The half-second before the payoff where everything but the voice stops.
 DROP_S = 0.5
 
@@ -247,10 +254,12 @@ def room_track(settings, hour: str = "") -> AudioTrack | None:
     return None
 
 
-def shot_tags(plate_keys: Iterable[str], motions: Iterable[str] = ()) -> set[str]:
-    """What a shot shows that the room should sound like."""
+def shot_tags(plate_keys: Iterable[str], motions: Iterable[str] = (),
+              seasons: Iterable[str] = ()) -> set[str]:
+    """What a shot shows that the room should sound like: the room loops its
+    plates play (`Plate.loops`) and the season they are dressed for."""
     tags = {m for m in motions if m in SET_LAYERS}
-    if any("-christmas" in k for k in plate_keys):
+    if "christmas" in set(seasons) or any("-christmas" in k for k in plate_keys):
         tags.add("christmas")
     return tags
 
@@ -366,6 +375,44 @@ class Cut:
     end: float
     chapter_n: int = 0
     tags: frozenset = frozenset()
+    # The second half of a beat held past its ceiling (`shots`, `<id>-in`):
+    # a punch-in on the same plate, a hard cut inside one subject. It gets no
+    # swish and no hit; the sound treats the beat as one shot.
+    part: int = 0
+    # The wipe over this cut, (start, end) in programme seconds, or None for
+    # a hard cut. The picture moves from the wipe's first frame, so the swish
+    # does too, and lands on the cut under the cover (`WIPE_CUT_S` in).
+    wipe: "tuple[float, float] | None" = None
+
+
+def wipe_swish(voicing: Voicing, settings, start: float,
+               end: float) -> AudioTrack | None:
+    """A swish that runs the length of a wipe, from its first frame.
+
+    Design's wipe covers the frame a quarter at a time and cuts the two
+    shots under its fourth frame (`WIPE_CUT_S` in), so a swish from the
+    wipe's first frame peaks as the cover closes: it lands on the cut.
+    """
+    return voicing.fire(CUT_KEY, start,
+                        settings.sfx_gain_db + CUT_GAIN_REL_DB,
+                        max_s=max(end - start, CUT_MIN_S),
+                        name=f"wipe@{start + WIPE_CUT_S:.2f}")
+
+
+def wipe_cues(wipes: Sequence[tuple[float, float]], settings,
+              voicing: Voicing, *, clear_of: Sequence[float] = ()
+              ) -> list[AudioTrack]:
+    """A swish under each wipe given as (start, cut), for a lane whose cuts
+    are otherwise silent (the LONG), except where a hit already marks that
+    cut: the blinds into a chapter bumper have the chapter's hit."""
+    out: list[AudioTrack] = []
+    for start, cut in wipes:
+        if any(abs(cut - t) < MOVE_CLEAR_S for t in clear_of):
+            continue
+        tr = wipe_swish(voicing, settings, start, start + WIPE_S)
+        if tr:
+            out.append(tr)
+    return out
 
 
 def structure_cues(cuts: Sequence[Cut], settings, voicing: Voicing, *,
@@ -384,6 +431,8 @@ def structure_cues(cuts: Sequence[Cut], settings, voicing: Voicing, *,
     if chapters:
         seen: set[int] = set()
         for c in cuts:
+            if c.part >= 2:
+                continue
             if c.chapter_n and c.chapter_n not in seen:
                 seen.add(c.chapter_n)
                 tr = voicing.fire(HIT_KEY, c.start - cue_lead_s(HIT_KEY),
@@ -400,12 +449,16 @@ def structure_cues(cuts: Sequence[Cut], settings, voicing: Voicing, *,
     if first:
         tracks.append(first)
     for c in cuts[1:]:
+        if c.part >= 2:
+            continue
         if c.shot_id in PAYOFF_SHOTS:
             # The payoff: half a second of nothing but the voice, then the hit
             # on the number instead of a swish.
             drops.append((max(c.start - DROP_S, 0.0), c.start))
             tr = voicing.fire(HIT_KEY, c.start, level + HIT_GAIN_REL_DB,
                               name=f"payoff_hit@{c.start:.2f}")
+        elif c.wipe is not None:
+            tr = wipe_swish(voicing, settings, *c.wipe)
         else:
             length = max(c.end - c.start, 0.0)
             tr = voicing.fire(

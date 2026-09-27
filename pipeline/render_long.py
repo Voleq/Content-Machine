@@ -89,9 +89,10 @@ from pipeline.bumper import bumper_clip, tick_start, wipe_clip
 from pipeline.plate_frames import (drawn_box, frame_indices, playback_seconds,
                                    render_clip)
 from pipeline.plates import _prefer_unused, at_episode_hour, load_plates
-from pipeline.sound import (DEFAULT_LEAD_S, EFFECT_KEYS, Voicing, cue_lead_s,
-                            manifest_rows, measure_lufs, placeholders_played,
-                            room_track, sound_summary, theme_tracks)
+from pipeline.sound import (DEFAULT_LEAD_S, EFFECT_KEYS, Cut, Move, Voicing,
+                            cue_lead_s, manifest_rows, measure_lufs,
+                            move_cues, placeholders_played, room_track,
+                            sound_summary, theme_tracks, wipe_cues)
 from pipeline.rasters import (
     build_phrase_ass,
     cover_fill_frame,
@@ -2132,6 +2133,19 @@ def _render_long(
     # only, held 1.6s, and a viewer who looks away misses that a new argument
     # started — so this is a navigation signpost, not atmosphere.
     audio += _chapter_cues(stinger_meta, settings, voicing)
+    # DESIGN'S MOVES, HEARD: a ratchet under a count-up, a marker under the
+    # writer's circle, the flip as the bumper's number turns over, each on
+    # the frame design lands it on (`sound.MOVE_CUES`). Timed to the record
+    # below, not worked out again. A swish runs under the cold open's and the
+    # end's wipes; the blinds into a bumper already have the chapter's hit.
+    hits_at = [float(s["t"]) for s in stinger_meta]
+    audio += move_cues(
+        [Move(r["move"], r["start"], r.get("shot_id", ""), r.get("slot", ""))
+         for r in long_moves],
+        settings, voicing, cuts=[Cut("chapter", t, t) for t in hits_at])
+    audio += wipe_cues([(float(w["start"]), float(w["cut"]))
+                        for w in transition_meta if "transition" in w],
+                       settings, voicing, clear_of=hits_at)
     banner = audio_banner(settings)
     if banner:
         log.warning("%s", banner)

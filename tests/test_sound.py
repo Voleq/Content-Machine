@@ -21,10 +21,11 @@ from pipeline.audio_assets import ROOM_TONE_GAIN_DB, ROOM_TONE_NAME
 from pipeline.render_common import AudioTrack, mix_under_picture, run_ffmpeg
 from pipeline.sound import (CUT_KEY, CUT_LEAD_S, DROP_S, HIT_KEY,
                             MOVE_CUES, MOVE_GAP_S, RATE_SPREAD,
-                            TRIM_SPREAD_DB, Cut, Move, Voicing, bed_track,
-                            manifest_rows, move_cues, normalises, room_track,
-                            set_layers, short_mix, shot_tags, sound_summary,
-                            structure_cues, theme_tracks, variants)
+                            TRIM_SPREAD_DB, WIPE_CUT_S, WIPE_S, Cut, Move,
+                            Voicing, bed_track, manifest_rows, move_cues,
+                            normalises, room_track, set_layers, short_mix,
+                            shot_tags, sound_summary, structure_cues,
+                            theme_tracks, variants, wipe_cues)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -297,6 +298,52 @@ def test_a_short_plays_its_moves_under_its_cuts(assets, tmp_path):
         FakeTTS(_voice(tmp_path / "w.m4a")), settings, cuts=CUTS, seed="s"))
 
 
+def test_a_punch_in_is_one_subject_and_a_wipe_swishes_through_its_cover(assets):
+    """The second half of a split beat (`<id>-in`) is a hard cut on the same
+    plate: no swish, and no chapter hit on a chaptered format. A wiped cut's
+    swish starts with the wipe and runs its eight frames, so it lands on the
+    cut under the cover rather than a tenth of a second ahead of it."""
+    root, settings = assets
+    cuts = [Cut("hook", 0.0, 5.0),
+            Cut("the-move", 5.0, 9.0),
+            Cut("the-move-in", 9.0, 12.0, part=2),
+            # A wipe over the 12.0 cut starts three frames ahead of it.
+            Cut("the-news", 12.0, 12.8, wipe=(12.0 - WIPE_CUT_S,
+                                              12.0 - WIPE_CUT_S + WIPE_S)),
+            Cut("close", 12.8, 16.0)]
+    tracks, _ = structure_cues(cuts, settings, Voicing(root / "sfx", "s"),
+                               chapters=False)
+    names = [t.name for t in tracks]
+    assert not any(abs(t.start_s + CUT_LEAD_S - 9.0) < 1e-6 for t in tracks), \
+        "a punch-in inside one beat got a swish"
+    [wipe] = [t for t in tracks if t.name.startswith("wipe@")]
+    assert wipe.name == "wipe@12.00"
+    assert wipe.start_s == pytest.approx(12.0 - WIPE_CUT_S)
+    assert wipe.max_s == pytest.approx(WIPE_S)
+    assert len(names) == 4, names   # hook, 5.0, the wipe, 12.8
+
+    chaptered = [Cut("ch1", 0.0, 4.0, chapter_n=1),
+                 Cut("ch2", 4.0, 9.0, chapter_n=2),
+                 Cut("ch2-in", 9.0, 12.0, chapter_n=3, part=2)]
+    tracks, _ = structure_cues(chaptered, settings,
+                               Voicing(root / "sfx", "s"), chapters=True)
+    assert [t.name for t in tracks] == ["chapter_hit@0.00", "chapter_hit@4.00"]
+
+
+def test_the_long_swishes_its_wipes_but_not_under_a_chapter_hit(assets):
+    root, settings = assets
+    tracks = wipe_cues([(4.75, 5.0), (29.75, 30.0)], settings,
+                       Voicing(root / "sfx", "s"), clear_of=[30.0])
+    assert [t.name for t in tracks] == ["wipe@5.00"]
+
+
+def test_the_room_hears_what_its_plates_loop():
+    assert shot_tags(["room/desk-front"], ["window-rain", "lights-twinkle"]) \
+        == {"window-rain"}
+    assert shot_tags(["room/desk-front"], (), ["christmas"]) == {"christmas"}
+    assert shot_tags(["room/desk-front"]) == set()
+
+
 # ---------------------------------------------------------- the variation
 
 
@@ -527,15 +574,33 @@ def test_a_rendered_short_carries_its_mix(settings, tmp_path, short_valid_json):
     assert manifest["audio"][1]["file"] == f"room_{manifest['hour']}.wav"
     assert "hook_hit@0.00" in names
 
-    starts = [s["start_s"] for s in manifest["shots"]][1:]
-    cues = sorted(a["start"] for a in manifest["audio"]
-                  if a["name"].startswith((CUT_KEY, "payoff_hit")))
+    # Every cut but the first gets its sound, except the punch-in half of a
+    # split beat, which is one subject and stays silent.
+    starts = [s["start_s"] for s in manifest["shots"][1:]
+              if s.get("part", 0) < 2]
+    def lands(a):
+        name, t = a["name"].rsplit("@", 1)
+        return float(t) if name in ("wipe", "payoff_hit") else a["start"] + CUT_LEAD_S
+    cues = sorted(lands(a) for a in manifest["audio"]
+                  if a["name"].startswith((CUT_KEY, "wipe@", "payoff_hit")))
     assert len(cues) == len(starts), (starts, names)
     for want, got in zip(starts, cues):
-        assert got == pytest.approx(want, abs=CUT_LEAD_S + 0.02)
+        assert got == pytest.approx(want, abs=0.02)
+    wipes = manifest["moves"]["wipes"]
+    assert sum(n.startswith("wipe@") for n in names) == len(wipes)
+
+    # Every move sound is a move the record says the picture played.
+    record = {(r["move"], r["start"]) for r in manifest["moves"]["moves"]}
+    heard = [a for a in manifest["audio"] if a["name"].startswith("move:")]
+    for a in heard:
+        move = a["name"][len("move:"):].split("@")[0]
+        cue = MOVE_CUES[move]
+        began = a["start"] if cue.drawn else a["start"] - cue.at_s
+        assert any(m == move and abs(t - began) < 0.01 for m, t in record), a
+    assert len(heard) <= len(record)
 
     assert "audio" in _streams(out)
     assert not _silences(out), "a short went to digital silence between words"
     sound = manifest["provenance"]["sound"]
-    assert sound["effects"] == len(cues) + 1
+    assert sound["effects"] == len(cues) + 1 + len(heard)
     assert sound["placeholders"] > 0, "the shipped effects are oscillators"
