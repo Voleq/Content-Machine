@@ -1095,6 +1095,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # same ink as everything else on the frame, from the same builder the LONG
     # uses. Drawing them into every one of two thousand frames sets the same
     # line thirty times a second for no reason.
+    from pipeline.compose import CAPTION_SIDE_FW, CAPTION_TYPE_FH
     from pipeline.rasters import build_phrase_ass
 
     W, H = result.frame
@@ -1103,14 +1104,26 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # at 18 characters a line, and a caption of the same sentence underneath is
     # the same words twice. Burning the whole track ignored the flag, because
     # the flag lives per shot and a subtitle file does not.
-    bands = [(l.t_start, l.t_end) for l in result.of_kind("caption")]
+    #
+    # AND WHERE EACH SHOT PUT THEM. `build_layers` placed every caption inside
+    # the band the phone leaves clear and off whatever its shot is showing,
+    # and the layer's box is the caption's box. Each window carries the foot
+    # of that box, so a line burns where its own shot placed it, and a line
+    # that runs on across a cut moves with the cut.
+    bands = [(l.t_start, l.t_end, l.y + l.h) for l in result.of_kind("caption")]
     spoken = [w for w in words
-              if any(a <= float(getattr(w, "start", 0.0)) < b for a, b in bands)]
+              if any(a <= float(getattr(w, "start", 0.0)) < b
+                     for a, b, _ in bands)]
     ass = workdir / "captions.ass"
+    # TWO TO FOUR WORDS A LINE, ONE OF THEM IN `attention`. On-screen text that
+    # repeats the narration word for word can hurt understanding, and five
+    # words at a time was most of the sentence; a figure or a turn word in
+    # colour is what the eye takes from a line it only glances at.
     ass.write_text(build_phrase_ass(
         spoken, settings=settings, play_res=(W, H),
-        font_size=int(H * 0.030), margin_v=int(H * 0.13),
-        margin_h=int(W * 0.10), max_words=5, max_chars=24,
+        font_size=int(H * CAPTION_TYPE_FH), margin_v=int(H * 0.13),
+        margin_h=int(W * CAPTION_SIDE_FW), max_words=4, min_words=2,
+        max_chars=24, key_words=True,
         duration=duration, windows=bands), encoding="utf-8")
     if spoken:
         burned = workdir / "video_captioned.mp4"
@@ -1118,7 +1131,13 @@ def _render_short(script, tts, workspace: Path, settings, *,
         # workspace name is a filtergraph separator. Escaped the way libavfilter
         # asks rather than by hoping the path is plain.
         spec = str(ass).replace("\\", "/").replace(":", "\\:")
-        run_ffmpeg(["-i", str(silent), "-vf", f"ass='{spec}'",
+        # THE KIT'S FONTS, BY DIRECTORY. The style names Archivo Narrow, which
+        # no install puts on the system, and without `fontsdir` libass fell
+        # back to DejaVu Sans: every short's captions were set in a face that
+        # runs a line nearly twice as wide as the one they were placed for.
+        # The LONG has always passed it (`render_common`).
+        fonts = str(settings.fonts_dir).replace("\\", "/").replace(":", "\\:")
+        run_ffmpeg(["-i", str(silent), "-vf", f"ass='{spec}':fontsdir='{fonts}'",
                     "-c:v", "libx264", "-preset", "medium",
                     "-crf", "20", "-pix_fmt", "yuv420p", str(burned)])
         silent = burned
