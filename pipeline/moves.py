@@ -493,6 +493,7 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
     plan.wipes = plan_wipes(fmt, result, reg, seed=seed, max_wipes=max_wipes)
     wiped_in = {w.shot_in: w for w in plan.wipes}
 
+    first = next(iter(result.spans), None)
     for span in result.spans:
         shot = span.shot
         layer = plate_layers.get(shot.id)
@@ -539,10 +540,12 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
             lane.place(new("highlight", lit), earliest)
 
         # 3. EVERY FIGURE COUNTS UP AS IT IS SAID. A figure the voice never
-        #    says counts up as the shot opens, the hook's move included:
-        #    the first half-second belongs to the ticker and the move.
+        #    says counts up as the shot opens, and so does the opening shot's:
+        #    the first half-second belongs to the ticker and the move (item 6),
+        #    whenever the hook gets round to saying it.
+        opening = span is first
         for slot in _figure_slots(plate, values, lit):
-            at = _heard(words, _said_forms(values[slot]), t0, t1)
+            at = None if opening else _heard(words, _said_forms(values[slot]), t0, t1)
             lane.place(new("count-up", slot, text=values[slot]),
                        at if at is not None else earliest)
 

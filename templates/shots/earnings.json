@@ -20,7 +20,9 @@
     "full even share of the opening (4.5-7 s) while the hook was spoken over it,",
     "and the hook shot lost its anchor to the monotonic pass. The first second",
     "is the ticker and the move. An order comes back when the narration says",
-    "where each beat starts, so a reordered cut still lands on its words."
+    "where each beat starts, so a reordered cut still lands on its words.",
+    "",
+    "WIPES MARK A CHANGE OF SUBJECT (item 13): a shot with `enter: wipe` is wiped in, sweep and page alternating, at most three a short; every other cut stays hard. A wipe on every cut would be a signpost on every cut, which is none."
   ],
   "shots": [
     {
@@ -31,20 +33,26 @@
       "captions": false,
       "bind": {
         "hook": "script.hook_text",
-        "sub": "?script.move_summary",
+        "move": "?chart.move",
+        "sub": "?chart.move_rest",
         "ticker": "script.ticker"
       },
-      "notes": "The hook card, second treatment — earnings is not the daily short and should not open on the same picture.",
+      "notes": "The hook card, second treatment — earnings is not the daily short and should not open on the same picture. THE TICKER AND THE MOVE IN FRAME ONE (item 6): `move` takes the day's signed move and counts up over the first half second while the hook is spoken; `sub` takes the rest of the summary. A summary that does not lead with a signed move leaves `move` empty and keeps the whole summary in `sub`.",
       "alts": [
         {
           "plate": "shorts/hook-card-t1"
         },
         {
-          "plate": "shorts/hook-card-t3"
+          "plate": "shorts/hook-card-t3",
+          "bind": {
+            "hook": "script.hook_text",
+            "sub": "?script.move_summary",
+            "ticker": "script.ticker"
+          }
         },
         {
           "plate": "shorts/hook-card-t5",
-          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same three slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
+          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
         }
       ]
     },
@@ -109,6 +117,7 @@
     {
       "id": "the-sheet",
       "plate": "tables/numbers-sheet-4r-9x16",
+      "enter": "wipe",
       "max_hold_s": 7,
       "anchor": "numbers",
       "lit": "all",
@@ -171,6 +180,7 @@
     {
       "id": "so-what",
       "plate": "structure/both-true-9x16",
+      "enter": "wipe",
       "max_hold_s": 7,
       "anchor": "cheap_or_trap",
       "meme": {

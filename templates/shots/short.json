@@ -36,7 +36,9 @@
     "",
     "ORDERS: an alternate sequence may only move shots the NARRATION does not pin. A shot with an `anchor` starts where its own words are spoken, and the words are one take written to the beat order in the writing prompt, so moving an anchored beat puts the picture over the wrong sentence. Only unanchored shots, and ones sharing an anchor with another, are free — which today is one swap. Reordering beats properly means the prompt stating the order it picked and the script carrying it back.",
     "",
-    "THE ROUND-ONE PHONE PLATES that a short script can fill are alternates here: the fifth hook card, the move on the day in both directions, and the one-line close. Placing a figure the size of the move's on a shot with captions switches the captions off for that shot, in code, because the template's `captions` flag cannot know which plate the rotation will pick."
+    "THE ROUND-ONE PHONE PLATES that a short script can fill are alternates here: the fifth hook card, the move on the day in both directions, and the one-line close. Placing a figure the size of the move's on a shot with captions switches the captions off for that shot, in code, because the template's `captions` flag cannot know which plate the rotation will pick.",
+    "",
+    "WIPES MARK A CHANGE OF SUBJECT (item 13): a shot with `enter: wipe` is wiped in, sweep and page alternating, at most three a short; every other cut stays hard. A wipe on every cut would be a signpost on every cut, which is none."
   ],
   "shots": [
     {
@@ -47,10 +49,11 @@
       "max_hold_s": 7,
       "bind": {
         "hook": "script.hook_text",
-        "sub": "?script.move_summary",
+        "move": "?chart.move",
+        "sub": "?chart.move_rest",
         "ticker": "script.ticker"
       },
-      "notes": "The hook card is the format's own opener — three treatments, and which one a video gets is a property of the script, not of this file.",
+      "notes": "The hook card is the format's own opener — three treatments, and which one a video gets is a property of the script, not of this file. THE TICKER AND THE MOVE IN FRAME ONE (item 6): `move` takes the day's signed move and counts up over the first half second while the hook is spoken; `sub` takes the rest of the summary. A summary that does not lead with a signed move leaves `move` empty and keeps the whole summary in `sub`.",
       "alts": [
         {
           "plate": "shorts/hook-card-t2",
@@ -58,11 +61,16 @@
         },
         {
           "plate": "shorts/hook-card-t3",
+          "bind": {
+            "hook": "script.hook_text",
+            "sub": "?script.move_summary",
+            "ticker": "script.ticker"
+          },
           "notes": "The third treatment. `huge` goes unfilled, which is the drawing, not a gap."
         },
         {
           "plate": "shorts/hook-card-t5",
-          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same three slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
+          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
         }
       ]
     },
@@ -103,6 +111,7 @@
     {
       "id": "the-news",
       "plate": "paper/headline-band-t1-9x16",
+      "enter": "wipe",
       "anchor": "headline",
       "max_hold_s": 7,
       "bind": {
@@ -144,6 +153,7 @@
     {
       "id": "numbers",
       "plate": "tables/numbers-sheet-3r-9x16",
+      "enter": "wipe",
       "anchor": "numbers",
       "max_hold_s": 7,
       "bind": {
@@ -229,6 +239,7 @@
     {
       "id": "cheap-or-trap",
       "plate": "structure/both-true-9x16",
+      "enter": "wipe",
       "anchor": "cheap_or_trap",
       "max_hold_s": 7,
       "bind": {

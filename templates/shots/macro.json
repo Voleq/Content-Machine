@@ -20,7 +20,9 @@
     "full even share of the opening (4.5-7 s) while the hook was spoken over it,",
     "and the hook shot lost its anchor to the monotonic pass. The first second",
     "is the ticker and the move. An order comes back when the narration says",
-    "where each beat starts, so a reordered cut still lands on its words."
+    "where each beat starts, so a reordered cut still lands on its words.",
+    "",
+    "WIPES MARK A CHANGE OF SUBJECT (item 13): a shot with `enter: wipe` is wiped in, sweep and page alternating, at most three a short; every other cut stays hard. A wipe on every cut would be a signpost on every cut, which is none."
   ],
   "shots": [
     {
@@ -36,14 +38,32 @@
       },
       "alts": [
         {
-          "plate": "shorts/hook-card-t1"
+          "plate": "shorts/hook-card-t1",
+          "bind": {
+            "hook": "script.hook_text",
+            "move": "?chart.move",
+            "sub": "?chart.move_rest",
+            "ticker": "script.ticker"
+          }
         },
         {
-          "plate": "shorts/hook-card-t2"
+          "plate": "shorts/hook-card-t2",
+          "bind": {
+            "hook": "script.hook_text",
+            "move": "?chart.move",
+            "sub": "?chart.move_rest",
+            "ticker": "script.ticker"
+          }
         },
         {
           "plate": "shorts/hook-card-t5",
-          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same three slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
+          "bind": {
+            "hook": "script.hook_text",
+            "move": "?chart.move",
+            "sub": "?chart.move_rest",
+            "ticker": "script.ticker"
+          },
+          "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
         }
       ]
     },
@@ -102,6 +122,7 @@
     {
       "id": "the-statement",
       "plate": "paper/headline-band-t2-9x16",
+      "enter": "wipe",
       "max_hold_s": 7,
       "anchor": "headline",
       "bind": {
@@ -144,6 +165,7 @@
     {
       "id": "who-it-hits",
       "plate": "cards/quote-pull-9x16",
+      "enter": "wipe",
       "max_hold_s": 7,
       "anchor": "consequences",
       "bind": {
@@ -171,6 +193,7 @@
     {
       "id": "so-what",
       "plate": "structure/both-true-9x16",
+      "enter": "wipe",
       "max_hold_s": 7,
       "anchor": "cheap_or_trap",
       "meme": {

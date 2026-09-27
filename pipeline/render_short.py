@@ -281,6 +281,17 @@ class ShortResolver:
             if field == "move_detail":
                 return detail or None
             return figure if field == f"move_{way}" else None
+        # THE MOVE IN FRAME ONE (item 6): the hook card's own `move` slot takes
+        # the signed figure in either direction, where it counts up while the
+        # first sentence is spoken, and its `sub` line takes the rest of the
+        # summary. A summary that does not open on a signed move leaves the
+        # slot empty and keeps the whole summary in the sub line, as before.
+        if field in ("move", "move_rest"):
+            summary = str(getattr(self.script, "move_summary", "") or "").strip()
+            lead = move_lead(summary)
+            if field == "move":
+                return lead[1] if lead else None
+            return (lead[2] if lead else summary) or None
         if self.prices is None:
             return None
         series = _legible(self.prices)

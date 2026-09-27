@@ -12,6 +12,7 @@ landed leaves the plate exactly as its still.
 from __future__ import annotations
 
 import json
+import re
 from collections import namedtuple
 from pathlib import Path
 
@@ -245,12 +246,12 @@ def test_a_wipe_goes_only_on_a_cut_the_template_marks(short, reg, settings):
     from dataclasses import replace
 
     fmt, result, words, _ = short
-    assert MV.plan_wipes(fmt, result, reg, seed="x") == [] or all(
-        (sp.shot.enter or "").startswith("wipe") for sp in result.spans
-        if sp.shot.id in {w.shot_in for w in MV.plan_wipes(fmt, result, reg, seed="x")})
+    by_id = {sp.shot.id: sp.shot for sp in result.spans}
+    for w in MV.plan_wipes(fmt, result, reg, seed="x"):
+        assert (by_id[w.shot_in].enter or "").startswith("wipe")
     marked = ("the-news", "numbers-1", "the-comment", "payoff")
     spans = [replace(sp, shot=replace(sp.shot, enter="wipe")) if sp.shot.id in marked
-             else sp for sp in result.spans]
+             else replace(sp, shot=replace(sp.shot, enter=None)) for sp in result.spans]
     result2 = replace(result, spans=spans)
     wipes = MV.plan_wipes(fmt, result2, reg, seed="x", max_wipes=3)
     assert 1 <= len(wipes) <= 3
@@ -261,6 +262,16 @@ def test_a_wipe_goes_only_on_a_cut_the_template_marks(short, reg, settings):
         # the cover is full on the frame the cut is under
         assert w.frame_at(w.cut) == w.cut_frame
         assert w.frame_at(w.start) == 0 and w.frame_at(w.end) is None
+
+
+def test_every_short_wipes_two_or_three_changes_of_subject(vertical, reg, settings):
+    """Item 13: a few signposts, never one inside a sequence."""
+    fmt, result, words, _ = vertical
+    wipes = MV.plan_wipes(fmt, result, reg, seed="x")
+    assert 2 <= len(wipes) <= 3, [w.shot_in for w in wipes]
+    beat = lambda shot_id: re.sub(r"-\d+$", "", shot_id)  # noqa: E731
+    for w in wipes:
+        assert beat(w.shot_out) != beat(w.shot_in), f"{w.shot_in}: a wipe inside a sequence"
 
 
 def test_moves_wait_for_the_wipe_to_uncover_the_shot(short, reg, settings):
@@ -436,3 +447,55 @@ def test_a_wipe_covers_the_whole_frame_on_the_cut(reg, settings):
     alpha = np.asarray(img)[:, :, 3]
     assert (alpha > 0).mean() > 0.999, "the cut shows through the cover"
     assert (alpha > 128).mean() > 0.99
+
+
+# ---------------------------------------------------------------------------
+# The hook (item 6)
+# ---------------------------------------------------------------------------
+
+def test_the_hook_card_carries_the_day_s_move_in_its_own_slot(settings):
+    from pipeline.parser_short import parse_short_script
+    from pipeline.render_short import ShortResolver
+
+    raw = (ROOT / "fixtures" / "scripts" / "short_valid.json").read_text(encoding="utf-8")
+    script, _ = parse_short_script(raw, settings)
+    r = ShortResolver(script=script, workdir=ROOT, settings=settings, prices=None,
+                      handle="@channel")
+    assert script.move_summary.startswith("+29%")
+    assert r.text_for("chart.move") == "+29%"
+    assert r.text_for("chart.move_rest") == "today · 5× average volume"
+    flat = script.model_copy(update={"move_summary": "Q3 beat · guide raised"})
+    r2 = ShortResolver(script=flat, workdir=ROOT, settings=settings, prices=None,
+                       handle="@channel")
+    assert r2.text_for("chart.move") is None
+    assert r2.text_for("chart.move_rest") == "Q3 beat · guide raised"
+
+
+@pytest.mark.parametrize("name", ["short", "earnings", "macro"])
+def test_every_hook_card_with_a_move_slot_binds_it(name, reg):
+    from pipeline.shots import load_format
+
+    fmt = load_format(name)
+    hook = fmt.shots[0]
+    for plate, bind in [(hook.plate, hook.bind)] + [(a.plate, a.bind or hook.bind)
+                                                     for a in hook.alts]:
+        key = reg.aspect_key(plate, "9x16") or plate
+        slots = reg.get(key).slots
+        if "move" in slots:
+            assert bind.get("move") == "?chart.move", plate
+            assert bind.get("sub") == "?chart.move_rest", plate
+        else:
+            assert "move" not in bind and bind.get("sub") == "?script.move_summary", plate
+
+
+def test_the_hook_s_move_counts_up_as_the_short_opens(short, reg, settings):
+    fmt, result, words, _ = short
+    hook = result.spans[0]
+    layer = MV.shot_plates(result)[hook.shot.id]
+    plan = MV.plan_short(fmt, result, reg, words, seed="x", settings=settings)
+    if "move" not in layer.values:
+        pytest.skip(f"{layer.entry_key} has no move slot")
+    assert layer.values["move"] == "+29%"
+    count = next(m for m in plan.moves if m.layer == layer.name and m.slot == "move")
+    assert count.move == "count-up" and count.start == pytest.approx(layer.t_start)
+    assert count.end - layer.t_start <= 0.6 + 1e-9

@@ -824,6 +824,9 @@ def expand_sequences(fmt: Format, items_for) -> Format:
                     lit=_sub(v.lit, i), focus=_sub(v.focus, i))
                     for v in shot.alts),
                 anchor=shot.anchor if i == 1 else None,
+                # A wipe marks the change of subject INTO the sequence, not
+                # each step of it.
+                enter=shot.enter if i == 1 else None,
                 marks=tuple(replace(m, target=_sub(m.target, i),
                                     name=_sub(m.name, i) or m.kind)
                             for m in shot.marks),
