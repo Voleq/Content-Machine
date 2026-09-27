@@ -135,7 +135,9 @@ _TAG_TO_KIND = {
     TagType.SOUND: CueKind.SOUND,
     TagType.PLATE: CueKind.PLATE,
     TagType.SCRIBBLE: CueKind.SCRIBBLE,
-
+    # A timed instruction to the plate already on screen; it claims no frame.
+    # plan_writer_moves turns these into the render's `writer_moves`.
+    TagType.MOVE: CueKind.MOVE,
 }
 
 # Tag types that draw nothing on the LONG timeline BY DESIGN, and why.
@@ -193,6 +195,29 @@ def unrenderable_long_tags(script: LongScript) -> list[tuple[TagEvent, str]]:
 VISUAL_CUE_KINDS = (CueKind.CLIP, CueKind.IMG, CueKind.MEME, CueKind.CHART,
                     CueKind.FILING, CueKind.SCREENGRAB, CueKind.PLATE)
 
+# Tags whose cue claims the frame. A [MOVE] acts on the last of these before
+# it — and only when that one is a [PLATE], because a move lands in a slot the
+# plate's own drawing publishes, and a clip or a meme has no slots.
+FRAME_TAG_TYPES = frozenset(
+    t for t, k in _TAG_TO_KIND.items() if k in VISUAL_CUE_KINDS)
+
+
+def move_targets(events: list[TagEvent]) -> dict[int, int | None]:
+    """For every [MOVE] in `events`, the index of the tag holding the frame.
+
+    `None` when nothing before it claims the frame (the move would open on
+    Dennis). The caller decides what a target that is not a plate means.
+    """
+    out: dict[int, int | None] = {}
+    last: int | None = None
+    for i, e in enumerate(events):
+        if e.type in FRAME_TAG_TYPES:
+            last = i
+        elif e.type is TagType.MOVE:
+            out[i] = last
+    return out
+
+
 # How long an annotation stays on screen before it lifts off. An annotation is
 # drawn in ATTENTION and spends the frame's one attention, so it is a beat in
 # its own right rather than decoration that can linger.
@@ -207,6 +232,7 @@ def build_long_timeline(
     """Resolve each TagEvent's clean-text char offset to its spoken time, so
     the ironic cut lands on the exact word it undercuts."""
     cues: list[Cue] = []
+    targets = move_targets(script.events)
     for idx, e in enumerate(script.events):
         # Not every tag draws. Delivery direction is audio and is filtered
         # against DELIVERY_TAG_TYPES so the intent stays readable here;
@@ -229,6 +255,18 @@ def build_long_timeline(
             payload["hold"] = e.hold
         if kind is CueKind.SCRIBBLE:
             payload["hold"] = SCRIBBLE_HOLD_S
+        if kind is CueKind.MOVE:
+            # WHICH PLATE, by the order of its tag. The parser recorded the
+            # plate key the move was written after, and that plate may have
+            # been dropped there; only when the tag holding the frame here is
+            # that same plate is the move paired, so it can never slide back
+            # onto an earlier plate the writer did not mean.
+            at = targets.get(idx)
+            held = script.events[at] if at is not None else None
+            same = (held is not None and held.type is TagType.PLATE
+                    and held.payload == e.values.get("plate"))
+            payload["plate_order"] = at if same else None
+            payload["plate"] = held.payload if same else ""
         cues.append(Cue(t=t, kind=kind, payload=payload))
     cues.sort(key=lambda c: (c.t, c.payload.get("order", 0)))
     return cues
@@ -549,3 +587,172 @@ def plan_long_segments(
     for a, b in zip(segments, segments[1:]):
         assert abs(a.end - b.start) < 1e-6, "segments must tile without gaps"
     return segments, warnings
+
+
+# --------------------------------------------------------------------------
+# Chapter windows, and the writer's moves on the plates.
+# --------------------------------------------------------------------------
+
+
+def chapter_windows(chapters, duration: float) -> list[tuple[float, float]]:
+    """`(start, end)` seconds per chapter of `script.chapter_list`.
+
+    The same placement render_long's chapter plan draws its openers at: a
+    trailer timestamp where the writer gave one, else the chapter's even share
+    of the runtime, because the ORDER is still information. The first window
+    opens at zero so the cold open owns everything before the first boundary.
+    Empty when there are no chapters.
+    """
+    n = len(chapters)
+    starts: list[float] = []
+    for i, ch in enumerate(chapters):
+        start_s = float(getattr(ch, "start_s", 0.0) or 0.0)
+        starts.append(start_s if start_s or i == 0 else duration * i / max(n, 1))
+    if starts:
+        starts[0] = 0.0
+    out: list[tuple[float, float]] = []
+    for i, a in enumerate(starts):
+        b = starts[i + 1] if i + 1 < n else duration
+        a = min(max(a, 0.0), duration)
+        out.append((a, min(max(b, a), duration)))
+    return out
+
+
+def chapter_at(t: float, starts: list[float]) -> int:
+    """Index of the chapter `t` falls in, by sorted chapter start times."""
+    i = 0
+    for j, s in enumerate(starts):
+        if t >= s:
+            i = j
+    return i
+
+
+@dataclass(frozen=True)
+class WriterMove:
+    """One `[MOVE]` the writer called, as the render should play it.
+
+    `t` is programme time in seconds, off the word timings; `at` is the same
+    moment measured from the start of the plate's segment, which is what an
+    engine animating one segment in isolation needs. `slot` and `box` are the
+    kit's anchor for this move on this plate (`Plate.motion`), never chosen
+    here; `text` is what the writer put in that slot, so a count-up knows the
+    figure it counts to without re-reading the tag.
+    """
+
+    move: str
+    plate: str
+    slot: str
+    t: float
+    segment: int
+    at: float
+    box: dict = field(default_factory=dict)
+    text: str = ""
+    order: int = 0
+
+    def to_json(self) -> dict:
+        return {"move": self.move, "plate": self.plate, "slot": self.slot,
+                "t": round(self.t, 3), "segment": self.segment,
+                "at": round(self.at, 3), "box": dict(self.box),
+                "text": self.text, "order": self.order}
+
+
+def plan_writer_moves(
+    cues: list[Cue],
+    segments: list[Segment],
+    reg,
+    *,
+    chapter_starts: list[float] | None = None,
+) -> tuple[list[WriterMove], list[str]]:
+    """Pair each `[MOVE]` cue with the plate segment it acts on.
+
+    Validation refused what the script got wrong before any money was spent;
+    this re-applies the same rules against the REAL clock, because only the
+    spoken timings say what is on screen when the word lands:
+
+    * a plate the planner deferred (the previous visual was still being read)
+      takes its move with it, so the move plays as the plate arrives rather
+      than over whatever came before it;
+    * a move whose word is spoken after the plate has cut back to Dennis has
+      nothing to act on, and is dropped with a warning, never replayed over
+      the host;
+    * pen-circle keeps to one a chapter and three a video by real chapter
+      time, first come first kept, because a parse-time estimate near a
+      chapter boundary can be wrong in either direction;
+    * the same move twice on one segment plays once.
+
+    Returns `(moves, warnings)`, moves in programme order.
+    """
+    from pipeline.plates import (
+        NUMBER_MOVES,
+        PEN_CIRCLES_PER_CHAPTER,
+        PEN_CIRCLES_PER_VIDEO,
+        move_box,
+        one_number,
+        writer_moves,
+    )
+
+    by_order = {s.payload.get("order"): i for i, s in enumerate(segments)
+                if s.kind == CueKind.PLATE.value}
+    starts = sorted(float(t) for t in (chapter_starts or []))
+    out: list[WriterMove] = []
+    warnings: list[str] = []
+    circles_video = 0
+    circles_chapter: dict[int, int] = {}
+    played: set[tuple[int, str]] = set()
+
+    moves = sorted((c for c in cues if c.kind is CueKind.MOVE),
+                   key=lambda c: (c.t, c.payload.get("order", 0)))
+    for c in moves:
+        move = str(c.payload.get("value") or "")
+        where = f"[MOVE: {move}] at {c.t:.1f}s"
+        seg_i = by_order.get(c.payload.get("plate_order"))
+        if c.payload.get("plate_order") is None:
+            warnings.append(f"{where} has no plate on screen to act on — skipped")
+            continue
+        if seg_i is None:
+            warnings.append(f"{where}: its plate never reached the screen "
+                            f"(dropped from the plan) — skipped")
+            continue
+        seg = segments[seg_i]
+        key = str(seg.payload.get("value") or "")
+        plate = reg.get(key) if reg is not None else None
+        slot = writer_moves(plate).get(move)
+        if not slot:
+            warnings.append(f"{where}: {key} cannot do {move} — skipped")
+            continue
+        values = seg.payload.get("values") or {}
+        text = str(values.get(slot, ""))
+        if move in NUMBER_MOVES and not one_number(text):
+            warnings.append(f"{where}: {key}'s {slot} holds {text!r}, not one "
+                            f"number — skipped")
+            continue
+        t = max(c.t, seg.start)
+        if t >= seg.end:
+            warnings.append(
+                f"{where}: {key} had cut back to Dennis at {seg.end:.1f}s, "
+                f"before the word the move was written on — skipped")
+            continue
+        if (seg_i, move) in played:
+            warnings.append(f"{where}: {move} already plays on {key} in this "
+                            f"beat — skipped")
+            continue
+        if move == "pen-circle":
+            ch = chapter_at(t, starts)
+            if circles_video >= PEN_CIRCLES_PER_VIDEO:
+                warnings.append(
+                    f"{where}: the video already has {PEN_CIRCLES_PER_VIDEO} "
+                    f"pen-circles — skipped")
+                continue
+            if circles_chapter.get(ch, 0) >= PEN_CIRCLES_PER_CHAPTER:
+                warnings.append(
+                    f"{where}: chapter {ch + 1} already has its pen-circle "
+                    f"— skipped")
+                continue
+            circles_video += 1
+            circles_chapter[ch] = circles_chapter.get(ch, 0) + 1
+        played.add((seg_i, move))
+        out.append(WriterMove(
+            move=move, plate=key, slot=slot, t=t, segment=seg_i,
+            at=t - seg.start, box=move_box(plate, move), text=text,
+            order=int(c.payload.get("order", 0))))
+    return out, warnings

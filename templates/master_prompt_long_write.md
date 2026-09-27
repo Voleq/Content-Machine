@@ -279,6 +279,13 @@ draws and where the drawing reads it from.
                             marks: {{scribble_styles}}
                             An annotation is drawn in ATTENTION and SPENDS the frame's one attention.
                             A plate that already carries an attention mark cannot also be annotated.
+[MOVE: name]            a move on the [PLATE] already on screen, right before the word it lands on:
+                        [PLATE: big-number-l1-16x9 | kicker=FREE CASH FLOW | value=$3.1bn | label=LTM] It made [MOVE: count-up] three point one billion dollars.
+                        count-up · pen-circle act on the plate's ◆ slot, and only on one number there.
+                        highlight · zoom-to-slot act on its ▭ slot; zoom on paper/ plates only.
+                        Which plate does which is marked in the catalogue. pen-circle is the rare one:
+                        the single figure a chapter turns on, at most one a chapter and three a video.
+                        A refused move blocks approval and says why.
 
 DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
 The full vocabulary is in DELIVERY DIRECTION near the top of this prompt, with

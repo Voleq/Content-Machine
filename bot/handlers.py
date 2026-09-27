@@ -1815,7 +1815,9 @@ class BotCore:
         stop a render the operator has already approved.
         """
         try:
-            from pipeline.storyboard import build_storyboard
+            from pipeline.storyboard import (
+                build_storyboard, host_share_lines, storyboard_caption,
+            )
             from pipeline.timeline import (
                 build_long_timeline, chapter_start_times, plan_long_segments,
             )
@@ -1831,7 +1833,12 @@ class BotCore:
                 segments, tts.words, ws.path / "storyboard.png", self.settings,
                 content=self.content, ticker=job.ticker, company_data=data,
                 workspace=ws.path, title=f"{job.ticker} — LONG",
+                chapters=script.chapter_list,
             )
+            # How much of each chapter is Dennis alone in frame, flagged over
+            # 70%. Reported, never acted on: that is the writer's call.
+            shares = host_share_lines(segments, script.chapter_list,
+                                      tts.duration_s)
         except JobCancelled:
             # A cancel is not a storyboard failure. Swallowing it here would
             # answer the operator's cancel with "rendering anyway" and then
@@ -1845,9 +1852,9 @@ class BotCore:
             log.exception("storyboard failed for %s — rendering anyway",
                           job.ticker)
             return
-        caption = f"{job.ticker} — storyboard, {len(segments)} beats"
-        if problems:
-            caption += "\n⚠ " + "\n⚠ ".join(problems[:6])
+        caption = storyboard_caption(
+            f"{job.ticker} — storyboard, {len(segments)} beats", problems,
+            shares)
         self.push_file(sheet, caption)
 
     def push_file(self, path: Path, caption: str = "") -> bool:
