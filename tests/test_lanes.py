@@ -57,7 +57,7 @@ def _seed_screen(settings, ticker: str, lane: str) -> None:
 def test_short_declares_the_lane_and_says_the_format(core, settings):
     reply = core.start_lane(CHAT, "short", "exmpl")
     assert "EXMPL" in reply.text
-    assert "SHORT" in reply.text and "60–75s" in reply.text
+    assert "SHORT" in reply.text and "45–55s" in reply.text
     assert core.context.get(CHAT).lane() == "short"
 
 

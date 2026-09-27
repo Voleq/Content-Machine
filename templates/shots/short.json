@@ -34,7 +34,7 @@
     "",
     "ALTERNATES: a beat may name other plates that can carry it, and code picks between them, rotating off what the last few videos used. The writer still chooses nothing — that is the point of a format that exists to be mass-produced. An alternate restates `bind` when it names its slots differently, and inherits when it does not.",
     "",
-    "ORDERS: an alternate sequence may only move shots the NARRATION does not pin. A shot with an `anchor` starts where its own words are spoken, and the words are one take written to the beat order in the writing prompt, so moving an anchored beat puts the picture over the wrong sentence. Only unanchored shots, and ones sharing an anchor with another, are free — which today is one swap. Reordering beats properly means the prompt stating the order it picked and the script carrying it back.",
+    "ORDERS: a shot with an `anchor` starts where its own words are spoken. An unmarked script is one take written to the authored beat order, so it is only offered the orders that keep that sequence. A script whose narration carries [BEAT: key] markers says where each beat starts, and the cut follows its markers, so the orders that move anchored beats are open to it (item 2).",
     "",
     "THE ROUND-ONE PHONE PLATES that a short script can fill are alternates here: the fifth hook card, the move on the day in both directions, and the one-line close. Placing a figure the size of the move's on a shot with captions switches the captions off for that shot, in code, because the template's `captions` flag cannot know which plate the rotation will pick.",
     "",
@@ -314,7 +314,7 @@
         "payoff",
         "close"
       ],
-      "notes": "The read before the pull-back instead of after it. `the-sheet` and `the-comment` both listen for `numbers_comment`, so the voice does not care which lands first — which is what makes this the one swap the narration leaves free."
+      "notes": "The read before the pull-back instead of after it. `the-sheet` and `the-comment` both listen for `numbers_comment`, so the voice does not care which lands first, and this order is open to a script with or without beat markers."
     },
     {
       "name": "news-first",

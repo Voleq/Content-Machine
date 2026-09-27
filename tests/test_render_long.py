@@ -1237,8 +1237,10 @@ def test_the_long_opens_on_a_wide_room(rendered):
     assert manifest["cold_open_room"] == WINDOW
     # The talking angles never include the window-wide shot, so a still of it
     # in the render's room cache is the cold open's beat having been shot there.
+    # Its window has weather now, so what is cached is its loop (item 19).
     rdir = out.parent / "render_long"
-    assert list(rdir.glob("room_window-wide-16x9_*.png"))
+    assert (list(rdir.glob("room_window-wide-16x9_*.png"))
+            or list(rdir.glob("roomloop_window-wide-16x9_*.mov")))
 
 
 def test_the_manifest_carries_the_writer_moves_for_the_renderer(rendered):
