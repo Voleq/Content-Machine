@@ -70,6 +70,11 @@ class TagType(str, Enum):
     # anchors publish for that move. LONG only; what each plate can do is in
     # pipeline/plates.py (writer_moves) and the writer is shown it in the menu.
     MOVE = "MOVE"
+    # WHERE THE FIGURE ON SCREEN COMES FROM — [SOURCE: Q2 10-Q], placed after
+    # the [PLATE] it is for. Like a [MOVE] it claims no frame: design's source
+    # tag slides in under that plate once its moves have landed. LONG only; a
+    # SHORT's sources are a field on its script.
+    SOURCE = "SOURCE"
     # DELIVERY DIRECTION — stripped from captions, passed to TTS.
     #
     # What each one becomes is in pipeline/direction.py, one table, per model
@@ -708,6 +713,8 @@ class CueKind(str, Enum):
     # A writer's [MOVE] on the plate on screen. No segment either: it is a
     # timed instruction to the plate that already holds the frame.
     MOVE = "move"
+    # A writer's [SOURCE] under the plate on screen. No segment either.
+    SOURCE = "source"
 
 
 class Cue(BaseModel):

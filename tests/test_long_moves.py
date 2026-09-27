@@ -146,7 +146,7 @@ def test_each_chapter_lands_on_its_own_cut():
 
 MOVES_RAW = """EXMPL made money on paper and not in the bank, and that is the whole story today.
 Here is the gap. [PLATE: earnings-vs-cash-16x9 | kicker=EARNINGS VS CASH | gap=$1.2bn] Earnings ran ahead of cash by [MOVE: count-up] one point two billion dollars, and that is the number to remember for the rest of this.
-Then the revenue, six years of it. [PLATE: bars-6y-16x9 | head-1=FY20 | head-2=FY21 | head-3=FY22 | head-4=FY23 | head-5=FY24 | head-6=FY25 | value-1=1.2 | value-2=1.5 | value-3=1.9 | value-4=2.4 | value-5=2.2 | value-6=3.1 | unit=$bn] It grew in five of those six years, which is the good news, and it is most of the good news.
+Then the revenue, six years of it. [PLATE: bars-6y-16x9 | head-1=FY20 | head-2=FY21 | head-3=FY22 | head-4=FY23 | head-5=FY24 | head-6=FY25 | value-1=1.2 | value-2=1.5 | value-3=1.9 | value-4=2.4 | value-5=2.2 | value-6=3.1 | unit=$bn] [SOURCE: 10-K filings, FY20–FY25] It grew in five of those six years, which is the good news, and it is most of the good news.
 That is where it stands for now. See you at the next filing.
 
 === CHAPTERS ===
@@ -198,3 +198,20 @@ def test_the_writer_s_count_up_and_the_bars_play_in_the_cut(rendered_moves):
     want = max(under) if under else wm["t"]
     assert count["start"] == pytest.approx(want, abs=1 / 12)
     assert not any(a <= count["start"] < b - 1e-3 for a, b in covers)
+
+
+def test_the_source_slides_in_under_the_bars_once_they_are_up(rendered_moves):
+    _, manifest = rendered_moves
+    (src,) = manifest["sources"]
+    assert src["text"] == "10-K filings, FY20–FY25"
+    shot = f"segment_{src['segment']}"
+    rows = manifest["moves"]["moves"]
+    grow = next(r for r in rows if r["move"] == "bars-grow" and r["shot_id"] == shot)
+    slide = next(r for r in rows if r["move"] == "slide-in" and r["shot_id"] == shot)
+    # After the bars have grown (8 frames) and held to the end of the beat.
+    assert slide["start"] >= grow["start"] + 8 / 12
+    assert slide["start"] == pytest.approx(src["start"])
+    seg = manifest["segments"][src["segment"]]
+    assert src["end"] == pytest.approx(seg["end"], abs=1e-3)
+    layer = next(l for l in manifest["layers"] if l["name"] == f"source_{src['segment']}")
+    assert layer["t_start"] == pytest.approx(src["start"], abs=1e-3)

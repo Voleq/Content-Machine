@@ -127,6 +127,7 @@ from pipeline.timeline import (
     chapter_start_times,
     plan_long_segments,
     plan_writer_moves,
+    plan_writer_sources,
     unrenderable_long_tags,
 )
 
@@ -662,6 +663,14 @@ def _render_long(
     # what the sound is timed to. Filled as the beats are drawn.
     long_moves: list[dict] = []
     moves_skipped: list[str] = []
+    # When each plate beat's moves have all landed, in programme time: the
+    # source slides in after them, not over a figure still counting.
+    seg_landed: dict[int, float] = {}
+    # THE WRITER'S SOURCES, paired with their beats the same way (item 14).
+    writer_sources, source_warnings = plan_writer_sources(cues, segments)
+    for w in source_warnings:
+        log.warning("sources: %s", w)
+    moves_skipped.extend(source_warnings)
 
     # WHERE THE FRAME IS COVERED: the opening title, each chapter's bumper
     # (or the room opener on chapter one), and the wipes on the cold open and
@@ -1248,6 +1257,7 @@ def _render_long(
         if clips is not None:
             long_moves.extend({**m.row(), "start": round(seg.start + m.start, 3)}
                               for m in moves)
+            seg_landed[seg_i] = seg.start + max(m.end for m in moves)
         return clips
 
     # ----------------------------------------------- the two-shot, on the room
@@ -1859,6 +1869,41 @@ def _render_long(
                     is_video=True, name=f"glitch@{seg.start:.2f}",
                 ))
 
+    # THE SOURCE SLIDES IN UNDER THE FIGURE (item 14): design's tag, off the
+    # frame's left edge with its small overshoot, where the writer's
+    # [SOURCE] says, once the beat's moves have landed and nothing covers
+    # the frame, held to the end of the beat. A beat too short to read it
+    # after all that gets none, and the manifest says so.
+    from pipeline.moves import TAG_READ_S, Move as _Move, source_tag_clip
+
+    source_meta: list[dict] = []
+    for src in writer_sources:
+        seg = segments[src.segment]
+        where = f"[SOURCE: {src.text}] at {src.t:.1f}s"
+        start = max(src.t, seg.start)
+        if src.segment in seg_landed:
+            start = max(start, seg_landed[src.segment] + 0.15)
+        start = _cleared(start, covers)
+        end = min(seg.end, duration)
+        if start + TAG_READ_S > end:
+            moves_skipped.append(f"{where}: the beat cuts at {end:.1f}s, too soon "
+                                 f"after its moves land to read a source — skipped")
+            continue
+        clip = source_tag_clip(reg, settings, rdir / f"source_{src.segment}.mov",
+                               text=src.text, plate=reg.get(src.plate),
+                               aspect=aspect,
+                               panel=panel_rects.get(src.segment, (0, 0, W, H)))
+        if clip is None:
+            moves_skipped.append(f"{where}: no source tag for {src.plate} — skipped")
+            continue
+        layers.append(OverlayLayer(
+            path=clip.path, x=clip.x, y=clip.y, t_start=start, t_end=end,
+            is_video=True, hold=True, name=f"source_{src.segment}"))
+        long_moves.append(_Move("slide-in", f"segment_{src.segment}", "", "source",
+                                start, clip.frames, "land").row())
+        source_meta.append({**src.to_json(), "start": round(start, 3),
+                            "end": round(end, 3)})
+
     # Annotations (TOP layer, riding over whatever segment shows).
     #
     # An annotation is drawn in ATTENTION and therefore SPENDS the frame's one
@@ -2224,6 +2269,8 @@ def _render_long(
         # would otherwise be indistinguishable from one another.
         "audio": audio_rows,
         "marks": mark_solves,
+        # Each [SOURCE] the writer wrote and when its tag slid in.
+        "sources": source_meta,
         "marks_out_of_band": [m for m in mark_solves if m["warnings"]],
         "segment_warnings": seg_warnings,
         "chapter_warnings": chapter_warnings,
