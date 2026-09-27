@@ -12,10 +12,10 @@ def test_mock_mode_default_true(tmp_path: Path):
 
 def test_budgets_defaults():
     s = Settings(_env_file=None)
-    assert s.short_max_chars == 1400  # 60–75s retention-first short
+    assert s.short_max_chars == 1100  # 45–55s retention-first short
     assert s.long_max_chars == 36000  # complexity-driven ceiling (~40 min)
     assert s.monthly_spend_cap_usd == 50.0
-    assert s.max_chars("short") == 1400
+    assert s.max_chars("short") == 1100
     assert s.max_chars("long") == 36000
 
 
@@ -30,6 +30,16 @@ def test_voice_settings_per_format():
     long_ = s.voice_settings("long")
     assert short["stability"] < long_["stability"], "LONG must be the deadpan (stable) voice"
     assert long_["style"] <= 0.1
+
+
+def test_the_short_voice_reads_quicker_and_the_long_voice_is_untouched():
+    """140–160 words have to land in 45–55 seconds; the long has its own
+    pace and nothing about the shorter short changes it."""
+    s = Settings(_env_file=None)
+    assert s.eleven_speed_short == 1.05
+    assert s.voice_settings("short")["speed"] == 1.05
+    assert s.eleven_speed_long == 0.95
+    assert s.voice_settings("long")["speed"] == 0.95
 
 
 def test_delivery_backend_validated():

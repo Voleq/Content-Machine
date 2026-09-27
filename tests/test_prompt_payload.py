@@ -252,3 +252,80 @@ def test_the_short_prompts_put_the_host_where_the_templates_do():
                       "back on camera"):
             assert stale not in text, f"master_prompt_{fmt}.md: {stale!r}"
         assert "opens on the hook card" in text, fmt
+
+
+# --------------------------------------------------------------------------
+# The cut: which beats, in which order, marked where.
+# --------------------------------------------------------------------------
+
+def _listed_beats(text: str) -> list[str]:
+    return re.findall(r"^\d+\. \[BEAT: ([a-z_]+)\]", text, flags=re.M)
+
+
+def test_the_short_prompt_hands_the_writer_the_order_the_cut_will_follow(
+        settings, fixtures_dir, tmp_path):
+    """The order is chosen BEFORE the script is written, and the writer marks
+    the beats in it — a render can only move a beat the narration moves."""
+    import shutil
+
+    from pipeline.company_data import load_company_data
+    from pipeline.shots import (apply_order, load_format, order_names,
+                                voice_keys)
+
+    from bot.prompts import fill_prompt
+
+    ws = tmp_path / "ws3"
+    ws.mkdir()
+    shutil.copy(fixtures_dir / "company_data" / "dennis_data.xlsx",
+                ws / "dennis_data.xlsx")
+    text = fill_prompt("short", "EXMPL", load_company_data(ws), ws, settings)
+
+    listed = _listed_beats(text)
+    assert listed[0] == "hook"
+    fmt = load_format("short")
+    assert tuple(listed) in {voice_keys(apply_order(fmt, n).shots)
+                             for n in order_names(fmt)}
+    assert "{{beat_order}}" not in text
+
+
+@pytest.mark.parametrize("mode,beat", [("earnings", "guidance"),
+                                       ("macro", "consequences"),
+                                       ("company", "numbers_comment")])
+def test_the_headline_prompt_lists_the_beats_of_the_format_it_will_render(
+        settings, tmp_path, mode, beat):
+    from pipeline.shots import beat_keys, load_format
+
+    from bot.prompts import fill_prompt
+
+    ws = tmp_path / f"ws-{mode}"
+    ws.mkdir()
+    text = fill_prompt("headline", "SPY", None, ws, settings,
+                       headline="x", headline_mode=mode)
+    listed = _listed_beats(text)
+    name = mode if mode in ("earnings", "macro") else "short"
+    assert sorted(listed) == sorted(beat_keys(load_format(name)))
+    assert beat in listed
+
+
+@pytest.mark.parametrize("fmt", ["short", "headline"])
+def test_both_short_prompts_ask_for_the_shorter_script(fmt):
+    text = (TEMPLATES / f"master_prompt_{fmt}.md").read_text(encoding="utf-8")
+    assert "140–160 spoken words, ≤ 1100 characters" in text
+    assert "~20–25s" in text
+    assert "~45–55s" in text
+    for old in ("180–210", "180-210", "1400", "~30s", "60–75"):
+        assert old not in text, old
+
+
+@pytest.mark.parametrize("fmt", ["short", "headline"])
+def test_the_prompt_example_is_marked_and_in_the_word_band(fmt):
+    """The example is what a writer copies. It carries markers, in a real
+    order, and is the length the rules ask for."""
+    from pipeline.tagging import tokenize_tags
+
+    text = (TEMPLATES / f"master_prompt_{fmt}.md").read_text(encoding="utf-8")
+    example = re.search(r'"audio_script": "(\[BEAT: hook\].*?)",\n', text)
+    assert example, "the example audio_script opens on [BEAT: hook]"
+    clean, _tags, _w = tokenize_tags(example.group(1))
+    assert 140 <= len(clean.split()) <= 160
+    assert len(clean) <= 1100

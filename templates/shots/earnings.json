@@ -221,5 +221,35 @@
         }
       ]
     }
+  ],
+  "orders": [
+    {
+      "name": "guidance-first",
+      "shots": [
+        "open",
+        "guidance",
+        "the-print",
+        "vs-expected",
+        "the-sheet",
+        "the-turn",
+        "so-what",
+        "close"
+      ],
+      "notes": "The guide is the news on some prints and the quarter is the footnote: guidance straight after the hook, then the print against the estimate. Cut only for a script whose markers put `guidance` second."
+    },
+    {
+      "name": "turn-early",
+      "shots": [
+        "open",
+        "the-print",
+        "vs-expected",
+        "the-turn",
+        "the-sheet",
+        "guidance",
+        "so-what",
+        "close"
+      ],
+      "notes": "The pivot before the years: Dennis says what the beat does not tell you, then the sheet proves it. Cut only for a script marked in this order."
+    }
   ]
 }

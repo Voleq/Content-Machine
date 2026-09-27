@@ -300,6 +300,38 @@
         "close"
       ],
       "notes": "The read before the pull-back instead of after it. `the-sheet` and `the-comment` both listen for `numbers_comment`, so the voice does not care which lands first — which is what makes this the one swap the narration leaves free."
+    },
+    {
+      "name": "news-first",
+      "shots": [
+        "hook",
+        "the-news",
+        "the-move",
+        "the-turn",
+        "numbers",
+        "the-sheet",
+        "the-comment",
+        "cheap-or-trap",
+        "payoff",
+        "close"
+      ],
+      "notes": "Why before how much: the headline straight after the hook, then the chart it moved. Moves two pinned beats, so it is cut only for a script whose markers put `headline` before `move` — the writing prompt names this order before a word is written."
+    },
+    {
+      "name": "turn-after-numbers",
+      "shots": [
+        "hook",
+        "the-move",
+        "the-news",
+        "numbers",
+        "the-sheet",
+        "the-comment",
+        "the-turn",
+        "cheap-or-trap",
+        "payoff",
+        "close"
+      ],
+      "notes": "The evidence first and the pivot after it: Dennis turns the story once the numbers are on the table, straight into cheap-or-trap. Moves the pinned `turn`, so it is cut only for a script marked in this order."
     }
   ]
 }

@@ -381,6 +381,30 @@ class CutawayTag(BaseModel):
     anchor_word: str = ""
 
 
+class BeatMark(BaseModel):
+    """Where the writer said a beat starts: `[BEAT: numbers]` in the narration.
+
+    A shot used to start wherever its FIELD's words turned up in the voice —
+    the first four words of `numbers_comment`, searched for in the audio. That
+    works only when the writer happens to say the field aloud, and it pins the
+    beats to one order, because the search cannot tell a beat that moved from
+    a beat that is missing. A marker says both things outright: this beat
+    starts on the next word, and it comes after the one marked before it.
+
+    It is never spoken. The parser takes it out of `audio_script` and keeps it
+    here, apart from `inline_events`, because a bare `[BEAT]` in that list IS
+    a pause — the voice would stop at every beat boundary if a marker were
+    filed beside it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # The shot template's anchor key: `hook`, `numbers`, `cheap_or_trap`.
+    key: str = Field(min_length=1, max_length=40)
+    # Offset into the CLEAN audio_script of the first word spoken in the beat.
+    char_offset: int = Field(ge=0)
+
+
 class ShortScript(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -455,6 +479,10 @@ class ShortScript(BaseModel):
     # (never spoken); offsets index the CLEAN audio_script. Model-populated,
     # never authored directly in the JSON.
     inline_events: list[TagEvent] = Field(default_factory=list)
+    # The `[BEAT: key]` markers the parser took out of audio_script, in the
+    # order they were written. Model-populated, never authored in the JSON.
+    # Empty is a script written without them, which renders as it always did.
+    beat_marks: list[BeatMark] = Field(default_factory=list)
 
     @field_validator("ticker")
     @classmethod
@@ -500,9 +528,26 @@ class ShortScript(BaseModel):
     def delivery_events(self) -> list[TagEvent]:
         return [e for e in self.inline_events if e.type in DELIVERY_TAG_TYPES]
 
+    def beat_order(self) -> list[str]:
+        """The marked beats' keys, in the order the narration reaches them."""
+        return [m.key for m in sorted(self.beat_marks,
+                                      key=lambda m: m.char_offset)]
+
+    def words_after_mark(self, key: str, n: int = 8) -> str:
+        """The first `n` words spoken after `[BEAT: key]`, or "" if unmarked."""
+        for m in self.beat_marks:
+            if m.key == key:
+                return " ".join(self.audio_script[m.char_offset:].split()[:n])
+        return ""
+
     def content_sha(self) -> str:
+        # AN UNMARKED SCRIPT KEEPS THE HASH IT HAD. The sha is what an
+        # approval is recorded against and what every render seed is drawn
+        # from, so a new empty field changing it would un-approve every script
+        # on disk and re-roll the plates of every video re-rendered from one.
+        exclude = None if self.beat_marks else {"beat_marks"}
         return hashlib.sha256(
-            self.model_dump_json().encode("utf-8")
+            self.model_dump_json(exclude=exclude).encode("utf-8")
         ).hexdigest()[:16]
 
 

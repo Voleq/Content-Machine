@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Collection, Sequence
+from typing import Any, Callable, Collection, Sequence
 
 TEMPLATE_DIR = Path("templates/shots")
 
@@ -252,6 +252,13 @@ class Shot:
     # Other plates that can carry this beat. Empty is the old behaviour: one
     # plate, every time.
     alts: tuple[Variant, ...] = ()
+    # SET BY `resolve_spans`, NEVER AUTHORED. A beat that runs past its ceiling
+    # is cut in two: part 1 is the drawing wide, part 2 moves in on one slot of
+    # the SAME drawing. `part_of` names the shot part 2 was cut from, so the
+    # compositor draws it on the plate part 1 picked instead of rolling the
+    # rotation again and cutting to a different picture of the same beat.
+    part: int = 0
+    part_of: str = ""
 
     @property
     def variants(self) -> tuple[Variant, ...]:
@@ -523,46 +530,79 @@ def parse_format(raw: dict, source: Path | None = None,
 # The authored sequence, as a name the rotation can pick and a manifest can
 # record. A format never lists it; it is always in play.
 AS_AUTHORED = "as-authored"
+# The narration's own sequence, when the script marks its beats in an order no
+# declared order cuts. Recorded on the manifest like any other name, and read
+# back by `apply_order` as the authored sequence — which is right, because the
+# markers, not the name, are what put the beats in order.
+AS_MARKED = "as-marked"
 
 
-def _anchored_spine(shots: Sequence[Shot]) -> tuple[str, ...]:
-    """The ids of the shots the NARRATION pins, in the order it pins them.
+def voice_keys(shots: Sequence[Shot]) -> tuple[str, ...]:
+    """The beats a run of shots listens for, by anchor key, in order.
 
-    A shot with an `anchor` starts where its own words are spoken, and the
-    words are one linear take the writer wrote to the format's authored beat
-    order. So the anchored shots are not free to move: put `the-news` ahead of
-    `the-move` and the picture is talking about the headline while the voice is
-    still on the price. `resolve_spans` will not even let it try — its
-    monotonic pass drops an anchor landing before one already fixed, so the
-    shot stops being anchored at all and interpolates to somewhere that matches
-    nothing.
-
-    THIS IS THE CEILING ON ALTERNATE ORDERS AND IT IS NOT A CODE LIMIT. It is
-    the writing prompt, which states the beats as fixed and asks for one take
-    of prose over them. Reordering beats for real means the prompt states the
-    order it picked and the script carries it back, and that is a change to
-    what the writer is asked for rather than to this file.
-
-    Until then an order may move the shots the narration does NOT pin — the
-    sign-off, and any beat sharing its anchor with another — and must leave the
-    pinned ones in the sequence the voice puts them in. Nothing goes ahead of
-    the opening shot, pinned or not: see `_parse_orders`.
+    A shot with an `anchor` starts where its own words are spoken, so this is
+    the order the NARRATION has to put the beats in for the picture to be on
+    the right sentence. Two shots listening for the same words are one beat to
+    the voice — the SHORT's sheet and comment both start on the numbers
+    comment — so a run of them counts once, and swapping them inside the run
+    changes nothing the voice can hear.
     """
-    return tuple(sh.id for sh in shots if sh.anchor)
+    out: list[str] = []
+    for sh in shots:
+        if sh.anchor and (not out or out[-1] != sh.anchor):
+            out.append(sh.anchor)
+    return tuple(out)
+
+
+def beat_keys(fmt: Format) -> tuple[str, ...]:
+    """The beats a writer may mark in this format — `[BEAT: key]` — in order.
+
+    They are the anchor keys, because a marker is the writer saying where the
+    words a shot listens for begin. A key two shots share is one marker.
+    """
+    out: list[str] = []
+    for sh in fmt.shots:
+        if sh.anchor and sh.anchor not in out:
+            out.append(sh.anchor)
+    return tuple(out)
+
+
+def marker_formats(root: Path | str = ".") -> dict[str, tuple[str, ...]]:
+    """Every format a SHORT renders through, with the beats it can mark.
+
+    The chaptered LONG is left out: its anchors are chapter numbers the
+    renderer derives from the prose, and nobody writes them.
+    """
+    out: dict[str, tuple[str, ...]] = {}
+    for name in available_formats(root):
+        fmt = load_format(name, root)
+        if any(sh.chapter for sh in fmt.shots):
+            continue
+        out[name] = beat_keys(fmt)
+    return out
 
 
 def _parse_orders(raw: Any, fmt_name: str,
                   shots: tuple[Shot, ...]) -> tuple[ShotOrder, ...]:
-    ids = [sh.id for sh in shots]
-    spine = _anchored_spine(shots)
-    by_id = {sh.id: sh for sh in shots}
-    # Two shots listening for the SAME words are interchangeable, so the spine
-    # compares what each pinned shot listens for rather than which shot it is.
-    def voice(order_ids: Sequence[str]) -> tuple[str, ...]:
-        return tuple(by_id[i].anchor or "" for i in order_ids
-                     if by_id[i].anchor)
+    """The format's declared alternate cut orders, checked.
 
-    want = voice(spine)
+    AN ORDER MAY MOVE A BEAT THE NARRATION PINS, and until the markers it could
+    not. A pinned shot starts where its own words are spoken, and the words
+    were one take written to the authored beat order, so a picture moved ahead
+    of its sentence talked over the wrong one — `resolve_spans` dropped its
+    anchor for landing before one already fixed, and it interpolated to
+    somewhere that matched nothing. Now the writing prompt names the order
+    before a word is written and the script marks where each beat starts, so a
+    narration can be in any declared order. `choose_order` keeps an order that
+    moves a pinned beat away from any script whose narration does not say it
+    is in that order, and an unmarked script never is.
+
+    What stays refused is what no script could be written to match: an order
+    that drops or repeats a shot, one that opens on anything but the hook, and
+    one that parts two shots listening for the same words.
+    """
+    ids = [sh.id for sh in shots]
+    by_id = {sh.id: sh for sh in shots}
     out: list[ShotOrder] = []
     seen: set[str] = set()
     for i, o in enumerate(raw or ()):
@@ -590,13 +630,18 @@ def _parse_orders(raw: Any, fmt_name: str,
                 f"it names every shot exactly once. Missing {missing}, "
                 f"unknown {extra}. Dropping a beat here would drop it "
                 f"silently — prune it from the script instead.")
-        if voice(oshots) != want:
+        # ONE BEAT IS ONE RUN OF SHOTS. Two shots listening for the same words
+        # start on the same sentence; an order that puts another beat between
+        # them asks the voice to say that sentence twice, and no script can be
+        # marked to match it — the order would parse and never be cut.
+        heard = voice_keys([by_id[s] for s in oshots])
+        parted = sorted({k for k in heard if heard.count(k) > 1})
+        if parted:
             raise TemplateError(
-                f"{where}: moves a shot the narration pins. The voice speaks "
-                f"these beats in the order {list(want)} and a picture that "
-                f"arrives out of that order is talking over the wrong "
-                f"sentence. Only shots with no anchor, or ones sharing an "
-                f"anchor with another, are free to move.")
+                f"{where}: puts another beat between the shots that listen "
+                f"for {parted}. They start on the same words, so the voice "
+                f"hears them as one beat, and a narration cannot reach one "
+                f"beat twice.")
         # The opening is the one position an unpinned shot cannot take.
         # `resolve_spans` puts whatever is first at 0.0 and drops the hook's
         # anchor for landing on top of it, so an unanchored shot moved ahead
@@ -638,18 +683,69 @@ def apply_order(fmt: Format, name: str) -> Format:
 
 
 def choose_order(fmt: Format, seed: str = "",
-                 avoid: "Collection[str]" = ()) -> str:
+                 avoid: "Collection[str]" = (), *,
+                 heard: Sequence[str] | None = None) -> str:
     """Which cut order this video gets, rotating off the recent ones.
 
     The same preference the plates use: drop what the last few videos were cut
     in unless that leaves nothing, then let the seed decide. A format that
-    declares no orders always answers with the authored one, so this is a
-    no-op until somebody authors an alternative.
+    declares no orders always answers with the authored one.
+
+    `heard` is the order the NARRATION puts the beats in, by anchor key, and
+    it narrows the rotation to the orders that cut those beats in that
+    sequence. `None` is the writing prompt, choosing before a word exists:
+    every declared order is open, because the writer is about to be told
+    which one to follow. A render passes what it heard — the marked beats, or
+    for an unmarked script the authored beats, which leaves exactly the orders
+    the rotation offered before orders could move a pinned beat, so an
+    unmarked script picks what it always picked.
+
+    When the markers put the beats in an order nothing declares, the answer
+    is `AS_MARKED`: the markers order the cut and there is no name to rotate.
     """
     import random
 
-    options = _prefer_unused_names(list(order_names(fmt)), avoid)
+    names = list(order_names(fmt))
+    if heard is not None:
+        want = tuple(heard)
+        keys = set(want)
+        names = [n for n in names
+                 if tuple(k for k in voice_keys(apply_order(fmt, n).shots)
+                          if k in keys) == want]
+        if not names:
+            return AS_MARKED
+    options = _prefer_unused_names(names, avoid)
     return random.Random(f"order|{fmt.name}|{seed}").choice(options)
+
+
+def order_by_marks(fmt: Format, heard: Sequence[str]) -> Format:
+    """`fmt` resequenced to where the narration's markers put its beats.
+
+    Each shot whose beat is marked starts a block. A shot with no anchor, or
+    one whose beat the writer left unmarked, rides in the block before it: the
+    sign-off stays behind the payoff wherever the payoff goes, which is the
+    only place a shot listening for nothing can be put and still be on the
+    right sentence. Blocks sort by where their marker falls, stably, so two
+    shots on the same words keep the order the template or the chosen order
+    gave them.
+
+    The opening shot's block never moves. The first words are spoken over it,
+    and a cut that opens on anything else holds that picture while the hook
+    is heard over it.
+    """
+    from dataclasses import replace
+
+    rank = {k: i for i, k in enumerate(heard)}
+    blocks: list[tuple[int, list[Shot]]] = []
+    for n, sh in enumerate(fmt.shots):
+        if n == 0:
+            blocks.append((-1, [sh]))
+        elif sh.anchor in rank:
+            blocks.append((rank[sh.anchor], [sh]))
+        else:
+            blocks[-1][1].append(sh)
+    blocks.sort(key=lambda b: b[0])
+    return replace(fmt, shots=tuple(sh for _r, b in blocks for sh in b))
 
 
 def _prefer_unused_names(options: list[str],
@@ -781,39 +877,58 @@ class Span:
         return self.end - self.start
 
 
+
+
 def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
-                  anchors: dict[str, str] | None = None) -> list[Span]:
+                  anchors: dict[str, str] | None = None, *,
+                  ordered: bool = False,
+                  punch_in: "Callable[[Shot], str | None] | None" = None,
+                  ) -> list[Span]:
     """Give every shot a start and an end, off the spoken audio.
 
     A shot whose `anchor` names text that can be found in the narration starts
-    where that text is spoken. Every other shot is distributed evenly between
-    its anchored neighbours. The result is monotonic and covers the full
-    duration exactly once — no shot may start before the one before it ends,
-    because two compositions at the same instant is not a thing the format can
+    where that text is spoken. Every other shot shares the time between its
+    anchored neighbours. The result is monotonic and covers the full duration
+    exactly once — no shot may start before the one before it ends, because
+    two compositions at the same instant is not a thing the format can
     express.
 
     `anchors` maps a shot's anchor key to the literal words to look for; the
     caller builds it from the script, because this module knows about shots
     and not about tickers.
+
+    `ordered` looks for each shot's words only AFTER the words of the shot
+    before it. A marked script asks for it: its anchors are the words spoken
+    right after each marker, and a phrase that also turns up earlier — the
+    first words of the payoff said once in the hook — must not pin the payoff
+    to the hook. An unmarked script searches the whole narration, as it
+    always did.
+
+    `punch_in(shot)` names the slot a beat that runs long can move in on; see
+    `_split_long_beats`. Without it a long beat holds.
     """
     from pipeline.timeline import clamp, find_anchor_time
 
     anchors = anchors or {}
-    n = len(fmt.shots)
-    at: list[float | None] = [None] * n
-
-    for i, s in enumerate(fmt.shots):
-        if not s.anchor:
-            continue
-        phrase = anchors.get(s.anchor)
-        if not phrase:
-            continue
-        tokens = str(phrase).split()
-        if len(tokens) < 2:
-            continue
-        t = find_anchor_time(list(words), " ".join(tokens[:4]))
-        if t is not None:
-            at[i] = clamp(t, duration)
+    words = list(words)
+    shots = fmt.shots
+    n = len(shots)
+    if ordered:
+        at = _ordered_anchor_times(shots, words, duration, anchors)
+    else:
+        at = [None] * n
+        for i, s in enumerate(shots):
+            if not s.anchor:
+                continue
+            phrase = anchors.get(s.anchor)
+            if not phrase:
+                continue
+            tokens = str(phrase).split()
+            if len(tokens) < 2:
+                continue
+            t = find_anchor_time(words, " ".join(tokens[:4]))
+            if t is not None:
+                at[i] = clamp(t, duration)
 
     # The cut opens on the first shot. This is fixed before anything else and
     # is never revisited: an opening the audio clock pushes later leaves the
@@ -829,51 +944,16 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
         else:
             last = at[i]
 
-    # Interpolate the unanchored runs between their fixed neighbours.
-    starts: list[float] = [0.0] * n
-    i = 0
-    while i < n:
-        if at[i] is not None:
-            starts[i] = float(at[i])
-            i += 1
-            continue
-        prev = starts[i - 1] if i else 0.0
-        j = i
-        while j < n and at[j] is None:
-            j += 1
-        nxt = float(at[j]) if j < n else duration
-        gap = max(nxt - prev, 0.0)
-        step = gap / (j - i + 1) if j - i + 1 else gap
-        for k in range(i, j):
-            starts[k] = prev + step * (k - i + 1)
-        i = j
+    starts = _share_runs(shots, at, duration)
 
     spans: list[Span] = []
-    for i, s in enumerate(fmt.shots):
+    for i, s in enumerate(shots):
         start = starts[i]
         end = starts[i + 1] if i + 1 < n else duration
         if end - start < MIN_SHOT_S:
             end = min(start + MIN_SHOT_S, duration)
         spans.append(Span(shot=s, start=start, end=end,
                           anchored=at[i] is not None))
-
-    # max_hold_s is a CEILING ON THE SPAN, for every shot.
-    #
-    # It used to apply only to bare-ground shots, on the reasoning that a
-    # plate boils and therefore never sits still. That is true of a dense
-    # plate and false of a sparse one: a chapter stinger is two words and two
-    # rules, and its boil moves too little ink to read as anything. Given an
-    # equal share of a 190-second runtime it held for fifteen seconds.
-    #
-    # So the ceiling binds the span, and the excess goes to the next shot.
-    for i, sp in enumerate(spans):
-        if sp.dur <= sp.shot.max_hold_s:
-            continue
-        capped = sp.start + sp.shot.max_hold_s
-        spans[i] = Span(sp.shot, sp.start, capped, sp.anchored)
-        if i + 1 < len(spans):
-            nxt = spans[i + 1]
-            spans[i + 1] = Span(nxt.shot, capped, nxt.end, nxt.anchored)
 
     # Repair any overlap the minimum introduced, then pin the tail to the
     # audio: a shot that outlives the narration is a frame with no reason to
@@ -882,50 +962,172 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
         if spans[i].end > spans[i + 1].start:
             spans[i] = Span(spans[i].shot, spans[i].start,
                             spans[i + 1].start, spans[i].anchored)
-    # Capping every span leaves a shortfall when the ceilings sum to less than
-    # the runtime. Pinning the tail to the audio dumped all of it on the last
-    # shot — sixteen seconds on a sign-off. Spread it instead, so every shot
-    # runs a little over its ceiling rather than one running four times it.
     if spans:
-        used = spans[-1].end
-        short = duration - used
-        if short > 0.05:
-            # THE SLACK GOES TO THE FRAMES THAT ARE STILL MOVING. A bare-
-            # ground shot is motionless once its type has drawn on, so
-            # extending it is the one thing the ceiling exists to prevent.
-            # But "has a plate" was too coarse a test for alive, and the
-            # reason it was has since been retracted: back when the kit froze
-            # every data plate, an even share put a motionless numbers sheet on
-            # screen for 15.4 seconds in a twelve-minute cut while the room
-            # beside it, with a man talking in it, took the same.
-            #
-            # DATA PLATES MOVE NOW and the ordering below still holds. The kit
-            # ships 3 static plates of 270 — `overlays/row-band` and the two
-            # lower thirds — and a data plate's FRAME breathes while its
-            # figures stay pinned (kit/engine/build.js §1.5). So a numbers sheet is
-            # no longer the dead frame this guarded against. It is still the
-            # frame with the least happening in it, which is why the order
-            # below is unchanged.
-            #
-            # A shot with a HOST is the most alive frame in the format: he
-            # talks, he blinks, the room boils behind him. He takes the
-            # remainder first, and a plate only takes it when no shot in the
-            # cut has him in it.
-            takers = [i for i, sp in enumerate(spans) if sp.shot.host]
-            if not takers:
-                takers = [i for i, sp in enumerate(spans) if sp.shot.plate]
-            if takers:
-                share = short / len(takers)
-                moved: list[Span] = []
-                shift = 0.0
-                for i, sp in enumerate(spans):
-                    start = sp.start + shift
-                    if i in set(takers):
-                        shift += share
-                    moved.append(Span(sp.shot, start, sp.end + shift,
-                                      sp.anchored))
-                spans = moved
         spans[-1] = Span(spans[-1].shot,
                          min(spans[-1].start, duration - MIN_SHOT_S),
                          duration, spans[-1].anchored)
+
+    # max_hold_s is a CEILING ON THE SPAN, for every shot — and it is no
+    # longer met by starting the next shot early.
+    #
+    # It used to be. A span over its ceiling was ended at the ceiling and the
+    # next shot began there, so the next picture went up while the voice was
+    # still on the last beat: the payoff figure over the valuation sentence,
+    # the sheet over the headline. Then the slack that left at the end was
+    # spread over the host shots, which moved every start after them later —
+    # anchored ones included. Both are gone. A start the words fix stays where
+    # the words are; a run of shots shares its own time (`_share_runs`); and
+    # a beat that is still too long becomes two pictures of one drawing
+    # (`_split_long_beats`) or, where it has nothing to move in on, holds —
+    # which `held_over_ceiling` measures on the frames and reports.
+    if punch_in is not None:
+        spans = _split_long_beats(spans, words, punch_in)
     return spans
+
+
+def _ordered_anchor_times(shots: Sequence[Shot], words: Sequence[Any],
+                          duration: float,
+                          anchors: dict[str, str]) -> list[float | None]:
+    """Each shot's start, looking only after the words of the shot before it.
+
+    A key two shots share is found once, for the first of them. The second is
+    the same beat's second picture; sent looking for the same sentence further
+    on, it would find it again only by accident, and pin itself there.
+    """
+    from pipeline.timeline import _norm, clamp
+
+    # A punctuation-only token — a dash read as a pause — is not a word, and a
+    # phrase has to match across it.
+    spoken = [(w, _norm(str(getattr(w, "word", "")))) for w in words]
+    spoken = [(w, tok) for w, tok in spoken if tok]
+    at: list[float | None] = [None] * len(shots)
+    found: set[str] = set()
+    cursor = 0
+    for i, s in enumerate(shots):
+        if not s.anchor or s.anchor in found:
+            continue
+        raw = str(anchors.get(s.anchor) or "").split()
+        if len(raw) < 2:
+            continue
+        want = [_norm(t) for t in raw[:4] if _norm(t)]
+        if not want:
+            continue
+        for p in range(cursor, len(spoken) - len(want) + 1):
+            if all(spoken[p + k][1] == want[k] for k in range(len(want))):
+                at[i] = clamp(float(spoken[p][0].start), duration)
+                found.add(s.anchor)
+                cursor = p + 1
+                break
+    return at
+
+
+def _share_runs(shots: Sequence[Shot], at: Sequence[float | None],
+                duration: float) -> list[float]:
+    """Every shot's start: an anchored one where its words are, and the shots
+    after it sharing the time up to the next anchored start.
+
+    THE NEXT SHOT STARTS ON ITS OWN WORDS, NEVER EARLY. Nothing below moves an
+    anchored start; the only freedom is how a run divides the time it has.
+    """
+    n = len(shots)
+    fixed = [i for i in range(n) if at[i] is not None]
+    starts = [0.0] * n
+    for k, a in enumerate(fixed):
+        b = fixed[k + 1] if k + 1 < len(fixed) else n
+        t0 = float(at[a])
+        t1 = float(at[b]) if b < n else duration
+        run = list(range(a, b))
+        t = t0
+        for i, share in zip(run, _run_shares([shots[i] for i in run],
+                                             max(t1 - t0, 0.0))):
+            starts[i] = t
+            t += share
+    return starts
+
+
+def _run_shares(run: Sequence[Shot], total: float) -> list[float]:
+    """How one stretch of narration divides between the shots cut over it.
+
+    Evenly, unless an even share carries a shot past its ceiling while a shot
+    with the HOST in it could take the difference. He is the most alive frame
+    in the format — he talks, he blinks, the room boils behind him — so the
+    slack goes to him and the evidence keeps to its ceiling. That was the rule
+    the old shortfall spread applied across the whole cut, where it moved
+    every start after him; inside one run it cannot move an anchored start.
+    Host shots are never split, so this is also the only way a host shot
+    grows.
+    """
+    even = total / len(run)
+    hosts = sum(1 for sh in run if sh.host)
+    if not hosts or all(sh.host or sh.max_hold_s >= even for sh in run):
+        return [even] * len(run)
+    kept = [0.0 if sh.host else min(sh.max_hold_s, even) for sh in run]
+    rest = (total - sum(kept)) / hosts
+    return [rest if sh.host else k for sh, k in zip(run, kept)]
+
+
+def _split_long_beats(spans: list[Span], words: Sequence[Any],
+                      punch_in: "Callable[[Shot], str | None]") -> list[Span]:
+    """A beat that runs past its ceiling becomes two pictures of one drawing.
+
+    Part 1 is the drawing wide; part 2 moves in on the slot being read —
+    `punch_in(shot)` says which, and a shot it names nothing for holds. The
+    composition changes, so the frame is no longer one held picture, and
+    nothing about the beat's timing moves: part 2 ends where the beat did,
+    and the next shot still starts on its own words.
+
+    NEVER A HOST SHOT, A ROOM OR A REPEAT. He is alive at any length and is
+    what `_run_shares` gives the slack to; a room is picked per role and its
+    second pick would be a different room; a repeat's cards enter on a
+    stagger that a cut through the middle would restart.
+    """
+    from dataclasses import replace
+
+    out: list[Span] = []
+    for sp in spans:
+        sh = sp.shot
+        if (sp.dur <= sh.max_hold_s + 1e-6 or sp.dur < 2 * MIN_SHOT_S
+                or sh.part or sh.host or sh.repeat is not None
+                or not sh.plate or sh.plate.startswith("room/")):
+            out.append(sp)
+            continue
+        slot = punch_in(sh)
+        if not slot:
+            out.append(sp)
+            continue
+        cut = _split_point(sp, words)
+        wide = replace(sh, part=1)
+        # Part 2 is a cut, not an entrance: whatever part 1 drew on, staggered
+        # in or landed is already on screen, so none of it starts again.
+        close = replace(
+            sh, id=f"{sh.id}-in", part=2, part_of=sh.id, focus=slot,
+            anchor=None, enter=None, stagger_s=0.0,
+            text=tuple(replace(t, draw_on_s=0.0) for t in sh.text),
+            marks=tuple(replace(m, after_s=0.0) for m in sh.marks))
+        out.append(Span(wide, sp.start, cut, sp.anchored))
+        out.append(Span(close, cut, sp.end, False))
+    return out
+
+
+def _split_point(sp: Span, words: Sequence[Any]) -> float:
+    """Where inside a long beat the second picture comes in.
+
+    On a sentence boundary when the words give one near the middle — the cut
+    lands as the voice starts a new thought, which is where an editor puts
+    it — and at the midpoint when they do not. Never so near either end that
+    one part is a flash: each keeps a quarter of the beat.
+    """
+    margin = max(MIN_SHOT_S, 0.25 * sp.dur)
+    lo, hi = sp.start + margin, sp.end - margin
+    mid = (sp.start + sp.end) / 2
+    best: float | None = None
+    for w, nxt in zip(words, list(words)[1:]):
+        t = float(getattr(nxt, "start", 0.0))
+        if not lo <= t <= hi:
+            continue
+        said = str(getattr(w, "word", "")).rstrip("\"'”’)")
+        if not said.endswith((".", "!", "?", "…")):
+            continue
+        if best is None or abs(t - mid) < abs(best - mid):
+            best = t
+    return best if best is not None else mid

@@ -31,7 +31,7 @@ from PIL import Image, ImageDraw
 from pipeline import marks as mk
 from pipeline.compose import (BuildResult, Layer, build_layers,
                               check_budgets, check_invariants,
-                              held_layer_spans)
+                              held_layer_spans, punch_in_slot)
 from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
 from pipeline.render_common import (RenderError, encode_profile,
@@ -39,9 +39,9 @@ from pipeline.render_common import (RenderError, encode_profile,
 from pipeline.sound import (Cut, manifest_rows, measure_lufs, normalises,
                             placeholders_played, short_mix, shot_tags,
                             sound_summary)
-from pipeline.shots import (Format, apply_order, choose_order,
-                            expand_sequences, load_format,
-                            resolve_spans)
+from pipeline.shots import (Format, apply_order, beat_keys, choose_order,
+                            expand_sequences, load_format, order_by_marks,
+                            resolve_spans, voice_keys)
 
 log = logging.getLogger(__name__)
 
@@ -486,6 +486,39 @@ def build_anchors(script: ShortScript) -> dict[str, str]:
         out["statement"] = script.headlines[0].text
     if script.cheap_or_trap:
         out["priced"] = script.cheap_or_trap
+    # A MARKED BEAT LISTENS FOR THE WORDS SPOKEN RIGHT AFTER ITS MARKER. A
+    # field is what goes ON the plate, and the writer rarely says it aloud
+    # word for word — `move_summary` is "+29% today · 5x average volume",
+    # which no narration contains — so a shot listening for its field found
+    # nothing and was shared out evenly with its neighbours. The marker is the
+    # writer saying where the beat starts; what follows it is what is heard.
+    for mark in getattr(script, "beat_marks", None) or ():
+        heard = script.words_after_mark(mark.key)
+        if len(heard.split()) >= 2:
+            out[mark.key] = heard
+    return out
+
+
+def marked_beats(script, fmt: Format) -> list[str]:
+    """The beats the script marks that this format can cut, in spoken order.
+
+    A marker for a beat this format does not have — a macro key in a script
+    rendered as a plain short — orders nothing and is left out.
+    """
+    order = getattr(script, "beat_order", None)
+    if order is None:
+        return []
+    keys = set(beat_keys(fmt))
+    return [k for k in order() if k in keys]
+
+
+def _part_fields(shot) -> dict:
+    """`part` and `part_of` for a manifest entry, or nothing for a whole shot."""
+    if not getattr(shot, "part", 0):
+        return {}
+    out = {"part": shot.part}
+    if shot.part_of:
+        out["part_of"] = shot.part_of
     return out
 
 
@@ -932,30 +965,56 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # pruned, because an order names the shots the template was AUTHORED with
     # and a sequence repeat renames them. Rotating off the recent orders the
     # same way the plates rotate off the recent plates.
+    #
+    # THE NARRATION DECIDES WHICH ORDERS ARE OPEN. A marked script says where
+    # each beat starts, so the cut follows its markers: the rotation picks
+    # among the declared orders that put the beats where the voice does, and
+    # `order_by_marks` puts them there whatever it picks. An unmarked script
+    # was written to the authored beat order and is heard in it, so only the
+    # orders that keep that sequence are open to it — the same choice, from
+    # the same list, that it always had.
     from pipeline.reach import recent_orders, recent_plates
 
-    shot_order = choose_order(fmt, seed=script.content_sha(),
-                              avoid=recent_orders(settings, exclude=workspace))
+    seed = script.content_sha()
+    marks = marked_beats(script, fmt)
+    shot_order = choose_order(fmt, seed=seed,
+                              avoid=recent_orders(settings, exclude=workspace),
+                              heard=marks or voice_keys(fmt.shots))
     fmt = apply_order(fmt, shot_order)
+    if marks:
+        fmt = order_by_marks(fmt, marks)
 
     fmt = expand_sequences(fmt, probe.list_for)
     fmt, dropped = prune_empty_shots(fmt, probe)
 
+    # WHAT THE LAST FEW VIDEOS ALREADY LOOKED LIKE (02). Read once and handed
+    # to both the timing and the composition: a long beat's punch-in is asked
+    # of the plate the rotation will draw, and asking with a different avoid
+    # set would ask about a different plate.
+    recent = recent_plates(settings, exclude=workspace)
+
+    def punch_in(shot):
+        return punch_in_slot(reg, shot, fmt.frame, resolver,
+                             aspect=fmt.aspect, seed=seed, avoid=recent)
+
+    # A marked script's anchors are searched IN ORDER, each after the last:
+    # the words after a marker can also be said earlier, and the first place
+    # they are said is not where that beat starts.
     spans = resolve_spans(fmt, words, duration,
                           anchors if anchors is not None
-                          else build_anchors(script))
+                          else build_anchors(script),
+                          ordered=bool(marks), punch_in=punch_in)
 
-    # WHAT THE LAST FEW VIDEOS ALREADY LOOKED LIKE (02). The seed alone makes
-    # two videos differ by chance; nothing stopped three in a row opening on
-    # the same pose in the same room. This steers off what is recent where
-    # the kit has an alternative, and is silently empty on a fresh install.
-    # It also decides which of a beat's interchangeable plates this video
-    # draws — the rotation the vertical formats never had, because a fixed
-    # shot list names one drawing per beat and `parser_short` ignores the
-    # inline tags a director would use in a LONG.
+    # The recent plates (02). The seed alone makes two videos differ by
+    # chance; nothing stopped three in a row opening on the same pose in the
+    # same room. This steers off what is recent where the kit has an
+    # alternative, and is silently empty on a fresh install. It also decides
+    # which of a beat's interchangeable plates this video draws — the
+    # rotation the vertical formats never had, because a fixed shot list
+    # names one drawing per beat and `parser_short` ignores the inline tags a
+    # director would use in a LONG.
     result = build_layers(fmt, spans, resolver, reg,
-                          aspect=fmt.aspect, seed=script.content_sha(),
-                          avoid=recent_plates(settings, exclude=workspace))
+                          aspect=fmt.aspect, seed=seed, avoid=recent)
 
     # A composition that breaks its own rules never reaches an encoder. This
     # is the check that the last renderer did not have: it shipped a 12.5s
@@ -1105,6 +1164,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
         "provenance": provenance.to_json(),
         "duration_s": round(duration, 3),
         "frame": {"w": result.frame[0], "h": result.frame[1]},
+        # A beat split for running long shows as both its parts: `part` 1 is
+        # the wide picture under the beat's own id, `part` 2 the move in,
+        # under `<id>-in` with `part_of` naming the beat. Unsplit shots carry
+        # neither key, so a manifest reader that knows nothing of parts reads
+        # every shot as it always did.
         "shots": [{
             "id": s.shot.id,
             "plate": s.shot.plate,
@@ -1113,6 +1177,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
             "anchored": s.anchored,
             "max_hold_s": s.shot.max_hold_s,
             "layers": [l.name for l in result.for_shot(s.shot.id)],
+            **_part_fields(s.shot),
         } for s in result.spans],
         "layers": len(result.layers),
         # What the render actually reached. Under the tag model this was an
@@ -1125,6 +1190,9 @@ def _render_short(script, tts, workspace: Path, settings, *,
         # `plates_used`; a manifest from before the field existed simply
         # contributes nothing.
         "shot_order": shot_order,
+        # And the beats as the narration marked them, which is what put them
+        # in that order. Empty for an unmarked script.
+        "beat_order": marks,
         # WHAT THE MIX DID, in the LONG's shape. A short had no mix for six
         # weeks and no field that would have shown it (`pipeline/sound.py`).
         "audio": audio_rows,

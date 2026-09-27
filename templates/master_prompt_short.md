@@ -1,4 +1,4 @@
-# MASTER PROMPT — SHORT-FORM ("Noise or signal?" · 9:16 · ~60–75s)
+# MASTER PROMPT — SHORT-FORM ("Noise or signal?" · 9:16 · ~45–55s)
 # The bot fills every {{placeholder}} and hands you this ready to paste into Claude/GPT.
 # You paste the model's JSON output back to the bot.
 
@@ -50,7 +50,7 @@ look like as you write to it — the frames a viewer will actually see:
 {{craft_rules}}
 
 ## THE FORMAT — "Noise or signal?"
-A trending stock gets ~60–75 seconds. **The video opens on the hook card — your `hook_text`, the ticker and the move — and ends on the sign-off card, which prints your `conclusion`. Dennis is on camera for one shot in the middle, between the news and the numbers.** Everything else is the evidence. Your words run under all of it, so the first sentence IS the hook, heard from the first frame. Five beats:
+A trending stock gets ~45–55 seconds. **The video opens on the hook card — your `hook_text`, the ticker and the move — and ends on the sign-off card, which prints your `conclusion`. Dennis is on camera for one shot in the middle, between the news and the numbers.** Everything else is the evidence. Your words run under all of it, so the first sentence IS the hook, heard from the first frame. Five beats — what each part of the short does; the ORDER this video is cut in is under THE CUT below:
 
 1. HOOK — the first sentence, spoken over the hook card; then the price chart, which is the hero. Write it as a spoken line, not a caption. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. `chart_style` defaults to "marker" — the hand-drawn napkin chart, which is the channel's own language and what the short holds for its longest single beat. Ask for "clean" (the polished branded card) only when the point of the beat is precision.
 2. WHY — the headline(s) that caused the move get overlaid ON the chart; you say what each actually means for the stock (usually less than the crowd thinks; occasionally more).
@@ -58,13 +58,18 @@ A trending stock gets ~60–75 seconds. **The video opens on the hook card — y
 4. CHEAP OR TRAP — the value-trap beat, **also held ~4–5 seconds**. Is the multiple a bargain or a trap? Name the multiple, then say what would have to be true for it to be cheap. Cheap and trapped look identical from the front; this is the beat that separates them. Goes in `cheap_or_trap`.
 5. PAYOFF — noise (just market activity) or signal (actually one to watch). Deadpan free text, spoken over the payoff figure; the sign-off card then prints it. There is NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
 
-## PACE — faster than long-form, but NOT machine-gun
-The extra runtime exists so the two data beats can breathe. The numbers sheet and the cheap-or-trap card each hold for four to five seconds — write enough narration over each to fill that. Do not write a script that needs a cut every two seconds; a viewer who cannot read the numbers has watched a screensaver.
+## THE CUT — THIS VIDEO'S BEATS, IN ORDER, AND WHERE EACH STARTS
+{{beat_order}}
 
-## RETENTION — the extra ~15 seconds buys attention, not filler
-The beats are fixed; the added runtime goes to keeping the viewer, never to more talking:
+A marker is `[BEAT: key]`, the key exactly as listed, written in `audio_script` immediately before the first word of that beat. It is never spoken and never shown: the bot takes it out before the voice, the captions and the character count. The shot for that beat starts on the word after the marker, so put it where the beat really begins — not a sentence early, not mid-thought. Every key above, once each, in that order; the script opens on `[BEAT: hook]`. A bare `[BEAT]` with no key is still a pause and means exactly what it always did.
+
+## PACE — faster than long-form, but NOT machine-gun
+The runtime is spent so the two data beats can breathe. The numbers sheet and the cheap-or-trap card each hold for four to five seconds — write enough narration over each to fill that. Do not write a script that needs a cut every two seconds; a viewer who cannot read the numbers has watched a screensaver.
+
+## RETENTION — every second buys attention, not filler
+The beats are set above; the runtime goes to keeping the viewer, never to more talking:
 1. FRONT-LOAD THE HOOK. The first ~3 seconds decide scroll-through — open on the sharpest version of the move and the doubt, no wind-up. `hook_text` stays ≤ 90 chars and mute-safe; the spoken first sentence hits just as hard.
-2. ONE MID-POINT RE-HOOK, around the 30-second mark (the WHY → GUT CHECK seam): a single line that re-opens the question so nobody drops at the halfway point — e.g. "but here's the part nobody screenshots". Exactly one; it's a turn back into the story, not a tangent.
+2. ONE MID-POINT RE-HOOK, around the 20–25-second mark (the WHY → GUT CHECK seam): a single line that re-opens the question so nobody drops at the halfway point — e.g. "but here's the part nobody screenshots". Exactly one; it's a turn back into the story, not a tangent.
 3. The CHEAP-OR-TRAP beat carries the counter-observation — the strongest point against the read you're about to give — so the payoff lands as considered, not reflexive.
 4. Room in the gut check for ONE more number IF it changes the read — a number, not more narration.
 Still NO verdict stamps: the payoff stays deadpan free text and the viewer draws the conclusion.
@@ -95,7 +100,7 @@ asks. Write the fields the template binds.
 **Delivery — never reaches the screen, only the voice.** The vocabulary, the mode each tag serves and the ceilings are in DELIVERY DIRECTION above, generated from the code that performs them. A [BEAT] before the payoff is what turns a sentence into a joke. Four or five across a short is plenty.
 
 ## HARD RULES
-1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — delivery tags are stripped before counting.
+1. `audio_script`: 140–160 spoken words, ≤ 1100 characters, first sentence = the hook, a `[BEAT: key]` marker at the start of every beat in the order under THE CUT, ONE mid-point re-hook (~20–25s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — delivery tags and beat markers are stripped before counting.
 2. `move_summary`: how much / how active, e.g. "+34% today · 6× average volume". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the on-screen headline (short, as reported). `meaning` = what it actually means for the stock, in your voice.
 4. `numbers`: 1–6 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The longer runtime has room for ONE more row than before IF it changes the read; don't pad.
@@ -112,7 +117,7 @@ The operator ratifies or regenerates, so make your reasoning legible. Emit these
 
 1. ANGLE & NUMBERS — one line naming the story, then the 3–5 `numbers` rows you'll feature and one clause each on WHY (each must be a chartable metric from the list above).
 2. HOOK OPTIONS — 2–3 muted-safe `hook_text` candidates (≤ 90 chars each); mark the one you'll use with ★.
-3. SCRIPT — the `audio_script` (180–210 words), written with the ★ hook as its first sentence, ONE mid-point re-hook (~30s), and — optionally — a single second-look line right before the verbatim conclusion.
+3. SCRIPT — the `audio_script` (140–160 words), written with the ★ hook as its first sentence, a `[BEAT: key]` marker where each beat starts in the order under THE CUT, ONE mid-point re-hook (~20–25s), and — optionally — a single second-look line right before the verbatim conclusion.
 4. TAGS — one line noting the doodle/scribble/meme keys you placed and why (all from the catalogs).
 
 THEN the strict JSON object below — keys exactly as shown, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
@@ -134,7 +139,7 @@ Put the four prose sections in the chat and the JSON object in the `.txt` file.
   "ticker": "{{ticker}}",
   "format": "short",
   "hook_text": "<= 90 chars, mute-safe>",
-  "audio_script": "<180-210 spoken words, <= 1400 chars, one mid-point re-hook, ends with the conclusion verbatim; may embed [PLATE:]/[SCRIBBLE:] inline>",
+  "audio_script": "<140-160 spoken words, <= 1100 chars, a [BEAT: key] marker at the start of each beat in the order under THE CUT, one mid-point re-hook, ends with the conclusion verbatim; may embed [PLATE:]/[SCRIBBLE:] inline>",
   "move_summary": "<how much / how active>",
   "chart_style": "marker",
   "headlines": [
@@ -156,12 +161,12 @@ Put the four prose sections in the chat and the JSON object in the `.txt` file.
 }
 
 ## STRUCTURE EXAMPLE — illustrative only, replace every value (do not reuse these numbers)
-Note how each fact is taught straight, then undercut flat; the hook is front-loaded, ONE mid-point re-hook ("but here is the part nobody screenshots") re-opens the question, a single peer-percentile one-liner sharpens the gut check, a self-deprecating account-blowup line lands mid-script, and one second-look concession precedes the verbatim payoff.
+Note how each fact is taught straight, then undercut flat; each beat opens on its marker, in the as-authored order (yours is under THE CUT); the hook is front-loaded, ONE mid-point re-hook ("but here is the part nobody screenshots") re-opens the question, a single peer-percentile one-liner sharpens the gut check, a self-deprecating account-blowup line lands mid-script, and the payoff ends on the `conclusion` verbatim.
 {
   "ticker": "EXMPL",
   "format": "short",
   "hook_text": "EXMPL is up 29% today. The business is not.",
-  "audio_script": "EXMPL is up twenty nine percent today on five times average volume, so the internet has decided it is a technology company again. The news is an AI partnership, which is a press release, not a purchase order. No revenue attached. Plus a squeeze, because eleven percent of the float was short. But here is the part nobody screenshots. Revenue went four hundred million to four ninety six in five years. That is not growth, that is a plateau in a costume. Losses got wider [SCRIBBLE: scrawl-oval-tight -> Net income] every year. Free cash flow went negative and stayed there, which means you pay them to own it. On the peer sheet it is ninetieth percentile on price and twentieth on margins, dear and mediocre in the same breath. I know a value trap; my own account went from twenty five k to zero dollars. In fairness, there is enough cash on the balance sheet to survive being wrong for a while, which is the nicest thing I can say and I am reaching. The chart went vertical. The business went sideways. Noise. A press release and a squeeze, stapled to five years of drift.",
+  "audio_script": "[BEAT: hook] EXMPL is up twenty nine percent today, so the internet has decided it is a technology company again. [BEAT: move] Five times average volume, straight up, no pullback. [BEAT: headline] The news is an AI partnership, which is a press release, not a purchase order. Plus a squeeze, because eleven percent of the float was short. [BEAT: turn] But here is the part nobody screenshots. [BEAT: numbers] Revenue went four hundred million to four ninety six in five years. Losses got wider every year. Free cash flow went negative and stayed there. [BEAT: numbers_comment] That is not growth, that is a plateau in a costume, and you pay them to own it. [BEAT: cheap_or_trap] Ninetieth percentile on price, twentieth on margins. I know a value trap; my own account went from twenty five k to zero. [BEAT: conclusion] The chart went vertical. The business went sideways. Noise. A press release and a squeeze, stapled to five years of drift.",
   "move_summary": "+29% today · 5× average volume",
   "chart_style": "marker",
   "headlines": [
@@ -175,6 +180,8 @@ Note how each fact is taught straight, then undercut flat; the hook is front-loa
     {"label": "Shares out", "values": ["298M", "315M", "330M", "346M", "365M"]}
   ],
   "numbers_comment": "Revenue has flatlined for three years while losses widen and the share count grows six percent a year. The business is going sideways; the stock is going vertical.",
+  "turn_line": "But here is the part nobody screenshots.",
+  "cheap_or_trap": "Ninetieth percentile on price, twentieth on margins. Cheap needs the losses to stop.",
   "conclusion": "Noise. A press release and a squeeze, stapled to five years of drift.",
   "meme": {"key": "stonks-man-up-only", "anchor_word": "vertical"},
   "broll": null,

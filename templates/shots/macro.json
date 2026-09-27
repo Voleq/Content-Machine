@@ -220,5 +220,35 @@
         }
       ]
     }
+  ],
+  "orders": [
+    {
+      "name": "statement-first",
+      "shots": [
+        "open",
+        "the-statement",
+        "the-print",
+        "vs-expected",
+        "the-mechanism",
+        "who-it-hits",
+        "so-what",
+        "close"
+      ],
+      "notes": "What was said before what was printed: the statement straight after the hook, then the figure and the estimate. Cut only for a script whose markers put `headline` second."
+    },
+    {
+      "name": "hits-before-mechanism",
+      "shots": [
+        "open",
+        "the-print",
+        "vs-expected",
+        "the-statement",
+        "who-it-hits",
+        "the-mechanism",
+        "so-what",
+        "close"
+      ],
+      "notes": "Who it hurts before why: the consequences land first and the mechanism explains them. Cut only for a script marked in this order."
+    }
   ]
 }
