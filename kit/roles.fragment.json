@@ -7948,7 +7948,7 @@
  },
  "structure/event-calendar": {
   "chapter_types": [
-   "what-to-watch",
+   "resigned-close",
    "risk"
   ],
   "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
@@ -7967,37 +7967,88 @@
  },
  "structure/chapter-bumper": {
   "chapter_types": [
-   "*"
+   "bull-vs-bear",
+   "capital-allocation",
+   "cold-open",
+   "filing-walk",
+   "guidance-estimates",
+   "how-the-money-is-made",
+   "how-we-got-here",
+   "management",
+   "moat",
+   "one-framework",
+   "resigned-close",
+   "risk",
+   "sector-comps",
+   "short-interest",
+   "the-numbers",
+   "valuation"
   ],
-  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "reached_by": "the assembler, before every chapter after the first; never the writer",
   "shot_ids": [
-   "evidence"
+   "open"
   ],
   "formats": [
    "long"
   ],
   "purpose": "the frame between chapters: the chapter number large, its title and the episode. Two seconds over room tone.",
   "caution": "The title is the chapter’s claim in five words or so, not its topic. “Where the cash goes”, not “Cash flow”.",
-  "round": "r5"
+  "round": "r5",
+  "any": true,
+  "motion": "tick-over from frame 3 (0.25 s) of its 24-frame hold: emit/motion.json timings"
  },
  "overlays/source-tag": {
   "chapter_types": [
-   "*"
+   "bull-vs-bear",
+   "capital-allocation",
+   "cold-open",
+   "filing-walk",
+   "guidance-estimates",
+   "how-the-money-is-made",
+   "how-we-got-here",
+   "management",
+   "moat",
+   "one-framework",
+   "resigned-close",
+   "risk",
+   "sector-comps",
+   "short-interest",
+   "the-numbers",
+   "valuation"
   ],
-  "reached_by": "writer names it in a [PLATE:] tag; gated by chapter type",
+  "reached_by": "the assembler, whenever the shot on screen shows a figure whose source the script names",
   "shot_ids": [
    "evidence"
   ],
   "formats": [
-   "long"
+   "long",
+   "short"
   ],
   "purpose": "where the figure on screen came from, as an alpha strip over a plate or the room: document, note and page.",
   "caution": "Name the document and the page, never just “company filings”. One source per tag; two figures from two sources are two tags.",
-  "round": "r5"
+  "round": "r5",
+  "any": true,
+  "placement": "emit/motion.json anchors[plate][\"slide-in\"]: 16:9 at x 96, 9:16 centred, bottom edge 24 above the safe line or the caption. Where it says clear: false, the tag goes on the next room or host shot, or the source is spoken.",
+  "shorts": "the -9x16 tag is for shorts and the 9:16 long cut alike"
  },
  "shorts/short-number": {
   "chapter_types": [
-   "*"
+   "bull-vs-bear",
+   "capital-allocation",
+   "cold-open",
+   "filing-walk",
+   "guidance-estimates",
+   "how-the-money-is-made",
+   "how-we-got-here",
+   "management",
+   "moat",
+   "one-framework",
+   "resigned-close",
+   "risk",
+   "sector-comps",
+   "short-interest",
+   "the-numbers",
+   "valuation"
   ],
   "reached_by": "the shorts writer names it; one per short",
   "shot_ids": [
@@ -8008,11 +8059,27 @@
   ],
   "purpose": "a short’s one number, set large in the safe area, with one line of context and its source.",
   "caution": "One number. If the short needs two, it is two shorts or a long plate.",
-  "round": "r5"
+  "round": "r5",
+  "any": true
  },
  "shorts/short-quote": {
   "chapter_types": [
-   "*"
+   "bull-vs-bear",
+   "capital-allocation",
+   "cold-open",
+   "filing-walk",
+   "guidance-estimates",
+   "how-the-money-is-made",
+   "how-we-got-here",
+   "management",
+   "moat",
+   "one-framework",
+   "resigned-close",
+   "risk",
+   "sector-comps",
+   "short-interest",
+   "the-numbers",
+   "valuation"
   ],
   "reached_by": "the shorts writer names it; one per short",
   "shot_ids": [
@@ -8023,11 +8090,27 @@
   ],
   "purpose": "a short’s one quote, large, with who said it and when, and the fact that makes it matter in the date line.",
   "caution": "Quote exactly from a transcript and date it. The date line carries the irony; the quote is never edited to sharpen it.",
-  "round": "r5"
+  "round": "r5",
+  "any": true
  },
  "shorts/short-chart": {
   "chapter_types": [
-   "*"
+   "bull-vs-bear",
+   "capital-allocation",
+   "cold-open",
+   "filing-walk",
+   "guidance-estimates",
+   "how-the-money-is-made",
+   "how-we-got-here",
+   "management",
+   "moat",
+   "one-framework",
+   "resigned-close",
+   "risk",
+   "sector-comps",
+   "short-interest",
+   "the-numbers",
+   "valuation"
   ],
   "reached_by": "the shorts writer names it; one per short",
   "shot_ids": [
@@ -8038,11 +8121,27 @@
   ],
   "purpose": "a three-second chart: one line, its last point, and the change as the big figure.",
   "caution": "One line and no grid. If it takes more than three seconds to read, use a long plate.",
-  "round": "r5"
+  "round": "r5",
+  "any": true
  },
  "overlays/wipe-sweep": {
   "chapter_types": [
-   "*"
+   "bull-vs-bear",
+   "capital-allocation",
+   "cold-open",
+   "filing-walk",
+   "guidance-estimates",
+   "how-the-money-is-made",
+   "how-we-got-here",
+   "management",
+   "moat",
+   "one-framework",
+   "resigned-close",
+   "risk",
+   "sector-comps",
+   "short-interest",
+   "the-numbers",
+   "valuation"
   ],
   "reached_by": "the assembler, between two shots; never the writer",
   "shot_ids": [
@@ -8054,11 +8153,27 @@
   ],
   "purpose": "a hatched cover sweeps left to right; for moving on within a chapter. Eight frames, played once, alpha outside the cover.",
   "caution": "Cut the two shots under frame 4, where the cover is full. At most one wipe a minute; the plain cut is the default.",
-  "round": "r5"
+  "round": "r5",
+  "any": true
  },
  "overlays/wipe-page": {
   "chapter_types": [
-   "*"
+   "bull-vs-bear",
+   "capital-allocation",
+   "cold-open",
+   "filing-walk",
+   "guidance-estimates",
+   "how-the-money-is-made",
+   "how-we-got-here",
+   "management",
+   "moat",
+   "one-framework",
+   "resigned-close",
+   "risk",
+   "sector-comps",
+   "short-interest",
+   "the-numbers",
+   "valuation"
   ],
   "reached_by": "the assembler, between two shots; never the writer",
   "shot_ids": [
@@ -8070,11 +8185,27 @@
   ],
   "purpose": "a sheet rises from the bottom edge and leaves at the top; for going to a document or a plate. Eight frames, played once, alpha outside the cover.",
   "caution": "Cut the two shots under frame 4, where the cover is full. At most one wipe a minute; the plain cut is the default.",
-  "round": "r5"
+  "round": "r5",
+  "any": true
  },
  "overlays/wipe-blinds": {
   "chapter_types": [
-   "*"
+   "bull-vs-bear",
+   "capital-allocation",
+   "cold-open",
+   "filing-walk",
+   "guidance-estimates",
+   "how-the-money-is-made",
+   "how-we-got-here",
+   "management",
+   "moat",
+   "one-framework",
+   "resigned-close",
+   "risk",
+   "sector-comps",
+   "short-interest",
+   "the-numbers",
+   "valuation"
   ],
   "reached_by": "the assembler, between two shots; never the writer",
   "shot_ids": [
@@ -8086,7 +8217,8 @@
   ],
   "purpose": "slats close and reopen; for the cut into a new chapter, under the bumper. Eight frames, played once, alpha outside the cover.",
   "caution": "Cut the two shots under frame 4, where the cover is full. At most one wipe a minute; the plain cut is the default.",
-  "round": "r5"
+  "round": "r5",
+  "any": true
  },
  "charts/valuation-energy": {
   "chapter_types": [
@@ -8642,5 +8774,354 @@
   "purpose": "the euro above, the currency effect on reported growth below.",
   "caution": "Quote organic growth beside it.",
   "round": "r5-sector"
+ },
+ "overlays/wipe-sweep-short": {
+  "chapter_types": [
+   "bull-vs-bear",
+   "capital-allocation",
+   "cold-open",
+   "filing-walk",
+   "guidance-estimates",
+   "how-the-money-is-made",
+   "how-we-got-here",
+   "management",
+   "moat",
+   "one-framework",
+   "resigned-close",
+   "risk",
+   "sector-comps",
+   "short-interest",
+   "the-numbers",
+   "valuation"
+  ],
+  "any": true,
+  "reached_by": "the assembler, between two shots in a short; never the writer",
+  "shot_ids": [
+   "transition"
+  ],
+  "formats": [
+   "short"
+  ],
+  "purpose": "the sweep in four frames (0.33 s), 9:16, for the fastest change of subject in a short. Played once, alpha outside the cover.",
+  "caution": "Cut the two shots under frame 2, where the cover is full. Shorts only; long form uses the eight-frame wipes.",
+  "round": "r5"
+ },
+ "overlays/wipe-page-short": {
+  "chapter_types": [
+   "bull-vs-bear",
+   "capital-allocation",
+   "cold-open",
+   "filing-walk",
+   "guidance-estimates",
+   "how-the-money-is-made",
+   "how-we-got-here",
+   "management",
+   "moat",
+   "one-framework",
+   "resigned-close",
+   "risk",
+   "sector-comps",
+   "short-interest",
+   "the-numbers",
+   "valuation"
+  ],
+  "any": true,
+  "reached_by": "the assembler, between two shots in a short; never the writer",
+  "shot_ids": [
+   "transition"
+  ],
+  "formats": [
+   "short"
+  ],
+  "purpose": "the page in four frames (0.33 s), 9:16, for the fastest change of subject in a short. Played once, alpha outside the cover.",
+  "caution": "Cut the two shots under frame 2, where the cover is full. Shorts only; long form uses the eight-frame wipes.",
+  "round": "r5"
+ },
+ "overlays/wipe-blinds-short": {
+  "chapter_types": [
+   "bull-vs-bear",
+   "capital-allocation",
+   "cold-open",
+   "filing-walk",
+   "guidance-estimates",
+   "how-the-money-is-made",
+   "how-we-got-here",
+   "management",
+   "moat",
+   "one-framework",
+   "resigned-close",
+   "risk",
+   "sector-comps",
+   "short-interest",
+   "the-numbers",
+   "valuation"
+  ],
+  "any": true,
+  "reached_by": "the assembler, between two shots in a short; never the writer",
+  "shot_ids": [
+   "transition"
+  ],
+  "formats": [
+   "short"
+  ],
+  "purpose": "the blinds in four frames (0.33 s), 9:16, for the fastest change of subject in a short. Played once, alpha outside the cover.",
+  "caution": "Cut the two shots under frame 2, where the cover is full. Shorts only; long form uses the eight-frame wipes.",
+  "round": "r5"
+ },
+ "host/holding-a-filing": {
+  "chapter_types": [
+   "filing-walk",
+   "the-numbers",
+   "risk",
+   "management"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide)",
+  "purpose": "the CITATION pose: the annual report held up in both hands. For a line that names the document and the page (\"it says so on page 96\").",
+  "caution": "Only when the words name a filing. Not with a plate of the same figure on screen: the plate is the evidence, and two pieces of evidence for one sentence is one too many.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide"
+  ]
+ },
+ "host/holding-a-filing-talk": {
+  "chapter_types": [
+   "filing-walk",
+   "the-numbers",
+   "risk",
+   "management"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide)",
+  "purpose": "the CITATION pose: the annual report held up in both hands. For a line that names the document and the page (\"it says so on page 96\"). (talk strip)",
+  "caution": "Only when the words name a filing. Not with a plate of the same figure on screen: the plate is the evidence, and two pieces of evidence for one sentence is one too many.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide"
+  ]
+ },
+ "host/holding-a-filing-idle": {
+  "chapter_types": [
+   "filing-walk",
+   "the-numbers",
+   "risk",
+   "management"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide)",
+  "purpose": "the CITATION pose: the annual report held up in both hands. For a line that names the document and the page (\"it says so on page 96\"). (idle strip)",
+  "caution": "Only when the words name a filing. Not with a plate of the same figure on screen: the plate is the evidence, and two pieces of evidence for one sentence is one too many.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide"
+  ]
+ },
+ "host/holding-a-filing-blink": {
+  "chapter_types": [
+   "filing-walk",
+   "the-numbers",
+   "risk",
+   "management"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide)",
+  "purpose": "the CITATION pose: the annual report held up in both hands. For a line that names the document and the page (\"it says so on page 96\"). (blink strip)",
+  "caution": "Only when the words name a filing. Not with a plate of the same figure on screen: the plate is the evidence, and two pieces of evidence for one sentence is one too many.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide"
+  ]
+ },
+ "host/holding-a-phone": {
+  "chapter_types": [
+   "cold-open",
+   "how-we-got-here",
+   "short-interest"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide)",
+  "purpose": "the NEWS pose: looking at a phone, not at us. For the hook that arrives as news: a price alert, a headline, a message read out.",
+  "caution": "He is looking down, so no to-camera line on it. Never for a figure from a filing; that is holding-a-filing.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide"
+  ],
+  "formats": [
+   "long",
+   "short"
+  ],
+  "beats": [
+   "hook",
+   "the-news",
+   "the-move"
+  ]
+ },
+ "host/holding-a-phone-talk": {
+  "chapter_types": [
+   "cold-open",
+   "how-we-got-here",
+   "short-interest"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide)",
+  "purpose": "the NEWS pose: looking at a phone, not at us. For the hook that arrives as news: a price alert, a headline, a message read out. (talk strip)",
+  "caution": "He is looking down, so no to-camera line on it. Never for a figure from a filing; that is holding-a-filing.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide"
+  ],
+  "formats": [
+   "long",
+   "short"
+  ],
+  "beats": [
+   "hook",
+   "the-news",
+   "the-move"
+  ]
+ },
+ "host/holding-a-phone-idle": {
+  "chapter_types": [
+   "cold-open",
+   "how-we-got-here",
+   "short-interest"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide)",
+  "purpose": "the NEWS pose: looking at a phone, not at us. For the hook that arrives as news: a price alert, a headline, a message read out. (idle strip)",
+  "caution": "He is looking down, so no to-camera line on it. Never for a figure from a filing; that is holding-a-filing.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide"
+  ],
+  "formats": [
+   "long",
+   "short"
+  ],
+  "beats": [
+   "hook",
+   "the-news",
+   "the-move"
+  ]
+ },
+ "host/holding-a-phone-blink": {
+  "chapter_types": [
+   "cold-open",
+   "how-we-got-here",
+   "short-interest"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide)",
+  "purpose": "the NEWS pose: looking at a phone, not at us. For the hook that arrives as news: a price alert, a headline, a message read out. (blink strip)",
+  "caution": "He is looking down, so no to-camera line on it. Never for a figure from a filing; that is holding-a-filing.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide"
+  ],
+  "formats": [
+   "long",
+   "short"
+  ],
+  "beats": [
+   "hook",
+   "the-news",
+   "the-move"
+  ]
+ },
+ "host/holding-a-mug": {
+  "chapter_types": [
+   "resigned-close"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide · desk-side)",
+  "purpose": "the THREE-IN-THE-MORNING pose: a mug at the sternum. For the close, and for the breath between two chapters.",
+  "caution": "Between beats, never on a number. At most once an episode.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide",
+   "desk-side"
+  ],
+  "formats": [
+   "long",
+   "short"
+  ],
+  "beats": [
+   "close"
+  ]
+ },
+ "host/holding-a-mug-talk": {
+  "chapter_types": [
+   "resigned-close"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide · desk-side)",
+  "purpose": "the THREE-IN-THE-MORNING pose: a mug at the sternum. For the close, and for the breath between two chapters. (talk strip)",
+  "caution": "Between beats, never on a number. At most once an episode.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide",
+   "desk-side"
+  ],
+  "formats": [
+   "long",
+   "short"
+  ],
+  "beats": [
+   "close"
+  ]
+ },
+ "host/holding-a-mug-idle": {
+  "chapter_types": [
+   "resigned-close"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide · desk-side)",
+  "purpose": "the THREE-IN-THE-MORNING pose: a mug at the sternum. For the close, and for the breath between two chapters. (idle strip)",
+  "caution": "Between beats, never on a number. At most once an episode.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide",
+   "desk-side"
+  ],
+  "formats": [
+   "long",
+   "short"
+  ],
+  "beats": [
+   "close"
+  ]
+ },
+ "host/holding-a-mug-blink": {
+  "chapter_types": [
+   "resigned-close"
+  ],
+  "reached_by": "host pose rotation, by chapter type and role, inside the rooms this pose fits (desk-front · desk-wide · desk-side)",
+  "purpose": "the THREE-IN-THE-MORNING pose: a mug at the sternum. For the close, and for the breath between two chapters. (blink strip)",
+  "caution": "Between beats, never on a number. At most once an episode.",
+  "any_shot": true,
+  "fits": [
+   "desk-front",
+   "desk-wide",
+   "desk-side"
+  ],
+  "formats": [
+   "long",
+   "short"
+  ],
+  "beats": [
+   "close"
+  ]
+ },
+ "room/window-talk": {
+  "chapter_types": [],
+  "reached_by": "room role rotation, by seed; the talk angle for a short or a 9:16 cut that wants the window in frame",
+  "any_shot": true,
+  "purpose": "window-wall with him at the window’s left edge: the only talk angle whose 9:16 crop shows the window, so snow and rain read in a short.",
+  "caution": "Nine poses fit: to-camera, hands-in-pockets, holding-a-page, holding-a-filing, holding-a-phone, holding-a-mug, arms-crossed, counting-on-fingers, shrug. Not the desk, chair, screen or plate poses. Same room as window-wall, so do not cut the two back to back or he jumps sideways."
+ },
+ "room/window-talk-christmas": {
+  "reached_by": "room role rotation, by seed; SEASONAL: pick the -christmas asset instead of the plain one in December",
+  "purpose": "room/window-talk with the Christmas set: lights along the picture rail and the window head, and the tree at the window’s left.",
+  "caution": "SEASONAL: December episodes only. Dress every angle or none."
  }
 }

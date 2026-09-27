@@ -4,7 +4,9 @@
  * These are five shapes the library could not draw, each at 16:9 and 9:16:
  *
  *   valuationHistory   a multiple over five years on its own range + average
- *   guidanceRange      the guided range per quarter as a bar, the actual as a mark
+ *   guidanceBands      the guided range per quarter as a bar, the actual as a mark
+ *                      (rebuild-40: was guidanceRange, which is round one’s author
+ *                      for figures/guidance-raise-cut and overwrote it)
  *   smallMultiples     4 or 6 mini lines on ONE shared scale
  *   earningsVsCash     net income against operating cash, gap filled, accruals row
  *   segmentMarginGrid  margin by segment x year, each cell banded on one scale
@@ -25,6 +27,10 @@
     if (!K || !Q) throw new Error('plates-r5.js installs after plates-r2.js: it reuses round two\u2019s furniture');
     const { role, sized, tighten, R, band, rule } = K;
     const { frame, topRoles, top, foot, key, floor, grid, row, callout, calloutRoles } = Q;
+    /* rebuild-40: no author here may replace one already installed. Round five
+     * once did (guidanceRange), silently turning a round-one plate into a copy
+     * of a round-five one. install() snapshots the library and throws on a clash. */
+    const before = Object.assign({}, P0);
 
     /* rebuild-38: a MULTI-LINE role. The fitter honours maxLines only when the
      * ROLE carries maxLines and maxCharsPerLine (as every legacy plate does); a
@@ -77,7 +83,7 @@
      * what it was, as a mark on it. Eight quarters side by side show the
      * habit, beating the top every time or landing low in the range, which
      * one quarter's headline never does. */
-    P0.guidanceRange = function (o) {
+    P0.guidanceBands = function (o) {
       const F = frame(o), n = o.quarters || 8;
       const W = F.land ? F.cw - 420 : F.cw, colW = W / n, cw2 = F.land ? 360 : F.cw;
       const roles = Object.assign(topRoles(F, true), {
@@ -438,7 +444,7 @@
       const th = blockH(roles.tag, 1), ll = F.land ? 2 : 3, lh = blockH(roles.line, ll);
       for (let i = 1; i <= n; i++) {
         const y = Math.round(top0 + rowH * (i - 1));
-        P.slot('mark-' + i, F.L, y, markW, blockH(roles.mark, 1), { align: 'center', role: 'mark', inkBy: 'the mark: + in down (a new risk), \u2212 in up (a risk dropped), ~ in quiet' });
+        P.slot('mark-' + i, F.L, y, markW, blockH(roles.mark, 1), { align: 'center', role: 'mark', inkBy: 'the mark: + in attention (a new risk), \u2212 in subject (a risk dropped), ~ in quiet; data.markInk gives each row\u2019s ink by name' });
         P.slot('tag-' + i, tx, y, tw, th, { align: 'left', role: 'tag' });
         P.slot('line-' + i, tx, y + th + 6, tw, lh, { align: 'left', role: 'line', maxLines: ll });
         if (i < n) rule(P, F.L, Math.round(y + rowH - 12), F.Rr, 6100 + i, 1.6, 0.22);
@@ -529,6 +535,8 @@
       const P = base(o, o.type || 'chapter-bumper', roles);
       P.meta.family = o.family || 'structure';
       P.meta.hold = { seconds: 2, why: 'long enough to read a number and five words, short enough not to be a pause' };
+      /* rebuild-40: published, not guessed. motion.js TIMINGS is the source. */
+      P.meta.tickOver = { startFrame: 3, startSeconds: 0.25, frames: 6, holdFrames: 24, why: 'the old number is read for a quarter second, turns over by 0.75 s, and the new one holds the rest of the two seconds' };
       const nh = blockH(roles.num, 1), th = blockH(roles.title, 2), oh = blockH(roles.of, 1), eh = blockH(roles.episode, 1);
       if (land) {
         const y = Math.round((o.h - nh) / 2) - 40;
@@ -557,6 +565,11 @@
       const P = base(Object.assign({}, o, { pal: Object.assign({}, o.pal, { ground: 'none', grain: null }) }), o.type || 'source-tag', roles);
       P.meta.family = o.family || 'overlays';
       P.meta.composite = 'alpha, over anything';
+      /* rebuild-40: where it goes, published. Over a plate, emit/motion.json
+       * anchors[plate]["slide-in"] applies the same rule to that plate\u2019s slots. */
+      P.meta.place = land
+        ? { x: 96, bottom: 1026 - 24, why: 'x at the 5% safe margin; bottom edge 24 above the safe bottom (1026) or the plate\u2019s caption, whichever is higher' }
+        : { centred: true, bottom: 1560 - 24, why: 'centred; bottom edge 24 above the shorts safe line (1560) or the plate\u2019s caption, whichever is higher. For shorts and the 9:16 long cut alike.' };
       band(P, 0, 0, o.w, o.h, 6501, 0.92);
 
       const lh = blockH(roles.label, 1), sh = blockH(roles.source, 1);
@@ -624,7 +637,12 @@
      * cuts from the outgoing shot to the incoming one under it, so the wipe
      * never shows two shots at once. Drawn in the ground and band inks, the
      * room's own colours, so a wipe reads as the set and not as an effect. */
-    const TFRAMES = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
+    /* rebuild-40: the frame count is the args' (8, or 4 for the shorts wipes),
+     * and the cut frame is a FULL, flat cover: a solid ground-ink sheet under
+     * the hatch, so no pixel of either shot shows on the frame the cut goes
+     * under. The hatch alone left about 40% of pixels partly transparent. */
+    const nFrames = o => (typeof o.transition === 'number' ? o.transition : 8);
+    const solid = (P, o) => P.colourAdd('<path d="M-20,-20H' + (o.w + 20) + 'V' + (o.h + 20) + 'H-20Z" fill="' + o.pal.ground + '" fill-opacity="1" stroke="none"/>'); /* o.pal: the wipe's own pal has ground "none" */
     const cover = (P, x, y, w, h, seed, ink) => {
       if (w <= 0 || h <= 0) return;
       P.colourAdd(H.hatch(H.polyRect(x, y, w, h), { color: ink, opacity: 1, gap: 14, width: 38, angle: -4, over: 18, seed }));
@@ -632,7 +650,9 @@
     const wipeBase = (o, type) => {
       const P = base(Object.assign({}, o, { pal: Object.assign({}, o.pal, { ground: 'none', grain: null }) }), type, {});
       P.meta.family = 'overlays'; P.meta.composite = 'alpha, over the cut';
-      P.meta.transition = { frames: TFRAMES.length, playback: 'once', cutAt: 4, why: 'the cover is full on frame 4; cut the shots under it there' };
+      const n = nFrames(o);
+      P.meta.transition = { frames: n, playback: 'once', cutAt: n / 2, opaque: 'frame ' + (n / 2) + ' is fully opaque, every pixel', why: 'the cover is full on frame ' + (n / 2) + '; cut the shots under it there' };
+      if ((o.t == null ? 0.5 : o.t) === 0.5) solid(P, o);
       return P;
     };
     /* progress 0..1 -> the covered span: grows to full at 0.5, then leaves. */
@@ -665,6 +685,9 @@
      * data, purpose and caution (the round-three pattern). */
     P0.saidHappenedAs = function (o) { const P = P0.saidHappened(o); P.meta.type = o.type; return P; };
     P0.revisionTrailAs = function (o) { const P = P0.revisionTrail(o); P.meta.type = o.type; return P; };
+
+    const clash = Object.keys(before).filter(k => P0[k] !== before[k]);
+    if (clash.length) throw new Error('plates-r5.js replaces authors already installed: ' + clash.join(', ') + '. Give the new author its own name.');
 
     /* ── Q5 · sector performance ──────────────────────────────────────── */
 

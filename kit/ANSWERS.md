@@ -49,7 +49,8 @@ and nothing read `design-tokens.json → motion`. It is built now, in `engine/fi
 its own file, listed in `out/index.json`. The contract your renderer reads —
 `playback`, `fps`, `frameCount` — is unchanged; the frames now exist.
 
-- **Host.** `-talk` loop/8/3: the three mouths, closed → mid → wide, each on its head
+- **Host.** `-talk` loop/8/6 (rebuild-31): six mouths in phrase order, closed → mid → wide → O →
+  EE → F/V, each on its head
   offset from `motion.hostOffsets` so it reads as speech. `-idle` loop/4/3: the head
   offsets alone (rotation about the neck join, shoulder line moving a unit). `-blink`
   overlay/4/2: eyes open, then closed (each eye squashed to 16% of its height about its
@@ -180,3 +181,96 @@ GAP 10.2pt"), so the area between them is a quantity. The sample was wrong, not 
 The three that do not fill are price-vs-volume, net-price-vs-volume and traffic-vs-ticket,
 because their two parts add up to the headline. Every two-line plot now publishes
 `plot-area.spreadFill`. Read that field, not the note. See DESIGN.md §5.5.
+
+
+---
+
+## §R40 — reply to the bot's rebuild-39 report
+
+The numbers follow your list. Everything below is in rebuild-40 and comes from the engine,
+so it arrives with the next drop. `emit/motion.json` is now written by `emit.js`, and new
+rule 31 checks it.
+
+**1. Timings.** Both are published now, in `motion.json → timings` and on the plates.
+- **Tick-over.** Your 0.25 s is right. It starts on frame 3 (0-based) of the bumper's
+  24-frame hold, runs 6 frames, and the new number holds for the rest. This is also in
+  `structure/chapter-bumper → meta.tickOver`.
+- **Source tag.**
+  - 16:9: x **96**, not 80. That is the 5% safe margin every plate uses.
+  - 9:16: centred.
+  - Both aspects: the bottom edge sits 24 above the safe line (1026 at 16:9, 1560 at 9:16)
+    or above the plate's caption, whichever is higher.
+- **Over a plate,** use `anchors.plates[key]["slide-in"]`. It applies that rule to the plate's
+  own slots. 275 of 540 plates have a clear spot. The other 265 say `clear: false` and name
+  the slots the tag would cover. On those, put the tag on the next room or host shot, or speak
+  the source.
+- **Shorts.** The 9:16 tag is meant for shorts too. Its roles entry now lists `short`.
+
+**2. Loops.**
+- **Snow** falls a whole number of pane-heights per loop (1 or 2), so frame 12 is frame 0.
+  **Rain** is the same field at three times the speed, so it is seamless too.
+- **Twinkle** steps every 4 frames: three inks × 4 = 12.
+- **Flicker on the panes was not meant.** `rooms.byId[room]` now lists which shapes flicker
+  (`flicker`, `lamp`) and which do not (`panes`, `daylight`). Only screens and the
+  monitor's cast are in `flicker`.
+
+**3. Page against catalogue.** The catalogue was right in all five places. The page now calls
+the same functions, so it follows the catalogue:
+- bars grow column by column (`anchor.columns`, one frame apart);
+- the line draws into the plot box plus a published `bleed` of 14, and nothing counts up with it;
+- the underline is 5;
+- the zoom uses pad 60 on the published box;
+- snow is painted straight after the pane, so the bars cover it.
+
+The page now says thirteen moves.
+
+**4. Holding poses.** Your casting is right, and it is now in `roles.fragment.json`:
+- a filing citation takes `holding-a-filing`;
+- a news hook takes `holding-a-phone`;
+- the close takes `holding-a-mug`.
+
+Each has chapter types, the rooms it fits, and a caution. The docs are updated: CONTRACT.json
+has a `motion.json` section, talk strips are 6 frames everywhere, DESIGN §5.6 covers motion,
+and README lists 31 rules.
+
+**5. The guidance redraw was not meant.** Round five's author is renamed `guidanceBands`.
+`figures/guidance-raise-cut` is round one's drawing again, and its roles entry now matches.
+A round that replaces an installed author now stops the build.
+
+**6. Pen-circle and count-up.**
+- Every figure anchor now carries `align`, `size`, `adv` and `shrink: "ink"`. Ring
+  `inkBox(box, text, fittedSize, align, adv)`, as you already do. That makes the big-number
+  plates usable.
+- A numbered figure now resolves to the latest column of its row (the rightmost). Sheets
+  ring the latest year, for example `cell-1-6`. Stacked rows keep row 1.
+
+**7. Highlight on tall boxes.** A multi-line anchor now carries `lines`, one box per line at
+the role's pitch. Underline the last line the copy sets.
+
+**8. The wipe's cut frame.** It is fully opaque now: a flat ground-ink sheet under the hatch,
+on that frame only. Rasterised, it is 100% of pixels at alpha 255, at both aspects and in all
+three wipes. `meta.transition.opaque` says so.
+
+**9. Night attention on paper.** Keep your fallback. On a paper or cream box, use the dusk
+ink at both hours: #A8243C is 5.79:1 on #F2E8D4. #F07A5A is for dark grounds only. This is
+in CONTRACT.json → slots.json → paperInk.
+
+**10. Small things.**
+- The event-calendar and market marks are now drawn at their published weights, 10 and 5.
+- Line-draw names the real plot key. That fixed 65 plates, and small multiples list their
+  panels in `also`.
+- `"*"` is now the sixteen chapter types named, plus `any: true`.
+- `what-to-watch` is now `resigned-close`.
+- The pairedBars and markedList inks are `subject`, `attention` and `quiet`.
+- `meta.aspect` comes from the name.
+
+**Optional asks.**
+- **The 4-frame shorts wipe is built,** as `overlays/wipe-sweep-short`, `wipe-page-short` and
+  `wipe-blinds-short`. Each is 9:16, 4 frames (0.33 s) and cuts under frame 2.
+- **The talk room with a window is built,** as `room/window-talk` (plus `-christmas`). It is
+  `window-wall` with no shapes added. He stands at the pane's left edge (anchor x 110), so the
+  9:16 crop shows 46 of its 98 units of window, and snow and rain read in a short. The pane is
+  listed in `motion.json` under `rooms.byId["room/window-talk"].panes`. Don't cut it back to
+  back with `window-wall`, or he jumps sideways.
+  Nine poses fit there: to-camera, hands-in-pockets, holding-a-page, holding-a-filing, holding-a-phone, holding-a-mug, arms-crossed, counting-on-fingers, shrug. All 18 were composited and all clear. The other nine
+  need a desk, a chair, a screen, a plate or a way out of frame, and this spot has none.

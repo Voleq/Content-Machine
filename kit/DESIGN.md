@@ -376,7 +376,7 @@ that varies by pose is a renderer bug waiting for a slot to land on it.
 | strip | frames | fps | playback |
 |---|---|---|---|
 | `base` | 3 | 2 | loop — frame 1 byte-identical to `-talk` frame 1 |
-| `-talk` | 3 | 8 | loop — mouth only, one boil index |
+| `-talk` | 6 | 8 | loop — six mouths in phrase order (closed, mid, wide, O, EE, F/V), each on its head offset (rebuild-31) |
 | `-idle` | 3 | 4 | loop — a 3-unit shoulder bob, mouth closed |
 | `-blink` | 2 | 4 | overlay — index-matched onto idle, **never** onto talk |
 
@@ -570,6 +570,27 @@ mechanism, and it is correct:
 
 ---
 
+
+### §5.6 Motion over plates and rooms (rebuild-35, published rebuild-40)
+
+Plates and rooms stay stills. Thirteen moves are DATA in `emit/motion.json`, written by
+`emit.js` from `engine/motion.js`; a renderer plays them over the published slots.
+- **Where a move lands is read, never placed.** `anchors.plates[key][move]` gives the slot
+  and box (and `columns` for bars-grow, `lines` for a multi-line highlight, `also` for
+  small-multiple panels). A numbered figure resolves to the latest of its row (the
+  rightmost column). `pen-circle` rings the text's ink, never the slot (`shrink: "ink"`).
+- **Which shapes a room move touches is published** in `rooms.byId[room]`: `flicker`,
+  `lamp`, `panes` (window or door), `daylight`, `bulbs` (with `phase`), `pin`. Panes
+  and daylight never flicker. Snow and rain paint straight after their pane shape.
+- **Timings are published** in `timings`: the bumper's tick-over starts on frame 3 (0.25 s)
+  of its 24-frame hold; the source tag sits 24 above the safe line or the caption.
+- **Every loop is 12 frames and closes on itself** (rule 31 checks the frame count; snow
+  falls whole pane-heights per loop and twinkle steps every 4 frames by construction).
+- **A wipe's cut frame is fully opaque** (`meta.transition.opaque`): a flat ground-ink sheet
+  under the hatch on that frame only.
+- The review page (`Motion Review.dc.html`) calls the same functions; when it and the
+  catalogue disagree, the catalogue is right and the page is a bug.
+
 ## 7 · The contract that must not break
 
 Breaking anything here means nothing renders. Verified present and working as of rebuild-01:
@@ -664,6 +685,7 @@ that failed**, because a failure is at least information.
 | 26 | **Every exported file frames its own ink**, within a 10% bleed per edge. |
 | 27 | **He stands clear of the front layer, composited.** Every pose that fits the room, placed by the contract: no head under a front shape, at most 10% of him above the desk top (§4.5). |
 | 28 | **A chapter title has somewhere to land.** At least one opener room; every title inside its card, the card inside the portrait window and clear of him (§5.3). |
+| 31 | **Every motion anchor lands on something the plate publishes** (§5.6). Every slot table has an anchor record in `emit/motion.json`; every anchored slot, column and panel exists on the plate; every room target is inside the room’s shape list; every loop is 12 frames. |
 | 30 | **One room: no angle adds furniture** (§5.4b). At most one desk, monitor, desk lamp and lit opening per angle; drawing agrees with `KitModel.PLAN.sees`; any angle outside the drawn fourteen is pulled from one. |
 | 29 | **The data contract is published, not implied** (§5.5). Every legend/row key publishes `ink`; a second series' `tone2` equals the ink its key shows; every two-line plot publishes a boolean `spreadFill` that its note agrees with; every band or marker region whose note names a scale carries that range in `scale`. |
 

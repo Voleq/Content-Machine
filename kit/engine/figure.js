@@ -71,6 +71,38 @@ function framesOf(suffix, tokens) {
 /* Absolute bbox of an SVG path string, M/L/H/V/C/S/Q/T/A/Z, either case.
  * Control points are included, which makes the box conservative. */
 function pathBox(d, acc) {
+  /* rebuild-40: one tokenising pass into typed arrays, no per-token regex or
+   * closures. Same semantics as before (checked against the old version on
+   * every exported file); it was 45% of emit's time. */
+  const b = acc || [Infinity, Infinity, -Infinity, -Infinity];
+  const re = /[MmLlHhVvCcSsQqTtAaZz]|-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/g, str = String(d);
+  const L = [], V = []; let m;
+  while ((m = re.exec(str))) { const t = m[0], c = t.charCodeAt(0); if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) { L.push(t); V.push(0); } else { L.push(null); V.push(parseFloat(t)); } }
+  const N = L.length;
+  let i = 0, cmd = 'M', x = 0, y = 0, sx = 0, sy = 0, b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3];
+  while (i < N) {
+    if (L[i] !== null) cmd = L[i++];
+    if (cmd === 'Z' || cmd === 'z') { x = sx; y = sy; continue; }
+    if (i >= N || L[i] !== null) continue;
+    const rel = cmd.charCodeAt(0) >= 97, C = rel ? cmd.toUpperCase() : cmd, ox = rel ? x : 0, oy = rel ? y : 0;
+    let px, py;
+    if (C === 'M' || C === 'L' || C === 'T') { px = V[i++] + ox; py = V[i++] + oy; x = px; y = py; if (C === 'M') { sx = x; sy = y; cmd = rel ? 'l' : 'L'; } }
+    else if (C === 'H') { x = V[i++] + ox; px = x; py = y; }
+    else if (C === 'V') { y = V[i++] + oy; px = x; py = y; }
+    else if (C === 'C' || C === 'S' || C === 'Q') {
+      const k = C === 'C' ? 2 : 1;
+      for (let j = 0; j < k; j++) { const qx = V[i++] + ox, qy = V[i++] + oy; if (qx < b0) b0 = qx; if (qy < b1) b1 = qy; if (qx > b2) b2 = qx; if (qy > b3) b3 = qy; }
+      px = V[i++] + ox; py = V[i++] + oy; x = px; y = py;
+    }
+    else if (C === 'A') { i += 5; px = V[i++] + ox; py = V[i++] + oy; x = px; y = py; }
+    else { i++; continue; }
+    if (px < b0) b0 = px; if (py < b1) b1 = py; if (px > b2) b2 = px; if (py > b3) b3 = py;
+  }
+  b[0] = b0; b[1] = b1; b[2] = b2; b[3] = b3;
+  return b;
+}
+
+function pathBoxLegacy(d, acc) {
   const b = acc || [Infinity, Infinity, -Infinity, -Infinity];
   const tk = String(d).match(/[MmLlHhVvCcSsQqTtAaZz]|-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/g) || [];
   let i = 0, cmd = 'M', x = 0, y = 0, sx = 0, sy = 0;
@@ -96,7 +128,15 @@ function pathBox(d, acc) {
 /* Ink box of a whole SVG string: every path d, rect and circle. [x0,y0,x1,y1]. */
 function inkBoxOfSvg(svg) {
   const b = [Infinity, Infinity, -Infinity, -Infinity];
-  (svg.match(/\sd="[^"]*"/g) || []).forEach(a => pathBox(a.slice(4, -1), b));
+  /* rebuild-40: cached per path string. The hours and the breathing frames
+   * share most of their path data, so each d is parsed once, not six times. */
+  const cache = inkBoxOfSvg.cache || (inkBoxOfSvg.cache = new Map());
+  if (cache.size > 200000) cache.clear();
+  (svg.match(/\sd="[^"]*"/g) || []).forEach(a => {
+    let p = cache.get(a);
+    if (!p) { p = pathBox(a.slice(4, -1)); cache.set(a, p); }
+    if (p[0] < b[0]) b[0] = p[0]; if (p[1] < b[1]) b[1] = p[1]; if (p[2] > b[2]) b[2] = p[2]; if (p[3] > b[3]) b[3] = p[3];
+  });
   (svg.match(/<rect [^>]*>/g) || []).forEach(r => {
     const v = k => parseFloat((r.match(new RegExp('\\s' + k + '="(-?[\\d.]+)"')) || [0, 0])[1]);
     const x = v('x'), y = v('y'), w = v('width'), h = v('height');
@@ -160,4 +200,4 @@ function svg(M, key, H, frame, tokens) {
     + (behind ? prop : '') + body + (behind ? '' : prop) + headGroup + '</svg>';
 }
 
-module.exports = { BOX, STRIPS, framesOf, svg, pathBox, inkBoxOfSvg, PROP_BEHIND };
+module.exports = { BOX, STRIPS, framesOf, svg, pathBox, pathBoxLegacy, inkBoxOfSvg, PROP_BEHIND };

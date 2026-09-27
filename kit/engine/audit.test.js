@@ -54,16 +54,20 @@ const CASES = [
   [30, 'an angle drawn fresh', d => { d.plates.plates.filter(p => p.pulledFrom).forEach(p => { delete p.pulledFrom; }); }],
   [17, 'band direction flipped', d => { d.tokens.hours.night.ink.band = '#0A0D14'; }],
   [18, 'slab caption broken', d => { d.tokens.hours.dusk.ink.band = '#6B5F50'; d.tokens.hours.dusk.ink.ground = '#5F5570'; }],
+  [31, 'an anchor naming a slot the plate lacks', d => { const k = Object.keys(d.motion.anchors.plates).find(x => d.motion.anchors.plates[x]['line-draw']);
+      d.motion.anchors.plates[k]['line-draw'].slot = 'no-such-slot'; }],
+  [31, 'a room target past its shape list', d => { first(d.motion.rooms.byId).flicker.push(9999); }],
 ];
 
 /* Load audit.js with its inputs swapped for the mutated copies. */
-function runAudit(tokens, manifest, plates, slots) {
+function runAudit(tokens, manifest, plates, slots, motion) {
   let src = fs.readFileSync(path.join(__dirname, 'audit.js'), 'utf8');
   src = src.replace(/^[\s\S]*?const ROOT = [^\n]*\n/, '')
     .replace(/const T = \(\) => read\('design-tokens\.json'\);/, 'const T = () => __t;')
     .replace(/const manifest = \(\)[^\n]*\n/, 'const manifest = () => __m;\n')
     .replace(/const plates = \(\)[^\n]*\n/, 'const plates = () => __p;\n')
     .replace(/const slotTables = \(\)[^\n]*\n/, 'const slotTables = () => __s;\n')
+    .replace(/const motionTable = \(\)[^\n]*\n/, 'const motionTable = () => __mo;\n')
     .replace(/\/\* ── report[\s\S]*$/, '')
     .replace(/\nconst argv = process\.argv[\s\S]*$/, '\n');
   /* eslint-disable no-new-func */
@@ -71,10 +75,10 @@ function runAudit(tokens, manifest, plates, slots) {
    * stripped with the header, so every rule that reads a file of its own
    * (22, 24, 25, 26 — the export index and the roles file) threw, the baseline
    * came up not-green, and this test had been refusing to run since rule 22. */
-  return new Function('__t', '__m', '__p', '__s', 'fs', 'path', 'ROOT', 'require', 'process', src + `
+  return new Function('__t', '__m', '__p', '__s', '__mo', 'fs', 'path', 'ROOT', 'require', 'process', src + `
     return RULES.map(r => { try { const o = r.fn(); return { n: r.n, state: o.ok ? 'pass' : 'FAIL' }; }
       catch (e) { return { n: r.n, state: e instanceof NeedsData ? 'needs-data' : 'DID NOT RUN' }; } });`
-  )(tokens, manifest, plates, slots, fs, path, ROOT, require, process);
+  )(tokens, manifest, plates, slots, motion, fs, path, ROOT, require, process);
 }
 
 const clean = () => ({
@@ -82,10 +86,11 @@ const clean = () => ({
   manifest: read('emit/manifest.json'),
   plates: read('emit/plates.json'),
   slots: read('emit/slots.json'),
+  motion: read('emit/motion.json'),
 });
 
 /* The audit must be green BEFORE anything is broken, or the test proves nothing. */
-const baseline = (() => { const d = clean(); return runAudit(d.tokens, d.manifest, d.plates, d.slots); })();
+const baseline = (() => { const d = clean(); return runAudit(d.tokens, d.manifest, d.plates, d.slots, d.motion); })();
 const notGreen = baseline.filter(r => r.state !== 'pass');
 if (notGreen.length) {
   process.stdout.write(`baseline is not green — ${notGreen.map(r => r.n + ':' + r.state).join(', ')}\n`);
@@ -97,7 +102,7 @@ let caught = 0;
 CASES.forEach(([n, label, mutate]) => {
   const d = clean();
   mutate(d);
-  const r = runAudit(d.tokens, d.manifest, d.plates, d.slots).find(x => x.n === n);
+  const r = runAudit(d.tokens, d.manifest, d.plates, d.slots, d.motion).find(x => x.n === n);
   const ok = r && r.state === 'FAIL';
   if (ok) caught++;
   process.stdout.write(`${ok ? '  caught ' : '  MISSED '} ${String(n).padStart(2)}  ${label}${ok ? '' : `  (reported ${r ? r.state : 'nothing'})`}\n`);

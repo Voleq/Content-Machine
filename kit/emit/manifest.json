@@ -980,6 +980,22 @@
    "roomRole": "diagram",
    "duskSafe": false
   },
+  "room/window-talk": {
+   "role": "host",
+   "dir": "room",
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "gradients": 0,
+   "partialOpacity": 0,
+   "textNodes": 0,
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ]
+  },
   "room/desk-front-christmas": {
    "role": "host",
    "dir": "room",
@@ -1217,6 +1233,22 @@
    ],
    "roomRole": "diagram",
    "duskSafe": false
+  },
+  "room/window-talk-christmas": {
+   "role": "host",
+   "dir": "room",
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "gradients": 0,
+   "partialOpacity": 0,
+   "textNodes": 0,
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ]
   },
   "annotations/scrawl-oval-wide": {
    "role": "plate",
@@ -2562,9 +2594,9 @@
    "frameCount": 3,
    "drawn": true,
    "gradients": 0,
-   "partialOpacity": 12,
+   "partialOpacity": 2,
    "textNodes": 0,
-   "slots": 41,
+   "slots": 10,
    "round": "r1"
   },
   "charts/intraday": {
@@ -4572,7 +4604,7 @@
   "charts/guidance-range": {
    "role": "plate",
    "dir": "charts",
-   "author": "guidanceRange",
+   "author": "guidanceBands",
    "playback": "loop",
    "fps": 3,
    "frameCount": 3,
@@ -5073,6 +5105,48 @@
    "slots": 0,
    "round": "r5"
   },
+  "overlays/wipe-sweep-short": {
+   "role": "transition",
+   "dir": "overlays",
+   "author": "wipeSweep",
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 4,
+   "drawn": true,
+   "gradients": 0,
+   "partialOpacity": 606,
+   "textNodes": 0,
+   "slots": 0,
+   "round": "r5"
+  },
+  "overlays/wipe-page-short": {
+   "role": "transition",
+   "dir": "overlays",
+   "author": "wipePage",
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 4,
+   "drawn": true,
+   "gradients": 0,
+   "partialOpacity": 180,
+   "textNodes": 0,
+   "slots": 0,
+   "round": "r5"
+  },
+  "overlays/wipe-blinds-short": {
+   "role": "transition",
+   "dir": "overlays",
+   "author": "wipeBlinds",
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 4,
+   "drawn": true,
+   "gradients": 0,
+   "partialOpacity": 264,
+   "textNodes": 0,
+   "slots": 0,
+   "round": "r5"
+  },
   "charts/valuation-energy": {
    "role": "plate",
    "dir": "charts",
@@ -5384,7 +5458,7 @@
   "charts/guidance-range-energy": {
    "role": "plate",
    "dir": "charts",
-   "author": "guidanceRange",
+   "author": "guidanceBands",
    "playback": "loop",
    "fps": 3,
    "frameCount": 3,
@@ -5398,7 +5472,7 @@
   "charts/guidance-range-utilities": {
    "role": "plate",
    "dir": "charts",
-   "author": "guidanceRange",
+   "author": "guidanceBands",
    "playback": "loop",
    "fps": 3,
    "frameCount": 3,
@@ -5412,7 +5486,7 @@
   "charts/guidance-range-retail": {
    "role": "plate",
    "dir": "charts",
-   "author": "guidanceRange",
+   "author": "guidanceBands",
    "playback": "loop",
    "fps": 3,
    "frameCount": 3,
@@ -5426,7 +5500,7 @@
   "charts/guidance-range-health": {
    "role": "plate",
    "dir": "charts",
-   "author": "guidanceRange",
+   "author": "guidanceBands",
    "playback": "loop",
    "fps": 3,
    "frameCount": 3,

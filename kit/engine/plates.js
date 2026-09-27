@@ -332,7 +332,7 @@
       // the plate itself has no surface and no grain.
       pal: Object.assign({}, p, { ground: "none", grain: null }),
       meta: {
-        aspect: land ? "16x9" : "9x16", family: "overlays", type: "lower-third",
+        aspect: aspectOf(o, land), family: "overlays", type: "lower-third",
         composite: "alpha, over anything",
         typeRoles: roles,
       },
@@ -2550,11 +2550,18 @@
   }
 
   // ---------------- cross-chapter structure ----------------
+  /* rebuild-40: the ASPECT is the name's (-16x9 / -9x16) wherever the key
+   * carries one. A strip overlay is wider than tall at both sizes, so w > h
+   * filed the 9:16 source tag and lower third as 16:9. Layout still reads w, h. */
+  function aspectOf(o, land) {
+    const k = String(o.key || '');
+    return /-9x16$/.test(k) ? "9x16" : /-16x9$/.test(k) ? "16x9" : land ? "16x9" : "9x16";
+  }
   function base(o, type, roles) {
     const land = o.w > o.h, p = o.pal;
     const P = H.Plate({
       key: o.key, w: o.w, h: o.h, seed: o.seed, pal: p,
-      meta: { aspect: land ? "16x9" : "9x16", family: "structure", type: type, typeRoles: roles },
+      meta: { aspect: aspectOf(o, land), family: "structure", type: type, typeRoles: roles },
     });
     // §1.5 — the surface's own furniture BREATHES. Pad rules and board smears are
     // decoration of the sheet: nobody reads a value off them, and on a gated

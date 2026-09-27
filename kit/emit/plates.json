@@ -11923,6 +11923,354 @@
    "drawnAngle": false
   },
   {
+   "id": "room/window-talk@night.16x9",
+   "role": "room",
+   "hour": "night",
+   "aspect": "16x9",
+   "twinId": "room/window-talk.16x9",
+   "geometryHash": "f7ae72a8",
+   "fills": [
+    "#20293C",
+    "#141824",
+    "#171C2B",
+    "#38302A",
+    "#3C7A8C",
+    "#1A2130",
+    "#2A5866",
+    "#C9D2D8",
+    "#5A4A3E",
+    "#3E4759",
+    "#6B4A32",
+    "#7FD4E8",
+    "#0F131D"
+   ],
+   "strokes": [
+    {
+     "colour": "#0B0E16",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 32,
+   "box": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "inkBox": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 14,
+   "clearance": {
+    "poses": 9,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.1
+    },
+    "figureBox": [
+     129.6,
+     45,
+     176.6,
+     138
+    ]
+   },
+   "sees": [
+    "desk",
+    "monitor",
+    "window"
+   ],
+   "seen": {
+    "monitor": 1,
+    "desk": 1,
+    "deskLamp": 0,
+    "opening": 1
+   },
+   "pulledFrom": "window-wall",
+   "drawnAngle": false
+  },
+  {
+   "id": "room/window-talk@night.9x16",
+   "role": "room",
+   "hour": "night",
+   "aspect": "9x16",
+   "twinId": "room/window-talk.9x16",
+   "geometryHash": "f7ae72a8",
+   "fills": [
+    "#20293C",
+    "#141824",
+    "#171C2B",
+    "#38302A",
+    "#3C7A8C",
+    "#1A2130",
+    "#2A5866",
+    "#C9D2D8",
+    "#5A4A3E",
+    "#3E4759",
+    "#6B4A32",
+    "#7FD4E8",
+    "#0F131D"
+   ],
+   "strokes": [
+    {
+     "colour": "#0B0E16",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 32,
+   "box": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "inkBox": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 14,
+   "clearance": {
+    "poses": 9,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.1
+    },
+    "figureBox": [
+     129.6,
+     45,
+     176.6,
+     138
+    ]
+   },
+   "sees": [
+    "desk",
+    "monitor",
+    "window"
+   ],
+   "seen": {
+    "monitor": 1,
+    "desk": 1,
+    "deskLamp": 0,
+    "opening": 1
+   },
+   "pulledFrom": "window-wall",
+   "drawnAngle": false
+  },
+  {
+   "id": "room/window-talk@dusk.16x9",
+   "role": "room",
+   "hour": "dusk",
+   "aspect": "16x9",
+   "twinId": "room/window-talk.16x9",
+   "geometryHash": "f7ae72a8",
+   "fills": [
+    "#B9A184",
+    "#5E5470",
+    "#514868",
+    "#453E55",
+    "#F0D49A",
+    "#9B7F5E",
+    "#C9A870",
+    "#F2E8D4",
+    "#6E6478",
+    "#D8A95F",
+    "#6A5A70",
+    "#8FB8C4",
+    "#453C58"
+   ],
+   "strokes": [
+    {
+     "colour": "#2A2036",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 32,
+   "box": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "inkBox": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 14,
+   "clearance": {
+    "poses": 9,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.1
+    },
+    "figureBox": [
+     129.6,
+     45,
+     176.6,
+     138
+    ]
+   },
+   "sees": [
+    "desk",
+    "monitor",
+    "window"
+   ],
+   "seen": {
+    "monitor": 1,
+    "desk": 1,
+    "deskLamp": 0,
+    "opening": 1
+   },
+   "pulledFrom": "window-wall",
+   "drawnAngle": false
+  },
+  {
+   "id": "room/window-talk@dusk.9x16",
+   "role": "room",
+   "hour": "dusk",
+   "aspect": "9x16",
+   "twinId": "room/window-talk.9x16",
+   "geometryHash": "f7ae72a8",
+   "fills": [
+    "#B9A184",
+    "#5E5470",
+    "#514868",
+    "#453E55",
+    "#F0D49A",
+    "#9B7F5E",
+    "#C9A870",
+    "#F2E8D4",
+    "#6E6478",
+    "#D8A95F",
+    "#6A5A70",
+    "#8FB8C4",
+    "#453C58"
+   ],
+   "strokes": [
+    {
+     "colour": "#2A2036",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 32,
+   "box": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "inkBox": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 14,
+   "clearance": {
+    "poses": 9,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.1
+    },
+    "figureBox": [
+     129.6,
+     45,
+     176.6,
+     138
+    ]
+   },
+   "sees": [
+    "desk",
+    "monitor",
+    "window"
+   ],
+   "seen": {
+    "monitor": 1,
+    "desk": 1,
+    "deskLamp": 0,
+    "opening": 1
+   },
+   "pulledFrom": "window-wall",
+   "drawnAngle": false
+  },
+  {
    "id": "room/desk-front-christmas@night.16x9",
    "role": "room",
    "hour": "night",
@@ -17144,6 +17492,372 @@
     "opening": 0
    },
    "pulledFrom": "board-side",
+   "drawnAngle": false
+  },
+  {
+   "id": "room/window-talk-christmas@night.16x9",
+   "role": "room",
+   "hour": "night",
+   "aspect": "16x9",
+   "twinId": "room/window-talk-christmas.16x9",
+   "geometryHash": "a9f14e40",
+   "fills": [
+    "#20293C",
+    "#141824",
+    "#171C2B",
+    "#38302A",
+    "#3C7A8C",
+    "#1A2130",
+    "#2A5866",
+    "#C9D2D8",
+    "#5A4A3E",
+    "#F07A5A",
+    "#F0B460",
+    "#7FD4E8",
+    "#2E5A48",
+    "#1C3A30",
+    "#3E4759",
+    "#6B4A32",
+    "#0F131D"
+   ],
+   "strokes": [
+    {
+     "colour": "#0B0E16",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 95,
+   "box": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "inkBox": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 77,
+   "clearance": {
+    "poses": 9,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.1
+    },
+    "figureBox": [
+     129.6,
+     45,
+     176.6,
+     138
+    ]
+   },
+   "sees": [
+    "desk",
+    "monitor",
+    "window"
+   ],
+   "seen": {
+    "monitor": 1,
+    "desk": 1,
+    "deskLamp": 0,
+    "opening": 1
+   },
+   "pulledFrom": "window-wall",
+   "drawnAngle": false
+  },
+  {
+   "id": "room/window-talk-christmas@night.9x16",
+   "role": "room",
+   "hour": "night",
+   "aspect": "9x16",
+   "twinId": "room/window-talk-christmas.9x16",
+   "geometryHash": "a9f14e40",
+   "fills": [
+    "#20293C",
+    "#141824",
+    "#171C2B",
+    "#38302A",
+    "#3C7A8C",
+    "#1A2130",
+    "#2A5866",
+    "#C9D2D8",
+    "#5A4A3E",
+    "#F07A5A",
+    "#F0B460",
+    "#7FD4E8",
+    "#2E5A48",
+    "#1C3A30",
+    "#3E4759",
+    "#6B4A32",
+    "#0F131D"
+   ],
+   "strokes": [
+    {
+     "colour": "#0B0E16",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 95,
+   "box": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "inkBox": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 77,
+   "clearance": {
+    "poses": 9,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.1
+    },
+    "figureBox": [
+     129.6,
+     45,
+     176.6,
+     138
+    ]
+   },
+   "sees": [
+    "desk",
+    "monitor",
+    "window"
+   ],
+   "seen": {
+    "monitor": 1,
+    "desk": 1,
+    "deskLamp": 0,
+    "opening": 1
+   },
+   "pulledFrom": "window-wall",
+   "drawnAngle": false
+  },
+  {
+   "id": "room/window-talk-christmas@dusk.16x9",
+   "role": "room",
+   "hour": "dusk",
+   "aspect": "16x9",
+   "twinId": "room/window-talk-christmas.16x9",
+   "geometryHash": "a9f14e40",
+   "fills": [
+    "#B9A184",
+    "#5E5470",
+    "#514868",
+    "#453E55",
+    "#F0D49A",
+    "#9B7F5E",
+    "#C9A870",
+    "#F2E8D4",
+    "#6E6478",
+    "#A8243C",
+    "#D88A2F",
+    "#2F5FA8",
+    "#5E7A4E",
+    "#3E5238",
+    "#D8A95F",
+    "#6A5A70",
+    "#8FB8C4",
+    "#453C58"
+   ],
+   "strokes": [
+    {
+     "colour": "#2A2036",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 95,
+   "box": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "inkBox": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 77,
+   "clearance": {
+    "poses": 9,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.1
+    },
+    "figureBox": [
+     129.6,
+     45,
+     176.6,
+     138
+    ]
+   },
+   "sees": [
+    "desk",
+    "monitor",
+    "window"
+   ],
+   "seen": {
+    "monitor": 1,
+    "desk": 1,
+    "deskLamp": 0,
+    "opening": 1
+   },
+   "pulledFrom": "window-wall",
+   "drawnAngle": false
+  },
+  {
+   "id": "room/window-talk-christmas@dusk.9x16",
+   "role": "room",
+   "hour": "dusk",
+   "aspect": "9x16",
+   "twinId": "room/window-talk-christmas.9x16",
+   "geometryHash": "a9f14e40",
+   "fills": [
+    "#B9A184",
+    "#5E5470",
+    "#514868",
+    "#453E55",
+    "#F0D49A",
+    "#9B7F5E",
+    "#C9A870",
+    "#F2E8D4",
+    "#6E6478",
+    "#A8243C",
+    "#D88A2F",
+    "#2F5FA8",
+    "#5E7A4E",
+    "#3E5238",
+    "#D8A95F",
+    "#6A5A70",
+    "#8FB8C4",
+    "#453C58"
+   ],
+   "strokes": [
+    {
+     "colour": "#2A2036",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 95,
+   "box": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "inkBox": [
+    0,
+    0,
+    320,
+    180
+   ],
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 77,
+   "clearance": {
+    "poses": 9,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.1
+    },
+    "figureBox": [
+     129.6,
+     45,
+     176.6,
+     138
+    ]
+   },
+   "sees": [
+    "desk",
+    "monitor",
+    "window"
+   ],
+   "seen": {
+    "monitor": 1,
+    "desk": 1,
+    "deskLamp": 0,
+    "opening": 1
+   },
+   "pulledFrom": "window-wall",
    "drawnAngle": false
   },
   {
@@ -27026,7 +27740,7 @@
    "aspect": "9x16",
    "drawn": true,
    "twinId": "figures/guidance-raise-cut.9x16",
-   "geometryHash": "8c20e780",
+   "geometryHash": "21a43f1a",
    "fills": [
     "#171D2A"
    ],
@@ -27036,15 +27750,15 @@
      "width": 0.035
     }
    ],
-   "shapeCount": 12,
+   "shapeCount": 2,
    "box": [
     0,
     0,
     1080,
     1920
    ],
-   "filledSlots": 24,
-   "textSlots": 24
+   "filledSlots": 8,
+   "textSlots": 8
   },
   {
    "id": "figures/guidance-raise-cut@dusk.9x16",
@@ -27054,7 +27768,7 @@
    "aspect": "9x16",
    "drawn": true,
    "twinId": "figures/guidance-raise-cut.9x16",
-   "geometryHash": "8c20e780",
+   "geometryHash": "21a43f1a",
    "fills": [
     "#F2E8D4"
    ],
@@ -27064,15 +27778,15 @@
      "width": 0.035
     }
    ],
-   "shapeCount": 12,
+   "shapeCount": 2,
    "box": [
     0,
     0,
     1080,
     1920
    ],
-   "filledSlots": 24,
-   "textSlots": 24
+   "filledSlots": 8,
+   "textSlots": 8
   },
   {
    "id": "charts/intraday@night.9x16",
@@ -45121,6 +45835,162 @@
     }
    ],
    "shapeCount": 196,
+   "box": [
+    0,
+    0,
+    1080,
+    1920
+   ],
+   "filledSlots": 0,
+   "textSlots": 0
+  },
+  {
+   "id": "overlays/wipe-sweep-short@night.9x16",
+   "role": "plate",
+   "family": "overlays",
+   "hour": "night",
+   "aspect": "9x16",
+   "drawn": true,
+   "twinId": "overlays/wipe-sweep-short.9x16",
+   "geometryHash": "4ce65718",
+   "fills": [],
+   "strokes": [
+    {
+     "colour": "#0B0E16",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 608,
+   "box": [
+    0,
+    0,
+    1080,
+    1920
+   ],
+   "filledSlots": 0,
+   "textSlots": 0
+  },
+  {
+   "id": "overlays/wipe-sweep-short@dusk.9x16",
+   "role": "plate",
+   "family": "overlays",
+   "hour": "dusk",
+   "aspect": "9x16",
+   "drawn": true,
+   "twinId": "overlays/wipe-sweep-short.9x16",
+   "geometryHash": "4ce65718",
+   "fills": [],
+   "strokes": [
+    {
+     "colour": "#2A2036",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 608,
+   "box": [
+    0,
+    0,
+    1080,
+    1920
+   ],
+   "filledSlots": 0,
+   "textSlots": 0
+  },
+  {
+   "id": "overlays/wipe-page-short@night.9x16",
+   "role": "plate",
+   "family": "overlays",
+   "hour": "night",
+   "aspect": "9x16",
+   "drawn": true,
+   "twinId": "overlays/wipe-page-short.9x16",
+   "geometryHash": "ce7de268",
+   "fills": [],
+   "strokes": [
+    {
+     "colour": "#0B0E16",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 180,
+   "box": [
+    0,
+    0,
+    1080,
+    1920
+   ],
+   "filledSlots": 0,
+   "textSlots": 0
+  },
+  {
+   "id": "overlays/wipe-page-short@dusk.9x16",
+   "role": "plate",
+   "family": "overlays",
+   "hour": "dusk",
+   "aspect": "9x16",
+   "drawn": true,
+   "twinId": "overlays/wipe-page-short.9x16",
+   "geometryHash": "ce7de268",
+   "fills": [],
+   "strokes": [
+    {
+     "colour": "#2A2036",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 180,
+   "box": [
+    0,
+    0,
+    1080,
+    1920
+   ],
+   "filledSlots": 0,
+   "textSlots": 0
+  },
+  {
+   "id": "overlays/wipe-blinds-short@night.9x16",
+   "role": "plate",
+   "family": "overlays",
+   "hour": "night",
+   "aspect": "9x16",
+   "drawn": true,
+   "twinId": "overlays/wipe-blinds-short.9x16",
+   "geometryHash": "c77cd3c0",
+   "fills": [],
+   "strokes": [
+    {
+     "colour": "#0B0E16",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 266,
+   "box": [
+    0,
+    0,
+    1080,
+    1920
+   ],
+   "filledSlots": 0,
+   "textSlots": 0
+  },
+  {
+   "id": "overlays/wipe-blinds-short@dusk.9x16",
+   "role": "plate",
+   "family": "overlays",
+   "hour": "dusk",
+   "aspect": "9x16",
+   "drawn": true,
+   "twinId": "overlays/wipe-blinds-short.9x16",
+   "geometryHash": "c77cd3c0",
+   "fills": [],
+   "strokes": [
+    {
+     "colour": "#2A2036",
+     "width": 0.035
+    }
+   ],
+   "shapeCount": 266,
    "box": [
     0,
     0,

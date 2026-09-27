@@ -1,7 +1,7 @@
 {
  "_spec": "Every plate’s slot table, keyed by plate name with aspect: canvas, type roles and slots (x, y, w, h, role, maxChars / maxCharsPerLine x maxLines). maxChars is a HARD limit, derived by engine/budget.js from the box. Written by engine/emit.js; do not hand-edit.",
  "_generated": "engine/emit.js",
- "count": 573,
+ "count": 576,
  "plates": {
   "room/desk-wide-16x9": {
    "canvas": [
@@ -36615,68 +36615,40 @@
      "maxChars": 56,
      "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 56"
     },
-    "unit": {
-     "font": "Courier Prime",
-     "size": 28,
-     "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 52,
-     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 1), was 52"
-    },
-    "legend": {
+    "label": {
      "font": "Archivo Narrow",
-     "size": 30,
+     "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 69,
-     "budget": "derived from the slot boxes that set this role; 69 is the floor (narrowest of 2), was 54"
+     "maxChars": 28,
+     "budget": "derived from the slot boxes that set this role; 28 is the floor (narrowest of 2), was 48"
     },
-    "head": {
+    "axisTitle": {
      "font": "Courier Prime",
-     "size": 22,
+     "size": 26,
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 8,
-     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 8), was 7"
+     "maxChars": 22,
+     "budget": "derived from the slot boxes that set this role; 22 is the floor (narrowest of 1), was 22"
     },
-    "value": {
-     "font": "Courier Prime",
-     "size": 24,
-     "weight": 700,
-     "colour": "structure",
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 8), was 7"
-    },
-    "calloutLabel": {
-     "font": "Courier Prime",
-     "size": 24,
-     "weight": 400,
-     "colour": "structure",
-     "opacity": 0.7,
-     "tracking": ".16em",
-     "transform": "uppercase",
-     "maxChars": 48,
-     "budget": "derived from the slot boxes that set this role; 48 is the floor (narrowest of 1), was 36"
-    },
-    "big": {
-     "font": "Courier Prime",
-     "size": 144,
-     "weight": 700,
-     "colour": "structure",
-     "maxChars": 10,
-     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 1), was 6"
-    },
-    "calloutDetail": {
+    "head": {
      "font": "Archivo Narrow",
-     "size": 28,
-     "weight": 400,
+     "size": 54,
+     "weight": 700,
      "colour": "structure",
-     "opacity": 0.85,
-     "maxLines": 2,
-     "maxCharsPerLine": 79,
-     "budget": "derived from the slot boxes that set this role; 79 is the floor (narrowest of 1), was 40"
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 41,
+     "budget": "derived from the slot boxes that set this role; 41 is the floor (narrowest of 1), was 22"
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 48,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 13,
+     "budget": "derived from the slot boxes that set this role; 13 is the floor (narrowest of 2), was 13"
     }
    },
    "slots": {
@@ -36689,417 +36661,90 @@
      "h": 32,
      "maxChars": 41
     },
-    "unit": {
+    "head": {
      "align": "left",
-     "role": "unit",
+     "role": "head",
      "x": 96,
-     "y": 300,
+     "y": 330,
      "w": 888,
-     "h": 32,
-     "maxChars": 52
+     "h": 190,
+     "maxChars": 60,
+     "wraps": 2,
+     "maxCharsPerLine": 41,
+     "maxLines": 3
     },
-    "legend-1": {
+    "row-axis": {
      "align": "left",
-     "role": "legend",
-     "ink": "quiet",
-     "x": 148,
-     "y": 350,
-     "w": 836,
-     "h": 35,
-     "maxChars": 69
-    },
-    "legend-2": {
-     "align": "left",
-     "role": "legend",
-     "ink": "attention",
-     "x": 148,
-     "y": 396,
-     "w": 836,
-     "h": 35,
-     "maxChars": 69
-    },
-    "plot-area": {
-     "role": "plot-area",
-     "container": true,
-     "note": "guide-N and actual-N are on ONE scale, the plate’s min–max; pass each as fractions of it",
+     "role": "axisTitle",
      "x": 96,
-     "y": 470,
+     "y": 650,
+     "w": 355,
+     "h": 30,
+     "maxChars": 22
+    },
+    "band": {
+     "role": "band",
+     "region": true,
+     "axis": "horizontal",
+     "note": "the prior range as an extent — engine/series.js historyBand draws it from low/high",
+     "x": 96,
+     "y": 720,
      "w": 888,
-     "h": 530
+     "h": 120
     },
-    "guide-1": {
-     "role": "band",
-     "region": true,
-     "axis": "vertical",
-     "ink": "quiet",
-     "scale": "plot-area",
-     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
-     "x": 133,
-     "y": 470,
-     "w": 38,
-     "h": 530
-    },
-    "actual-1": {
+    "marker": {
      "role": "marker",
      "region": true,
-     "axis": "vertical",
-     "ink": "attention",
-     "scale": "plot-area",
-     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
-     "x": 117,
-     "y": 470,
-     "w": 69,
-     "h": 530
-    },
-    "guide-2": {
-     "role": "band",
-     "region": true,
-     "axis": "vertical",
-     "ink": "quiet",
-     "scale": "plot-area",
-     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
-     "x": 244,
-     "y": 470,
-     "w": 38,
-     "h": 530
-    },
-    "actual-2": {
-     "role": "marker",
-     "region": true,
-     "axis": "vertical",
-     "ink": "attention",
-     "scale": "plot-area",
-     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
-     "x": 228,
-     "y": 470,
-     "w": 69,
-     "h": 530
-    },
-    "guide-3": {
-     "role": "band",
-     "region": true,
-     "axis": "vertical",
-     "ink": "quiet",
-     "scale": "plot-area",
-     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
-     "x": 355,
-     "y": 470,
-     "w": 38,
-     "h": 530
-    },
-    "actual-3": {
-     "role": "marker",
-     "region": true,
-     "axis": "vertical",
-     "ink": "attention",
-     "scale": "plot-area",
-     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
-     "x": 339,
-     "y": 470,
-     "w": 69,
-     "h": 530
-    },
-    "guide-4": {
-     "role": "band",
-     "region": true,
-     "axis": "vertical",
-     "ink": "quiet",
-     "scale": "plot-area",
-     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
-     "x": 466,
-     "y": 470,
-     "w": 38,
-     "h": 530
-    },
-    "actual-4": {
-     "role": "marker",
-     "region": true,
-     "axis": "vertical",
-     "ink": "attention",
-     "scale": "plot-area",
-     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
-     "x": 450,
-     "y": 470,
-     "w": 69,
-     "h": 530
-    },
-    "guide-5": {
-     "role": "band",
-     "region": true,
-     "axis": "vertical",
-     "ink": "quiet",
-     "scale": "plot-area",
-     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
-     "x": 577,
-     "y": 470,
-     "w": 38,
-     "h": 530
-    },
-    "actual-5": {
-     "role": "marker",
-     "region": true,
-     "axis": "vertical",
-     "ink": "attention",
-     "scale": "plot-area",
-     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
-     "x": 561,
-     "y": 470,
-     "w": 69,
-     "h": 530
-    },
-    "guide-6": {
-     "role": "band",
-     "region": true,
-     "axis": "vertical",
-     "ink": "quiet",
-     "scale": "plot-area",
-     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
-     "x": 688,
-     "y": 470,
-     "w": 38,
-     "h": 530
-    },
-    "actual-6": {
-     "role": "marker",
-     "region": true,
-     "axis": "vertical",
-     "ink": "attention",
-     "scale": "plot-area",
-     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
-     "x": 672,
-     "y": 470,
-     "w": 69,
-     "h": 530
-    },
-    "guide-7": {
-     "role": "band",
-     "region": true,
-     "axis": "vertical",
-     "ink": "quiet",
-     "scale": "plot-area",
-     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
-     "x": 799,
-     "y": 470,
-     "w": 38,
-     "h": 530
-    },
-    "actual-7": {
-     "role": "marker",
-     "region": true,
-     "axis": "vertical",
-     "ink": "attention",
-     "scale": "plot-area",
-     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
-     "x": 783,
-     "y": 470,
-     "w": 69,
-     "h": 530
-    },
-    "guide-8": {
-     "role": "band",
-     "region": true,
-     "axis": "vertical",
-     "ink": "quiet",
-     "scale": "plot-area",
-     "note": "the guided range for the quarter — historyBand, vertical, [low, high, \"quiet\"]",
-     "x": 910,
-     "y": 470,
-     "w": 38,
-     "h": 530
-    },
-    "actual-8": {
-     "role": "marker",
-     "region": true,
-     "axis": "vertical",
-     "ink": "attention",
-     "scale": "plot-area",
-     "note": "what was reported — axisMark, vertical; a value off the range is the story, so it is never clamped to the range",
-     "x": 894,
-     "y": 470,
-     "w": 69,
-     "h": 530
-    },
-    "head-1": {
-     "align": "center",
-     "role": "head",
+     "axis": "horizontal",
+     "note": "the new guide as one position — engine/series.js axisMark draws it, and reports a clamp",
      "x": 96,
-     "y": 1018,
-     "w": 111,
-     "h": 26,
-     "maxChars": 8
-    },
-    "head-2": {
-     "align": "center",
-     "role": "head",
-     "x": 207,
-     "y": 1018,
-     "w": 111,
-     "h": 26,
-     "maxChars": 8
-    },
-    "head-3": {
-     "align": "center",
-     "role": "head",
-     "x": 318,
-     "y": 1018,
-     "w": 111,
-     "h": 26,
-     "maxChars": 8
-    },
-    "head-4": {
-     "align": "center",
-     "role": "head",
-     "x": 429,
-     "y": 1018,
-     "w": 111,
-     "h": 26,
-     "maxChars": 8
-    },
-    "head-5": {
-     "align": "center",
-     "role": "head",
-     "x": 540,
-     "y": 1018,
-     "w": 111,
-     "h": 26,
-     "maxChars": 8
-    },
-    "head-6": {
-     "align": "center",
-     "role": "head",
-     "x": 651,
-     "y": 1018,
-     "w": 111,
-     "h": 26,
-     "maxChars": 8
-    },
-    "head-7": {
-     "align": "center",
-     "role": "head",
-     "x": 762,
-     "y": 1018,
-     "w": 111,
-     "h": 26,
-     "maxChars": 8
-    },
-    "head-8": {
-     "align": "center",
-     "role": "head",
-     "x": 873,
-     "y": 1018,
-     "w": 111,
-     "h": 26,
-     "maxChars": 8
-    },
-    "value-1": {
-     "align": "center",
-     "role": "value",
-     "x": 96,
-     "y": 1054,
-     "w": 111,
-     "h": 28,
-     "maxChars": 7
-    },
-    "value-2": {
-     "align": "center",
-     "role": "value",
-     "x": 207,
-     "y": 1054,
-     "w": 111,
-     "h": 28,
-     "maxChars": 7
-    },
-    "value-3": {
-     "align": "center",
-     "role": "value",
-     "x": 318,
-     "y": 1054,
-     "w": 111,
-     "h": 28,
-     "maxChars": 7
-    },
-    "value-4": {
-     "align": "center",
-     "role": "value",
-     "x": 429,
-     "y": 1054,
-     "w": 111,
-     "h": 28,
-     "maxChars": 7
-    },
-    "value-5": {
-     "align": "center",
-     "role": "value",
-     "x": 540,
-     "y": 1054,
-     "w": 111,
-     "h": 28,
-     "maxChars": 7
-    },
-    "value-6": {
-     "align": "center",
-     "role": "value",
-     "x": 651,
-     "y": 1054,
-     "w": 111,
-     "h": 28,
-     "maxChars": 7
-    },
-    "value-7": {
-     "align": "center",
-     "role": "value",
-     "x": 762,
-     "y": 1054,
-     "w": 111,
-     "h": 28,
-     "maxChars": 7
-    },
-    "value-8": {
-     "align": "center",
-     "role": "value",
-     "x": 873,
-     "y": 1054,
-     "w": 111,
-     "h": 28,
-     "maxChars": 7
-    },
-    "record-label": {
-     "align": "left",
-     "role": "calloutLabel",
-     "x": 96,
-     "y": 1220,
+     "y": 694,
      "w": 888,
-     "h": 28,
-     "maxChars": 48
+     "h": 172
     },
-    "record": {
+    "label-1": {
      "align": "left",
-     "role": "big",
+     "role": "label",
      "x": 96,
-     "y": 1264,
-     "w": 888,
-     "h": 167,
-     "maxChars": 10
+     "y": 894,
+     "w": 391,
+     "h": 39,
+     "maxChars": 28
     },
-    "record-detail": {
+    "figure-1": {
      "align": "left",
-     "role": "calloutDetail",
+     "role": "figure",
      "x": 96,
-     "y": 1443,
-     "w": 888,
-     "h": 112,
-     "maxChars": 176,
-     "wraps": 3,
-     "maxCharsPerLine": 79,
-     "maxLines": 2
+     "y": 950,
+     "w": 391,
+     "h": 56,
+     "maxChars": 13
+    },
+    "label-2": {
+     "align": "right",
+     "role": "label",
+     "x": 593,
+     "y": 894,
+     "w": 391,
+     "h": 39,
+     "maxChars": 28
+    },
+    "figure-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 593,
+     "y": 950,
+     "w": 391,
+     "h": 56,
+     "maxChars": 13
     },
     "caption": {
      "align": "left",
      "role": "caption",
      "x": 96,
-     "y": 1760,
+     "y": 1720,
      "w": 888,
-     "h": 30,
+     "h": 60,
      "maxChars": 56
     }
    }
@@ -146977,7 +146622,7 @@
     "mark-1": {
      "align": "center",
      "role": "mark",
-     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "inkBy": "the mark: + in attention (a new risk), − in subject (a risk dropped), ~ in quiet; data.markInk gives each row’s ink by name",
      "x": 160,
      "y": 250,
      "w": 90,
@@ -147007,7 +146652,7 @@
     "mark-2": {
      "align": "center",
      "role": "mark",
-     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "inkBy": "the mark: + in attention (a new risk), − in subject (a risk dropped), ~ in quiet; data.markInk gives each row’s ink by name",
      "x": 160,
      "y": 380,
      "w": 90,
@@ -147037,7 +146682,7 @@
     "mark-3": {
      "align": "center",
      "role": "mark",
-     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "inkBy": "the mark: + in attention (a new risk), − in subject (a risk dropped), ~ in quiet; data.markInk gives each row’s ink by name",
      "x": 160,
      "y": 510,
      "w": 90,
@@ -147067,7 +146712,7 @@
     "mark-4": {
      "align": "center",
      "role": "mark",
-     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "inkBy": "the mark: + in attention (a new risk), − in subject (a risk dropped), ~ in quiet; data.markInk gives each row’s ink by name",
      "x": 160,
      "y": 640,
      "w": 90,
@@ -147097,7 +146742,7 @@
     "mark-5": {
      "align": "center",
      "role": "mark",
-     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "inkBy": "the mark: + in attention (a new risk), − in subject (a risk dropped), ~ in quiet; data.markInk gives each row’s ink by name",
      "x": 160,
      "y": 770,
      "w": 90,
@@ -147221,7 +146866,7 @@
     "mark-1": {
      "align": "center",
      "role": "mark",
-     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "inkBy": "the mark: + in attention (a new risk), − in subject (a risk dropped), ~ in quiet; data.markInk gives each row’s ink by name",
      "x": 96,
      "y": 480,
      "w": 80,
@@ -147252,7 +146897,7 @@
     "mark-2": {
      "align": "center",
      "role": "mark",
-     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "inkBy": "the mark: + in attention (a new risk), − in subject (a risk dropped), ~ in quiet; data.markInk gives each row’s ink by name",
      "x": 96,
      "y": 712,
      "w": 80,
@@ -147283,7 +146928,7 @@
     "mark-3": {
      "align": "center",
      "role": "mark",
-     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "inkBy": "the mark: + in attention (a new risk), − in subject (a risk dropped), ~ in quiet; data.markInk gives each row’s ink by name",
      "x": 96,
      "y": 944,
      "w": 80,
@@ -147314,7 +146959,7 @@
     "mark-4": {
      "align": "center",
      "role": "mark",
-     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "inkBy": "the mark: + in attention (a new risk), − in subject (a risk dropped), ~ in quiet; data.markInk gives each row’s ink by name",
      "x": 96,
      "y": 1176,
      "w": 80,
@@ -147345,7 +146990,7 @@
     "mark-5": {
      "align": "center",
      "role": "mark",
-     "inkBy": "the mark: + in down (a new risk), − in up (a risk dropped), ~ in quiet",
+     "inkBy": "the mark: + in attention (a new risk), − in subject (a risk dropped), ~ in quiet; data.markInk gives each row’s ink by name",
      "x": 96,
      "y": 1408,
      "w": 80,
@@ -150150,6 +149795,33 @@
    "slots": {}
   },
   "overlays/wipe-blinds-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "aspect": "9x16",
+   "typeRoles": {},
+   "slots": {}
+  },
+  "overlays/wipe-sweep-short-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "aspect": "9x16",
+   "typeRoles": {},
+   "slots": {}
+  },
+  "overlays/wipe-page-short-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "aspect": "9x16",
+   "typeRoles": {},
+   "slots": {}
+  },
+  "overlays/wipe-blinds-short-9x16": {
    "canvas": [
     1080,
     1920

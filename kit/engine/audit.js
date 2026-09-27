@@ -69,6 +69,7 @@ const plates = () => (exists('emit/plates.json') ? read('emit/plates.json') : ne
 const exportIndex = () => (exists('out/index.json') ? read('out/index.json') : needs('out/index.json — run engine/export.js'));
 const slotTables = () => (exists('emit/slots.json') ? read('emit/slots.json') : needs('emit/slots.json — run the emitter'));
 const roles = () => (exists('roles.fragment.json') ? read('roles.fragment.json') : needs('roles.fragment.json'));
+const motionTable = () => (exists('emit/motion.json') ? read('emit/motion.json') : needs('emit/motion.json \u2014 run the emitter'));
 
 rule(1, 'No gradients', () => {
   const m = manifest();
@@ -299,6 +300,36 @@ rule(28, 'A chapter title has somewhere to land', () => {
     note: !openers.length ? 'no anchored room publishes a title slot — every chapter title would drop'
       : bad.length ? 'title misplaced: ' + bad.map(r => r.id).join(', ')
       : 'Every opener room\u2019s title sits on its card, inside the portrait window, and clear of every pose that fits the room.' };
+});
+
+rule(31, 'Every motion anchor lands on something the plate publishes', () => {
+  /* rebuild-40. The bot found anchors naming plot-area on 105 plates whose
+   * plot is published under another name, and room moves applied by a review
+   * page's own guess at which shapes are screens. This fails any anchor whose
+   * slot (or column, or extra panel) the plate does not publish, any plate
+   * with no anchor record, any room target outside the room's shape list, and
+   * any looping move that is not 12 frames (every loop must close on itself). */
+  const mo = motionTable(), st = slotTables(), p = plates();
+  const bad = [];
+  let n = 0;
+  Object.keys(st.plates).forEach(key => {
+    const S = (st.plates[key] || {}).slots || {}, A = (mo.anchors.plates || {})[key];
+    if (!A) { bad.push(key + ': no anchor record'); return; }
+    Object.keys(A).forEach(mv => { const a = A[mv]; if (!a) return; n++;
+      const names = [a.slot].concat(a.also || [], ...(a.columns || []).map(c => c.slots)).filter(Boolean);
+      names.forEach(s => { if (!S[s]) bad.push(key + ' ' + mv + ' -> ' + s); }); });
+  });
+  const shapes = {};
+  p.plates.filter(pl => pl.role === 'room').forEach(pl => { shapes[pl.twinId.replace(/\.(16x9|9x16)$/, '')] = pl.shapeCount; });
+  Object.keys((mo.rooms || {}).byId || {}).forEach(id => {
+    const t = mo.rooms.byId[id], c = shapes[id];
+    if (c === undefined) { bad.push(id + ': no such room'); return; }
+    const idx = [].concat(t.flicker, t.lamp, t.daylight, t.panes.map(q => q.shape), t.bulbs.map(q => q.shape));
+    idx.forEach(i => { n++; if (!(i >= 0 && i < c)) bad.push(id + ' shape ' + i + ' of ' + c); });
+  });
+  (mo.moves || []).filter(m => m.playback === 'loop' && m.frames !== 12).forEach(m => bad.push(m.id + ' loops over ' + m.frames));
+  return { ok: !bad.length, count: n + ' targets',
+    note: bad.length ? bad.slice(0, 5).join('; ') : 'Every plate has an anchor record; every anchored slot, column and panel is one the plate publishes; every room target is inside its room\u2019s shape list; every loop is 12 frames.' };
 });
 
 rule(30, 'One room: no angle adds furniture', () => {

@@ -58,18 +58,26 @@ const g = {};
 
 /* Round-one authors install onto the same PLATES registry, so every consumer
  * of this module sees one library. */
+/* rebuild-40: a round may ADD authors, never replace one. Round five once
+ * redefined round one's guidanceRange and nothing noticed; this throws. */
+const installRound = (name, mod) => {
+  const before = Object.assign({}, g.PLATES);
+  mod.install(g.PLATES, g.HAND);
+  const clash = Object.keys(before).filter(k => g.PLATES[k] !== before[k]);
+  if (clash.length) throw new Error(name + ' replaces authors already installed: ' + clash.join(', '));
+};
 g.PLATES_R1 = require('./plates-r1');
-g.PLATES_R1.install(g.PLATES, g.HAND);
+installRound('plates-r1.js', g.PLATES_R1);
 /* Round two — software and industrials — installs AFTER round one, whose
  * budget helpers it reuses. */
 g.PLATES_R2 = require('./plates-r2');
-g.PLATES_R2.install(g.PLATES, g.HAND);
+installRound('plates-r2.js', g.PLATES_R2);
 /* Round three — one set per sector — names round two's shapes. */
 g.PLATES_R3 = require('./plates-r3');
-g.PLATES_R3.install(g.PLATES, g.HAND);
+installRound('plates-r3.js', g.PLATES_R3);
 /* Round five — new shapes — reuses round two's furniture. */
 g.PLATES_R5 = require('./plates-r5');
-g.PLATES_R5.install(g.PLATES, g.HAND);
+installRound('plates-r5.js', g.PLATES_R5);
 
 /* The catalogue, read out of build.js rather than retyped (§8.1), with the
  * round-one entries appended. emit.js and export.js both read THIS, which is

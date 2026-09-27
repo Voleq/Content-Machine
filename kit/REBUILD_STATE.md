@@ -1,5 +1,57 @@
 # Dennis v2 — REBUILD_STATE.md
 
+> ## rebuild-40 — answers to the bot's rebuild-39 report
+>
+> Through the kit's own scripts: `emit.js` **419 assets · 1,400 plate records · 576 slot tables**;
+> `export.js --index` **5,122 files (3,786 frames)**; `audit.js --check` **31 of 31**;
+> `audit.test.js` **27 of 27**. (Rule 9 was memoised to the same run's build for time; the
+> negative control ran against the files on disk.) The full reply is ANSWERS.md §R40.
+>
+> **Engine changes:**
+> - `emit.js` now WRITES `emit/motion.json` (it was written by a review script before). It adds
+>   `timings`, per-plate anchors from `motion.anchorFor(slots, key)`, and `rooms.byId` from
+>   `motion.roomTargets()`: which shape indices flicker, which are panes, daylight and bulbs.
+> - `motion.js`: snow falls whole pane-heights per loop and twinkle steps every 4 frames, so
+>   both loops are seamless. Anchors name the real plot key (65 plates were `plot-area` by
+>   default), give bars-grow its columns, give multi-line highlights their `lines`, and resolve a
+>   numbered figure to the latest column. Pen-circle and count-up publish `align/size/adv`
+>   and `shrink: "ink"`.
+> - Source-tag placement per plate (`slide-in` anchor): 275 of 540 plates have a clear spot.
+>   The other 265 say `clear: false` and what the tag would cover.
+> - Tick-over starts on frame 3 (0.25 s) of the bumper's 24-frame hold. This is published in
+>   `meta.tickOver` and `timings`.
+> - Wipes: the cut frame has a flat ground sheet under the hatch. It rasterises 100% opaque at
+>   both aspects (it was about 57%). There are also three new 9:16 four-frame wipes,
+>   `overlays/wipe-*-short`, which cut under frame 2.
+> - `plates-r5.js`: `guidanceRange` is renamed `guidanceBands`, so
+>   `figures/guidance-raise-cut` is round one's drawing again. `port.js` and `plates-r5.js`
+>   now throw if a round replaces an installed author.
+> - `export.js`: markers honour their published `weight` (event-calendar 10, market line 5).
+> - `plates.js`: `meta.aspect` comes from the key suffix (source tag, lower third).
+> - `copy-r5.js`: pairedBars and markedList data inks are ink names (subject, attention,
+>   quiet). `"*"` is now the sixteen chapter types plus `any: true`. `what-to-watch` is now
+>   `resigned-close`.
+> - `kit-model.js`: the Christmas bulbs carry `bulb: true`.
+> - **New rule 31:** every motion anchor and room target resolves, and every loop is 12 frames.
+>
+> **Roles:** the three holding poses and their strips now have entries (12). The source tag
+> reaches shorts. The bumper is reached by the assembler.
+>
+> **Docs:** CONTRACT.json has motion.json, slots.json inks and the 6-frame talk strips.
+> DESIGN §5.6 and rule 31 are added. The ANSWERS §2 talk strip is corrected.
+> **Motion Review** now calls the same functions, so it matches the catalogue in all five places.
+>
+> **`room/window-talk`** (and its `-christmas` twin) is new. It is `window-wall` with the same
+> shapes, only his anchor moved right to x 110, so he stands at the pane's left edge. The 9:16
+> crop now shows 46 of its 98 units of window. The composite is in `screenshots/r40-window-talk.png`.
+> All 18 poses were composited there (`screenshots/r40-window-talk-poses.png`), and every one
+> clears (worst: shrug, upper 1.1%). **Nine fit** and are listed: to-camera, hands-in-pockets, holding-a-page, holding-a-filing, holding-a-phone, holding-a-mug, arms-crossed, counting-on-fingers, shrug. The other nine need
+> something this spot lacks: a desk under the hand, a chair, a screen, a plate beside him, or a
+> way out of frame. Rule 27 now checks all nine here.
+> - `figure.js`: `inkBoxOfSvg` caches each path's box. It was 45% of emit's time, and emit
+>   had grown past the tool's run limit. The boxes are unchanged: 0 differences in 15,147 paths.
+> - `kit-model.js`: `clearanceOf` is memoised per room geometry.
+
 > ## rebuild-39 — stamp move removed (user call)
 > `stamp` is gone from `motion.js` (MOVES, stampScale, anchorFor), from `emit/motion.json` (moves and all 573 anchor sets) and from Motion Review. 13 moves remain. Older notes below that mention the stamp are history.
 

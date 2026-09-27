@@ -7,6 +7,7 @@
  *   emit/manifest.json        one record per ASSET  (what it is, how it plays)
  *   emit/plates.json          one record per PLATE  (asset x hour x aspect) + the facts the audit reads
  *   emit/slots.json           every plate's slot table: position, type role, maxChars
+ *   emit/motion.json          the motion catalogue: moves, timings, where each move lands on every plate, and which shapes each room move touches (rebuild-40)
  *   <family>/manifest.json    the per-family manifests the ingest globs for, frames and slots included
  *
  *   node engine/emit.js                 # write all of the above
@@ -36,6 +37,7 @@ const M = require('./kit-model');
 const F = require('./figure');
 const PORT = require('./port');
 const CONTENT = require('./content');
+const MO = require('./motion');
 
 const ROOT = path.resolve(__dirname, '..');
 const g = PORT.engine;
@@ -78,7 +80,9 @@ function build(opts) {
   /* budget.js owns type capacity; content.js must not keep a second model. */
   if (CONTENT.useMetrics) CONTENT.useMetrics(g.BUDGET);
 
-  const assets = {}, plates = [], index = [], slots = {}, fam = {};
+  const assets = {}, plates = [], index = [], slots = {}, fam = {}, roomMotion = {};
+  const pbox = d => { const b = [Infinity, Infinity, -Infinity, -Infinity]; F.pathBox(d, b); return { x: b[0], y: b[1], w: b[2] - b[0], h: b[3] - b[1] }; };
+  const PLAN = M.constructor.PLAN || M.PLAN || {};
   const addFam = (dir, key, rec) => { (fam[dir] = fam[dir] || {})[key] = rec; };
   const emitFile = (entry, svg) => {
     entry.hash = hash(svg); entry.bytes = svg.length; entry.inkBox = F.inkBoxOfSvg(svg);
@@ -146,6 +150,7 @@ function build(opts) {
     const win = [Math.max(0, Math.min(320 - PW, Math.round(cx - PW / 2))), PY, PW, PH];
     const gHash = hash(r.shapes.map(s => s.d).join('|'));
     const id = 'room/' + r.id;
+    roomMotion[id] = MO.roomTargets(r, (PLAN.sees || {})[r.pulledFrom || r.id] || [], pbox);
     const c0 = countsOf(roomSvg(r, M.HOURS[0]));
     assets[id] = { role: anchor ? 'host' : 'plate', dir: 'room', playback: 'still', fps: 1, frameCount: 1,
       gradients: c0.gradients, partialOpacity: c0.partialOpacity, textNodes: c0.textNodes };
@@ -229,7 +234,8 @@ function build(opts) {
     const still = it.dir === 'annotations';
     /* rebuild-34: a transition's frames are its PROGRESS, one plate per frame
      * (args.t), played once; not the breathing rule offsets. */
-    const TR5 = it.args && it.args.transition ? [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1] : null;
+    const nT = it.args && it.args.transition ? (typeof it.args.transition === 'number' ? it.args.transition : 8) : 0;
+    const TR5 = nT ? Array.from({ length: nT }, (_, i) => (i + 1) / nT) : null;
     const O = still ? [0] : TR5 || offs;
     ['night', 'dusk'].forEach(hour => {
       const H = M.HOURS.find(x => x.name === hour);
@@ -328,6 +334,15 @@ function build(opts) {
   outputs['emit/slots.json'] = J({
     _spec: 'Every plate\u2019s slot table, keyed by plate name with aspect: canvas, type roles and slots (x, y, w, h, role, maxChars / maxCharsPerLine x maxLines). maxChars is a HARD limit, derived by engine/budget.js from the box. Written by engine/emit.js; do not hand-edit.',
     _generated: 'engine/emit.js', count: Object.keys(slots).length, plates: slots });
+  const anchors = {};
+  Object.keys(slots).forEach(k => { anchors[k] = MO.anchorFor(slots[k], k); });
+  outputs['emit/motion.json'] = J({
+    _generated: 'engine/emit.js from engine/motion.js (rebuild-40). Do not hand-edit.', fps: MO.FPS,
+    why: 'Moves are data, played by the renderer over a plate\u2019s published slots; see engine/motion.js for each move\u2019s per-frame function. No move fades (rule 2). Every loop is seamless: frame 12 is frame 0.',
+    moves: MO.MOVES, timings: MO.TIMINGS,
+    anchors: { why: 'Where each move lands on each plate, READ from its published slots by motion.anchorFor(); null = the plate has nothing for that move, skip it. Never placed by eye. Boxes are in the plate\u2019s canvas units.', plates: anchors },
+    rooms: { why: 'Which shapes each room move touches, by index into the room\u2019s shape list (the nth <path> of the room file), from motion.roomTargets(). Boxes are in room units (320 x 180).', byId: roomMotion },
+  });
   Object.keys(fam).sort().forEach(dir => {
     outputs[dir + '/manifest.json'] = J({
       family: dir, pack: 'rebuild-17',
@@ -336,7 +351,7 @@ function build(opts) {
       hashAlgo: 'fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8',
       frameNaming: '<name>-<hour>_f01.._fNN before the extension. The BASE file carries no frame tag and is byte-identical to _f01.',
       files: '`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table \u2014 an episode picks one and never mixes them.',
-      motion: 'Authored, from design-tokens.json -> motion. Plates: the frame\u2019s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.',
+      motion: 'Authored, from design-tokens.json -> motion. Plates: the frame\u2019s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles six mouths (closed, mid, wide, O, EE, F/V) on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still. Moves played OVER plates and rooms are data in emit/motion.json.',
       bakedText: false,
       assetCount: Object.keys(fam[dir]).length,
       plates: fam[dir],

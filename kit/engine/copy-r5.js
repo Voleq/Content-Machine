@@ -24,6 +24,9 @@
   };
   const each = (o, p, l) => { l.forEach((v, i) => { o[p + '-' + (i + 1)] = v; }); return o; };
   const frac = (v, lo, hi) => +((v - lo) / (hi - lo)).toFixed(4);
+  /* rebuild-40: "every chapter type" is the sixteen, named, plus any: true (the
+   * fragment’s own vocabulary); a "*" does not resolve against the gate. */
+  const ANY = ['bull-vs-bear', 'capital-allocation', 'cold-open', 'filing-walk', 'guidance-estimates', 'how-the-money-is-made', 'how-we-got-here', 'management', 'moat', 'one-framework', 'resigned-close', 'risk', 'sector-comps', 'short-interest', 'the-numbers', 'valuation'];
 
   const B = {
     valuationHistory(e) {
@@ -37,7 +40,7 @@
       return { text: t, data: { series: s, min: e.min, max: e.max, accentLast: true,
         bands: { range: [frac(lo, e.min, e.max), frac(hi, e.min, e.max), 'band'] }, marks: { average: frac(avg, e.min, e.max) } } };
     },
-    guidanceRange(e) {
+    guidanceBands(e) {
       const inOrAbove = e.actual.filter((a, i) => a >= e.guide[i][0]).length;
       const t = { kicker: e.kicker, unit: e.unit, 'legend-1': 'Guided range', 'legend-2': 'Reported', caption: e.caption,
         'record-label': 'AT OR ABOVE RANGE', record: inOrAbove + ' of ' + e.actual.length, 'record-detail': e.detail };
@@ -162,7 +165,7 @@
 
   B.pairedBars = e => {
     const t = { kicker: e.kicker, unit: e.unit, caption: e.caption, 'col-a': e.cols[0], 'col-b': e.cols[1] }, bands = {};
-    const bar = (v, s) => { const z = frac(0, s[0], s[1]), f = frac(Math.max(s[0], Math.min(s[1], v)), s[0], s[1]); return [Math.min(z, f), Math.max(z, f), v >= 0 ? 'up' : 'down']; };
+    const bar = (v, s) => { const z = frac(0, s[0], s[1]), f = frac(Math.max(s[0], Math.min(s[1], v)), s[0], s[1]); return [Math.min(z, f), Math.max(z, f), v >= 0 ? 'subject' : 'attention']; };
     e.rows.forEach((r, i) => {
       t['label-' + (i + 1)] = r[0]; t['av-' + (i + 1)] = fmt(r[1], '%', 1, true); t['bv-' + (i + 1)] = fmt(r[2], '%', 1, true);
       bands['a-' + (i + 1)] = bar(r[1], e.sa); bands['b-' + (i + 1)] = bar(r[2], e.sb);
@@ -172,7 +175,7 @@
   B.markedList = e => {
     const t = { kicker: e.kicker, unit: e.unit, caption: e.caption };
     e.rows.forEach((r, i) => { t['mark-' + (i + 1)] = r[0] === '-' ? MINUS : r[0]; t['tag-' + (i + 1)] = r[1]; t['line-' + (i + 1)] = r[2]; });
-    return { text: t, data: { series: null, markInk: e.rows.map(r => (r[0] === '+' ? 'down' : r[0] === '-' ? 'up' : 'quiet')) } };
+    return { text: t, data: { series: null, markInk: e.rows.map(r => (r[0] === '+' ? 'attention' : r[0] === '-' ? 'subject' : 'quiet')) } };
   };
   B.footnoteSpot = e => ({ text: { kicker: e.kicker, unit: e.unit, caption: e.caption, ref: e.ref, quote: e.quote, marked: e.marked,
     'pull-label': e.pull[0], pull: e.pull[1], 'pull-detail': e.pull[2] }, data: { series: null } });
@@ -234,7 +237,7 @@
     caption: 'The highest cash yield in five years',
     ch: ['valuation', 'capital-allocation'], purpose: 'free cash flow as a share of market value over five years, against its own range and average.',
     caution: 'This one reads upside down: a HIGHER yield is a CHEAPER share. Say so in the voice-over every time.' });
-  add('charts', 'guidance-range', 'guidanceRange', { quarters: 8 }, { u: '$m', min: 170, max: 235,
+  add('charts', 'guidance-range', 'guidanceBands', { quarters: 8 }, { u: '$m', min: 170, max: 235,
     guide: [[180, 184], [188, 192], [196, 200], [204, 208], [210, 214], [216, 220], [220, 224], [224, 228]],
     actual: [186, 193, 199, 207, 211, 217, 219, 223],
     kicker: 'REVENUE AGAINST GUIDANCE', unit: '$m per quarter',
@@ -454,30 +457,30 @@
       ['15 Mar', 165, 'Credit facility matures', 'Refinancing terms']],
     kicker: 'WHAT COMES NEXT', unit: 'the next six months, Tessera',
     caption: 'Five dates, and the thing to watch on each',
-    ch: ['what-to-watch', 'risk'], sectors: ['information-technology'], purpose: 'the next dates that could move the shares on one rail over a fixed window, numbered, with the list saying what to watch at each: the episode’s closing checklist.',
+    ch: ['resigned-close', 'risk'], sectors: ['information-technology'], purpose: 'the next dates that could move the shares on one rail over a fixed window, numbered, with the list saying what to watch at each: the episode’s closing checklist.',
     caution: 'Only confirmed dates. An expected date the company has not announced goes in the voice-over, not on the rail.' });
 
   /* Q9 · episode furniture. */
   add('structure', 'chapter-bumper', 'chapterBumper', {}, { num: '03', of: 'OF SEVEN', title: 'Where the cash actually goes',
     episode: 'BRIGHTLINE \u00b7 EPISODE 14',
-    ch: ['*'], purpose: 'the frame between chapters: the chapter number large, its title and the episode. Two seconds over room tone.',
+    ch: ANY, any: true, purpose: 'the frame between chapters: the chapter number large, its title and the episode. Two seconds over room tone.',
     caution: 'The title is the chapter\u2019s claim in five words or so, not its topic. \u201cWhere the cash goes\u201d, not \u201cCash flow\u201d.' });
   add('overlays', 'source-tag', 'sourceTag', { sizes: { land: [900, 72], port: [980, 92] } }, { source: '10-K FY25, note 14, page 96',
-    ch: ['*'], purpose: 'where the figure on screen came from, as an alpha strip over a plate or the room: document, note and page.',
+    ch: ANY, any: true, purpose: 'where the figure on screen came from, as an alpha strip over a plate or the room: document, note and page.',
     caution: 'Name the document and the page, never just \u201ccompany filings\u201d. One source per tag; two figures from two sources are two tags.' });
 
   /* Q10 · shorts, 9:16 only. */
   add('shorts', 'short-number', 'shortNumber', { portOnly: true }, { label: 'OFF THE BALANCE SHEET', num: '$3.1bn',
     context: 'Brightline\u2019s content commitments, in a footnote', source: 'SOURCE \u00b7 10-K FY25, NOTE 14',
-    ch: ['*'], purpose: 'a short\u2019s one number, set large in the safe area, with one line of context and its source.',
+    ch: ANY, any: true, purpose: 'a short\u2019s one number, set large in the safe area, with one line of context and its source.',
     caution: 'One number. If the short needs two, it is two shorts or a long plate.' });
   add('shorts', 'short-quote', 'shortQuote', { portOnly: true }, { quote: 'We are not planning any large acquisitions.',
     who: 'HARROW CHIEF EXECUTIVE', when: 'MARCH 2023 \u00b7 EIGHT MONTHS BEFORE BUYING CASTELL',
-    ch: ['*'], purpose: 'a short\u2019s one quote, large, with who said it and when, and the fact that makes it matter in the date line.',
+    ch: ANY, any: true, purpose: 'a short\u2019s one quote, large, with who said it and when, and the fact that makes it matter in the date line.',
     caution: 'Quote exactly from a transcript and date it. The date line carries the irony; the quote is never edited to sharpen it.' });
   add('shorts', 'short-chart', 'shortChart', { portOnly: true }, { label: 'LARKIN SHARE PRICE', min: 20, max: 60,
     series: [52, 54, 51, 48, 49, 44, 41, 42, 37, 34, 35, 31], start: 'JAN 25', end: 'DEC 25', source: 'SOURCE \u00b7 CLOSING PRICES',
-    ch: ['*'], purpose: 'a three-second chart: one line, its last point, and the change as the big figure.',
+    ch: ANY, any: true, purpose: 'a three-second chart: one line, its last point, and the change as the big figure.',
     caution: 'One line and no grid. If it takes more than three seconds to read, use a long plate.' });
 
   /* Q11 · transitions: no copy, no data. */
@@ -485,8 +488,12 @@
   [['wipe-sweep', 'wipeSweep', 'a hatched cover sweeps left to right; for moving on within a chapter'],
    ['wipe-page', 'wipePage', 'a sheet rises from the bottom edge and leaves at the top; for going to a document or a plate'],
    ['wipe-blinds', 'wipeBlinds', 'slats close and reopen; for the cut into a new chapter, under the bumper']].forEach(r =>
-    add('overlays', r[0], r[1], { transition: true }, { ch: ['*'], purpose: r[2] + '. Eight frames, played once, alpha outside the cover.',
+    add('overlays', r[0], r[1], { transition: true }, { ch: ANY, any: true, purpose: r[2] + '. Eight frames, played once, alpha outside the cover.',
       caution: 'Cut the two shots under frame 4, where the cover is full. At most one wipe a minute; the plain cut is the default.' }));
+  /* rebuild-40: four-frame wipes for shorts (0.33 s), 9:16 only; cut under frame 2. */
+  [['wipe-sweep-short', 'wipeSweep', 'the sweep in four frames'], ['wipe-page-short', 'wipePage', 'the page in four frames'], ['wipe-blinds-short', 'wipeBlinds', 'the blinds in four frames']].forEach(r =>
+    add('overlays', r[0], r[1], { transition: 4, portOnly: true }, { ch: ANY, any: true, purpose: r[2] + ', for the fastest change of subject in a short. Four frames, 0.33 s, played once, alpha outside the cover.',
+      caution: 'Cut the two shots under frame 2, where the cover is full. Shorts only; the eight-frame wipes are for long form.' }));
 
   /* ── SECTOR VARIANTS (rebuild-36): the round-five shapes across the eleven
    * sectors, one issuer each. Series are generated from a seeded walk so a
@@ -544,7 +551,7 @@
   const GR = (sector, id, who, u, lo, step, width, seed, kick, cap) => { const guide = [], actual = []; let s = seed; const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
     for (let i = 0; i < 8; i++) { const a = lo + step * i; guide.push([+a.toFixed(1), +(a + width).toFixed(1)]); actual.push(+(a + width * (r() * 1.6 - 0.3)).toFixed(1)); }
     const all = [].concat.apply(actual, guide); const [mn, mx] = range(all, 0.2);
-    add('charts', 'guidance-range-' + id, 'guidanceRange', { quarters: 8 }, { u, min: Math.floor(mn), max: Math.ceil(mx), guide, actual, kicker: kick, unit: who + ', each quarter',
+    add('charts', 'guidance-range-' + id, 'guidanceBands', { quarters: 8 }, { u, min: Math.floor(mn), max: Math.ceil(mx), guide, actual, kicker: kick, unit: who + ', each quarter',
       detail: 'Guided range as first given', caption: cap, ch: ['guidance-estimates', 'management'], sectors: [sector],
       purpose: who + '\u2019s guided range against what it reported, eight quarters.', caution: 'Use the range as first given, not as revised.' }); };
   GR('energy', 'energy', 'Ashby', '', 400, 6, 20, 501, 'OUTPUT AGAINST GUIDANCE, KBOE/D', 'Ashby lands inside its range');
@@ -579,7 +586,7 @@
     SPEC: SPEC.map(r => r.slice(0, 4)),
     text: (type) => { const b = get(type); return b ? Object.assign({}, b.text) : null; },
     data: (type) => { const b = get(type); return b ? JSON.parse(JSON.stringify(b.data)) : null; },
-    roles: () => SPEC.map(r => ({ id: r[0] + '/' + r[1], ch: r[4].ch, sectors: r[4].sectors, purpose: r[4].purpose, caution: r[4].caution })),
+    roles: () => SPEC.map(r => ({ id: r[0] + '/' + r[1], ch: r[4].ch, any: r[4].any || undefined, sectors: r[4].sectors, purpose: r[4].purpose, caution: r[4].caution })),
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   g.COPY_R5 = API;
