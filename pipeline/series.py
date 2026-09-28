@@ -498,7 +498,8 @@ def data_layer(slots: dict[str, dict], data: dict, ink: dict[str, str]) -> list[
     for k, v in (g("marks") or {}).items():
         b = SL.get(k)
         if b:
-            outs.append(axis_mark(b, v, ink, axis=b.get("axis") or "horizontal", tone=b.get("ink")))
+            outs.append(axis_mark(b, v, ink, axis=b.get("axis") or "horizontal", tone=b.get("ink"),
+                                  weight=b.get("weight") or 8))
     # The attention underline a slot publishes (the footnote spotlight).
     for b in SL.values():
         if b.get("underline"):
@@ -583,6 +584,8 @@ def boxes(plate) -> dict[str, dict]:
                 box[key] = val
         if s.spread_fill is not None:
             box["spreadFill"] = s.spread_fill
+        if s.weight:
+            box["weight"] = s.weight
         if s.under:
             box["under"] = True
         out[name] = box

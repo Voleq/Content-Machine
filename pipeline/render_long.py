@@ -2140,7 +2140,8 @@ def _render_long(
     # end's wipes; the blinds into a bumper already have the chapter's hit.
     hits_at = [float(s["t"]) for s in stinger_meta]
     audio += move_cues(
-        [Move(r["move"], r["start"], r.get("shot_id", ""), r.get("slot", ""))
+        [Move(r["move"], r["start"], r.get("shot_id", ""), r.get("slot", ""),
+              int(r.get("frames") or 0))
          for r in long_moves],
         settings, voicing, cuts=[Cut("chapter", t, t) for t in hits_at])
     audio += wipe_cues([(float(w["start"]), float(w["cut"]))

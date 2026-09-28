@@ -208,9 +208,11 @@ def test_the_slot_fields_the_data_layer_reads_come_through_the_registry():
            "underline": "attention", "weight": 5, "inkBy": "+ in down", "clamp": True}
     slot = Slot.from_registry("market", raw, 2)
     box = S.boxes(type("P", (), {"slots": {"market": slot}})())["market"]
+    # The mark's weight too: export.js draws a mark at its slot's weight
+    # since rebuild-40 (the event calendar's dates 10, a market line 5).
     assert box == {"x": 1, "y": 2, "w": 3, "h": 4, "ink": "quiet", "tone": "subject",
                    "tone2": "subject2", "underline": "attention", "spreadFill": False,
-                   "under": True}
+                   "under": True, "weight": 5}
     assert slot.weight == 5 and slot.ink_by == "+ in down" and slot.clamp
 
 

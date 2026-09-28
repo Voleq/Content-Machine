@@ -389,7 +389,13 @@ def _plate_notes(delivery: Path, built: dict) -> tuple[dict, list[str], list[str
 
       a chapter type outside the sixteen, a sector outside GICS, a format or a
       beat our templates do not define is dropped and reported. A value that
-      resolves to nothing is a promise no shot can keep.
+      resolves to nothing is a promise no shot can keep;
+
+      an entry that says `any: true` belongs everywhere because the renderer
+      places it (the bumper, the wipes, the source tag, the shorts' own
+      cards, a pose placed by rotation), so its chapter types are not filed:
+      filed, the bumper and the wipes would sit on every chapter's menu for
+      the writer to name.
 
     Returns (notes, problems, remarks). A missing fragment is a problem: every
     chapter's menu is built from it. The rest are remarks, printed and not
@@ -405,7 +411,7 @@ def _plate_notes(delivery: Path, built: dict) -> tuple[dict, list[str], list[str
     formats, beats = _template_vocabulary()
 
     notes: dict[str, dict] = {}
-    respelled, stale, doubled, spread = [], [], [], []
+    respelled, stale, doubled, spread, anywhere = [], [], [], [], []
     dropped: Counter = Counter()
 
     def names(field: str, v: dict, allowed) -> list[str]:
@@ -441,10 +447,13 @@ def _plate_notes(delivery: Path, built: dict) -> tuple[dict, list[str], list[str
         if not targets:
             doubled.append(key)
             continue
+        placed = v.get("any") is True
+        if placed:
+            anywhere.append(key)
         note = {
             "purpose": str(v.get("purpose") or "").strip(),
             "caution": str(v.get("caution") or "").strip(),
-            "chapterTypes": names("chapter_types", v, CHAPTER_TYPES),
+            "chapterTypes": [] if placed else names("chapter_types", v, CHAPTER_TYPES),
             "sectors": names("sectors", v, GICS_SECTORS),
             "formats": names("formats", v, formats),
             "beats": names("beats", v, beats),
@@ -474,6 +483,11 @@ def _plate_notes(delivery: Path, built: dict) -> tuple[dict, list[str], list[str
         remarks.append(
             f"roles.fragment.json: {len(stale)} entries name assets this kit "
             f"does not ship, dropped: {', '.join(stale)}")
+    if anywhere:
+        remarks.append(
+            f"roles.fragment.json: {len(anywhere)} entries say any: true "
+            f"(e.g. {', '.join(anywhere[:3])}); the renderer places them, so "
+            f"they are on no chapter's menu")
     for (field, value), n in sorted(dropped.items()):
         remarks.append(
             f"roles.fragment.json: {n} entries give {field} {value!r}, which "
@@ -494,8 +508,15 @@ def _motion(delivery: Path, built: dict) -> tuple[dict, list[str]]:
     READ, NOT TRUSTED, like the fragment: an anchor set for a plate this kit
     did not draw is dropped and reported, and one naming a slot the plate does
     not publish keeps its box — the move acts on the box — and is reported.
-    rebuild-39 names `plot-area` for the line-draw and bars-grow of 105 plates
-    whose plot is a container slot under another name.
+
+    Everything else an anchor says is carried whole (rebuild-40): where a
+    figure's ink sits inside its box (`align`, `size`, `adv`), the lines a
+    highlight can underline, a zoom's pad, a line-draw's bleed and the panels
+    drawn with it, a bars-grow's columns, and whether a source tag's spot on
+    the plate is clear and what it would cover. So are the kit's `timings`
+    (the bumper's tick-over, the source tag's rule) and `rooms` (which shapes
+    of each room a loop touches), which the renderer reads instead of
+    guessing.
 
     Returns (motion, remarks). A kit that ships no motion is a kit whose plates
     do not move, which is a remark rather than a failure.
@@ -526,7 +547,8 @@ def _motion(delivery: Path, built: dict) -> tuple[dict, list[str]]:
             slot = at.get("slot")
             if slot is not None and slot not in (plate.get("slots") or {}):
                 misnamed[(move, str(slot))] += 1
-            kept[str(move)] = {"slot": slot, "box": dict(at["box"])}
+            kept[str(move)] = {k: json.loads(json.dumps(v)) for k, v in at.items()
+                               if k != "why"}
         if kept:
             anchors[key] = kept
     remarks = []
@@ -538,7 +560,10 @@ def _motion(delivery: Path, built: dict) -> tuple[dict, list[str]]:
         remarks.append(
             f"emit/motion.json: {move} names slot {slot!r} on {n} plates that "
             f"publish none by that name; its box stands")
-    return {"fps": int(raw.get("fps") or 0), "moves": moves, "anchors": anchors}, remarks
+    rooms = {str(k): v for k, v in ((raw.get("rooms") or {}).get("byId") or {}).items()
+             if isinstance(v, dict)}
+    return {"fps": int(raw.get("fps") or 0), "moves": moves, "anchors": anchors,
+            "timings": dict(raw.get("timings") or {}), "rooms": rooms}, remarks
 
 
 def _room_loops(motion: dict, built: dict) -> list[str]:

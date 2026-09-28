@@ -308,17 +308,24 @@ _MOVE_LEGEND = (
     "pen-circle is for the single figure a chapter turns on: at most one a",
     "chapter and three a video. line-draw and bars-grow play by themselves on",
     "every chart — never tag them. No mark, no move.",
+    "  ✕source  no room for a [SOURCE] tag: it would cover the plate's own",
+    "         figures. Say where the figure is from in the sentence instead.",
 )
 
 
 def _move_marks(plate) -> str:
-    """`  ◆value  ▭passage` — where this plate's writer moves land."""
+    """`  ◆value  ▭passage  ✕source` — where this plate's writer moves land,
+    and whether a [SOURCE] tag has room on it."""
     from pipeline.plates import NUMBER_MOVES, writer_moves
+
+    from pipeline.moves import tag_clear
 
     can = writer_moves(plate)
     number = {can[m] for m in NUMBER_MOVES if m in can}
     passage = {can[m] for m in ("highlight", "zoom-to-slot") if m in can}
     marks = [f"◆{s}" for s in sorted(number)] + [f"▭{s}" for s in sorted(passage)]
+    if plate.slot("source") is None and not tag_clear(plate):
+        marks.append("✕source")
     return ("  " + "  ".join(marks)) if marks else ""
 
 

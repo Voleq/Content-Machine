@@ -1304,7 +1304,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
                 part=int(getattr(sp.shot, "part", 0) or 0),
                 wipe=wiped.get(round(sp.start, 3)))
             for sp in result.spans]
-    moves = [Move(r["move"], r["start"], r["shot_id"], r["slot"])
+    moves = [Move(r["move"], r["start"], r["shot_id"], r["slot"], int(r.get("frames") or 0))
              for r in plan.record()["moves"]]
     tracks = short_mix(tts, settings, cuts=cuts, hour=reg.hour,
                        seed=script.content_sha(),

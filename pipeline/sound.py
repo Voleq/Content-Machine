@@ -152,7 +152,9 @@ CUT_SHARE = 0.5
 CUT_MIN_S, CUT_MAX_S = 0.15, 0.45
 
 # Design's wipes: eight frames at 12 fps, the two shots cut under the fourth
-# (rebuild-39 contract, `transitions`).
+# (rebuild-39 contract, `transitions`). The shorts' four-frame wipes
+# (rebuild-40) cut under the second; a short's cut carries its own wipe's
+# span and cut, so these are the long's.
 WIPE_S = 8 / 12
 WIPE_CUT_S = 3 / 12
 
@@ -386,17 +388,19 @@ class Cut:
 
 
 def wipe_swish(voicing: Voicing, settings, start: float,
-               end: float) -> AudioTrack | None:
+               end: float, cut: float | None = None) -> AudioTrack | None:
     """A swish that runs the length of a wipe, from its first frame.
 
-    Design's wipe covers the frame a quarter at a time and cuts the two
-    shots under its fourth frame (`WIPE_CUT_S` in), so a swish from the
-    wipe's first frame peaks as the cover closes: it lands on the cut.
+    Design's wipe covers the frame and cuts the two shots under its full
+    cover (`cut`; `WIPE_CUT_S` in on the long's eight-frame wipes), so a
+    swish from the wipe's first frame peaks as the cover closes: it lands on
+    the cut.
     """
+    at = start + WIPE_CUT_S if cut is None else cut
     return voicing.fire(CUT_KEY, start,
                         settings.sfx_gain_db + CUT_GAIN_REL_DB,
                         max_s=max(end - start, CUT_MIN_S),
-                        name=f"wipe@{start + WIPE_CUT_S:.2f}")
+                        name=f"wipe@{at:.2f}")
 
 
 def wipe_cues(wipes: Sequence[tuple[float, float]], settings,
@@ -458,7 +462,7 @@ def structure_cues(cuts: Sequence[Cut], settings, voicing: Voicing, *,
             tr = voicing.fire(HIT_KEY, c.start, level + HIT_GAIN_REL_DB,
                               name=f"payoff_hit@{c.start:.2f}")
         elif c.wipe is not None:
-            tr = wipe_swish(voicing, settings, *c.wipe)
+            tr = wipe_swish(voicing, settings, *c.wipe, cut=c.start)
         else:
             length = max(c.end - c.start, 0.0)
             tr = voicing.fire(
@@ -477,6 +481,10 @@ class Move:
     start: float
     shot_id: str = ""
     slot: str = ""
+    # How many frames the move ran, where the record says. A bars-grow runs a
+    # frame longer for every column after the first (each starts one frame
+    # after the one before), so its last column lands on its own last frame.
+    frames: int = 0
 
 
 def move_cues(moves: Sequence[Move], settings, voicing: Voicing, *,
@@ -496,6 +504,8 @@ def move_cues(moves: Sequence[Move], settings, voicing: Voicing, *,
         cue = MOVE_CUES.get(mv.move)
         if cue is None:
             continue
+        if mv.move == "bars-grow" and mv.frames > 1:
+            cue = MoveCue(cue.key, (mv.frames - 1) / 12, cue.drawn)
         if cue.drawn:
             t, until = mv.start, mv.start + cue.at_s
         else:

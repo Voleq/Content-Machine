@@ -289,10 +289,12 @@ draws and where the drawing reads it from.
 [SOURCE: document]      where the figure on the [PLATE] on screen comes from, slid in under it once
                         its moves land: the filing or the agency, as short as it reads on a source
                         line, 40 characters at most. "Q2 10-Q", "FY24 10-K", "BLS, August CPI".
-                        [PLATE: bars-6y-16x9 | …] [SOURCE: 10-K filings, FY20–FY25] Revenue grew in five of six years.
+                        [PLATE: earnings-vs-cash-16x9 | …] [SOURCE: FY25 10-K, cash flow statement] Earnings ran ahead of cash.
                         Only what the data above says the figure is from; never a data vendor, and
                         no [SOURCE] at all when you do not know. One a plate. A plate that prints
-                        its own source takes it in its own slot (source=…), not in this tag.
+                        its own source takes it in its own slot (source=…), not in this tag. A plate
+                        marked ✕source has no room for the tag without covering its own figures:
+                        say where the figure is from in the sentence instead ("the 10-K shows").
                         Name the document, never just "company filings", and add the page or
                         note ("FY24 10-K, note 7") when you read the figure there yourself.
 

@@ -70,10 +70,7 @@ def test_a_beat_s_source_reaches_the_shot_that_plays_it(short_valid_json,
     assert got == {"numbers": "FY25 10-K", "the-comment": "FY25 10-K"}
 
 
-def test_the_sheet_s_source_slides_in_once_its_rows_are_read(short_valid_json,
-                                                             settings, tmp_path):
-    """Under the sheet, after the last figure it counts up has landed, and
-    held to the cut — and nowhere a plate prints a source line of its own."""
+def _short_plan(short_valid_json, settings, tmp_path, sources):
     from pipeline import moves as MV
     from pipeline.compose import build_layers
     from pipeline.plates import load_plates
@@ -84,10 +81,7 @@ def test_the_sheet_s_source_slides_in_once_its_rows_are_read(short_valid_json,
     from pipeline.tts import TTSEngine
 
     reg = load_plates(settings.assets_dir)
-    script, _ = parse_short_script(
-        _with_sources(short_valid_json, {"numbers": "10-K filings, FY21-FY25",
-                                         "numbers_comment": "FY25 10-K"}),
-        settings)
+    script, _ = parse_short_script(_with_sources(short_valid_json, sources), settings)
     tts = TTSEngine(settings).synthesize(script.audio_script, "short")
     resolver = ShortResolver(script=script, workdir=tmp_path, settings=settings,
                              prices=None, handle="@channel")
@@ -101,23 +95,53 @@ def test_the_sheet_s_source_slides_in_once_its_rows_are_read(short_valid_json,
     plan = MV.plan_short(fmt, result, reg, list(tts.words),
                          seed=script.content_sha(), settings=settings,
                          sources=shot_sources(script, fmt))
+    return reg, result, plan
 
+
+def test_a_source_slides_in_where_design_gives_it_room(short_valid_json,
+                                                       settings, tmp_path):
+    """Design says where the tag can rest on each plate and whether that spot
+    is clear. The sheet's is not (the tag would cover its last rows), so its
+    source goes on the next shot that has room: a room or host shot, or a
+    plate whose spot is clear. Never over the figures, and never over a plate
+    that prints a source line of its own."""
+    from pipeline import moves as MV
+
+    reg, result, plan = _short_plan(short_valid_json, settings, tmp_path,
+                                    {"numbers": "10-K filings, FY21-FY25"})
     layers = MV.shot_plates(result)
-    beat = lambda sid: sid[:-3] if sid.endswith("-in") else sid  # noqa: E731
-    tags = [t for t in plan.tags if beat(t.shot_id) == "numbers"]
-    assert len(tags) == 1, plan.tags
-    (tag,) = tags
+    order = [sp.shot.id for sp in result.spans]
+    assert not MV.tag_clear(reg.get(layers["numbers"].entry_key))
+    (tag,) = plan.tags
     assert tag.text == "10-K filings, FY21-FY25"
-    layer = layers[tag.shot_id]
-    landed = [m.end for m in plan.moves if m.shot_id == tag.shot_id
-              and m.move == "count-up"]
-    assert tag.start >= max(landed, default=layer.t_start)
-    assert tag.end == layer.t_end
-    for t in plan.tags:
-        assert reg.get(layers[t.shot_id].entry_key).slot("source") is None
+    assert order.index(tag.shot_id) > order.index("numbers")
+    span = next(sp for sp in result.spans if sp.shot.id == tag.shot_id)
+    layer = layers.get(tag.shot_id)
+    if layer is not None:
+        plate = reg.get(layer.entry_key)
+        assert MV.tag_clear(plate) and plate.slot("source") is None
+    assert span.start < tag.start and tag.end == pytest.approx(span.end)
     rows = [r for r in plan.record()["moves"] if r["move"] == "slide-in"]
-    assert sorted((r["shot_id"], r["start"]) for r in rows) == \
-        sorted((t.shot_id, round(t.start, 3)) for t in plan.tags)
+    assert [(r["shot_id"], r["start"]) for r in rows] == \
+        [(tag.shot_id, round(tag.start, 3))]
+
+
+def test_the_tag_rests_where_design_puts_it(settings):
+    """Over a plate, the plate's own spot; on a room or host shot, the kit's
+    default for the frame: centred on 9:16, its foot 24 above the 1560 line."""
+    from pipeline import moves as MV
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    tag = reg.get(reg.aspect_key("overlays/source-tag", "9x16"))
+    x, y, w, h = MV.tag_rect(tag, None, (1080, 1920), reg)
+    assert (x, y, w, h) == (50, 1444, 980, 92)
+    assert x + w / 2 == 540 and y + h == 1560 - 24
+    plate = reg.get("tables/customer-cohorts-9x16")
+    spot = plate.motion["slide-in"]
+    assert spot["clear"] is True
+    assert MV.tag_rect(tag, plate, (540, 960), reg)[:2] == \
+        (round(spot["box"]["x"] / 2), round(spot["box"]["y"] / 2))
 
 
 def test_both_short_prompts_teach_the_field():

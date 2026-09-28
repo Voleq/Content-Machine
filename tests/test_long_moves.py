@@ -47,6 +47,38 @@ def test_a_chart_s_data_draws_on_as_the_beat_is_first_seen(reg, settings):
     moves, skipped = _plan(reg, settings, BARS, earliest=2.0)
     assert [m.move for m in moves] == ["bars-grow"] and skipped == []
     assert moves[0].start == pytest.approx(2.0)
+    # Column by column, each a frame after the one before: design's eight
+    # frames plus one for each of the five columns after the first.
+    assert moves[0].frames == 8 + 6 - 1
+
+
+def test_bars_grow_one_column_at_a_time_inside_their_own_columns(reg, settings):
+    """Frame f shows column i grown to out(stagger(f, i)), clipped to that
+    column's box; nothing outside the columns is part of the move."""
+    from PIL import Image
+
+    from pipeline import motion as M
+
+    key, values = BARS
+    plate = reg.get(key)
+    moves, _ = _plan(reg, settings, BARS)
+    comp = MV.MoveCompositor(MV.MovePlan(moves=moves), reg, settings, None)
+    s = plate.export_scale
+    full = Image.new("RGBA", plate.pixel_size, (255, 0, 0, 255))
+    cols = plate.motion["bars-grow"]["columns"]
+    for f in (0, 3, 12):
+        got = np.asarray(comp._reveal(full, plate, moves[0], f, values=values))[..., 3]
+        for i, c in enumerate(cols):
+            b = c["box"]
+            shown = M.reveal(M.Box(b["x"], b["y"], b["w"], b["h"]),
+                             M.out(M.stagger(f, i, 8)), "bottom")
+            col = got[int(b["y"] * s):int((b["y"] + b["h"]) * s),
+                      int((b["x"] + 2) * s):int((b["x"] + b["w"] - 2) * s)]
+            want = shown.h / b["h"]
+            assert abs((col > 0).mean() - want) < 0.02, (f, i)
+        # Between the columns the layer is never cut.
+        gap = cols[0]["box"]["x"] + cols[0]["box"]["w"] + 4
+        assert got[int(400 * s), int(gap * s)] == 255
 
 
 def test_the_writer_s_moves_play_on_their_words_one_after_another(reg, settings):
@@ -145,8 +177,8 @@ def test_each_chapter_lands_on_its_own_cut():
 # ---------------------------------------------------------------------------
 
 MOVES_RAW = """EXMPL made money on paper and not in the bank, and that is the whole story today.
-Here is the gap. [PLATE: earnings-vs-cash-16x9 | kicker=EARNINGS VS CASH | gap=$1.2bn] Earnings ran ahead of cash by [MOVE: count-up] one point two billion dollars, and that is the number to remember for the rest of this.
-Then the revenue, six years of it. [PLATE: bars-6y-16x9 | head-1=FY20 | head-2=FY21 | head-3=FY22 | head-4=FY23 | head-5=FY24 | head-6=FY25 | value-1=1.2 | value-2=1.5 | value-3=1.9 | value-4=2.4 | value-5=2.2 | value-6=3.1 | unit=$bn] [SOURCE: 10-K filings, FY20–FY25] It grew in five of those six years, which is the good news, and it is most of the good news.
+Here is the gap. [PLATE: earnings-vs-cash-16x9 | kicker=EARNINGS VS CASH | gap=$1.2bn] [SOURCE: FY25 10-K, cash flow statement] Earnings ran ahead of cash by [MOVE: count-up] one point two billion dollars, and that is the number to remember for the rest of this.
+Then the revenue, six years of it. [PLATE: bars-6y-16x9 | head-1=FY20 | head-2=FY21 | head-3=FY22 | head-4=FY23 | head-5=FY24 | head-6=FY25 | value-1=1.2 | value-2=1.5 | value-3=1.9 | value-4=2.4 | value-5=2.2 | value-6=3.1 | unit=$bn] It grew in five of those six years, which is the good news, and it is most of the good news.
 That is where it stands for now. See you at the next filing.
 
 === CHAPTERS ===
@@ -200,16 +232,16 @@ def test_the_writer_s_count_up_and_the_bars_play_in_the_cut(rendered_moves):
     assert not any(a <= count["start"] < b - 1e-3 for a, b in covers)
 
 
-def test_the_source_slides_in_under_the_bars_once_they_are_up(rendered_moves):
+def test_the_source_slides_in_once_the_figure_has_counted_up(rendered_moves):
     _, manifest = rendered_moves
     (src,) = manifest["sources"]
-    assert src["text"] == "10-K filings, FY20–FY25"
+    assert src["text"] == "FY25 10-K, cash flow statement"
     shot = f"segment_{src['segment']}"
     rows = manifest["moves"]["moves"]
-    grow = next(r for r in rows if r["move"] == "bars-grow" and r["shot_id"] == shot)
+    count = next(r for r in rows if r["move"] == "count-up" and r["shot_id"] == shot)
     slide = next(r for r in rows if r["move"] == "slide-in" and r["shot_id"] == shot)
-    # After the bars have grown (8 frames) and held to the end of the beat.
-    assert slide["start"] >= grow["start"] + 8 / 12
+    # After the figure has landed (7 frames) and held to the end of the beat.
+    assert slide["start"] >= count["start"] + 7 / 12
     assert slide["start"] == pytest.approx(src["start"])
     seg = manifest["segments"][src["segment"]]
     assert src["end"] == pytest.approx(seg["end"], abs=1e-3)

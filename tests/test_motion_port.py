@@ -53,11 +53,14 @@ out.zoom = [[1920, 1080], [1080, 1920]].map(cv => cases.boxes.map(b =>
   [60, 40, 0].map(pad => cases.ts.map(t => M.zoomBox(cv, box(b), t, pad)))));
 out.snow = [...Array(12).keys()].map(f => M.snow(box([100, 50, 400, 300]), f));
 out.rain = [...Array(12).keys()].map(f => M.RAIN(box([100, 50, 400, 300]), f));
-out.twinkle = [...Array(6).keys()].map(i => [...Array(12).keys()].map(f => M.twinkleInk(i, f)));
+out.twinkle = [...Array(6).keys()].map(i => [...Array(13).keys()].map(f => M.twinkleInk(i, f)));
+out.outset = cases.boxes.map(b => [0, 14, 60].map(p => M.outset(box(b), p)));
+out.stagger = [...Array(16).keys()].map(f => [0, 1, 5].map(i => M.stagger(f, i, 8)));
 out.pin = cases.ts.map(t => M.pinDrop(t));
 out.slide = cases.ts.map(t => [M.slideX(900, t), M.slideX(980, t)]);
 out.tick = cases.ts.map(t => M.tick(348, t));
-out.pulse = [M.SCREEN_PULSE, M.LAMP_FLICKER, M.TWINKLE, M.FPS];
+out.pulse = [M.SCREEN_PULSE, M.LAMP_FLICKER, M.TWINKLE, M.FPS, M.TWINKLE_STEP];
+out.timings = M.TIMINGS;
 process.stdout.write(JSON.stringify(out));
 """
 
@@ -146,10 +149,44 @@ def test_the_room_loops_fall_and_twinkle_the_same(kit):
             assert _close(g.x, w["x"]) and _close(g.y, w["y"])
             assert (g.w, g.h) == (w["w"], w["h"])
     for i, row in enumerate(kit["twinkle"]):
-        assert [M.twinkle_ink(i, f) for f in range(12)] == row
-    pulse, lamp, twinkle, fps = kit["pulse"]
+        assert [M.twinkle_ink(i, f) for f in range(13)] == row
+    pulse, lamp, twinkle, fps, step = kit["pulse"]
     assert list(M.SCREEN_PULSE) == pulse and list(M.LAMP_FLICKER) == lamp
-    assert list(M.TWINKLE) == twinkle and M.FPS == fps
+    assert list(M.TWINKLE) == twinkle and M.FPS == fps and M.TWINKLE_STEP == step
+
+
+def test_every_loop_is_seamless_frame_twelve_is_frame_zero():
+    """Design's promise for rebuild-40, and what the bot bakes: a loop that
+    jumps at its seam jumps every second on screen."""
+    pane = M.Box(100, 50, 400, 300)
+    for a, b in zip(M.snow(pane, 0), M.snow(pane, 12)):
+        assert _close(a.x, b.x) and _close(a.y, b.y)
+    for a, b in zip(M.rain(pane, 0), M.rain(pane, 12)):
+        assert _close(a.x, b.x) and _close(a.y, b.y)
+    for phase in range(3):
+        assert M.twinkle_ink(phase, 0) == M.twinkle_ink(phase, 12)
+
+
+def test_a_column_grows_one_frame_after_the_last_and_a_plot_grows_by_its_bleed(kit):
+    for b, per_pad in zip(BOXES, kit["outset"]):
+        for p, want in zip([0, 14, 60], per_pad):
+            got = M.outset(M.Box(*b), p)
+            assert all(_close(getattr(got, k), want[k]) for k in "xywh"), (b, p)
+    for f, row in enumerate(kit["stagger"]):
+        for i, want in zip([0, 1, 5], row):
+            assert _close(M.stagger(f, i, 8), want), (f, i)
+
+
+def test_the_timings_the_registry_carries_are_the_kit_s(kit):
+    """The bumper's tick-over and the source tag's rule are read off the
+    registry, not written into the bot: they must be design's."""
+    from config import Settings
+    from pipeline.plates import load_plates
+
+    reg = load_plates(Settings(_env_file=None).assets_dir)
+    if not reg.motion_timings:
+        pytest.skip("the kit is not ingested")
+    assert reg.motion_timings == kit["timings"]
 
 
 def test_the_overlays_slide_pin_and_tick_the_same(kit):

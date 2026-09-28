@@ -642,11 +642,14 @@ def source_problems(script: LongScript, reg, settings: Settings
     """Every [SOURCE] checked against the plate it goes under.
 
     BLOCKING: a source with no plate on screen, one longer than the tag holds,
-    two on one plate, and one on a plate that prints its own source in a slot
-    of its own (the source goes in that slot). A source written long after its
-    plate went up warns, the way a late move does. `(warnings, blocking)`.
+    two on one plate, one on a plate that prints its own source in a slot of
+    its own (the source goes in that slot), and one on a plate design gives no
+    clear spot for the tag (it would cover the plate's own figures: design's
+    word is to say the source instead). A source written long after its plate
+    went up warns, the way a late move does. `(warnings, blocking)`.
     """
     from pipeline.models import CueKind
+    from pipeline.moves import tag_clear
     from pipeline.timeline import DEFAULT_HOLDS, move_targets
 
     warnings: list[str] = []
@@ -698,6 +701,15 @@ def source_problems(script: LongScript, reg, settings: Settings
                 f"{tag}: {_short_name(plate_key)} prints its own source — put "
                 f"it in the plate's tag as source={e.payload} and cut the "
                 f"[SOURCE].")
+            continue
+        if not tag_clear(plate):
+            covers = ((plate.motion or {}).get("slide-in") or {}).get("covers") or ()
+            what = f" ({', '.join(list(covers)[:3])})" if covers else ""
+            blocking.append(
+                f"{tag}: {_short_name(plate_key)} has no clear spot for the "
+                f"source tag — it would cover the plate's own figures{what}. "
+                f"Say where the figure is from in the sentence and cut the "
+                f"[SOURCE], or put the figure on a plate without the ✕source mark.")
             continue
         if holder in seen:
             blocking.append(f"{tag}: {_short_name(plate_key)} already has a "

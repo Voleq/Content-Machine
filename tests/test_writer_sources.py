@@ -24,8 +24,13 @@ from pipeline.tts import mock_words
 
 ROOT = Path(__file__).resolve().parents[1]
 
-BIG = ("[PLATE: big-number-l1-16x9 | kicker=FREE CASH FLOW | value=$3.1bn | "
+# The big figure with a detail line under it: design gives it a clear spot
+# for the tag. Its one-line sibling `big-number-l1` has none (`CROWDED`).
+BIG = ("[PLATE: big-number-l2-16x9 | kicker=FREE CASH FLOW | value=$3.1bn | "
        "label=LTM]")
+CROWDED = ("[PLATE: bars-6y-16x9 | head-1=FY20 | head-2=FY21 | head-3=FY22 | "
+           "head-4=FY23 | head-5=FY24 | head-6=FY25 | value-1=1.2 | value-2=1.5 | "
+           "value-3=1.9 | value-4=2.4 | value-5=2.2 | value-6=3.1 | unit=$bn]")
 QUOTE = ("[PLATE: quote-pull-16x9 | body=We remain confident in the long "
          "term. | attribution=The CEO]")
 
@@ -52,7 +57,7 @@ def test_a_source_is_parsed_onto_the_plate_before_it_and_never_spoken(settings):
     script, _ = parse_long_script(raw, "EXMPL", settings)
     src = script.events_of(TagType.SOURCE)[0]
     assert src.payload == "FY24 10-K"
-    assert src.values == {"plate": "figures/big-number-l1-16x9", "on": "PLATE"}
+    assert src.values == {"plate": "figures/big-number-l2-16x9", "on": "PLATE"}
     assert "SOURCE" not in script.narration and "10-K" not in script.narration
 
 
@@ -76,6 +81,8 @@ def test_a_source_naming_the_data_vendor_is_refused_at_the_parse(settings):
     (f"Quote. {QUOTE} [SOURCE: Q2 call] He said it.", "prints its own source"),
     ("Cash. [MEME: this-is-fine] [SOURCE: FY24 10-K] It made a lot.",
      "belongs to a [MEME]"),
+    (f"Revenue. {CROWDED} [SOURCE: 10-K filings, FY20–FY25] It grew.",
+     "no clear spot for the source tag"),
 ])
 def test_a_source_that_cannot_go_under_its_plate_blocks(settings, tmp_path, raw, why):
     _, blocking, _ = _check(raw, settings, tmp_path)
@@ -98,13 +105,13 @@ def test_a_source_goes_under_its_beat_and_one_a_beat(settings):
     assert warnings == []
     (src,) = sources
     seg = segments[src.segment]
-    assert seg.kind == "plate" and src.plate == "figures/big-number-l1-16x9"
+    assert seg.kind == "plate" and src.plate == "figures/big-number-l2-16x9"
     assert seg.start <= src.t < seg.end and src.at == pytest.approx(src.t - seg.start)
     assert src.text == "FY24 10-K"
 
 
 def test_a_source_spoken_after_its_plate_has_gone_is_dropped(reg):
-    big = "figures/big-number-l1-16x9"
+    big = "figures/big-number-l2-16x9"
     cues = [_cue(2.0, CueKind.PLATE, 0, value=big, values={"value": "$1bn"}),
             _cue(25.0, CueKind.SOURCE, 1, value="FY24 10-K", plate=big,
                  plate_order=0)]
@@ -124,15 +131,18 @@ def test_the_tag_slides_in_from_the_left_and_rests_on_the_plate_s_margin(
         return out
 
     monkeypatch.setattr("pipeline.rasters.held_frames_to_alpha_clip", held)
-    plate = reg.get("charts/bars-6y-16x9")
+    plate = reg.get("charts/earnings-vs-cash-16x9")
     panel = (100, 60, 960, 540)
     clip = MV.source_tag_clip(reg, settings, tmp_path / "s.mov", text="FY24 10-K",
                               plate=plate, aspect="16x9", panel=panel)
     assert clip is not None and got["fps"] == 12 and len(got["frames"]) == clip.frames
     assert all(abs(d * 12 - 1) < 1e-9 for _, d in got["frames"])
     tag = reg.get(reg.aspect_key("overlays/source-tag", "16x9"))
-    x, y, w, h = MV.tag_rect(tag, plate, panel[2:])
+    x, y, w, h = MV.tag_rect(tag, plate, panel[2:], reg)
     assert clip.y == panel[1] + y and clip.y + h <= panel[1] + panel[3]
+    # Design's spot on this plate, scaled with the panel: x 96, y 930.
+    spot = plate.motion["slide-in"]["box"]
+    assert (x, y) == (round(spot["x"] / 2), round(spot["y"] / 2))
 
     def left_edge(img):
         cols = np.nonzero(np.asarray(img)[..., 3].max(axis=0))[0]
@@ -141,6 +151,30 @@ def test_the_tag_slides_in_from_the_left_and_rests_on_the_plate_s_margin(
     first, last = got["frames"][0][0], got["frames"][-1][0]
     assert left_edge(first) is None or left_edge(first) < panel[0] + x
     assert left_edge(last) == pytest.approx(panel[0] + x, abs=2)
+
+
+def test_a_plate_with_no_clear_spot_gets_no_tag(settings, reg, tmp_path):
+    """Design: where the tag would cover the plate's figures, never over it."""
+    from pipeline import moves as MV
+
+    plate = reg.get("charts/bars-6y-16x9")
+    assert not MV.tag_clear(plate)
+    assert MV.source_tag_clip(reg, settings, tmp_path / "s.mov", text="FY24 10-K",
+                              plate=plate, aspect="16x9",
+                              panel=(0, 0, 1920, 1080)) is None
+
+
+def test_the_catalogue_marks_the_plates_a_source_cannot_go_under(settings):
+    from bot.prompts import plate_catalogue
+
+    slots, plate = {}, None
+    for l in plate_catalogue(settings).splitlines():
+        if l.startswith("  ") and not l.startswith("   "):
+            plate = l.split()[0]
+        elif l.strip().startswith("slots:") and plate:
+            slots[plate] = l
+    assert "✕source" in slots["bars-6y-16x9"]
+    assert "✕source" not in slots["earnings-vs-cash-16x9"]
 
 
 def test_a_plate_that_prints_its_own_source_gets_no_tag(settings, reg, tmp_path):
@@ -155,3 +189,4 @@ def test_the_write_prompt_teaches_the_source_tag():
     text = (ROOT / "templates" / "master_prompt_long_write.md").read_text(
         encoding="utf-8")
     assert "[SOURCE: document]" in text and "never a data vendor" in text
+    assert "✕source" in text

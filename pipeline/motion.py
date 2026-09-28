@@ -1,7 +1,7 @@
 """Design's motion catalogue, in Python: a line-for-line port of
 ``kit/engine/motion.js``.
 
-THE MOVES ARE DESIGN'S, NOT OURS. Rebuild-39 publishes thirteen moves as data
+THE MOVES ARE DESIGN'S, NOT OURS. The kit publishes thirteen moves as data
 rather than as baked frames: each names what it applies to, its length in
 frames at 12 fps, its easing, and a pure function a renderer calls per frame.
 The plates stay stills and a renderer plays a move OVER a plate's published
@@ -18,9 +18,11 @@ the kit's own file in node and compares every function, number for number.
 Rules every move keeps (design's DESIGN.md §5): no partial opacity, so nothing
 fades; things draw on, grow, slide, or appear on a frame.
 
-What is NOT here: where a move lands. Design's ``anchorFor`` already ran at
-ingest and its answer is on every plate (``Plate.motion``, from
-``kit/emit/motion.json``), so re-running it here would be a second opinion
+What is NOT here: where a move lands. Design's ``anchorFor``, ``tagPlace``
+and ``roomTargets`` already ran when the kit was emitted and their answers are
+on every plate (``Plate.motion``) and room (``Registry.motion_rooms``), from
+``kit/emit/motion.json``, with the timings design fixes outside a plate
+(``Registry.motion_timings``). Re-running them here would be a second opinion
 about a question the kit has answered.
 """
 
@@ -153,6 +155,19 @@ def reveal(box: Box, t: float, side: str) -> Box:
     return Box(x, y, w * (linear(t) if side == "left-linear" else k), h)
 
 
+def outset(box: Box, p: float) -> Box:
+    """`box` grown by `p` on every side: a line-draw's clip is the plot grown
+    by its bleed, so the line's half-weight and end points are not cut."""
+    x, y, w, h = box
+    return Box(x - p, y - p, w + p * 2, h + p * 2)
+
+
+def stagger(f: float, i: int, frames: int) -> float:
+    """bars-grow: where column `i` is at frame `f`, each column starting one
+    frame after the one before. A move over n columns lasts frames + n - 1."""
+    return _clamp((f - i) / max(1, frames - 1))
+
+
 def _lcg(seed: int):
     """motion.js's seeded generator: s = (s * 9301 + 49297) % 233280."""
     s = seed
@@ -222,7 +237,7 @@ def partial_path(points: list[tuple[float, float]],
 
 
 def zoom_box(canvas: tuple[float, float], box: Box, t: float,
-             pad: float = 60) -> tuple[float, float, float, float]:
+             pad: float | None = 60) -> tuple[float, float, float, float]:
     """The viewBox at `t`, from the whole canvas to `box` padded, eased.
 
     Kept at the canvas's aspect ratio, so the push never stretches the plate.
@@ -230,7 +245,7 @@ def zoom_box(canvas: tuple[float, float], box: Box, t: float,
     whether to clamp is the renderer's call, made where the frame is known.
     """
     k = in_out(t)
-    p = pad or 60
+    p = 60 if pad is None else pad
     ar = canvas[0] / canvas[1]
     w = box.w + p * 2
     h = w / ar
@@ -259,12 +274,17 @@ class Flake(NamedTuple):
 
 
 def snow(box: Box, frame: float, n: int = 26) -> list[Flake]:
-    """Flakes falling in a window pane, seeded, looping over 12 frames."""
+    """Flakes falling in a window pane, seeded, looping over 12 frames.
+
+    Each flake falls a whole number of pane-heights a loop (one or two), so
+    frame 12 puts every flake where frame 0 had it and the loop has no seam.
+    """
     r = _lcg(11)
     got: list[Flake] = []
     for i in range(n or 26):
         x0, y0 = r(), r()
-        sz, sp = 0.8 + r() * 1.4, 0.6 + r() * 0.8
+        sz = 0.8 + r() * 1.4
+        sp = 1 if r() < 0.7 else 2
         y = math.fmod(y0 + (frame / 12) * sp, 1)
         x = math.fmod(x0 + math.sin((frame / 12) * math.pi * 2 + i) * 0.02 + 1, 1)
         got.append(Flake(box.x + x * box.w, box.y + y * box.h, sz))
@@ -279,16 +299,21 @@ class Drop(NamedTuple):
 
 
 def rain(box: Box, frame: float) -> list[Drop]:
-    """Rain: snow three times as fast, forty short strokes."""
+    """Rain: snow three times as fast, forty short strokes (3 and 6
+    pane-heights a loop, so seamless like the snow)."""
     return [Drop(f.x, f.y, 0.6, 5) for f in snow(box, frame * 3, 40)]
 
 
 TWINKLE = ("attention", "subject2", "subject")
+# One ink step every four frames: three inks by four frames is the 12-frame
+# loop, so no state holds longer at the seam.
+TWINKLE_STEP = 4
 
 
-def twinkle_ink(i: int, frame: int) -> str:
-    """Bulb `i`'s ink at `frame`: one step along the cycle every 3 frames."""
-    return TWINKLE[(i + frame // 3) % 3]
+def twinkle_ink(phase: int, frame: int) -> str:
+    """A bulb's ink at `frame`, from its `phase`, the ink it shows at frame 0
+    (the kit publishes it per bulb, `rooms[id].bulbs[n].phase`)."""
+    return TWINKLE[(phase + frame // TWINKLE_STEP) % 3]
 
 
 def pin_drop(t: float) -> tuple[float, float]:
