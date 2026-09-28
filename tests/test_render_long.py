@@ -1143,7 +1143,7 @@ def test_every_role_the_long_casts_from_is_declared_for_the_kit_audit(settings):
 
     reg = load_plates(settings.assets_dir)
     roles = set(reg.room_roles) | set(reg.host_roles)
-    tree = ast.parse(Path("pipeline/render_long.py").read_text())
+    tree = ast.parse(Path("pipeline/render_long.py").read_text(encoding="utf-8"))
     named = {n.value for n in ast.walk(tree)
              if isinstance(n, ast.Constant) and n.value in roles}
     declared = {*LONG_ROOM_ROLES, *LONG_HOST_ROLES, "opener", "establish"}
