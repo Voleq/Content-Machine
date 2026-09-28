@@ -266,7 +266,8 @@ def check_report(diffs: Sequence[FrameDiff]) -> str:
 #
 # The other two caps stay ceilings. Reading them as asks would invent a debt
 # nobody incurred: they were deliberately set above what ships so a full
-# family is never trimmed.
+# family is never trimmed. The talk role ships nine since rebuild-40 added
+# window-talk to the vertical crop, so social's ceiling is twelve.
 # What each by-product is built FROM, now that "thumbnails" and "scenes" are
 # not families anybody ships.
 #
@@ -280,7 +281,7 @@ def check_report(diffs: Sequence[FrameDiff]) -> str:
 BYPRODUCT_SOURCES: dict[str, tuple[str, int]] = {
     # label: (room role the composition is shot in, cap)
     "thumbnails": ("establish", 6),
-    "social": ("talk", 8),
+    "social": ("talk", 12),
     "end_screens": ("exit", 4),
 }
 

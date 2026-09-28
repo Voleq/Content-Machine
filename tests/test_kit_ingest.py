@@ -712,8 +712,7 @@ def test_the_insider_flow_marks_declare_one_scale_for_both_directions():
 
     The plate declares the contract itself, and this pins it: one `scale`
     divides both directions, and both are measured against the same
-    half-height from the same axis. (Both plates are held back today; the
-    contract is what the filler must honour the day they are not.)
+    half-height from the same axis.
     """
     shipped = _shipped()
     for key in ("charts/insider-flow-6-16x9", "charts/insider-flow-12-16x9"):
