@@ -101,14 +101,14 @@ asks. Write the fields the template binds.
 1. `audio_script`: 140–160 spoken words, ≤ 1100 characters, first sentence = the hook, a `[BEAT: key]` marker at the start of every beat in the order under THE CUT, ONE mid-point re-hook (~20–25s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — delivery tags and beat markers are stripped before counting.
 2. `move_summary`: how much / how active, e.g. "+34% today · 6× average volume". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the on-screen headline (short, as reported). `meaning` = what it actually means for the stock, in your voice.
-4. `numbers`: 1–4 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The sheet shows four rows; a fifth is never drawn. Don't pad.
+4. `numbers`: 1–4 rows from the history table above, each with SIX values OLDEST → NEWEST — the table's six periods: four fiscal years, the last full year, LTM — as display strings ("$1.2B", "-18%", "365M"). Set `years` to those six period heads as the table labels them. Where the table has no figure, write "" in that place rather than closing the gap: five figures under six heads put every one under the wrong year, and the bot refuses the script. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The sheet shows four rows; a fifth is never drawn. Don't pad.
 5. `numbers_comment`: the holistic read of the trend, ≤ 300 chars.
 6. `conclusion`: free text, ≤ 220 chars, opening with the call the way you'd mutter it ("Noise." / "Signal, unfortunately." / "Mostly noise, one number worth watching."). NEVER a label from a taxonomy.
 7. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — the vendor unnamed, and `sources` names only the filing.
 8. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
 9. Both-ways honesty: if the numbers are genuinely good, the joke is the market ignoring five clean years — praise through gritted teeth, sarcasm aimed at the crowd's blindness, never manufactured doom.
 10. **EVERY FIGURE IN `audio_script` IS WRITTEN THE WAY IT IS SAID.** The spoken line is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to `audio_script`: `numbers` values, `move_summary` and every `[PLATE]` slot are ON SCREEN and stay as display strings ("$1.2B", "-18%").
-11. `sources` (optional): where the figures on screen come from, keyed by the beat that shows them, e.g. `{"numbers": "10-K filings, FY21–FY25"}`. ≤ 40 chars each. The filing or the public agency — never a data vendor, terminal or data product, and never a document the figure did not come from: leave a beat out rather than guess. Name the document, never just "company filings". It slides in under that beat's plate once its figures land.
+11. `sources` (optional): where the figures on screen come from, keyed by the beat that shows them, e.g. `{"numbers": "10-K and 10-Q filings, FY21–LTM"}`. ≤ 40 chars each. The filing or the public agency — never a data vendor, terminal or data product, and never a document the figure did not come from: leave a beat out rather than guess. Name the document, never just "company filings". It slides in under that beat's plate once its figures land.
 
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
 The operator ratifies or regenerates, so make your reasoning legible. Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:
@@ -142,9 +142,9 @@ Put the four prose sections in the chat and the JSON object in the `.txt` file.
   "headlines": [
     {"text": "<on-screen headline>", "meaning": "<what it actually means>"}
   ],
-  "years": ["2021", "2022", "2023", "2024", "2025"],
+  "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
   "numbers": [
-    {"label": "Revenue", "values": ["<oldest>", "...", "<newest>"]}
+    {"label": "Revenue", "values": ["<oldest>", "<...>", "<...>", "<...>", "<...>", "<LTM>"]}
   ],
   "numbers_comment": "<holistic read of the trend>",
   "cheap_or_trap": "<the value-trap beat: name the multiple, then what would have to be true for it to be cheap; <= 260 chars>",
@@ -164,15 +164,15 @@ Note how each fact is taught straight, then undercut flat; each beat opens on it
     {"text": "EXMPL announces AI partnership", "meaning": "A press release, not a purchase order — no revenue attached."},
     {"text": "Squeeze chatter on retail forums", "meaning": "11% of the float is short. The crowd noticed and piled in."}
   ],
-  "years": ["2021", "2022", "2023", "2024", "2025"],
+  "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
   "numbers": [
-    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M"]},
-    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M"]},
-    {"label": "Shares out", "values": ["298M", "315M", "330M", "346M", "365M"]}
+    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M", "$498M"]},
+    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M", "-$94M"]},
+    {"label": "Shares out", "values": ["298M", "315M", "330M", "346M", "365M", "371M"]}
   ],
   "numbers_comment": "Revenue has flatlined for three years while losses widen and the share count grows six percent a year. The business is going sideways; the stock is going vertical.",
   "turn_line": "But here is the part nobody screenshots.",
   "cheap_or_trap": "Ninetieth percentile on price, twentieth on margins. Cheap needs the losses to stop.",
   "conclusion": "Noise. A press release and a squeeze, stapled to five years of drift.",
-  "sources": {"numbers": "10-K filings, FY21–FY25"}
+  "sources": {"numbers": "10-K and 10-Q filings, FY21–LTM"}
 }

@@ -186,3 +186,40 @@ def test_macro_renders_without_company_data(settings, tmp_path):
     out, manifest = render_short(script, tts, ws, s)
     assert out.exists() and out.stat().st_size > 0
     assert json.loads(Path(manifest).read_text(encoding="utf-8"))["ticker"] == "SPY"
+
+
+TEMPLATES = Path(__file__).resolve().parents[1] / "templates"
+
+
+@pytest.mark.parametrize("prompt", ["master_prompt_short.md",
+                                    "master_prompt_headline.md"])
+def test_the_worked_example_in_each_short_prompt_parses(settings, prompt):
+    """A writer copies the example's shape before anything else in the prompt.
+
+    Both examples carried five `years` while the model has refused anything
+    but six since the kit went to four fiscal years, the last full year and
+    LTM — so a script written the way the prompt showed was rejected at intake.
+    """
+    text = (TEMPLATES / prompt).read_text(encoding="utf-8")
+    example = text[text.index("## STRUCTURE EXAMPLE"):]
+    script, _ = parse_short_script(example[example.index("{"):], settings)
+    assert len(script.years) == 6
+
+
+@pytest.mark.parametrize("mode", ["earnings", "macro"])
+def test_the_headline_prompt_names_every_field_its_cut_draws(mode):
+    """The earnings and macro cuts bind fields the company cut never uses.
+
+    A field the prompt never names is one the writer never fills, and the shot
+    that draws it drops out of every video in that mode.
+    """
+    import re
+
+    bound = set(re.findall(
+        r"(?:script\.|compare\.)(reported|expected|guidance|mechanism|consequences)",
+        (TEMPLATES / "shots" / f"{mode}.json").read_text(encoding="utf-8")))
+    assert bound, mode
+    schema = (TEMPLATES / "master_prompt_headline.md").read_text(encoding="utf-8")
+    schema = schema[schema.index("## OUTPUT"):schema.index("## STRUCTURE EXAMPLE")]
+    missing = sorted(f for f in bound if f'"{f}":' not in schema)
+    assert not missing, f"{mode} draws {missing} and the JSON schema never asks for them"
