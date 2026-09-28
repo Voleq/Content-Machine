@@ -518,7 +518,6 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine,
                        *, gate_report=None) -> "CostReport":
     from pipeline.gates import check_audio
     from pipeline.models import CostReport  # avoid a cycle
-    from pipeline.reach import script_reach
 
     cached = tts_engine.is_cached(script.audio_script, "short",
                                   events=script.inline_events)
@@ -561,7 +560,9 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine,
         est_render_minutes=estimate_render_minutes("short", script.word_count, settings.mock_wps_short),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,
-        kit_reach=script_reach(script, settings).line(),
+        # No kit line: it counted the script's inline [PLATE] tags, and a
+        # short draws its template's plates, never those. The render's own
+        # reach is on its manifest.
         warnings=warnings,
         blocking=blocking,
         script_sha=script.content_sha(),

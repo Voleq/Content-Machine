@@ -264,13 +264,8 @@ def test_unclosed_json_still_rejected(settings):
 
 
 def test_a_bare_show_article_survives_the_parser(settings, short_valid_json):
-    """`[SHOW ARTICLE]` means something with no payload at all.
-
-    Every other tag needs a key, so the parser dropped any tag without one —
-    which meant the writer had to paste a URL for the highest-credibility
-    visual the format has, and so it was never used. The renderer resolves the
-    link off the export's own news rows; the tag only has to reach it.
-    """
+    """`[SHOW ARTICLE]` takes no payload, so a bare one is not a tag missing
+    its key. Neither format draws it now; the short says so."""
     import json
 
     data = json.loads(short_valid_json)
@@ -282,32 +277,8 @@ def test_a_bare_show_article_survives_the_parser(settings, short_valid_json):
     assert len(articles) == 1
     assert articles[0].payload == ""
     assert not any("carries no key" in w for w in warnings)
-def _thin(short_valid_json: str, *tags: str) -> str:
-    """The fixture with its beat library stripped out, plus `tags`.
+    assert any("not drawn" in w and "SHOW ARTICLE" in w for w in warnings)
 
-    The committed fixture draws every beat it has, which is the point of it —
-    so the thin case has to be built rather than borrowed.
-    """
-    import json
-    import re
-
-    data = json.loads(short_valid_json)
-    stripped = re.sub(r"\[PROP:[^\]]*\]\s*", "", data["audio_script"])
-    assert "[PROP" not in stripped
-    data["audio_script"] = " ".join(tags) + " " + stripped
-    return json.dumps(data)
-def test_the_reach_warning_never_blocks(settings, short_valid_json):
-    """A thin script is a judgement call, not a defect. It parses, it renders,
-    and the operator decides — a gate here would teach gate-skipping."""
-    from pipeline.cost import SpendLedger, build_short_report
-    from pipeline.tts import TTSEngine
-
-    script, warnings = parse_short_script(_thin(short_valid_json), settings)
-    report = build_short_report(script, warnings, settings,
-                                SpendLedger(settings), TTSEngine(settings))
-    assert report.approvable
-    assert not any("beat-library" in b for b in report.blocking)
-    assert any("beat-library" in w for w in report.warnings)
 
 # --------------------------------------------------------------------------
 # The plate tag, in the short.
