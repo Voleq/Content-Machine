@@ -47,7 +47,9 @@ from pipeline.shots import (Format, apply_order, beat_keys, choose_order,
 log = logging.getLogger(__name__)
 
 FPS = 30
-# The kit boils at three frames, 7fps. Code-drawn artwork matches it.
+# The kit boils a data plate through three drawings at 3fps. Code-drawn
+# artwork is drawn three times too, and plays at the rate of the plate it
+# stands in for.
 BOIL_FRAMES = 3
 # THE HOST IS IN ONE VERTICAL SHOT, AND IT IS THE TURN.
 #
@@ -68,11 +70,12 @@ def host_shots(fmt) -> tuple[str, ...]:
 
 HOST_SHOTS = ("the-turn",)
 
-# One definition, in marks, so the fitter and the budget measurement agree.
-BODY_FONT = mk.BODY_FONT
-DISPLAY_FONT = mk.DISPLAY_FONT
-
 _FIGURE = re.compile(r"^(-?)([$€£]?)([\d.,]+)([KMBT]?)(%?)$")
+
+
+def _latest(row) -> str:
+    """A row's most recent figure, skipping periods it leaves blank."""
+    return next((str(v) for v in reversed(row.values) if str(v).strip()), "")
 
 
 def _unit_of(rows) -> str:
@@ -365,9 +368,23 @@ class ShortResolver:
         # own fields when the script carries them.
         if which == "reported":
             return (getattr(self.script, "reported", None)
-                    or (rows[0].values[-1] if rows else None))
+                    or (_latest(rows[0]) if rows else None))
         if which == "expected":
             return getattr(self.script, "expected", None)
+        if which == "print_label":
+            # WHAT THE PRINT IS, only when the sheet says so: the row whose
+            # latest figure is the reported one. It used to be the sheet's
+            # first row whatever the print was, so an earnings short put an
+            # EPS beat of $1.42 on screen labelled "Revenue", under "LTM".
+            # No row matching leaves the label empty; the caption carries the
+            # move summary, which says what printed.
+            reported = (getattr(self.script, "reported", None) or "").strip()
+            for r in rows:
+                if reported and _latest(r).strip() == reported:
+                    return r.label
+            return None
+        if which == "guidance_label":
+            return "Guidance"
         pick = None
         for r in rows:
             lab = r.label.lower()
@@ -386,10 +403,20 @@ class ShortResolver:
         # `structure/both-true` takes two STATEMENTS, not two stacked figures.
         # The plate wraps them itself in the face it declares, so a newline
         # here would be a second opinion about the line break.
+        #
+        # From the FIGURES THE ROW HAS. A row is six periods wide and may
+        # leave its early ones blank (a macro series with four years of
+        # history, an earnings sheet from FY22), and the first period was
+        # taken whatever it held: "It was ." on the earnings and macro cut.
+        # With fewer than two figures there is no then-and-now to state, and
+        # the beat takes its other plate or none.
+        figures = [v for v in pick.values if str(v).strip()]
+        if which in ("heavy", "light") and len(figures) < 2:
+            return None
         if which == "heavy":
-            return f"{pick.label} is {pick.values[-1]} now."
+            return f"{pick.label} is {figures[-1]} now."
         if which == "light":
-            return f"It was {pick.values[0]}."
+            return f"It was {figures[0]}."
         return None
 
     # -- images -----------------------------------------------------------
@@ -730,9 +757,10 @@ class _Cache:
 def _frame_index(layer: Layer, t: float) -> int:
     """Which frame of an animated layer is showing at `t`.
 
-    fps and playback come from the plate the layer was built from — a room
-    boils at 2, a talk strip runs at 8, an idle at 4. Nothing here assumes a
-    rate, and a static plate has one frame and no clock.
+    fps and playback come from the plate the layer was built from — a data
+    plate boils at 3, a room loops at 12, a talk strip runs at 8, an idle at
+    4. Nothing here assumes a rate, and a static plate has one frame and no
+    clock.
     """
     if layer.frame_count <= 1 or layer.fps <= 0:
         return 0
@@ -810,9 +838,6 @@ def _draw_text(canvas: Image.Image, layer: Layer, settings, reg,
     in the face and size the kit declares for it. This is the remainder: a
     line the format places itself, sized as a fraction of frame height.
     """
-
-    from pipeline import marks as mk
-
     draw = ImageDraw.Draw(canvas)
     want = max(int(round(layer.size_fh * canvas.height)), _type_floor(canvas))
     lines, font, size = mk.fit_lines(
@@ -1000,7 +1025,7 @@ def held_over_ceiling(video: Path, spans,
     entry names the shot it happens in and where. `None` means the frames
     could not be read, which is not the same answer as "none held".
     """
-    from pipeline.byproducts import (BOIL_SAMPLE_FPS, BOIL_SCALE, held_spans,
+    from pipeline.frame_checks import (BOIL_SAMPLE_FPS, BOIL_SCALE, held_spans,
                                      holds_past)
 
     try:

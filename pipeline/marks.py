@@ -4,16 +4,20 @@ One job: fit type into a box, the wrap-then-shrink loop, in fractions of frame
 height rather than hardcoded point sizes. The hand-drawn strokes that used to
 sit here beside it live in `pipeline.rasters`, which is what draws with them.
 
-WHAT THIS MODULE DOES NOT OWN is colour and, as of the typography note below,
-faces. Both belong to the kit, are read off the registry, and had stale copies
-here for two deliveries. See the comment where the palette used to be.
+WHAT THIS MODULE DOES NOT OWN is colour. It belongs to the kit, is read off
+the registry, and had a stale copy here for two deliveries. See the comment
+where the palette used to be. The faces below are the kit's own, named here
+only so the fitter and the budget measure the same type.
 """
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from PIL import ImageFont
+
+log = logging.getLogger(__name__)
 
 # THERE IS NO PALETTE HERE, AND THERE MUST NOT BE ONE.
 #
@@ -44,28 +48,21 @@ from PIL import ImageFont
 # The two faces. Named here rather than in the renderer so the budget
 # measurement and the fitter cannot be measuring different type.
 #
-# THESE ARE NOT THE KIT'S FACES, AND THAT IS AN OPEN DECISION, NOT AN OVERSIGHT.
-#
-# The kit declares exactly two, in its every `typeRoles` table: Archivo Narrow
-# (weights 400/500/600/700) and Courier Prime (400/700). `plate_frames.py` reads
-# them off the manifest and sets every word that lands in a plate SLOT in them.
-# What is left is the free-placed type in the vertical formats — the layers
-# `render_short._draw_text` positions itself — and that is what these two names
-# feed.
-#
-# Inter has never been vendored, so those layers are really set in the
-# substitute below, DejaVu Sans Bold, which arrived in `62baf29` with the
-# original scaffold and predates both kits. The result is a SHORT whose plate
-# type is Archivo Narrow and whose free type is DejaVu.
-#
-# Moving these to Archivo Narrow is the kit-correct answer and it is a visible
-# change: the faces have different metrics, so every fitted block in every
-# vertical format re-flows, and the shrink-to-fit in `fit_lines` lands
-# elsewhere. That is a call about what the channel looks like rather than a bug
-# fix, so it is written down here rather than made quietly. Whoever takes it:
-# the substitution table below is the only other thing that has to change.
-BODY_FONT = "Inter-Regular.ttf"
-DISPLAY_FONT = "Inter-Bold.ttf"
+# Both are the kit's Archivo Narrow, at two of the weights its `typeRoles`
+# declare. `plate_frames.py` sets every word that lands in a plate SLOT from
+# the manifest; these feed what is left, the free-placed layers
+# `render_short._draw_text` positions itself, so a short's free type is the
+# same face as its plate type. They used to name Inter, which was never
+# vendored and was drawn in a DejaVu Sans stand-in from the first scaffold.
+BODY_FONT = "Archivo Narrow 500"
+DISPLAY_FONT = "Archivo Narrow 700"
+
+# Each face name -> the file it is drawn from and the weight axis it is set
+# at. A name that is not here is taken as a file under assets/fonts.
+_FACES = {
+    BODY_FONT: ("ArchivoNarrow[wght].ttf", 500),
+    DISPLAY_FONT: ("ArchivoNarrow[wght].ttf", 700),
+}
 
 # Line height as a multiple of ascent+descent. Here for the same reason as
 # the faces: the compositor asks "how many lines does this box hold" before a
@@ -98,22 +95,6 @@ def face_for(size_fh: float) -> str:
 # vertical formats is set in a face nobody chose.
 _FONT_DIR = Path(__file__).resolve().parents[1] / "assets" / "fonts"
 
-# Inter is not vendored. Neither face above has ever been on disk, so every
-# line of type in this renderer is actually set in its stand-in — and the
-# stand-in used to be "whichever file sorts first in assets/fonts". The day the
-# kit's own Archivo Narrow landed in that directory, every short in the repo
-# silently re-set itself in a narrow italic, and the character budgets — derived
-# against the old face — went on claiming numbers that were half again too
-# small. A directory listing is not a typographic decision, so each face names
-# its substitute here.
-#
-# (That sentence used to name `templates/budgets.json`. There is no such file;
-# budgets are read per slot off the kit's own manifests by `pipeline/form.py`.)
-_SUBSTITUTES = {
-    "Inter-Regular.ttf": "DejaVuSans-Bold.ttf",
-    "Inter-Bold.ttf": "DejaVuSans-Bold.ttf",
-}
-
 _font_cache: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
 
 
@@ -124,10 +105,8 @@ def font_file(name: str) -> Path | None:
     against whatever this returns, and if it starts returning something else
     the numbers the writing prompt hands out stop being true.
     """
-    for candidate in (name, _SUBSTITUTES.get(name)):
-        if candidate and (_FONT_DIR / candidate).exists():
-            return _FONT_DIR / candidate
-    return None
+    path = _FONT_DIR / _FACES.get(name, (name, None))[0]
+    return path if path.exists() else None
 
 
 def load_font(name: str, size: int) -> ImageFont.FreeTypeFont:
@@ -136,15 +115,22 @@ def load_font(name: str, size: int) -> ImageFont.FreeTypeFont:
     if hit is not None:
         return hit
     path = font_file(name)
-    try:
-        f = ImageFont.truetype(str(path), int(size))
-    except (OSError, TypeError):
+    if path is None:
         # Nothing named is on disk — a checkout without the fonts at all.
-        # Last resort only; anything drawn here is the wrong shape by
-        # definition, so it stays a fallback rather than a substitution.
-        candidates = sorted(_FONT_DIR.glob("*.ttf")) + sorted(_FONT_DIR.glob("*.otf"))
-        f = (ImageFont.truetype(str(candidates[0]), int(size)) if candidates
-             else ImageFont.load_default())
+        # Pillow's own face, loudly, rather than whichever file happens to
+        # sort first in the directory: the day the kit's Archivo Narrow
+        # landed, "first file" had become its italic.
+        log.warning("font %r is not in %s; drawing in Pillow's default",
+                    name, _FONT_DIR)
+        f = ImageFont.load_default(int(size))
+    else:
+        f = ImageFont.truetype(str(path), int(size))
+        weight = _FACES.get(name, (None, None))[1]
+        if weight is not None:
+            try:
+                f.set_variation_by_axes([weight])
+            except Exception:      # a FreeType without variable support
+                log.debug("no variable-font support; %s stays at 400", path.name)
     _font_cache[key] = f
     return f
 
@@ -231,8 +217,8 @@ def block_height(font_name: str, size_px: int, lines: int) -> int:
 
     A box for free-placed type has to be built from the same number the
     fitter measures with, not from an estimate near it. `size * lines * 1.25`
-    was the estimate, and it is 13% short of `(asc + desc) * LINE_LEADING`
-    for Inter: every free-placed block in every format was authored a box
+    was the estimate, and it was 13% short of `(asc + desc) * LINE_LEADING`
+    for the face of the day: every free-placed block in every format was authored a box
     that could not hold the lines it asked for, and the fitter quietly drew
     them smaller than the template said.
     """

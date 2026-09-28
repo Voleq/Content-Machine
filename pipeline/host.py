@@ -530,8 +530,8 @@ def stands_on(room: Plate, host: HostShot) -> bool:
 
     The two DECLARED cases, both of which are data rather than a failure:
 
-    * `room.refuses_host` — `room/high-desk-down` is the camera above the desk
-      and `room/wall-of-calls` is a wall of index cards. Neither has a floor
+    * `room.refuses_host` — `room/desk-top-down` is the camera above the desk
+      and `room/board` is the pinned wall of index cards. Neither has a floor
       in shot, and both say so in the field rather than leaving it out.
     * `host.is_framing` — a close-up is a camera distance, not a cut-out.
       There is no floor line on it to pin.

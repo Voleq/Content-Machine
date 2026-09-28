@@ -115,10 +115,10 @@ def test_every_plate_a_format_names_is_in_the_kit(name):
 
 @pytest.mark.parametrize("name", VERTICAL)
 def test_a_vertical_format_reaches_only_vertical_plates(name):
-    """The comps table, the scatter and the waterfall are 16:9 by design.
+    """The scatter, the multiple bridge and the flow plates are 16:9 by design.
 
-    They need horizontal room to be readable and do not belong in seventy-five
-    seconds. One named here would render letterboxed with its type at a third
+    They need horizontal room to be readable and do not belong in a
+    fifty-second vertical cut. One named here would render letterboxed with its type at a third
     of the size it was drawn at.
     """
     reg = _reg()

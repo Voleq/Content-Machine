@@ -46,9 +46,9 @@ SFX_KEYS = (
 
 
 # --------------------------------------------------------------------------
-# Shared tag grammar — used by BOTH formats (LONG narration tags, SHORT
-# inline [DOODLE]/[SCRIBBLE] tags). Kept up here so the SHORT script can
-# carry inline-parsed events too.
+# Shared tag grammar — used by BOTH formats (LONG narration tags, the
+# SHORT's inline tags). Kept up here so the SHORT script can carry
+# inline-parsed events too.
 # --------------------------------------------------------------------------
 
 
@@ -475,7 +475,7 @@ class ShortScript(BaseModel):
     meme: CutawayTag | None = None
     broll: CutawayTag | None = None
     annotations: list[Annotation] = Field(default_factory=list, max_length=4)
-    # inline [DOODLE]/[SCRIBBLE] tags the parser strips out of audio_script
+    # inline [SCRIBBLE] tags the parser strips out of audio_script
     # (never spoken); offsets index the CLEAN audio_script. Model-populated,
     # never authored directly in the JSON.
     inline_events: list[TagEvent] = Field(default_factory=list)

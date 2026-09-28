@@ -319,8 +319,8 @@ def test_the_previous_kits_files_are_gone():
 
     `engine/` at the repository root was the whole of it: three ink engines and
     a `KIT_DELIVERY.md` stating a contract — 476 entries, four registers,
-    `playback: "boil"` — that contradicts this kit's 270 / one surface /
-    `loop | overlay | static` point for point. Nothing imported it, so nothing
+    `playback: "boil"` — that contradicts this kit's one surface and
+    `loop | once | overlay | static` point for point. Nothing imported it, so nothing
     failed; but a dozen comments under `pipeline/` cite `engine/build.js` and
     `engine/series.js` meaning `kit/engine/`, and a reader who followed one
     landed in the dead directory, which has no `build.js` in it at all.
@@ -386,3 +386,106 @@ def test_the_old_kit_search_would_actually_find_something():
     assert "ballpoint" in _OLD_KIT_INK_REGISTERS
     marks = (ROOT / "pipeline" / "marks.py").read_text(encoding="utf-8")
     assert "def wrap_to" in marks, "marks.py is still the file being searched"
+
+
+# --------------------------------------------------------------------------
+# The bot draws in the kit's faces, and names only the kit's plates.
+# --------------------------------------------------------------------------
+# The kit sets type in two faces, and every plate's typeRoles names one of
+# them. Space Grotesk, Space Mono and a DejaVu stand-in for an Inter that was
+# never vendored sat beside them for three deliveries, from before any kit:
+# the mock b-roll labels, the filing chip, the free-placed type in the shorts
+# and the internal sheets were all set in them. A face on disk is a face some
+# new line of code will reach for.
+_KIT_FACES = ("ArchivoNarrow", "CourierPrime")
+
+
+def test_the_only_faces_on_disk_are_the_kits():
+    fonts = ROOT / "assets" / "fonts"
+    stray = sorted(p.name for p in fonts.iterdir()
+                   if not p.name.startswith(_KIT_FACES))
+    assert not stray, (
+        f"assets/fonts/ carries {stray}, which the kit does not set type in. "
+        f"Every face the bot draws in comes from the kit's typeRoles")
+
+
+# Plates the tree names without drawing them, on purpose. Each is history
+# written where it is recorded, not a key anything looks up.
+_NAMED_AS_HISTORY = {
+    "charts/valuation-history",  # scripts/ingest_kit.py: a plate design retired
+    "host/empty-chair",          # scripts/ingest_kit.py: the same
+}
+
+# Where a plate name is a claim about the kit. Tests are left out: they build
+# registries of their own with invented keys.
+_NAMING_FOLDERS = ("pipeline", "bot", "scripts", "templates", "deploy")
+_NAMING_FILES = ("README.md", "config.py", ".env.example")
+
+
+def _naming_paths() -> list[Path]:
+    paths = [ROOT / f for f in _NAMING_FILES]
+    for folder in _NAMING_FOLDERS:
+        paths += sorted(p for p in (ROOT / folder).rglob("*")
+                        if p.suffix in (".py", ".md", ".json", ".sh", ".txt")
+                        and "__pycache__" not in p.parts)
+    return paths
+
+
+def _named_plates(reg, paths) -> dict[str, list[str]]:
+    """`{family/name: [file:line, …]}` for every plate-shaped name in `paths`
+    that the kit does not draw."""
+    families = sorted({k.split("/", 1)[0] for k in reg.keys()})
+    keys = set(reg.keys())
+    stems = {re.sub(r"-(16x9|9x16)$", "", k) for k in keys}
+    stems |= {re.sub(r"-(night|dusk|christmas)(?=-|$)", "", s) for s in stems}
+    roles = ({f"room/{r}" for r in reg.room_roles}
+             | {f"host/{r}" for r in reg.host_roles})
+    pattern = re.compile(r"(?<![\w/.-])(" + "|".join(map(re.escape, families))
+                         + r")/([a-z0-9][a-z0-9-]*[a-z0-9])(?![\w/.])")
+    found: dict[str, list[str]] = {}
+    for path in paths:
+        for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            for m in pattern.finditer(line):
+                name = m.group(0)
+                bare = re.sub(r"-(16x9|9x16)$", "", name)
+                bare = re.sub(r"-(night|dusk|christmas)$", "", bare)
+                if (name in keys or name in stems or name in roles
+                        or bare in stems or name in _NAMED_AS_HISTORY):
+                    continue
+                # A family of numbered plates named by its prefix:
+                # `tables/numbers-sheet-*`, `overlays/wipe-{sweep,page}`.
+                if (line[m.end():m.end() + 1] in ("-", "*", "{")
+                        and any(k.startswith(name + "-") for k in keys)):
+                    continue
+                found.setdefault(name, []).append(f"{path.name}:{i}")
+    return found
+
+
+def test_every_plate_the_tree_names_is_one_the_kit_draws(settings):
+    """A kit swap leaves names behind, and a stale name reads as fact.
+
+    `room/wall-of-calls` was still filled from the thesis book two kits after
+    design stopped drawing it; `room/high-desk-down` and `cards/term` were
+    still the examples in the comments that explained the code. None of it
+    failed, because nothing looked the names up. This does.
+    """
+    from pipeline.plates import load_plates
+
+    stale = _named_plates(load_plates(settings.assets_dir), _naming_paths())
+    assert not stale, "names for plates the kit does not draw:\n  " + "\n  ".join(
+        f"{name}  ({', '.join(where[:3])})" for name, where in sorted(stale.items()))
+
+
+def test_the_plate_name_search_would_actually_find_one(settings, tmp_path):
+    """The test above passes trivially if the pattern matches nothing."""
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    probe = tmp_path / "probe.md"
+    probe.write_text("the wall is `room/wall-of-calls`, beside "
+                     "`room/board` and `tables/numbers-sheet-*`\n",
+                     encoding="utf-8")
+    assert set(_named_plates(reg, [probe])) == {"room/wall-of-calls"}
+    paths = _naming_paths()
+    assert ROOT / "pipeline" / "compose.py" in paths
+    assert ROOT / "templates" / "shots" / "short.json" in paths

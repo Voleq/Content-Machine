@@ -1,191 +1,504 @@
 {
- "ticker": "EXMPL",
- "format": "short",
- "beats": 10,
- "shots_count": 12,
- "anchored_shots": 4,
- "kit": "v2-plates",
- "duration_s": 71.865,
- "frame": {
-  "w": 1080,
-  "h": 1920
- },
- "shots": [
-  {
-   "id": "hook",
-   "plate": "shorts/hook-card-t1",
-   "start_s": 0.0,
-   "end_s": 3.586,
-   "anchored": true,
-   "max_hold_s": 7.0,
-   "layers": [
-    "hook:ground",
-    "hook:plate:shorts/hook-card-t1"
-   ]
+  "ticker": "EXMPL",
+  "format": "short",
+  "hour": "night",
+  "beats": 9,
+  "engine": "shots",
+  "shots_count": 9,
+  "anchored_shots": 4,
+  "kit": "v2-plates",
+  "prices": {
+    "source": "fixture",
+    "degraded": false
   },
-  {
-   "id": "the-move",
-   "plate": "charts/line-dense-9x16",
-   "start_s": 3.586,
-   "end_s": 7.172,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "the-move:ground",
-    "the-move:plate:charts/line-dense-9x16",
-    "the-move:caption"
-   ]
+  "provenance": {
+    "ticker": "EXMPL",
+    "format": "short",
+    "workdate": "sample_short",
+    "duration_s": 57.423,
+    "render": {
+      "engine": "shots",
+      "format": "short"
+    },
+    "prices": {
+      "source": "fixture",
+      "degraded": false,
+      "days": 85,
+      "as_of": "2026-09-10"
+    },
+    "visuals": {
+      "library": 1
+    },
+    "filings": {},
+    "audio": {
+      "tier": "mock",
+      "model": "mock",
+      "draft": false,
+      "cached": true,
+      "cost_usd": 0.0,
+      "chunks": null
+    },
+    "sound": {
+      "lufs": -23.0,
+      "effects": 13,
+      "bed": "",
+      "theme": false,
+      "room": "room_night.wav",
+      "placeholders": 5
+    },
+    "llm": {
+      "provider": "",
+      "model": "",
+      "calls": 0,
+      "hosted_fallbacks": 0,
+      "skipped": []
+    },
+    "gates": ""
   },
-  {
-   "id": "the-news",
-   "plate": "paper/headline-band-t1-9x16",
-   "start_s": 7.172,
-   "end_s": 10.758,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "the-news:ground",
-    "the-news:plate:paper/headline-band-t1-9x16",
-    "the-news:caption"
-   ]
+  "duration_s": 57.423,
+  "frame": {
+    "w": 1080,
+    "h": 1920
   },
-  {
-   "id": "the-turn",
-   "plate": "room/talk",
-   "start_s": 10.758,
-   "end_s": 17.758,
-   "anchored": true,
-   "max_hold_s": 7.0,
-   "layers": [
-    "the-turn:ground",
-    "the-turn:plate:room/low-desk-height-9x16",
-    "the-turn:host:close-up",
-    "the-turn:caption"
-   ]
+  "shots": [
+    {
+      "id": "hook",
+      "plate": "shorts/hook-card-t1",
+      "start_s": 0.0,
+      "end_s": 3.501,
+      "anchored": true,
+      "max_hold_s": 7.0,
+      "layers": [
+        "hook:ground",
+        "hook:plate:shorts/hook-card-t3"
+      ]
+    },
+    {
+      "id": "the-move",
+      "plate": "charts/line-dense-9x16",
+      "start_s": 3.501,
+      "end_s": 7.002,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "the-move:ground",
+        "the-move:plate:charts/line-dense-9x16",
+        "the-move:caption"
+      ]
+    },
+    {
+      "id": "the-news",
+      "plate": "paper/headline-band-t1-9x16",
+      "start_s": 7.002,
+      "end_s": 10.502,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "the-news:ground",
+        "the-news:plate:paper/headline-stack-3-9x16",
+        "the-news:caption"
+      ]
+    },
+    {
+      "id": "the-turn",
+      "plate": "room/talk",
+      "start_s": 10.502,
+      "end_s": 26.422,
+      "anchored": true,
+      "max_hold_s": 7.0,
+      "layers": [
+        "the-turn:ground",
+        "the-turn:plate:room/window-talk-9x16",
+        "the-turn:host:close-up",
+        "the-turn:caption"
+      ]
+    },
+    {
+      "id": "numbers",
+      "plate": "tables/numbers-sheet-4r-9x16",
+      "start_s": 26.422,
+      "end_s": 37.882,
+      "anchored": false,
+      "max_hold_s": 14.0,
+      "layers": [
+        "numbers:ground",
+        "numbers:plate:tables/numbers-sheet-4r-spark-9x16",
+        "numbers:caption"
+      ]
+    },
+    {
+      "id": "the-comment",
+      "plate": "cards/quote-pull-9x16",
+      "start_s": 37.882,
+      "end_s": 44.882,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "the-comment:ground",
+        "the-comment:plate:cards/quote-pull-9x16",
+        "the-comment:caption"
+      ]
+    },
+    {
+      "id": "cheap-or-trap",
+      "plate": "structure/both-true-9x16",
+      "start_s": 44.882,
+      "end_s": 50.825,
+      "anchored": true,
+      "max_hold_s": 7.0,
+      "layers": [
+        "cheap-or-trap:ground",
+        "cheap-or-trap:plate:structure/both-true-9x16",
+        "cheap-or-trap:caption"
+      ]
+    },
+    {
+      "id": "payoff",
+      "plate": "figures/big-number-l2-9x16",
+      "start_s": 50.825,
+      "end_s": 54.124,
+      "anchored": true,
+      "max_hold_s": 7.0,
+      "layers": [
+        "payoff:ground",
+        "payoff:plate:figures/big-number-l2-9x16",
+        "payoff:meme-frame:frames/media-frame-t2-9x16",
+        "payoff:meme:fomo-stages-wish-i-bought-doodle"
+      ]
+    },
+    {
+      "id": "close",
+      "plate": "structure/closing-9x16",
+      "start_s": 54.124,
+      "end_s": 57.423,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "close:ground",
+        "close:plate:structure/closing-9x16",
+        "close:caption"
+      ]
+    }
+  ],
+  "layers": 28,
+  "plates_used": [
+    "cards/quote-pull-9x16",
+    "charts/line-dense-9x16",
+    "figures/big-number-l2-9x16",
+    "frames/media-frame-t2-9x16",
+    "host/close-up",
+    "paper/headline-stack-3-9x16",
+    "room/window-talk-9x16",
+    "shorts/hook-card-t3",
+    "structure/both-true-9x16",
+    "structure/closing-9x16",
+    "tables/numbers-sheet-4r-spark-9x16"
+  ],
+  "shot_order": "as-authored",
+  "moves": {
+    "moves": [
+      {
+        "move": "highlight",
+        "start": 0.15,
+        "shot_id": "hook",
+        "slot": "hook",
+        "frames": 6
+      },
+      {
+        "move": "line-draw",
+        "start": 3.501,
+        "shot_id": "the-move",
+        "slot": "plot-area",
+        "frames": 10
+      },
+      {
+        "move": "highlight",
+        "start": 26.672,
+        "shot_id": "numbers",
+        "slot": "band-1",
+        "frames": 6
+      },
+      {
+        "move": "highlight",
+        "start": 28.884,
+        "shot_id": "numbers",
+        "slot": "band-2",
+        "frames": 6
+      },
+      {
+        "move": "highlight",
+        "start": 31.096,
+        "shot_id": "numbers",
+        "slot": "band-3",
+        "frames": 6
+      },
+      {
+        "move": "highlight",
+        "start": 31.746,
+        "shot_id": "numbers",
+        "slot": "band-4",
+        "frames": 6
+      },
+      {
+        "move": "highlight",
+        "start": 38.232,
+        "shot_id": "the-comment",
+        "slot": "body",
+        "frames": 6
+      },
+      {
+        "move": "count-up",
+        "start": 50.825,
+        "shot_id": "payoff",
+        "slot": "value",
+        "frames": 7
+      }
+    ],
+    "wipes": [
+      {
+        "transition": "overlays/wipe-page-short-9x16",
+        "cut": 7.002,
+        "start": 6.918,
+        "shot_out": "the-move",
+        "shot_in": "the-news"
+      },
+      {
+        "transition": "overlays/wipe-sweep-short-9x16",
+        "cut": 26.422,
+        "start": 26.339,
+        "shot_out": "the-turn",
+        "shot_in": "numbers"
+      },
+      {
+        "transition": "overlays/wipe-page-short-9x16",
+        "cut": 44.882,
+        "start": 44.799,
+        "shot_out": "the-comment",
+        "shot_in": "cheap-or-trap"
+      }
+    ],
+    "skipped": [
+      "numbers: pen-circle sits this video out (about one short in 3, never two running)",
+      "payoff: no pen-circle, value is too big a part of the plate to ring without ringing the plate"
+    ]
   },
-  {
-   "id": "numbers-1",
-   "plate": "tables/numbers-sheet-3r-9x16",
-   "start_s": 17.758,
-   "end_s": 24.758,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "numbers-1:ground",
-    "numbers-1:plate:tables/numbers-sheet-3r-9x16",
-    "numbers-1:caption"
-   ]
+  "meme": {
+    "key": "fomo-stages-wish-i-bought-doodle",
+    "file": "fomo-stages-wish-i-bought-doodle.jpeg",
+    "source": "library",
+    "shot": "payoff",
+    "start_s": 53.024,
+    "end_s": 54.124,
+    "frame": "frames/media-frame-t2-9x16",
+    "score": 6,
+    "matched": [
+      "short-squeeze (chasing)",
+      "press-release-pump (pump)",
+      "rally",
+      "\"vertical\""
+    ],
+    "why": "scored 6 on short-squeeze (chasing); press-release-pump (pump); rally; \"vertical\""
   },
-  {
-   "id": "numbers-2",
-   "plate": "tables/numbers-sheet-3r-9x16",
-   "start_s": 24.758,
-   "end_s": 31.758,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "numbers-2:ground",
-    "numbers-2:plate:tables/numbers-sheet-3r-9x16",
-    "numbers-2:caption"
-   ]
+  "beat_order": [],
+  "audio": [
+    {
+      "name": "voice",
+      "start": 0.0,
+      "gain_db": 0.0,
+      "loop": false,
+      "file": "audio.m4a"
+    },
+    {
+      "name": "room_tone",
+      "start": 0.0,
+      "gain_db": -40.0,
+      "loop": true,
+      "file": "room_night.wav",
+      "gaps": [
+        [
+          50.33,
+          50.83
+        ]
+      ]
+    },
+    {
+      "name": "screen_buzz@10.50",
+      "start": 10.5,
+      "gain_db": -34.0,
+      "loop": true,
+      "file": "screen_buzz.wav",
+      "gaps": [
+        [
+          50.33,
+          50.83
+        ]
+      ]
+    },
+    {
+      "name": "hook_hit@0.00",
+      "start": 0.0,
+      "gain_db": -6.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 0.989,
+      "trim_db": -0.9
+    },
+    {
+      "name": "whoosh@3.40",
+      "start": 3.4,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 1.004,
+      "trim_db": -1.2
+    },
+    {
+      "name": "wipe@7.00",
+      "start": 6.92,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 1.01,
+      "trim_db": 0.2
+    },
+    {
+      "name": "whoosh@10.40",
+      "start": 10.4,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.963,
+      "trim_db": 0.1
+    },
+    {
+      "name": "wipe@26.42",
+      "start": 26.34,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 1.006,
+      "trim_db": 0.1
+    },
+    {
+      "name": "whoosh@37.78",
+      "start": 37.78,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.969,
+      "trim_db": 0.3
+    },
+    {
+      "name": "wipe@44.88",
+      "start": 44.8,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.986,
+      "trim_db": -0.6
+    },
+    {
+      "name": "payoff_hit@50.83",
+      "start": 50.83,
+      "gain_db": -6.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 0.965,
+      "trim_db": 0.9
+    },
+    {
+      "name": "whoosh@54.02",
+      "start": 54.02,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 1.023,
+      "trim_db": 0.9
+    },
+    {
+      "name": "move:highlight@28.88",
+      "start": 28.88,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "marker_draw.wav",
+      "rate": 1.014,
+      "trim_db": -1.4
+    },
+    {
+      "name": "move:highlight@31.10",
+      "start": 31.1,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "marker_draw.wav",
+      "rate": 0.962,
+      "trim_db": -1.1
+    },
+    {
+      "name": "move:highlight@31.75",
+      "start": 31.75,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "marker_draw.wav",
+      "rate": 1.026,
+      "trim_db": -1.5
+    },
+    {
+      "name": "move:highlight@38.23",
+      "start": 38.23,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "marker_draw.wav",
+      "rate": 0.998,
+      "trim_db": -0.2
+    }
+  ],
+  "kit_reach": "Kit: 11 of 704 plates, 10 families, 10 animated layers",
+  "skipped": [
+    "the-news.headline-3 <- script.headlines.2.text",
+    "numbers.label-3 <- numbers.label.2 (14 > 13 chars)",
+    "payoff.detail <- script.verdict"
+  ],
+  "dropped_shots": [],
+  "text_overflow": {},
+  "host_faces": {
+    "the-turn:host:close-up": {
+      "pose": "host/close-up",
+      "spoke": true,
+      "talk_frames": 455,
+      "idle_frames": 0,
+      "blinks": 4,
+      "has_talk": true,
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": []
+    }
   },
-  {
-   "id": "numbers-3",
-   "plate": "tables/numbers-sheet-3r-9x16",
-   "start_s": 31.758,
-   "end_s": 38.758,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "numbers-3:ground",
-    "numbers-3:plate:tables/numbers-sheet-3r-9x16",
-    "numbers-3:caption"
-   ]
+  "longest_layer_hold_s": 0.0,
+  "pacing": {
+    "shots": 9,
+    "longest_span_s": 15.92,
+    "longest_still_span_s": 11.46,
+    "spans_over_their_ceiling": [
+      "the-turn 15.9s over 7.0s"
+    ],
+    "hold_ceiling_s": 8.0,
+    "held_over_ceiling": [
+      {
+        "shot": "numbers",
+        "start_s": 26.8,
+        "end_s": 37.8,
+        "held_s": 11.0
+      }
+    ]
   },
-  {
-   "id": "the-sheet",
-   "plate": "tables/numbers-sheet-4r-9x16",
-   "start_s": 38.758,
-   "end_s": 45.758,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "the-sheet:ground",
-    "the-sheet:plate:tables/numbers-sheet-4r-9x16",
-    "the-sheet:caption"
-   ]
-  },
-  {
-   "id": "the-comment",
-   "plate": "cards/quote-pull-9x16",
-   "start_s": 45.758,
-   "end_s": 52.758,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "the-comment:ground",
-    "the-comment:plate:cards/quote-pull-9x16",
-    "the-comment:caption"
-   ]
-  },
-  {
-   "id": "cheap-or-trap",
-   "plate": "structure/both-true-9x16",
-   "start_s": 52.758,
-   "end_s": 59.758,
-   "anchored": true,
-   "max_hold_s": 7.0,
-   "layers": [
-    "cheap-or-trap:ground",
-    "cheap-or-trap:plate:structure/both-true-9x16",
-    "cheap-or-trap:caption"
-   ]
-  },
-  {
-   "id": "payoff",
-   "plate": "figures/big-number-l2-9x16",
-   "start_s": 59.758,
-   "end_s": 66.758,
-   "anchored": true,
-   "max_hold_s": 7.0,
-   "layers": [
-    "payoff:ground",
-    "payoff:plate:figures/big-number-l2-9x16"
-   ]
-  },
-  {
-   "id": "close",
-   "plate": "structure/closing-9x16",
-   "start_s": 66.758,
-   "end_s": 71.865,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "close:ground",
-    "close:plate:structure/closing-9x16",
-    "close:caption"
-   ]
-  }
- ],
- "layers": 35,
- "plates_used": [
-  "cards/quote-pull-9x16",
-  "charts/line-dense-9x16",
-  "figures/big-number-l2-9x16",
-  "host/close-up",
-  "paper/headline-band-t1-9x16",
-  "room/low-desk-height-9x16",
-  "shorts/hook-card-t1",
-  "structure/both-true-9x16",
-  "structure/closing-9x16",
-  "tables/numbers-sheet-3r-9x16",
-  "tables/numbers-sheet-4r-9x16"
- ],
- "kit_reach": "Kit: 11 of 140 plates, 9 families, 5 animated layers",
- "skipped": [
-  "payoff.detail <- script.verdict"
- ],
- "dropped_shots": [],
- "text_overflow": {},
- "longest_layer_hold_s": 7.0
+  "placement": "MOCK TIMINGS \u2014 every cue time in this manifest came from interpolated mock TTS word timestamps, not from a voice. Composition, type fit and kit coverage are real; WHERE anything lands is not. Judge placement from a real render only."
 }

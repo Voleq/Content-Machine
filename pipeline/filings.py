@@ -13,7 +13,7 @@ run thesis-aware after the LONG angle is picked:
   5. SCREENSHOT  headless Chromium (Playwright) locates each quote's enclosing
      block, scrolls it in, optionally highlights it, and shots it at 2×.
   6. NORMALIZE  every PNG runs through company_data.prepare_screenshot() — the
-     generic "FROM THE 10-K" chip, never a vendor — and lands in the workspace
+     kit's source tag, "SOURCE 10-K", never a vendor — and lands in the workspace
      so list_screenshots() / [SHOW FILING: file] pick it up unchanged. A small
      manifest (quote · section · why) feeds the long-write prompt.
 

@@ -5,57 +5,51 @@ Structure:
   * `build_long_timeline` resolves every tag to its spoken word
   * `plan_long_segments` tiles the full duration with host beats and the
     evidence he cuts away to
-  * the whole video is ONE ffmpeg filter_complex: per-segment trim ->
-    concat -> bug/disclaimer/glitch overlays -> libass captions, plus
-    VO + room tone + SFX in a single amix — one final encode
-
-NOTHING PANS OR ZOOMS. Motion is the host (mouth flap, boil pairs), the cuts,
-and real video clips. Every still is scale + pad, held.
+  * each beat encodes on its own (segmented, cached, in parallel) and the
+    beats are concatenated; the overlays that span beats (opening title,
+    chapter bumpers, corner bug, top strip, disclaimer, marks, captions) go
+    over that base in one pass, with VO + room tone + SFX in a single amix
   * draft mode reuses the same cached audio and graph at low res /
     ultrafast (never re-calls TTS)
   * proof mode reuses them at FULL res and real fps on a cheap encode, so
     the operator can judge composition and type size — the one question
     draft and preview scale away — without buying a voice
 
+NOTHING PANS OR ZOOMS. Motion is the kit's own: the rooms' loops, the host
+rig's talk, idle and blink strips, the plates' boil, the kit's moves where a
+beat declares one, and real footage. Every still is scale + pad on the kit's
+ground, held.
+
 DENNIS IS THE BASE FRAME (§editing): this is a talking-host show. Untagged
-narration is the host on screen, lip-synced to the voice-over by
-`pipeline.host`; a tag means leave his face for a piece of evidence and hold
-it long enough to read. Nothing flashes by: data visuals cannot be cut short
-by a later tag, that tag is deferred instead. Doodles/scribbles ride ON TOP,
-including over the host.
+narration is the host on screen, a cut-out standing in one of the kit's rooms
+and lip-synced to the voice-over by `pipeline.host`; a tag means leave his
+face for a piece of evidence and hold it long enough to read. Nothing flashes
+by: data visuals cannot be cut short by a later tag, that tag is deferred
+instead. Marks ride ON TOP, including over the host.
 
 Segment kinds:
-  host    Dennis talking — the default frame, one held beat per untagged gap
-  clip    ironic stock footage (content engine, palette-first), real motion
-  img     real operations/product imagery, full-frame and held still
-  meme    freeze-frame from the owned library, composed full-frame + boom
-          (first one gets the record-scratch rewind)
-  chart   auto-generated channel-style chart — a TWO-SHOT beside the host
-  filing  the unnamed-source data screenshot, glitch flash on reveal
-  asset   bespoke Claude-Design visual from assets/custom/ — also a two-shot
+  host        Dennis talking in a room — the default frame
+  plate       the kit plate the writer named, with the words they wrote in its
+              slots; a two-shot beside the host unless a mark needs the frame
+  chapter     a chapter's plate, the same way
+  clip        stock footage, played inside a kit frames/ plate
+  screengrab  an operator-dropped capture, framed the same way
+  filing      the filing screenshot, framed, with design's source tag
+  img         real operations/product imagery, full-frame and held still
+  chart       an auto-generated chart — a two-shot beside the host
+  meme        a freeze-frame from the owned library, full-frame
 
-Layouts: host-full (him alone), two-shot (him beside a designed panel) and
-cutaway-full (raw full-frame photography, footage and filings), always
-returning to him. Chapter boundaries reserve a host beat on each side, so a
-chapter opens and closes on his face.
-
-ONE COMPOSITION PER FRAME. The host shots are complete 16:9 scenes — Dennis,
-a headline, often an illustration of their own — so a host beat IS the frame
-and nothing goes behind it. A two-shot is composed as a single still: paper,
-the evidence, and a cut-out `mascot/` figure standing beside it. It used to
-stack three finished designs (a designed backdrop with its own giant ticker,
-an evidence card, and a whole host slide over both), which is what made the
-cut read as a collage.
+A two-shot is composed as ONE still: the room, the evidence, and the host
+standing beside it. Chapter boundaries reserve a host beat on each side, so a
+chapter opens and closes on his face, and from the second chapter on a kit
+bumper names it.
 
 Kit artwork is addressed through the registry as an ASSET, not a path, so a
 tag's `= value` reaches the drawing's declared boxes and a one-shot shows its
-end state rather than freezing on frame 1.
-
-Chapter stingers divide the acts; the branded strip + corner bug frame the
-top, captions are the same phrase-by-phrase chips the short uses — dark ink
-on paper, a whole clause at a time. Every visual lands on its anchor word (or
-the first moment after it that is free); there is no verdict stamp — the
-video ends on whatever deadpan line the script wrote.
+end state rather than freezing on frame 1. Captions are phrase by phrase in
+the kit's faces. Every visual lands on its anchor word (or the first moment
+after it that is free); there is no verdict stamp — the video ends on
+whatever deadpan line the script wrote.
 """
 
 from __future__ import annotations
@@ -110,7 +104,6 @@ from pipeline.render_common import (
     encode_profile,
     ffprobe_duration,
     render_thread_budget,
-    run_ffmpeg,
 )
 from pipeline.segments import (
     CACHE_DIRNAME as SEG_CACHE_DIRNAME,
@@ -331,7 +324,7 @@ def _globalise(chain: str, offset: int, index: int) -> str:
 
 
 def _segment_fallback(spec: SegmentSpec, backdrop_for, W: int, H: int,
-                      fps: int) -> SegmentSpec | None:
+                      fps: int, ground: str) -> SegmentSpec | None:
     """What a failed segment becomes: the designed backdrop, held.
 
     One unresolvable asset should cost one beat, not the whole cut.
@@ -346,18 +339,26 @@ def _segment_fallback(spec: SegmentSpec, backdrop_for, W: int, H: int,
         inputs=(("-loop", "1", "-framerate", str(fps),
                  "-t", f"{spec.duration + 0.2:.4f}", "-i", str(bg)),),
         filter_chain=_hold_still_chain(0, spec.duration, W, H,
-                                       ",setsar=1,format=yuv420p[out]"),
+                                       ",setsar=1,format=yuv420p[out]",
+                                       ground=ground),
         layout="host-full",
         extra_identity=("fallback",),
     )
 
 
-def _hold_still_chain(i: int, seg_len: float, W: int, H: int, tail: str) -> str:
-    """A still, held: contain-fit onto the paper, no movement at all."""
+def _hold_still_chain(i: int, seg_len: float, W: int, H: int, tail: str, *,
+                      ground: str) -> str:
+    """A still, held: contain-fit onto the kit's ground, no movement at all.
+
+    `ground` is the palette's `ground` as ffmpeg takes it (`0x171D2A`). The pad
+    was a hard-coded paper white, the ground of the light kit two deliveries
+    back, so a still that did not fill the frame sat between white bars in a
+    night video.
+    """
     return (
         f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
         f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
-        f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF{tail}"
+        f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color={ground}{tail}"
     )
 
 
@@ -664,6 +665,8 @@ def _render_long(
     overrides = broll_overrides or {}
     reg = load_plates(settings.assets_dir)
     aspect = "16x9"
+    # The ground a held still is padded onto, as ffmpeg takes a colour.
+    ground_ff = "0x" + reg.colour_hex("ground").lstrip("#")
 
     # THE WRITER'S MOVES, on the real clock. Each `[MOVE]` is paired with the
     # plate segment it acts on and timed off the spoken word; the list goes on
@@ -1030,7 +1033,7 @@ def _render_long(
     def _still_chain(input_i: int, seg, seg_len: float, seg_i: int,
                      tail: str) -> str:
         """Every still is held. There is no drift on anything."""
-        return _hold_still_chain(input_i, seg_len, W, H, tail)
+        return _hold_still_chain(input_i, seg_len, W, H, tail, ground=ground_ff)
 
     # ------------------------------------------------------- the host rig
     # Dennis is composited per segment onto the ROOM, lip-synced to that
@@ -1175,9 +1178,9 @@ def _render_long(
         """A layer over the room, scaled into its box, as one concat-ready
         segment stream.
 
-        `loop` is what a BOIL needs. A two-frame loop is encoded once at its
-        own 2fps and then repeated for the beat; cloning its last frame instead
-        — which is what `tpad` does — freezes the drawing after half a second,
+        `loop` is what a BOIL needs. A three-drawing boil is encoded once at
+        its own 3fps and then repeated for the beat; cloning its last frame
+        instead — which is what `tpad` does — freezes the drawing after a second,
         and a frozen plate beside a boiling room is the exact thing the boil
         exists to prevent.
 
@@ -1720,7 +1723,7 @@ def _render_long(
     # for correctness comparison.
     #
     # Either way the result is one base video that the global overlays — the
-    # corner bug, disclaimer, captions, chapter stingers, doodles — composite
+    # corner bug, disclaimer, captions, chapter bumpers, marks — composite
     # over. Those span segment boundaries, so they cannot be baked in per
     # segment.
     profile = encode_profile(settings, "long", draft=draft, preview=preview,
@@ -1731,7 +1734,8 @@ def _render_long(
         seg_run = encode_segments(
             seg_specs, settings.cache_dir / SEG_CACHE_DIRNAME, profile,
             total_threads=render_thread_budget(),
-            fallback=lambda spec: _segment_fallback(spec, _backdrop_path, W, H, fps),
+            fallback=lambda spec: _segment_fallback(spec, _backdrop_path, W, H, fps,
+                                                    ground_ff),
             on_progress=progress,
             # Detection proves the GPU can open one encode session, not
             # `workers` of them at once. If it runs out partway through, the
@@ -1863,22 +1867,6 @@ def _render_long(
             ))
         stinger_meta.append({"type": ctype, "title": title,
                              "script_t": round(target, 2), "t": round(t, 2)})
-
-    # glitch flash on every filing reveal (pre-rendered overlay)
-    glitch = settings.assets_dir / "overlays" / "glitch_noise.mov"
-    if glitch.exists():
-        glitch_big = rdir / "glitch_scaled.mov"
-        if not glitch_big.exists():
-            run_ffmpeg(["-i", str(glitch),
-                        "-vf", f"scale={W}:{H}:flags=neighbor",
-                        "-c:v", "png", "-pix_fmt", "rgba", str(glitch_big)])
-        for seg in segments:
-            if seg.kind == "filing":
-                layers.append(OverlayLayer(
-                    path=glitch_big, x=0, y=0,
-                    t_start=seg.start, t_end=min(seg.start + 0.5, duration),
-                    is_video=True, name=f"glitch@{seg.start:.2f}",
-                ))
 
     # THE SOURCE SLIDES IN UNDER THE FIGURE (item 14): design's tag, off the
     # frame's left edge with its small overshoot, where the writer's

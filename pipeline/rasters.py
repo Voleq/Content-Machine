@@ -141,8 +141,21 @@ def caption_key_colour(settings: Settings) -> tuple[int, int, int] | None:
     return None
 
 
-def load_font(settings: Settings, name: str, size: int) -> ImageFont.FreeTypeFont:
-    return ImageFont.truetype(str(settings.fonts_dir / name), size)
+def load_font(settings: Settings, name: str, size: int,
+              weight: int | None = None) -> ImageFont.FreeTypeFont:
+    """A kit face at `size`, and at `weight` on the variable one.
+
+    Archivo Narrow ships as one variable file whose default instance is 400,
+    so a bold role asks for 700 here the way `plate_frames` sets it for a slot.
+    The Courier Prime files are static and ignore `weight`.
+    """
+    font = ImageFont.truetype(str(settings.fonts_dir / name), size)
+    if weight is not None and name == ARCHIVO:
+        try:
+            font.set_variation_by_axes([max(400, min(int(weight), 700))])
+        except Exception:          # a FreeType without variable support
+            log.debug("no variable-font support; %s stays at 400", name)
+    return font
 
 
 def simple_text(

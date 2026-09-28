@@ -13,7 +13,7 @@
     "consequences told over TIME rather than as cards in one frame. Three",
     "cards in a 9:16 column measure 33px type, under the readability floor.",
     "",
-    "A STATIC PLATE MAY HOLD. The ceiling was written when every plate in the kit boiled; 44 of the 140 are `playback: static` now, because a figure that moves is a figure being re-read. What keeps a data beat short is the ceiling itself, and it is set to what a seventy-second cut of ten beats actually gives each one.",
+    "A STATIC PLATE MAY HOLD. The ceiling was written when every plate in the kit boiled; some are `playback: static` now, because a figure that moves is a figure being re-read. What keeps a data beat short is the ceiling itself (`short_max_hold_s`, 8 s), which is already more than a fifty-second cut of eight or nine beats gives any one of them.",
     "",
     "ALTERNATE ORDERS CAME BACK WITH THE BEAT MARKERS (items 2 and 26). `sign-off-first` put the closing card ahead of the hook and stays retired: the first second is the ticker and the move. The orders below may move anchored beats, because a marked script says where each beat starts and the cut follows its markers; an unmarked script is only offered the orders that keep the beat sequence it was written to.",
     "",
@@ -68,18 +68,18 @@
       "max_hold_s": 7,
       "anchor": "reported",
       "bind": {
-        "kicker": "?numbers.headline_kicker",
+        "kicker": "?compare.reported_label",
         "value": "compare.reported",
-        "label": "?numbers.headline_label",
+        "label": "?compare.print_label",
         "caption": "?script.move_summary"
       },
       "alts": [
         {
           "plate": "figures/big-number-l2-9x16",
           "bind": {
-            "kicker": "?numbers.headline_kicker",
+            "kicker": "?compare.reported_label",
             "value": "compare.reported",
-            "label": "?numbers.headline_label",
+            "label": "?compare.print_label",
             "caption": "?script.move_summary"
           }
         }
@@ -91,8 +91,8 @@
       "max_hold_s": 7,
       "anchor": "expected",
       "bind": {
-        "kicker": "?compare.kicker",
-        "label-1": "?numbers.headline_label",
+        "kicker": "?script.ticker",
+        "label-1": "?compare.reported_label",
         "value-1": "compare.reported",
         "label-2": "?compare.expected_label",
         "value-2": "?compare.expected"
@@ -140,7 +140,6 @@
       "max_hold_s": 7,
       "anchor": "turn",
       "bind": {
-        "kicker": "?compare.kicker",
         "term": "?numbers.headline_label",
         "body": "script.mechanism.0",
         "example": "?script.mechanism.1"
@@ -179,8 +178,7 @@
           "plate": "cards/definition-9x16",
           "bind": {
             "term": "?script.ticker",
-            "body": "script.consequences.$n-1",
-            "kicker": "?compare.kicker"
+            "body": "script.consequences.$n-1"
           },
           "notes": "One consequence per beat as a term and its meaning. `$n-1` steps with the sequence exactly as the authored bind does."
         },
