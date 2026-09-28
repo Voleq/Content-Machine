@@ -280,13 +280,6 @@ class Corpus:
                         return hits
         return hits
 
-    def hooks(self, *, fmt: str = "short") -> list[tuple[ScriptEntry, float]]:
-        """Openers that have retention against them, best hold first."""
-        rows = [(e, e.hold) for e in self.for_format(fmt)
-                if e.hook and e.hold is not None]
-        return sorted(((e, float(h)) for e, h in rows),
-                      key=lambda r: r[1], reverse=True)
-
 
 # --------------------------------------------------------------------------
 # Similarity — the measurement idea 01's gate is built on.

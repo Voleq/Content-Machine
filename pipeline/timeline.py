@@ -79,18 +79,6 @@ def clamp(t: float, duration: float) -> float:
     return min(max(t, 0.0), max(duration - 0.05, 0.0))
 
 
-def proportional_fallback(index: int, n: int, duration: float) -> float:
-    """Position for a cue whose anchor word was not found."""
-    return duration * (index + 1) / (n + 1)
-
-
-def _first_sentence_end(words: list[WordTimestamp], duration: float) -> float:
-    for w in words:
-        if w.word.rstrip("\"'”’)").endswith((".", "!", "?", "…")):
-            return w.end
-    return min(2.5, duration * 0.15)
-
-
 # --------------------------------------------------------------------------
 # The SHORT beat timeline lived here, and nothing called any of it (D4).
 # --------------------------------------------------------------------------
