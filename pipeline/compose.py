@@ -50,6 +50,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Collection, Protocol, Sequence
@@ -214,6 +215,21 @@ class BuildResult:
 # Resolving what the template names
 # ---------------------------------------------------------------------------
 
+# TWO ANGLES OF ONE SPOT. `room/window-talk` is `window-wall` with him moved
+# to the pane's left edge (design, rebuild-40): cut from one straight to the
+# other and he jumps sideways in a room that did not move. For "never the same
+# angle twice running" they are one angle.
+SAME_SPOT = {"room/window-talk": "room/window-wall"}
+
+
+def _spot(reg: Registry, key: str) -> str:
+    """The spot a room key is shot from: its angle, its December twin and its
+    same-spot sibling folded together."""
+    stem = re.sub(r"-(16x9|9x16)$", "", reg.base_key(key))
+    stem = stem[: -len("-christmas")] if stem.endswith("-christmas") else stem
+    return SAME_SPOT.get(stem, stem)
+
+
 def resolve_room(reg: Registry, role: str, aspect: str, *, seed: str,
                  step: int, after: str = "") -> Plate | None:
     """A room ROLE — `talk`, `establish`, `read` — to one of its angles.
@@ -257,8 +273,11 @@ def resolve_room(reg: Registry, role: str, aspect: str, *, seed: str,
     offset = (int(hashlib.sha256(seed.encode()).hexdigest(), 16)
               if seed else 0)
     picked = resolved[(offset + step) % len(resolved)]
-    if after and picked.key == after and len(resolved) > 1:
-        picked = resolved[(offset + step + 1) % len(resolved)]
+    if after and _spot(reg, picked.key) == _spot(reg, after):
+        for i in range(1, len(resolved)):
+            other = resolved[(offset + step + i) % len(resolved)]
+            if _spot(reg, other.key) != _spot(reg, after):
+                return other
     return picked
 
 

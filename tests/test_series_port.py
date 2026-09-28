@@ -208,9 +208,11 @@ def test_the_slot_fields_the_data_layer_reads_come_through_the_registry():
            "underline": "attention", "weight": 5, "inkBy": "+ in down", "clamp": True}
     slot = Slot.from_registry("market", raw, 2)
     box = S.boxes(type("P", (), {"slots": {"market": slot}})())["market"]
+    # The mark's weight too: export.js draws a mark at its slot's weight
+    # since rebuild-40 (the event calendar's dates 10, a market line 5).
     assert box == {"x": 1, "y": 2, "w": 3, "h": 4, "ink": "quiet", "tone": "subject",
                    "tone2": "subject2", "underline": "attention", "spreadFill": False,
-                   "under": True}
+                   "under": True, "weight": 5}
     assert slot.weight == 5 and slot.ink_by == "+ in down" and slot.clamp
 
 
@@ -402,20 +404,12 @@ def _flat(v) -> list[float]:
     return out
 
 
-# Where the kit's sample and the plate disagree, and design has been asked.
-# brand-vs-private-label's plot note says "spreadFill between them" and its
-# sample leaves the gap unfilled with nothing on the plate saying why; the bot
-# follows the note until design says otherwise.
-_OPEN_WITH_DESIGN = {("brand-vs-private-label", "spread")}
-
-
 def test_design_sample_copy_round_trips_to_the_kit_data(reg, samples):
     wrong = []
     for row in samples:
         if not row["nodes"]:
             continue                      # the kit's sample draws nothing either
         plate = reg.get(row["key"])
-        stem = re.sub(r"-(16x9|9x16)$", "", plate.key.split("/", 1)[1])
         want = row["data"]
         fill = build_fill(reg, _tag(plate, row["text"], want))
         if fill.problems:
@@ -424,8 +418,7 @@ def test_design_sample_copy_round_trips_to_the_kit_data(reg, samples):
         got = S.plate_data(plate, fill.values).data
 
         def bad(what: str, a, b) -> None:
-            if (stem, what.split()[0]) not in _OPEN_WITH_DESIGN:
-                wrong.append(f"{row['key']}: {what} is {b!r}, the kit's is {a!r}")
+            wrong.append(f"{row['key']}: {what} is {b!r}, the kit's is {a!r}")
 
         # Figures drawn off the plate's own type are compared to its rounding.
         text = row["text"]
@@ -548,7 +541,7 @@ def test_every_hour_keys_the_same_ink(reg):
 
 def test_the_gap_is_not_filled_where_the_two_lines_add_up(reg):
     """price and volume ADD to organic growth; the area between them measures
-    nothing, and the plate's caution says not to fill it."""
+    nothing, and the plot publishes `spreadFill: false`."""
     series = {"series": "8,7,6,4,4,3,2,2", "series2": "-2,-3,-3,-3,-2,-2,-1,0"}
     for stem in ("price-vs-volume", "traffic-vs-ticket", "net-price-vs-volume"):
         got = S.plate_data(reg.get(f"charts/{stem}-16x9"), series)

@@ -5,7 +5,6 @@
   "emit/manifest.json": "One record per asset. Per-asset facts: what it is, how it plays, what it contains.",
   "emit/plates.json": "One record per emitted PLATE (asset × hour × aspect). Per-plate facts: geometry, fills, boxes."
  },
-
  "manifest.json": {
   "C": "number — the anchor constant. Rule 8 compares it against the value derived from design-tokens.json and fails on disagreement. Emit it so the two can be checked against each other; never as the source.",
   "assets": {
@@ -14,7 +13,7 @@
     "dir": "string — the folder, carried from the rename map",
     "playback": "'loop' | 'overlay' | 'still' — rule 9",
     "fps": "number — rule 9",
-    "frameCount": "number — rule 9; 3 for base/-talk/-idle, 2 for -blink (§3.5)",
+    "frameCount": "number — rule 9. Host: 6 for -talk (six mouths, rebuild-31), 3 for -idle, 2 for -blink, 1 for the still. Plates: 3 (breathing rule offsets); transitions 8, or 4 for the -short wipes; annotations 1.",
     "hostAnchor": "[x, y, w, h] or null — required when role is 'host'",
     "gradients": "number — rule 1 fails on any non-zero",
     "partialOpacity": "number — rule 2 fails on any non-zero; count of nodes whose opacity is neither 0 nor 1",
@@ -22,7 +21,6 @@
    }
   }
  },
-
  "plates.json": {
   "figureInkAspect": "number — the figure's ink width divided by the 720-unit box height. Rule 16 checks every anchor width equals height × this. An anchor publishes a HEIGHT; the width is derived (§4.4a).",
   "plates": [
@@ -46,10 +44,22 @@
    }
   ]
  },
-
  "_notes": [
   "Rules 5, 8, 12, 17 and 18 read design-tokens.json alone and run today — they were verified against the real tokens at rebuild-06 and agree to the digit with the review surface.",
   "Every other rule reports needs-data until the emitter writes these two files. needs-data is a schedule; DID NOT RUN is a defect. --check exits non-zero on the second, not the first (§8).",
   "engine/audit.legacy.js is the predecessor's boil metric, kept because it settled a real disagreement about over-boiled assets. It measures stroke motion, and §6 removes the strokes it measured — it becomes live again only if annotations/ are rebuilt with strokes."
- ]
+ ],
+ "motion.json": {
+  "_generated": "engine/emit.js from engine/motion.js (rebuild-40); audit rule 31 checks it",
+  "moves": "[{id, group, frames, playback, ease, appliesTo, how}] — 13 moves at 12 fps. `how` names the motion.js function a renderer calls per frame.",
+  "timings": "{ 'tick-over': {startFrame 3, startSeconds 0.25, frames 6, holdFrames 24}, 'source-tag': {tag sizes, gap 24, safeBottom, left, default}, highlight: {weight 5, gap 2, widthOfBox 0.8}, 'zoom-to-slot': {pad 60}, 'line-draw': {bleed 14} }",
+  "anchors.plates[<plate key>]": "{ <move id>: null | {slot, box, …} } for every slot table. count-up / pen-circle: {slot, box, align, size, adv, shrink:\"ink\"} — ring inkBox(box, text, fittedSize, align, adv). line-draw: {slot, box, bleed, also?}. bars-grow: {slot, box, columns:[{slots, box}]} oldest first. highlight: {slot, box, lines?} — underline the last line the copy sets. zoom-to-slot: {slot, box, pad}. tick-over: chapter-bumper only. slide-in: the source tag on this plate, {box, clear, covers?}; clear:false means do not lay the tag over this plate.",
+  "rooms.byId[<room id>]": "{ flicker:[i], lamp:[i], panes:[{shape, kind:\"window\"|\"door\", box}], daylight:[i], bulbs:[{shape, phase}], pin? } — i indexes the room’s shape list (the nth <path> of the room file); boxes in room units (320 x 180)."
+ },
+ "slots.json": {
+  "inks": "Every ink a slot or its data names is one of the nine: ground, band, rule, axis, quiet, structure, subject, subject2, attention. (\"up\"/\"down\"/\"neutralData\" are legacy palette keys for legend swatches, never data inks.)",
+  "aspect": "A plate’s aspect is its name’s suffix (-16x9 / -9x16); meta.aspect agrees from rebuild-40.",
+  "weight": "A marker that publishes weight is drawn at that weight by the data layer (rebuild-40); otherwise 8.",
+  "paperInk": "Type on a paper or cream box uses the dusk inks at both hours (attention #A8243C, 5.79:1 on cream #F2E8D4). The night attention #F07A5A is for dark grounds only."
+ }
 }

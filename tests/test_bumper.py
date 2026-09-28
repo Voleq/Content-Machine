@@ -49,7 +49,8 @@ def _num_box(reg):
 
 def test_the_number_turns_over_and_nothing_else_changes(frames, reg):
     box = _num_box(reg)
-    first = int(round(B.TICK_AT_S * M.FPS))
+    first, _ = B.tick_timing(reg, reg.get(reg.aspect_key("structure/chapter-bumper", "16x9")))
+    assert first == 3, "design's tick-over starts on the fourth frame of the hold"
     a = [np.asarray(f.convert("RGB"), dtype=np.int16) for f in frames]
     # Before the tick the old number holds; after six frames the new one does.
     assert np.abs(a[0] - a[first]).max() < 60      # boil only

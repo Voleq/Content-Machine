@@ -362,8 +362,9 @@ def test_the_flicker_is_motion_js_frame_for_frame(installed):
 
 
 def test_the_windows_are_the_only_rooms_with_weather(installed):
-    """No window pane is inside any 9:16 crop, and doorway-wide's lit door is
-    not a window, so rain is the long's, on the three window angles."""
+    """doorway-wide's lit door is not a window, so rain falls on the window
+    angles only. window-talk (rebuild-40) is the one whose 9:16 crop keeps its
+    pane, so it is the one room where a short shows the weather."""
     rooms = [p for k, p in sorted(installed.all_plates().items())
              if p.family == "room" and p.hour in ("", installed.base_hour)]
     if not any(p.loops for p in rooms):
@@ -371,11 +372,14 @@ def test_the_windows_are_the_only_rooms_with_weather(installed):
 
     wet = {p.key for p in rooms if p.weathers}
     assert wet == {"room/desk-wide-16x9", "room/window-wall-16x9",
-                   "room/window-wide-16x9"}
+                   "room/window-wide-16x9", "room/window-talk-16x9",
+                   "room/window-talk-9x16"}
     snowing = {p.key for p in rooms if "window-snow" in p.loops}
     assert snowing == {"room/desk-wide-christmas-16x9",
                        "room/window-wall-christmas-16x9",
-                       "room/window-wide-christmas-16x9"}
+                       "room/window-wide-christmas-16x9",
+                       "room/window-talk-christmas-16x9",
+                       "room/window-talk-christmas-9x16"}
     for p in rooms:
         if p.season:
             assert "lights-twinkle" in p.loops, p.key
@@ -386,7 +390,7 @@ def test_every_twin_names_the_angle_it_dresses(installed):
     if not twins:
         pytest.skip("the installed kit predates the December switch; re-run the ingest")
 
-    assert len(twins) == 28, "fourteen rooms at two aspects"
+    assert len(twins) == 30, "fifteen rooms at two aspects"
     for p in twins:
         assert p.season == "christmas"
         assert p.dressed_from in installed.assets, p.key

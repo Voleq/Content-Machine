@@ -1,6 +1,6 @@
 """Design's chapter bumper and its wipes, as clips the LONG lays over its cut.
 
-THE BUMPER IS A COUNT, NOT A CARD. Rebuild-39's `structure/chapter-bumper`
+THE BUMPER IS A COUNT, NOT A CARD. The kit's `structure/chapter-bumper`
 is the full frame between chapters: the chapter number large, "OF SEVEN", the
 chapter's title and the episode, held for two seconds (the plate publishes
 the hold). Its number is the one thing that changes between two bumpers in
@@ -31,12 +31,29 @@ log = logging.getLogger(__name__)
 
 FPS = M.FPS
 
-# WHEN THE NUMBER TURNS OVER, inside the bumper's two seconds. Design
-# publishes the hold and the move's six frames but not where in the hold the
-# move starts (item 33 of the motion plan asks them to). A quarter of a
-# second in: the slats have opened on the old number, and the new one has
-# landed with most of the two seconds left to read the title.
-TICK_AT_S = 0.25
+# WHEN THE NUMBER TURNS OVER, inside the bumper's two seconds, is design's:
+# `timings["tick-over"]` in emit/motion.json, repeated on the bumper's own
+# tick-over anchor. The old number is read for a quarter second (frame 3,
+# counted from 0), turns over in six frames, and the new one holds the rest.
+# These are the kit's numbers, used only by a kit that does not publish them.
+TICK_START_FRAME = 3
+TICK_FRAMES = 6
+
+
+def tick_timing(reg, plate=None) -> tuple[int, int]:
+    """(first frame, frames) of the tick-over inside the bumper's hold.
+
+    The bumper's own anchor first, then the kit's timings, then the numbers
+    above: a kit that moves the tick moves it here.
+    """
+    anchor = ((getattr(plate, "motion", None) or {}).get("tick-over") or {}) \
+        if plate is not None else {}
+    timing = (getattr(reg, "motion_timings", None) or {}).get("tick-over") or {}
+    spec = (getattr(reg, "motion_moves", None) or {}).get("tick-over") or {}
+    start = anchor.get("startFrame", timing.get("startFrame", TICK_START_FRAME))
+    frames = anchor.get("frames") or timing.get("frames") or spec.get("frames") \
+        or TICK_FRAMES
+    return int(start), int(frames)
 
 
 @dataclass(frozen=True)
@@ -49,6 +66,7 @@ class Clip:
     name: str
     move: str            # design's id, for the move record ("tick-over", "wipe-blinds")
     cut: float | None = None
+    tick_frame: int = 0  # a bumper: the frame its number starts to turn over
 
 
 def spelled(n: int) -> str:
@@ -92,9 +110,7 @@ def bumper_frames(reg, settings, *, aspect: str, n: int, total: int, title: str,
     rest = {k: v for k, v in values.items() if k != "num" and plate.slot(k) is not None}
     hold = float(plate.hold_s or 2.0)
     count = max(int(round(hold * FPS)), 1)
-    spec = (getattr(reg, "motion_moves", None) or {}).get("tick-over") or {}
-    tick_frames = int(spec.get("frames") or 6)
-    first = int(round(TICK_AT_S * FPS))
+    first, tick_frames = tick_timing(reg, plate)
 
     s = max(int(plate.export_scale or 1), 1)
     slot = plate.slots["num"]
@@ -167,8 +183,9 @@ def bumper_clip(reg, settings, out: Path, *, aspect: str, at: float, n: int,
                     "without one", aspect, n)
         return None
     frames_to_alpha_clip(frames, FPS, out)
+    plate = reg.get(reg.aspect_key("structure/chapter-bumper", aspect))
     return Clip(out, at, at + len(frames) / FPS, f"bumper_{n}", "tick-over",
-                cut=at)
+                cut=at, tick_frame=tick_timing(reg, plate)[0])
 
 
 def wipe_clip(reg, out: Path, *, name: str, aspect: str, cut: float,
@@ -189,4 +206,4 @@ def wipe_clip(reg, out: Path, *, name: str, aspect: str, cut: float,
 
 def tick_start(clip: Clip) -> float:
     """Programme time of the tick-over's first frame inside a bumper clip."""
-    return clip.start + math.floor(TICK_AT_S * FPS + 0.5) / FPS
+    return clip.start + clip.tick_frame / FPS

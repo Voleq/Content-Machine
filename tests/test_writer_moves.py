@@ -83,10 +83,11 @@ def test_a_plate_offers_only_the_moves_its_kit_anchors_publish(reg):
     assert big == {"count-up": "value"}, "the big figure is never ringed"
     assert writer_moves(reg.get("charts/earnings-vs-cash-16x9")) == {
         "count-up": "gap", "pen-circle": "gap"}
-    assert "count-up" not in writer_moves(reg.get("charts/bars-6y-16x9")), \
-        "the first bar is the oldest year"
-    assert not {"count-up", "pen-circle"} & set(
-        writer_moves(reg.get("tables/numbers-sheet-4r-16x9")))
+    # A row of figures resolves to its LATEST column, the year being talked
+    # about (design, rebuild-40), never the oldest.
+    assert writer_moves(reg.get("charts/bars-6y-16x9"))["count-up"] == "value-6"
+    sheet = writer_moves(reg.get("tables/numbers-sheet-4r-16x9"))
+    assert sheet["count-up"] == sheet["pen-circle"] == "cell-1-6"
     quote = writer_moves(reg.get("cards/quote-pull-16x9"))
     assert quote["highlight"] == "body"
     assert "zoom-to-slot" not in quote, "zoom is for paper only"
@@ -361,13 +362,14 @@ def test_the_long_menu_marks_where_each_move_lands(settings):
         i = next(i for i, l in enumerate(lines) if l.strip().startswith(name))
         return next(l for l in lines[i:] if "slots:" in l)
 
-    assert slots_line(long, "big-number-l1-16x9").endswith("◆value")
+    # The big figure fills the tag's spot, so a [SOURCE] has no room on it.
+    assert slots_line(long, "big-number-l1-16x9").endswith("◆value  ✕source")
     assert slots_line(long, "filing-page-16x9").endswith("◆kicker  ▭passage")
     assert "▭" not in slots_line(long, "big-number-l1-16x9")
 
     short = plate_catalogue(settings, fmt="short")
-    assert "◆" not in short and "[MOVE" not in short, \
-        "a short has no [MOVE] grammar"
+    assert "◆" not in short and "[MOVE" not in short and "✕source" not in short, \
+        "a short has no [MOVE] or [SOURCE] grammar"
 
 
 def test_the_chapter_types_carry_the_pen_circle_ration(settings):

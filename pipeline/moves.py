@@ -4,7 +4,7 @@ looks like.
 WHY THE SHORTS FELT SLOW WAS NOT THE NUMBER OF CUTS. Faster means a new piece
 of information on screen every couple of seconds, landing on the word that says
 it: the number counting up as it is said, the chart drawing on, the line being
-read getting underlined. Design's rebuild-39 publishes exactly those moves
+read getting underlined. Design's kit publishes exactly those moves
 (`kit/engine/motion.js`, ported in :mod:`pipeline.motion`), and this module
 decides where they go and draws them.
 
@@ -26,7 +26,10 @@ layer, an underline or a ring is drawn over the top, a zoom crops the lot.
 
 Rules every move keeps (design's DESIGN.md §5): nothing fades; things draw on,
 grow, slide, or appear on a frame. The ink is the slot's published ink or the
-room's own material.
+room's own material. Where a move lands is design's anchor (`Plate.motion`):
+the plot a line draws on and the bleed round it, the columns bars grow in, the
+lines a highlight underlines, the spot a source tag slides into and whether
+that spot is clear. Nothing here places a move by eye.
 """
 
 from __future__ import annotations
@@ -61,9 +64,9 @@ MOVE_GAP_S = 0.15
 # A move that cannot finish this long before its shot ends is not started.
 # Half a count-up under a cut is a number the viewer never saw land.
 END_MARGIN_S = 0.15
-# A shot that opens under a wipe keeps its moves until the cover has gone:
-# the cut is on the fourth of eight frames, the last four uncover it.
-AFTER_WIPE_S = 4 / FPS
+# A shot that opens under a wipe keeps its moves until the cover has gone
+# (`Wipe.end`): on design's eight-frame wipes the last four frames uncover the
+# cut, on the four-frame short ones the last two.
 
 # THE CIRCLE IS RARE, AND NEVER ROUND A WHOLE PLATE. Valentin's word on the
 # plan (26 Sep 2026): "please make it that he doesn't abuse circling the whole
@@ -89,9 +92,9 @@ VERDICT_SHOTS = ("payoff", "the-print")
 ZOOM_MIN = 1.12
 ZOOM_MAX = 1.6
 
-# A slot counts up only when it holds exactly ONE figure: design's anchor also
-# lands on units, kickers, dates and the first cell of a sheet, and counting
-# up "FY2025" or the oldest year's revenue is noise, not information.
+# A slot counts up only when it holds exactly ONE figure: design's anchor can
+# land on a unit, a kicker or a date, and counting up "FY2025" is noise, not
+# information.
 _ONE_FIGURE = re.compile(
     r"^\(?[+\-−]?[$€£]?\d[\d,]*(?:\.\d+)?"
     r"\s?(?:%|x|×|bn|b|m|k|tn|pt|pts|bps)?\)?$", re.IGNORECASE)
@@ -161,16 +164,17 @@ class Move:
 
     def row(self) -> dict:
         return {"move": self.move, "start": round(self.start, 3),
-                "shot_id": self.shot_id, "slot": self.slot}
+                "shot_id": self.shot_id, "slot": self.slot, "frames": self.frames}
 
 
 @dataclass(frozen=True)
 class Wipe:
-    """A wipe over a cut: design's eight frames, the cut under the fourth.
+    """A wipe over a cut, on design's frames, the cut under its `cutAt`.
 
-    Frame f of a wipe is t = (f + 1) / 8, so its first frame already covers a
-    quarter of the frame, the cover is full on frame 3 and the two shots are
-    cut under it there. It starts three frames before the cut.
+    The eight-frame wipes cover the frame fully on their fourth frame and the
+    four-frame short ones on their second (`meta.transition.cutAt`, counted
+    from one; that frame is fully opaque). The two shots are cut under it, so
+    the wipe starts `cut_frame` frames before the cut.
     """
 
     key: str
@@ -254,6 +258,27 @@ def _catalogue(reg, move: str) -> tuple[int, str | None]:
     spec = (getattr(reg, "motion_moves", None) or {}).get(move) or {}
     frames, ease = _CATALOGUE.get(move, (8, "out"))
     return int(spec.get("frames") or frames), spec.get("ease", ease)
+
+
+def _columns(plate) -> list[dict]:
+    """A bars-grow's columns on `plate`, oldest first, as design anchors them."""
+    got = ((plate.motion or {}).get("bars-grow") or {}).get("columns") if plate else None
+    return [c for c in (got or ()) if isinstance(c, dict) and isinstance(c.get("box"), dict)]
+
+
+def _plot_slot(plate, move: str) -> str:
+    """The plot a line-draw or bars-grow acts on, by the anchor's own name."""
+    return str(((plate.motion or {}).get(move) or {}).get("slot") or "plot-area")
+
+
+def _frames(reg, plate, move: str) -> tuple[int, str | None]:
+    """(frames, ease) of `move` on `plate`. A bars-grow lasts its catalogue
+    frames plus one for every column after the first: each column starts one
+    frame after the one before (design's `stagger`)."""
+    frames, ease = _catalogue(reg, move)
+    if move == "bars-grow":
+        frames += max(len(_columns(plate)) - 1, 0)
+    return frames, ease
 
 
 def _said_forms(figure: str) -> list[list[str]]:
@@ -344,8 +369,8 @@ def _figure_slots(plate, values: dict, lit: str = "") -> list[str]:
     """The slots on this plate holding one figure worth counting, top first.
 
     A sheet's cells are not counted, except the latest figure of the row the
-    shot lights: design's anchor on every sheet is the FIRST cell, the oldest
-    year, which is the one number on the sheet nobody is talking about.
+    shot lights: design's anchor on a sheet is the latest figure of its FIRST
+    row, and the row a short is talking about is the one it lights.
     """
     anchor = ((plate.motion or {}).get("count-up") or {}).get("slot")
     if anchor and _CELL.match(anchor):
@@ -426,16 +451,23 @@ def circle_box(plate, slot_name: str, value: str, settings, reg):
     return box
 
 
-def zoom_pad(canvas: tuple[float, float], box) -> float:
-    """Design's 60-unit pad, widened when a small slot would push in past
-    ZOOM_MAX: the view never gets narrower than the canvas over ZOOM_MAX."""
+def zoom_pad(canvas: tuple[float, float], box, pad: float = 60.0) -> float:
+    """Design's pad (60, on the anchor), widened when a small slot would push
+    in past ZOOM_MAX: the view never gets narrower than the canvas over
+    ZOOM_MAX."""
     ar = canvas[0] / canvas[1]
     target = canvas[0] / ZOOM_MAX
-    return max(60.0, min((target - box.w) / 2, (target / ar - box.h) / 2))
+    return max(float(pad), min((target - box.w) / 2, (target / ar - box.h) / 2))
+
+
+def _zoom_pad_of(plate) -> float:
+    got = ((plate.motion or {}).get("zoom-to-slot") or {}).get("pad")
+    return float(got) if isinstance(got, (int, float)) else 60.0
 
 
 def _zoom_factor(plate, box) -> float:
-    vx, vy, vw, vh = M.zoom_box(plate.canvas, box, 1.0, zoom_pad(plate.canvas, box))
+    vx, vy, vw, vh = M.zoom_box(plate.canvas, box, 1.0,
+                                zoom_pad(plate.canvas, box, _zoom_pad_of(plate)))
     return plate.canvas[0] / max(vw, 1.0)
 
 
@@ -493,6 +525,10 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
     # WIPES FIRST: a shot a wipe opens holds its moves until the cover goes.
     plan.wipes = plan_wipes(fmt, result, reg, seed=seed, max_wipes=max_wipes)
     wiped_in = {w.shot_in: w for w in plan.wipes}
+    # A SOURCE WITH NOWHERE CLEAR TO GO on its own plate goes on the next shot
+    # that has room for it, a room or host shot or a plate whose spot is
+    # clear; never over the figures it would cover (design, rebuild-40).
+    carried: tuple[str, str] | None = None
 
     first = next(iter(result.spans), None)
     # A BEAT SPLIT FOR RUNNING LONG is one drawing seen twice, wide then
@@ -506,20 +542,31 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
         beat = getattr(shot, "part_of", "") or shot.id
         closer = getattr(shot, "part", 0) == 2
         layer = plate_layers.get(shot.id)
-        if layer is None:
-            continue
-        plate = reg.get(layer.entry_key)
+        plate = reg.get(layer.entry_key) if layer is not None else None
+        own = sources.get(shot.id) or sources.get(beat) \
+            or sources.get(beat.rsplit("-", 1)[0])
         if plate is None:
+            if carried is not None and not own and span.end > span.start:
+                t0 = float(span.start)
+                wipe = wiped_in.get(shot.id)
+                tag = _source_tag(reg, fmt, None, shot.id, carried[0], None,
+                                  t0, float(span.end),
+                                  max(t0, wipe.end) if wipe else t0)
+                if tag is not None:
+                    plan.tags.append(tag)
+                    tagged.add(carried[1])
+                    carried = None
             continue
         values = dict(layer.values)
         motion = plate.motion or {}
         lit = shot.lit or ""
         t0, t1 = layer.t_start, layer.t_end
-        earliest = t0 + (AFTER_WIPE_S if shot.id in wiped_in else 0.0)
+        wipe = wiped_in.get(shot.id)
+        earliest = max(t0, wipe.end) if wipe else t0
         lane = _Lane(t0, t1, earliest)
 
         def new(move: str, slot: str, text: str = "", seed_: int = 5) -> Move:
-            frames, ease = _catalogue(reg, move)
+            frames, ease = _frames(reg, plate, move)
             return Move(move, shot.id, layer.name, slot, t0, frames, ease,
                         text=text, seed=seed_)
 
@@ -527,9 +574,9 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
         #    bar chart's columns up from the baseline.
         kind = _data_kind(plate, values) if not closer else None
         if kind == "line" and motion.get("line-draw"):
-            lane.place(new("line-draw", "plot-area"), earliest)
+            lane.place(new("line-draw", _plot_slot(plate, "line-draw")), earliest)
         elif kind == "bars" and motion.get("bars-grow"):
-            lane.place(new("bars-grow", "plot-area"), earliest)
+            lane.place(new("bars-grow", _plot_slot(plate, "bars-grow")), earliest)
 
         # 2. ROWS LIGHT AS THEY ARE READ. A sheet told `lit: "read"` lights
         #    each row's band when its label is spoken, and they stay lit, so
@@ -600,14 +647,29 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
 
         plan.moves += lane.moves
 
-        # 5. THE SOURCE SLIDES IN under the figure once it has landed.
-        src = sources.get(shot.id) or sources.get(beat) \
-            or sources.get(beat.rsplit("-", 1)[0])
-        if src and beat not in tagged:
+        # 5. THE SOURCE SLIDES IN under the figure once it has landed, where
+        #    design says the plate has room for it; where it has none, on the
+        #    next shot that does.
+        src, whose = (own, beat) if own else (carried or (None, None))
+        if src and whose not in tagged:
+            if not tag_clear(plate):
+                if own:
+                    if carried is not None and carried[1] != beat:
+                        plan.skipped.append(
+                            f"{shot.id}: the source carried from {carried[1]} gave way "
+                            f"to this shot's own")
+                    carried = (own, beat)
+                continue
             tag = _source_tag(reg, fmt, plate, shot.id, src, lane, t0, t1, earliest)
             if tag is not None:
                 plan.tags.append(tag)
-                tagged.add(beat)
+                tagged.add(whose)
+                if not own:
+                    carried = None
+    if carried is not None:
+        plan.skipped.append(
+            f"{carried[1]}: no source tag, its plate has no clear spot for one "
+            f"and no later shot had room")
     return plan
 
 
@@ -640,48 +702,84 @@ def _ink_box(plate, slot_name: str, value: str, settings, reg):
     return M.Box(got[0] / s, got[1] / s, got[2] / s, got[3] / s)
 
 
-# Where the source tag rests on a vertical frame: clear of the platform's
-# buttons (design's shorts safe band stops at 1560 of 1920), left-aligned with
-# the plates' own margin. Design publishes no position for it (item 33 asks).
-TAG_MARGIN = 24
+def tag_clear(plate) -> bool:
+    """Whether the source tag can rest over `plate` without covering it.
+
+    Design's `slide-in` anchor applies the tag's rule to the plate's own slots
+    and says so (`clear`), naming what the tag would cover where it is not. A
+    plate with no such anchor is a kit before it, and keeps the old answer.
+    """
+    spot = ((plate.motion or {}).get("slide-in") or {}) if plate is not None else {}
+    return spot.get("clear") is not False
 
 
-def tag_rect(tag, plate, frame: tuple[int, int]) -> tuple[int, int, int, int]:
+def tag_rect(tag, plate, frame: tuple[int, int], reg=None) -> tuple[int, int, int, int]:
     """Where the source tag rests over `plate` drawn at `frame`: (x, y, w, h).
 
-    Scaled with the plate, above its safe bottom (design's 1560 of 1920 on a
-    vertical frame), centred in the vertical frame's width, which leaves it
-    on the plates' own margin, and on that margin on a horizontal one.
+    Design's spot: the plate's own `slide-in` anchor, or with no plate (a room
+    or host shot) the kit's default for the aspect (`timings["source-tag"]`),
+    scaled with the frame. On 16:9 its left edge is on the 5% margin (x 96);
+    on 9:16 it is centred; either way 24 above the lower of the safe bottom
+    and the plate's caption.
     """
     fw, fh = frame
+    land = fw > fh
+    aspect = "16x9" if land else "9x16"
     w, h = tag.canvas
-    k = fw / (1920 if fw > fh else 1080)
-    w, h = int(w * k), int(h * k)
-    safe_bottom = (plate.safe or {}).get("bottom") if isinstance(plate.safe, dict) else None
-    bottom = int((safe_bottom or (1560 if fh > fw else 1032)) * fh / (1920 if fh > fw else 1080))
-    x = (fw - w) // 2 if fh > fw else int(80 * k)
-    y = bottom - h - int(TAG_MARGIN * k)
-    return x, y, w, h
+    spot = ((plate.motion or {}).get("slide-in") or {}).get("box") if plate is not None else None
+    rule = (getattr(reg, "motion_timings", None) or {}).get("source-tag") or {}
+    if not spot:
+        spot = (rule.get("default") or {}).get(aspect)
+    if not spot:
+        # A kit that publishes no spot at all: design's rule, as its text says.
+        spot = {"x": 96 if land else (1080 - w) / 2,
+                "y": (1026 if land else 1560) - 24 - h}
+    base = plate.canvas[0] if plate is not None else (1920 if land else 1080)
+    k = fw / base
+    return (int(round(spot["x"] * k)), int(round(spot["y"] * k)),
+            int(round(w * k)), int(round(h * k)))
 
 
-def _source_tag(reg, fmt, plate, shot_id: str, text: str, lane: _Lane,
+def _source_tag(reg, fmt, plate, shot_id: str, text: str, lane: "_Lane | None",
                 t0: float, t1: float, earliest: float) -> Tag | None:
     """The source tag for one shot, or None when the plate prints its own
-    source or the shot is too short to slide it in and read it."""
-    if plate.slot("source") is not None:
+    source or the shot is too short to slide it in and read it. `plate` is
+    None on a room or host shot, which takes the kit's default spot."""
+    if plate is not None and plate.slot("source") is not None:
         return None
     aspect = getattr(fmt, "aspect", "") or "9x16"
     key = reg.aspect_key("overlays/source-tag", aspect) if hasattr(reg, "aspect_key") else None
     tag = reg.get(key) if key else None
     if tag is None:
         return None
-    x, y, w, h = tag_rect(tag, plate, fmt.frame)
-    figs = [m for m in lane.moves if m.move in ("count-up", "line-draw", "bars-grow")]
+    x, y, w, h = tag_rect(tag, plate, fmt.frame, reg)
+    figs = [m for m in (lane.moves if lane is not None else ())
+            if m.move in ("count-up", "line-draw", "bars-grow")]
     start = max(earliest + 0.3, figs[0].end + MOVE_GAP_S if figs else earliest + 0.3)
     if start + 1.5 > t1:
         return None
     return Tag(key=tag.key, shot_id=shot_id, text=text, start=start, end=t1,
                x=x, y=y, w=w, h=h)
+
+
+# THE SHORTS WIPE IN FOUR FRAMES. Design drew each wipe again at a third of a
+# second for the vertical frame (`overlays/wipe-*-short`), cut under its
+# second frame, and a short is the lane that has to move fast.
+SHORT_WIPE_SUFFIX = "-short"
+
+
+def wipe_plate(reg, name: str, aspect: str):
+    """The wipe `name` at `aspect`: on a vertical frame the kit's four-frame
+    short cut of it where the kit has one, else the wipe itself."""
+    if not hasattr(reg, "aspect_key"):
+        return None
+    names = ([name + SHORT_WIPE_SUFFIX] if aspect == "9x16" else []) + [name]
+    for n in names:
+        key = reg.aspect_key(f"overlays/{n}", aspect)
+        plate = reg.get(key) if key else None
+        if plate is not None:
+            return plate
+    return None
 
 
 def plan_wipes(fmt, result, reg, *, seed: str = "", max_wipes: int = 3) -> list[Wipe]:
@@ -703,8 +801,7 @@ def plan_wipes(fmt, result, reg, *, seed: str = "", max_wipes: int = 3) -> list[
         if not enter.startswith("wipe") or len(got) >= max_wipes:
             continue
         name = enter if enter != "wipe" else order[len(got) % 2]
-        key = reg.aspect_key(f"overlays/{name}", aspect) if hasattr(reg, "aspect_key") else None
-        plate = reg.get(key) if key else None
+        plate = wipe_plate(reg, name, aspect)
         if plate is None:
             continue
         spec = plate.transition or {}
@@ -718,6 +815,42 @@ def plan_wipes(fmt, result, reg, *, seed: str = "", max_wipes: int = 3) -> list[
             continue
         got.append(w)
     return got
+
+
+def underline_line(plate, slot_name: str, value: str, settings, reg):
+    """The line a highlight rules under, in canvas units, or None.
+
+    Design's anchor names the slot's lines where it sets more than one; the
+    rule goes under the line the copy's last line sits in, found from where
+    the type's ink ends. A one-line slot is its box. A slot the anchor does
+    not name is ruled under its ink, as before design published lines.
+    """
+    anchor = (plate.motion or {}).get("highlight") or {}
+    ink = _ink_box(plate, slot_name, value, settings, reg) if settings is not None else None
+    if anchor.get("slot") != slot_name or not isinstance(anchor.get("box"), dict):
+        return None if ink is None else M.Box(ink.x, ink.y + 6, ink.w / 0.8, ink.h)
+    lines = [l for l in (anchor.get("lines") or ()) if isinstance(l, dict)]
+    if not lines:
+        b = anchor["box"]
+        return M.Box(b["x"], b["y"], b["w"], b["h"])
+    pick = lines[0]
+    if ink is not None:
+        foot = ink.y + ink.h
+        for l in lines:
+            if l["y"] < foot:
+                pick = l
+    return M.Box(pick["x"], pick["y"], pick["w"], pick["h"])
+
+
+def _accent_column(plate, values: dict, n: int) -> int | None:
+    """Which bar column the data accents, if it names one: it grows last."""
+    from pipeline import series as S
+
+    try:
+        got = S.plate_data(plate, dict(values)).data.get("accent")
+    except Exception:                                    # noqa: BLE001
+        return None
+    return got if isinstance(got, int) and 0 <= got < n else None
 
 
 # ---------------------------------------------------------------------------
@@ -864,7 +997,7 @@ class MoveCompositor:
                           getattr(layer, "seed", "") or "")
         if data is not None:
             if reveal is not None:
-                data = self._reveal(data, plate, *reveal)
+                data = self._reveal(data, plate, *reveal, values=values)
             img.alpha_composite(data)
         for m, f in live:
             if f is None:
@@ -881,7 +1014,7 @@ class MoveCompositor:
             box = _ink_box(plate, m.slot, values.get(m.slot, ""), self.settings, self.reg)
             if box is not None:
                 vx, vy, vw, vh = M.zoom_box(plate.canvas, box, M.t_of_frame(f, m.frames),
-                                            zoom_pad(plate.canvas, box))
+                                            zoom_pad(plate.canvas, box, _zoom_pad_of(plate)))
                 vw, vh = min(vw, plate.canvas[0]), min(vh, plate.canvas[1])
                 # The push never shows past the plate's edge: design's box is
                 # not held inside the canvas, and an edge of empty ground
@@ -894,40 +1027,71 @@ class MoveCompositor:
             img = img.resize((max(layer.w, 1), max(layer.h, 1)), Image.LANCZOS)
         return img
 
-    def _reveal(self, data, plate, m: Move, f: int | None):
-        """The data layer with the part of the plot not yet drawn cut away.
+    def _reveal(self, data, plate, m: Move, f: int | None, values: dict | None = None):
+        """The data layer with what has not drawn on yet cut away.
 
-        Only inside the plot: a mark or a sparkline elsewhere on the plate is
-        not part of the line and is never hidden by it. The plot is padded
-        20 x 30 units, as design's review page pads it, so the line's stroke
-        and its last point are not clipped at the plot's own edge.
+        Design's clips, off the plate's anchor. A line draws on inside the
+        plot grown by its bleed (and inside every small-multiple panel drawn
+        with it), left to right at a constant speed. Bars grow column by
+        column from the baseline, each clipped to its own column and starting
+        one frame after the one before, the accented column last. Nothing
+        outside those boxes is part of the move, so it is never hidden.
         """
+        anchor = (plate.motion or {}).get(m.move) or {}
+        if m.move == "bars-grow" and _columns(plate):
+            columns = list(_columns(plate))
+            accent = _accent_column(plate, values or {}, len(columns))
+            if accent is not None:
+                columns.append(columns.pop(accent))
+            base = max(m.frames - (len(columns) - 1), 1)
+            shown = []
+            for i, c in enumerate(columns):
+                b = c["box"]
+                k = 0.0 if f is None else M.out(M.stagger(f, i, base))
+                shown.append((M.Box(b["x"], b["y"], b["w"], b["h"]),
+                              M.reveal(M.Box(b["x"], b["y"], b["w"], b["h"]), k, "bottom")))
+            return self._clip(data, plate, shown)
+        boxes = []
+        box = anchor.get("box")
+        if isinstance(box, dict):
+            boxes.append(box)
+        elif plate.slot(m.slot) is not None or plate.slot("plot-area") is not None:
+            sl = plate.slot(m.slot) or plate.slot("plot-area")
+            boxes.append({"x": sl.x, "y": sl.y, "w": sl.w, "h": sl.h})
+        for name in anchor.get("also") or ():
+            sl = plate.slot(str(name))
+            if sl is not None:
+                boxes.append({"x": sl.x, "y": sl.y, "w": sl.w, "h": sl.h})
+        if not boxes:
+            return data
+        bleed = anchor.get("bleed")
+        if not isinstance(bleed, (int, float)):
+            bleed = ((getattr(self.reg, "motion_timings", None) or {})
+                     .get("line-draw") or {}).get("bleed", 14)
+        t = None if f is None else M.t_of_frame(f, m.frames)
+        side = "left-linear" if m.move == "line-draw" else "bottom"
+        shown = []
+        for b in boxes:
+            whole = M.outset(M.Box(b["x"], b["y"], b["w"], b["h"]), float(bleed))
+            shown.append((whole, M.Box(whole.x, whole.y, 0, 0) if t is None
+                          else M.reveal(whole, t, side)))
+        return self._clip(data, plate, shown)
+
+    @staticmethod
+    def _clip(data, plate, parts):
+        """`data` with each (whole, shown) box cut back to what is shown."""
         from PIL import Image
 
-        slot = plate.slot(m.slot) or plate.slot("plot-area")
-        box = ((plate.motion or {}).get(m.move) or {}).get("box")
-        if box:
-            px, py, pw, ph = box["x"], box["y"], box["w"], box["h"]
-        elif slot is not None:
-            px, py, pw, ph = slot.x, slot.y, slot.w, slot.h
-        else:
-            return data
-        px, py, pw, ph = px - 20, py - 30, pw + 40, ph + 60
         s = max(int(plate.export_scale or 1), 1)
-        if f is None:
-            shown = M.Box(px, py, 0, 0)
-        elif m.move == "line-draw":
-            shown = M.reveal(M.Box(px, py, pw, ph), M.t_of_frame(f, m.frames), "left-linear")
-        else:
-            shown = M.reveal(M.Box(px, py, pw, ph), M.t_of_frame(f, m.frames), "bottom")
         out = data.copy()
-        hide = Image.new("RGBA", (int(pw * s) + 1, int(ph * s) + 1), (0, 0, 0, 0))
-        ox, oy = int(px * s), int(py * s)
-        if shown.w > 0 and shown.h > 0:
-            keep = data.crop((int(shown.x * s), int(shown.y * s),
-                              int((shown.x + shown.w) * s), int((shown.y + shown.h) * s)))
-            hide.paste(keep, (int(shown.x * s) - ox, int(shown.y * s) - oy))
-        out.paste(hide, (ox, oy))
+        for whole, shown in parts:
+            ox, oy = int(whole.x * s), int(whole.y * s)
+            hide = Image.new("RGBA", (int(whole.w * s) + 1, int(whole.h * s) + 1), (0, 0, 0, 0))
+            if shown.w > 0 and shown.h > 0:
+                keep = data.crop((int(shown.x * s), int(shown.y * s),
+                                  int((shown.x + shown.w) * s), int((shown.y + shown.h) * s)))
+                hide.paste(keep, (int(shown.x * s) - ox, int(shown.y * s) - oy))
+            out.paste(hide, (ox, oy))
         return out
 
     def _draw_band(self, img, plate, m: Move, f: int) -> None:
@@ -952,22 +1116,27 @@ class MoveCompositor:
 
     def _draw_underline(self, img, plate, m: Move, f: int, value: str) -> None:
         """Design's highlight: a rule under the line being read, drawn on from
-        the left. Under the type's own ink rather than the slot's box, which
-        on a nine-line hook box sits a third of the frame below the words."""
+        the left. `TIMINGS.highlight`: 2 under the line, 5 thick, 0.8 of the
+        line's width. The line is the anchor's line the copy's last line sits
+        in (`lines`), or the anchor's box on a one-line slot; a slot with no
+        anchor is ruled under the type's own ink."""
         from PIL import ImageDraw
 
-        box = _ink_box(plate, m.slot, value, self.settings, self.reg)
-        if box is None:
-            return
         s = max(int(plate.export_scale or 1), 1)
         slot = plate.slots[m.slot]
         ink = self._ink(plate, slot.underline or "attention")
-        shown = M.reveal(box, M.t_of_frame(f, m.frames), "left")
+        rule = (getattr(self.reg, "motion_timings", None) or {}).get("highlight") or {}
+        gap, weight = float(rule.get("gap", 2)), float(rule.get("weight", 5))
+        share = float(rule.get("widthOfBox", 0.8))
+        line = underline_line(plate, m.slot, value, self.settings, self.reg)
+        if line is None:
+            return
+        shown = M.reveal(line, M.t_of_frame(f, m.frames), "left")
         if shown.w <= 0:
             return
-        y = (box.y + box.h + 8) * s
+        y = (line.y + line.h + gap) * s
         ImageDraw.Draw(img).rectangle(
-            [box.x * s, y, (box.x + shown.w) * s, y + 5 * s], fill=ink)
+            [line.x * s, y, (line.x + shown.w * share) * s, y + weight * s], fill=ink)
 
     def _draw_ring(self, img, plate, m: Move, f: int, value: str) -> None:
         """The pen's ring round the figure's ink, as much of it as is drawn."""
@@ -1032,14 +1201,14 @@ def plan_segment(plate, values: dict, rows: Sequence[dict], *, seg_len: float,
     motion = plate.motion or {}
 
     def new(move: str, slot: str, text: str = "") -> Move:
-        frames, ease = _catalogue(reg, move)
+        frames, ease = _frames(reg, plate, move)
         return Move(move, shot_id, layer, slot, 0.0, frames, ease, text=text)
 
     kind = _data_kind(plate, values)
     if kind == "line" and motion.get("line-draw"):
-        lane.place(new("line-draw", "plot-area"), 0.0)
+        lane.place(new("line-draw", _plot_slot(plate, "line-draw")), 0.0)
     elif kind == "bars" and motion.get("bars-grow"):
-        lane.place(new("bars-grow", "plot-area"), 0.0)
+        lane.place(new("bars-grow", _plot_slot(plate, "bars-grow")), 0.0)
 
     for r in sorted(rows, key=lambda r: (float(r.get("at") or 0.0), int(r.get("order") or 0))):
         move, slot = str(r.get("move") or ""), str(r.get("slot") or "")
@@ -1206,21 +1375,24 @@ class TagClip:
 def source_tag_clip(reg, settings, out: Path, *, text: str, plate, aspect: str,
                     panel: tuple[int, int, int, int]) -> TagClip | None:
     """Design's source tag for a LONG beat, sliding in under `plate` as it is
-    placed on the frame (`panel` is its x, y, w, h), or None when the kit has
-    no tag at this aspect or the plate prints its own source."""
+    placed on the frame (`panel` is its x, y, w, h), into the spot design
+    gives it on that plate. None when the kit has no tag at this aspect, the
+    plate prints its own source, or design says the plate has no clear spot
+    for one (the parser refuses a [SOURCE] there, so this is the backstop)."""
     from PIL import Image
 
     from pipeline.plate_frames import render_frame
     from pipeline.rasters import held_frames_to_alpha_clip
 
-    if plate is None or plate.slot("source") is not None or not str(text).strip():
+    if plate is None or plate.slot("source") is not None or not str(text).strip() \
+            or not tag_clear(plate):
         return None
     key = reg.aspect_key("overlays/source-tag", aspect) if hasattr(reg, "aspect_key") else None
     tag = reg.get(key) if key else None
     if tag is None:
         return None
     px, py, pw, ph = panel
-    x, y, w, h = tag_rect(tag, plate, (pw, ph))
+    x, y, w, h = tag_rect(tag, plate, (pw, ph), reg)
     img = render_frame(tag, 0, {"label": "SOURCE", "source": str(text).strip()},
                        settings, reg).convert("RGBA")
     if img.size != (w, h):

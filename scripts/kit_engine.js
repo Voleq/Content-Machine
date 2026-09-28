@@ -115,8 +115,12 @@ const STILL_FAMILIES = {
  * numbers, and the export check holds every frame to design's file. Drawn at
  * the rule offsets, a wipe is its midpoint, a full hatched cover boiling in
  * place; registered as a loop at the plate rate, its eight frames repeat every
- * 2.7 seconds instead of playing once. */
-const TRANSITION_STEPS = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
+ * 2.7 seconds instead of playing once. The frame count is the args' (rebuild-40:
+ * 8, or 4 for the shorts wipes), stepped as emit.js steps it: (i + 1) / n. */
+const transitionSteps = (args) => {
+  const n = typeof args.transition === "number" ? args.transition : 8;
+  return Array.from({ length: n }, (_, i) => (i + 1) / n);
+};
 const TRANSITION_FPS = 12;
 
 // The canvas a room is delivered on. The model draws rooms in a 320x180 box;
@@ -191,7 +195,7 @@ function loadPort(engineDir) {
 const ROOM_LOOP_MOVES = ["screen-flicker", "lights-twinkle", "window-snow", "window-rain"];
 function loadMotion(engineDir, M, F) {
   const MO = require(path.join(engineDir, "motion.js"));
-  const need = ["FPS", "MOVES", "SCREEN_PULSE", "LAMP_FLICKER", "snow", "RAIN", "TWINKLE", "twinkleInk"];
+  const need = ["FPS", "MOVES", "SCREEN_PULSE", "LAMP_FLICKER", "snow", "RAIN", "TWINKLE", "twinkleInk", "roomTargets"];
   const missing = need.filter((k) => MO[k] === undefined);
   if (missing.length) die("motion.js exports no " + missing.join(", ") + "; the room loops have to come off the kit");
   const moves = {};
@@ -387,7 +391,7 @@ async function drawContent(ctx, items, emitWrite) {
   for (const it of items) {
     const family = it.key.split("/")[0];
     for (const hour of hours) {
-      let P, m, svgs;
+      let P, m, svgs, steps;
       const wipe = !!(it.args && it.args.transition);
       try {
         const draw = (extra) => g.PLATES[it.author](Object.assign({}, it.args, extra || {},
@@ -395,7 +399,8 @@ async function drawContent(ctx, items, emitWrite) {
         P = draw();
         m = P.manifest();
         if (wipe) {
-          svgs = TRANSITION_STEPS.map((t) => draw({ t }).toSVG());
+          steps = transitionSteps(it.args);
+          svgs = steps.map((t) => draw({ t }).toSVG());
         } else {
           /* One draw per distinct offset, in the kit's order: a drawing that
            * consumes its seed as it goes has to be asked the same questions in
@@ -450,13 +455,15 @@ async function drawContent(ctx, items, emitWrite) {
             + ", and the data layer draws it in subject (up)");
         }
       }
-      /* THE KEY SAYS THE ASPECT, as the kit's own emit.js reads it. A plate's
-       * meta guesses it from its shape (wider than tall is 16:9), and a strip is
-       * wider than tall at both: the 9:16 source tag and lower third were filed
-       * as 16:9, so no short could find either. */
+      /* THE KEY SAYS THE ASPECT, and since rebuild-40 the plate's meta agrees.
+       * Rebuild-39 guessed it from the shape, and a strip is wider than tall at
+       * both sizes, so the 9:16 source tag and lower third were filed as 16:9
+       * and no short could find either. Held to it rather than trusted. */
       const suffix = /-(9x16|16x9)$/.exec(it.key);
+      if (suffix && m.aspect !== suffix[1]) {
+        problems.push(it.key + ": its meta says aspect " + m.aspect + " and its name says " + suffix[1]);
+      }
       emitWrite(key, Object.assign({}, m, Object.keys(keys).length ? { keys } : {}, {
-        aspect: suffix ? suffix[1] : m.aspect,
         family: family,
         author: it.author,
         seed: it.seed,
@@ -468,7 +475,7 @@ async function drawContent(ctx, items, emitWrite) {
         frameCount: still ? 1 : svgs.length,
         frames: still ? [{ tag: "", png: drawn[0].png, svg: drawn[0].svg }]
           : drawn.map((d, i) => Object.assign({ tag: "_f" + pad(i + 1), png: d.png, svg: d.svg },
-            wipe ? { t: TRANSITION_STEPS[i] } : { boil: offs[i] })),
+            wipe ? { t: steps[i] } : { boil: offs[i] })),
         files: { png: drawn[0].png, svg: drawn[0].svg, baseIsFrame: still ? null : "_f01" },
         dir: family + "/",
       }));
@@ -527,11 +534,15 @@ function headCovered(ctx, r, e) {
  * room as it plays any looping plate. Played live, a room would have to be
  * redrawn from a shape list the render path is not allowed to read.
  *
- * AS PUBLISHED, SEAMS AND ALL. Every fill and speck is the kit's own rule, as
- * the Motion Review page draws it frame for frame: the snow jumps when the
- * loop restarts, and the twinkle repeats every nine frames inside a loop of
- * twelve. Both are design's to fix in motion.js, and nothing below restates a
- * number motion.js owns, so their fix is a re-ingest and not a change here.
+ * AS PUBLISHED. Every fill and speck is the kit's own rule and every shape a
+ * loop touches is the kit's own choice: motion.roomTargets() names, by index
+ * into the room's shape list, the screens and glows that flicker, the lamps,
+ * the window and door panes (which never flicker, nor the daylight they
+ * cast), and each Christmas bulb with the ink it shows at frame 0. It is the
+ * function emit.js publishes `rooms` in emit/motion.json from, called here on
+ * the same room, so nothing below restates a rule motion.js owns and a fix to
+ * one is a re-ingest and not a change here. Every loop is seamless: frame 12
+ * is frame 0 (rebuild-40).
  *
  * NO BOIL TO COMBINE THEM WITH. The rooms have been drawn still since the
  * kit stopped boiling them (every room installed static, one frame), so these
@@ -550,36 +561,34 @@ function headCovered(ctx, r, e) {
  * snow and rain in one window, so the twins carry none. */
 const ROOM_WEATHER = { rain: "window-rain" };
 
-/* THE WINDOW PANE, by the review page's own rule: the first lit glow high on
- * the wall (its top above y 60) at least 40 x 36 units. Only on an angle whose
- * plan SEES a window: doorway-wide's lit door is a glow the same size in the
- * same place, and snow through a doorway is snow indoors. A derived angle and
- * a twin see what the angle they were pulled from sees. */
-function windowPane(ctx, r) {
-  const sees = ctx.plan[r.pulledFrom || r.id];
-  if (!Array.isArray(sees) || sees.indexOf("window") < 0) return null;
-  for (let i = 0; i < r.shapes.length; i++) {
-    const s = r.shapes[i];
-    if (s.role !== "glow" || s.tone === "shade" || s.ink) continue;
-    const [x0, y0, x1, y1] = ctx.F.pathBox(s.d);
-    const box = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
-    if (box.y < 60 && box.w >= 40 && box.h >= 36) return { index: i, d: s.d, box: box };
-  }
-  return null;
+/* WHAT EACH LOOP TOUCHES in room `r`, off the kit: {panes, daylight, flicker,
+ * lamp, bulbs, pin?}, as emit.js publishes it. A derived angle and a twin see
+ * what the angle they were pulled from sees, so a lit door is a door and snow
+ * never falls through it. */
+function roomTargets(ctx, r) {
+  const boxOf = (d) => {
+    const b = [Infinity, Infinity, -Infinity, -Infinity];
+    ctx.F.pathBox(d, b);
+    return { x: b[0], y: b[1], w: b[2] - b[0], h: b[3] - b[1] };
+  };
+  return ctx.MO.roomTargets(r, ctx.plan[r.pulledFrom || r.id] || [], boxOf);
 }
 
-const isBulb = (ctx, s) => !!(s.season && s.ink && ctx.MO.TWINKLE.indexOf(s.role) >= 0);
-const flickers = (s) => !s.ink && (s.role === "screen" || s.role === "glow" || (s.role === "lamp" && s.tone !== "shade"));
+/* The window the weather falls past, or null: a pane of kind "window". */
+function windowPane(r, T) {
+  const p = T.panes.find((q) => q.kind === "window");
+  return p ? { index: p.shape, d: r.shapes[p.shape].d, box: p.box } : null;
+}
 
 /* The loops a room plays at one aspect: those with something in the room to
  * act on. `view` is the aspect's box in room units, and a pane outside it is
  * not in shot. A lamp outside the crop is still listed, and draws the same
  * pixels on every frame; the store below keeps one file for them. */
-function roomLoops(ctx, r, pane, view) {
+function roomLoops(r, T, pane, view) {
   const loops = [];
-  if (r.shapes.some(flickers)) loops.push("screen-flicker");
+  if (T.flicker.length || T.lamp.length) loops.push("screen-flicker");
   const xmas = r.season === "christmas";
-  if (xmas && r.shapes.some((s) => isBulb(ctx, s))) loops.push("lights-twinkle");
+  if (xmas && T.bulbs.length) loops.push("lights-twinkle");
   const inShot = !!pane && pane.box.x < view[0] + view[2] && pane.box.x + pane.box.w > view[0]
     && pane.box.y < view[1] + view[3] && pane.box.y + pane.box.h > view[1];
   if (xmas && inShot) loops.push("window-snow");
@@ -593,23 +602,25 @@ function loopLength(ctx, loops) {
 }
 
 /* The room's shape list at frame `f` of `loops`, as [d, fill, extra] nodes.
- * The fills are the Motion Review page's, rule for rule. The snow and rain are
- * drawn straight after the pane and clipped to it, which is the catalogue's
- * "inside the pane, drawn behind the frame bars": the review page lays them
- * over the whole room instead, and a speck over a bar is a speck on the
- * glass's frame. */
-function roomFrame(ctx, r, H, loops, f, pane) {
+ * A flickering shape takes its shade tone on SCREEN_PULSE's frames, a lamp on
+ * LAMP_FLICKER's, a bulb twinkleInk(its phase, f). The snow and rain are
+ * painted straight after the pane shape, as the catalogue says, so every
+ * later shape (the frame bars, the sill, the tree, him) paints over them;
+ * they are clipped to the pane as well, so a flake at its edge stays on the
+ * glass. */
+function roomFrame(ctx, r, H, T, loops, f, pane) {
   const MO = ctx.MO;
   const at = (id) => (loops.indexOf(id) >= 0 ? f % ctx.moves[id].frames : -1);
   const flick = at("screen-flicker"), twinkle = at("lights-twinkle");
-  let bulb = 0;
-  const nodes = r.shapes.map((s) => {
+  const screens = new Set(T.flicker), lamps = new Set(T.lamp);
+  const phase = new Map(T.bulbs.map((b) => [b.shape, b.phase]));
+  const nodes = r.shapes.map((s, i) => {
     let fill = s.ink ? H.ink[s.role] : H.m[s.role][s.tone === "shade" ? 1 : 0];
-    if (flick >= 0 && !s.ink) {
-      if ((s.role === "screen" || s.role === "glow") && MO.SCREEN_PULSE[flick]) fill = H.m[s.role][1];
-      else if (s.role === "lamp" && s.tone !== "shade" && MO.LAMP_FLICKER[flick]) fill = H.m.lamp[1];
+    if (flick >= 0) {
+      if (screens.has(i) && MO.SCREEN_PULSE[flick]) fill = H.m[s.role][1];
+      else if (lamps.has(i) && MO.LAMP_FLICKER[flick]) fill = H.m.lamp[1];
     }
-    if (twinkle >= 0 && isBulb(ctx, s)) fill = H.ink[MO.twinkleInk(bulb++, twinkle)];
+    if (twinkle >= 0 && phase.has(i)) fill = H.ink[MO.twinkleInk(phase.get(i), twinkle)];
     return [s.d, fill];
   });
   const snow = at("window-snow"), rain = at("window-rain");
@@ -656,7 +667,8 @@ async function drawRooms(ctx, emitWrite) {
   mkdirp(famDir);
   for (const r of M.rooms()) {
     const covered = headCovered(ctx, r, emitted["room/" + r.id + "@" + BASE_HOUR + ".16x9"]);
-    const pane = windowPane(ctx, r);
+    const targets = roomTargets(ctx, r);
+    const pane = windowPane(r, targets);
     for (const hour of hours) {
       const H = M.HOURS.find((h) => h.name === hour);
       if (!H) { problems.push("kit-model.js draws no " + hour + " hour for the rooms"); continue; }
@@ -703,14 +715,14 @@ async function drawRooms(ctx, emitWrite) {
         const drawLoop = async (loops, stem) => {
           const out = [];
           for (let f = 0; f < loopLength(ctx, loops); f++) {
-            const fnodes = roomFrame(ctx, r, H, loops, f, pane);
+            const fnodes = roomFrame(ctx, r, H, targets, loops, f, pane);
             const png = await store(svgOf(fnodes), stem.whole(f));
             const front = hasFront ? await store(svgOf(fnodes.slice(split)), stem.front(f)) : null;
             out.push({ png: png, front: front, nodes: fnodes });
           }
           return out;
         };
-        const plan = roomLoops(ctx, r, pane, box);
+        const plan = roomLoops(r, targets, pane, box);
         const loop = await drawLoop(plan.loops, {
           whole: (f) => (f ? name + tag(f) : name),
           front: (f) => name + "_front" + (f ? tag(f) : ""),

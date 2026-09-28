@@ -498,7 +498,8 @@ def data_layer(slots: dict[str, dict], data: dict, ink: dict[str, str]) -> list[
     for k, v in (g("marks") or {}).items():
         b = SL.get(k)
         if b:
-            outs.append(axis_mark(b, v, ink, axis=b.get("axis") or "horizontal", tone=b.get("ink")))
+            outs.append(axis_mark(b, v, ink, axis=b.get("axis") or "horizontal", tone=b.get("ink"),
+                                  weight=b.get("weight") or 8))
     # The attention underline a slot publishes (the footnote spotlight).
     for b in SL.values():
         if b.get("underline"):
@@ -583,6 +584,8 @@ def boxes(plate) -> dict[str, dict]:
                 box[key] = val
         if s.spread_fill is not None:
             box["spreadFill"] = s.spread_fill
+        if s.weight:
+            box["weight"] = s.weight
         if s.under:
             box["under"] = True
         out[name] = box
@@ -1122,16 +1125,15 @@ def _split(plate) -> bool:
 # The kit's ink name for each registry palette role — KIT_INK read backwards.
 _KIT_NAME = {ours: kit for kit, ours in KIT_INK.items()}
 
-# THE GAP IS NOT ALWAYS A QUANTITY. Every two-line plate built on
-# price-cost-spread inherits its plot note, "spreadFill between them", but where
-# the two lines are the PARTS of one total (price and volume add to organic
-# growth) the area between them measures nothing, and the plate's own caution
-# says so: "the gap is not filled", "Do not fill it". The caution wins.
-_NOT_FILLED = re.compile(r"\b(?:not|no|never)\s+(?:be\s+)?fill(?:ed)?\b", re.IGNORECASE)
-
-
-def _unfilled(plate) -> bool:
-    return bool(_NOT_FILLED.search(getattr(plate, "caution", "") or ""))
+# THE GAP IS NOT ALWAYS A QUANTITY. Where two lines are compared (a price
+# against its cost) the area between them is the plate's figure and is filled;
+# where they are the PARTS of one total (price and volume add to organic
+# growth) it measures nothing and is left open. Design publishes which on the
+# plot itself, `plot-area.spreadFill`, and audits its note against it:
+# "Read that field, not the note" (ANSWERS, rebuild-22).
+def _filled(plate) -> bool:
+    pa = plate.slots.get("plot-area")
+    return pa is not None and pa.spread_fill is True
 
 
 def plate_data(plate, values: dict[str, str]) -> PlateData:
@@ -1212,8 +1214,7 @@ def plate_data(plate, values: dict[str, str]) -> PlateData:
         d["tone2"] = _KIT_NAME[key2]
     elif "series2" in d and not pair_cols:
         d["tone2"] = "subject2"
-    if "series2" in d and not pair_cols and "spreadfill" in _note(plate, "plot-area") \
-            and not _unfilled(plate):
+    if "series2" in d and not pair_cols and _filled(plate):
         d["spread"] = True
 
     # THE SCALE IS WHAT THE PLATE STATES. A plot drawn to a fixed scale says so

@@ -6,9 +6,9 @@
  "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8",
  "frameNaming": "<name>-<hour>_f01.._fNN before the extension. The BASE file carries no frame tag and is byte-identical to _f01.",
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
- "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
+ "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles six mouths (closed, mid, wide, O, EE, F/V) on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still. Moves played OVER plates and rooms are data in emit/motion.json.",
  "bakedText": false,
- "assetCount": 30,
+ "assetCount": 32,
  "plates": {
   "room/desk-front": {
    "key": "room/desk-front",
@@ -1403,6 +1403,75 @@
     }
    }
   },
+  "room/window-talk": {
+   "key": "room/window-talk",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 14,
+   "roomRole": null,
+   "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 9,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.1
+    },
+    "figureBox": [
+     129.6,
+     45,
+     176.6,
+     138
+    ]
+   },
+   "files": {
+    "base": "window-talk-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "window-talk-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "window-talk-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
   "room/desk-front-christmas": {
    "key": "room/desk-front-christmas",
    "dir": "room",
@@ -2709,6 +2778,75 @@
     },
     "dusk": {
      "base": "board-wide-christmas-dusk.png",
+     "baseIsFrame": true,
+     "frames": []
+    }
+   }
+  },
+  "room/window-talk-christmas": {
+   "key": "room/window-talk-christmas",
+   "dir": "room",
+   "aspect": "any",
+   "canvas": [
+    320,
+    180
+   ],
+   "delivered": [
+    3840,
+    2160
+   ],
+   "exportScale": 2,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
+   "hostAnchor": [
+    139.3,
+    44,
+    27.4,
+    94
+   ],
+   "portraitWindow": [
+    104,
+    4,
+    98,
+    174
+   ],
+   "occlusionSplit": 77,
+   "roomRole": null,
+   "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 9,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "shrug",
+     "headCover": 0,
+     "upperCover": 1.1
+    },
+    "figureBox": [
+     129.6,
+     45,
+     176.6,
+     138
+    ]
+   },
+   "files": {
+    "base": "window-talk-christmas-night.png",
+    "baseIsFrame": true,
+    "frames": []
+   },
+   "filesByHour": {
+    "night": {
+     "base": "window-talk-christmas-night.png",
+     "baseIsFrame": true,
+     "frames": []
+    },
+    "dusk": {
+     "base": "window-talk-christmas-dusk.png",
      "baseIsFrame": true,
      "frames": []
     }

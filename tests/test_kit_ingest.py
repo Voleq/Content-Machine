@@ -712,8 +712,7 @@ def test_the_insider_flow_marks_declare_one_scale_for_both_directions():
 
     The plate declares the contract itself, and this pins it: one `scale`
     divides both directions, and both are measured against the same
-    half-height from the same axis. (Both plates are held back today; the
-    contract is what the filler must honour the day they are not.)
+    half-height from the same axis.
     """
     shipped = _shipped()
     for key in ("charts/insider-flow-6-16x9", "charts/insider-flow-12-16x9"):
@@ -872,3 +871,51 @@ def test_a_data_plate_breathes_and_its_axes_do_not():
         "no data plate with an axis differs between any two of its frames — "
         "the frame is not breathing anywhere, so the pinned-axis check above "
         "proved nothing")
+
+
+# --------------------------------------------------------------------------
+# rebuild-40: what design now publishes instead of the bot guessing it
+# --------------------------------------------------------------------------
+
+
+def test_the_registry_carries_design_s_timings_rooms_and_whole_anchors(registry):
+    """The bumper's tick-over, the source tag's rule, which shapes each room
+    loop touches, and every field an anchor publishes, carried as given."""
+    if not registry.motion_timings:
+        pytest.skip("the installed kit predates rebuild-40's timings")
+    tick = registry.motion_timings["tick-over"]
+    assert (tick["startFrame"], tick["frames"], tick["holdFrames"]) == (3, 6, 24)
+    assert registry.motion_timings["source-tag"]["default"]["9x16"] == {"x": 50, "y": 1444}
+    wall = registry.motion_rooms["room/window-wall"]
+    assert wall["panes"] and wall["panes"][0]["kind"] == "window"
+    assert not set(wall["flicker"]) & {p["shape"] for p in wall["panes"]}, \
+        "a window pane flickers with the screens"
+    bars = registry.get("charts/bars-6y-16x9").motion
+    assert bars["count-up"]["slot"] == "value-6" and bars["count-up"]["shrink"] == "ink"
+    assert len(bars["bars-grow"]["columns"]) == 6
+    assert bars["slide-in"]["clear"] is False and bars["slide-in"]["covers"]
+    assert bars["line-draw"]["bleed"] == 14
+
+
+def test_the_renderer_s_own_plates_are_on_no_chapter_s_menu(registry):
+    """design files the bumper, the wipes and the tag under every chapter
+    type with `any: true`: the renderer places them, the writer never does."""
+    for ctype in ("the-numbers", "cold-open", "valuation"):
+        menu = registry.plates_for_chapter(ctype)
+        assert not any(k.startswith("structure/chapter-bumper") for k in menu), ctype
+
+
+def test_window_talk_is_a_vertical_angle_never_cut_beside_window_wall(registry):
+    """Design: window-talk is window-wall with him at the pane's left edge,
+    drawn so a short's crop has the window; cut next to window-wall he jumps
+    sideways."""
+    from pipeline.compose import resolve_room
+
+    if registry.get("room/window-talk-9x16") is None:
+        pytest.skip("the installed kit predates window-talk")
+    assert "room/window-talk-9x16" in registry.angles_for("talk", "9x16")
+    assert not any("window-talk" in k for k in registry.angles_for("talk", "16x9"))
+    wall = registry.aspect_key("room/window-wall", "9x16")
+    for step in range(12):
+        got = resolve_room(registry, "talk", "9x16", seed="s", step=step, after=wall)
+        assert "window-wall" not in got.key and "window-talk" not in got.key, step

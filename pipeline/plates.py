@@ -251,9 +251,11 @@ class Slot:
     spread_fill: bool | None = None
     under: bool = False
     underline: str = ""
-    # Informational, as the kit's own data layer reads neither: the stroke a
-    # mark's slot asks for, a rule for colouring its TEXT by what it says
-    # ("+ in down, − in up"), and a rail that clamps what falls off its ends.
+    # The stroke a mark's slot asks for (the data layer draws a mark this
+    # thick since rebuild-40: the event calendar's dates 10, a market line 5);
+    # and, informational, as the kit's data layer reads neither: a rule for
+    # colouring its TEXT by what it says ("+ in down, − in up"), and a rail
+    # that clamps what falls off its ends.
     weight: float | None = None
     ink_by: str = ""
     clamp: bool = False
@@ -521,9 +523,13 @@ class Plate:
     composite: str = ""
     hold_s: float | None = None
     # WHERE EACH OF THE KIT'S MOVES LANDS ON THIS PLATE, off
-    # `emit/motion.json`: {move: {"slot": name or None, "box": {x, y, w, h}}}
-    # in canvas units, for the moves that land here at all. A move absent from
-    # it has nothing on this plate to act on, and is skipped.
+    # `emit/motion.json`: {move: {"slot": name or None, "box": {x, y, w, h},
+    # ...}} in canvas units, for the moves that land here at all, with the
+    # rest of what design publishes per move carried as given (a figure's
+    # `align`/`size`/`adv`, a highlight's `lines`, a zoom's `pad`, a
+    # line-draw's `bleed` and `also`, a bars-grow's `columns`, a source tag's
+    # `clear` and `covers`). A move absent from it has nothing on this plate
+    # to act on, and is skipped.
     motion: dict = field(default_factory=dict)
     # THE ROOM LOOPS BAKED INTO THIS ROOM'S FRAMES (item 19): which of the
     # kit's content-free room moves — `screen-flicker`, `lights-twinkle`,
@@ -683,6 +689,13 @@ NUMBER_MOVES = frozenset({"count-up", "pen-circle"})
 # decoration, and after the third it no longer points at anything.
 PEN_CIRCLES_PER_CHAPTER = 1
 PEN_CIRCLES_PER_VIDEO = 3
+# AN ANGLE DRAWN FOR ONE ASPECT. Design drew `room/window-talk` (rebuild-40)
+# so a vertical crop has the window in it and weather reads in a short. At
+# 16:9 it is `window-wall` with him a step to the left, and cut beside
+# window-wall he jumps sideways: the long picks its rooms by seed shot by
+# shot and cannot see the room before, so it is not offered there at all.
+ONLY_AT = {"room/window-talk": ("9x16",)}
+
 # Zoom pushes into a passage of a document. On a card or a chart the anchor is
 # a sentence the viewer can already read at full frame, so the push adds
 # nothing but motion; on paper it is the difference between a page and a line.
@@ -734,20 +747,8 @@ def writer_moves(plate: "Plate | None") -> dict[str, str]:
             continue
         if move == "pen-circle" and not _ringable(plate, plate.slot(str(slot))):
             continue
-        # On a sheet or a row of bars the anchor is the FIRST column, the
-        # oldest year. The tag cannot name another, so the pen and the
-        # count-up would land on the one figure nobody is talking about;
-        # they are not offered there at all.
-        if move in ("count-up", "pen-circle") and _first_of_series(plate, str(slot)):
-            continue
         out[move] = str(slot)
     return out
-
-
-def _first_of_series(plate: "Plate", name: str) -> bool:
-    """`value-1` beside a `value-2`, `cell-1-1` beside a `cell-1-2`."""
-    m = re.match(r"^(.+)-1$", name)
-    return bool(m) and plate.slot(f"{m.group(1)}-2") is not None
 
 
 def _ringable(plate: "Plate", slot) -> bool:
@@ -863,13 +864,22 @@ class Registry:
         self.held_back: dict[str, dict[str, str]] = {
             "plates": dict(_held.get("plates") or {}),
             "rooms": dict(_held.get("rooms") or {})}
-        # THE KIT'S MOVES, as data (rebuild-39): what each is — its frames,
-        # whether it plays once or loops, its ease — and where it lands on
-        # every plate, by the plate's base-hour key. Empty on a kit before it.
+        # THE KIT'S MOVES, as data: what each is — its frames, whether it
+        # plays once or loops, its ease — and where it lands on every plate,
+        # by the plate's base-hour key. `motion_timings` is what design times
+        # outside a plate (the bumper's tick-over, the source tag's rule, the
+        # highlight's rect) and `motion_rooms` which shapes of each room a
+        # loop touches. Empty on a kit before them.
         _motion = raw.get("motion") or {}
         self.motion_fps: int = int(_motion.get("fps") or 0)
         self.motion_moves: dict[str, dict] = {
             str(k): v for k, v in (_motion.get("moves") or {}).items()
+            if isinstance(v, dict)}
+        self.motion_timings: dict[str, dict] = {
+            str(k): v for k, v in (_motion.get("timings") or {}).items()
+            if isinstance(v, dict)}
+        self.motion_rooms: dict[str, dict] = {
+            str(k): v for k, v in (_motion.get("rooms") or {}).items()
             if isinstance(v, dict)}
         self._motion_anchors: dict[str, dict] = {
             str(k): v for k, v in (_motion.get("anchors") or {}).items()
@@ -1499,7 +1509,8 @@ class Registry:
         render that cannot find a room.
         """
         options = [k for stem in self.room_roles.get(role, ())
-                   if (k := self.aspect_key(stem, aspect))]
+                   if aspect in ONLY_AT.get(stem, (aspect,))
+                   and (k := self.aspect_key(stem, aspect))]
         if hour and hour != self.base_hour:
             safe = [k for k in options if self.assets[k].dusk_safe is not False]
             if options and not safe:

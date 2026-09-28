@@ -183,7 +183,10 @@ class KitModel {
     if (!this.anchorOf(r)) return null;
     const fid = r.fitsAs || r.id;
     const keys = Object.keys(KitModel.POSES).filter(k => k === "to-camera" || KitModel.POSES[k].fits.split(" · ").indexOf(fid) >= 0);
-    const rows = keys.map(k => this.clearance(r, k));
+    /* Memoised on the room's own geometry: emit and the audit ask for the same
+     * room many times, and each clearance rasterises a pose. */
+    const memo = this._clr || (this._clr = new Map()), mk = r.id + "|" + String(r.anchor) + "|" + r.shapes.length + "|" + keys.join(",");
+    const rows = memo.get(mk) || keys.map(k => this.clearance(r, k)); memo.set(mk, rows);
     const worst = f => rows.reduce((a, b) => (b[f] > a[f] ? b : a));
     const box = rows.reduce((a, r) => [Math.min(a[0], r.box[0]), Math.min(a[1], r.box[1]), Math.max(a[2], r.box[2]), Math.max(a[3], r.box[3])], [Infinity, Infinity, -Infinity, -Infinity]);
     const strip = r0 => ({ pose: r0.pose, headCover: r0.headCover, upperCover: r0.upperCover });
@@ -233,13 +236,13 @@ class KitModel {
       note: "Weight through the near arm onto the desk — the loaded hip swaps sides, which the rig does for free.",
       arms: c => ({ R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 118, c.shR + 118], [c.cx + 150, c.shR + 232]] }),
       legs: c => ({ L: [[c.cx - 36, c.hipL - 8], [c.cx - 52, c.knee], [c.cx - 70, c.floor - 16]] }) },
-    "hands-in-pockets": { label: "hands in pockets", origin: "drawn kit", fits: "desk-front · doorway",
+    "hands-in-pockets": { label: "hands in pockets", origin: "drawn kit", fits: "desk-front · doorway · window-talk",
       note: "Forearms angled in, hands at the hip. The most closed pose and the one that holds under a long voice-over.",
       arms: c => ({
         L: [[c.cx - c.sw * 0.9, c.shL + 14], [c.cx - 100, c.shL + 122], [c.cx - 58, c.shL + 212]],
         R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 104, c.shR + 124], [c.cx + 64, c.shR + 216]],
       }) },
-    "holding-a-page": { label: "holding a page", origin: "drawn kit", fits: "desk-front · board", face: "lamp",
+    "holding-a-page": { label: "holding a page", origin: "drawn kit", fits: "desk-front · board · window-talk", face: "lamp",
       note: "Both hands to a sheet at chest height. The page is a prop path in the paper role, not part of him.",
       arms: c => ({
         L: [[c.cx - c.sw * 0.9, c.shL + 14], [c.cx - 96, c.shL + 116], [c.cx - 40, c.shL + 168]],
@@ -248,20 +251,20 @@ class KitModel {
       prop: c => ({ d: "M" + (c.cx - 46) + "," + (c.shL + 150) + "h92v74h-92z", role: "paper", front: true }) },
     /* rebuild-31 · hand props. Each prop is a path in an existing material role,
      * placed from the wrist it sits in, so it follows the arm and never floats. */
-    "holding-a-filing": { label: "holding the filing", origin: "new", fits: "desk-front · desk-wide", face: "lamp",
+    "holding-a-filing": { label: "holding the filing", origin: "new", fits: "desk-front · desk-wide · window-talk", face: "lamp",
       note: "The annual report held up to camera in both hands, taller than a page and bound down its left edge. For \u201cit says so on page 96\u201d.",
       arms: c => ({
         L: [[c.cx - c.sw * 0.9, c.shL + 14], [c.cx - 98, c.shL + 110], [c.cx - 46, c.shL + 150]],
         R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 102, c.shR + 112], [c.cx + 50, c.shR + 152]],
       }),
       prop: c => ({ role: "paper", front: true, d: "M" + (c.cx - 58) + "," + (c.shL + 104) + "h116v132h-116z M" + (c.cx - 64) + "," + (c.shL + 100) + "h10v140h-10z" }) },
-    "holding-a-phone": { label: "holding a phone", origin: "new", fits: "desk-front · desk-wide", face: "lamp",
+    "holding-a-phone": { label: "holding a phone", origin: "new", fits: "desk-front · desk-wide · window-talk", face: "lamp",
       note: "Right hand up at the chest, looking at a phone and not at us. For the price alert, the message, the tweet read out.",
       headRot: -6, headDy: 6,
       arms: c => ({ R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 96, c.shR + 128], [c.cx + 40, c.shR + 128]] }),
       /* In the SCREEN role: a lit phone reads as a phone; a dark one read as a patch on the shirt. */
       prop: c => ({ role: "screen", front: true, d: "M" + (c.cx + 26) + "," + (c.shR + 84) + "h30v54h-30z" }) },
-    "holding-a-mug": { label: "holding a mug", origin: "new", fits: "desk-front · desk-wide · desk-side", face: "lamp",
+    "holding-a-mug": { label: "holding a mug", origin: "new", fits: "desk-front · desk-wide · desk-side · window-talk", face: "lamp",
       note: "Right hand at the sternum with a mug in it, the three-in-the-morning prop. Between beats, never on a number.",
       arms: c => ({ R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 104, c.shR + 140], [c.cx + 52, c.shR + 150]] }),
       /* In the PAPER role, a pale mug, over the hand so the fingers wrap it. */
@@ -322,7 +325,7 @@ class KitModel {
         L: [[c.cx - 34, c.hipL - 8], [c.cx - 72, c.knee], [c.cx - 94, c.floor - 16]],
         R: [[c.cx + 32, c.hipR - 8], [c.cx + 58, c.knee - 12], [c.cx + 80, c.floor - 16]],
       }) },
-    "arms-crossed": { label: "arms crossed", origin: "new", fits: "board · desk-wide · board-wide",
+    "arms-crossed": { label: "arms crossed", origin: "new", fits: "board · desk-wide · board-wide · window-talk",
       note: "Waiting. Reads as a man who has already worked out what the number means and is letting you catch up.",
       arms: c => ({
         L: [[c.cx - c.sw * 0.9, c.shL + 14], [c.cx - 102, c.shL + 122], [c.cx + 34, c.shL + 148]],
@@ -362,13 +365,13 @@ class KitModel {
         R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 118, c.shR + 94], [c.cx + 172, c.shR + 22]],
       }),
       legs: c => ({ R: [[c.cx + 34, c.hipR - 6], [c.cx + 50, c.knee], [c.cx + 58, c.floor - 14]] }) },
-    "counting-on-fingers": { label: "counting on fingers", origin: "new", fits: "desk-front · desk-front-b · desk-wide · window-wide",
+    "counting-on-fingers": { label: "counting on fingers", origin: "new", fits: "desk-front · desk-front-b · desk-wide · window-wide · window-talk",
       note: "NEW — the LIST pose. Both hands meet at the chest, camera-right hand tapping the camera-left palm. It carries 'three things' beats. At composite scale the hands read as hands meeting, not as separate fingers. The count is in the voice-over, not the drawing.",
       arms: c => ({
         L: [[c.cx - c.sw * 0.9, c.shL + 14], [c.cx - 94, c.shL + 120], [c.cx - 22, c.shL + 150]],
         R: [[c.cx + c.sw * 0.9, c.shR + 12], [c.cx + 96, c.shR + 110], [c.cx + 22, c.shR + 128]],
       }) },
-    "shrug": { label: "shrug", origin: "new", fits: "desk-front · desk-front-b · desk-wide · window-wide",
+    "shrug": { label: "shrug", origin: "new", fits: "desk-front · desk-front-b · desk-wide · window-wide · window-talk",
       note: "NEW — the NOBODY-KNOWS pose. Shoulders lifted, elbows at the waist, forearms out and open, head tipped. Use it for a guidance range wide enough to mean nothing, or a question the filing does not answer. Deadpan, not comic: the face does not change.",
       shoulderDy: -10, headRot: -5.5, headDy: 4,
       arms: c => ({
@@ -754,6 +757,21 @@ class KitModel {
       pull("board-side", "board-wide", 0.8, withCard(card(55, 10), { role: "diagram", duskSafe: false,
         why: "NEW — the DIAGRAM opener: board-side pulled back. The same card wall and the same things on the floor, with the title card on the wall above him. NOT dusk-safe, like board-side." })),
     );
+    /* rebuild-40: THE WINDOW TALK ANGLE. No vertical crop saw a window, so
+     * weather never showed in a short. This is window-wall exactly (same
+     * shapes, same scale, nothing added), with his anchor moved right until he
+     * stands at the pane's left edge: the 9:16 window then takes in 46 of its
+     * 98 units of the pane. The composite is clear at every x from 110 (head
+     * 0%, upper 0%); at the drawn angle's own spot the crop showed 9 units.
+     * All 18 poses clear here; nine are listed as fitting (fits: "window-talk").
+     * The other nine need something this spot does not have: a desk under the
+     * hand (leaning, pointing-down, considering, head-in-hands), a chair
+     * (sitting), a screen to turn to, a plate beside him (checking, gesturing),
+     * or a way out of frame (walking). */
+    { const src = raw.find(r => r.id === "window-wall");
+      raw.push(Object.assign({}, src, { id: "window-talk", isNew: true, pulledFrom: "window-wall",
+        anchor: [110, src.anchor[1], src.anchor[2], src.anchor[3]],
+        why: "NEW (rebuild-40) \u2014 window-wall with him standing at the window\u2019s left edge, so the 9:16 crop shows the pane and the weather. Same room, same shapes; only the anchor moved." })); }
     raw.forEach(r => { if (r.role === undefined) delete r.role; });
     /* rebuild-25: THE CHRISTMAS SET. A seasonal layer on every angle that sees
      * the window, derived from that angle's own window so the tree and lights
@@ -780,14 +798,14 @@ class KitModel {
       const rail = [], rn = 34;
       for (let i = 0; i <= rn; i++) { const t = i / rn, seg = (i % 5) / 5; rail.push([Math.round(320 * t * 10) / 10, Math.round((5 + 2.6 * 4 * seg * (1 - seg)) * 10) / 10]); }
       out.push(s(Y(rail.concat(rail.slice().reverse().map(p => [p[0], Math.round((p[1] + 1) * 10) / 10]))), "prop", "shade"));
-      rail.slice(1, -1).forEach((p, i) => out.push(ink(R(Math.round((p[0] - 1.2) * 10) / 10, Math.round((p[1] + 0.6) * 10) / 10, 2.4, 3), inkCycle[i % 3])));
+      rail.slice(1, -1).forEach((p, i) => out.push(Object.assign(ink(R(Math.round((p[0] - 1.2) * 10) / 10, Math.round((p[1] + 0.6) * 10) / 10, 2.4, 3), inkCycle[i % 3]), { bulb: true })));
       if (!win) return out.map(o => Object.assign(o, { back: true, season: "christmas" }));
       const [wx0, wy0, wx1, wy1] = box(win.d), fy = box(flo.d)[1], ww = wx1 - wx0;
       /* the string: a sagging cable across the window head, a bulb every ~9 units */
       const n = Math.max(6, Math.round(ww / 9)), sag = Math.max(3, ww * 0.05);
       const pts = []; for (let i = 0; i <= n; i++) { const t = i / n; pts.push([r1(wx0 + ww * t), r1(wy0 + 1 + sag * 4 * t * (1 - t))]); }
       out.push(s(Y(pts.concat(pts.slice().reverse().map(p => [p[0], r1(p[1] + 1.2)]))), "prop", "shade"));
-      pts.slice(1, -1).forEach((p, i) => out.push(ink(R(r1(p[0] - 1.4), r1(p[1] + 0.6), 2.8, 3.4), inkCycle[i % 3])));
+      pts.slice(1, -1).forEach((p, i) => out.push(Object.assign(ink(R(r1(p[0] - 1.4), r1(p[1] + 0.6), 2.8, 3.4), inkCycle[i % 3]), { bulb: true })));
       /* the tree: three stacked tiers and a trunk, base on the floor line */
       const th = Math.max(34, Math.min(70, (fy - wy0) * 0.62)), tw = th * 0.56;
       const cx = r1(Math.max(tw * 0.5 - 6, wx0 - tw * 0.62)), base = r1(fy + 4), top = r1(base - th);
@@ -799,7 +817,7 @@ class KitModel {
       });
       /* bulbs on the tree, in the same three inks as the string */
       [[0.22, -0.08], [0.36, 0.12], [0.48, -0.2], [0.6, 0.18], [0.7, -0.05], [0.8, 0.3], [0.84, -0.3]].forEach(([f, dx], i) =>
-        out.push(ink(R(r1(cx + dx * tw - 1.4), r1(top + th * f), 2.8, 2.8), inkCycle[i % 3])));
+        out.push(Object.assign(ink(R(r1(cx + dx * tw - 1.4), r1(top + th * f), 2.8, 2.8), inkCycle[i % 3]), { bulb: true })));
       out.push(ink(Y([[cx, r1(top - 4)], [r1(cx + 3), r1(top)], [cx, r1(top + 4)], [r1(cx - 3), r1(top)]]), "subject2"));
       return out.map(o => Object.assign(o, { back: true, season: "christmas" }));
     };

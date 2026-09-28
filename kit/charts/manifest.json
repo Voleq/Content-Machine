@@ -6,7 +6,7 @@
  "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8",
  "frameNaming": "<name>-<hour>_f01.._fNN before the extension. The BASE file carries no frame tag and is byte-identical to _f01.",
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
- "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
+ "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles six mouths (closed, mid, wide, O, EE, F/V) on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still. Moves played OVER plates and rooms are data in emit/motion.json.",
  "bakedText": false,
  "assetCount": 223,
  "plates": {

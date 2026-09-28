@@ -6,9 +6,9 @@
  "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8",
  "frameNaming": "<name>-<hour>_f01.._fNN before the extension. The BASE file carries no frame tag and is byte-identical to _f01.",
  "files": "`files` is the night hour, in the legacy shape; `filesByHour` carries both hours. Every hour is one shape list read through one colour table — an episode picks one and never mixes them.",
- "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles the three mouths on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still.",
+ "motion": "Authored, from design-tokens.json -> motion. Plates: the frame’s rule lines take dataRuleOffsets; pinned ink and every value stay still. Host: -talk cycles six mouths (closed, mid, wide, O, EE, F/V) on the head offsets, -idle loops the head offsets, -blink closes the eyes, the base strip is a still. Moves played OVER plates and rooms are data in emit/motion.json.",
  "bakedText": false,
- "assetCount": 11,
+ "assetCount": 14,
  "plates": {
   "overlays/row-band": {
    "key": "overlays/row-band",
@@ -788,7 +788,7 @@
       "args": {
        "ruleOffset": 0.5
       },
-      "hash": "7f0adec8"
+      "hash": "9438820e"
      },
      {
       "file": "wipe-sweep-16x9-night_f05.png",
@@ -859,7 +859,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "7f0adec8"
+       "hash": "9438820e"
       },
       {
        "file": "wipe-sweep-16x9-night_f05.png",
@@ -929,7 +929,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "ce8ff110"
+       "hash": "9f28a7b8"
       },
       {
        "file": "wipe-sweep-16x9-dusk_f05.png",
@@ -1020,7 +1020,7 @@
       "args": {
        "ruleOffset": 0.5
       },
-      "hash": "08f4efe0"
+      "hash": "5d4c09ba"
      },
      {
       "file": "wipe-sweep-9x16-night_f05.png",
@@ -1091,7 +1091,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "08f4efe0"
+       "hash": "5d4c09ba"
       },
       {
        "file": "wipe-sweep-9x16-night_f05.png",
@@ -1161,7 +1161,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "0b0ccbe0"
+       "hash": "0421da58"
       },
       {
        "file": "wipe-sweep-9x16-dusk_f05.png",
@@ -1252,7 +1252,7 @@
       "args": {
        "ruleOffset": 0.5
       },
-      "hash": "23b32180"
+      "hash": "40f0ac98"
      },
      {
       "file": "wipe-page-16x9-night_f05.png",
@@ -1323,7 +1323,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "23b32180"
+       "hash": "40f0ac98"
       },
       {
        "file": "wipe-page-16x9-night_f05.png",
@@ -1393,7 +1393,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "40d94db6"
+       "hash": "b3147168"
       },
       {
        "file": "wipe-page-16x9-dusk_f05.png",
@@ -1484,7 +1484,7 @@
       "args": {
        "ruleOffset": 0.5
       },
-      "hash": "e2d371d0"
+      "hash": "9450ef99"
      },
      {
       "file": "wipe-page-9x16-night_f05.png",
@@ -1555,7 +1555,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "e2d371d0"
+       "hash": "9450ef99"
       },
       {
        "file": "wipe-page-9x16-night_f05.png",
@@ -1625,7 +1625,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "91d3f176"
+       "hash": "6d4f0e10"
       },
       {
        "file": "wipe-page-9x16-dusk_f05.png",
@@ -1716,7 +1716,7 @@
       "args": {
        "ruleOffset": 0.5
       },
-      "hash": "eb8ab208"
+      "hash": "f593f5b0"
      },
      {
       "file": "wipe-blinds-16x9-night_f05.png",
@@ -1787,7 +1787,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "eb8ab208"
+       "hash": "f593f5b0"
       },
       {
        "file": "wipe-blinds-16x9-night_f05.png",
@@ -1857,7 +1857,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "0b7e108c"
+       "hash": "93e0fe68"
       },
       {
        "file": "wipe-blinds-16x9-dusk_f05.png",
@@ -1948,7 +1948,7 @@
       "args": {
        "ruleOffset": 0.5
       },
-      "hash": "fad3d006"
+      "hash": "c62331a2"
      },
      {
       "file": "wipe-blinds-9x16-night_f05.png",
@@ -2019,7 +2019,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "fad3d006"
+       "hash": "c62331a2"
       },
       {
        "file": "wipe-blinds-9x16-night_f05.png",
@@ -2089,7 +2089,7 @@
        "args": {
         "ruleOffset": 0.5
        },
-       "hash": "e73f65be"
+       "hash": "5d7572e0"
       },
       {
        "file": "wipe-blinds-9x16-dusk_f05.png",
@@ -2118,6 +2118,414 @@
       {
        "file": "wipe-blinds-9x16-dusk_f08.png",
        "tag": "_f08",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "17e49462"
+      }
+     ]
+    }
+   },
+   "slotCount": 0,
+   "typeRoles": {},
+   "slots": {}
+  },
+  "overlays/wipe-sweep-short-9x16": {
+   "key": "overlays/wipe-sweep-short-9x16",
+   "dir": "overlays",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 4,
+   "files": {
+    "base": "wipe-sweep-short-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "wipe-sweep-short-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0.25
+      },
+      "hash": "3e901856"
+     },
+     {
+      "file": "wipe-sweep-short-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 0.5
+      },
+      "hash": "5d4c09ba"
+     },
+     {
+      "file": "wipe-sweep-short-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0.75
+      },
+      "hash": "a2d8ad40"
+     },
+     {
+      "file": "wipe-sweep-short-9x16-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "30e495c0"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "wipe-sweep-short-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-sweep-short-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "3e901856"
+      },
+      {
+       "file": "wipe-sweep-short-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "5d4c09ba"
+      },
+      {
+       "file": "wipe-sweep-short-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "a2d8ad40"
+      },
+      {
+       "file": "wipe-sweep-short-9x16-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "30e495c0"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "wipe-sweep-short-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-sweep-short-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "1a4926e8"
+      },
+      {
+       "file": "wipe-sweep-short-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "0421da58"
+      },
+      {
+       "file": "wipe-sweep-short-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "41528058"
+      },
+      {
+       "file": "wipe-sweep-short-9x16-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "0400672e"
+      }
+     ]
+    }
+   },
+   "slotCount": 0,
+   "typeRoles": {},
+   "slots": {}
+  },
+  "overlays/wipe-page-short-9x16": {
+   "key": "overlays/wipe-page-short-9x16",
+   "dir": "overlays",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 4,
+   "files": {
+    "base": "wipe-page-short-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "wipe-page-short-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0.25
+      },
+      "hash": "869231a2"
+     },
+     {
+      "file": "wipe-page-short-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 0.5
+      },
+      "hash": "9450ef99"
+     },
+     {
+      "file": "wipe-page-short-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0.75
+      },
+      "hash": "7f15f4de"
+     },
+     {
+      "file": "wipe-page-short-9x16-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "17e49462"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "wipe-page-short-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-page-short-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "869231a2"
+      },
+      {
+       "file": "wipe-page-short-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "9450ef99"
+      },
+      {
+       "file": "wipe-page-short-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "7f15f4de"
+      },
+      {
+       "file": "wipe-page-short-9x16-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "17e49462"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "wipe-page-short-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-page-short-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "82641458"
+      },
+      {
+       "file": "wipe-page-short-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "6d4f0e10"
+      },
+      {
+       "file": "wipe-page-short-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "3ae730f0"
+      },
+      {
+       "file": "wipe-page-short-9x16-dusk_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "17e49462"
+      }
+     ]
+    }
+   },
+   "slotCount": 0,
+   "typeRoles": {},
+   "slots": {}
+  },
+  "overlays/wipe-blinds-short-9x16": {
+   "key": "overlays/wipe-blinds-short-9x16",
+   "dir": "overlays",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "once",
+   "fps": 12,
+   "frameCount": 4,
+   "files": {
+    "base": "wipe-blinds-short-9x16-night.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "wipe-blinds-short-9x16-night_f01.png",
+      "tag": "_f01",
+      "args": {
+       "ruleOffset": 0.25
+      },
+      "hash": "5d8e39be"
+     },
+     {
+      "file": "wipe-blinds-short-9x16-night_f02.png",
+      "tag": "_f02",
+      "args": {
+       "ruleOffset": 0.5
+      },
+      "hash": "c62331a2"
+     },
+     {
+      "file": "wipe-blinds-short-9x16-night_f03.png",
+      "tag": "_f03",
+      "args": {
+       "ruleOffset": 0.75
+      },
+      "hash": "5d8e39be"
+     },
+     {
+      "file": "wipe-blinds-short-9x16-night_f04.png",
+      "tag": "_f04",
+      "args": {
+       "ruleOffset": 1
+      },
+      "hash": "17e49462"
+     }
+    ]
+   },
+   "filesByHour": {
+    "night": {
+     "base": "wipe-blinds-short-9x16-night.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-blinds-short-9x16-night_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "5d8e39be"
+      },
+      {
+       "file": "wipe-blinds-short-9x16-night_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "c62331a2"
+      },
+      {
+       "file": "wipe-blinds-short-9x16-night_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "5d8e39be"
+      },
+      {
+       "file": "wipe-blinds-short-9x16-night_f04.png",
+       "tag": "_f04",
+       "args": {
+        "ruleOffset": 1
+       },
+       "hash": "17e49462"
+      }
+     ]
+    },
+    "dusk": {
+     "base": "wipe-blinds-short-9x16-dusk.png",
+     "baseIsFrame": true,
+     "frames": [
+      {
+       "file": "wipe-blinds-short-9x16-dusk_f01.png",
+       "tag": "_f01",
+       "args": {
+        "ruleOffset": 0.25
+       },
+       "hash": "25d3c6e0"
+      },
+      {
+       "file": "wipe-blinds-short-9x16-dusk_f02.png",
+       "tag": "_f02",
+       "args": {
+        "ruleOffset": 0.5
+       },
+       "hash": "5d7572e0"
+      },
+      {
+       "file": "wipe-blinds-short-9x16-dusk_f03.png",
+       "tag": "_f03",
+       "args": {
+        "ruleOffset": 0.75
+       },
+       "hash": "25d3c6e0"
+      },
+      {
+       "file": "wipe-blinds-short-9x16-dusk_f04.png",
+       "tag": "_f04",
        "args": {
         "ruleOffset": 1
        },

@@ -169,7 +169,8 @@
     "room/desk-front",
     "room/desk-front-b",
     "room/desk-wide",
-    "room/window-wide"
+    "room/window-wide",
+    "room/window-talk"
    ],
    "purpose": "the LIST pose: hands meet at the chest for a three-things beat. The count is in the voice-over, so never for one item"
   },
@@ -181,7 +182,8 @@
     "room/desk-front",
     "room/desk-front-b",
     "room/desk-wide",
-    "room/window-wide"
+    "room/window-wide",
+    "room/window-talk"
    ],
    "purpose": "the NOBODY-KNOWS pose: a range too wide to mean anything, or a question the filing does not answer. Deadpan, never a joke about the company; once a video, like head-in-hands"
   },
@@ -190,7 +192,8 @@
    "castBy": "citation",
    "fits": [
     "room/desk-front",
-    "room/desk-wide"
+    "room/desk-wide",
+    "room/window-talk"
    ],
    "purpose": "the annual report held up to camera in both hands: for 'it says so on page 96'"
   },
@@ -199,7 +202,8 @@
    "castBy": "alert",
    "fits": [
     "room/desk-front",
-    "room/desk-wide"
+    "room/desk-wide",
+    "room/window-talk"
    ],
    "purpose": "reading a phone, not looking at us: the price alert, the message, the post read out"
   },
@@ -209,7 +213,8 @@
    "fits": [
     "room/desk-front",
     "room/desk-wide",
-    "room/desk-side"
+    "room/desk-side",
+    "room/window-talk"
    ],
    "purpose": "the three-in-the-morning prop: between beats, never on a number"
   },
@@ -244,6 +249,13 @@
    "talk angles are too tight to fit a card above him. The ingest refuses an",
    "opener that publishes no title slot.",
    "",
+   "window-talk (rebuild-40) is window-wall with him at the pane's left edge,",
+   "the one talk angle whose 9:16 crop shows the window, so weather reads in a",
+   "short. Cut straight from one to the other he jumps sideways, so the two sit",
+   "apart in talk's rotation and count as one angle for never-twice-running",
+   "(compose.SAME_SPOT). It is a 9:16 angle only (plates.ONLY_AT): at 16:9 it",
+   "adds nothing window-wall does not, and the long cannot see the room before.",
+   "",
    "board and desk-top-down declare no host anchor, so nobody stands in them: a",
    "beat that asks for a host there is told in the close-up. board is the index",
    "card wall and carries the receipts role; it publishes no card slots, so the",
@@ -268,6 +280,7 @@
   ],
   "talk": [
    "room/desk-front",
+   "room/window-talk",
    "room/desk-front-b",
    "room/desk-front-low",
    "room/window-wall"
@@ -310,17 +323,12 @@
    "the safe margin, and the six rooms that painted over him were fixed. A plate",
    "or room goes back in here with its reason the day a drop breaks it.",
    "",
-   "figures/guidance-raise-cut is held back since rebuild-39 because a name clash",
-   "in the kit redrew it as a copy of another plate; see its reason.",
-   "",
    "The rooms held back since rebuild-39 are not broken. Each is right for a",
    "shot nothing can recognise yet, and a room in a role is picked by seed.",
    "The Christmas twins were held back until December dressed a whole",
    "episode; it does since item 19, so only board-wide's twin is left here."
   ],
-  "plates": {
-   "figures/guidance-raise-cut": "NOT THE PLATE ITS NOTES DESCRIBE. rebuild-39's round five named its new guidance chart's drawing guidanceRange, the name of the round-one drawing behind this plate, and round five installs last, so this key now draws an exact copy of charts/guidance-range-9x16 (same slots, same art) while roles.fragment.json still describes the old range-and-mark figure. Offered, the writer would pick it for a figure it no longer draws. charts/guidance-range-9x16 carries the new chart; this comes back when design renames one of the two drawings."
-  },
+  "plates": {},
   "rooms": {
    "room/board-wide": "design: open on it only when the chapter will be argued on the board. The opener role picks by seed, so in it this would open chapters that never go near the board. Night only as well (duskSafe false), like board-side.",
    "room/board-wide-christmas": "SEASONAL, and the twin of board-wide, which is held back above: December shoots an angle's twin in its place, so this is reached when board-wide is, and not before."

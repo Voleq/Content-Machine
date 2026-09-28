@@ -83,7 +83,7 @@ function dataLayer(m, data, hour) {
   if (data.points && SL['plot-area'] && SERIES.scatter) outs.push(SERIES.scatter({ box: SL['plot-area'], points: data.points, accent: data.accent, ink }));
   /* Named per-slot marks and extents: a plate with one rail per row publishes
    * marker-N / band-N regions, and the data names which value goes in which. */
-  Object.keys(data.marks || {}).forEach(k => { const b = SL[k]; if (b) outs.push(SERIES.axisMark({ box: b, value: data.marks[k], axis: b.axis || 'horizontal', tone: b.ink, ink })); });
+  Object.keys(data.marks || {}).forEach(k => { const b = SL[k]; if (b) outs.push(SERIES.axisMark({ box: b, value: data.marks[k], axis: b.axis || 'horizontal', tone: b.ink, weight: b.weight, ink })); });
   /* rebuild-30: the attention underline a slot publishes (footnote-spotlight). */
   Object.keys(SL).forEach(k => { const b = SL[k]; if (b && b.underline) outs.push({ nodes: [{ tag: 'rect', attrs: { x: Math.round(b.x), y: Math.round(b.y + b.h + 2), width: Math.round(b.w * 0.8), height: 5, fill: ink[b.underline] } }] }); });
   /* rebuild-29: said-happened's diverge-N. The slot note always promised "the

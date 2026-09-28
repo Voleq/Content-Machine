@@ -103,8 +103,9 @@ def test_a_figure_states_its_signed_number():
 
 
 def test_a_sheet_counts_the_latest_figure_of_the_row_it_lights(reg):
-    """Design's anchor on every sheet is the first cell, the oldest year —
-    the one number nobody is talking about."""
+    """Design's anchor on a sheet is the latest figure of its first row; a
+    short counts the latest figure of the row it lights, which is the row
+    being read."""
     plate = reg.get("tables/numbers-sheet-3r-9x16")
     values = {f"cell-{r}-{c}": str(r * 100 + c) for r in (1, 2, 3) for c in range(1, 7)}
     assert MV._figure_slots(plate, values, "band-2") == ["cell-2-6"]
@@ -285,7 +286,7 @@ def test_moves_wait_for_the_wipe_to_uncover_the_shot(short, reg, settings):
     wipe = next(w for w in plan.wipes if w.shot_in == "the-news")
     for m in plan.moves:
         if m.shot_id == "the-news":
-            assert m.start >= wipe.cut + MV.AFTER_WIPE_S - 1e-9
+            assert m.start >= wipe.end - 1e-9
 
 
 # ---------------------------------------------------------------------------
@@ -434,26 +435,59 @@ def test_the_ring_is_drawn_round_the_figure_not_the_slot(short, reg, settings):
     assert (xs.max() - xs.min()) < (box.w + 120) * k
 
 
-def test_a_wipe_covers_the_whole_frame_on_the_cut(reg, settings):
+@pytest.mark.parametrize("text", [
+    "Goodwill impairment of $1.2bn was recorded in the fourth quarter.",
+    "Goodwill impairment of $1.2bn was recorded in the fourth quarter, after "
+    "the segment missed its plan for a second year and the discount rate "
+    "used in the test rose by two points."])
+def test_the_underline_sits_under_the_line_the_copy_ends_on(reg, settings, text):
+    """Design's highlight: under the anchor's line that the copy's last line
+    sits in, not under a tall box a third of the frame below the words."""
+    plate = reg.get("paper/footnote-spotlight-9x16")
+    anchor = plate.motion["highlight"]
+    line = MV.underline_line(plate, anchor["slot"], text, settings, reg)
+    ink = MV._ink_box(plate, anchor["slot"], text, settings, reg)
+    assert dict(line._asdict()) in anchor["lines"]
+    assert line.y < ink.y + ink.h <= line.y + line.h + 8
+
+
+@pytest.mark.parametrize("name, frames", [("wipe-sweep", 8), ("wipe-page", 8),
+                                          ("wipe-blinds", 8),
+                                          ("wipe-sweep-short", 4),
+                                          ("wipe-page-short", 4),
+                                          ("wipe-blinds-short", 4)])
+def test_a_wipe_covers_the_whole_frame_on_the_cut(reg, settings, name, frames):
+    """Design made the cut frame fully opaque (rebuild-40): the two shots are
+    cut under it and neither shows through."""
     from PIL import Image
 
     from pipeline.render_short import _Cache
 
-    key = reg.aspect_key("overlays/wipe-sweep", "9x16")
+    key = reg.aspect_key(f"overlays/{name}", "9x16")
     plate = reg.get(key)
-    assert plate is not None and (plate.transition or {}).get("frames") == 8
-    w = MV.Wipe(key=key, cut=5.0, shot_out="a", shot_in="b")
+    spec = (plate.transition or {}) if plate is not None else {}
+    assert spec.get("frames") == frames and spec.get("cutAt") == frames // 2
+    w = MV.Wipe(key=key, cut=5.0, shot_out="a", shot_in="b", frames=frames,
+                cut_frame=frames // 2 - 1)
     comp = MV.MoveCompositor(MV.MovePlan(wipes=[w]), reg, settings, _Cache(settings, reg))
     img = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))
     comp.draw_overlays(img, w.cut + 0.01)
     import numpy as np
 
-    # Every pixel is covered. Design's hatch on the cover is drawn in partial
-    # opacity (down to a quarter), so the cut ghosts through about 2% of the
-    # frame for one frame; that is theirs to fix and is in the note to them.
     alpha = np.asarray(img)[:, :, 3]
-    assert (alpha > 0).mean() > 0.999, "the cut shows through the cover"
-    assert (alpha > 128).mean() > 0.99
+    assert (alpha == 255).mean() > 0.999, "the cut shows through the cover"
+
+
+def test_a_short_wipes_in_design_s_four_frame_cuts(vertical, reg, settings):
+    """The shorts are the fast lane: design's third-of-a-second wipes, the
+    cut under the second frame, and the shot's moves wait only for those."""
+    fmt, result, words, _ = vertical
+    wipes = MV.plan_wipes(fmt, result, reg, seed="x")
+    assert wipes
+    for w in wipes:
+        assert w.key.split("/")[1].rsplit("-", 1)[0].endswith("-short"), w.key
+        assert (w.frames, w.cut_frame) == (4, 1)
+        assert w.end - w.cut == pytest.approx(3 / 12)
 
 
 # ---------------------------------------------------------------------------
