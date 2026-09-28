@@ -21,7 +21,7 @@ Write in the sub-mode named above (auto-detected from the input; the operator ma
 
 * **company** — a company item (partnership, lawsuit, product, exec change). Take the headline AS REPORTED → say what it literally says vs. what the crowd will assume it means → gut-check against THIS ticker's multi-year numbers → deadpan verdict: priced in / nothingburger / actually matters.
 * **earnings** — a quarterly print. Lead with beat/miss + guidance vs. the standing thesis → decide whether the print changes the TRAJECTORY or just the week → same numbers gut-check, pulling the figures from the headline and the data below.
-* **macro** — a market/sector release (CPI, Fed, jobs, rates). NOT a single company. Frame it as "here's what this actually does to your holdings," deadpan. There is NO company 10-K data and none is required: chart the {{ticker}} index/sector proxy and keep the numbers beat OPTIONAL — if you use it, carry index levels or the macro series itself (e.g. CPI year-over-year), never company financials.
+* **macro** — a market/sector release (CPI, Fed, jobs, rates). NOT a single company. Frame it as "here's what this actually does to your holdings," deadpan. There is NO company 10-K data and none is required: {{ticker}} is the index/sector proxy, and the numbers beat is OPTIONAL — if you use it, carry index levels or the macro series itself (e.g. CPI year-over-year), never company financials.
 
 ## INPUT
 Ticker / index: {{ticker}}   (as of {{as_of_date}})
@@ -102,7 +102,7 @@ the payoff is what turns a sentence into a joke.
 6. `conclusion`: free text, ≤ 220 chars, opening with the verdict the way you'd mutter it ("Priced in." / "Nothingburger." / "This one actually matters." / "Noise, but the guide is real."). NEVER a label from a taxonomy.
 7. NEVER name any data vendor, terminal, or data product. A news `Source` (Reuters, Bloomberg, AP) is fine; a data terminal is not. On screen, filings are "from the 10-K" — the vendor unnamed, and `sources` names only the filing or the agency.
 8. The kit is fixed — do NOT request custom assets; this is a SHORT.
-9. MODE-SPECIFIC: macro mode has NO company 10-K data and needs none — `ticker` is the index/sector proxy ({{ticker}}), the chart is that index, and the numbers beat is optional (index/macro figures only). company/earnings modes anchor on THIS ticker and its multi-year numbers.
+9. MODE-SPECIFIC: macro mode has NO company 10-K data and needs none — `ticker` is the index/sector proxy ({{ticker}}), and the numbers beat is optional (index/macro figures only). company/earnings modes anchor on THIS ticker and its multi-year numbers.
 10. Both-ways honesty: let the facts pick the polarity — a real beat gets grudging credit, a nothingburger gets a shrug; never manufacture doom or hype.
 11. `sources` (optional): where the figures on screen come from, keyed by the beat that shows them — company `{"numbers": "10-K filings, FY21–FY25"}`, earnings `{"numbers": "Q3 release, Oct 2026"}`, macro `{"numbers": "BLS, August CPI"}`. ≤ 40 chars each. The filing, the company's release or the public agency — never a data vendor, terminal or data product, and never a document the figure did not come from: leave a beat out rather than guess. Name the document, never just "company filings". It slides in under that beat's plate once its figures land.
 

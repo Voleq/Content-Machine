@@ -150,6 +150,13 @@ def make_price_source(settings: Settings) -> PriceSource:
     return MockPriceSource(settings) if settings.mocking_prices else YahooPriceSource(settings)
 
 
+# How long a SYNTHETIC series is served from the cache. Long enough for one
+# job to read the same series twice (the gate, then the chart); short enough
+# that "retry once the feed is back" fetches again instead of meeting the
+# same random walk for the rest of the hour.
+DEGRADED_TTL_S = 300
+
+
 def get_price_history(ticker: str, settings: Settings,
                       source: PriceSource | None = None) -> PriceSeries:
     """TTL-cached price history (§2.4-style: unchanged inputs ⇒ zero calls).
@@ -159,10 +166,12 @@ def get_price_history(ticker: str, settings: Settings,
     cdir = settings.cache_dir / "prices"
     cfile = cdir / f"{ticker}_{days}.json"
     try:
-        if cfile.exists() and time.time() - cfile.stat().st_mtime < settings.prices_cache_ttl_s:
+        age = time.time() - cfile.stat().st_mtime if cfile.exists() else None
+        if age is not None and age < settings.prices_cache_ttl_s:
             series = PriceSeries.from_json(cfile.read_text(encoding="utf-8"))
-            return series
-    except (json.JSONDecodeError, KeyError, ValueError):
+            if not series.degraded or age < DEGRADED_TTL_S:
+                return series
+    except (json.JSONDecodeError, KeyError, ValueError, OSError):
         pass
 
     src = source or make_price_source(settings)
