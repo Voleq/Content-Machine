@@ -72,6 +72,11 @@ The beats are set above; the runtime goes to keeping the viewer, never to more t
 4. Room in the gut check for ONE more number IF it changes the read — a number, not more narration.
 Still NO verdict stamps: the payoff stays deadpan free text and the viewer draws the conclusion.
 
+### WHERE VIEWERS HAVE LEFT BEFORE — measured weekly, to the sentence
+The channel's own shorts: the lines people stopped watching on, and what those lines share. The counts come from code; any reading under them is the bot's model.
+
+{{retention_note}}
+
 ## WHAT REACHES THE SCREEN, AND WHAT DOES NOT
 
 **The visuals of a short are a fixed shot template, not something you place.**

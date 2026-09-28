@@ -69,6 +69,11 @@ The beats are set above; the runtime goes to keeping the viewer, never more talk
 3. The CHEAP-OR-TRAP beat carries the counter-observation — the strongest point against the read you're about to give — so the payoff lands as considered, not reflexive.
 4. Room for ONE more number IF it changes the read — a number, not more narration.
 
+### WHERE VIEWERS HAVE LEFT BEFORE — measured weekly, to the sentence
+The channel's own shorts: the lines people stopped watching on, and what those lines share. The counts come from code; any reading under them is the bot's model.
+
+{{retention_note}}
+
 ## WHAT REACHES THE SCREEN, AND WHAT DOES NOT
 
 **The visuals here are the fixed shot template above, not something you

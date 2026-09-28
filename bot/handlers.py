@@ -90,6 +90,7 @@ HELP_TEXT = """Dennis — operator commands
 /hooks [short|long] — openers ranked by what they held
 /rules — what the voice rules are worth, measured
 /runtime — hold against how long the videos run
+/lessons [now] — what the writer is told about where viewers left (now = rewrite it)
 /said <phrase> — every earlier use of a line, across every script shipped
 /experiments — clip pairs, and which one held
 /scoreboard [YYYY-Qn] — what we said and what happened, for a quarter
@@ -2800,6 +2801,20 @@ class BotCore:
 
         return runtime_evidence_text(self.settings)
 
+    def lessons_text(self, args: list[str]) -> str:
+        """`/lessons [now]` — the weekly note the writing prompts carry.
+
+        `now` rewrites it first: a fresh retention pull, the counts, and one
+        call to the local model. Free either way — the note's model call never
+        reaches the paid hosted tier.
+        """
+        from pipeline.retention_notes import notes_text, refresh_notes
+
+        if args and args[0].lower() == "now":
+            summary = refresh_notes(self.settings)
+            return f"Rewritten: {summary}\n\n{notes_text(self.settings)}"
+        return notes_text(self.settings)
+
     def shots_text(self, args: list[str]) -> str:
         """`/shots TICKER` — which shots of a published video lose people."""
         import json as _json
@@ -3035,6 +3050,47 @@ def schedule_batch(application, core: BotCore) -> None:
         batch_job, interval=15 * 60, first=60, name="overnight_batch")
     log.info("overnight batch window %02d:00-%02d:00 (machine clock)",
              settings.batch_start_hour, settings.batch_end_hour)
+
+
+def schedule_retention_notes(application, core: BotCore) -> None:
+    """Rewrite the note to the writer once a week (`RETENTION_NOTE_DAYS`).
+
+    Checked every six hours against the note's own date rather than run on a
+    seven-day timer, so a box that restarts every few days still writes it.
+    A pass that has nothing due does nothing and says nothing; the operator
+    hears about it only when a lane had enough videos to say something.
+    """
+    settings = core.settings
+    if not settings.retention_notes_enabled:
+        log.info("weekly retention note disabled (RETENTION_NOTES_ENABLED)")
+        return
+
+    async def notes_job(ctx) -> None:
+        import asyncio
+
+        from pipeline.retention_notes import (NOTE_FLOOR, load_notes,
+                                              notes_due, refresh_notes)
+
+        if not notes_due(settings):
+            return
+        try:
+            summary = await asyncio.to_thread(refresh_notes, settings)
+        except Exception as e:  # noqa: BLE001 - a pass that dies waits for the next
+            log.warning("weekly retention note failed (%s)", e)
+            return
+        log.info("weekly retention note: %s", summary)
+        notes = load_notes(settings)
+        if not any((notes.get(f) or {}).get("status") == "ok"
+                   for f in ("short", "long")):
+            return
+        for chat_id in settings.operator_chat_ids:
+            await ctx.bot.send_message(
+                chat_id, f"📝 Weekly note to the writer rewritten ({summary}). "
+                         f"/lessons shows it; the next prompt carries it. "
+                         f"A lane needs {NOTE_FLOOR} videos before it counts.")
+
+    application.job_queue.run_repeating(
+        notes_job, interval=6 * 3600, first=10 * 60, name="retention_notes")
 
 
 def _authorized(core: BotCore, chat_id: int) -> bool:
@@ -3347,6 +3403,12 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, await asyncio.to_thread(core.runtime_text))
 
     @guard
+    async def cmd_lessons(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.lessons_text, list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
     async def cmd_shots(update, ctx):
         import asyncio
         reply = await asyncio.to_thread(core.shots_text, list(ctx.args or []))
@@ -3564,6 +3626,7 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("hooks", cmd_hooks))
     app.add_handler(CommandHandler("rules", cmd_rules))
     app.add_handler(CommandHandler("runtime", cmd_runtime))
+    app.add_handler(CommandHandler("lessons", cmd_lessons))
     app.add_handler(CommandHandler("shots", cmd_shots))
     app.add_handler(CommandHandler("stillness", cmd_stillness))
     app.add_handler(CommandHandler("said", cmd_said))

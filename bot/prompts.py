@@ -133,6 +133,27 @@ def retention_evidence(settings: Settings) -> str:
     return "\n".join(lines)
 
 
+def retention_note(settings: Settings, fmt: str) -> str:
+    """Where viewers left, to the sentence, for the lane this prompt writes.
+
+    `retention_evidence` above says which chapter TYPES hold; a short has no
+    chapters, and a type is still a paragraph. This is the finer half,
+    rewritten weekly by `pipeline.retention_notes`: the sentences people
+    left on across the lane's recent videos, what they share by count, and
+    the local model's reading of it.
+    """
+    if not settings.retention_notes_enabled:
+        return ("(the weekly retention note is switched off — "
+                "RETENTION_NOTES_ENABLED=false)")
+    from pipeline.retention_notes import note_block
+
+    try:
+        return note_block(settings, "long" if fmt in _LONG_FORM else "short")
+    except Exception:                              # noqa: BLE001 — never fatal
+        return ("(retention note unreadable — write the script the story "
+                "earns and ignore this block)")
+
+
 def meme_catalog(settings: Settings) -> str:
     """Every meme key + its 'use when' — the full catalog (capped in use)."""
     idx = MemeLibrary(settings).index()
@@ -1033,6 +1054,8 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                  lambda c: confession_ledger(c.settings)),
     PayloadBlock("{{retention}}", _LONG_FORM,
                  lambda c: retention_evidence(c.settings)),
+    PayloadBlock("{{retention_note}}", _WRITING,
+                 lambda c: retention_note(c.settings, c.fmt)),
 
     # --- visual catalogs
     # LONG-FORM ONLY. Both were offered to the SHORT lane as well, where

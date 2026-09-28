@@ -141,7 +141,7 @@ def _video_index(settings: Settings) -> dict[str, dict]:
     been uploaded is a corpus of scripts, which is still useful.
     """
     try:
-        from pipeline.youtube import VideoLog
+        from pipeline.youtube import VideoLog, retention_rows
 
         records = VideoLog(settings).all()
     except Exception as e:  # noqa: BLE001 — the scripts are the point
@@ -151,10 +151,7 @@ def _video_index(settings: Settings) -> dict[str, dict]:
     for rec in records:
         if not rec.workdate:
             continue
-        rows = (rec.retention or {}).get("rows") or []
-        ratios = [r.get("watch_ratio") for r in rows
-                  if isinstance(r, dict) and isinstance(
-                      r.get("watch_ratio"), (int, float))]
+        ratios = [r["watch_ratio"] for r in retention_rows(rec.retention)]
         out[f"{rec.ticker}/{rec.workdate}"] = {
             "video_id": rec.video_id,
             "title": rec.title,

@@ -16,7 +16,8 @@ from config import detect_ffmpeg, get_settings
 from pipeline.jobs import RenderJobQueue
 from pipeline.render_common import set_render_politeness
 
-from bot.handlers import BotCore, build_application, schedule_batch
+from bot.handlers import (BotCore, build_application, schedule_batch,
+                          schedule_retention_notes)
 
 log = logging.getLogger("dennis")
 
@@ -140,6 +141,8 @@ def main() -> None:
             log.info("screener module not present; digest not scheduled")
         # The overnight window: what `/batch` queued runs in it unattended.
         schedule_batch(application, core)
+        # Weekly: the sentences viewers left on, into the next writing prompt.
+        schedule_retention_notes(application, core)
 
     async def _post_shutdown(application) -> None:
         """Let go of anything still reading a filing (P1).

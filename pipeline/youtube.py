@@ -742,10 +742,33 @@ def pull_retention(video_id: str, settings: Settings, *,
         return {"status": "unavailable", "reason": str(e)[:160]}
 
     mapped = map_retention_to_chapters(rows, record.chapters, record.duration_s)
-    payload = {"status": "ok", "video_id": video_id, "rows": len(rows),
-               "chapters": mapped, "pulled_at": now.isoformat()}
+    # THE ROWS THEMSELVES, not how many there were. This stored `len(rows)`,
+    # and every reader downstream — the sentence join in `retention_lines`,
+    # the hook bench, the rules on trial, the corpus's hold, the clip pairs —
+    # reads `rows` as the curve. A test builds its records by hand with the
+    # curve in place, so all of them passed, and on a real pull every one of
+    # them would have been handed an integer. `retention_rows` reads both.
+    payload = {"status": "ok", "video_id": video_id, "rows": rows,
+               "row_count": len(rows), "chapters": mapped,
+               "pulled_at": now.isoformat()}
     log_.update_retention(video_id, payload)
     return payload
+
+
+def retention_rows(retention: dict | None) -> list[dict]:
+    """The stored curve, as `[{elapsed_ratio, watch_ratio}, …]`, or nothing.
+
+    A record pulled before the curve was kept carries a bare count under
+    `rows`. That reads as no curve rather than as an error: those videos are
+    simply pulled again, and the next pull stores the rows.
+    """
+    rows = (retention or {}).get("rows")
+    if not isinstance(rows, list):
+        return []
+    return [r for r in rows
+            if isinstance(r, dict)
+            and isinstance(r.get("elapsed_ratio"), (int, float))
+            and isinstance(r.get("watch_ratio"), (int, float))]
 
 
 def chapter_type_evidence(settings: Settings) -> list[dict]:

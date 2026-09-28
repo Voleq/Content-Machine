@@ -80,17 +80,15 @@ class Experiment:
 
 def experiments(settings: Settings) -> list[Experiment]:
     """Every clip pair that has been shipped, newest first."""
-    from pipeline.youtube import VideoLog
+    from pipeline.youtube import VideoLog, retention_rows
 
     by_pair: dict[str, list[Arm]] = {}
     for record in VideoLog(settings).all():
         tag = getattr(record, "experiment", "")
         if not tag:
             continue
-        rows = (record.retention or {}).get("rows") or []
-        ratios = [float(r["watch_ratio"]) for r in rows
-                  if isinstance(r, dict)
-                  and isinstance(r.get("watch_ratio"), (int, float))]
+        ratios = [float(r["watch_ratio"])
+                  for r in retention_rows(record.retention)]
         by_pair.setdefault(tag, []).append(Arm(
             video_id=record.video_id, title=record.title,
             start_s=float(getattr(record, "clip_start_s", 0.0) or 0.0),
