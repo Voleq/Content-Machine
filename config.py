@@ -361,15 +361,11 @@ class Settings(BaseSettings):
     retention_window_days: int = Field(default=28, alias="RETENTION_WINDOW_DAYS")
 
     # ------------------------------------------------ free sources (P3.4)
-    # 8-K/EX-99.1, Form 4 and 13F reuse the EDGAR client above (SEC_USER_AGENT
-    # and the fair-access interval apply). FRED needs its own free key. Every
+    # 8-K/EX-99.1 and Form 4 reuse the EDGAR client above (SEC_USER_AGENT and
+    # the fair-access interval apply). FRED needs its own free key. Every
     # source degrades to "unavailable" rather than failing a run.
     fred_api_key: str = Field(default="", alias="FRED_API_KEY")
     fred_base_url: str = "https://api.stlouisfed.org"
-    # Optional webcast transcription. Slow and GPU-hungry; nothing waits on it.
-    whisper_enabled: bool = Field(default=False, alias="WHISPER_ENABLED")
-    whisper_model: str = Field(default="base.en", alias="WHISPER_MODEL")
-    whisper_cuda: bool = Field(default=True, alias="WHISPER_CUDA")
 
     # ---------------------------------------------- intraday alerting (3b)
     # Short-form is time-sensitive, and one pre-market digest doesn't cover

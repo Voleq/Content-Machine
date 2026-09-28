@@ -212,7 +212,7 @@ pipeline/
   broll.py               the content engine: [CLIP], [IMG]/[PRODUCT], [MEME],
                          [SCREENGRAB] — cached, attributed
   memes.py               owned meme library (meme_index.json) + providers
-  sources.py             free feeds: 8-K + EX-99.1, Form 4, 13F, FRED, IR RSS
+  sources.py             free feeds: 8-K + EX-99.1, Form 4, FRED, IR RSS
   audio_assets.py        where the sound came from, and whether it is real
   sound.py               what a SHORT sounds like: voice and room through
                          the LONG's mixer (render_common.audio_graph)
@@ -917,7 +917,6 @@ number, which is exactly the case the gate exists to catch.
 | `ALERTS_ENABLED` / `ALERT_POLL_MINUTES` | true / 15 | intraday watch on covered names |
 | `ALERT_MOVE_PCT` / `ALERT_COOLDOWN_MINUTES` | 6.0 / 180 | when it speaks, and how rarely it repeats |
 | `FRED_API_KEY` | — | free macro series for `/headline macro`; absent = unavailable |
-| `WHISPER_ENABLED` | false | optional webcast transcription; never blocks |
 | `YOUTUBE_ENABLED` / `YOUTUBE_CREDENTIALS` | false / — | upload as private or scheduled; never public |
 | `BYPRODUCTS_ENABLED` | true | thumbnails, social cards, end screens per render |
 | `STATUS_PAGE_ENABLED` / `STATUS_PAGE_PORT` | false / 8787 | read-only localhost view |

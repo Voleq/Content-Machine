@@ -99,13 +99,21 @@ def _safe(fn, message: str) -> str:
 
 
 def _queue_section(settings: Settings) -> str:
-    rows = []
+    # Newest first, as /status lists them. Job ids are random, so the file
+    # names say nothing about when a job ran, and the last twelve by name
+    # were any twelve.
+    jobs = []
     store = settings.state_dir / "jobs"
     if store.is_dir():
-        for f in sorted(store.glob("*.json"))[-12:]:
-            job = json.loads(f.read_text(encoding="utf-8"))
-            rows.append([job.get("ticker", ""), job.get("kind", ""),
-                         job.get("status", ""), job.get("detail", "")[:48]])
+        for f in store.glob("*.json"):
+            try:
+                jobs.append(json.loads(f.read_text(encoding="utf-8")))
+            except (OSError, ValueError):
+                continue        # one corrupt job file is one missing row
+    jobs.sort(key=lambda j: str(j.get("updated_at", "")), reverse=True)
+    rows = [[job.get("ticker", ""), job.get("kind", ""),
+             job.get("status", ""), str(job.get("detail", ""))[:48]]
+            for job in jobs[:12]]
     return _rows(["Ticker", "Kind", "Status", "Detail"], rows, "nothing queued")
 
 

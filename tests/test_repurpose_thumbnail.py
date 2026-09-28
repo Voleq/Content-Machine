@@ -3,7 +3,7 @@ import json
 import pytest
 
 from pipeline.render_common import ffprobe_json, run_ffmpeg
-from pipeline.repurpose import pick_best_window, repurpose_short_from_long
+from pipeline.repurpose import pick_best_window, repurpose_clips_from_long
 from pipeline.thumbnail import make_thumbnail, shock_metric
 from pipeline.tts import mock_words
 
@@ -62,7 +62,7 @@ def test_repurpose_crops_to_9_16(settings, tmp_path):
         "duration": 30.0,
         "cues": [_cue(5, "clip"), _cue(12, "filing"), _cue(20, "meme")],
     }), encoding="utf-8")
-    out, info = repurpose_short_from_long(src, manifest, small)
+    [(out, info)] = repurpose_clips_from_long(src, manifest, small, n=1)
     assert out.exists()
     v = next(s for s in ffprobe_json(out)["streams"] if s["codec_type"] == "video")
     assert (v["width"], v["height"]) == (306, 544)

@@ -14,13 +14,10 @@ What is here:
   `/headline earnings`.
 * **Form 4** — insider transactions. Pairs with the `insider-selling` kit
   asset and is a strong short hook on its own.
-* **13F** — which funds hold it. Filed quarterly and 45 days late, so it is
-  always a story about last quarter; the reader says so.
 * **FRED** — CPI, rates, jobs, for `/headline macro`, replacing scraped
   headlines with the actual series.
-* **Company IR RSS** — press releases, feeding the idea queue.
-* **Whisper** — optional, GPU, best-effort: transcribe a webcast when the
-  audio URL is discoverable. Never blocks anything.
+* **Company IR RSS** — press releases, the news for a name too small to
+  make the headlines.
 
 Every fetch goes through one cache with a per-source TTL, because these
 endpoints are either rate-limited (SEC) or key-limited (FRED), and because
@@ -33,8 +30,7 @@ import json
 import logging
 import re
 import time
-from dataclasses import asdict, dataclass, field
-from datetime import date, datetime, timedelta, timezone
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -44,11 +40,11 @@ log = logging.getLogger(__name__)
 
 UNAVAILABLE = "unavailable"
 
-# Per-source cache lifetimes. A 13F is quarterly; a price-moving 8-K is not.
+# Per-source cache lifetimes. A macro series moves monthly; a price-moving
+# 8-K does not wait.
 TTL_SECONDS = {
     "8k": 900,          # 15 min — an earnings 8-K is the time-critical one
     "form4": 3600,
-    "13f": 86400 * 7,   # quarterly data, 45 days stale by law
     "fred": 3600 * 6,
     "rss": 1800,
 }
@@ -87,7 +83,7 @@ def store(settings: Settings, kind: str, key: str, data: Any) -> Any:
 
 
 # --------------------------------------------------------------------------
-# EDGAR: 8-K + EX-99.1, Form 4, 13F.
+# EDGAR: 8-K + EX-99.1, Form 4.
 # --------------------------------------------------------------------------
 
 
@@ -244,38 +240,6 @@ def insider_transactions(ticker: str, settings: Settings,
     })
 
 
-def institutional_holders(ticker: str, settings: Settings) -> dict:
-    """13F holdings — "which funds bought this".
-
-    Filed quarterly and up to 45 days after quarter end, so this is always a
-    story about last quarter. Said plainly here so a script can say it too
-    rather than implying somebody bought it yesterday.
-    """
-    key = ticker.upper()
-    hit = cached(settings, "13f", key)
-    if hit is not None:
-        return hit
-    if settings.mock_mode:
-        return store(settings, "13f", key,
-                     _fixture(settings, "sec_13f.json",
-                              {"status": UNAVAILABLE, "ticker": key}))
-    # Full-text search is the practical route: 13Fs are filed by the HOLDER,
-    # not the issuer, so there is no per-ticker submissions feed to read.
-    from pipeline.filings import _sec_get
-
-    url = (f"{settings.sec_data_base_url}/submissions/CIK"
-           f"{(_cik_for(ticker, settings) or '').zfill(10)}.json")
-    resp = _sec_get(url, settings) if _cik_for(ticker, settings) else None
-    if resp is None:
-        return store(settings, "13f", key,
-                     {"status": UNAVAILABLE, "ticker": key,
-                      "reason": "13F lookup unavailable"})
-    return store(settings, "13f", key, {
-        "status": "ok", "ticker": key, "holders": [],
-        "as_of_note": "13F data is quarterly and filed up to 45 days late",
-    })
-
-
 # --------------------------------------------------------------------------
 # FRED: the macro series.
 # --------------------------------------------------------------------------
@@ -292,6 +256,11 @@ FRED_SERIES = {
     "gdp": "GDPC1",
     "pce": "PCEPI",
 }
+
+# Series that are already a rate. Their change is in percentage points: the
+# unemployment rate going from 4.1 to 4.3 is up two tenths of a point, and
+# "+4.9%" is a number a script would read out as if it were the rate.
+RATE_SERIES = frozenset({"UNRATE", "FEDFUNDS", "DGS10", "DGS2"})
 
 
 def fred_series(name: str, settings: Settings, *, limit: int = 13) -> dict:
@@ -334,7 +303,7 @@ def fred_series(name: str, settings: Settings, *, limit: int = 13) -> dict:
         "status": "ok", "series": series_id, "name": name.lower(),
         "observations": obs,
         "latest": obs[-1] if obs else None,
-        "change": _series_change(obs),
+        "change": _series_change(obs, points=series_id in RATE_SERIES),
     })
 
 
@@ -345,15 +314,29 @@ def _fnum(v) -> float | None:
         return None
 
 
-def _series_change(obs: list[dict]) -> dict:
-    """Month-on-month and year-on-year, when there are enough points."""
+def _series_change(obs: list[dict], *, points: bool = False) -> dict:
+    """Month-on-month and year-on-year, when there are enough points.
+
+    `points` gives the change of a rate in percentage points, and marks it
+    with `"unit": "pts"` so nothing prints it with a percent sign.
+    """
     if len(obs) < 2:
         return {}
     latest = obs[-1]["value"]
-    out = {"mom": _pct(obs[-2]["value"], latest)}
+    step = _pts if points else _pct
+    out = {"mom": step(obs[-2]["value"], latest)}
     if len(obs) >= 13:
-        out["yoy"] = _pct(obs[-13]["value"], latest)
-    return {k: v for k, v in out.items() if v is not None}
+        out["yoy"] = step(obs[-13]["value"], latest)
+    out = {k: v for k, v in out.items() if v is not None}
+    if points and out:
+        out["unit"] = "pts"
+    return out
+
+
+def _pts(before, after) -> float | None:
+    if before is None or after is None:
+        return None
+    return round(after - before, 2)
 
 
 def _pct(before, after) -> float | None:
@@ -432,71 +415,6 @@ def _text(node, tag: str) -> str:
     return (el.text or "").strip() if el is not None and el.text else ""
 
 
-def ideas_from_ir(settings: Settings, ticker: str, url: str) -> int:
-    """Press releases become backlog entries (P3.3's queue, fed by 3b's watch)."""
-    feed = ir_feed(url, settings)
-    if feed.get("status") != "ok":
-        return 0
-    from pipeline.standing import IdeaQueue
-
-    q = IdeaQueue(settings)
-    items = feed.get("items", [])[:3]
-    for item in items:
-        q.add(ticker, f"IR: {item['title'][:90]}", source="ir", score=1.0)
-    return len(items)
-
-
-# --------------------------------------------------------------------------
-# Whisper (optional, best-effort).
-# --------------------------------------------------------------------------
-
-
-def whisper_available(settings: Settings) -> tuple[bool, str]:
-    if not settings.whisper_enabled:
-        return False, "transcription is switched off (WHISPER_ENABLED=false)."
-    try:
-        import faster_whisper  # noqa: F401
-        return True, "faster-whisper is installed"
-    except ImportError:
-        pass
-    try:
-        import whisper  # noqa: F401
-        return True, "openai-whisper is installed"
-    except ImportError:
-        return False, "no Whisper package installed (pip install faster-whisper)."
-
-
-def transcribe(audio_url: str, settings: Settings, *,
-               out_dir: Path | None = None) -> dict:
-    """Transcribe a webcast. NEVER blocks — this is a nice-to-have.
-
-    Deliberately the weakest link in the module: it is slow, it needs a GPU
-    to be pleasant, and nothing downstream should ever be waiting on it.
-    """
-    ok, why = whisper_available(settings)
-    if not ok:
-        return {"status": UNAVAILABLE, "reason": why}
-    if settings.mock_mode:
-        return {"status": UNAVAILABLE, "reason": "MOCK_MODE — no transcription"}
-    try:
-        from faster_whisper import WhisperModel
-
-        model = WhisperModel(settings.whisper_model,
-                             device="cuda" if settings.whisper_cuda else "cpu",
-                             compute_type="float16" if settings.whisper_cuda else "int8")
-        segments, info = model.transcribe(audio_url)
-        text = " ".join(s.text.strip() for s in segments)
-    except Exception as e:  # noqa: BLE001 - best-effort by definition
-        log.warning("transcription failed for %s: %s", audio_url, e)
-        return {"status": UNAVAILABLE, "reason": str(e)[:160]}
-    payload = {"status": "ok", "url": audio_url, "text": text,
-               "language": getattr(info, "language", "")}
-    if out_dir:
-        out_dir.mkdir(parents=True, exist_ok=True)
-        (out_dir / "webcast_transcript.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    return payload
-
-
 # --------------------------------------------------------------------------
 # Fixtures + reporting.
 # --------------------------------------------------------------------------
@@ -521,10 +439,13 @@ def summarise(payload: dict) -> str:
         bits = [f"{payload.get('series')}: {latest.get('value')} "
                 f"({latest.get('date')})"]
         change = payload.get("change") or {}
+        unit = (" percentage points" if change.get("unit") == "pts"
+                else "%")
+        spec = "+.2f" if change.get("unit") == "pts" else "+.1f"
         if "yoy" in change:
-            bits.append(f"{change['yoy']:+.1f}% y/y")
+            bits.append(f"{change['yoy']:{spec}}{unit} y/y")
         elif "mom" in change:
-            bits.append(f"{change['mom']:+.1f}% m/m")
+            bits.append(f"{change['mom']:{spec}}{unit} m/m")
         return " · ".join(bits)
     if "filings" in payload:
         return f"{payload.get('count', 0)} recent {payload.get('ticker')} Form 4(s)"

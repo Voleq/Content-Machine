@@ -160,16 +160,14 @@ _LONG_NO_CUE_REASONS: dict[TagType, str] = {
     # tag inherits the exclusion instead of crashing the render.
     **{t: "delivery direction — consumed by TTS, never drawn"
        for t in DELIVERY_TAG_TYPES},
-    # SHORT-only. render_short resolves it through article_lookup +
-    # screenshot_article; render_long has no article machinery, and
-    # master_prompt_long_write.md never asks for one. It still parses on a
-    # LONG (it is self-resolving, so a bare tag needs no payload), so it can
-    # arrive here — skipped, and said out loud, not mapped to a segment kind
-    # the long renderer cannot paint.
+    # No renderer draws it. The short's article cutaway went with the shot
+    # templates, and the long never had one. It still parses (it is
+    # self-resolving, so a bare tag needs no payload), so it can arrive
+    # here — skipped, and said out loud, not mapped to a segment kind the
+    # long renderer cannot paint.
     TagType.SHOW_ARTICLE: (
-        "[SHOW ARTICLE] is a SHORT beat — the LONG renderer has no article "
-        "path, so this draws nothing. Use [SCREENGRAB] with the capture, or "
-        "cut the tag"),
+        "[SHOW ARTICLE] draws nothing — there is no article screenshot in "
+        "either format. Use [SCREENGRAB] with the capture, or cut the tag"),
 }
 
 

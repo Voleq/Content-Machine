@@ -1692,8 +1692,7 @@ class BotCore:
             if not clips:
                 raise RuntimeError("no usable window in the finished LONG")
             checkpoint("delivery")
-            import json as _json
-            attributions = _json.loads(manifest.read_text(encoding="utf-8")).get("attributions", [])
+            attributions = self._attributions(manifest)
             # EVERY clip's link, not just the last one's (I3). `result` was
             # overwritten each pass, so `/status` and the job record showed
             # only the final clip — the first two were delivered and
