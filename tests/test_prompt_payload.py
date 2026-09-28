@@ -340,3 +340,21 @@ def test_the_short_is_not_asked_for_a_plate_per_figure():
         text = (TEMPLATES / f"master_prompt_{fmt}.md").read_text(encoding="utf-8")
         assert "{{tagging_density}}" not in text
     assert "{{tagging_density}}" in payload_tokens("long_write")
+
+
+def test_the_short_catalogue_is_the_template_s_plates(settings):
+    """The short prompt calls its catalogue "the frames a viewer will
+    actually see", and it listed every portrait plate in the kit: 130k
+    characters of slots and cautions for plates the writer cannot place and
+    the template never lands on."""
+    from bot.prompts import plate_catalogue, template_plates
+
+    only = template_plates(settings, "short")
+    assert "tables/numbers-sheet-4r-9x16" in only
+    text = plate_catalogue(settings, fmt="short", only=only)
+    everything = plate_catalogue(settings, fmt="short")
+    assert "numbers-sheet-4r-9x16" in text
+    listed = {ln.split()[0] for ln in text.splitlines()
+              if ln.startswith("  ") and not ln.startswith("   ")}
+    assert listed and all(any(k.endswith("/" + s) for k in only) for s in listed)
+    assert len(text) < len(everything) / 5
