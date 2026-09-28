@@ -2223,8 +2223,7 @@ def _render_long(
                 is_video=first, hold=first, name="lower_third"))
             if first:
                 long_moves.append({"move": "slide-in", "start": round(a, 3),
-                                   "shot_id": "lower_third", "slot": "",
-                                   "frames": lt_clip.frames})
+                                   "shot_id": "lower_third", "slot": ""})
     else:
         lt = simple_text(settings, f"${script.ticker} · {settings.brand_tagline.lower()}",
                          font_size=px(34), fill=(*role(settings, "structure"), 220),
