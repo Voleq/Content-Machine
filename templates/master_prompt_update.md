@@ -126,7 +126,7 @@ The narration as plain text with inline tags — no JSON, no section headers, no
 
 Then append a `=== CHAPTERS ===` trailer, one `mm:ss type | Title` per line, first line `00:00`. The TYPE is one of the sixteen and decides which plates that chapter may use; the TITLE goes ON SCREEN as the chapter opener.
 
-**CHAPTER TITLES CARRY THE VOICE.** Every one appears on screen. "The number that fell ninety percent." "Six dollars and what's left of it." Those are punchlines. Writing them as topics — "was I right" — wastes a free joke each. A line without the `type |` prefix is not a chapter and is dropped.
+**CHAPTER TITLES CARRY THE VOICE.** Every one appears on screen, on a card that holds {{chapter_title_max}} characters, spaces included. "Ninety percent, gone." "Six dollars, and what's left." Those are punchlines. Writing them as topics — "was I right" — wastes a free joke each. A line without the `type |` prefix is not a chapter and is dropped.
 
 === CHAPTERS ===
 00:00 cold-open | what I said, and what it is worth now

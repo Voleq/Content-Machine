@@ -210,6 +210,23 @@ def parse_chapters(text: str) -> tuple[list[Chapter], list[str]]:
     return chapters, warnings
 
 
+def _title_warnings(chapters, settings: Settings) -> list[str]:
+    """A title longer than the chapter card holds runs into the drawing."""
+    from pipeline.bumper import chapter_title_limit
+    from pipeline.plates import PlateError, load_plates
+
+    try:
+        limit = chapter_title_limit(load_plates(settings.assets_dir))
+    except PlateError:
+        return []
+    if not limit:
+        return []
+    return [f"chapter title {ch.title!r} is {len(ch.title)} characters and "
+            f"the chapter card holds {limit} — past that the line runs into "
+            f"the drawing. Shorten it; the joke survives."
+            for ch in chapters if len(ch.title) > limit]
+
+
 def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongScript, list[str]]:
     """Tokenize tagged narration. Returns (script, warnings).
 
@@ -342,6 +359,7 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
 
     chapter_list, chapter_warnings = parse_chapters(chapters)
     warnings.extend(chapter_warnings)
+    warnings.extend(_title_warnings(chapter_list, settings))
     if not chapter_list:
         warnings.append(
             "the script has no usable `=== CHAPTERS ===` trailer — every "

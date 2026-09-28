@@ -379,13 +379,15 @@ chapter opener as the room with your title in its title slot. A type may repeat
 under different titles; nothing is numbered.
 
 **CHAPTER TITLES CARRY THE VOICE.** There are about eight of them and every one
-appears on screen. "The billion-dollar shortcut." "The number that fell ninety
-percent." "Six dollars and what's left of it." Those are punchlines. Writing
-them as topics — "valuation", "the risks" — wastes eight free jokes.
+appears on screen. "The billion-dollar shortcut." "Ninety percent, gone."
+"Six dollars, and what's left." Those are punchlines. Writing them as topics —
+"valuation", "the risks" — wastes eight free jokes. Each one sits on the
+chapter card, which holds {{chapter_title_max}} characters, spaces included;
+past that the line runs into the drawing.
 
 === CHAPTERS ===
 00:00 cold-open | a body or a bargain
-mm:ss how-the-money-is-made | the money arrives one seat at a time
+mm:ss how-the-money-is-made | one seat at a time
 mm:ss the-numbers | six years, one direction
 mm:ss filing-walk | page four hundred and eleven
 mm:ss valuation | what you'd have to believe

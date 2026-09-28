@@ -101,7 +101,7 @@ asks. Write the fields the template binds.
 1. `audio_script`: 140–160 spoken words, ≤ 1100 characters, first sentence = the hook, a `[BEAT: key]` marker at the start of every beat in the order under THE CUT, ONE mid-point re-hook (~20–25s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — delivery tags and beat markers are stripped before counting.
 2. `move_summary`: how much / how active, e.g. "+34% today · 6× average volume". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the on-screen headline (short, as reported). `meaning` = what it actually means for the stock, in your voice.
-4. `numbers`: 1–6 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The longer runtime has room for ONE more row than before IF it changes the read; don't pad.
+4. `numbers`: 1–4 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The sheet shows four rows; a fifth is never drawn. Don't pad.
 5. `numbers_comment`: the holistic read of the trend, ≤ 300 chars.
 6. `conclusion`: free text, ≤ 220 chars, opening with the call the way you'd mutter it ("Noise." / "Signal, unfortunately." / "Mostly noise, one number worth watching."). NEVER a label from a taxonomy.
 7. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — the vendor unnamed, and `sources` names only the filing.
@@ -113,7 +113,7 @@ asks. Write the fields the template binds.
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
 The operator ratifies or regenerates, so make your reasoning legible. Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:
 
-1. ANGLE & NUMBERS — one line naming the story, then the 3–5 `numbers` rows you'll feature and one clause each on WHY (each must be a chartable metric from the list above).
+1. ANGLE & NUMBERS — one line naming the story, then the 3–4 `numbers` rows you'll feature and one clause each on WHY (each must be a chartable metric from the list above).
 2. HOOK OPTIONS — 2–3 muted-safe `hook_text` candidates (≤ 90 chars each); mark the one you'll use with ★.
 3. SCRIPT — the `audio_script` (140–160 words), written with the ★ hook as its first sentence, a `[BEAT: key]` marker where each beat starts in the order under THE CUT, ONE mid-point re-hook (~20–25s), and — optionally — a single second-look line right before the verbatim conclusion.
 4. TAGS — one line noting the delivery tags you placed and why.

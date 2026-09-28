@@ -45,6 +45,11 @@ VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "workspace.refinitiv")
 SHORT_WORDS_MIN = 130
 SHORT_WORDS_MAX = 170
 
+# Rows a short's numbers sheet draws. Every short template binds four
+# (`numbers.label.0`–`.3`); a fifth or sixth row validates and reaches no
+# frame.
+SHEET_ROWS = 4
+
 
 class ScriptParseError(Exception):
     """Human-readable parse/validation failure (shown in Telegram)."""
@@ -528,4 +533,10 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             "some numbers rows carry fewer than 3 years — direction is the "
             "point of the gut check"
         )
+    if len(script.numbers) > SHEET_ROWS:
+        dropped = ", ".join(r.label for r in script.numbers[SHEET_ROWS:])
+        warnings.append(
+            f"numbers has {len(script.numbers)} rows and the sheet draws "
+            f"{SHEET_ROWS} — {dropped} will not be on screen. Keep the "
+            f"{SHEET_ROWS} that carry the read.")
     return script, warnings

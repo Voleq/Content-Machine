@@ -75,6 +75,29 @@ def spelled(n: int) -> str:
     return say_integer(int(n)).replace(" and ", " ").upper()
 
 
+def chapter_title_limit(reg, aspect: str = "16x9") -> int | None:
+    """How many characters of chapter title every card that prints one holds:
+    the bumper before each chapter after the first, and the opener rooms the
+    first opens on. None when no card states a limit.
+
+    Past it the line runs into the drawing, and the render can only warn:
+    the title is the writer's, so the writer is told first.
+    """
+    from pipeline.plate_frames import slot_limit
+
+    keys = [reg.aspect_key("structure/chapter-bumper", aspect)]
+    if reg.room_roles.get("opener"):
+        keys += list(reg.angles_for("opener", aspect, ""))
+    limits = []
+    for key in keys:
+        plate = reg.get(key) if key else None
+        slot = plate.slot("title") if plate is not None else None
+        n = slot_limit(plate, slot) if slot is not None else None
+        if n:
+            limits.append(n)
+    return min(limits) if limits else None
+
+
 def bumper_values(n: int, total: int, title: str, episode: str) -> dict[str, str]:
     """The bumper's slots, in design's own shape ("03", "OF SEVEN")."""
     return {"num": f"{int(n):02d}", "of": f"OF {spelled(total)}",

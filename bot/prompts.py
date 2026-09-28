@@ -198,6 +198,18 @@ def _stem_of(key: str) -> str:
     return key.removesuffix("-16x9").removesuffix("-9x16")
 
 
+def chapter_title_max(settings: Settings) -> str:
+    """The chapter card's title room, read off the kit (`bumper`)."""
+    from pipeline.bumper import chapter_title_limit
+    from pipeline.plates import PlateError, load_plates
+
+    try:
+        limit = chapter_title_limit(load_plates(settings.assets_dir))
+    except PlateError:
+        limit = None
+    return str(limit) if limit else "about 30"
+
+
 def template_plates(settings: Settings, name: str) -> frozenset[str] | None:
     """Every plate a shot template can land a beat on, or None if it will
     not load."""
@@ -1041,6 +1053,8 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                            if c.fmt == "short" else None))),
     PayloadBlock("{{scribble_styles}}", _LONG_FORM,
                  lambda c: scribble_styles(c.settings)),
+    PayloadBlock("{{chapter_title_max}}", _LONG_FORM,
+                 lambda c: chapter_title_max(c.settings)),
     PayloadBlock("{{chapter_types}}", _LONG_FORM,
                  lambda c: chapter_type_catalogue(c.settings, fmt=c.fmt,
                                                   sector=_sector(c))),

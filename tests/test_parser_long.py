@@ -502,3 +502,23 @@ def test_a_thin_last_chapter_is_still_named(settings):
     warnings = density_warnings(script, settings)
     assert any('"Three"' in w for w in warnings)
     assert not any('"One"' in w or '"Two"' in w for w in warnings)
+
+
+def test_a_chapter_title_longer_than_the_card_is_named(long_valid_text,
+                                                      settings):
+    """Every chapter title is printed on the bumper or the opener room, and
+    the render can only warn once the line has run into the drawing. The
+    writer is told at intake, against the kit's own title room."""
+    from pipeline.bumper import chapter_title_limit
+    from pipeline.plates import load_plates
+
+    limit = chapter_title_limit(load_plates(settings.assets_dir))
+    assert limit
+    _, warnings = parse_long_script(long_valid_text, "EXMPL", settings)
+    over = [w for w in warnings if w.startswith("chapter title")]
+    assert over == [w for w in over if "the covenant, four hundred pages in" in w]
+    assert len(over) == 1 and f"holds {limit}" in over[0]
+    fixed = long_valid_text.replace("the covenant, four hundred pages in",
+                                    "the covenant, page 400")
+    _, warnings = parse_long_script(fixed, "EXMPL", settings)
+    assert not any(w.startswith("chapter title") for w in warnings)

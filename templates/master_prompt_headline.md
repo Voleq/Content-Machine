@@ -97,7 +97,7 @@ the payoff is what turns a sentence into a joke.
 1. `audio_script`: 140–160 spoken words, ≤ 1100 characters, first sentence = the hook, a `[BEAT: key]` marker at the start of every beat in the order under THE CUT, ONE mid-point re-hook (~20–25s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts SPOKEN words only — delivery tags and beat markers are stripped before counting.
 2. `move_summary`: one line of context for the news, e.g. "Q3 print · guide raised" or "CPI 3.4% vs 3.1% expected". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the headline as reported (short). `meaning` = what it actually means, in your voice.
-4. `numbers`: 1–6 rows. company/earnings: from the history table above (each with 2–6 values OLDEST → NEWEST as display strings, matching a chartable metric). macro: OPTIONAL/index-based — index levels or a macro series (e.g. "CPI YoY": ["3.7%","3.2%","3.1%","3.4%"]); set `years` to the matching period labels. One extra row is fine IF it changes the read; don't pad.
+4. `numbers`: 1–4 rows. company/earnings: from the history table above (each with 2–6 values OLDEST → NEWEST as display strings, matching a chartable metric). macro: OPTIONAL/index-based — index levels or a macro series (e.g. "CPI YoY": ["3.7%","3.2%","3.1%","3.4%"]); set `years` to the matching period labels. The sheet shows four rows; a fifth is never drawn. Don't pad.
 5. `numbers_comment`: the holistic read, ≤ 300 chars. (macro: the read on the index/macro series.)
 6. `conclusion`: free text, ≤ 220 chars, opening with the verdict the way you'd mutter it ("Priced in." / "Nothingburger." / "This one actually matters." / "Noise, but the guide is real."). NEVER a label from a taxonomy.
 7. NEVER name any data vendor, terminal, or data product. A news `Source` (Reuters, Bloomberg, AP) is fine; a data terminal is not. On screen, filings are "from the 10-K" — the vendor unnamed, and `sources` names only the filing or the agency.
@@ -122,7 +122,7 @@ arrives in one piece.
 Put the prose sections in the chat and the JSON object in the `.txt` file.
 Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:
 
-1. READ — one line on the news and which MODE it is, then the 1–5 `numbers` rows you'll feature (or "macro — numbers optional") and one clause each on WHY.
+1. READ — one line on the news and which MODE it is, then the 1–4 `numbers` rows you'll feature (or "macro — numbers optional") and one clause each on WHY.
 2. HOOK OPTIONS — 2–3 muted-safe `hook_text` candidates (≤ 90 chars each); mark the one you'll use with ★.
 3. SCRIPT — the `audio_script` (140–160 words), the ★ hook as its first sentence, a `[BEAT: key]` marker where each beat starts in the order under THE CUT, ONE mid-point re-hook, and — optionally — a single second-look line right before the verbatim conclusion.
 4. TAGS — one line noting the delivery tags you placed and why.
