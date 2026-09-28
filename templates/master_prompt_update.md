@@ -18,6 +18,8 @@ The register for that is the one you already have and it is the honest one: you 
 THE FILING, ALREADY READ — and graded against what we said. A survey of the latest annual report, the prior year's, and the quarterly pair beside them, plus a pass over the claims above: which of them the filings SUPPORT, which they UNDERMINE, and which they do not address. That grading is the spine of this format — what I said, what happened, was I right, what now — so start there rather than from the numbers.
 {{filing_brief}}
 
+CHECK THE BRIEF FIRST — a small local model wrote it, and the verdict you are about to give yourself rests on it. Every numbered point at the bottom carries the filing sentence it came from. The bot has confirmed each sentence really is in the filing; it has NOT confirmed the point reads it right. Take the points one at a time: does the sentence say what the point says — the same figure, the same direction, the same period, the same certainty? If not, the point FAILS, and a SUPPORTED or UNDERMINED above that rests only on failed points is NOT ADDRESSED until the numbers settle it. Never grade yourself on a figure that is in no holding point's sentence and nowhere in the data. A point flagged "(not in the sentence: …)" carries a figure its own sentence does not; check that one hardest. Put the result in the chat, NOT in the `.txt` file, as `Brief check:` followed by each failed point and what its sentence actually says, or "all N points hold", or "no brief to check".
+
 ## THE FOUR MOVEMENTS — this is the whole structure
 An update is not the first-time video with a history paragraph in front of it. Do not re-explain the business model, do not re-run the "how the money is made" chapter, do not rebuild the bull case from scratch. The viewer's question is narrow and you answer exactly it, in this order:
 
@@ -121,7 +123,7 @@ long deliverable arrives as fragments, and the bot now REFUSES a paste that
 looks cut off rather than saving half a script over a whole one. A file
 arrives in one piece.
 
-Put the HOOK OPTIONS menu in the chat and the narration and its trailers in the `.txt` file.
+Put the `Brief check:` and the HOOK OPTIONS menu in the chat and the narration and its trailers in the `.txt` file.
 The narration as plain text with inline tags — no JSON, no section headers, no stage directions other than the bracket tags. Begin on the claim.
 
 Then append a `=== CHAPTERS ===` trailer, one `mm:ss type | Title` per line, first line `00:00`. The TYPE is one of the sixteen and decides which plates that chapter may use; the TITLE goes ON SCREEN as the chapter opener.

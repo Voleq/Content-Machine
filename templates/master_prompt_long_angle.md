@@ -26,8 +26,10 @@ PEER PERCENTILES — where THIS ticker ranks within its peer set:
 Chartable metrics present in THIS data (a featured number MUST come from here): {{chart_metrics}}
 Uploaded filing screenshots you could flash: {{available_screenshots}}
 
-THE FILING, ALREADY READ. A survey of the latest annual report, the prior year's, and the quarterly pair beside them: what moved in the risk factors, where management's language shifted, which segments moved, and — the line worth starting from — anything in the filing that disagrees with the numbers above. A company contradicting its own reported figures IS the tension you are looking for. This is a survey, not a receipt: every claim you build on it has to be traceable to the data above or to a quote pulled after the angle is chosen.
+THE FILING, ALREADY READ — by a small local model, so CHECK IT BEFORE YOU USE IT. A survey of the latest annual report, the prior year's, and the quarterly pair beside them: what moved in the risk factors, where management's language shifted, which segments moved, and — the line worth starting from — anything in the filing that disagrees with the numbers above. A company contradicting its own reported figures IS the tension you are looking for. This is a survey, not a receipt: every claim you build on it has to be traceable to the data above or to a quote pulled after the angle is chosen.
 {{filing_brief}}
+
+CHECK THE BRIEF FIRST. Every numbered point at the bottom of the brief carries the filing sentence it came from. The bot has confirmed each sentence really is in the filing; it has NOT confirmed the point reads it right, and a small model misreads in exactly the ways that make an angle: a figure off by a digit, a "may" read as "will", the prior year's number given as this year's, a qualifier dropped. So before you look for a tension, take the points one at a time: does the sentence say what the point says — the same figure, the same direction, the same period, the same certainty? If it does not, the point FAILS. Then build only on points that hold: a paragraph, contradiction or verdict above that rests only on failed points is gone, and a figure that is in no holding point's sentence and nowhere in the data above does not exist. A point flagged "(not in the sentence: …)" carries a figure its own sentence does not; check that one hardest. If there is no brief, or it predates the sentences, say so in the check and work from the numbers above.
 
 Verbatim filing quotes for a chosen thesis — the receipts, pulled AFTER an angle is picked, so normally empty at this step:
 {{filing_quotes}}
@@ -45,6 +47,8 @@ Rules for the angles:
   - Optional (add ONLY when the data earns it): management & incentives (dilution, comp, actions vs words) · capital allocation (buybacks, dividends, debt maturities) · moat / competitive reality (when the moat is the crux) · "how we got here" (fallen angels) · sector comps (when the peer percentiles are the story) · short interest (when positioning is the story) · guidance & estimates (when the print vs the guide is the story) · **the risk nobody's pricing** (the non-obvious one — not the risk already in every headline) · the smoking-gun filing walk (when the 10-K has receipts).
 
 ## OUTPUT — EXACTLY THIS SHAPE, NOTHING ELSE
+Brief check: <each point that FAILS, one line each: "P7 — the sentence says <what it actually says>"; or "all N points hold"; or "no brief to check">
+
 ${{ticker}} — pick an angle
 <one line naming the core tension>
 
