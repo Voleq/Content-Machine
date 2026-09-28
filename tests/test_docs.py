@@ -385,4 +385,4 @@ def test_the_old_kit_search_would_actually_find_something():
         "the search reads a real tree, and this kit's engine is kit/engine/"
     assert "ballpoint" in _OLD_KIT_INK_REGISTERS
     marks = (ROOT / "pipeline" / "marks.py").read_text(encoding="utf-8")
-    assert "marker_stroke" in marks, "marks.py is still the file being searched"
+    assert "def wrap_to" in marks, "marks.py is still the file being searched"

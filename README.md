@@ -208,7 +208,6 @@ pipeline/
   filing_brief.py        THE PRE-ANGLE BRIEF — reads the filings BEFORE the
                          angle is chosen: risk shift, language, segments, and
                          what contradicts the workbook
-  article_lookup.py      the real article behind a headline the script wrote
   broll.py               the content engine: [CLIP], [IMG]/[PRODUCT], [MEME],
                          [SCREENGRAB] — cached, attributed
   memes.py               owned meme library (meme_index.json) + providers
