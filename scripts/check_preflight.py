@@ -89,7 +89,7 @@ def _kit(settings, report: Report) -> None:
         return
     report.add(PASS, "design kit",
                f"{len(keys)} plates, matching the shipped pack — now run "
-               f"`/kit doctor`, while the host/room change is still fresh")
+               f"`/kit doctor`, while the kit change is still fresh")
 
 
 def _sfx(settings, report: Report) -> None:

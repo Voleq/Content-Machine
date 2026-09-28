@@ -5,7 +5,7 @@ and its position recorded as an offset INTO THE CLEAN TEXT — the exact
 string that goes to TTS, so word timestamps and tag offsets share one
 coordinate system. The LONG parser tokenizes its whole narration; the
 SHORT parser tokenizes only the `audio_script` and restricts the allowed
-tags to the overlay set ([DOODLE]/[SCRIBBLE]).
+tags to the short's own set (`SHORT_TAG_TYPES`).
 
 Unknown tag *types* are logged, stripped and skipped — never fatal, never
 spoken. Payload-level validation is the caller's job.

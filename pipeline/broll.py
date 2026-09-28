@@ -1039,7 +1039,7 @@ class ContentManager:
     def resolve_screengrab(self, slug: str) -> Visual:
         """[SCREENGRAB: slug] -> assets/custom/<slug>.* — an operator-
         supplied real screenshot or short screen-record (broker app, P&L,
-        a Google search). Images are pad-fitted; clips are normalized.
+        a Google search). Images fill the frame; clips are pad-fitted.
         Degrades to the filler card if it vanished since validation."""
         custom = self.settings.assets_dir / "custom"
         hits = sorted(custom.glob(f"{slug}.*")) if custom.is_dir() else []
@@ -1084,7 +1084,7 @@ class ContentManager:
         ])
         return dest
 
-    # ------------------------------------------------------------- doodles
+    # ------------------------------------------------------------ dispatch
     def resolve_visual(self, kind: str, value: str, *, ticker: str = "",
                        company_data=None, website: str = "",
                        choice: int = 0, style: str = "clean") -> Visual:

@@ -33,7 +33,7 @@ A CSV export (`field_key,value`) is accepted for the snapshot only. Missing
 required identity/size fields BLOCK the run; other gaps warn.
 
 NOTHING here ever puts the vendor's name on screen: uploaded raw
-screenshots are normalized with a generic "FROM THE 10-K" label.
+screenshots are normalized with design's source tag reading "SOURCE 10-K".
 """
 
 from __future__ import annotations

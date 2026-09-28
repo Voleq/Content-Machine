@@ -626,7 +626,8 @@ class Settings(BaseSettings):
         default="Opinion / entertainment. Not financial advice.",
         alias="DISCLAIMER_TEXT",
     )
-    # brand copy burned into the intro/outro bug — never the data vendor
+    # the channel's line: the LONG's top strip, its opening title's sub line
+    # and its chapter bumpers — never the data vendor
     brand_tagline: str = "NOISE OR SIGNAL?"
     # the handle the signature close card signs off with
     brand_handle: str = Field(default="@dennisreads", alias="BRAND_HANDLE")

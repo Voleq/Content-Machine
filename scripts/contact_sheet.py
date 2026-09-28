@@ -4,7 +4,7 @@
     python scripts/contact_sheet.py samples/sample_short_EXMPL.mp4
     python scripts/contact_sheet.py <mp4> --every 5 --out sheet.png
 
-Eleven frames covers a 70-second SHORT. It does not cover a 190-second LONG:
+Eleven frames covers a 50-second SHORT. It does not cover a 190-second LONG:
 at that length eleven samples is one frame per seventeen seconds, and every
 fault in this rebuild that mattered was found by LOOKING. So the long gets a
 contact sheet every 5 seconds — 38 cells — and the sheet is the artefact that

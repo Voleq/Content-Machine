@@ -11,5 +11,5 @@ originals here are never modified.
 
 The valid palette keys are defined in `pipeline/broll.py` (PALETTE).
 Owned memes live next door in `assets/meme_library/` (see its
-`meme_index.json`), and bespoke Claude-Design visuals for `[ASSET]` tags
-go in `assets/custom/`.
+`meme_index.json`), and operator captures for `[SCREENGRAB]` tags go in
+`assets/custom/`.

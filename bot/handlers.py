@@ -120,9 +120,9 @@ upload it as dennis_data.xlsx) → run the prompt in Claude/GPT →
 here → review the validation & cost report → tweak it in chat if you want
 (/script, /edit, /replace — every revision re-runs the gates and re-prices)
 → Approve ✅ → /render. Nothing paid happens before Approve, and the approval
-is pinned to the exact version you approved. If a LONG uses [SCREENGRAB] tags, drop the
-prompt into Claude Design and upload the exported PNG here — the render
-stays blocked until every asset file exists."""
+is pinned to the exact version you approved. If a LONG uses [SCREENGRAB] tags,
+upload each capture here named after its slug (a PNG, JPG or short clip) —
+the render stays blocked until every one exists."""
 
 
 @dataclass
@@ -634,14 +634,13 @@ class BotCore:
         if suffix in (".png", ".jpg", ".jpeg", ".webp", ".mp4", ".mov", ".mkv", ".webm"):
             pending = self._pending_custom_slugs(ws)
             if stem in pending:
-                # a Claude Design export ([ASSET]) or an operator capture
-                # ([SCREENGRAB]) — into the shared custom library, where
-                # pre-render validation looks for it
+                # an operator capture ([SCREENGRAB]) — into the shared
+                # custom library, where pre-render validation looks for it
                 custom = self.settings.assets_dir / "custom"
                 custom.mkdir(parents=True, exist_ok=True)
                 (custom / f"{stem}{suffix}").write_bytes(data)
                 remaining = [s for s in self._pending_custom_slugs(ws) if s != stem]
-                kind = "screengrab" if pending[stem] == "screengrab" else "custom asset"
+                kind = pending[stem]
                 note = (f" Still missing: {', '.join(remaining)}." if remaining
                         else " All custom files present — re-paste the script "
                              "to refresh the report.")

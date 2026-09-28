@@ -173,7 +173,7 @@ def unrenderable_long_tags(script: LongScript) -> list[tuple[TagEvent, str]]:
 
 
 # cue kinds that claim a visual segment on the LONG timeline (the base
-# frame). DOODLE/SCRIBBLE are overlays; SOUND is audio — none claim a cut.
+# frame). SCRIBBLE is an overlay; SOUND is audio — neither claims a cut.
 VISUAL_CUE_KINDS = (CueKind.CLIP, CueKind.IMG, CueKind.MEME, CueKind.CHART,
                     CueKind.FILING, CueKind.SCREENGRAB, CueKind.PLATE)
 

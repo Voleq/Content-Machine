@@ -47,7 +47,9 @@ from pipeline.shots import (Format, apply_order, beat_keys, choose_order,
 log = logging.getLogger(__name__)
 
 FPS = 30
-# The kit boils at three frames, 7fps. Code-drawn artwork matches it.
+# The kit boils a data plate through three drawings at 3fps. Code-drawn
+# artwork is drawn three times too, and plays at the rate of the plate it
+# stands in for.
 BOIL_FRAMES = 3
 # THE HOST IS IN ONE VERTICAL SHOT, AND IT IS THE TURN.
 #
@@ -726,9 +728,10 @@ class _Cache:
 def _frame_index(layer: Layer, t: float) -> int:
     """Which frame of an animated layer is showing at `t`.
 
-    fps and playback come from the plate the layer was built from — a room
-    boils at 2, a talk strip runs at 8, an idle at 4. Nothing here assumes a
-    rate, and a static plate has one frame and no clock.
+    fps and playback come from the plate the layer was built from — a data
+    plate boils at 3, a room loops at 12, a talk strip runs at 8, an idle at
+    4. Nothing here assumes a rate, and a static plate has one frame and no
+    clock.
     """
     if layer.frame_count <= 1 or layer.fps <= 0:
         return 0

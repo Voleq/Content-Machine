@@ -455,11 +455,12 @@ def test_the_kit_doctor_runs_without_a_script(settings):
     report = kit_doctor_text(settings)
     assert "KIT DOCTOR" in report
     # THE COUNT COMES OFF THE REGISTRY, not out of this file. It read
-    # "143 plates" against a kit that ships 270 — a number typed here when the
-    # kit was smaller, which then asserted the size of a kit nobody has
-    # shipped for several drops. A kit is swapped in as a whole and its size
-    # is a property of the delivery, so the only honest thing to compare the
-    # report against is the registry the report was generated from.
+    # "143 plates" against a kit that ships several times that — a number
+    # typed here when the kit was smaller, which then asserted the size of a
+    # kit nobody has shipped for several drops. A kit is swapped in as a
+    # whole and its size is a property of the delivery, so the only honest
+    # thing to compare the report against is the registry the report was
+    # generated from.
     assert f"{len(load_plates(settings.assets_dir))} plates" in report
     assert "Never reached in a recent render" in report
     # It groups by family, because "eighteen room angles unused" is actionable

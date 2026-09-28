@@ -30,8 +30,10 @@ Three things follow from the v2 kit that did not hold under the old one:
 * **Data plates used to not boil, and now they do — but not the numbers.**
   Every data plate was once `playback: static`, on the argument that a number
   moving three times a second cannot be read, which is the whole job of a
-  number. The kit ships 270 plates: 260 `loop`, 7 `overlay` and 3 `static`,
-  and the three are furniture — `overlays/row-band` and the two lower thirds.
+  number. Most of the kit loops now, and `static` is the kit's own call per
+  plate — the host's held poses, the marks, the lower thirds and the source
+  tag, some figures, charts, rankings and room angles — read off the
+  manifest, never assumed from a family.
 
   THE ARGUMENT WAS NOT ABANDONED, IT WAS MADE PER-MARK. `kit/engine/build.js`
   §1.5 turns the boil on for a data plate's FURNITURE — paper edge, corner
@@ -864,13 +866,6 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             # -- what goes in its slots. The renderer draws the plate WITH
             #    these; nothing here sets type.
             values, missing, gone = _bound_values(shot, plate, resolver, reg)
-            # THE WALL IS THE RECEIPTS, so it is filled from the book rather
-            # than from the script: seven tickers this channel actually
-            # covered, when, and one word for how it went. A template cannot
-            # bind them — they are not facts about this video.
-            if plate.name.startswith("wall-of-calls"):
-                from pipeline.plates import wall_of_calls
-                values = {**wall_of_calls(_settings()), **values}
             unfilled += missing
             skipped += gone
             plate_large = sets_large_type(plate, values, placed[3], fh)

@@ -29,14 +29,14 @@ from pipeline.render_short import render_short
 from pipeline.tts import TTSEngine
 
 # A short is a dozen shots, so it reaches roughly a dozen plates — it cannot
-# and should not reach a large fraction of a 270-plate kit. These are floors
+# and should not reach a large fraction of a kit of several hundred plates. These are floors
 # on the format doing its job, not on a writer naming things.
 #
 # ANIMATED IS A LOW FLOOR ON PURPOSE, but no longer for the reason written
 # here before. That read "44 of the 143 v2 plates are `playback: static` —
 # tables, charts, figures, structure — because a figure that moves is a figure
-# being re-read", and the kit retracted that rule: 3 plates of 270 are static
-# and all 122 data-family plates loop. A data plate's FRAME breathes while its
+# being re-read", and the kit retracted that rule as a rule: static is its call
+# per plate now, and most data plates loop. A data plate's FRAME breathes while its
 # axes and series stay pinned (kit/engine/build.js §1.5), which is tested against
 # the delivered artwork in test_kit_ingest.py rather than inferred from a
 # playback flag here. The floor stays low because a short is a dozen shots.

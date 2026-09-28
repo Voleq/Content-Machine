@@ -14,7 +14,7 @@ Two formats:
   payoff. No verdict, no stamp — the viewer draws the conclusion.
 - **LONG** — 16:9 deadpan deep-dive on a beaten-down value-lane stock
   (never the trending names): real operations imagery, auto-generated
-  charts, unnamed-source filing flashes auto-pulled from the 10-K (SEC
+  charts, unnamed-source filing screenshots auto-pulled from the 10-K (SEC
   EDGAR → smoking-gun quotes → headless-Chromium screenshots, no manual
   uploads), at most 1–2 memes from the owned library, fast ~1.5–3s cuts,
   resigned close.
@@ -59,7 +59,7 @@ Excel; the refresh happens on the operator's own machine.)
 | A PNG on disk the registry does not name, or a frame it names and cannot find, fails the ingest | `scripts/ingest_kit.py --check`, `Registry.verify`, `/kit doctor` |
 | Every plate is reachable by a template, a chapter type or the renderer — artwork with no route to the screen is reported | `pipeline/gates.py` `reachable_plates`, `/kit doctor` |
 | Visuals: owned library → cache → fetch → filler; a missing item **never** aborts a render | `pipeline/broll.py` content engine, `pipeline/memes.py` |
-| The data vendor is never named on screen — scripts are hard-rejected if they try | parsers' vendor block; filing overlays carry a generic "FROM THE 10-K" chip |
+| The data vendor is never named on screen — scripts are hard-rejected if they try | parsers' vendor block; filing screenshots carry design's source tag, "SOURCE 10-K" |
 | `[SCREENGRAB]` tags **block** the render until the operator's capture exists | `validate_long_script` + `assets/custom/` |
 | Every figure that reaches the SCREEN is re-read against the data, not just the spoken ones | `pipeline/gates.py` `onscreen_fact_check` |
 | A stated quarterly figure is checked against the `Quarters` sheet, and a sentence that names a quarter is checked against THAT column | `pipeline/gates.py` `fact_check`, `_quarter_indices`; the earnings format was structurally unverifiable without it |
@@ -132,7 +132,7 @@ pipeline/
   tagging.py             the shared tag tokenizer, for both formats
 
   plates.py              THE PLATE REGISTRY — the read side of the design kit.
-                         270 plates keyed family/name, each with its canvas,
+                         every plate keyed family/name, each with its canvas,
                          exportScale, frames, playback, slot geometry and type
                          roles; the palette's eight colour roles; the host and
                          room ROLES; the sixteen chapter types and what each
@@ -152,9 +152,9 @@ pipeline/
                          list of layers; the two-shot split, the room-angle
                          rotation, the invariants and the kit's own budgets
   host.py                Dennis on screen — a cut-out solved onto a room's
-                         host-anchor, or a FRAMING (close-up, medium) placed on
-                         its eye line; the glance, the wardrobe, the flap
-  marks.py               hand-drawn line primitives and type fitting
+                         host-anchor, or the close-up FRAMING placed on its
+                         eye line; the talk, idle and blink strips
+  marks.py               type fitting for the shorts' free-placed type
   media_frames.py        foreign media gets a frame (`frames/` family)
   chart.py               the data path for a declared chart region, and the
                          range marks on a multiples strip — nothing else; the
@@ -248,8 +248,8 @@ assets/
                          families at every hour the set is lit at, plus
                          plates-registry.json, written by the ingest
   voice_bible.md         the voice, and what the linter checks against
-  fonts, brand, channel, backgrounds, overlays, sfx, broll_library,
-  meme_library, custom/ ([SCREENGRAB] drops)
+  fonts/                 the kit's two faces, Archivo Narrow and Courier Prime
+  sfx, broll_library, meme_library, custom/ ([SCREENGRAB] drops)
 templates/
   shots/                 one file per FORMAT: short, earnings, macro
   master_prompt_*.md     the writing prompts
@@ -296,7 +296,7 @@ python3.11 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
 npm ci                                      # the kit's rasteriser (build-time only)
 .venv/bin/python scripts/gen_assets.py      # placeholder sfx + room tone
-.venv/bin/python scripts/ingest_kit.py kit  # the 270 drawn plates -> assets/plates
+.venv/bin/python scripts/ingest_kit.py kit  # the kit's drawn plates -> assets/plates
 .venv/bin/python -m pytest tests/           # offline, zero network calls
 .venv/bin/python scripts/render_samples.py  # sample MP4s from fixtures
 ```
@@ -597,27 +597,27 @@ starting point, but they are **unmaintained** and nothing tests them.
    any approval** on that workspace — the approval pins the script's hash,
    which does not change when the data underneath it does, so new numbers
    have to be re-read and re-approved. Optionally upload raw screenshot PNGs for
-   `[SHOW FILING: file.png]` moments — they get a generic "FROM THE 10-K"
-   label on screen.
+   `[SHOW FILING: file.png]` moments — they carry design's source tag,
+   "SOURCE 10-K", on screen.
 3. The bot replies with the lane's **pre-filled master prompt** — run it in
    Claude/GPT, paste the model's output back (message or .txt). The prompt
-   carries a **kit catalog generated from the manifest at fill time**: exactly
-   which `[TERM]`, `[BIGNUM]`, `[TABLE]`, `[PROP]` and `[ALERT]` keys have
-   artwork, the concept illustrations with a one-line "use when", the chapter
-   kits, the host's poses and reactions — plus the expressivity tags and the
-   pacing rules. Validation already rejects unknown keys; this stops them
-   being invented, and because it is read off disk it cannot drift from what
-   is shipped.
+   carries a **kit catalog generated from the manifest at fill time**: every
+   plate a `[PLATE: …]` tag may name, with its slots and each slot's
+   character budget, the chapter types and what each allows, and the mark
+   styles — plus the meme and b-roll keys, the delivery tags and the pacing
+   rules. Validation already rejects unknown keys; this stops them being
+   invented, and because it is read off disk it cannot drift from what is
+   shipped.
 4. Read the **validation + cost report** (chars, $ estimate, cache hits,
    visual sources + contact sheet, meme count, blockers, month-to-date
    spend). It also states how much of the kit this script reaches —
-   `Kit: 7 of 442 assets · 4 families · 7 beat-library scenes` — which is the
+   `Kit: 12 of 704 plates · 6 families · 7 data plates` — which is the
    number that says whether the video will look like the last one. A script
    under the floor gets a warning naming the beats that carry a figure and
-   have no drawing to put it in; it is a judgement call, never a blocker. If the LONG used `[ASSET: slug]` tags, the bot attaches each
-   appended **Claude Design prompt as a paste-ready file** and BLOCKS the
-   render until you paste it into Claude Design, export, and upload the
-   PNG (bespoke visuals never come from an image-generation API).
+   have no drawing to put it in; it is a judgement call, never a blocker. If
+   the LONG uses `[SCREENGRAB: slug]` tags, the report names each capture
+   still missing and BLOCKS the render until you upload it here, named after
+   its slug.
    `Swap clip 🔄` rotates any `[CLIP]` pick. Approve ✅ arms the render.
 5. Tweak it in chat, without going back to the model. `/script` prints the
    script numbered; `/edit 12 <new text>` replaces line 12 (`12-14` for a
@@ -1072,8 +1072,8 @@ python scripts/check_preflight.py --live   # also the production-only settings
 
 | # | step | why |
 |---|---|---|
-| 1 | `npm install`, then `python scripts/ingest_kit.py kit` | `assets/plates/` is a gitignored ~300MB build product. Without it `Registry` raises, `kit doctor` blocks, and **nothing renders on either lane**. The ingest runs the kit's own audit and `emit.js --check` on a staged copy, draws every plate blank at night and at dusk, proves each one is design's exported file byte for byte, draws the host's close-up, and stands him in every room to measure what paints over him. `--only FAMILY` draws and checks one family without installing anything. |
-| 2 | `/kit doctor` | Immediately after the ingest, while the host/room change is fresh — a stale plate found three fixes later looks like a regression in something else. |
+| 1 | `npm install`, then `python scripts/ingest_kit.py kit` | `assets/plates/` is a gitignored ~500MB build product. Without it `Registry` raises, `kit doctor` blocks, and **nothing renders on either lane**. The ingest runs the kit's own audit and `emit.js --check` on a staged copy, draws every plate blank at night and at dusk, proves each one is design's exported file byte for byte, draws the host's close-up, and stands him in every room to measure what paints over him. `--only FAMILY` draws and checks one family without installing anything. |
+| 2 | `/kit doctor` | Immediately after the ingest, while the kit change is fresh — a stale plate found three fixes later looks like a regression in something else. |
 | 3 | `export FREESOUND_API_KEY=…`, then `scripts/fetch_sfx.py`, then commit `assets/sfx/` | `assets/sfx/` ships twenty-seven ffmpeg oscillators and no `SOURCES.json`, so `check_audio` blocks **every** final render. The gate is per file: room tone alone leaves twenty-six. Committed, the real files clear it for every checkout, CI included. The music is separate and optional: `MOCK_MODE=false python scripts/make_score.py --confirm` makes the theme and the six loops once (about $1.19), and without it nothing blocks, the shorts just play no loop and the long no theme. |
 | 4 | `python scripts/check_sfx.py` | Must report zero placeholders. Anything listed still blocks. |
 | 5 | `SEC_USER_AGENT="Your Name your@email"` | The SEC 403s generic agents. Nothing blocks — you just quietly lose the filing brief, the 8-K source and `[SHOW FILING]`. The bot warns at startup when `MOCK_MODE` is off. |
@@ -1242,7 +1242,7 @@ network calls:
 
 - **`PlateError: no plates-registry.json in …/assets/plates`, and ~180 tests
   fail** — the design kit was never built. `assets/plates/` is a build product
-  (`.gitignore`d, ~850MB of PNGs) and comes from the kit's own engine:
+  (`.gitignore`d, ~500MB of PNGs) and comes from the kit's own engine:
   `npm ci && .venv/bin/python scripts/ingest_kit.py kit`. `scripts/gen_assets.py`
   does *not* produce it — it draws placeholders for the things the kit does not
   draw. `deploy/bootstrap.sh` does this for you, before the test suite.
@@ -1275,9 +1275,9 @@ network calls:
 - **Report says BLOCKED: screenshot not found** — upload the exact
   filename the script references, or remove the tag. Renders never start
   with missing assets.
-- **Report says BLOCKED: [ASSET: slug] has no file** — paste the attached
-  Claude Design prompt into Claude Design, export the PNG, upload it in
-  the chat (file name = slug) or drop it at `assets/custom/<slug>.png`.
+- **Report says BLOCKED: [SCREENGRAB: slug] has no file** — upload the
+  capture in the chat (file name = slug) or drop it at
+  `assets/custom/<slug>.png` (a short screen-record works too).
 - **"the data vendor's name appears"** — the model leaked the source into
   an on-screen field; regenerate or edit, then re-paste. On screen the
   data is "from the 10-K".

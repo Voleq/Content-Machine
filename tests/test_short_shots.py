@@ -152,11 +152,11 @@ def test_every_plate_the_template_names_is_in_the_kit(fmt, reg):
 
 
 def test_the_vertical_set_stays_vertical(fmt, reg):
-    """Ten families, and none of the 16:9-only plates.
+    """None of the 16:9-only plates.
 
-    The comps table, the scatter, the waterfall, the grouped bars, the flow
-    plate and the diff plate need horizontal room to be readable and do not
-    belong in seventy-five seconds. Naming one here would render it letterboxed
+    The scatter, the multiple bridge, the flow plates and the rest of what the
+    kit draws 16:9 only need horizontal room to be readable and do not belong in
+    a fifty-second vertical cut. Naming one here would render it letterboxed
     into a vertical frame with its type at a third of the size it was drawn at.
     """
     from pipeline.compose import resolve_plate
