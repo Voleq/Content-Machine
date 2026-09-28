@@ -637,7 +637,7 @@ def test_a_sequence_repeat_steps_its_alternates_binds_too():
     for n, shot in enumerate(steps, 1):
         for variant in shot.variants:
             bind, _lit, _focus = variant.resolved(shot)
-            placed = [v for v in bind.values() if "consequences" in v]
+            placed = [v for v in bind.values() if "script.consequences" in v]
             assert placed, (shot.id, variant.plate)
             for body in placed:
                 assert "$n" not in body, (shot.id, variant.plate, body)

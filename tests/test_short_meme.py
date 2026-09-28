@@ -385,7 +385,10 @@ def test_each_short_format_places_its_meme_at_the_end_of_the_verdict(name,
 
 
 def test_a_template_with_no_meme_place_still_loads():
-    assert not any(sh.meme for sh in load_format("long").shots)
+    raw = json.loads(Path("templates/shots/macro.json").read_text(encoding="utf-8"))
+    for shot in raw["shots"]:
+        shot.pop("meme", None)
+    assert not any(sh.meme for sh in parse_format(raw).shots)
 
 
 # ---------------------------------------------------------------------------

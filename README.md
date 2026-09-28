@@ -251,8 +251,7 @@ assets/
   fonts, brand, channel, backgrounds, overlays, sfx, broll_library,
   meme_library, custom/ ([SCREENGRAB] drops)
 templates/
-  shots/                 one file per FORMAT: short, earnings, macro, long
-  chapters/              one file per chapter TYPE — all sixteen
+  shots/                 one file per FORMAT: short, earnings, macro
   master_prompt_*.md     the writing prompts
   dennis_data_template.xlsx
 fixtures/                mock scripts / Pexels / Wikimedia / TTS / prices /
