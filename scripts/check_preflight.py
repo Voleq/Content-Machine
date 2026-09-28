@@ -145,16 +145,6 @@ def _publish_window(settings, report: Report) -> None:
                f"inherit it (that is 10:00 US Eastern in summer)")
 
 
-def _engine(settings, report: Report) -> None:
-    engine = settings.long_render_engine
-    if engine == "segments":
-        report.add(PASS, "LONG engine", "segments (the production path)")
-    else:
-        report.add(FAIL, "LONG engine",
-                   f"{engine!r} — `shots` is wired up and has no production "
-                   f"mileage. Do not pick it for a first live LONG.")
-
-
 def _state_backup(settings, report: Report) -> None:
     backups = Path(settings.base_dir) / "backups"
     found = sorted(backups.glob("state-*.tar.gz")) if backups.is_dir() else []
@@ -196,7 +186,6 @@ def main(argv: list[str] | None = None) -> int:
     _sec_agent(settings, report, live)
     _broll(settings, report)
     _delivery(settings, report, live)
-    _engine(settings, report)
     _publish_window(settings, report)
     _state_backup(settings, report)
     _suite(report)

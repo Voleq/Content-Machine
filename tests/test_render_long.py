@@ -1120,21 +1120,18 @@ def test_a_short_says_which_of_its_tags_will_not_be_drawn(settings,
     assert any("not drawn" in w for w in warnings), warnings
 
 
-def test_the_second_long_engine_has_a_route_now(settings):
-    """D6: `render_long_shots` was reachable only from the sample script."""
+def test_the_long_has_one_engine(settings):
+    """The chapter-template engine was retired: it had no production mileage
+    and moved the writer-driven long toward fixed templates."""
     from pathlib import Path
 
-    from bot import handlers
-
-    assert settings.long_render_engine == "segments", "the default does not move"
-    src = Path(handlers.__file__).read_text(encoding="utf-8")
-    assert "render_long_shots" in src, \
-        "a render engine with no caller is a render engine nobody can trust"
+    assert not Path("pipeline/render_long_shots.py").exists()
+    assert not Path("templates/shots/long.json").exists()
+    assert not hasattr(settings, "long_render_engine")
 
 
 def test_the_manifest_names_the_engine_that_drew_it(rendered):
-    """P4: `LONG_RENDER_ENGINE` picks between the segmented renderer and the
-    shot-template engine. Which one ran is a fact about the artefact, and it
+    """P4: which renderer drew a video is a fact about the artefact, and it
     was recoverable from neither the manifest nor the provenance record."""
     _settings, _script, _tts, _out, manifest = rendered
 

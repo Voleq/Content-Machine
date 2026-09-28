@@ -349,18 +349,6 @@ def test_live_mode_checks_the_settings_that_only_matter_in_production(tmp_path):
     assert "silently useless in production" in live.stdout
 
 
-def test_the_preflight_refuses_the_engine_with_no_production_mileage(tmp_path):
-    """P4: `render_long_shots` is wired up and has never rendered a real
-    video. A first live LONG must not be the one that finds out."""
-    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
-    got = _run("check_preflight.py", ASSETS_DIR=str(assets),
-               STATE_DIR=str(tmp_path / "state"),
-               LONG_RENDER_ENGINE="shots")
-    assert "[FAIL] LONG engine" in got.stdout
-    assert "no production mileage" in got.stdout
-    assert got.returncode == 1
-
-
 def test_the_readme_preflight_and_the_script_name_the_same_scripts():
     """A checklist step pointing at a script that is not there is worse than
     a step that is missing, and the README is where the operator reads it."""

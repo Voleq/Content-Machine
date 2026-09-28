@@ -180,10 +180,8 @@ pipeline/
   render_common.py       ffmpeg wrappers, encode profiles, compositing engine
   render_short.py        the vertical formats, from a shot template and the
                          audio clock — SHORT, EARNINGS, MACRO
-  render_long_shots.py   the LONG from chapter templates, through that same
-                         engine — a resolver and an entry point, no compositor
   render_long.py         the tag-driven LONG: fast-cut concat engine, the
-                         two-shot, the scribble solver (rewritten in Stage 3)
+                         two-shot, the scribble solver
   storyboard.py          storyboard contact sheet — see the cut before paying
   reach.py               how much of the plate library a script actually reaches
 

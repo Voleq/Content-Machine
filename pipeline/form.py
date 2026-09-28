@@ -14,8 +14,9 @@ format is a form the moment its JSON exists.
 
 Two kinds of source, and only one of them is the writer's:
 
-* **WRITER** — `script.*` for the verticals, `chapter.*` for the long. Prose
-  somebody has to compose, with a character budget it has to fit.
+* **WRITER** — `script.*`. Prose somebody has to compose, with a character
+  budget it has to fit. A `source.<beat>` bind is the writer's `sources` line
+  for that beat, which is one field, `script.sources`.
 * **SUPPLIED** — `numbers.*` and `compare.*` come from the data export,
   `chart.*` and `media.*` off the workspace, `plate.*` out of the kit,
   `channel.*` from settings. The writer never sees these and must never be
@@ -37,7 +38,7 @@ from pipeline.shots import available_formats, expand_sequences, load_format
 
 # Sources the writer composes. Everything else is supplied by the pipeline,
 # and asking a writer for it is how a hallucinated figure reaches a frame.
-WRITER_ROOTS = ("script", "chapter")
+WRITER_ROOTS = ("script",)
 
 # THE BUDGET COMES FROM THE KIT, NOT FROM A MEASUREMENT OF THIS CODE.
 #
@@ -151,6 +152,14 @@ def form_for(name: str, root: Path | str = ".") -> list[Field]:
     def note(src: str, dest: str, shot: str) -> None:
         if not src:
             return
+        # `a|b` reads the first alternative that says something, so each is
+        # a source landing in the same box.
+        if "|" in src:
+            for alt in src.split("|"):
+                note(alt.strip(), dest, shot)
+            return
+        if src.startswith("source."):
+            src = "script.sources"
         # A PASSAGE SET ONE LINE A SLOT (`wrap.34.4.0.script.consequences.0`)
         # is the writer's field, broken at the plate's width. The line slots
         # say nothing about how long the field may be: a passage that needs

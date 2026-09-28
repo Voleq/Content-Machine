@@ -2245,9 +2245,8 @@ def _render_long(
         # THE WHOLE RECORD (N3): what in this video was real. Machine-
         # readable here, and the same thing in words on the delivery
         # message, so the two surfaces cannot drift.
-        # WHICH ENGINE DREW IT (P4). `LONG_RENDER_ENGINE` switches between
-        # this and the shot-template path, and "which branch did that run
-        # take" should be answerable from the artefact.
+        # WHICH ENGINE DREW IT (P4): this one for a LONG, the shot engine for
+        # every SHORT, answerable from the artefact.
         "engine": "segments",
         "provenance": provenance.to_json(),
         "duration": duration,

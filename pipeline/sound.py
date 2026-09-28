@@ -372,7 +372,6 @@ class Cut:
     shot_id: str
     start: float
     end: float
-    chapter_n: int = 0
     tags: frozenset = frozenset()
     # The second half of a beat held past its ceiling (`shots`, `<id>-in`):
     # a punch-in on the same plate, a hard cut inside one subject. It gets no
@@ -416,31 +415,13 @@ def wipe_cues(wipes: Sequence[tuple[float, float]], settings,
     return out
 
 
-def structure_cues(cuts: Sequence[Cut], settings, voicing: Voicing, *,
-                   chapters: bool) -> tuple[list[AudioTrack], list[tuple[float, float]]]:
-    """The effects that come from the cut itself, and the drop windows.
-
-    A chaptered format (the LONG through this engine) gets a hit on each
-    chapter change and nothing else: a swish on every one of forty cuts is
-    a short's pace, not a deep-dive's. Everything else gets the short's set.
-    """
+def structure_cues(cuts: Sequence[Cut], settings, voicing: Voicing,
+                   ) -> tuple[list[AudioTrack], list[tuple[float, float]]]:
+    """The effects that come from the cut itself, and the drop windows."""
     tracks: list[AudioTrack] = []
     drops: list[tuple[float, float]] = []
     level = settings.sfx_gain_db
     if not cuts:
-        return tracks, drops
-    if chapters:
-        seen: set[int] = set()
-        for c in cuts:
-            if c.part >= 2:
-                continue
-            if c.chapter_n and c.chapter_n not in seen:
-                seen.add(c.chapter_n)
-                tr = voicing.fire(HIT_KEY, c.start - cue_lead_s(HIT_KEY),
-                                  level + HIT_GAIN_REL_DB,
-                                  name=f"chapter_hit@{c.start:.2f}")
-                if tr:
-                    tracks.append(tr)
         return tracks, drops
 
     # The hook: something lands on the first frame, so the first half second
@@ -523,7 +504,7 @@ def move_cues(moves: Sequence[Move], settings, voicing: Voicing, *,
 
 
 def short_mix(tts, settings, *, cuts: Sequence[Cut] = (), hour: str = "",
-              seed: str = "", chapters: bool = False, duration: float = 0.0,
+              seed: str = "",
               workspace: "Path | str | None" = None,
               moves: Sequence[Move] = ()) -> list[AudioTrack]:
     """Every track under a shots-engine render, or none when there is no voice.
@@ -541,21 +522,18 @@ def short_mix(tts, settings, *, cuts: Sequence[Cut] = (), hour: str = "",
     room = room_track(settings, hour)
     if room:
         loops.append(room)
-    if not chapters:
-        bed = bed_track(settings, seed,
-                        avoid=recent_beds(settings, exclude=workspace))
-        if bed:
-            loops.append(bed)
+    bed = bed_track(settings, seed,
+                    avoid=recent_beds(settings, exclude=workspace))
+    if bed:
+        loops.append(bed)
     layers = set_layers(settings, [(c.start, c.end, set(c.tags)) for c in cuts])
     voicing = Voicing(settings.assets_dir / "sfx", seed)
-    cues, drops = structure_cues(cuts, settings, voicing, chapters=chapters)
+    cues, drops = structure_cues(cuts, settings, voicing)
     cues += move_cues(moves, settings, voicing, cuts=cuts, drops=drops)
     # The drop silences everything that is not the voice and not the hit.
     for tr in loops + layers:
         tr.gaps = tuple(drops)
     tracks += loops + layers + cues
-    if chapters and duration > 0:
-        tracks += theme_tracks(settings, duration)
     banner = audio_banner(settings)
     if banner:
         log.warning("%s", banner)

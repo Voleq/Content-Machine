@@ -197,47 +197,19 @@ def render_long_sample(fixture: str = "long_sample") -> Path:
     return dest
 
 
-def render_long_shots_sample(fixture: str = "long_sample") -> Path:
-    """The LONG through the shot engine — sixteen chapters, one compositor."""
-    from pipeline.broll import ContentManager
-    from pipeline.render_long_shots import render_long_shots
-
-    settings, script, ws, data, tts = _long_inputs(fixture)
-    t0 = time.time()
-    out, manifest = render_long_shots(script, tts, ws, settings,
-                                      content=ContentManager(settings),
-                                      company_data=data,
-                                      out_name="long_shots_final.mp4")
-    print(f"  rendered in {time.time() - t0:.0f}s")
-    _banner()
-    SAMPLES.mkdir(exist_ok=True)
-    stem = ("sample_long_shots_EXMPL" if fixture == "long_sample"
-            else f"sample_{fixture}_shots_EXMPL")
-    dest = SAMPLES / f"{stem}.mp4"
-    shutil.copy(out, dest)
-    _stamp(Path(shutil.copy(manifest, SAMPLES / f"{stem}.manifest.json")))
-    return dest
-
-
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
     for name in VERTICAL_SAMPLES:
         if what in (name, "vertical", "all"):
             print(f"{name.upper()} sample:")
             print(" ->", render_vertical_sample(name))
-    if what in ("long-shots", "all"):
-        print("LONG sample (shot engine):")
-        print(" ->", render_long_shots_sample())
-    if what == "long":
-        print("LONG sample (old renderer):")
+    if what in ("long", "all"):
+        print("LONG sample:")
         print(" ->", render_long_sample())
     # AT THE LENGTH THE FORMAT IS FOR. `long_sample` is 590 words of narration
     # in four minutes; a clean thesis is about sixteen hundred and runs
     # twelve. Events per minute measured on the short fixture is an
     # extrapolation, and the number decides whether the format works.
     if what == "long-full":
-        print("LONG sample (old renderer, full length):")
+        print("LONG sample (full length):")
         print(" ->", render_long_sample("long_full"))
-    if what == "long-shots-full":
-        print("LONG sample (shot engine, full length):")
-        print(" ->", render_long_shots_sample("long_full"))

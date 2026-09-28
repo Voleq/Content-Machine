@@ -47,9 +47,14 @@ def test_every_field_a_vertical_asks_for_has_a_measured_budget(name):
 @pytest.mark.parametrize("name", VERTICALS)
 def test_a_verticals_form_is_short_enough_to_fill(name):
     """Eight or nine fields. If it grows past a dozen it is a document
-    again, and the reason the old prompt failed was that it was a document."""
-    assert 5 <= len(writer_fields(name)) <= 12, [
-        f.src for f in writer_fields(name)]
+    again, and the reason the old prompt failed was that it was a document.
+
+    Counted per model field: `consequences.0` to `.2` are one list the writer
+    fills, not three fields."""
+    import re
+
+    fields = {re.sub(r"\.\d+.*$", "", f.src) for f in writer_fields(name)}
+    assert 5 <= len(fields) <= 12, sorted(fields)
 
 
 @pytest.mark.parametrize("name", VERTICALS)
@@ -83,36 +88,6 @@ def test_the_model_allows_more_than_the_frame_holds():
         if limit and f.budget and limit > f.budget:
             over.append(f"{head}: model {limit}, frame {f.budget}")
     assert over, "if the model has been narrowed to the form, update this"
-
-
-def test_the_long_has_no_written_fields_at_all():
-    """THE GAP, as a test rather than a paragraph in a report.
-
-    Nine chapters ask for a title, three lines and four phrases each. Not one
-    of them is written: `render_long_shots.split_chapters` cuts a single
-    prose narration into sentences and hands the pieces out, `_title` takes
-    the first four words of the first one, and a "phrase" is the head of a
-    sentence truncated at twenty characters. That is why a chain box reads
-    "Two larger".
-
-    This test does not fail on the gap — it MEASURES it, so closing it is a
-    deliberate act with a test change beside it.
-    """
-    from pipeline.plates import CHAPTER_TYPES
-
-    fields = writer_fields("long")
-    per_chapter = {f.name for f in fields}
-    assert per_chapter, "the long reads no chapter sources at all"
-    # Sixteen chapter types have a file now, not nine, and a chapter binds
-    # PROSE only to slots written for a sentence: a `label` holds thirty
-    # characters and is for a metric name. So the gap is smaller than it was
-    # and it is still a gap — every one of these is sliced out of a block of
-    # narration rather than written into a field of its own.
-    assert len(fields) * len(CHAPTER_TYPES) >= 30, (
-        f"{len(fields)} fields x {len(CHAPTER_TYPES)} chapters")
-    from pipeline.render_long_shots import LongResolver
-    assert any(f.name.startswith("line") for f in fields)
-    assert hasattr(LongResolver, "_chapter")
 
 
 @pytest.mark.parametrize("name", FORMATS)

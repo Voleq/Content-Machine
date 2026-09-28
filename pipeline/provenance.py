@@ -61,11 +61,9 @@ class Provenance:
     workdate: str = ""
     duration_s: float = 0.0
 
-    # WHICH CODE DREW THIS (P4). `long_render_engine` and the SHORT's shot
-    # template are both switchable, and a first production run should not
-    # have to discover which branch it took. `render_long_shots` in
-    # particular is wired up and has no production mileage — a surprise
-    # should be attributable rather than mysterious.
+    # WHICH CODE DREW THIS (P4). The SHORT's shot template is picked per
+    # video, and a first production run should not have to discover which
+    # one it took: a surprise should be attributable rather than mysterious.
     render: dict = field(default_factory=dict)
     prices: dict = field(default_factory=dict)
     visuals: dict = field(default_factory=dict)

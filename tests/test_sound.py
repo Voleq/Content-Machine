@@ -19,8 +19,7 @@ import pytest
 
 from pipeline.audio_assets import ROOM_TONE_GAIN_DB, ROOM_TONE_NAME
 from pipeline.render_common import AudioTrack, mix_under_picture, run_ffmpeg
-from pipeline.sound import (CUT_KEY, CUT_LEAD_S, DROP_S, HIT_KEY,
-                            MOVE_CUES, MOVE_GAP_S, RATE_SPREAD,
+from pipeline.sound import (CUT_KEY, CUT_LEAD_S, DROP_S, MOVE_CUES, MOVE_GAP_S, RATE_SPREAD,
                             TRIM_SPREAD_DB, WIPE_CUT_S, WIPE_S, Cut, Move,
                             Voicing, bed_track, manifest_rows, move_cues,
                             normalises, room_track, set_layers, short_mix,
@@ -190,8 +189,7 @@ def test_the_set_is_heard_only_while_it_is_on_screen(assets):
 
 def test_every_cut_swishes_and_the_payoff_lands(assets):
     root, settings = assets
-    tracks, drops = structure_cues(CUTS, settings,
-                                   Voicing(root / "sfx", "seed"), chapters=False)
+    tracks, drops = structure_cues(CUTS, settings, Voicing(root / "sfx", "seed"))
     names = [t.name for t in tracks]
     assert names[0] == "hook_hit@0.00", "the first frame lands with a hit"
     assert names[-2] == "payoff_hit@12.80"
@@ -218,19 +216,6 @@ def test_the_drop_silences_everything_but_the_voice(assets, tmp_path):
             assert t.gaps == ((12.8 - DROP_S, 12.8),), t.name
         else:
             assert t.gaps == (), t.name
-
-
-def test_a_chaptered_format_hits_on_each_chapter_and_nothing_else(assets):
-    root, settings = assets
-    cuts = [Cut("ch1-open", 0.0, 4.0, chapter_n=1),
-            Cut("ch1-a", 4.0, 9.0, chapter_n=1),
-            Cut("ch2-open", 9.0, 14.0, chapter_n=2),
-            Cut("ch2-a", 14.0, 20.0, chapter_n=2)]
-    tracks, drops = structure_cues(cuts, settings,
-                                   Voicing(root / "sfx", "seed"), chapters=True)
-    assert [t.name for t in tracks] == ["chapter_hit@0.00", "chapter_hit@9.00"]
-    assert all(t.path.stem.startswith(HIT_KEY) for t in tracks)
-    assert drops == []
 
 
 # ---------------------------------------------------------- design's moves
@@ -280,8 +265,7 @@ def test_moves_make_fewer_sounds_than_moves(assets):
         Move("window-rain", 14.0),      # a loop: set layer, not a cue
         Move("tick-over", 15.0),
     ]
-    _, drops = structure_cues(CUTS, settings, Voicing(root / "sfx", "s"),
-                              chapters=False)
+    _, drops = structure_cues(CUTS, settings, Voicing(root / "sfx", "s"))
     tracks = move_cues(moves, settings, Voicing(root / "sfx", "s"),
                        cuts=CUTS, drops=drops)
     assert [t.name for t in tracks] == ["move:count-up@7.00",
@@ -311,8 +295,7 @@ def test_a_punch_in_is_one_subject_and_a_wipe_swishes_through_its_cover(assets):
             Cut("the-news", 12.0, 12.8, wipe=(12.0 - WIPE_CUT_S,
                                               12.0 - WIPE_CUT_S + WIPE_S)),
             Cut("close", 12.8, 16.0)]
-    tracks, _ = structure_cues(cuts, settings, Voicing(root / "sfx", "s"),
-                               chapters=False)
+    tracks, _ = structure_cues(cuts, settings, Voicing(root / "sfx", "s"))
     names = [t.name for t in tracks]
     assert not any(abs(t.start_s + CUT_LEAD_S - 9.0) < 1e-6 for t in tracks), \
         "a punch-in inside one beat got a swish"
@@ -321,13 +304,6 @@ def test_a_punch_in_is_one_subject_and_a_wipe_swishes_through_its_cover(assets):
     assert wipe.start_s == pytest.approx(12.0 - WIPE_CUT_S)
     assert wipe.max_s == pytest.approx(WIPE_S)
     assert len(names) == 4, names   # hook, 5.0, the wipe, 12.8
-
-    chaptered = [Cut("ch1", 0.0, 4.0, chapter_n=1),
-                 Cut("ch2", 4.0, 9.0, chapter_n=2),
-                 Cut("ch2-in", 9.0, 12.0, chapter_n=3, part=2)]
-    tracks, _ = structure_cues(chaptered, settings,
-                               Voicing(root / "sfx", "s"), chapters=True)
-    assert [t.name for t in tracks] == ["chapter_hit@0.00", "chapter_hit@4.00"]
 
 
 def test_the_long_swishes_its_wipes_but_not_under_a_chapter_hit(assets):
@@ -408,7 +384,7 @@ def test_a_short_gets_one_owned_loop_and_not_the_last_ones(settings, tmp_path):
     assert bed_track(s.model_copy(update={"short_bed": False}), "x") is None
 
 
-def test_no_score_no_loop_and_the_long_never_gets_one(settings, tmp_path):
+def test_no_score_no_loop(settings, tmp_path):
     assert bed_track(settings, "seed") is None or \
         (settings.assets_dir / "score").is_dir()
     score = tmp_path / "assets" / "score"
@@ -418,9 +394,7 @@ def test_no_score_no_loop_and_the_long_never_gets_one(settings, tmp_path):
     s = settings.model_copy(update={"assets_dir": tmp_path / "assets"})
     voice = _voice(tmp_path / "v.m4a")
     short = short_mix(FakeTTS(voice), s, cuts=CUTS, seed="x")
-    long = short_mix(FakeTTS(voice), s, cuts=CUTS, seed="x", chapters=True)
     assert any(t.name == "bed" for t in short)
-    assert not any(t.name == "bed" for t in long)
 
 
 # ------------------------------------------------------------ the file itself

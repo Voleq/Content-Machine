@@ -43,15 +43,11 @@ class TemplateError(RuntimeError):
 # with nothing in it — a format quietly one shot shorter than it says it is.
 # Every key any of these objects may carry is listed, and anything else is an
 # error naming the key and the shot it is in.
-FORMAT_KEYS = frozenset({"format", "aspect", "frame", "shots", "chapters",
-                         "notes", "orders"})
-CHAPTER_KEYS = frozenset({"chapter", "shots", "notes"})
-CHAPTER_DIR = Path("templates/chapters")
+FORMAT_KEYS = frozenset({"format", "aspect", "frame", "shots", "notes",
+                         "orders"})
 SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
                        "lit", "anchor", "max_hold_s", "captions", "notes",
-                       "repeat", "stagger_s", "focus", "alts", "meme",
-                       # set by chapter expansion, never authored
-                       "_chapter", "_chapter_n"})
+                       "repeat", "stagger_s", "focus", "alts", "meme"})
 # An ALTERNATE is the same beat drawn on a different plate. It carries its own
 # `bind` because interchangeable plates rarely name their slots the same way:
 # `structure/closing` writes `line-1` and `structure/end-card` writes `line`,
@@ -274,8 +270,6 @@ class Shot:
     # read as motion at all. Something entering is what the ceiling rule
     # actually asks for.
     stagger_s: float = 0.0
-    chapter: str = ""            # which chapter type this shot came from
-    chapter_n: int = 0           # and which chapter of the video
     # Move in on this slot of the plate, so it fills the frame rather than
     # sitting in a wide shot with a box round it.
     focus: str | None = None
@@ -406,62 +400,12 @@ def _meme_spec(raw: Any, where: str, *, repeat: Any) -> MemeSpec | None:
     return MemeSpec(at=at, notes=str(raw.get("notes", "")))
 
 
-def _chapter_shots(names: list[str], fmt_name: str,
-                   root: Path | str = ".", *,
-                   boundary: str | None = None) -> list[dict]:
-    """Every chapter's shots, in order, with ids that say where they came from.
-
-    An id like `ch3-the-event-dive-in` is how a manifest, a contact sheet cell
-    and an invariant failure all name the same frame — with a chapter used
-    twice, bare shot ids would collide silently.
-
-    `boundary` is the transition the format puts at the top of every chapter.
-    It is applied HERE, once, rather than authored into nine chapter files:
-    the same rule written nine times is the drift that a template engine is
-    supposed to remove, and a chapter type does not know it is a chapter of
-    a long — the same file has to work wherever it is picked.
-    """
-    out: list[dict] = []
-    for n, cname in enumerate(names, 1):
-        path = Path(root) / CHAPTER_DIR / f"{cname}.json"
-        if not path.exists():
-            raise TemplateError(
-                f"{fmt_name}: no chapter type {cname!r} at {path}. A chapter "
-                f"type is a JSON file; adding one is authoring a file.")
-        try:
-            craw = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
-            raise TemplateError(f"{path} is not valid JSON: {exc}") from exc
-        _reject_unknown(craw, CHAPTER_KEYS, f"chapter {cname}")
-        for j, sh in enumerate(craw.get("shots") or ()):
-            sh = dict(sh)
-            sh["id"] = f"ch{n}-{cname}-{sh['id']}"
-            sh["_chapter"] = cname
-            sh["_chapter_n"] = n
-            # The chapter's first shot anchors to the chapter's first
-            # sentence, so nine chapters give nine points where the cut is
-            # pinned to the audio rather than interpolated.
-            if j == 0 and "anchor" not in sh:
-                sh["anchor"] = f"ch{n}"
-            if j == 0 and boundary and "enter" not in sh:
-                sh["enter"] = boundary
-            out.append(sh)
-    return out
-
-
-def parse_format(raw: dict, source: Path | None = None,
-                 root: Path | str = ".") -> Format:
+def parse_format(raw: dict, source: Path | None = None) -> Format:
     _reject_unknown(raw, FORMAT_KEYS, "template")
     try:
         name = raw["format"]
         frame = (int(raw["frame"]["w"]), int(raw["frame"]["h"]))
-        # A format lists SHOTS or CHAPTERS. A chapter is a named small shot
-        # list of its own, so nine picks become thirty-eight shots and nobody
-        # authors them one at a time.
-        shots_raw = raw.get("shots")
-        if shots_raw is None:
-            shots_raw = _chapter_shots(raw["chapters"], name, root,
-                                       boundary=raw.get("chapter_enter"))
+        shots_raw = raw["shots"]
     except KeyError as exc:
         raise TemplateError(f"template missing {exc}") from exc
     if not shots_raw:
@@ -562,7 +506,6 @@ def parse_format(raw: dict, source: Path | None = None,
             enter=s.get("enter"), lit=s.get("lit"),
             anchor=s.get("anchor"), stagger_s=float(s.get("stagger_s", 0.0)),
             focus=s.get("focus"),
-            chapter=s.get("_chapter", ""), chapter_n=int(s.get("_chapter_n", 0)),
             max_hold_s=float(s.get("max_hold_s", 8.0)),
             captions=bool(s.get("captions", True)),
             notes=s.get("notes", ""), meme=meme))
@@ -639,18 +582,9 @@ def beat_keys(fmt: Format) -> tuple[str, ...]:
 
 
 def marker_formats(root: Path | str = ".") -> dict[str, tuple[str, ...]]:
-    """Every format a SHORT renders through, with the beats it can mark.
-
-    The chaptered LONG is left out: its anchors are chapter numbers the
-    renderer derives from the prose, and nobody writes them.
-    """
-    out: dict[str, tuple[str, ...]] = {}
-    for name in available_formats(root):
-        fmt = load_format(name, root)
-        if any(sh.chapter for sh in fmt.shots):
-            continue
-        out[name] = beat_keys(fmt)
-    return out
+    """Every format a SHORT renders through, with the beats it can mark."""
+    return {name: beat_keys(load_format(name, root))
+            for name in available_formats(root)}
 
 
 def _parse_orders(raw: Any, fmt_name: str,
@@ -842,7 +776,7 @@ def load_format(name: str, root: Path | str = ".") -> Format:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise TemplateError(f"{path} is not valid JSON: {exc}") from exc
-    return parse_format(raw, source=path, root=root)
+    return parse_format(raw, source=path)
 
 
 def _sub(value: str | None, n: int) -> str | None:
