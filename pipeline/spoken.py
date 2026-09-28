@@ -1,7 +1,7 @@
 """Figures and terms as they are SAID, not as they are typed.
 
 Both writing prompts now carry the rule in full — `master_prompt_short.md`
-rule 11 and `master_prompt_long_write.md` — so a script normally arrives with
+rule 10 and `master_prompt_long_write.md` — so a script normally arrives with
 its figures already spelled for the voice. A prompt is an instruction to a
 model, though, not a guarantee, and one `$1,234.56` that slips through is read
 wrong out loud on a figure the on-screen fact-check gate has already verified:

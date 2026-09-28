@@ -34,13 +34,15 @@ from __future__ import annotations
 import json
 import logging
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from config import Settings
 
 log = logging.getLogger(__name__)
 
+# The LONG's name, which is every render's name from before the SHORT wrote
+# timings of its own. `pipeline.publish.byproduct_name` holds both.
 WORDS_FILE = "words.json"
 
 # A short's opener is judged over this many seconds. Long enough to be a
@@ -85,11 +87,16 @@ def write_words(words, path: Path) -> Path:
     return path
 
 
-def load_words(ws_path: Path) -> list[dict]:
-    """The word timings for one workspace, or an empty list."""
+def load_words(ws_path: Path, fmt: str = "long") -> list[dict]:
+    """One format's word timings for one workspace, or an empty list."""
+    from pipeline.publish import byproduct_name
+
+    name = byproduct_name("words", fmt) or WORDS_FILE
     try:
-        rows = json.loads((ws_path / WORDS_FILE).read_text(encoding="utf-8"))
+        rows = json.loads((ws_path / name).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
+        return []
+    if not isinstance(rows, list):
         return []
     return [r for r in rows if isinstance(r, dict) and "start" in r]
 
@@ -99,13 +106,18 @@ _SRT_TIME = re.compile(
     r"(\d{2}):(\d{2}):(\d{2})[,.](\d{1,3})")
 
 
-def load_cues(ws_path: Path) -> list[Span]:
+def load_cues(ws_path: Path, fmt: str = "long") -> list[Span]:
     """Subtitle cues, as the fallback for a video rendered before words were
     written. Coarser than the words — a cue is a line or two — but it is the
-    same clock, so it localises a drop to a line rather than a chapter."""
+    same clock, so it localises a drop to a line rather than a chapter.
+
+    The SHORT's file carries its format in the name; the LONG's is any other
+    `.srt`, which is what renders from before the SHORT wrote one left."""
+    found = sorted(p for p in ws_path.glob("*.srt")
+                   if p.name.endswith(".short.srt") == (fmt == "short"))
     try:
-        text = next(ws_path.glob("*.srt")).read_text(encoding="utf-8")
-    except (StopIteration, OSError):
+        text = found[0].read_text(encoding="utf-8")
+    except (IndexError, OSError):
         return []
     spans: list[Span] = []
     blocks = [b for b in re.split(r"\n\s*\n", text) if b.strip()]
@@ -226,24 +238,48 @@ def line_holds(spans: list[Span], retention: dict,
 
 
 def spans_for(settings: Settings, ticker: str, workdate: str,
-              narration: str = "") -> list[Span]:
-    """The best timing available for one workspace: words, else cues."""
+              narration: str = "", fmt: str = "long") -> list[Span]:
+    """The best timing available for one format in one workspace: words,
+    else cues."""
     ws_path = settings.workspace_dir / ticker.upper() / workdate
-    words = load_words(ws_path)
+    words = load_words(ws_path, fmt)
     if words and narration:
         spans = sentence_spans(narration, words)
         if spans:
             return spans
-    return load_cues(ws_path)
+    return load_cues(ws_path, fmt)
 
 
 def holds_for_video(settings: Settings, record,
                     narration: str = "") -> list[LineHold]:
-    """The sentence-level holds for one published video, or nothing."""
-    if not record.retention or record.duration_s <= 0:
+    """The sentence-level holds for one published video, or nothing.
+
+    Nothing for a clip: it is a window cut out of the LONG, so its retention
+    runs on the clip's clock and the only timings on file run on the LONG's.
+    """
+    from pipeline.youtube import record_format
+
+    fmt = record_format(record)
+    if fmt == "clip" or not record.retention or record.duration_s <= 0:
         return []
-    spans = spans_for(settings, record.ticker, record.workdate, narration)
+    spans = spans_for(settings, record.ticker, record.workdate, narration,
+                      fmt)
     return line_holds(spans, record.retention, record.duration_s)
+
+
+def narration_for(settings: Settings, record) -> str:
+    """The narration of the render this upload was, off the script corpus.
+
+    By format as well as by ticker and date: a SHORT and a LONG can share
+    both, and the first match used to win whichever the upload was.
+    """
+    from pipeline.corpus import Corpus
+    from pipeline.youtube import record_format
+
+    fmt = record_format(record)
+    return next((e.narration for e in Corpus(settings).entries
+                 if e.ticker == record.ticker.upper()
+                 and e.workdate == record.workdate and e.fmt == fmt), "")
 
 
 def worst_lines(holds: list[LineHold], n: int = 5) -> list[LineHold]:
@@ -293,10 +329,14 @@ def hook_bench(settings: Settings, *, fmt: str = "short",
     from pipeline.corpus import Corpus
     from pipeline.youtube import VideoLog
 
+    from pipeline.youtube import record_format
+
     corpus = Corpus(settings)
     by_key = {f"{e.ticker}/{e.workdate}/{e.fmt}": e for e in corpus.entries}
     out: list[Hook] = []
     for record in VideoLog(settings).all():
+        if record_format(record) != fmt:
+            continue
         entry = by_key.get(f"{record.ticker}/{record.workdate}/{fmt}")
         if entry is None or not record.retention or record.duration_s <= 0:
             continue
@@ -360,15 +400,21 @@ class RuleEvidence:
 
 
 def _features(text: str) -> dict[str, bool]:
-    """What the linter would say about one sentence."""
-    from pipeline.gates import _TURN
+    """What the linter would say about one sentence.
+
+    The text is the narration the voice read, which is written for the ear:
+    its figures are spelled out, so a figure is found the way the fact-check
+    finds one, not by looking for a digit. And the tokenizer took every
+    bracket out of it before it was saved, so a direction tag is not
+    something this text can show — that rule is not tried here.
+    """
+    from pipeline.gates import _TURN, spoken_figures
 
     low = text.lower()
     return {
         "a turn in the sentence": bool(_TURN.search(text)),
-        "a direction tag": bool(re.search(r"\[[a-z ]+\]", text)),
         "a question": "?" in text,
-        "a figure spoken": bool(re.search(r"\d", text)),
+        "a figure spoken": bool(spoken_figures(text)),
         "first person": bool(re.search(r"\b(i|we|my|our)\b", low)),
     }
 
@@ -384,14 +430,17 @@ def rule_evidence(settings: Settings) -> list[RuleEvidence]:
     from pipeline.corpus import Corpus
     from pipeline.youtube import VideoLog
 
+    from pipeline.youtube import record_format
+
     corpus = Corpus(settings)
-    narrations = {f"{e.ticker}/{e.workdate}": e.narration
+    narrations = {f"{e.ticker}/{e.workdate}/{e.fmt}": e.narration
                   for e in corpus.entries}
     buckets: dict[str, tuple[list[float], list[float]]] = {}
     for record in VideoLog(settings).all():
         holds = holds_for_video(
             settings, record,
-            narrations.get(f"{record.ticker}/{record.workdate}", ""))
+            narrations.get(f"{record.ticker}/{record.workdate}/"
+                           f"{record_format(record)}", ""))
         for hold in holds:
             for rule, present in _features(hold.text).items():
                 yes, no = buckets.setdefault(rule, ([], []))

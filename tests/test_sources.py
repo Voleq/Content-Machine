@@ -12,9 +12,7 @@ of them being broken.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-import pytest
 
 from pipeline.sources import (
     FRED_SERIES,
@@ -22,15 +20,12 @@ from pipeline.sources import (
     UNAVAILABLE,
     cached,
     fred_series,
-    institutional_holders,
     insider_transactions,
     ir_feed,
     latest_8k,
     parse_rss,
     store,
     summarise,
-    transcribe,
-    whisper_available,
 )
 
 RSS = """<?xml version="1.0"?>
@@ -90,13 +85,6 @@ def test_form_4s_come_back_with_dates(settings):
     assert all(f["filed"] for f in got["filings"])
 
 
-def test_13f_says_out_loud_that_it_is_stale(settings):
-    """It is always a story about last quarter — a script needs to say so
-    rather than implying somebody bought it yesterday."""
-    got = institutional_holders("EXMPL", settings)
-    assert "45 days" in got["as_of_note"]
-
-
 # --------------------------------------------------------------------------
 # FRED.
 # --------------------------------------------------------------------------
@@ -128,6 +116,23 @@ def test_a_series_change_needs_enough_points():
     two = _series_change([{"date": "a", "value": 100.0},
                           {"date": "b", "value": 110.0}])
     assert two == {"mom": 10.0}, two
+
+
+def test_a_rate_changes_in_points_not_percent():
+    """Unemployment from 4.1 to 4.3 is up two tenths of a point. As a percent
+    it is "+4.9%", which a script reads out as though it were the rate."""
+    from pipeline.sources import RATE_SERIES, _series_change
+
+    assert {"UNRATE", "FEDFUNDS"} <= RATE_SERIES
+    obs = [{"date": f"2025-{m:02d}-01", "value": 4.1} for m in range(1, 13)]
+    obs.append({"date": "2026-01-01", "value": 4.3})
+    change = _series_change(obs, points=True)
+    assert change == {"mom": 0.2, "yoy": 0.2, "unit": "pts"}, change
+    line = summarise({"status": "ok", "series": "UNRATE",
+                      "observations": obs, "latest": obs[-1],
+                      "change": change})
+    assert "+0.20 percentage points y/y" in line
+    assert "%" not in line
 
 
 def test_no_fred_key_is_unavailable_not_an_error(settings):
@@ -174,26 +179,6 @@ def test_the_feed_limit_is_honoured():
     assert len(parse_rss(many, limit=5)) == 5
 
 
-def test_ir_items_become_backlog_entries(settings):
-    from pipeline.sources import ideas_from_ir
-    from pipeline.standing import IdeaQueue
-
-    n = ideas_from_ir(settings, "EXMPL", "https://ir.example.com/rss")
-    assert n >= 1
-    top = IdeaQueue(settings).ranked()[0]
-    assert top.ticker == "EXMPL" and top.source == "ir"
-
-
-def test_an_unavailable_feed_adds_nothing(settings, monkeypatch):
-    from pipeline import sources as src
-    from pipeline.standing import IdeaQueue
-
-    monkeypatch.setattr(src, "ir_feed",
-                        lambda *a, **k: {"status": UNAVAILABLE})
-    assert src.ideas_from_ir(settings, "EXMPL", "https://x") == 0
-    assert IdeaQueue(settings).ranked() == []
-
-
 # --------------------------------------------------------------------------
 # Degrading, and never blocking.
 # --------------------------------------------------------------------------
@@ -226,19 +211,6 @@ def test_an_edgar_miss_is_unavailable_with_a_reason(settings, monkeypatch):
         assert got.get("reason"), fn.__name__
 
 
-def test_whisper_is_optional_and_says_so(settings):
-    ok, why = whisper_available(settings)
-    assert not ok
-    assert "switched off" in why or "Whisper" in why
-
-
-def test_transcription_never_raises(settings):
-    """Best-effort by definition: nothing downstream waits on it."""
-    got = transcribe("https://example.com/webcast.mp3", settings)
-    assert got["status"] == UNAVAILABLE
-    assert got["reason"]
-
-
 # --------------------------------------------------------------------------
 # The cache: these endpoints are rate- or key-limited.
 # --------------------------------------------------------------------------
@@ -259,8 +231,8 @@ def test_a_stale_entry_is_a_miss(settings):
 
 
 def test_ttls_reflect_how_often_each_source_actually_changes():
-    """A 13F is quarterly; a price-moving 8-K is not."""
-    assert TTL_SECONDS["8k"] < TTL_SECONDS["form4"] < TTL_SECONDS["13f"]
+    """A macro series moves monthly; a price-moving 8-K does not wait."""
+    assert TTL_SECONDS["8k"] < TTL_SECONDS["form4"] < TTL_SECONDS["fred"]
 
 
 def test_a_corrupt_cache_file_is_a_miss_not_a_crash(settings):
@@ -299,7 +271,6 @@ def test_everything_runs_offline_in_mock_mode(settings):
     assert settings.mock_mode
     for payload in (latest_8k("EXMPL", settings),
                     insider_transactions("EXMPL", settings),
-                    institutional_holders("EXMPL", settings),
                     fred_series("cpi", settings),
                     ir_feed("https://ir.example.com/rss", settings)):
         assert payload["status"] == "ok", payload

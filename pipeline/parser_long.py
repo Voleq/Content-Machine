@@ -210,6 +210,23 @@ def parse_chapters(text: str) -> tuple[list[Chapter], list[str]]:
     return chapters, warnings
 
 
+def _title_warnings(chapters, settings: Settings) -> list[str]:
+    """A title longer than the chapter card holds runs into the drawing."""
+    from pipeline.bumper import chapter_title_limit
+    from pipeline.plates import PlateError, load_plates
+
+    try:
+        limit = chapter_title_limit(load_plates(settings.assets_dir))
+    except PlateError:
+        return []
+    if not limit:
+        return []
+    return [f"chapter title {ch.title!r} is {len(ch.title)} characters and "
+            f"the chapter card holds {limit} — past that the line runs into "
+            f"the drawing. Shorten it; the joke survives."
+            for ch in chapters if len(ch.title) > limit]
+
+
 def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongScript, list[str]]:
     """Tokenize tagged narration. Returns (script, warnings).
 
@@ -342,6 +359,7 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
 
     chapter_list, chapter_warnings = parse_chapters(chapters)
     warnings.extend(chapter_warnings)
+    warnings.extend(_title_warnings(chapter_list, settings))
     if not chapter_list:
         warnings.append(
             "the script has no usable `=== CHAPTERS ===` trailer — every "
@@ -405,19 +423,21 @@ def density_warnings(script: LongScript, settings: Settings) -> list[str]:
             f"rate the cut is a talking head with occasional pictures.")
 
     # Per chapter, by character offset. Chapter boundaries are timestamps and
-    # tags are offsets, so this maps them through the narration's own length —
-    # approximate on purpose, and a warning for exactly that reason.
+    # tags are offsets, so this maps them through the narration's own length
+    # over the estimated runtime — approximate on purpose, and a warning for
+    # exactly that reason. The scale is the whole runtime, not the last
+    # chapter's start: on that scale the last chapter began at the end of the
+    # text and was always reported empty.
     chapters = script.chapter_list
     if len(chapters) < 2 or not chapters[-1].start_s:
         return out
-    span = chapters[-1].start_s or duration
     for i, ch in enumerate(chapters):
         start_s = ch.start_s
         end_s = chapters[i + 1].start_s if i + 1 < len(chapters) else duration
         if end_s - start_s < 60:
             continue
-        lo = int(len(script.narration) * (start_s / max(span, 1e-6)))
-        hi = int(len(script.narration) * (end_s / max(span, 1e-6)))
+        lo = int(len(script.narration) * min(start_s / duration, 1.0))
+        hi = int(len(script.narration) * min(end_s / duration, 1.0))
         n = sum(1 for e in visuals if lo <= e.char_offset < hi)
         mins = (end_s - start_s) / 60.0
         if n / mins < DENSITY_FLOOR_PER_MIN:

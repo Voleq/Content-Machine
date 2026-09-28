@@ -13,12 +13,11 @@ Where an answering LLM is needed it is injected — never reached for.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
 
-from pipeline.filing_brief import FilingBrief, build_brief, load_brief
+from pipeline.filing_brief import build_brief, load_brief
 
 
 @pytest.fixture()

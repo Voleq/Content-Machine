@@ -50,6 +50,25 @@ def test_a_script_with_no_figure_at_all_says_so():
     assert measure_pacing("No numbers here. None at all.").first_figure_s is None
 
 
+def test_a_figure_spelled_out_for_the_voice_is_a_figure():
+    """Both writing prompts require every spoken figure spelled out, so a
+    check that looked for a digit found none in a correct script and told
+    every approval card that no figure is spoken anywhere."""
+    pacing = measure_pacing("Nobody watches this one. Revenue grew twenty-nine "
+                            "percent. Margins sit at fifty-nine point six "
+                            "percent.")
+    assert pacing.first_figure_s is not None
+    assert pacing.first_figure_s < 3.0
+    assert not any("no figure is spoken" in f.message for f in pacing_report(_Script(
+        "Revenue fell by one point four billion dollars last year.")))
+
+
+def test_a_small_word_number_is_not_a_figure():
+    # "one reason", "two things": spoken English, not data.
+    assert measure_pacing("One reason. Two things. No one cares."
+                          ).first_figure_s is None
+
+
 def test_the_longest_figure_free_stretch_is_found_and_quoted():
     narration = ("Revenue was 4 billion. " + "filler word here " * 40
                  + "And margin was 12 percent.")

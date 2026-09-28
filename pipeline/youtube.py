@@ -83,6 +83,11 @@ class VideoRecord:
     clip_start_s: float = 0.0
     # Corrections pinned after publication (06): [{"at": iso, "text": …}].
     corrections: list = field(default_factory=list)
+    # Which render went up: short | long | clip. Everything that maps
+    # retention back onto a script needs it — a SHORT and a LONG can share
+    # a ticker and a date, and their sentences and cuts are not each other's.
+    # Empty on a row written before it was recorded; `record_format` infers.
+    fmt: str = ""
 
     def url(self) -> str:
         return f"https://youtu.be/{self.video_id}"
@@ -94,6 +99,19 @@ class VideoRecord:
 # --------------------------------------------------------------------------
 # Validation — cheaper to catch here than after the upload starts.
 # --------------------------------------------------------------------------
+
+
+def record_format(record: VideoRecord) -> str:
+    """short | long | clip for one upload, inferred for rows that predate
+    `fmt`: a tagged clip is a clip, and anything under three minutes is a
+    SHORT — the LONG runs to tens of minutes, so the line is not close."""
+    if record.fmt in ("short", "long", "clip"):
+        return record.fmt
+    if record.experiment or record.clip_start_s:
+        return "clip"
+    if 0 < record.duration_s < 180:
+        return "short"
+    return "long"
 
 
 def validate_package(title: str, description: str,
@@ -477,7 +495,8 @@ def upload_video(video: Path, package, settings: Settings, *,
                  client: YouTubeClient | None = None,
                  now: datetime | None = None,
                  experiment: str = "",
-                 clip_start_s: float = 0.0) -> VideoRecord:
+                 clip_start_s: float = 0.0,
+                 fmt: str = "") -> VideoRecord:
     """Upload as private (or scheduled), pin the comment, record it.
 
     Never public on the way out: a scheduled publish is the most this will do
@@ -543,7 +562,7 @@ def upload_video(video: Path, package, settings: Settings, *,
         workdate=workdate, chapters=[list(c) for c in chapters],
         duration_s=duration_s,
         synthetic_declared=(None if declared is None else bool(declared)),
-        experiment=experiment, clip_start_s=clip_start_s)
+        experiment=experiment, clip_start_s=clip_start_s, fmt=fmt)
     VideoLog(settings).record(record)
     log.info("youtube: %s uploaded as %s%s", video_id, record.privacy,
              f" for {record.publish_at}" if when else "")
@@ -587,14 +606,21 @@ class VideoLog:
                          ticker=video.ticker, workdate=video.workdate,
                          video_id=video.video_id, privacy=video.privacy)
 
+    @staticmethod
+    def _record(row: dict) -> VideoRecord:
+        """A row, with keys this build does not know dropped rather than
+        raised on — the same compatibility `ThesisBook.get` keeps."""
+        known = set(VideoRecord.__dataclass_fields__)
+        return VideoRecord(**{k: v for k, v in row.items() if k in known})
+
     def get(self, video_id: str) -> VideoRecord | None:
         for r in self._all():
             if r.get("video_id") == video_id:
-                return VideoRecord(**r)
+                return self._record(r)
         return None
 
     def all(self) -> list[VideoRecord]:
-        return [VideoRecord(**r) for r in self._all()]
+        return [self._record(r) for r in self._all() if isinstance(r, dict)]
 
     def for_ticker(self, ticker: str) -> list[VideoRecord]:
         return [v for v in self.all() if v.ticker == ticker.upper()]

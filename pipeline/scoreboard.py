@@ -70,7 +70,11 @@ class Row:
 
     def line(self) -> str:
         moved = ""
-        material = [m for m in self.moves if m.get("material")]
+        # `ThesisBook.check` keeps only material moves, and `material` is a
+        # property on the Move, not a field, so a stored row never carries
+        # the key: absent means material. Filtering on its presence showed
+        # what moved on no row at all.
+        material = [m for m in self.moves if m.get("material", True)]
         if material:
             first = material[0]
             moved = (f" — {first.get('field', 'a tracked number')} moved "
@@ -147,7 +151,7 @@ class Scoreboard:
                 lines.append(f"- {row.ticker} ({row.workdate}) — "
                              f"{row.verdict}. Said: {row.summary}")
                 for move in row.moves:
-                    if move.get("material"):
+                    if move.get("material", True):
                         lines.append(
                             f"    {move.get('field', '?')}: "
                             f"{move.get('change', 0) * 100:+.1f}%")

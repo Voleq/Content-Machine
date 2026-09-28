@@ -435,7 +435,7 @@ class TTSEngine:
 
     def synthesize(self, text: str, fmt: str, *, events=None,
                    draft: bool = False, free_only: bool = False,
-                   cached_only: bool = False) -> TTSResult:
+                   cached_only: bool = False, ticker: str = "") -> TTSResult:
         """text must be the CLEAN script (tags stripped). fmt: short|long.
 
         `events` carries the script's delivery direction ([BEAT], [SIGH],
@@ -457,6 +457,10 @@ class TTSEngine:
         of any tier is generated. `free_only` cannot serve that job, because
         a reuse of the paid tier's audio has to ask for the paid tier's
         cache key.
+
+        `ticker` is only bookkeeping: it names the video on the ledger rows
+        this call writes, which is what `/cost explain` groups by. It is not
+        part of the cache key — the same words cost nothing twice.
         """
         if fmt not in ("short", "long"):
             raise ValueError(f"fmt must be short|long, got {fmt!r}")
@@ -483,7 +487,8 @@ class TTSEngine:
             # sha-keyed cache is the guarantee that an unchanged script costs
             # nothing, and it has never left a trace anyone could read.
             if tier == "paid":
-                self.ledger.record_cache_hit(len(text), lane=fmt, tier=tier)
+                self.ledger.record_cache_hit(len(text), lane=fmt,
+                                             ticker=ticker, tier=tier)
             return TTSResult(
                 audio_path=audio_path,
                 words=words,
@@ -534,7 +539,7 @@ class TTSEngine:
             try:
                 chunk_files, chunk_words, cost_usd = self._generate_real(
                     chunks, voice_id, model_id, vsettings, cdir,
-                    fmt=fmt, tier=tier
+                    fmt=fmt, tier=tier, ticker=ticker
                 )
             finally:
                 # Whatever happened, the claim is over: what was actually
@@ -679,6 +684,7 @@ class TTSEngine:
         cdir: Path,
         fmt: str = "",
         tier: str = "",
+        ticker: str = "",
     ) -> tuple[list[Path], list[list[WordTimestamp]], float]:
         """Generate every chunk, metering and resuming per chunk.
 
@@ -750,8 +756,8 @@ class TTSEngine:
                 # before anything downstream can raise. The cap is metered on
                 # what was actually billed.
                 spent = estimate_tts_usd(len(chunk), self.settings)
-                self.ledger.record_tts(spent, lane=fmt, chars=len(chunk),
-                                       tier=tier)
+                self.ledger.record_tts(spent, lane=fmt, ticker=ticker,
+                                       chars=len(chunk), tier=tier)
                 cost_usd += spent
                 files.append(f)
                 words.append(cwords)

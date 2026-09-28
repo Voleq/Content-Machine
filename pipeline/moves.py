@@ -41,7 +41,7 @@ import re
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Sequence
 
 from pipeline import motion as M
 
@@ -158,10 +158,6 @@ class Move:
             return None
         return min(f, self.frames - 1)
 
-    def t_at(self, t: float) -> float | None:
-        f = self.frame_at(t)
-        return None if f is None else M.t_of_frame(f, self.frames)
-
     def row(self) -> dict:
         return {"move": self.move, "start": round(self.start, 3),
                 "shot_id": self.shot_id, "slot": self.slot, "frames": self.frames}
@@ -236,9 +232,6 @@ class MovePlan:
     # Why a move a plate offered did not play, for the manifest: a circle
     # that sat this video out is a decision, not a bug, and says so.
     skipped: list[str] = field(default_factory=list)
-
-    def for_layer(self, name: str) -> list[Move]:
-        return [m for m in self.moves if m.layer == name]
 
     @property
     def layers(self) -> set[str]:
@@ -650,14 +643,18 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
         # 5. THE SOURCE SLIDES IN under the figure once it has landed, where
         #    design says the plate has room for it; where it has none, on the
         #    next shot that does.
+        # A later beat with a source of its own ends the carry: the carried
+        # line names the figure before it, and resting it under a shot after
+        # this one would cite the wrong figure.
+        if own and carried is not None and carried[1] != beat:
+            plan.skipped.append(
+                f"{shot.id}: the source carried from {carried[1]} gave way "
+                f"to this shot's own")
+            carried = None
         src, whose = (own, beat) if own else (carried or (None, None))
         if src and whose not in tagged:
             if not tag_clear(plate):
                 if own:
-                    if carried is not None and carried[1] != beat:
-                        plan.skipped.append(
-                            f"{shot.id}: the source carried from {carried[1]} gave way "
-                            f"to this shot's own")
                     carried = (own, beat)
                 continue
             tag = _source_tag(reg, fmt, plate, shot.id, src, lane, t0, t1, earliest)
@@ -666,6 +663,12 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
                 tagged.add(whose)
                 if not own:
                     carried = None
+            elif own:
+                plan.skipped.append(
+                    f"{shot.id}: no source tag, "
+                    + ("the plate prints a source line of its own"
+                       if plate.slot("source") is not None
+                       else "the shot is too short to slide one in and read it"))
     if carried is not None:
         plan.skipped.append(
             f"{carried[1]}: no source tag, its plate has no clear spot for one "

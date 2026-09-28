@@ -46,7 +46,6 @@ leaving the oscillators in place.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import shutil
 import subprocess
@@ -68,7 +67,6 @@ from pipeline.audio_assets import (  # noqa: E402
     load_sources,
     save_sources,
 )
-from pipeline.models import SFX_KEYS  # noqa: E402
 from pipeline.sound import EFFECT_KEYS, variant_names  # noqa: E402
 
 API = "https://freesound.org/apiv2"

@@ -20,19 +20,14 @@ script's own anchors — no scene time is ever hardcoded in a renderer.
 
 from __future__ import annotations
 
-import hashlib
 import math
-import re
 from dataclasses import dataclass, field
 
 from pipeline.models import (
     DELIVERY_TAG_TYPES,
-    OVERLAY_TAG_TYPES,
-    AnnotationTarget,
     Cue,
     CueKind,
     LongScript,
-    ShortScript,
     TagEvent,
     TagType,
     WordTimestamp,
@@ -77,18 +72,6 @@ def char_offset_time(words: list[WordTimestamp], offset: int) -> float:
 
 def clamp(t: float, duration: float) -> float:
     return min(max(t, 0.0), max(duration - 0.05, 0.0))
-
-
-def proportional_fallback(index: int, n: int, duration: float) -> float:
-    """Position for a cue whose anchor word was not found."""
-    return duration * (index + 1) / (n + 1)
-
-
-def _first_sentence_end(words: list[WordTimestamp], duration: float) -> float:
-    for w in words:
-        if w.word.rstrip("\"'”’)").endswith((".", "!", "?", "…")):
-            return w.end
-    return min(2.5, duration * 0.15)
 
 
 # --------------------------------------------------------------------------
@@ -160,16 +143,14 @@ _LONG_NO_CUE_REASONS: dict[TagType, str] = {
     # tag inherits the exclusion instead of crashing the render.
     **{t: "delivery direction — consumed by TTS, never drawn"
        for t in DELIVERY_TAG_TYPES},
-    # SHORT-only. render_short resolves it through article_lookup +
-    # screenshot_article; render_long has no article machinery, and
-    # master_prompt_long_write.md never asks for one. It still parses on a
-    # LONG (it is self-resolving, so a bare tag needs no payload), so it can
-    # arrive here — skipped, and said out loud, not mapped to a segment kind
-    # the long renderer cannot paint.
+    # No renderer draws it. The short's article cutaway went with the shot
+    # templates, and the long never had one. It still parses (it is
+    # self-resolving, so a bare tag needs no payload), so it can arrive
+    # here — skipped, and said out loud, not mapped to a segment kind the
+    # long renderer cannot paint.
     TagType.SHOW_ARTICLE: (
-        "[SHOW ARTICLE] is a SHORT beat — the LONG renderer has no article "
-        "path, so this draws nothing. Use [SCREENGRAB] with the capture, or "
-        "cut the tag"),
+        "[SHOW ARTICLE] draws nothing — there is no article screenshot in "
+        "either format. Use [SCREENGRAB] with the capture, or cut the tag"),
 }
 
 
@@ -296,10 +277,6 @@ class Segment:
 
 MIN_SEGMENT_S = 0.25
 
-# size of the renderer's DESIGNED-backdrop pool (each of rasters'
-# LONG_BACKDROP_FAMILIES families is drawn with several seeds). Kept as a bare
-# int so this module stays pure logic — no PIL/raster import.
-LONG_FILLER_LOOKS = 12
 
 # How long each visual kind holds before cutting back to the host WHEN THE
 # DIRECTOR DID NOT SAY. These are roughly double the old values: the show is a

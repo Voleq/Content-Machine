@@ -4,9 +4,10 @@ Callback data grammar (64-byte Telegram limit — keep it terse):
     a|<fmt>|<ticker>|<date>|<sha8>     approve
     x|<fmt>|<ticker>|<date>           cancel
     w|<ticker>|<date>                 open the swap-clip menu (LONG)
+    w!|<ticker>|<date>                back from the swap menu to the report
     s|<ticker>|<date>|<i>             swap visual #i to its next take
     n|<lane>|<ticker>                 open a screener candidate in its own lane
-    fv|<ticker>|<date>|<file>         veto (drop) an auto-pulled filing shot
+    fv|<ticker>|<date>|<i>            veto (drop) auto-pulled filing shot #i
 """
 
 from __future__ import annotations

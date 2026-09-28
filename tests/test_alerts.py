@@ -150,6 +150,25 @@ def test_a_flood_is_capped(settings):
     assert all(a.magnitude >= 20.0 for a in out), [a.magnitude for a in out]
 
 
+def test_an_earnings_alert_that_loses_the_cut_is_offered_again(settings):
+    """The calendar marked a print as flagged the moment it was a candidate,
+    before the poll kept one alert per pass and capped the rest — so on a
+    morning when more names reported than the cap, the rest were marked as
+    said and never said."""
+    cal = EarningsCalendar(settings)
+    n = settings.alert_max_per_poll + 2
+    for i in range(n):
+        cal.set(f"E{i}", "2026-07-24")          # reported last Friday
+
+    first = poll_once(settings, now=MARKET_HOURS)
+    second = poll_once(settings, now=MARKET_HOURS + timedelta(minutes=15))
+
+    assert len(first) == settings.alert_max_per_poll
+    assert {a.ticker for a in second} == \
+        {f"E{i}" for i in range(n)} - {a.ticker for a in first}
+    assert poll_once(settings, now=MARKET_HOURS + timedelta(minutes=30)) == []
+
+
 def test_an_uncovered_name_needs_a_much_bigger_move(settings):
     """Otherwise this just duplicates the screener, loudly."""
     modest = poll_once(settings, quotes=[quote(symbol="RANDO", pct=-7.0)],

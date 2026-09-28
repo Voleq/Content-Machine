@@ -111,6 +111,29 @@ def test_the_page_carries_the_provenance_a_viewer_would_ask_for():
     assert page.startswith("<!doctype html>")
 
 
+def test_the_page_reads_the_record_a_render_actually_writes():
+    """The tests above hand the page a shape nothing writes. A render writes
+    `Provenance.to_json()`: filings and visuals as dicts, the voice under
+    "audio". Read as lists, the page printed a dict's keys as the filings
+    and had no narration block at all."""
+    from pipeline.provenance import Provenance
+
+    record = Provenance(
+        ticker="AAPL", fmt="long", workdate="2026-09-12", duration_s=800.0,
+        visuals={"pexels": 6, "local": 3, "tenor": 1, "filler": 0},
+        filings={"shots": 2, "refs": ["10-K 0000320193-26-000012"],
+                 "brief": {"sections": 5, "context_held": True}},
+        audio={"tier": "paid", "model": "eleven_v3", "cost_usd": 0.94})
+    page = build_page({"ticker": "AAPL", "provenance": record.to_json()})
+
+    assert "10-K 0000320193-26-000012" in page
+    assert "2 shots" in page and "brief: 5 sections" in page
+    assert "6 pexels" in page and "3 owned" in page and "1 GIF (tenor)" in page
+    assert "eleven_v3" in page
+    assert "generated, not recorded" in page
+    assert "refs" not in page and "{" not in page.split("</style>")[1]
+
+
 def test_the_page_says_the_narration_is_synthetic_even_with_no_voice_block():
     assert "generated, not recorded" in build_page({"ticker": "AAPL"})
 
@@ -227,6 +250,20 @@ def test_the_scoreboard_leads_with_what_was_wrong(settings):
     assert "1 of 2 calls are wrong" in board.headline()
     assert board.rows[0].ticker == "AAA", "worst first"
     assert "margin moved -31%" in board.rows[0].line()
+
+
+def test_the_board_shows_what_moved_on_a_row_the_book_really_wrote(settings):
+    """`ThesisBook.check` stores only material moves, and `material` is a
+    property, so a stored row never carries the key. Filtering on it showed
+    what moved on no row at all."""
+    _thesis(settings, "AAA", "broken", "2026-08-10",
+            [{"field": "margin", "before": 0.4, "after": 0.28,
+              "change": -0.31}])
+
+    board = build(settings, "2026-Q3")
+
+    assert "margin moved -31%" in board.rows[0].line()
+    assert "margin: -31.0%" in board.script_brief()
 
 
 def test_a_thesis_from_another_quarter_is_not_on_this_board(settings):

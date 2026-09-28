@@ -17,7 +17,6 @@ touches the network or spends anything.
 from __future__ import annotations
 
 import argparse
-import subprocess
 import sys
 from pathlib import Path
 

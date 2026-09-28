@@ -15,7 +15,6 @@ An ffmpeg encode already in flight finishes its stage first.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import uuid
 from pathlib import Path
@@ -170,10 +169,6 @@ class RenderJobQueue:
                 _journal(self.settings, job, "cancelled by the operator")
                 cancelled.append(job)
         return cancelled
-
-    def is_cancelled(self, job_id: str) -> bool:
-        job = self.store.load(job_id)
-        return job is not None and job.status is JobStatus.CANCELLED
 
     def status_text(self) -> str:
         jobs = self.store.all()

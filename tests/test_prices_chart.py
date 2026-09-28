@@ -325,6 +325,39 @@ def test_a_failed_feed_reaches_the_caller_flagged(settings, tmp_path):
     assert again.degraded is True, "the cache must not launder a fake series"
 
 
+def test_a_retry_after_the_feed_is_back_gets_real_prices(settings, tmp_path):
+    """The price gate says "retry once the feed is back". A synthetic series
+    held for the whole cache hour made that retry meet the same random walk;
+    it is now served for minutes, then fetched again."""
+    import os
+    import time
+
+    from pipeline.prices import DEGRADED_TTL_S, PriceSeries, get_price_history
+
+    class DeadFeed:
+        def history(self, ticker, days):
+            raise RuntimeError("yahoo is down")
+
+    class LiveFeed:
+        def history(self, ticker, days):
+            return PriceSeries(ticker=ticker, dates=["2026-01-01", "2026-01-02"],
+                               closes=[10.0, 11.0], source="yahoo")
+
+    live = settings.model_copy(update={"mock_prices": False,
+                                       "cache_dir": tmp_path / "c"})
+    assert get_price_history("EXMPL", live, source=DeadFeed()).degraded
+    # inside one job's window the same series comes back
+    assert get_price_history("EXMPL", live, source=LiveFeed()).degraded
+    cfile = live.cache_dir / "prices" / f"EXMPL_{live.price_history_days}.json"
+    then = time.time() - DEGRADED_TTL_S - 1
+    os.utime(cfile, (then, then))
+    back = get_price_history("EXMPL", live, source=LiveFeed())
+    assert not back.degraded and back.source == "yahoo"
+    # and a real series keeps the whole cache hour
+    os.utime(cfile, (then, then))
+    assert get_price_history("EXMPL", live, source=DeadFeed()).source == "yahoo"
+
+
 def test_the_synthetic_floor_no_longer_fakes_an_event_move(settings):
     """A floor that lets a render finish is fine. One engineered to look
     like a real trending stock is the opposite of a floor."""
@@ -344,7 +377,6 @@ def test_the_synthetic_floor_no_longer_fakes_an_event_move(settings):
 def test_a_synthetic_series_blocks_a_final_render_outside_mock_mode(
         settings, short_valid_json, tmp_path):
     """B1/N4: informational everywhere else, a blocker here."""
-    import json as _json
 
     from pipeline.gates import check_prices
     from pipeline.parser_short import parse_short_script
@@ -378,6 +410,37 @@ def test_a_synthetic_series_blocks_a_final_render_outside_mock_mode(
     (cdir / f"{script.ticker}_{live.price_history_days}.json").write_text(
         good.to_json(), encoding="utf-8")
     assert check_prices(script, live, final=True) == []
+
+
+def test_a_short_format_with_no_price_chart_is_not_blocked_on_one(
+        settings, short_valid_json, tmp_path):
+    """`earnings` and `macro` show the move as the writer's figure and draw no
+    prices, so a dead feed must not stop them, and they fetch no prices to
+    report on. The plain short's move beat is a price line, so it still
+    stops."""
+    from pipeline.gates import check_prices
+    from pipeline.parser_short import parse_short_script
+    from pipeline.prices import PriceSeries
+    from pipeline.shots import draws_prices, load_format
+
+    assert draws_prices(load_format("short"))
+    assert not draws_prices(load_format("earnings"))
+    assert not draws_prices(load_format("macro"))
+
+    script, _ = parse_short_script(short_valid_json, settings=settings)
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "cache_dir": tmp_path / "c"})
+    cdir = live.cache_dir / "prices"
+    cdir.mkdir(parents=True)
+    fake = PriceSeries(ticker=script.ticker,
+                       dates=["2026-01-01", "2026-01-02"],
+                       closes=[10.0, 11.0], source="synthetic", degraded=True)
+    (cdir / f"{script.ticker}_{live.price_history_days}.json").write_text(
+        fake.to_json(), encoding="utf-8")
+
+    assert check_prices(script, live, final=True, format_name="earnings") == []
+    assert check_prices(script, live, final=True, format_name="macro") == []
+    assert check_prices(script, live, final=True, format_name="short")
 
 
 # --------------------------------------------------------------------------

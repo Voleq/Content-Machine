@@ -32,9 +32,8 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import date, datetime, time, timedelta, timezone
-from pathlib import Path
 from typing import Iterable, Sequence
 
 from config import Settings
@@ -281,6 +280,10 @@ def in_quiet_hours(settings: Settings, now: datetime | None = None) -> bool:
 # When the numbers a `bmo` name puts out are public. US regular session.
 MARKET_OPEN = time(hour=9, minute=30)
 
+# The reaction alert's headline, which is also how `mark_sent` tells it from
+# the setup.
+REPORTED = "reported — the numbers are out"
+
 
 @dataclass
 class EarningsEntry:
@@ -349,7 +352,8 @@ class EarningsCalendar:
                 out.append(self._entry(row))
         return sorted(out, key=lambda e: e.date)
 
-    def due_alerts(self, now: datetime | date | None = None) -> list[Alert]:
+    def due_alerts(self, now: datetime | date | None = None, *,
+                   mark: bool = True) -> list[Alert]:
         """Pre- and post-print flags, each fired once.
 
         Two flags because they are two different videos: "reports after the
@@ -369,6 +373,13 @@ class EarningsCalendar:
         So: the day is the day in the MARKET's timezone, and `bmo` flips to
         the reaction at the open. A `date` is still accepted, and is read as
         that day before the open — which is what a caller passing one means.
+
+        `mark=False` leaves the flags alone for a caller that may not send
+        what comes back — `poll_once`, which keeps one alert per ticker and
+        caps a pass. Flagging here unconditionally meant an earnings alert
+        that lost that cut was marked as said and never said, which on a
+        busy earnings morning is most of them. That caller marks what it
+        actually sent, with `mark_sent`.
         """
         tz = _alert_tz(self.settings)
         if now is None:
@@ -382,10 +393,10 @@ class EarningsCalendar:
             today, clock = now, time(0, 0)
         after_open = clock >= MARKET_OPEN
 
-        entries = self._all()
         out: list[Alert] = []
-        changed = False
-        for ticker, row in entries.items():
+        for ticker, row in self._all().items():
+            if not isinstance(row, dict):
+                continue
             try:
                 d = date.fromisoformat(str(row.get("date")))
             except (TypeError, ValueError):
@@ -398,15 +409,9 @@ class EarningsCalendar:
             reported = delta < 0 or (delta == 0 and when == "bmo" and after_open)
             if reported and not row.get("flagged_post"):
                 out.append(Alert(ticker=ticker, kind="earnings",
-                                 headline="reported — the numbers are out",
+                                 headline=REPORTED,
                                  detail="the fast one: /headline works too",
                                  magnitude=2.0))
-                row["flagged_post"] = True
-                # The setup is moot now. Marking it keeps a name whose
-                # calendar entry is corrected backwards from announcing a
-                # print that has already been reported on.
-                row["flagged_pre"] = True
-                changed = True
             elif delta == 0 and not reported and not row.get("flagged_pre"):
                 slot = {"bmo": "before the open", "amc": "after the close"}.get(
                     when, "today")
@@ -414,11 +419,27 @@ class EarningsCalendar:
                                  headline=f"reports {slot}",
                                  detail="worth having the angle ready",
                                  magnitude=1.0))
-                row["flagged_pre"] = True
-                changed = True
-        if changed:
-            self._save(entries)
+        if mark:
+            self.mark_sent(out)
         return out
+
+    def mark_sent(self, alerts: Iterable[Alert]) -> None:
+        """Flag the earnings alerts that went out, so each fires once."""
+        sent = [a for a in alerts if a.kind == "earnings"]
+        if not sent:
+            return
+        entries = self._all()
+        for a in sent:
+            row = entries.get(a.ticker)
+            if not isinstance(row, dict):
+                continue
+            row["flagged_pre"] = True
+            if a.headline == REPORTED:
+                # The setup is moot now. Marking it keeps a name whose
+                # calendar entry is corrected backwards from announcing a
+                # print that has already been reported on.
+                row["flagged_post"] = True
+        self._save(entries)
 
 
 # --------------------------------------------------------------------------
@@ -456,8 +477,9 @@ def poll_once(settings: Settings, *, quotes: Iterable[dict] | None = None,
     candidates += [a for a in filings if a.ticker in watch]
     # The DATETIME, not its UTC date: `due_alerts` needs the market clock to
     # tell a print that has happened from one that is still hours away.
-    candidates += EarningsCalendar(settings).due_alerts(
-        now or datetime.now(timezone.utc))
+    calendar = EarningsCalendar(settings)
+    candidates += calendar.due_alerts(now or datetime.now(timezone.utc),
+                                      mark=False)
 
     # Highest-severity, then biggest, so a ticker's single allowed alert is
     # its most important one rather than whichever was evaluated first.
@@ -475,6 +497,9 @@ def poll_once(settings: Settings, *, quotes: Iterable[dict] | None = None,
         out.append(a)
         if len(out) >= settings.alert_max_per_poll:
             break
+    # Only what was said is marked as said; the rest is offered again next
+    # pass, the way a move that lost the cut would be.
+    calendar.mark_sent(out)
     if out:
         log.info("alerts: pushing %d of %d candidate(s)", len(out), len(candidates))
     return out
@@ -491,7 +516,11 @@ def fetch_filings(settings: Settings, tickers: Sequence[str]) -> list[Alert]:
     if not tickers:
         return []
     out: list[Alert] = []
-    today = datetime.now(timezone.utc).date().isoformat()
+    # EDGAR dates a filing in New York. The UTC date rolls over at 8pm
+    # there, so from then on every filing made that day read as yesterday's
+    # and never alerted — the evening 8-K most of all. The market clock the
+    # rest of this module runs on (F4).
+    today = datetime.now(_alert_tz(settings)).date().isoformat()
     try:
         from pipeline.sources import insider_transactions, latest_8k
     except ImportError:  # pragma: no cover

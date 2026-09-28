@@ -250,9 +250,6 @@ class Corpus:
     def __len__(self) -> int:
         return len(self.entries)
 
-    def for_format(self, fmt: str) -> list[ScriptEntry]:
-        return [e for e in self.entries if e.fmt == fmt]
-
     def recent(self, n: int, *, fmt: str = "",
                exclude: str = "") -> list[ScriptEntry]:
         """The n most recent entries, newest last. `exclude` drops one key —
@@ -279,13 +276,6 @@ class Corpus:
                     if len(hits) >= limit:
                         return hits
         return hits
-
-    def hooks(self, *, fmt: str = "short") -> list[tuple[ScriptEntry, float]]:
-        """Openers that have retention against them, best hold first."""
-        rows = [(e, e.hold) for e in self.for_format(fmt)
-                if e.hook and e.hold is not None]
-        return sorted(((e, float(h)) for e, h in rows),
-                      key=lambda r: r[1], reverse=True)
 
 
 # --------------------------------------------------------------------------

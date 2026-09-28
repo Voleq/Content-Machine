@@ -30,27 +30,16 @@ def test_inline_plate_and_scribble_stripped_and_anchored(short_doodles_json, set
     assert after.startswith("The news")
 
 
-def test_chart_style_marker_parsed(short_doodles_json, settings):
+def test_chart_style_still_parses_though_nothing_draws_it(short_valid_json,
+                                                          short_doodles_json,
+                                                          settings):
+    """There is one price chart now, the kit's, so `chart_style` selects
+    nothing. It stays on the model because the script's hash covers it: an
+    approval recorded against an older script must still match."""
     script, _ = parse_short_script(short_doodles_json, settings)
     assert script.chart_style is ChartStyle.MARKER
-
-
-def test_chart_style_defaults_to_the_house_language(short_valid_json, settings):
-    """A script that says nothing gets the marker chart.
-
-    The default was CLEAN, and the short holds its chart from the stage open
-    to the gut check — one of the longest single holds in the video. So unless
-    a writer thought to ask, every short spent that hold on the machine-drawn
-    card in a channel whose whole argument is that a person drew this.
-    """
     script, _ = parse_short_script(short_valid_json, settings)
     assert script.chart_style is ChartStyle.MARKER
-
-
-def test_clean_is_still_selectable(short_valid_json, settings):
-    """Two chart STYLES is fine — precision is a legitimate register."""
-    import json
-
     data = json.loads(short_valid_json)
     data["chart_style"] = "clean"
     script, _ = parse_short_script(json.dumps(data), settings)
@@ -217,11 +206,19 @@ def test_reject_empty(settings):
         parse_short_script("   \n ", settings)
 
 
-def test_warning_on_missing_anchor(short_valid_json, settings):
-    raw = short_valid_json.replace('"anchor_word": "today"', '"anchor_word": "zebra"')
-    script, warnings = parse_short_script(raw, settings)
-    assert script.missing_anchor_words() == ["zebra"]
-    assert any("zebra" in w and "fallback" in w for w in warnings)
+def test_fields_no_template_draws_are_reported_not_placed(short_valid_json,
+                                                           settings):
+    """A short draws neither scribbles nor a chosen chart style, so an anchor
+    word for one is not checked, and the fields are named as unbound."""
+    import json
+
+    data = json.loads(short_valid_json.replace('"anchor_word": "today"',
+                                               '"anchor_word": "zebra"'))
+    data["chart_style"] = "clean"
+    _, warnings = parse_short_script(json.dumps(data), settings)
+    assert not any("zebra" in w for w in warnings)
+    (unbound,) = [w for w in warnings if "no shot template binds" in w]
+    assert "annotations" in unbound and "chart_style" in unbound
 
 
 def test_warning_on_word_count(short_valid_json, settings):
@@ -267,13 +264,8 @@ def test_unclosed_json_still_rejected(settings):
 
 
 def test_a_bare_show_article_survives_the_parser(settings, short_valid_json):
-    """`[SHOW ARTICLE]` means something with no payload at all.
-
-    Every other tag needs a key, so the parser dropped any tag without one —
-    which meant the writer had to paste a URL for the highest-credibility
-    visual the format has, and so it was never used. The renderer resolves the
-    link off the export's own news rows; the tag only has to reach it.
-    """
+    """`[SHOW ARTICLE]` takes no payload, so a bare one is not a tag missing
+    its key. Neither format draws it now; the short says so."""
     import json
 
     data = json.loads(short_valid_json)
@@ -285,32 +277,8 @@ def test_a_bare_show_article_survives_the_parser(settings, short_valid_json):
     assert len(articles) == 1
     assert articles[0].payload == ""
     assert not any("carries no key" in w for w in warnings)
-def _thin(short_valid_json: str, *tags: str) -> str:
-    """The fixture with its beat library stripped out, plus `tags`.
+    assert any("not drawn" in w and "SHOW ARTICLE" in w for w in warnings)
 
-    The committed fixture draws every beat it has, which is the point of it —
-    so the thin case has to be built rather than borrowed.
-    """
-    import json
-    import re
-
-    data = json.loads(short_valid_json)
-    stripped = re.sub(r"\[PROP:[^\]]*\]\s*", "", data["audio_script"])
-    assert "[PROP" not in stripped
-    data["audio_script"] = " ".join(tags) + " " + stripped
-    return json.dumps(data)
-def test_the_reach_warning_never_blocks(settings, short_valid_json):
-    """A thin script is a judgement call, not a defect. It parses, it renders,
-    and the operator decides — a gate here would teach gate-skipping."""
-    from pipeline.cost import SpendLedger, build_short_report
-    from pipeline.tts import TTSEngine
-
-    script, warnings = parse_short_script(_thin(short_valid_json), settings)
-    report = build_short_report(script, warnings, settings,
-                                SpendLedger(settings), TTSEngine(settings))
-    assert report.approvable
-    assert not any("beat-library" in b for b in report.blocking)
-    assert any("beat-library" in w for w in report.warnings)
 
 # --------------------------------------------------------------------------
 # The plate tag, in the short.
@@ -505,3 +473,19 @@ def test_the_character_budget_is_eleven_hundred(short_valid_json, settings):
     data["audio_script"] += " " + "x" * 400
     with pytest.raises(ScriptParseError, match="over the SHORT budget of 1100"):
         parse_short_script(json.dumps(data), settings)
+
+
+def test_rows_past_the_sheet_are_named(short_valid_json, settings):
+    """Every short template binds four numbers rows. A fifth validates and
+    never reaches the screen, so the writer is told which rows will not."""
+    from pipeline.parser_short import SHEET_ROWS
+
+    data = json.loads(short_valid_json)
+    row = dict(data["numbers"][0], label="Buybacks")
+    data["numbers"] = (data["numbers"] * 2)[:SHEET_ROWS] + [row]
+    _, warnings = parse_short_script(json.dumps(data), settings)
+    (w,) = [w for w in warnings if "the sheet draws" in w]
+    assert "Buybacks" in w
+    data["numbers"] = data["numbers"][:SHEET_ROWS]
+    _, warnings = parse_short_script(json.dumps(data), settings)
+    assert not any("the sheet draws" in w for w in warnings)

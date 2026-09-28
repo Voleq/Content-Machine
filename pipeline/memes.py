@@ -39,7 +39,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Collection, Protocol
+from typing import Collection
 
 import httpx
 
@@ -143,14 +143,8 @@ def library_still(settings: Settings, src: Path) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# Fallback providers (real + mock behind one shape).
+# Fallback providers.
 # ---------------------------------------------------------------------------
-
-
-class MemeProvider(Protocol):
-    name: str
-    def search(self, query: str, *, animated: bool = False) -> str | None: ...
-    def download(self, url: str, dest: Path) -> Path: ...
 
 
 class _PoliteHttp:

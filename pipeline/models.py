@@ -129,16 +129,6 @@ VISUAL_TAG_TYPES = frozenset({
     TagType.SCREENGRAB,
 })
 
-# Foreign media — anything not drawn by the kit's own engine. All four are
-# composited INSIDE a frames/ plate rather than landing full-frame, because a
-# raw photograph over the whole frame destroys the drawn surface the rest of the
-# video is built on. See pipeline.media_frames.
-FOREIGN_MEDIA_TAG_TYPES = frozenset({
-    TagType.CLIP, TagType.BROLL, TagType.IMG, TagType.PRODUCT,
-    TagType.SHOW_ARTICLE, TagType.SHOW_FILING, TagType.SCREENGRAB,
-    TagType.MEME,
-})
-
 # Tags that take a `| hold=<seconds>` field.
 #
 # The joke and the illustration, which are the two the writer actually times.
@@ -179,14 +169,6 @@ SHORT_TAG_TYPES = frozenset(
 # those same rows, so demanding a pasted URL asked the writer to go and find
 # something the pipeline was already holding.
 SELF_RESOLVING_TAG_TYPES = frozenset({TagType.SHOW_ARTICLE})
-
-# Tags that claim the SHORT's frame for a beat (as opposed to riding on top of
-# whatever is showing). Delivery tags claim nothing — they are audio.
-SHORT_SEGMENT_TAG_TYPES = frozenset({
-    TagType.PLATE, TagType.IMG, TagType.PRODUCT, TagType.SHOW_FILING,
-    TagType.SHOW_ARTICLE, TagType.SCREENGRAB, TagType.MEME, TagType.CLIP,
-    TagType.BROLL, TagType.CHART,
-})
 
 
 class ScribbleStyle(str, Enum):
@@ -546,19 +528,6 @@ class ShortScript(BaseModel):
     @property
     def char_count(self) -> int:
         return len(self.audio_script)
-
-    def anchor_words(self) -> list[str]:
-        """Every anchor the timeline will try to resolve."""
-        anchors = [a.anchor_word for a in self.annotations]
-        for tag in (self.meme, self.broll):
-            if tag is not None and tag.anchor_word:
-                anchors.append(tag.anchor_word)
-        return anchors
-
-    def missing_anchor_words(self) -> list[str]:
-        """Anchors not found verbatim (case-insensitive) in audio_script."""
-        script = self.audio_script.lower()
-        return [a for a in self.anchor_words() if a.lower() not in script]
 
     def scribble_events(self) -> list[TagEvent]:
         return [e for e in self.inline_events if e.type is TagType.SCRIBBLE]
@@ -1008,9 +977,6 @@ class CompanyData(BaseModel):
             any(v is not None for v in vals) for vals in self.quarters.values()
         )
 
-    def quarter_row(self, field: str) -> list[float | None]:
-        return self.quarters.get(field, [])
-
     def available_quarter_metrics(self) -> list[str]:
         """Quarterly metrics with enough of a series to compare.
 
@@ -1175,18 +1141,12 @@ class CompanyData(BaseModel):
             # THE NEWS SHEET REACHED NOBODY (M5). `CompanyData.news` carries
             # `{date, headline, source, url}` per row and `as_prompt_block`
             # did not emit it, so `{{company_data}}` contained zero headlines
-            # in every prompt. Its only consumer was `article_lookup`, which
-            # runs AFTER the script is written: the writer invented a
-            # headline from its own training knowledge and `resolve_url`
-            # then token-matched that invented text against these rows to
-            # find a real URL for `[SHOW ARTICLE]`.
+            # in every prompt. The SHORT's beat 3 is "the headline(s) that
+            # caused the move" and the writer was composing it unaided, from
+            # its own training knowledge.
             #
-            # The SHORT's beat 3 is "the headline(s) that caused the move"
-            # and the writer was composing it unaided.
-            #
-            # The URL is deliberately absent: it is what `[SHOW ARTICLE]`
-            # resolves against server-side, and a model handed one will put
-            # it on screen.
+            # The URL is deliberately absent: a model handed one will put it
+            # on screen.
             lines.append(f"[news · {len(self.news)} recent headlines]")
             for item in self.news[:12]:
                 head = str(item.get("headline") or "").strip()
@@ -1326,11 +1286,6 @@ class CostReport(BaseModel):
     headline_count: int = 0
     numbers_rows: int = 0
     numbers_years: int = 0
-    annotation_note: str = ""
-    # Which chart the script actually asked for. The report used to state
-    # "branded" unconditionally, so a script with "chart_style": "marker" —
-    # the crude napkin chart — was shown a line describing the other one.
-    chart_style: str = ChartStyle.CLEAN.value
     # LONG specifics
     visuals: list[VisualPlanItem] = Field(default_factory=list)
     filing_overlays: int = 0
@@ -1406,17 +1361,13 @@ class CostReport(BaseModel):
 
         if self.fmt == "short":
             # The approval screen is the one place in this system that has to
-            # be true, so it reports the chart that was REQUESTED rather than
-            # a hardcoded description of one of the two.
-            chart = ("hand-drawn napkin" if self.chart_style == ChartStyle.MARKER.value
-                     else "branded")
+            # be true. It named a chart style and listed scribbles, and the
+            # short draws neither: one price chart, the kit's, and no
+            # scribbles. A dead price feed is the price gate's to report.
             lines.append(
-                f"Chart: {chart}, from cached prices ✓   "
                 f"Headlines: {self.headline_count} ✓   "
                 f"Numbers: {self.numbers_rows} rows × {self.numbers_years}yr"
             )
-            if self.annotation_note:
-                lines.append(self.annotation_note)
         if self.visuals:
             c = self.visual_counts
             line = (f"Visuals: {len(self.visuals)} "

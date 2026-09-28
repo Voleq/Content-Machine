@@ -21,7 +21,7 @@ Write in the sub-mode named above (auto-detected from the input; the operator ma
 
 * **company** — a company item (partnership, lawsuit, product, exec change). Take the headline AS REPORTED → say what it literally says vs. what the crowd will assume it means → gut-check against THIS ticker's multi-year numbers → deadpan verdict: priced in / nothingburger / actually matters.
 * **earnings** — a quarterly print. Lead with beat/miss + guidance vs. the standing thesis → decide whether the print changes the TRAJECTORY or just the week → same numbers gut-check, pulling the figures from the headline and the data below.
-* **macro** — a market/sector release (CPI, Fed, jobs, rates). NOT a single company. Frame it as "here's what this actually does to your holdings," deadpan. There is NO company 10-K data and none is required: chart the {{ticker}} index/sector proxy and keep the numbers beat OPTIONAL — if you use it, carry index levels or the macro series itself (e.g. CPI year-over-year), never company financials.
+* **macro** — a market/sector release (CPI, Fed, jobs, rates). NOT a single company. Frame it as "here's what this actually does to your holdings," deadpan. There is NO company 10-K data and none is required: {{ticker}} is the index/sector proxy, and the numbers beat is OPTIONAL — if you use it, carry index levels or the macro series itself (e.g. CPI year-over-year), never company financials.
 
 ## INPUT
 Ticker / index: {{ticker}}   (as of {{as_of_date}})
@@ -48,8 +48,8 @@ Chartable metrics present in THIS data — every company/earnings `numbers` row 
 ## THE FORMAT — fixed beats (the render kit is fixed — you only supply the rotating content)
 **The video opens on the hook card and ends on the sign-off card, which prints your `conclusion`. Dennis is on camera for one shot in the middle of a company or earnings video, and not at all in a macro one.** Everything else is the evidence. Your words run under all of it, so the first sentence IS the hook, heard from the first frame. These are what each part of the short does; the ORDER this video is cut in is under THE CUT below.
 
-1. HOOK — the branded chart is the hero (the {{ticker}} price/index, rendered from our own data — never a screenshot). `hook_text` states the news and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. Choose `chart_style`: "clean" or "marker" (the crude napkin look, for the extra-deadpan takes).
-2. WHAT IT SAYS vs WHAT THEY'LL ASSUME — the headline is overlaid ON the chart; you say what it literally reports, then what the crowd will read into it (usually more than it says; occasionally less).
+1. HOOK — the first sentence, spoken over the hook card. `hook_text` states the news and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe.
+2. WHAT IT SAYS vs WHAT THEY'LL ASSUME — you say what it literally reports, then what the crowd will read into it (usually more than it says; occasionally less).
 3. GUT CHECK — company/earnings: the MULTI-YEAR numbers sheet, **held ~4–5 seconds so it can be read** — does this news change the trajectory or just the week? macro: OPTIONAL — an index/sector or macro series (CPI, rates), or skip straight to the payoff. If the PEER PERCENTILES sharpen it, you MAY drop a SINGLE percentile one-liner — at most one, never a table.
 4. CHEAP OR TRAP — **also held ~4–5 seconds**. company/earnings: is the multiple a bargain or a trap after this news? Name it, then say what would have to be true for it to be cheap. macro: what the release would have to keep doing for the market's reaction to make sense. Goes in `cheap_or_trap`.
 5. PAYOFF — the deadpan verdict: priced in · nothingburger · actually matters (macro: what it does to your holdings), spoken over the closing beats; the sign-off card then prints it. Free text. NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
@@ -75,7 +75,8 @@ The beats are set above; the runtime goes to keeping the viewer, never more talk
 place.** `templates/shots/<mode>.json` decides which plate carries each beat
 and the renderer binds your words into its slots, so what you control is the
 structured fields — `hook_text`, `move_summary`, `headlines`, `numbers` and
-`numbers_comment`, `cheap_or_trap`, `conclusion`.
+`numbers_comment`, `cheap_or_trap`, `conclusion`, and in earnings and macro
+mode the fields in rule 12.
 
 **Nothing you write places a visual, in either form.**
 
@@ -83,10 +84,10 @@ structured fields — `hook_text`, `move_summary`, `headlines`, `numbers` and
 `[SCRIBBLE]` written inside `audio_script` are LONG-form grammar. This format
 parses them, reports them as ignored, and draws none.
 
-The JSON fields `meme`, `broll` and `annotations` are the same story one
-level up: they validate, they are counted on the cost report, and no shot
-template binds them, so they reach no frame either. Do not spend a decision
-on them — write the fields the template binds.
+The JSON fields `meme`, `broll`, `annotations` and `chart_style` are the
+same story one level up: they validate, and no shot template binds them, so
+they reach no frame either. Leave them out — write the fields the template
+binds.
 
 You MAY place DELIVERY DIRECTION inline — that does reach the voice. The full
 vocabulary, the mode each tag serves and the ceilings are in DELIVERY
@@ -97,17 +98,17 @@ the payoff is what turns a sentence into a joke.
 1. `audio_script`: 140–160 spoken words, ≤ 1100 characters, first sentence = the hook, a `[BEAT: key]` marker at the start of every beat in the order under THE CUT, ONE mid-point re-hook (~20–25s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts SPOKEN words only — delivery tags and beat markers are stripped before counting.
 2. `move_summary`: one line of context for the news, e.g. "Q3 print · guide raised" or "CPI 3.4% vs 3.1% expected". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the headline as reported (short). `meaning` = what it actually means, in your voice.
-4. `numbers`: 1–6 rows. company/earnings: from the history table above (each with 2–6 values OLDEST → NEWEST as display strings, matching a chartable metric). macro: OPTIONAL/index-based — index levels or a macro series (e.g. "CPI YoY": ["3.7%","3.2%","3.1%","3.4%"]); set `years` to the matching period labels. One extra row is fine IF it changes the read; don't pad.
+4. `numbers`: 1–4 rows, each with SIX values OLDEST → NEWEST as display strings, under six `years`. company/earnings: from the history table above, matching a chartable metric — the table's six periods (four fiscal years, the last full year, LTM), with `years` the six period heads as the table labels them. macro: OPTIONAL/index-based — six readings of the index or macro series (e.g. "CPI YoY": ["3.7%","3.2%","3.1%","3.4%","3.0%","2.9%"]), with `years` the six matching period labels. Where there is no figure, write "" in that place rather than closing the gap: five figures under six heads put every one under the wrong year, and the bot refuses the script. The sheet shows four rows; a fifth is never drawn. Don't pad.
 5. `numbers_comment`: the holistic read, ≤ 300 chars. (macro: the read on the index/macro series.)
 6. `conclusion`: free text, ≤ 220 chars, opening with the verdict the way you'd mutter it ("Priced in." / "Nothingburger." / "This one actually matters." / "Noise, but the guide is real."). NEVER a label from a taxonomy.
-7. `annotations`: up to 4 scribbles. `target` "chart" or "numbers" with `row_index`; `anchor_word` must appear VERBATIM in `audio_script`; optional `note` ≤ 40 chars, lowercase, terse.
-8. `meme` / `broll` (optional, use ONLY if it genuinely lands): `{"key": "<from the keys above>", "anchor_word": "<word in audio_script>"}`.
-9. `chart_style`: "clean" or "marker". Default "clean".
-10. NEVER name any data vendor, terminal, or data product. A news `Source` (Reuters, Bloomberg, AP) is fine; a data terminal is not. On screen, filings are "from the 10-K" — the vendor unnamed, and `sources` names only the filing or the agency.
-11. The kit is fixed — do NOT request custom assets; this is a SHORT.
-12. MODE-SPECIFIC: macro mode has NO company 10-K data and needs none — `ticker` is the index/sector proxy ({{ticker}}), the chart is that index, and the numbers beat is optional (index/macro figures only). company/earnings modes anchor on THIS ticker and its multi-year numbers.
-13. Both-ways honesty: let the facts pick the polarity — a real beat gets grudging credit, a nothingburger gets a shrug; never manufacture doom or hype.
-14. `sources` (optional): where the figures on screen come from, keyed by the beat that shows them — company `{"numbers": "10-K filings, FY21–FY25"}`, earnings `{"numbers": "Q3 release, Oct 2026"}`, macro `{"numbers": "BLS, August CPI"}`. ≤ 40 chars each. The filing, the company's release or the public agency — never a data vendor, terminal or data product, and never a document the figure did not come from: leave a beat out rather than guess. Name the document, never just "company filings". It slides in under that beat's plate once its figures land.
+7. NEVER name any data vendor, terminal, or data product. A news `Source` (Reuters, Bloomberg, AP) is fine; a data terminal is not. On screen, filings are "from the 10-K" — the vendor unnamed, and `sources` names only the filing or the agency.
+8. The kit is fixed — do NOT request custom assets; this is a SHORT.
+9. MODE-SPECIFIC: macro mode has NO company 10-K data and needs none — `ticker` is the index/sector proxy ({{ticker}}), and the numbers beat is optional (index/macro figures only). company/earnings modes anchor on THIS ticker and its multi-year numbers.
+10. Both-ways honesty: let the facts pick the polarity — a real beat gets grudging credit, a nothingburger gets a shrug; never manufacture doom or hype.
+11. `sources` (optional): where the figures on screen come from, keyed by the beat that shows them — company `{"numbers": "10-K and 10-Q filings, FY21–LTM"}`, earnings `{"numbers": "Q3 release, Oct 2026"}`, macro `{"numbers": "BLS, August CPI"}`. ≤ 40 chars each. The filing, the company's release or the public agency — never a data vendor, terminal or data product, and never a document the figure did not come from: leave a beat out rather than guess. Name the document, never just "company filings". It slides in under that beat's plate once its figures land.
+12. MODE FIELDS — the earnings and macro cuts have beats the company cut does not, and each of those beats draws its own field. Company mode leaves all of these out.
+   * earnings: `reported` — the print as a bare figure, six characters at most ("$1.42"); `expected` — consensus, the same way ("$1.28"); `guidance` — the guide and what changed in it, ≤ 140 chars.
+   * macro: `reported` and `expected` — the release and consensus as bare figures, six characters at most ("3.4%" and "3.1%"); `mechanism` — a list: first how the release reaches prices, in one or two sentences, then optionally one concrete example of ≤ 55 chars; `consequences` — a list of two or three who-it-hits sentences, ≤ 120 chars each, one on screen at a time (a fourth is never drawn).
 
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
 
@@ -125,36 +126,35 @@ arrives in one piece.
 Put the prose sections in the chat and the JSON object in the `.txt` file.
 Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:
 
-1. READ — one line on the news and which MODE it is, then the 1–5 `numbers` rows you'll feature (or "macro — numbers optional") and one clause each on WHY.
+1. READ — one line on the news and which MODE it is, then the 1–4 `numbers` rows you'll feature (or "macro — numbers optional") and one clause each on WHY.
 2. HOOK OPTIONS — 2–3 muted-safe `hook_text` candidates (≤ 90 chars each); mark the one you'll use with ★.
 3. SCRIPT — the `audio_script` (140–160 words), the ★ hook as its first sentence, a `[BEAT: key]` marker where each beat starts in the order under THE CUT, ONE mid-point re-hook, and — optionally — a single second-look line right before the verbatim conclusion.
-4. TAGS — one line noting the doodle/scribble/meme keys you placed and why (all from the catalogs).
+4. TAGS — one line noting the delivery tags you placed and why.
 
-THEN, as the final block, the strict JSON object below — keys exactly as shown, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
+THEN, as the final block, the strict JSON object below — keys exactly as shown, leaving out the rule-12 fields your mode does not use, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
 
 {
   "ticker": "{{ticker}}",
   "format": "short",
   "hook_text": "<= 90 chars, mute-safe>",
-  "audio_script": "<140-160 spoken words, <= 1100 chars, a [BEAT: key] marker at the start of each beat in the order under THE CUT, one mid-point re-hook, ends with the conclusion verbatim; may embed [PLATE:]/[SCRIBBLE:] inline>",
+  "audio_script": "<140-160 spoken words, <= 1100 chars, a [BEAT: key] marker at the start of each beat in the order under THE CUT, one mid-point re-hook, ends with the conclusion verbatim>",
   "move_summary": "<one line of news context>",
-  "chart_style": "clean",
   "headlines": [
     {"text": "<headline as reported>", "meaning": "<what it actually means>"}
   ],
-  "years": ["2022", "2023", "2024", "2025"],
+  "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
   "numbers": [
-    {"label": "Revenue", "values": ["<oldest>", "...", "<newest>"]}
+    {"label": "Revenue", "values": ["<oldest>", "<...>", "<...>", "<...>", "<...>", "<LTM>"]}
   ],
   "numbers_comment": "<holistic read>",
   "cheap_or_trap": "<the value-trap beat: name the multiple, then what would have to be true for it to be cheap; <= 260 chars>",
   "conclusion": "<the verdict, free text>",
   "sources": {"numbers": "<the filing, release or agency the rows are from, <= 40 chars>"},
-  "meme": {"key": "<meme key>", "anchor_word": "<word>"},
-  "broll": null,
-  "annotations": [
-    {"target": "chart", "anchor_word": "<word in audio_script>", "note": "<= 40 chars"}
-  ]
+  "reported": "<earnings/macro: the print, <= 6 chars>",
+  "expected": "<earnings/macro: consensus, <= 6 chars>",
+  "guidance": "<earnings: the guide and what changed, <= 140 chars>",
+  "mechanism": ["<macro: how it reaches prices>", "<optional example, <= 55 chars>"],
+  "consequences": ["<macro: who it hits, <= 120 chars>", "<...>"]
 }
 
 ## STRUCTURE EXAMPLE — illustrative only, replace every value (do not reuse these numbers)
@@ -165,21 +165,15 @@ A company-news example: each beat opens on its marker, in the company short's as
   "hook_text": "EXMPL signed an AI partnership. Read the second sentence.",
   "audio_script": "[BEAT: hook] EXMPL announced an AI partnership this morning, and the stock went up before anyone read the release. [BEAT: move] Up eleven percent by lunch, on one sentence nobody finished reading. [BEAT: headline] What it literally says is that two companies will explore opportunities together. What the crowd hears is revenue. There is no dollar figure and no timeline. [BEAT: turn] But here's the part the headline skips. [BEAT: numbers] Revenue went four hundred million to four ninety six in five years. Losses got wider every one of those years. [BEAT: numbers_comment] A plateau wearing a growth costume, and a press release does not move a plateau. [BEAT: cheap_or_trap] I have owned a press release before; my account went to zero waiting for the follow-through. In fairness, partnerships sometimes become contracts. [BEAT: conclusion] Today it is a sentence about exploring. Priced in, and then some. A partnership to explore, stapled to five years of flat.",
   "move_summary": "AI partnership announced · no terms disclosed",
-  "chart_style": "marker",
   "headlines": [
     {"text": "EXMPL announces AI partnership", "meaning": "A letter of intent, not a contract — no revenue, no timeline attached."}
   ],
-  "years": ["2021", "2022", "2023", "2024", "2025"],
+  "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
   "numbers": [
-    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M"]},
-    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M"]}
+    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M", "$498M"]},
+    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M", "-$94M"]}
   ],
   "numbers_comment": "Revenue has been flat for three years and losses keep widening. A partnership with no terms doesn't touch either line.",
   "conclusion": "Priced in, and then some. A partnership to explore, stapled to five years of flat.",
-  "sources": {"numbers": "10-K filings, FY21–FY25"},
-  "meme": null,
-  "broll": null,
-  "annotations": [
-    {"target": "numbers", "row_index": 1, "anchor_word": "wider", "note": "every year"}
-  ]
+  "sources": {"numbers": "10-K and 10-Q filings, FY21–LTM"}
 }

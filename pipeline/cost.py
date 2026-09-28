@@ -14,8 +14,14 @@ import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from config import Settings
+
+if TYPE_CHECKING:
+    from datetime import date
+
+    from pipeline.models import CostReport
 
 log = logging.getLogger(__name__)
 
@@ -511,19 +517,11 @@ def estimate_runtime_minutes(words: int, wps: float) -> float:
 def build_short_report(script, parse_warnings, settings, ledger, tts_engine,
                        *, gate_report=None) -> "CostReport":
     from pipeline.gates import check_audio
-    from pipeline.models import AnnotationTarget, CostReport  # avoid a cycle
-    from pipeline.reach import script_reach
+    from pipeline.models import CostReport  # avoid a cycle
 
     cached = tts_engine.is_cached(script.audio_script, "short",
                                   events=script.inline_events)
     est = 0.0 if cached else estimate_tts_usd(script.char_count, settings)
-    missing = set(script.missing_anchor_words())
-    notes = []
-    for a in script.annotations:
-        mark = "⚠ fallback position" if a.anchor_word in missing else "✓ (anchor found)"
-        where = ("chart" if a.target is AnnotationTarget.CHART
-                 else f"numbers row {a.row_index if a.row_index is not None else 0}")
-        notes.append(f'Scribble -> {where} "{a.anchor_word}" {mark}')
     blocking: list[str] = []
     warnings = list(parse_warnings)
     if not cached and ledger.would_exceed(est):
@@ -554,19 +552,17 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine,
         tts_cached=cached,
         est_tts_usd=est,
         headline_count=len(script.headlines),
-        chart_style=script.chart_style.value,
         numbers_rows=len(script.numbers),
         numbers_years=max(len(r.values) for r in script.numbers),
-        annotation_note="\n".join(notes),
-        meme_count=1 if script.meme else 0,
-        meme_cap=settings.meme_max_per_long,
         gif_cap=settings.gif_max_per_video,
         est_runtime_min=estimate_runtime_minutes(script.word_count, settings.mock_wps_short),
         delivery_directives=_count_directives(script),
         est_render_minutes=estimate_render_minutes("short", script.word_count, settings.mock_wps_short),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,
-        kit_reach=script_reach(script, settings).line(),
+        # No kit line: it counted the script's inline [PLATE] tags, and a
+        # short draws its template's plates, never those. The render's own
+        # reach is on its manifest.
         warnings=warnings,
         blocking=blocking,
         script_sha=script.content_sha(),

@@ -81,13 +81,11 @@ from pipeline.models import (
     CueKind,
     LongScript,
     SFX_KEYS,
-    TagType,
     TTSResult,
     parse_scribble_payload,
 )
 from pipeline.bumper import bumper_clip, tick_start, wipe_clip
-from pipeline.plate_frames import (drawn_box, frame_indices, playback_seconds,
-                                   render_clip)
+from pipeline.plate_frames import drawn_box, frame_indices, playback_seconds
 from pipeline.plates import _prefer_unused, at_episode_hour, load_plates
 from pipeline.sound import (DEFAULT_LEAD_S, EFFECT_KEYS, Cut, Move, Voicing,
                             cue_lead_s, manifest_rows, measure_lufs,
@@ -120,12 +118,11 @@ from pipeline.segments import (
     SegmentSpec,
     concat_clips,
     encode_segments,
+    prune_cache,
 )
 from pipeline.timeline import (
-    LONG_FILLER_LOOKS,
     MIN_SEGMENT_S,
     build_long_timeline,
-    chapter_start_times,
     plan_long_segments,
     plan_writer_moves,
     plan_writer_sources,
@@ -956,9 +953,6 @@ def _render_long(
         frames_to_alpha_clip(frames, max(plate.fps or 2, 1), dest)
         return dest, True, (W, H), tuple(plan), plate.key
 
-    def _plate_still(seg, seg_i: int, value: str) -> Path:
-        return _plate_art(seg, seg_i, value)[0]
-
     # ------------------------------------------------ foreign media, framed
     # [CLIP], [IMG], [SHOW ARTICLE] and [SHOW FILING] land INSIDE a frames/
     # plate. Raw and full-frame they destroy the drawn surface the rest of the
@@ -1155,24 +1149,12 @@ def _render_long(
         return (_add_input(["-i", str(clip_path)]),
                 int((W - hw) / 2), max(H - hh, 0), hw, hh, None)
 
-    def _overlay_chain(bg_i: int, fg_i: int, x: int, y: int,
-                       seg_len: float, seg_i: int, tail: str) -> str:
-        """Room + alpha host clip -> one concat-ready segment stream."""
-        return (
-            f"[{bg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-            f"scale={W}:{H}[hbg];"
-            f"[{fg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-            f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
-            f"trim=0:{seg_len:.4f}[hfg];"
-            f"[hbg][hfg]overlay={x}:{y}:eof_action=repeat"
-            f"{tail}"
-        )
-
     def _scaled_overlay_chain(bg_i: int, fg_i: int, x: int, y: int,
                               w: int, h: int, seg_len: float, tail: str, *,
                               loop: bool = False,
                               front_i: int | None = None) -> str:
-        """As `_overlay_chain`, but the layer is scaled into its box first.
+        """A layer over the room, scaled into its box, as one concat-ready
+        segment stream.
 
         `loop` is what a BOIL needs. A two-frame loop is encoded once at its
         own 2fps and then repeated for the beat; cloning its last frame instead
@@ -1738,6 +1720,15 @@ def _render_long(
             software_profile=profile.software_equivalent(settings),
         )
         base_video = concat_clips(seg_run.clips(), rdir / "base.mp4")
+        # The cache lives outside the workspace so it survives cleanup, and
+        # so nothing else bounds it: this run's clips stay, and the oldest of
+        # the rest go once there are more than the cap.
+        try:
+            prune_cache(settings.cache_dir / SEG_CACHE_DIRNAME,
+                        {p.stem for p in seg_run.clips()},
+                        max_files=settings.segment_cache_max_files)
+        except OSError as e:
+            log.warning("segment cache: could not prune (%s)", e)
         inputs = ["-i", str(base_video)]
         lines = [f"[0:v]fps={fps},setsar=1[v0]"]
     else:

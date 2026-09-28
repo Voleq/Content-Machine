@@ -462,3 +462,63 @@ def test_the_vendor_block_still_fires_before_the_floor(settings):
     real = _real_settings(settings)
     with pytest.raises(LongScriptError, match="vendor"):
         parse_long_script("According to Refinitiv, revenue fell.", "EXMPL", real)
+
+
+def _evenly_tagged(settings, minutes: float, every_s: float, *, stop_s=None):
+    """A long of `minutes`, a visual every `every_s` seconds (up to `stop_s`)."""
+    from pipeline.models import Chapter, LongScript, TagEvent
+    from pipeline.plates import CHAPTER_TYPES
+
+    wps = settings.mock_wps_long
+    words = ["word"] * int(minutes * 60 * wps)
+    events = []
+    for i in range(0, len(words), max(int(every_s * wps), 1)):
+        if stop_s is not None and i / wps >= stop_s:
+            break
+        off = len(" ".join(words[:i])) + (1 if i else 0)
+        events.append(TagEvent(type=TagType.PLATE, payload="x",
+                               char_offset=off, raw_offset=off))
+    chapters = [Chapter(type=CHAPTER_TYPES[n], title=title, start_s=start)
+                for n, (title, start) in enumerate(
+                    [("One", 0), ("Two", 300), ("Three", 600)])]
+    return LongScript(ticker="EXMPL", narration=" ".join(words),
+                      events=events, chapter_list=chapters)
+
+
+def test_an_evenly_tagged_last_chapter_is_not_called_empty(settings):
+    """The chapter check mapped the narration onto the LAST chapter's start
+    rather than the runtime, so the last chapter began at the end of the text
+    and was reported as having no visuals at all."""
+    from pipeline.parser_long import density_warnings
+
+    script = _evenly_tagged(settings, 15, 15)
+    assert density_warnings(script, settings) == []
+
+
+def test_a_thin_last_chapter_is_still_named(settings):
+    from pipeline.parser_long import density_warnings
+
+    script = _evenly_tagged(settings, 15, 15, stop_s=600)
+    warnings = density_warnings(script, settings)
+    assert any('"Three"' in w for w in warnings)
+    assert not any('"One"' in w or '"Two"' in w for w in warnings)
+
+
+def test_a_chapter_title_longer_than_the_card_is_named(long_valid_text,
+                                                      settings):
+    """Every chapter title is printed on the bumper or the opener room, and
+    the render can only warn once the line has run into the drawing. The
+    writer is told at intake, against the kit's own title room."""
+    from pipeline.bumper import chapter_title_limit
+    from pipeline.plates import load_plates
+
+    limit = chapter_title_limit(load_plates(settings.assets_dir))
+    assert limit
+    _, warnings = parse_long_script(long_valid_text, "EXMPL", settings)
+    over = [w for w in warnings if w.startswith("chapter title")]
+    assert over == [w for w in over if "the covenant, four hundred pages in" in w]
+    assert len(over) == 1 and f"holds {limit}" in over[0]
+    fixed = long_valid_text.replace("the covenant, four hundred pages in",
+                                    "the covenant, page 400")
+    _, warnings = parse_long_script(fixed, "EXMPL", settings)
+    assert not any(w.startswith("chapter title") for w in warnings)

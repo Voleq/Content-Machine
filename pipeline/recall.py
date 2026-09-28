@@ -232,7 +232,9 @@ def _state_docs(settings: Settings) -> list[Doc]:
             lines.append(f"concluded: {t['conclusion']}")
         for move in t.get("last_moves") or []:
             if isinstance(move, dict):
-                lines.append(f"moved: {move.get('metric')} "
+                # `field`, as `ThesisBook.check` stores it; `metric` is a
+                # name no row has ever carried.
+                lines.append(f"moved: {move.get('field') or move.get('metric')} "
                              f"{move.get('before')} -> {move.get('after')}")
         docs.append(Doc("thesis", f"thesis on {ticker}: {t.get('status')}",
                         "\n".join(lines), ticker, str(t.get("workdate") or ""),
@@ -356,7 +358,7 @@ def _pass_docs() -> list[Doc]:
 
 _WHAT_DENNIS_IS = (
     "You are the local assistant inside Dennis, a Telegram bot that makes "
-    "financial videos for one YouTube channel: 9:16 SHORTS (60 to 75 seconds) "
+    "financial videos for one YouTube channel: 9:16 SHORTS (45 to 55 seconds) "
     "on trending stocks, and 16:9 LONG deep dives on value stocks. The "
     "operator supplies the numbers (an uploaded workbook), the thesis and "
     "the approval; the bot does the voice, the visuals, the composition and "

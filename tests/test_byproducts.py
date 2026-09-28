@@ -18,7 +18,6 @@ from PIL import Image, ImageDraw
 from pipeline.byproducts import (
     BYPRODUCT_SOURCES,
     DEFAULT_TOLERANCE,
-    ByProducts,
     bless,
     build_byproducts,
     check_report,
@@ -292,6 +291,26 @@ def test_the_page_shows_what_state_there_is(settings):
     html = render_page(settings)
     assert "EXMPL" in html
     assert "beaten down and hated" in html
+
+
+def test_the_queue_panel_lists_the_newest_jobs(settings):
+    """Job ids are random, so the last twelve files by name were any twelve
+    jobs; the panel lists the newest, like /status."""
+    from pipeline.status_page import _queue_section
+
+    jobs = settings.state_dir / "jobs"
+    jobs.mkdir(parents=True, exist_ok=True)
+    for n in range(14):
+        # ids that sort the opposite way to when the jobs ran
+        (jobs / f"{99 - n:02d}.json").write_text(json.dumps({
+            "id": f"{99 - n:02d}", "kind": "render_short",
+            "ticker": f"T{n:02d}", "status": "done",
+            "updated_at": f"2026-09-{n + 1:02d}T00:00:00Z"}), encoding="utf-8")
+    (jobs / "zz.json").write_text("{", encoding="utf-8")
+    html = _queue_section(settings)
+    assert "T13" in html and "T02" in html
+    assert "T01" not in html and "T00" not in html
+    assert html.index("T13") < html.index("T12")
 
 
 def test_a_broken_panel_does_not_break_the_page(settings, monkeypatch):

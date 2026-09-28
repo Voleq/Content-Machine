@@ -41,8 +41,8 @@ from pipeline.sound import (Cut, Move, manifest_rows, measure_lufs,
                             normalises, placeholders_played, short_mix,
                             shot_tags, sound_summary)
 from pipeline.shots import (Format, apply_order, beat_keys, choose_order,
-                            expand_sequences, load_format, order_by_marks,
-                            resolve_spans, voice_keys)
+                            draws_prices, expand_sequences, load_format,
+                            order_by_marks, resolve_spans, voice_keys)
 
 log = logging.getLogger(__name__)
 
@@ -152,7 +152,6 @@ class ShortResolver:
 
     def __post_init__(self) -> None:
         self._images: dict[str, Path | list[Path] | None] = {}
-        self._fracs: dict[str, tuple[float, float, float, float]] = {}
         # The meme this short was given, once asked — kept so the manifest
         # can say which one and why, not only that a still was drawn.
         self.meme_choice = None
@@ -441,11 +440,6 @@ class ShortResolver:
                 out[f"head-{i + 1}"] = str(dates[j])[-5:]
         return out
 
-    def frac_box_for(self, src: str) -> tuple[float, float, float, float] | None:
-        """A mark target inside an image, as fractions of that image."""
-        self.image_for("chart.price")
-        return self._fracs.get(src)
-
     def _chart(self) -> list[Path] | None:
         """The chart, drawn three times.
 
@@ -464,30 +458,13 @@ class ShortResolver:
         try:
             for i in range(BOIL_FRAMES):
                 out = self.workdir / f"chart_price_f{i + 1:02d}.png"
-                path, meta = render_price_plate(
+                path, _meta = render_price_plate(
                     reg, _legible(self.prices), out, self.settings,
                     aspect="9x16", seed=f"boil{i}",
                     slot_values=self._chart_labels())
                 paths.append(path)
         except Exception:                                    # noqa: BLE001
             return None
-        # The ring goes on the extreme CANDLE, never on a label and never
-        # near it. The chart reports where it actually drew that point, so
-        # the mark is placed from the drawing rather than from a second
-        # guess at the same arithmetic.
-        # The ring goes on the EXTREME point, which is the one the shot is
-        # about — not on the last one, which is merely where the line stops
-        # and is often sitting on the axis.
-        cw, ch = meta["size"]
-        x0, y0, x1, y1 = meta["plot_box"]
-        closes = list(_legible(self.prices).closes)
-        lo, hi = min(closes), max(closes)
-        i = closes.index(hi if abs(hi - closes[0]) >= abs(lo - closes[0]) else lo)
-        px = x0 + (x1 - x0) * (i / max(len(closes) - 1, 1))
-        py = y1 - (y1 - y0) * ((closes[i] - lo) / (hi - lo) if hi > lo else 0.5)
-        rx, ry = 0.09, 0.09 * cw / ch
-        self._fracs["chart.extreme_candle"] = (
-            max(0.0, px / cw - rx), max(0.0, py / ch - ry), rx * 2, ry * 2)
         return paths
 
 
@@ -817,7 +794,6 @@ def _draw_text(canvas: Image.Image, layer: Layer, settings, reg,
     in the face and size the kit declares for it. This is the remainder: a
     line the format places itself, sized as a fraction of frame height.
     """
-    from PIL import ImageDraw
 
     from pipeline import marks as mk
 
@@ -1094,8 +1070,10 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # Prices before the resolver: the resolver holds them, and a resolver
     # built with None leaves THE MOVE's chart slot unfilled.
     # `get_price_history` never raises — worst case is a labelled synthetic
-    # series — so the slot is always fillable.
-    if prices is None:
+    # series — so the slot is always fillable. A format that draws no prices
+    # (`earnings`, `macro`) fetches none, so its record does not report on a
+    # feed that is not in the picture.
+    if prices is None and draws_prices(fmt):
         from pipeline.prices import get_price_history
         prices = get_price_history(getattr(script, "ticker", ""), settings)
 

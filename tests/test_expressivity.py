@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
 
-from config import Settings
 from pipeline.models import TagEvent, TagType, WordTimestamp
 from pipeline.tts import TTSEngine, expand_delivery, remap_to_clean
 

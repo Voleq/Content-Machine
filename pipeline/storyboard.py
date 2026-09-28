@@ -24,7 +24,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from config import Settings, detect_ffmpeg
-from pipeline.models import TagType, WordTimestamp
+from pipeline.models import WordTimestamp
 from pipeline.plates import load_plates
 from pipeline.rasters import ARCHIVO, COURIER, COURIER_BOLD, load_font, role
 

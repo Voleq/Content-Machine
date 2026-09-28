@@ -45,6 +45,11 @@ VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "workspace.refinitiv")
 SHORT_WORDS_MIN = 130
 SHORT_WORDS_MAX = 170
 
+# Rows a short's numbers sheet draws. Every short template binds four
+# (`numbers.label.0`–`.3`); a fifth or sixth row validates and reaches no
+# frame.
+SHEET_ROWS = 4
+
 
 class ScriptParseError(Exception):
     """Human-readable parse/validation failure (shown in Telegram)."""
@@ -217,12 +222,12 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
 
     # THE STRUCTURED FIELDS ARE THE SAME STORY ONE LEVEL UP (P3).
     #
-    # `meme`, `broll` and `annotations` validate, and `build_short_report`
-    # counts a meme against `meme_cap` — so the operator is shown "Memes:
-    # 1/2" for a cutaway no frame contains. A short's visuals come from its
-    # shot template, and no template in `templates/shots/` binds any of the
-    # three. The writing prompts no longer offer them; a script written
-    # before that change, or by a model working from memory, still can.
+    # `meme`, `broll`, `annotations` and `chart_style` validate, and a
+    # short's visuals come from its shot template: no template in
+    # `templates/shots/` binds any of them, and there is one price chart, the
+    # kit's. The writing prompts no longer offer them; a script written
+    # before that change, or by a model working from memory, still can. The
+    # fields stay on the model because the script's hash covers them.
     #
     # Reported rather than rejected: refusing a whole script over a field
     # that changes nothing would be worse than the silence it replaces.
@@ -233,6 +238,8 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
         unbound.append("broll")
     if getattr(script, "annotations", None):
         unbound.append("annotations")
+    if "chart_style" in script.model_fields_set:
+        unbound.append("chart_style")
     if unbound:
         out.append(
             f"{', '.join(unbound)} {'are' if len(unbound) > 1 else 'is'} set "
@@ -262,34 +269,7 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
             "make the deadpan land, and four or five across a short is the "
             "budget. Without them TTS reads it evenly. The vocabulary, the "
             "mode each tag serves and the ceilings are in the writing prompt.")
-    out.extend(_reach_warning(script, settings))
     return out
-
-
-def _reach_warning(script: ShortScript, settings: Settings) -> list[str]:
-    """One warning when the script reaches for too little of the beat library.
-
-    A warning, never a blocker: a thin script is a judgement call, and a gate
-    that refused one would be a gate that teaches gate-skipping. But it names
-    the beats — a warning that says "reach for more" without saying which beat
-    is short is a warning nobody acts on, and the beat library went unused for
-    months with nothing saying anything at all.
-    """
-    from pipeline.reach import script_reach
-
-    reach = script_reach(script, settings)
-    if not reach.thin:
-        return []
-    scenes = len(reach.scenes)
-    msg = (f"{scenes} beat-library scene{'' if scenes == 1 else 's'} for "
-           f"{reach.data_beats} beats that carry a figure — the floor is "
-           f"{reach.floor}, one drawing per data beat.")
-    if reach.undrawn:
-        msg += (" These have a number in them and no drawing to put it in, so "
-                "the renderer falls back to the desk: "
-                + "; ".join(reach.undrawn) + ".")
-    return [msg + " The SHORT BEAT LIBRARY in the prompt is grouped by "
-                  "situation — pick a different one for each beat."]
 
 
 # ---------------------------------------------------------------------------
@@ -403,7 +383,7 @@ def _check_beat_marks(text: str, marks: list[dict],
     fits = [name for name, beats in formats.items() if set(keys) <= set(beats)]
     if not fits:
         return [
-            f"the beat markers mix formats — "
+            "the beat markers mix formats — "
             + "; ".join(f"{name} knows "
                         f"{', '.join(k for k in keys if k in beats) or 'none'}"
                         for name, beats in sorted(formats.items()))
@@ -537,11 +517,6 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
 
     warnings: list[str] = list(inline_warnings)
     warnings.extend(_tag_warnings(script, settings))
-    for anchor in script.missing_anchor_words():
-        warnings.append(
-            f'anchor_word "{anchor}" not found in audio_script — the cue will '
-            f"use a proportional fallback position"
-        )
     if not SHORT_WORDS_MIN <= script.word_count <= SHORT_WORDS_MAX:
         warnings.append(
             f"audio_script is {script.word_count} words (target ~140–160 for "
@@ -558,4 +533,10 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             "some numbers rows carry fewer than 3 years — direction is the "
             "point of the gut check"
         )
+    if len(script.numbers) > SHEET_ROWS:
+        dropped = ", ".join(r.label for r in script.numbers[SHEET_ROWS:])
+        warnings.append(
+            f"numbers has {len(script.numbers)} rows and the sheet draws "
+            f"{SHEET_ROWS} — {dropped} will not be on screen. Keep the "
+            f"{SHEET_ROWS} that carry the read.")
     return script, warnings

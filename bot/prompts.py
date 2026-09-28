@@ -19,7 +19,6 @@ validate-then-fail.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -199,6 +198,30 @@ def _stem_of(key: str) -> str:
     return key.removesuffix("-16x9").removesuffix("-9x16")
 
 
+def chapter_title_max(settings: Settings) -> str:
+    """The chapter card's title room, read off the kit (`bumper`)."""
+    from pipeline.bumper import chapter_title_limit
+    from pipeline.plates import PlateError, load_plates
+
+    try:
+        limit = chapter_title_limit(load_plates(settings.assets_dir))
+    except PlateError:
+        limit = None
+    return str(limit) if limit else "about 30"
+
+
+def template_plates(settings: Settings, name: str) -> frozenset[str] | None:
+    """Every plate a shot template can land a beat on, or None if it will
+    not load."""
+    from pipeline.shots import TemplateError, load_format
+
+    try:
+        fmt = load_format(name, Path(settings.templates_dir).parent)
+    except TemplateError:
+        return None
+    return frozenset(v.plate for sh in fmt.shots for v in sh.variants) or None
+
+
 def _for_company(plate, sector: str) -> bool:
     """Whether a plate belongs on this company's menu.
 
@@ -211,9 +234,12 @@ def _for_company(plate, sector: str) -> bool:
 
 
 def plate_catalogue(settings: Settings, *, fmt: str = "long",
-                    sector: str = "") -> str:
+                    sector: str = "", only: frozenset[str] | None = None) -> str:
     """Every plate the director may name: what it is for, when not to use it,
     and its slots.
+
+    `only` narrows it to those keys: a short's writer places nothing, so it
+    is shown the plates its shot template can land on and no others.
 
     Design writes a purpose and a caution on every plate (`roles.fragment.json`)
     and both are shown: the caution is where a plate says which sibling to use
@@ -249,6 +275,8 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long",
         keys = []
         for k in reg.family(family):
             plate = reg.assets[k]
+            if only is not None and k not in only:
+                continue
             if plate.aspect and plate.aspect != aspect:
                 continue
             if _stem_of(k) in held:
@@ -1020,9 +1048,13 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{plate_catalogue}}", ("short", "long_write", "update"),
                  lambda c: plate_catalogue(
                      c.settings, fmt="short" if c.fmt == "short" else "long",
-                     sector=_sector(c))),
+                     sector=_sector(c),
+                     only=(template_plates(c.settings, "short")
+                           if c.fmt == "short" else None))),
     PayloadBlock("{{scribble_styles}}", _LONG_FORM,
                  lambda c: scribble_styles(c.settings)),
+    PayloadBlock("{{chapter_title_max}}", _LONG_FORM,
+                 lambda c: chapter_title_max(c.settings)),
     PayloadBlock("{{chapter_types}}", _LONG_FORM,
                  lambda c: chapter_type_catalogue(c.settings, fmt=c.fmt,
                                                   sector=_sector(c))),
@@ -1031,7 +1063,9 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{beat_order}}", ("short", "headline"), beat_order_block),
 
     # --- craft rules
-    PayloadBlock("{{tagging_density}}", ("short", "long_write", "update"),
+    # Long only: it asks for a plate on every figure and [SHOW FILING] on
+    # every quote, which a short's writer is told it cannot place.
+    PayloadBlock("{{tagging_density}}", _LONG_FORM,
                  lambda c: TAGGING_DENSITY),
     PayloadBlock("{{craft_rules}}", _WRITING,
                  lambda c: expressivity_and_pacing()),

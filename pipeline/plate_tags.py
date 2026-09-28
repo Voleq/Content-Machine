@@ -811,38 +811,3 @@ def check_bound(reg: Registry, key: str, values: dict[str, str], *,
     _check_data(plate, fill)
     _warn_unfilled(plate, fill)
     return fill
-
-
-def catalogue(reg: Registry, *, aspect: str = "", chapter_type: str = "") -> list[str]:
-    """The plate catalogue, generated from the manifests.
-
-    Name, purpose, slot names, and which chapter types may use it. Generated
-    rather than written down for the same reason every other catalogue here is:
-    a hand-maintained list drifts the moment the artwork changes, and the
-    failure mode of drift is a script full of names that validate-then-fail.
-    """
-    rows: list[str] = []
-    by_type: dict[str, list[str]] = {}
-    for ct in reg.chapter_types_available():
-        for k in reg.plates_for_chapter(ct):
-            by_type.setdefault(k, []).append(ct)
-
-    for family in reg.families():
-        keys = [k for k in reg.family(family)
-                if (not aspect or not reg.assets[k].aspect
-                    or reg.assets[k].aspect == aspect)
-                and (not chapter_type or reg.chapter_allows(chapter_type, k))]
-        if not keys:
-            continue
-        rows.append(f"  {family}/")
-        for k in keys:
-            p = reg.assets[k]
-            short = k.split("/", 1)[1]
-            line = f"    {short}"
-            if p.purpose:
-                line += f" — {p.purpose}"
-            rows.append(line)
-            slots = _slot_summary(p)
-            if slots:
-                rows.append(f"        slots: {slots}")
-    return rows

@@ -27,7 +27,6 @@ Outputs:
 
 from __future__ import annotations
 
-import random
 import subprocess
 import sys
 from pathlib import Path

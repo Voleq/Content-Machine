@@ -42,7 +42,6 @@ Three things here are contracts rather than conveniences:
 
 from __future__ import annotations
 
-import re
 
 import json
 import logging
@@ -52,7 +51,10 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Collection, Any, Iterator
+from typing import TYPE_CHECKING, Any, Collection, Iterator
+
+if TYPE_CHECKING:
+    from datetime import date
 
 log = logging.getLogger(__name__)
 
@@ -661,9 +663,6 @@ class Plate:
 
     def text_slots(self) -> dict[str, Slot]:
         return {k: v for k, v in self.slots.items() if v.is_text}
-
-    def slots_with_role(self, role: str) -> list[Slot]:
-        return [s for s in self.slots.values() if s.role == role]
 
     @property
     def pixel_size(self) -> tuple[int, int]:
@@ -1276,18 +1275,6 @@ class Registry:
         self.colour(role)          # validate
         return self.palette[role]
 
-    def direction_colour(self, value: float) -> tuple[int, int, int]:
-        """``up`` for a rise, ``down`` for a fall, ``neutral-data`` for neither.
-
-        A number with no direction is neutral data even when the story about it
-        is bad news — that is the rule the eight roles exist to keep.
-        """
-        if value > 0:
-            return self.colour("up")
-        if value < 0:
-            return self.colour("down")
-        return self.colour("neutral-data")
-
     # ---------------------------------------------------------------- aspect
 
     def aspect_key(self, stem: str, aspect: str) -> str | None:
@@ -1601,16 +1588,6 @@ class VariantLedger:
     def all_used(self) -> set[str]:
         """Every plate key any recent render reached."""
         return {name for names in self._recent.values() for name in names}
-
-    def unused(self, prefix: str, options: list[str]) -> list[str]:
-        """The options this family has not shown recently.
-
-        Falls back to the full list once everything has been used — a family
-        smaller than the history window must still return something.
-        """
-        recent = set(self._recent.get(prefix, []))
-        fresh = [n for n in options if n not in recent]
-        return fresh or list(options)
 
     def record(self, prefix: str, name: str) -> None:
         seen = [n for n in self._recent.get(prefix, []) if n != name]

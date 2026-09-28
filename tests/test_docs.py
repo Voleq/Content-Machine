@@ -177,10 +177,16 @@ def test_the_help_text_and_the_readme_agree_on_what_exists():
     one and absent from the other means one of them is stale."""
     from bot.handlers import HELP_TEXT
 
-    in_help = set(re.findall(r"^/([a-z_]+)", HELP_TEXT, re.MULTILINE))
+    in_help = set(re.findall(r"^/([a-z_]+)|\bor /([a-z_]+)", HELP_TEXT,
+                             re.MULTILINE))
+    in_help = {name for pair in in_help for name in pair if name}
     documented = _documented()
     assert not (in_help - documented), \
         f"in the help text, missing from the README: {sorted(in_help - documented)}"
+    # Both ways: eleven commands were registered and documented and missing
+    # from the list an operator actually has in the chat.
+    assert not (documented - in_help), \
+        f"in the README, missing from the help text: {sorted(documented - in_help)}"
 
 
 # --------------------------------------------------------------------------
@@ -379,4 +385,4 @@ def test_the_old_kit_search_would_actually_find_something():
         "the search reads a real tree, and this kit's engine is kit/engine/"
     assert "ballpoint" in _OLD_KIT_INK_REGISTERS
     marks = (ROOT / "pipeline" / "marks.py").read_text(encoding="utf-8")
-    assert "marker_stroke" in marks, "marks.py is still the file being searched"
+    assert "def wrap_to" in marks, "marks.py is still the file being searched"

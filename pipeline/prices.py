@@ -19,9 +19,8 @@ import logging
 import math
 import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, timedelta
-from pathlib import Path
 from typing import Protocol
 
 from config import Settings
@@ -40,18 +39,6 @@ class PriceSeries:
     @property
     def last(self) -> float:
         return self.closes[-1]
-
-    @property
-    def pct_change_1d(self) -> float:
-        if len(self.closes) < 2 or not self.closes[-2]:
-            return 0.0
-        return (self.closes[-1] - self.closes[-2]) / self.closes[-2] * 100.0
-
-    @property
-    def pct_change_period(self) -> float:
-        if len(self.closes) < 2 or not self.closes[0]:
-            return 0.0
-        return (self.closes[-1] - self.closes[0]) / self.closes[0] * 100.0
 
     def to_json(self) -> str:
         # `degraded` travels with the series (B1). It used to be dropped
@@ -163,6 +150,13 @@ def make_price_source(settings: Settings) -> PriceSource:
     return MockPriceSource(settings) if settings.mocking_prices else YahooPriceSource(settings)
 
 
+# How long a SYNTHETIC series is served from the cache. Long enough for one
+# job to read the same series twice (the gate, then the chart); short enough
+# that "retry once the feed is back" fetches again instead of meeting the
+# same random walk for the rest of the hour.
+DEGRADED_TTL_S = 300
+
+
 def get_price_history(ticker: str, settings: Settings,
                       source: PriceSource | None = None) -> PriceSeries:
     """TTL-cached price history (§2.4-style: unchanged inputs ⇒ zero calls).
@@ -172,10 +166,12 @@ def get_price_history(ticker: str, settings: Settings,
     cdir = settings.cache_dir / "prices"
     cfile = cdir / f"{ticker}_{days}.json"
     try:
-        if cfile.exists() and time.time() - cfile.stat().st_mtime < settings.prices_cache_ttl_s:
+        age = time.time() - cfile.stat().st_mtime if cfile.exists() else None
+        if age is not None and age < settings.prices_cache_ttl_s:
             series = PriceSeries.from_json(cfile.read_text(encoding="utf-8"))
-            return series
-    except (json.JSONDecodeError, KeyError, ValueError):
+            if not series.degraded or age < DEGRADED_TTL_S:
+                return series
+    except (json.JSONDecodeError, KeyError, ValueError, OSError):
         pass
 
     src = source or make_price_source(settings)

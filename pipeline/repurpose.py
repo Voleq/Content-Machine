@@ -157,57 +157,6 @@ def pick_best_windows(
     return taken
 
 
-def repurpose_short_from_long(
-    long_mp4: Path,
-    manifest_path: Path,
-    settings: Settings,
-    out_path: Path | None = None,
-    words: list[WordTimestamp] | None = None,
-) -> tuple[Path, dict]:
-    """Cut + center-crop the best window to 9:16. Returns (mp4, info)."""
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    duration = float(manifest["duration"])
-    start, end = pick_best_window(manifest.get("cues", []), duration, words=words)
-    length = end - start
-
-    W, H = settings.short_resolution
-    out_path = out_path or long_mp4.with_name("short_repurposed.mp4")
-    # ONE ENCODE, THROUGH THE PROJECT'S PROFILE (I1).
-    #
-    # A correction to the diagnosis first: this cannot stream-copy. The whole
-    # point of the cut is 16:9 -> 9:16, and a crop changes the geometry —
-    # there is no keyframe alignment that lets `-c:v copy` produce a
-    # differently-shaped picture. Cutting on a keyframe and re-encoding only
-    # the lead-in is a concat-of-two-sources trick that buys nothing here,
-    # because every frame needs re-encoding anyway.
-    #
-    # What was actually wasteful is that this hardcoded libx264 and the
-    # project's final preset while the render path resolves an encoder,
-    # including NVENC when the box has one — so the machine that had just
-    # spent hours on the GPU did three more clips on the CPU. It uses the
-    # same profile as a SHORT final now.
-    profile = encode_profile(settings, "short")
-    run_ffmpeg([
-        "-ss", f"{start:.3f}", "-t", f"{length:.3f}", "-i", str(long_mp4),
-        "-vf",
-        f"crop=trunc(ih*{W}/{H}/2)*2:ih,scale={W}:{H},setsar=1",
-        "-af", f"afade=t=in:st=0:d=0.25,afade=t=out:st={max(length - 0.4, 0):.3f}:d=0.4",
-        *profile.video_args(),
-        "-c:a", "aac", "-b:a", settings.audio_bitrate,
-        "-movflags", "+faststart",
-        str(out_path),
-    ])
-    rendered = ffprobe_duration(out_path)
-    info = {
-        "source": str(long_mp4),
-        "window": [start, end],
-        "duration": rendered,
-        "note": "repurposed from LONG — zero new TTS/fetch spend",
-    }
-    out_path.with_suffix(".repurpose.json").write_text(json.dumps(info, indent=2), encoding="utf-8")
-    return out_path, info
-
-
 def repurpose_clips_from_long(
     long_mp4: Path,
     manifest_path: Path,

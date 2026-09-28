@@ -32,6 +32,37 @@ MIN_CUE_S = 0.9
 GAP_SPLIT_S = 0.6   # a pause this long ends the cue — usually a sentence
 
 
+# WHERE EACH FORMAT'S BY-PRODUCTS LAND. A SHORT and a LONG can share one
+# workspace (both lanes on one date), so the SHORT's carry the format in their
+# names and the LONG's keep the names they have always had — which is also
+# what every render made before the SHORT wrote any of these left behind.
+_BYPRODUCT_NAMES: dict[str, dict[str, str]] = {
+    "long": {"captions": "{ticker}.srt",
+             "transcript": "{ticker}.transcript.txt",
+             "words": "words.json",
+             "package": "upload_package.txt",
+             "companion": "companion.html",
+             "thumbnail": "thumbnail.png"},
+    "short": {"captions": "{ticker}.short.srt",
+              "transcript": "{ticker}.short.transcript.txt",
+              "words": "words_short.json",
+              "package": "upload_package_short.txt",
+              "companion": "companion_short.html",
+              "thumbnail": "thumbnail_tall.png"},
+}
+
+
+def byproduct_name(kind: str, fmt: str, ticker: str = "") -> str:
+    """The file name one by-product of one format is written under.
+
+    A clip is cut from the LONG and has no timings, package or page of its
+    own, so it has no names here.
+    """
+    names = _BYPRODUCT_NAMES.get(fmt) or {}
+    name = names.get(kind, "")
+    return name.format(ticker=ticker.upper()) if name else ""
+
+
 def _timestamp(seconds: float) -> str:
     if seconds < 0:
         seconds = 0.0
@@ -262,15 +293,23 @@ def build_package(script, settings, *, ticker: str = "",
                   hook: str = "", runtime_min: float = 0.0,
                   transcript: str = "",
                   timestamps: "Sequence[tuple[str, str]]" = (),
-                  why: str = "") -> UploadPackage:
+                  why: str = "", duration_s: float = 0.0,
+                  with_chapters: bool = True) -> UploadPackage:
     """Title options, description with chapters, tags and a pinned comment.
 
     Deliberately mechanical: it assembles what the script already decided
     rather than inventing new claims. Nothing here should say anything the
     video does not.
+
+    `duration_s` is the RENDERED length, so a chapter the cut left past the
+    end is dropped from the description — which is where YouTube reads the
+    chapter list from, and a list with one entry out of range renders as no
+    list at all. `with_chapters=False` is for a clip cut from the LONG: the
+    LONG's chapter trailer describes twenty minutes the clip does not have.
     """
     ticker = (ticker or getattr(script, "ticker", "")).upper()
-    chapters = normalise_chapters(getattr(script, "chapters", ""))
+    chapters = (normalise_chapters(getattr(script, "chapters", ""), duration_s)
+                if with_chapters else [])
     narration = getattr(script, "narration", "") or getattr(script, "audio_script", "")
     first_line = next((s.strip() for s in re.split(r"(?<=[.!?])\s+", narration)
                        if s.strip()), "")
@@ -288,7 +327,7 @@ def build_package(script, settings, *, ticker: str = "",
         body.append("Chapters")
         body += [f"{ts} {title}" for ts, title, _ in chapters]
         body.append("")
-    elif timestamps:
+    elif timestamps and with_chapters:
         # No chapter trailer — a SHORT never has one. The cues do the job.
         body.append("Chapters")
         body += [f"{ts} {label}" for ts, label in timestamps]

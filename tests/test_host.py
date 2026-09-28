@@ -390,7 +390,6 @@ def test_a_registry_with_no_wardrobe_block_is_refused(tmp_path):
     it wrote `{}`, which reads exactly like a kit with one outfit.
     """
     import json
-    import shutil
 
     from pipeline.plates import PlateError, REGISTRY_NAME, load_plates
 

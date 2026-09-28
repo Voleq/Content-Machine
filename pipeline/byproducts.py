@@ -57,10 +57,6 @@ TILE_GRID = (8, 6)
 DEFAULT_TOLERANCE = 6.0
 
 
-class GoldenMismatch(AssertionError):
-    """A frame moved further than the tolerance allows."""
-
-
 @dataclass
 class FrameDiff:
     name: str
@@ -126,22 +122,6 @@ def frame_distance(a: Path, b: Path) -> float:
                 total += sum(v * c for v, c in enumerate(band)) / pixels
             worst = max(worst, total / 3.0)
     return round(worst, 4)
-
-
-def extract_frames(video: Path, out_dir: Path, *, at: Sequence[float],
-                   settings: Settings | None = None) -> list[Path]:
-    """Pull frames at given seconds. Named by timestamp so goldens line up."""
-    from pipeline.render_common import run_ffmpeg
-
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out: list[Path] = []
-    for t in at:
-        dest = out_dir / f"t{t:07.2f}.png".replace(".", "_", 1)
-        run_ffmpeg(["-ss", f"{t:.3f}", "-i", str(video), "-frames:v", "1",
-                    "-y", str(dest)])
-        if dest.exists():
-            out.append(dest)
-    return out
 
 
 def key_times(duration: float, n: int = 6) -> list[float]:
@@ -522,11 +502,6 @@ def held_spans(video: Path, *, sample_fps: float = HOLD_SAMPLE_FPS,
     return spans
 
 
-def longest_hold(video: Path, **kw) -> float:
-    spans = held_spans(video, **kw)
-    return max((b - a for a, b in spans), default=0.0)
-
-
 def holds_past(spans: Sequence[tuple[float, float]], cuts: Sequence[float],
                ceiling: float) -> list[tuple[float, float]]:
     """Every held composition longer than `ceiling`, split at the cuts.
@@ -545,65 +520,4 @@ def holds_past(spans: Sequence[tuple[float, float]], cuts: Sequence[float],
         for lo, hi in zip([a, *inside], [*inside, b]):
             if hi - lo > ceiling + 1e-6:
                 out.append((lo, hi))
-    return out
-
-
-# --------------------------------------------------------------------------
-# The same ceiling, on the LAYER LIST.
-# --------------------------------------------------------------------------
-# `held_spans` measures the encode, which is the backstop and costs a render
-# plus a decode to consult. This reads the manifest instead: it runs in
-# milliseconds, it runs before anything is encoded, and — the part the pixels
-# cannot do — it NAMES the layer at fault.
-#
-# The rule is not "no layer may be longer than the ceiling". The numbers sheet
-# is up for twenty seconds and its rows type on all the way through; the
-# ticker chip is up for the whole video by design. A layer may live as long as
-# it likes provided the composition keeps changing under it. What is forbidden
-# is a layer that outlasts the ceiling AND contains a ceiling-long window in
-# which nothing else enters or leaves the frame — which is exactly what an
-# act-scoped `t_end=<next act boundary>` produces when the script puts nothing
-# inside the act.
-
-
-@dataclass(frozen=True)
-class StillLayer:
-    """One layer, and the window inside it where the frame stops changing."""
-
-    name: str
-    t_start: float
-    t_end: float
-    window: tuple[float, float]
-
-    @property
-    def held(self) -> float:
-        return self.window[1] - self.window[0]
-
-    def line(self) -> str:
-        return (f"{self.name} ({self.t_start:.1f}s->{self.t_end:.1f}s): nothing "
-                f"enters or leaves between {self.window[0]:.1f}s and "
-                f"{self.window[1]:.1f}s ({self.held:.1f}s)")
-
-
-def still_layers(layers: Sequence[dict], ceiling: float,
-                 *, eps: float = 0.05) -> list[StillLayer]:
-    """Every layer that outlives `ceiling` with the frame unchanged inside it.
-
-    `layers` is the manifest's own list — `name`, `t_start`, `t_end`. `eps`
-    is the slack that stops a layer's own endpoints, and anything landing on
-    the same frame as them, from counting as a change within it.
-    """
-    events = sorted({round(float(l[k]), 3)
-                     for l in layers for k in ("t_start", "t_end")})
-    out: list[StillLayer] = []
-    for l in layers:
-        a, b = float(l["t_start"]), float(l["t_end"])
-        if b - a <= ceiling:
-            continue
-        marks = [a] + [e for e in events if a + eps < e < b - eps] + [b]
-        for p, q in zip(marks, marks[1:]):
-            if q - p > ceiling:
-                out.append(StillLayer(name=str(l["name"]), t_start=a, t_end=b,
-                                      window=(p, q)))
-                break
     return out

@@ -1,7 +1,6 @@
 """The content engine (§5): per-tag resolution chains, caching, filler
 floor, attribution — all offline."""
 
-import json
 import pathlib
 
 import pytest

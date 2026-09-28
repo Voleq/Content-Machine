@@ -208,11 +208,10 @@ pipeline/
   filing_brief.py        THE PRE-ANGLE BRIEF — reads the filings BEFORE the
                          angle is chosen: risk shift, language, segments, and
                          what contradicts the workbook
-  article_lookup.py      the real article behind a headline the script wrote
   broll.py               the content engine: [CLIP], [IMG]/[PRODUCT], [MEME],
                          [SCREENGRAB] — cached, attributed
   memes.py               owned meme library (meme_index.json) + providers
-  sources.py             free feeds: 8-K + EX-99.1, Form 4, 13F, FRED, IR RSS
+  sources.py             free feeds: 8-K + EX-99.1, Form 4, FRED, IR RSS
   audio_assets.py        where the sound came from, and whether it is real
   sound.py               what a SHORT sounds like: voice and room through
                          the LONG's mixer (render_common.audio_graph)
@@ -549,7 +548,9 @@ outside the cache key, so the second render of a script is $0 and reuses the
 same voice. Clear it and every one of those scripts re-bills in full at the
 per-1k-character rate on its next render. `RETENTION_DAYS` never touches it,
 and neither should anybody clearing space: prune `cache/segments` (encoded
-video, regenerates for free) and old workspaces instead.
+video, regenerates for free) and old workspaces instead. Each long render
+already trims `cache/segments` to its newest 4,000 clips, keeping the ones
+that render just used.
 
 **Keep everything off `/mnt/c`.** `workspace/`, `cache/` and `state/` must
 live on the Linux filesystem. `cache/segments` is thousands of small clips
@@ -747,8 +748,9 @@ only the human-facing summary in the chat body.
 
 | command | what it does |
 |---|---|
-| `/upload TICKER [short\|long\|clip] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`, and a naive time is read in that zone rather than UTC. The thumbnail and the `.srt` go up with the video; a dropped upload resumes rather than starting a second one. |
+| `/upload TICKER [short\|long\|clip] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`, and a naive time is read in that zone rather than UTC. The format's own thumbnail and `.srt` go up with the video (a clip gets neither: the LONG's run on the wrong clock and shape for it), and the description is the render's package — the why, the transcript, and chapters cut to the rendered length. A dropped upload resumes rather than starting a second one. |
 | `/upload TICKER pair` | Ships **two** repurposed clips off one long, tagged as a pair, so `/experiments` can compare them. Two clips off one render cost no voice generation and no new composition and differ in exactly one thing — which minute of the argument they carry. The second one used to be thrown away. |
+| `/probe TICKER [short\|long]` | One **unlisted** upload of a finished render with the synthetic-media box ticked, to see where YouTube actually puts the AI label on this channel's output — under the player, or only in the expanded description. The answer is on the watch page, not in the API. Never public, never scheduled, not recorded as a published video; delete it when you have looked. |
 | `/scheduled` | What is queued to publish, and when. |
 | `/retention [TICKER]` | Per-chapter drop-off. No ticker aggregates the evidence across everything published. |
 | `/correct [TICKER <what was wrong>]` | Pins a correction on a video that has already shipped, amends its description and records it. No arguments lists every correction ever issued. Twelve gates stop a wrong number before it goes out; this is for the one that was right on Tuesday and restated on Friday. |
@@ -765,8 +767,8 @@ away.
 | `/hooks [short\|long]` | Openers ranked by what they held over their own first five seconds, rather than by the whole video's average. An opener's job ends early and a video that loses people at the end did not fail at the top. |
 | `/shots TICKER` | Which shots of a published video lose people, and how long each of them runs. The half of the retention loop the renderer never heard. |
 | `/stillness TICKER` | Every stretch where the audio runs and the picture holds still for more than eight seconds. Read off the manifest, so it works offline and on a video that has never shipped. |
-| `/rules` | What the voice rules are worth, measured. Mean hold on sentences carrying a turn, a direction tag, a question, a figure — against those without. Every threshold in the linter was a judgement; this is where they argue back. |
-| `/runtime` | Hold against how long the videos run, per band. Sixty to seventy-five seconds for a short is an assumption in a spec, not a finding. |
+| `/rules` | What the voice rules are worth, measured. Mean hold on sentences carrying a turn, a question, a spoken figure, first person — against those without. Every threshold in the linter was a judgement; this is where they argue back. |
+| `/runtime` | Hold against how long the videos run, per band. Forty-five to fifty-five seconds for a short is an assumption in a spec, not a finding. |
 | `/said <phrase>` | Every earlier use of a line, across every script ever shipped. The voice bible's *no construction twice* rule could only ever see inside one script. |
 | `/experiments` | Clip pairs cut from one long and shipped as a pair, and which one held. Two clips off one render cost no voice generation — the only free experiment in the system, and the second one used to be thrown away. |
 | `/scoreboard [YYYY-Qn]` | What we said and what happened, for a quarter. Every number in it was already gathered for the video it came from. It leads with the calls that were wrong, deliberately. |
@@ -910,13 +912,12 @@ number, which is exactly the case the gate exists to catch.
 | `DELIVERY_BACKEND` | gdrive | gdrive · s3 · telegram · local |
 | `GDRIVE_CREDENTIALS` / `GDRIVE_ROOT_FOLDER_ID` | — | Drive delivery |
 | `LOCAL_TTS_ENABLED` / `LOCAL_TTS_MODEL` | true / — | free draft voice (Piper .onnx); drafts fall back to mock, never to paid |
-| `RETENTION_DAYS` | 14 | cleanup horizon (caches never pruned). **`cache/tts` holds audio that was paid for and must never be deleted** — see *Never delete `cache/tts`* below |
+| `RETENTION_DAYS` | 14 | cleanup horizon for workspaces (it never touches `cache/`). **`cache/tts` holds audio that was paid for and must never be deleted** — see *Never delete `cache/tts`* below |
 | `SCREEN_TOP_N` / `COOLDOWN_DAYS` | 8 / 30 | screener caps |
 | `SCREEN_DIGEST_CRON` | `30 7 * * 1-5` | digest, `SCREEN_TIMEZONE` (ET) |
 | `ALERTS_ENABLED` / `ALERT_POLL_MINUTES` | true / 15 | intraday watch on covered names |
 | `ALERT_MOVE_PCT` / `ALERT_COOLDOWN_MINUTES` | 6.0 / 180 | when it speaks, and how rarely it repeats |
 | `FRED_API_KEY` | — | free macro series for `/headline macro`; absent = unavailable |
-| `WHISPER_ENABLED` | false | optional webcast transcription; never blocks |
 | `YOUTUBE_ENABLED` / `YOUTUBE_CREDENTIALS` | false / — | upload as private or scheduled; never public |
 | `BYPRODUCTS_ENABLED` | true | thumbnails, social cards, end screens per render |
 | `STATUS_PAGE_ENABLED` / `STATUS_PAGE_PORT` | false / 8787 | read-only localhost view |
@@ -939,9 +940,10 @@ env var, case-insensitive).
   seeded walk with no invented spike on the final bar, it is flagged
   `degraded` all the way through the cache and onto the render manifest,
   and it **blocks** a final render outside `MOCK_MODE`: a fabricated chart
-  on a channel whose premise is real numbers is not a warning-level event. Two styles: the clean
-  branded card and a crude hand-drawn "marker" napkin chart on black;
-  a SHORT picks via `chart_style`, a LONG via `[CHART: metric style=marker]`.
+  on a channel whose premise is real numbers is not a warning-level event. There
+  is one look, the kit's hand-drawn price plate; a script's `chart_style` or
+  `style=` token no longer selects a second one. The `earnings` and `macro`
+  shorts draw no price chart, so a dead feed does not stop them.
 - **The director names the plate.** `[PLATE: numbers-sheet-4r-16x9 | unit=$M
   | head=FY21,…,LTM | label-1=Revenue | row-1=400,452,471,491,496,496 |
   band=3]` — the tag carries its own content and the renderer only places it.

@@ -169,57 +169,25 @@ def test_the_short_report_blocks_on_placeholder_audio(settings, short_valid_json
 # --------------------------------------------------------------------------
 
 
-def test_the_short_report_states_what_the_script_reaches(settings, short_valid_json):
-    """`kit_assets_used` has been in the render manifest since the kit existed
-    and nobody ever opened it, so a short reaching 17 of 442 assets and one
-    data plate went unremarked for months. The approval screen is the
-    last moment the script can be sent back, so it says so there."""
-    import re
-
+def test_the_short_report_counts_no_plates_it_will_not_draw(settings,
+                                                            short_valid_json):
+    """The kit line counts the script's inline [PLATE] tags. A LONG draws
+    those; a SHORT draws its template's plates and discards the tags, so a
+    count of them on its approval screen, and a warning to name more, told
+    the writer the opposite of its prompt. The render's reach is on its
+    manifest."""
     from pipeline.cost import build_short_report
     from pipeline.parser_short import parse_short_script
     from pipeline.tts import TTSEngine
-
-    from pipeline.plates import load_plates
 
     script, warnings = parse_short_script(short_valid_json, settings)
+    assert any(e.type.value == "PLATE" for e in script.inline_events)
     report = build_short_report(script, warnings, settings,
                                 SpendLedger(settings), TTSEngine(settings))
-    line = next(ln for ln in report.render_text().splitlines()
-                if ln.startswith("Kit: "))
-    assert re.fullmatch(
-        r"Kit: \d+ of \d+ plates · \d+ families · \d+ data plates?",
-        line), line
-    # THE DENOMINATOR IS THE LIBRARY, READ LIVE. Asserted against the
-    # registry rather than against a number typed here: the kit grew from
-    # 143 plates to 270 in delta-14, and a literal would have made a correct
-    # reach line look like a regression on the day the operator ingests it.
-    # What the line is for is that the numerator is small against whatever
-    # the library currently holds.
-    from pipeline.plates import load_plates
-
-    total = len(load_plates(settings.assets_dir).keys())
-    assert f"of {total} plates" in line
-
-
-def test_the_line_counts_what_the_script_actually_names(settings, short_valid_json):
-    import json
-
-    from pipeline.cost import build_short_report
-    from pipeline.parser_short import parse_short_script
-    from pipeline.tts import TTSEngine
-
-    import re
-
-    data = json.loads(short_valid_json)
-    # stripped back to two named beats, so the count is checkable by hand
-    data["audio_script"] = ("[PROP: crushed-flat = -$89M] [PROP: c-doc-tear] "
-                            + re.sub(r"\[PROP:[^\]]*\]\s*", "",
-                                     data["audio_script"]))
-    script, warnings = parse_short_script(json.dumps(data), settings)
-    report = build_short_report(script, warnings, settings,
-                                SpendLedger(settings), TTSEngine(settings))
-    assert "plates ·" in report.kit_reach and "data plate" in report.kit_reach
+    assert report.kit_reach == ""
+    assert not any(ln.startswith("Kit: ")
+                   for ln in report.render_text().splitlines())
+    assert not any("beat-library" in w for w in warnings)
 
 
 def test_the_long_report_carries_the_same_line(settings, long_valid_text, workspace):
@@ -235,7 +203,6 @@ def test_the_long_report_carries_the_same_line(settings, long_valid_text, worksp
     from pipeline.plates import load_plates
 
     assert report.kit_reach.startswith("Kit: ")
-    from pipeline.plates import load_plates
 
     assert f"of {len(load_plates(settings.assets_dir).keys())} plates" \
         in report.kit_reach

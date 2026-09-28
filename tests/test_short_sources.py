@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections import namedtuple
 from pathlib import Path
 
 import pytest
@@ -124,6 +123,25 @@ def test_a_source_slides_in_where_design_gives_it_room(short_valid_json,
     rows = [r for r in plan.record()["moves"] if r["move"] == "slide-in"]
     assert [(r["shot_id"], r["start"]) for r in rows] == \
         [(tag.shot_id, round(tag.start, 3))]
+
+
+def test_a_carried_source_stops_at_the_next_beat_with_its_own(short_valid_json,
+                                                              settings, tmp_path):
+    """The sheet has no clear spot, so its source waits for the next shot with
+    room. When that next beat cites its own figure first, the sheet's line
+    must not turn up a shot later under a figure it does not source."""
+    from pipeline import moves as MV
+
+    reg, result, plan = _short_plan(
+        short_valid_json, settings, tmp_path,
+        {"numbers": "10-K filings, FY21-FY25", "numbers_comment": "FY25 10-K"})
+    assert "10-K filings, FY21-FY25" not in [t.text for t in plan.tags]
+    assert any("gave way" in s for s in plan.skipped), plan.skipped
+    # the comment's own line is still cited: under it, or in the plate's own
+    # source slot where the plate prints one
+    plate = reg.get(MV.shot_plates(result)["the-comment"].entry_key)
+    assert plate.slot("source") is not None or \
+        [(t.shot_id, t.text) for t in plan.tags] == [("the-comment", "FY25 10-K")]
 
 
 def test_the_tag_rests_where_design_puts_it(settings):

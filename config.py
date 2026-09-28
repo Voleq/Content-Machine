@@ -361,15 +361,11 @@ class Settings(BaseSettings):
     retention_window_days: int = Field(default=28, alias="RETENTION_WINDOW_DAYS")
 
     # ------------------------------------------------ free sources (P3.4)
-    # 8-K/EX-99.1, Form 4 and 13F reuse the EDGAR client above (SEC_USER_AGENT
-    # and the fair-access interval apply). FRED needs its own free key. Every
+    # 8-K/EX-99.1 and Form 4 reuse the EDGAR client above (SEC_USER_AGENT and
+    # the fair-access interval apply). FRED needs its own free key. Every
     # source degrades to "unavailable" rather than failing a run.
     fred_api_key: str = Field(default="", alias="FRED_API_KEY")
     fred_base_url: str = "https://api.stlouisfed.org"
-    # Optional webcast transcription. Slow and GPU-hungry; nothing waits on it.
-    whisper_enabled: bool = Field(default=False, alias="WHISPER_ENABLED")
-    whisper_model: str = Field(default="base.en", alias="WHISPER_MODEL")
-    whisper_cuda: bool = Field(default=True, alias="WHISPER_CUDA")
 
     # ---------------------------------------------- intraday alerting (3b)
     # Short-form is time-sensitive, and one pre-market digest doesn't cover
@@ -483,7 +479,6 @@ class Settings(BaseSettings):
     short_height: int = 1920
     long_width: int = 1920
     long_height: int = 1080
-    short_target_seconds: float = 50.0  # 45–55s "Noise or signal?" band midpoint
     # Deliberate pacing (§editing): Dennis holds the frame and cuts away to
     # evidence that stays up long enough to read. `long_min_readable_s` is the
     # floor for data visuals — a later cut is deferred rather than truncating
@@ -624,7 +619,9 @@ class Settings(BaseSettings):
     s3_region: str = "us-east-1"
 
     # ------------------------------------------------------------------- jobs
-    max_concurrent_renders: int = 1
+    # One render at a time, always: `RenderJobQueue` has a single worker, and
+    # a 12GB card has no room for two encodes. There used to be a
+    # `max_concurrent_renders` here that nothing read.
     retention_days: int = Field(default=14, alias="RETENTION_DAYS")
 
     # --------------------------------------------------------------- screener
@@ -649,7 +646,6 @@ class Settings(BaseSettings):
         alias="DISCLAIMER_TEXT",
     )
     # brand copy burned into the intro/outro bug — never the data vendor
-    brand_name: str = "DENNIS"
     brand_tagline: str = "NOISE OR SIGNAL?"
     # the handle the signature close card signs off with
     brand_handle: str = Field(default="@dennisreads", alias="BRAND_HANDLE")

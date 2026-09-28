@@ -1,4 +1,4 @@
-"""What the kit does not draw: captions, alpha clips, and figure animation.
+"""What the kit does not draw: captions, alpha clips, and annotation marks.
 
 Everything with a plate equivalent has gone. This module existed because the
 renderer had to draw what the kit did not ship — sheets, cards, panels, chapter
@@ -9,12 +9,11 @@ that is genuinely not a plate:
   a text format rather than a drawing
 * **alpha clips** (`frames_to_alpha_clip`) — the encode step every animated
   overlay goes through
-* **figure animation** (`count_up_frames`, `roll_steps`, `roll_over_lines`) — a
-  number counting up is a value CHANGING over time, and a plate is one moment
 * **annotation marks** (`fitted_mark`, `mark_frames`) — solving an
   `annotations/` cut-out onto a target and drawing it on
-* **small utilities** (`simple_text`, `drawn_rect`, `flash_frames`,
-  `cover_fill_frame`)
+* **small utilities** (`simple_text`, `drawn_rect`, `cover_fill_frame`)
+
+A number counting up is `pipeline.moves`' count-up, on design's frames.
 
 THERE ARE NO COLOUR CONSTANTS HERE ANY MORE. `INK`, `RED`, `GREEN`, `PANEL` and
 `CARD_LINE` named a palette that no longer exists, and worse, `RED` carried both
@@ -220,9 +219,6 @@ def cover_fill_frame(
     return bg
 
 
-# the designed filler families — visually distinct looks so consecutive
-# filler beats never read as "the same scene on repeat"
-LONG_BACKDROP_FAMILIES = 5
 def frames_to_alpha_clip(frames: list[Image.Image], fps: int, out_path: Path) -> Path:
     """Encode RGBA frames once into a PNG-codec .mov (alpha preserved)."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -270,19 +266,6 @@ def held_frames_to_alpha_clip(frames: list[tuple[Image.Image, float]],
             "-fps_mode", "vfr", "-c:v", "png", "-pix_fmt", "rgba", str(out_path),
         ])
     return out_path
-
-
-def flash_frames(w: int, h: int, *, fps: int = 30,
-                 flash_seconds: float = 0.14) -> list[Image.Image]:
-    """A white flash stinger for beat transitions."""
-    n = max(int(flash_seconds * fps), 2)
-    frames = []
-    for k in range(n + 1):
-        p = k / n
-        alpha = int(190 * (1 - p))
-        img = Image.new("RGBA", (w, h), (255, 255, 255, alpha))
-        frames.append(img)
-    return frames
 
 
 # --------------------------------------------------------------------------
@@ -830,22 +813,6 @@ def drawn_rect(d, box, rng, *, width, color, jitter=1.6, passes=1,
                  ((x0, y1 + oy), (x0, y0 - oy))):
         marker_stroke(d, [a, b], rng, width=width, color=color,
                        jitter=jitter, passes=passes)
-
-
-def stroke_inset(box, *, width, jitter, overshoot) -> tuple[int, int]:
-    """`(x, y)` — how far inside `box` a `drawn_rect` has to start.
-
-    A pen stroke reaches past the geometry it is drawn against in three ways:
-    it overshoots the corner, it wobbles by `jitter`, and it has a nib. Every
-    card in this module is measured somewhere else — the numbers sheet returns
-    a layout that positions every row overlay, a hook card's height decides
-    where the stage begins — so the stroke moves inward and the box does not
-    grow.
-    """
-    w, h = abs(box[2] - box[0]), abs(box[3] - box[1])
-    reach = jitter + width / 2 + 1
-    return (int(math.ceil(w * overshoot + reach)),
-            int(math.ceil(h * overshoot + reach)))
 # A mark's nib, in delivered pixels. A plate downscaled onto a small target
 # loses its stroke before it loses its shape, so the alpha is grown back to a
 # floor — otherwise a tight oval around one cell arrives as a grey smudge.
@@ -1175,156 +1142,3 @@ def _drawn_mark_frames(w: int, h: int, *, style: str, color, fps: int,
 def _ease_out(t: float) -> float:
     """Fast, then settling. The house easing for anything that lands."""
     return 1.0 - (1.0 - min(max(t, 0.0), 1.0)) ** 3
-
-
-# The figure inside a display string. Shared by the roller and the locator so
-# what gets found is exactly what gets rolled.
-_ROLL_RE = re.compile(r"-?\d[\d,]*\.?\d*")
-
-
-def roll_steps(value: str, n: int) -> list[str] | None:
-    """`value` rolling from zero to itself over `n+1` display strings.
-
-    None when there is no number in it, so a caller can hold the string
-    instead of animating punctuation. The prefix, suffix and sign do not
-    count — "$4.1B" rolls "0.0" to "4.1" and keeps the dollar and the B,
-    because a currency symbol flickering through the alphabet is noise.
-
-    Split out of `count_up_frames` so the roll is not tied to one raster.
-    Every figure in a short arrives somewhere — a slot on a drawing, a
-    blank layout's `figure` box, a headline card, the ledger line — and only
-    the numbers-sheet cue was ever animated, so every other one appeared
-    fully formed and the motion layer stopped at the sheet.
-    """
-    m = _ROLL_RE.search(value or "")
-    if m is None:
-        return None
-    raw = m.group(0).replace(",", "")
-    try:
-        target = float(raw)
-    except ValueError:
-        return None
-    head, tail = value[:m.start()], value[m.end():]
-    decimals = len(raw.split(".")[1]) if "." in raw else 0
-    grouped = "," in m.group(0)
-    out: list[str] = []
-    for k in range(max(n, 1) + 1):
-        cur = target * _ease_out(k / max(n, 1))
-        body = f"{cur:,.{decimals}f}" if grouped else f"{cur:.{decimals}f}"
-        out.append(f"{head}{body}{tail}")
-    return out
-
-
-def roll_over_lines(
-    base: Image.Image,
-    placed: list[tuple[str, float, float]],
-    font,
-    *,
-    fill,
-    bg,
-    line_h: int,
-    fps: int = 30,
-    seconds: float = 0.7,
-) -> list[Image.Image] | None:
-    """`base` re-drawn with the first figure in `placed` counting up to itself.
-
-    `placed` is `[(line_text, x, y)]` — the wrapped lines exactly as the card
-    drew them. None when no line carries a figure, so this is safe to call on
-    any card.
-
-    The figure is repainted INSIDE the box it already occupies rather than the
-    line being re-rendered around it. Both display faces have PROPORTIONAL
-    figures — a `4` is 33% wider than a `1` in Space Grotesk Bold, and 60% in
-    Shantell — so re-wrapping "fell 0%" into "fell 41%" slides every word
-    after the number back and forth under the digits. That reads as a wobble,
-    not as a counter, and it is worse than the static card it replaced.
-
-    The last frame is `base` itself, so a card that holds after the roll holds
-    exactly the pixels the rest of the render was measured against.
-    """
-    for line, lx, ly in placed:
-        m = _ROLL_RE.search(line)
-        if m is None:
-            continue
-        probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-        body = line[m.start():m.end()]
-        steps = roll_steps(body, max(int(seconds * fps), 2))
-        if steps is None:
-            continue
-        bx = lx + probe.textlength(line[:m.start()], font=font)
-        bw = probe.textlength(body, font=font)
-        frames: list[Image.Image] = []
-        for s in steps[:-1]:
-            f = base.copy()
-            d = ImageDraw.Draw(f)
-            # The card's plate is a flat fill, so painting the box back to it
-            # restores exactly what was under the digits.
-            d.rectangle([bx, ly, bx + bw + 1, ly + line_h], fill=bg)
-            # RIGHT-aligned in the box the final value will fill. A narrower
-            # step has to leave its slack somewhere, and the right edge puts it
-            # at the word boundary before the number instead of between the
-            # number and its unit — left-aligned, "12%" mid-roll rendered as
-            # "12 %", which reads as a typo rather than as a count.
-            d.text((bx + bw - probe.textlength(s, font=font), ly), s,
-                   font=font, fill=fill)
-            frames.append(f)
-        frames.append(base)
-        return frames
-    return None
-
-
-def count_up_frames(
-    settings: Settings,
-    value: str,
-    *,
-    width: int,
-    height: int,
-    fps: int = 30,
-    seconds: float = 0.8,
-    font_name: str = COURIER_BOLD,
-    fill=None,
-    align: str = "center",
-) -> list[Image.Image]:
-    """A figure rolling up to its spoken value.
-
-    The digits count; the prefix, suffix and sign do not — "$4.1B" rolls
-    "0.0" to "4.1" and keeps the dollar and the B, because a currency symbol
-    flickering through the alphabet is noise, not motion. A value with no
-    digits at all is simply held, so this is safe to call on anything.
-    """
-    fill = fill if fill is not None else role(settings, "structure")
-    m = re.search(r"-?\d[\d,]*\.?\d*", value)
-    frames: list[Image.Image] = []
-    n = max(int(seconds * fps), 2)
-
-    def draw(text: str) -> Image.Image:
-        img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        d = ImageDraw.Draw(img)
-        size = int(height * 0.82)
-        font = load_font(settings, font_name, size)
-        while size > 10 and d.textlength(text, font=font) > width:
-            size = int(size * 0.92)
-            font = load_font(settings, font_name, size)
-        w = d.textlength(text, font=font)
-        x = 0 if align == "left" else (width - w if align == "right" else (width - w) / 2)
-        ascent, descent = font.getmetrics()
-        d.text((x, (height - ascent - descent) / 2), text, font=font, fill=(*fill, 255))
-        return img
-
-    if m is None:
-        return [draw(value)] * 2
-
-    head, tail = value[:m.start()], value[m.end():]
-    raw = m.group(0).replace(",", "")
-    try:
-        target = float(raw)
-    except ValueError:
-        return [draw(value)] * 2
-    decimals = len(raw.split(".")[1]) if "." in raw else 0
-    grouped = "," in m.group(0)
-
-    for k in range(n + 1):
-        cur = target * _ease_out(k / n)
-        body = f"{cur:,.{decimals}f}" if grouped else f"{cur:.{decimals}f}"
-        frames.append(draw(f"{head}{body}{tail}"))
-    return frames

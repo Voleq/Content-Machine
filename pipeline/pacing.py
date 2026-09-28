@@ -59,7 +59,6 @@ STILL_LIMIT_S = 8.0
 # going to do the job of carrying someone past the opening.
 LOOP_WINDOW_S = 20.0
 
-_FIGURE_RE = re.compile(r"\d")
 _WORD_RE = re.compile(r"[a-z][a-z'-]+")
 
 # Words too common to mean anything when a title and an opener share them.
@@ -134,11 +133,22 @@ def measure_pacing(narration: str) -> Pacing:
     # sixty-word sentence lands forty words in; attributing it to the
     # sentence's own start reports an opening that was never spoken — and a
     # long unbroken sentence is exactly the shape this check exists to catch.
+    #
+    # A FIGURE AS IT IS SAID. The narration spells its numbers out for the
+    # voice (both writing prompts require it), so looking for a digit found
+    # none in a correct script and reported "no figure is spoken anywhere" on
+    # every one of them. The fact-check's own reader finds them instead, and
+    # each word inside a figure's span counts.
+    from pipeline.gates import spoken_figures
+
+    spans = [(n.start, n.end) for n in spoken_figures(narration)]
+    figure_words = {i for i, m in enumerate(re.finditer(r"\S+", narration))
+                    if any(a < m.end() and m.start() < b for a, b in spans)}
     clock = 0.0
     gap_start = 0.0
     gap_opening: list[str] = []
-    for word in words:
-        if _FIGURE_RE.search(word):
+    for i, word in enumerate(words):
+        if i in figure_words:
             if pacing.first_figure_s is None:
                 pacing.first_figure_s = clock
             if clock - gap_start > pacing.longest_figure_gap_s:
