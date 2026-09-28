@@ -549,7 +549,9 @@ outside the cache key, so the second render of a script is $0 and reuses the
 same voice. Clear it and every one of those scripts re-bills in full at the
 per-1k-character rate on its next render. `RETENTION_DAYS` never touches it,
 and neither should anybody clearing space: prune `cache/segments` (encoded
-video, regenerates for free) and old workspaces instead.
+video, regenerates for free) and old workspaces instead. Each long render
+already trims `cache/segments` to its newest 4,000 clips, keeping the ones
+that render just used.
 
 **Keep everything off `/mnt/c`.** `workspace/`, `cache/` and `state/` must
 live on the Linux filesystem. `cache/segments` is thousands of small clips
@@ -911,7 +913,7 @@ number, which is exactly the case the gate exists to catch.
 | `DELIVERY_BACKEND` | gdrive | gdrive · s3 · telegram · local |
 | `GDRIVE_CREDENTIALS` / `GDRIVE_ROOT_FOLDER_ID` | — | Drive delivery |
 | `LOCAL_TTS_ENABLED` / `LOCAL_TTS_MODEL` | true / — | free draft voice (Piper .onnx); drafts fall back to mock, never to paid |
-| `RETENTION_DAYS` | 14 | cleanup horizon (caches never pruned). **`cache/tts` holds audio that was paid for and must never be deleted** — see *Never delete `cache/tts`* below |
+| `RETENTION_DAYS` | 14 | cleanup horizon for workspaces (it never touches `cache/`). **`cache/tts` holds audio that was paid for and must never be deleted** — see *Never delete `cache/tts`* below |
 | `SCREEN_TOP_N` / `COOLDOWN_DAYS` | 8 / 30 | screener caps |
 | `SCREEN_DIGEST_CRON` | `30 7 * * 1-5` | digest, `SCREEN_TIMEZONE` (ET) |
 | `ALERTS_ENABLED` / `ALERT_POLL_MINUTES` | true / 15 | intraday watch on covered names |

@@ -332,6 +332,43 @@ def test_execute_job_short_end_to_end(core, xlsx_bytes):
     assert not (ws.path / "EXMPL.srt").exists(), "the LONG's name is the LONG's"
 
 
+def test_a_final_on_synthetic_prices_stops_before_the_voice(core, xlsx_bytes,
+                                                            short_valid_json,
+                                                            tmp_path):
+    """Approval ran the price gate, but the final renders later on a fresh
+    fetch. A feed that died in between must stop the job before the paid
+    voice, not draw a random walk into a video that ships."""
+    from pipeline.prices import PriceSeries
+
+    core.start_lane(CHAT, "short", "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    core.intake_script(CHAT, short_valid_json)
+    ws = Workspace.latest_for(core.settings, "EXMPL")
+    core.approve("short", "EXMPL", ws.workdate, ws.load_short().content_sha()[:8])
+
+    core.settings = core.settings.model_copy(update={
+        "mock_mode": False, "cache_dir": tmp_path / "c"})
+    # what `get_price_history` returns when the live feed is down
+    cdir = core.settings.cache_dir / "prices"
+    cdir.mkdir(parents=True)
+    fake = PriceSeries(ticker="EXMPL", dates=["2026-01-01", "2026-01-02"],
+                       closes=[10.0, 10.4], source="synthetic", degraded=True)
+    (cdir / f"EXMPL_{core.settings.price_history_days}.json").write_text(
+        fake.to_json(), encoding="utf-8")
+
+    def no_voice(*_a, **_k):
+        raise AssertionError("the voice was paid for")
+    core.tts.synthesize = no_voice
+    job = JobRecord(id="synthetic", kind=JobKind.RENDER_SHORT,
+                    ticker="EXMPL", workdate=ws.workdate)
+    with pytest.raises(RuntimeError, match="SYNTHETIC PRICE DATA"):
+        core.execute_job(job)
+
+    # MOCK_MODE is synthetic by construction, so it warns and renders.
+    core.settings = core.settings.model_copy(update={"mock_mode": True})
+    core._refuse_synthetic_prices(ws.load_short())
+
+
 def test_unauthorized_helper():
     from bot.handlers import _authorized
 

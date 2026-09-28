@@ -1560,6 +1560,7 @@ class BotCore:
             script = ws.load_short()
             if script is None or not ws.is_approved("short"):
                 raise RuntimeError("script/approval vanished before render")
+            self._refuse_synthetic_prices(script)
             checkpoint("tts")
             tts = self.tts.synthesize(script.audio_script, "short",
                                       events=script.inline_events,
@@ -1588,6 +1589,8 @@ class BotCore:
                 raise RuntimeError("script vanished before render")
             if not draft and not ws.is_approved("long"):
                 raise RuntimeError("approval vanished before render")
+            if not draft:
+                self._refuse_synthetic_prices(script)
             checkpoint("tts")
             # A draft asks for the free tier (P3.2): the local neural voice if
             # the box has one, the mock hum otherwise. Never ElevenLabs — the
@@ -1713,6 +1716,21 @@ class BotCore:
             return str(clips[0][0])
 
         raise RuntimeError(f"unknown job kind {job.kind}")
+
+    def _refuse_synthetic_prices(self, script) -> None:
+        """Stop a final whose price chart would be the synthetic floor.
+
+        Approval runs the price gate, but a final can render hours later —
+        the overnight window, a queue behind a long — on a fresh fetch, and
+        a feed that died in between drew a seeded random walk into a video
+        that ships. Checked here, before the paid voice, it costs nothing.
+        """
+        from pipeline.gates import check_prices
+
+        blocks = [f for f in check_prices(script, self.settings, final=True)
+                  if f.severity == "block"]
+        if blocks:
+            raise RuntimeError(blocks[0].message)
 
     @staticmethod
     def _attributions(manifest) -> list[str]:
