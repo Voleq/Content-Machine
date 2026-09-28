@@ -73,12 +73,27 @@ HELP_TEXT = """Dennis — operator commands
 /headline TICKER <news> — a SHORT about a specific headline (macro: /headline macro <text>)
 /prompts — re-send this lane's pre-filled master prompt
 /screen [trending|value|all] — ranked candidates (trending → SHORT, value → LONG)
-/ideas — the ranked backlog; /idea TICKER <why> adds, /unidea TICKER drops
+/ideas — the ranked backlog
+/idea TICKER <why> — add one by hand
+/unidea TICKER — drop one
 /thesis [TICKER] — what we said, and whether the numbers still back it
 /batch [TICKER [fmt] | run | clear] — queue renders to run unattended overnight
-/upload TICKER [YYYY-MM-DD HH:MM] — YouTube, private or scheduled (never public)
+/why TICKER [<your sentence>] — why this one; prints above Approve, rides the description
+/upload TICKER [short|long|clip] [YYYY-MM-DD HH:MM] — YouTube, private or scheduled (never public)
+/upload TICKER pair — two repurposed clips off one LONG, tagged as a pair
+/probe TICKER [short|long] — one UNLISTED upload, to see where YouTube puts the AI label
 /scheduled — what's queued to publish and when
 /retention [TICKER] — per-chapter drop-off; no ticker = the evidence across all
+/lines TICKER — where a published video lost them, to the sentence
+/shots TICKER — which shots of a published video lose people
+/stillness TICKER — every stretch where the picture holds still too long
+/hooks [short|long] — openers ranked by what they held
+/rules — what the voice rules are worth, measured
+/runtime — hold against how long the videos run
+/said <phrase> — every earlier use of a line, across every script shipped
+/experiments — clip pairs, and which one held
+/scoreboard [YYYY-Qn] — what we said and what happened, for a quarter
+/correct [TICKER <what was wrong>] — pin a correction on a shipped video
 /watch [TICKER | drop TICKER] — intraday watch (published names join automatically)
 /earnings TICKER YYYY-MM-DD [bmo|amc] — so the bot flags the print both sides
 /render TICKER — render the approved script for this ticker's lane
@@ -97,7 +112,7 @@ HELP_TEXT = """Dennis — operator commands
 /ask <question> — the local AI answers from everything the bot has saved
 /find <words> — search everything the bot has saved, no AI
 /kit doctor — unresolved tag keys, never-used artwork, unregistered PNGs
-/help — this text
+/help or /start — this text
 
 Flow: /short or /long TICKER (refresh the template outside the bot and
 upload it as dennis_data.xlsx) → run the prompt in Claude/GPT →
@@ -1265,14 +1280,6 @@ class BotCore:
             files=prompt_files,
         )
 
-    @staticmethod
-    def _long_clip_keys(script) -> list[str]:
-        seen: list[str] = []
-        for e in script.events_of(TagType.CLIP, TagType.BROLL):
-            if e.payload not in seen:
-                seen.append(e.payload)
-        return seen
-
     def _contact_sheet(self, ws: Workspace, plan) -> Path | None:
         """Grid of proposed visual thumbnails for the approval report."""
         if not plan:
@@ -1555,13 +1562,18 @@ class BotCore:
                 raise RuntimeError("script/approval vanished before render")
             checkpoint("tts")
             tts = self.tts.synthesize(script.audio_script, "short",
-                                      events=script.inline_events)
+                                      events=script.inline_events,
+                                      ticker=job.ticker)
             checkpoint("render")
             out, manifest = render_short(
                 script, tts, ws.path, self.settings, content=self.content,
                 format_name=self.short_format_name(ws))
             checkpoint("delivery")
-            result = deliver(out, job.ticker, job.workdate, self.settings)
+            extra = self._publish_byproducts(job, ws, script, tts, manifest,
+                                             "short")
+            result = deliver(out, job.ticker, job.workdate, self.settings,
+                             attributions=self._attributions(manifest),
+                             extra_files=extra)
             held = _frame_holds(manifest)
             if held:
                 result.note = "\n\n".join(
@@ -1581,7 +1593,8 @@ class BotCore:
             # the box has one, the mock hum otherwise. Never ElevenLabs — the
             # whole point of a draft is to iterate on pacing without spending.
             tts = self.tts.synthesize(script.narration, "long",
-                                      events=script.events, draft=draft)
+                                      events=script.events, draft=draft,
+                                      ticker=job.ticker)
             if tts.draft:
                 checkpoint(f"draft audio ({tts.tier}) — not the real voice")
             data = self._company_data(ws)
@@ -1621,56 +1634,8 @@ class BotCore:
                 job.delivered_link = f"file://{out}"
                 return str(out)
             checkpoint("delivery")
-            import json as _json
-            attributions = _json.loads(Path(manifest).read_text(encoding="utf-8")).get("attributions", [])
-            extra: list[Path] = []
-            try:  # LONG gets an auto thumbnail
-                from pipeline.thumbnail import make_thumbnail
-                thumb = make_thumbnail(script, ws, self.settings)
-                if thumb:
-                    extra.append(thumb)
-            except ImportError:
-                pass
-            # Free by-products of a finished render: subtitles straight off
-            # the master clock (so they match the burned-in captions exactly)
-            # and the upload package. Best-effort — neither is worth losing a
-            # completed render over.
-            try:
-                from pipeline.publish import (
-                    build_package, group_cues, timestamps_from_cues,
-                    transcript_text, write_srt, write_transcript,
-                )
-                from pipeline.retention_lines import WORDS_FILE, write_words
-
-                extra.append(write_srt(tts.words, ws.path / f"{job.ticker}.srt"))
-                # The same clock unrounded, kept beside the video. Retention
-                # comes back as a ratio through the video and means nothing
-                # on its own; joined against these it names the sentence.
-                write_words(tts.words, ws.path / WORDS_FILE)
-                # The transcript and the timestamps (27): both derived from
-                # the timings that are already here, both free, and neither
-                # has ever reached the description.
-                extra.append(write_transcript(
-                    tts.words, ws.path / f"{job.ticker}.transcript.txt"))
-                cues = group_cues(tts.words)
-                pkg = build_package(script, self.settings, ticker=job.ticker,
-                                    runtime_min=tts.duration_s / 60.0,
-                                    transcript=transcript_text(tts.words),
-                                    timestamps=timestamps_from_cues(cues),
-                                    why=ws.why)
-                pkg_path = ws.path / "upload_package.txt"
-                pkg_path.write_text(pkg.render_text(), encoding="utf-8")
-                extra.append(pkg_path)
-                # The receipt for this video (25): the provenance the render
-                # already wrote, as a page a viewer can be pointed at.
-                from pipeline.companion import write_companion
-
-                page = write_companion(Path(manifest), self.settings,
-                                       why=ws.why)
-                if page:
-                    extra.append(page)
-            except Exception:  # noqa: BLE001
-                log.exception("publishing by-products failed — delivering anyway")
+            extra = self._publish_byproducts(job, ws, script, tts, manifest,
+                                             "long")
             # The rest of the kit's by-products (P3.6): eight thumbnail
             # layouts, the social cards, the end screens. All free — same data,
             # artwork already drawn — and the alternative is making them by
@@ -1686,7 +1651,8 @@ class BotCore:
                 except Exception:  # noqa: BLE001 - never lose a finished render
                     log.exception("by-products failed — delivering anyway")
             result = deliver(out, job.ticker, job.workdate, self.settings,
-                             attributions=attributions, extra_files=extra)
+                             attributions=self._attributions(manifest),
+                             extra_files=extra)
             self._finish(job, result)
             return str(out)
 
@@ -1713,7 +1679,7 @@ class BotCore:
                 try:
                     words = self.tts.synthesize(
                         script.narration, "long", events=script.events,
-                        cached_only=True).words
+                        cached_only=True, ticker=job.ticker).words
                 except CacheMissForbidden as e:
                     log.info("repurpose %s: no cached narration (%s) — "
                              "cutting on the manifest's beats", job.ticker, e)
@@ -1748,6 +1714,79 @@ class BotCore:
             return str(clips[0][0])
 
         raise RuntimeError(f"unknown job kind {job.kind}")
+
+    @staticmethod
+    def _attributions(manifest) -> list[str]:
+        """The stock-footage credits a render recorded, or none."""
+        import json as _json
+
+        try:
+            data = _json.loads(Path(manifest).read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return []
+        got = data.get("attributions") if isinstance(data, dict) else None
+        return list(got) if isinstance(got, list) else []
+
+    def _publish_byproducts(self, job: JobRecord, ws: Workspace, script, tts,
+                            manifest, fmt: str) -> list[Path]:
+        """The free by-products of a finished render, for either format.
+
+        The cover; subtitles straight off the master clock, so they match the
+        burned-in captions exactly; the same clock unrounded, which is what
+        the retention join names a sentence with; the transcript and the
+        timestamps (27); the upload package; and the companion page (25).
+
+        A SHORT used to get none of them — it delivered the MP4 alone — so
+        `/upload short` went up with no thumbnail and no captions, its
+        description had no "why this one", and its retention could never be
+        joined to a sentence. Each format writes under its own names
+        (`publish.byproduct_name`), because both lanes can share a folder.
+
+        Best-effort: none of it is worth losing a completed render over.
+        """
+        from pipeline.publish import byproduct_name
+
+        def path(kind: str) -> Path:
+            return ws.path / byproduct_name(kind, fmt, job.ticker)
+
+        extra: list[Path] = []
+        try:
+            from pipeline.thumbnail import make_thumbnail
+
+            # Writes the 16:9, and the 9:16 beside it for a SHORT — which is
+            # the one a SHORT ships.
+            if make_thumbnail(script, ws, self.settings) and \
+                    path("thumbnail").exists():
+                extra.append(path("thumbnail"))
+        except ImportError:
+            pass
+        try:
+            from pipeline.companion import write_companion
+            from pipeline.publish import (
+                build_package, group_cues, timestamps_from_cues,
+                transcript_text, write_srt, write_transcript,
+            )
+            from pipeline.retention_lines import write_words
+
+            extra.append(write_srt(tts.words, path("captions")))
+            write_words(tts.words, path("words"))
+            extra.append(write_transcript(tts.words, path("transcript")))
+            pkg = build_package(
+                script, self.settings, ticker=job.ticker,
+                runtime_min=tts.duration_s / 60.0,
+                transcript=transcript_text(tts.words),
+                timestamps=timestamps_from_cues(group_cues(tts.words)),
+                why=ws.why, duration_s=tts.duration_s)
+            pkg_path = path("package")
+            pkg_path.write_text(pkg.render_text(), encoding="utf-8")
+            extra.append(pkg_path)
+            page = write_companion(Path(manifest), self.settings,
+                                   out_path=path("companion"), why=ws.why)
+            if page:
+                extra.append(page)
+        except Exception:  # noqa: BLE001
+            log.exception("publishing by-products failed — delivering anyway")
+        return extra
 
     def _run_proof(self, job: JobRecord, ws, checkpoint) -> str:
         """The free full-quality pass, for either format.
@@ -1950,17 +1989,20 @@ class BotCore:
         from pipeline.provenance import Provenance
 
         ws = Workspace(self.settings, job.ticker, job.workdate)
-        for name in ("render_long_manifest.json", "short_final.manifest.json",
-                     "render_long_proof_manifest.json",
-                     "short_proof.manifest.json"):
-            try:
-                data = _json.loads((ws.path / name).read_text(encoding="utf-8"))
-            except (FileNotFoundError, _json.JSONDecodeError, OSError):
-                continue
-            block = data.get("provenance")
-            if block:
-                return Provenance.from_json(block).render_text()
-        return ""
+        # THIS JOB'S format first. A folder holding both lanes answered a
+        # SHORT's delivery with the LONG's record, because the LONG's name
+        # came first in a fixed list.
+        short = job.kind in (JobKind.RENDER_SHORT, JobKind.RENDER_PROOF_SHORT)
+        manifest = self._manifest_for(ws, "short" if short else "long",
+                                      trials=True)
+        if manifest is None:
+            return ""
+        try:
+            data = _json.loads(manifest.read_text(encoding="utf-8"))
+        except (_json.JSONDecodeError, OSError):
+            return ""
+        block = data.get("provenance") if isinstance(data, dict) else None
+        return Provenance.from_json(block).render_text() if block else ""
 
     @staticmethod
     def _byproduct_lines(result) -> list[str]:
@@ -2155,6 +2197,30 @@ class BotCore:
 
         BatchQueue(self.settings).mark_done(ticker, fmt, error)
 
+    async def run_batch(self) -> tuple[int, list[str], str]:
+        """Submit what the batch holds: `(queued, skipped, report)`.
+
+        One runner for `/batch run` and the overnight window, so the two
+        cannot drift apart. A render the queue already has — queued or
+        running — is the render the batch wanted, so the entry is closed
+        rather than left to submit a second copy once the first finishes.
+        """
+        submittable, skipped, note = self.batch_plan()
+        queued = 0
+        for kind, ws, item in submittable:
+            try:
+                await self.queue.submit(kind, ws.ticker, ws.workdate)
+                self.batch_done(item.ticker, item.fmt)
+                queued += 1
+            except ValueError as e:
+                self.batch_done(item.ticker, item.fmt, str(e))
+                skipped.append(f"{item.ticker} {item.fmt.upper()}: {e}")
+        lines = [f"🌙 batch: {queued} queued, {len(skipped)} skipped"]
+        lines += [f"  ⛔ {s}" for s in skipped[:6]]
+        if note:
+            lines.append(f"  {note}")
+        return queued, skipped, "\n".join(lines)
+
     # --------------------------------- YouTube publishing (P3.5 + 5b)
     def upload_command(self, args: list[str]) -> Reply:
         """`/upload TICKER [YYYY-MM-DD HH:MM]` — private, or scheduled.
@@ -2192,10 +2258,19 @@ class BotCore:
         if video is None:
             return Reply(why)
 
-        pkg_path = ws.path / "upload_package.txt"
         package = self._upload_package(ws, fmt, video)
         if package is None:
             return Reply("⛔ no upload package on file — re-render to build one.")
+        # What is about to be sent, on disk, so the by-hand fallback below
+        # attaches exactly that rather than whatever the render left.
+        from pipeline.publish import byproduct_name
+
+        pkg_path = ws.path / (byproduct_name("package", fmt)
+                              or f"upload_package_{fmt}.txt")
+        try:
+            pkg_path.write_text(package.render_text(), encoding="utf-8")
+        except OSError:
+            log.warning("could not write %s", pkg_path)
 
         ok, why = available(self.settings)
         if not ok:
@@ -2211,8 +2286,9 @@ class BotCore:
                 duration_s=self._render_duration(ws, fmt, video),
                 # Both are written by every finished render and were handed
                 # to `deliver` and to nobody else (E7).
-                thumbnail=self._byproduct(ws, "thumbnail"),
-                captions=self._byproduct(ws, "captions"))
+                thumbnail=self._byproduct(ws, "thumbnail", fmt),
+                captions=self._byproduct(ws, "captions", fmt),
+                fmt=fmt)
         except (UploadError, YouTubeUnavailable) as e:
             return Reply(f"⛔ upload failed: {e}\nThe package is still yours "
                          f"to post by hand.",
@@ -2226,6 +2302,50 @@ class BotCore:
         else:
             tail = "uploaded PRIVATE — publish it when you're ready"
         return Reply(f"📺 {ticker}: {tail}\n{record.url()}")
+
+    def probe_command(self, args: list[str]) -> Reply:
+        """`/probe TICKER [short|long]` — where YouTube puts the AI label (05).
+
+        `youtube.disclosure_probe` was built for this and never reachable
+        from the chat. Whether the synthetic-media label lands under the
+        player or only in the expanded description is a property of the
+        watch page, so the one way to know is one unlisted upload of a real
+        render with the box ticked. Unlisted, never public, never scheduled,
+        and not recorded as a published video; delete it once you have
+        looked.
+        """
+        from pipeline.youtube import (
+            UploadError, YouTubeUnavailable, available, disclosure_probe,
+        )
+
+        if not args:
+            return Reply("Usage: /probe TICKER [short|long] — one UNLISTED "
+                         "upload of a finished render, to see where YouTube "
+                         "puts the AI label.")
+        ticker = args[0].upper()
+        wanted = args[1].lower() if len(args) > 1 else ""
+        if wanted not in ("", "short", "long"):
+            return Reply("Usage: /probe TICKER [short|long]")
+        ws = Workspace.latest_for(self.settings, ticker)
+        if ws is None:
+            return Reply(f"No workspace for {ticker}.")
+        fmt, video, why = self._upload_target(ws, wanted)
+        if video is None:
+            return Reply(why)
+        package = self._upload_package(ws, fmt, video)
+        if package is None:
+            return Reply("⛔ no script on file to describe the probe with.")
+        if not self.settings.mock_mode:
+            ok, why = available(self.settings)
+            if not ok:
+                return Reply(f"⛔ can't upload from here: {why}")
+        try:
+            return Reply(disclosure_probe(video, package, self.settings))
+        except (UploadError, YouTubeUnavailable) as e:
+            return Reply(f"⛔ probe upload failed: {e}")
+        except Exception as e:  # noqa: BLE001
+            log.exception("disclosure probe blew up")
+            return Reply(f"💥 probe error: {e}")
 
     def _clip_start(self, clip: Path) -> float:
         """Where in the long this clip was cut from, off its own sidecar."""
@@ -2275,7 +2395,7 @@ class BotCore:
                     workdate=ws.workdate,
                     duration_s=self._render_duration(ws, "clip", clip),
                     experiment=tag,
-                    clip_start_s=self._clip_start(clip))
+                    clip_start_s=self._clip_start(clip), fmt="clip")
             except (UploadError, YouTubeUnavailable) as e:
                 # The first may already be up. Say so rather than implying
                 # neither went: an untagged single is still a shipped video.
@@ -2345,17 +2465,40 @@ class BotCore:
                      + retention_report(payload["chapters"]))
 
     def _upload_package(self, ws: Workspace, fmt: str, video=None):
-        from pipeline.cost import build_long_report  # noqa: F401  (import guard)
-        from pipeline.publish import build_package
+        """The package `/upload` sends, built the way the render built it.
 
-        # A repurposed clip is cut from the LONG, so it is the LONG's script
-        # that describes it.
+        It used to be rebuilt from the script alone, so the description that
+        actually went to YouTube had no "why this one", no transcript and no
+        timestamps — all three were in `upload_package.txt` and nowhere else —
+        and its chapter list was not cut to the rendered length, which is the
+        list YouTube reads. A clip is cut from the LONG, so it is the LONG's
+        script that describes it, and the LONG's chapter list describes
+        twenty minutes the clip does not have: it gets none.
+        """
+        from pipeline.models import WordTimestamp
+        from pipeline.publish import (
+            build_package, group_cues, timestamps_from_cues, transcript_text,
+        )
+        from pipeline.retention_lines import load_words
+
         script = ws.load_short() if fmt == "short" else ws.load_long()
         if script is None:
             return None
+        duration = self._render_duration(ws, fmt, video)
+        transcript, timestamps = "", ()
+        if fmt in ("short", "long"):
+            try:
+                words = [WordTimestamp(**w) for w in load_words(ws.path, fmt)]
+            except (TypeError, ValueError):
+                words = []
+            if words:
+                transcript = transcript_text(words)
+                timestamps = timestamps_from_cues(group_cues(words))
         return build_package(
             script, self.settings, ticker=ws.ticker,
-            runtime_min=self._render_duration(ws, fmt, video) / 60.0)
+            runtime_min=duration / 60.0, transcript=transcript,
+            timestamps=timestamps, why=ws.why, duration_s=duration,
+            with_chapters=fmt != "clip")
 
     def _chapter_pairs(self, ws: Workspace, fmt: str, video=None) -> list:
         from pipeline.publish import normalise_chapters
@@ -2367,19 +2510,27 @@ class BotCore:
         return normalise_chapters(getattr(script, "chapters", "") or "",
                                   self._render_duration(ws, fmt, video))
 
-    def _byproduct(self, ws: Workspace, kind: str) -> Path | None:
-        """A by-product the render already wrote, if it is still there.
+    def _byproduct(self, ws: Workspace, kind: str,
+                   fmt: str = "long") -> Path | None:
+        """One format's by-product the render already wrote, if it is still
+        there — a missing one is a thing to skip, not to fail on.
 
-        Found by shape rather than by a remembered path, because the render
-        and the upload are separate commands with a sweep possibly in
-        between — and a missing one is a thing to skip, not to fail on.
+        By FORMAT, because both lanes can share a folder: the first `*.srt`
+        in it was sent with whatever was uploaded, so a SHORT could go up
+        with the LONG's captions. A clip gets neither: it is cut from the
+        LONG, so the LONG's `.srt` runs on the wrong clock for it and the
+        LONG's cover is the wrong shape.
         """
-        patterns = {"thumbnail": ("thumbnail*.png", "*_thumb.png"),
-                    "captions": ("*.srt",)}
-        for pattern in patterns.get(kind, ()):
-            for found in sorted(ws.path.glob(pattern)):
-                if found.is_file() and found.stat().st_size:
-                    return found
+        from pipeline.publish import byproduct_name
+
+        name = byproduct_name(kind, fmt, ws.ticker)
+        candidates = [ws.path / name] if name else []
+        if kind == "thumbnail" and fmt == "long":
+            # The kit's own cover layouts (P3.6), when the drawn one is gone.
+            candidates += sorted(ws.path.glob("*_thumb.png"))
+        for found in candidates:
+            if found.is_file() and found.stat().st_size:
+                return found
         return None
 
     @staticmethod
@@ -2450,29 +2601,57 @@ class BotCore:
         return fmt, None, (
             f"No finished {fmt.upper()} render for {ws.ticker} yet.{extra}")
 
-    # Where each renderer actually writes its manifest, and what it calls the
-    # length inside it (E5). The SHORT was read from
+    # WHERE EACH RENDERER WRITES ITS MANIFEST (E5). The SHORT was read from
     # `render_short_manifest.json` under the key `"duration"`; it writes
     # `short_final.manifest.json` under `"duration_s"`. Both wrong, so SHORT
-    # runtime was always 0.0 in the upload package and the YouTube record —
-    # and the LONG path was right, which is why nobody noticed.
-    _MANIFESTS: dict[str, tuple[str, str]] = {
-        "long": ("render_long_manifest.json", "duration"),
-        "short": ("short_final.manifest.json", "duration_s"),
-        "clip": ("", ""),
+    # runtime was always 0.0 in the upload package and the YouTube record.
+    #
+    # Finals first, then the passes that only look (a proof, a draft): the
+    # commands that map retention onto a cut used to take the first
+    # `*manifest*.json` in sorted order, which in a folder holding a /draft
+    # is the draft's — the right video's retention laid over the wrong
+    # voice's timings. The LONG's final depends on the engine that cut it.
+    _MANIFEST_NAMES: dict[str, dict[str, tuple[str, ...]]] = {
+        "long": {"final": ("render_long_manifest.json",
+                           "long_final.manifest.json"),
+                 "trial": ("render_long_proof_manifest.json",
+                           "render_long_draft_manifest.json")},
+        "short": {"final": ("short_final.manifest.json",),
+                  "trial": ("short_proof.manifest.json",)},
     }
+
+    def _manifest_for(self, ws: Workspace, fmt: str | None = None, *,
+                      trials: bool = False) -> Path | None:
+        """The manifest of one format's render — or, with no format, the
+        lane's first and then the other's. `trials` lets a proof or a draft
+        answer when there is no final."""
+        order = [fmt] if fmt else [ws.current_format() or "long",
+                                   "long", "short"]
+        order = [f for f in dict.fromkeys(order) if f in self._MANIFEST_NAMES]
+        names = [n for f in order for n in self._MANIFEST_NAMES[f]["final"]]
+        if trials:
+            names += [n for f in order
+                      for n in self._MANIFEST_NAMES[f]["trial"]]
+        for name in names:
+            if (ws.path / name).is_file():
+                return ws.path / name
+        return None
 
     def _render_duration(self, ws: Workspace, fmt: str,
                          video: Path | None = None) -> float:
-        name, key = self._MANIFESTS.get(fmt, ("", ""))
-        if name:
+        manifest = (self._manifest_for(ws, fmt)
+                    if fmt in self._MANIFEST_NAMES else None)
+        if manifest is not None:
             try:
                 import json as _json
-                data = _json.loads((ws.path / name).read_text(encoding="utf-8"))
-                got = float(data.get(key, 0))
+                data = _json.loads(manifest.read_text(encoding="utf-8"))
+                # The segments engine says "duration"; the shots engine,
+                # which cuts every SHORT, says "duration_s".
+                got = float(data.get("duration_s") or data.get("duration")
+                            or 0)
                 if got:
                     return got
-            except (FileNotFoundError, ValueError, KeyError, OSError, TypeError):
+            except (ValueError, OSError, TypeError, AttributeError):
                 pass
         # A repurposed clip has no manifest of its own, and a manifest that
         # has been swept still leaves the file. Measuring the artefact is
@@ -2549,17 +2728,6 @@ class BotCore:
         return Reply(f"📊 {ticker} reports {when_date}"
                      f"{' ' + slot if slot else ''}. I'll flag it before and after.")
 
-    def poll_alerts(self) -> list:
-        """One alert pass. Sync, so the scheduler and tests share a path."""
-        from pipeline.alerts import (
-            Watchlist, fetch_filings, fetch_quotes, poll_once,
-        )
-
-        tickers = Watchlist(self.settings).all()
-        quotes = fetch_quotes(self.settings, tickers)
-        filings = fetch_filings(self.settings, tickers)
-        return poll_once(self.settings, quotes=quotes, filings=filings)
-
     # ----------------------------------------------------------- utilities
     def cost_text(self) -> str:
         return (
@@ -2583,11 +2751,10 @@ class BotCore:
 
     def lines_text(self, args: list[str]) -> str:
         """`/lines TICKER` — where a published video lost them, by sentence."""
-        from pipeline.corpus import Corpus
         from pipeline.retention_lines import (
-            holds_for_video, line_report,
+            holds_for_video, line_report, narration_for,
         )
-        from pipeline.youtube import VideoLog
+        from pipeline.youtube import VideoLog, record_format
 
         if not args:
             return "usage: /lines TICKER"
@@ -2597,10 +2764,13 @@ class BotCore:
             return (f"No uploaded video on record for {ticker}. "
                     f"/lines reads retention off videos this bot uploaded.")
         record = max(records, key=lambda v: v.uploaded_at)
-        narration = next(
-            (e.narration for e in Corpus(self.settings).entries
-             if e.ticker == ticker and e.workdate == record.workdate), "")
-        return line_report(holds_for_video(self.settings, record, narration))
+        if record_format(record) == "clip":
+            return (f"{ticker}'s latest upload is a clip. Its retention "
+                    f"runs on the clip's own clock and the only sentence "
+                    f"timings on file are the LONG's, so it cannot be placed "
+                    f"sentence by sentence.")
+        return line_report(holds_for_video(
+            self.settings, record, narration_for(self.settings, record)))
 
     def hooks_text(self, args: list[str]) -> str:
         """`/hooks` — the openers that held, over their own first seconds."""
@@ -2627,7 +2797,7 @@ class BotCore:
         import json as _json
 
         from pipeline.retention_lines import shot_holds, shot_report
-        from pipeline.youtube import VideoLog
+        from pipeline.youtube import VideoLog, record_format
 
         if not args:
             return "usage: /shots TICKER"
@@ -2636,14 +2806,18 @@ class BotCore:
         if not records:
             return f"No uploaded video on record for {ticker}."
         record = max(records, key=lambda v: v.uploaded_at)
+        fmt = record_format(record)
+        if fmt == "clip":
+            return (f"{ticker}'s latest upload is a clip, which has no cut of "
+                    f"its own on file — only the LONG it came from does.")
         ws = Workspace(self.settings, ticker, record.workdate)
-        manifests = sorted(ws.path.glob("*manifest*.json")) if ws.exists else []
-        if not manifests:
+        found = self._manifest_for(ws, fmt) if ws.exists else None
+        if found is None:
             return (f"No render manifest left in {ticker}'s workspace — "
                     f"cleanup prunes the heavy artefacts after "
                     f"{self.settings.retention_days} days.")
         try:
-            manifest = _json.loads(manifests[0].read_text(encoding="utf-8"))
+            manifest = _json.loads(found.read_text(encoding="utf-8"))
         except (OSError, ValueError) as e:
             return f"That manifest could not be read: {e}"
         return shot_report(shot_holds(manifest, record.retention,
@@ -2662,11 +2836,13 @@ class BotCore:
         if not args:
             return "usage: /stillness TICKER"
         ws = Workspace.latest_for(self.settings, args[0].upper())
-        manifests = sorted(ws.path.glob("*manifest*.json")) if ws else []
-        if not manifests:
+        # The lane's final first; a proof or a draft answers when that is all
+        # there is, since this is the check to run before anything ships.
+        found = self._manifest_for(ws, trials=True) if ws else None
+        if found is None:
             return f"No render manifest for {args[0].upper()} to read."
         try:
-            manifest = _json.loads(manifests[0].read_text(encoding="utf-8"))
+            manifest = _json.loads(found.read_text(encoding="utf-8"))
         except (OSError, ValueError) as e:
             return f"That manifest could not be read: {e}"
         measured = frame_holds_report(manifest)
@@ -2811,6 +2987,46 @@ class BotCore:
 # ---------------------------------------------------------------------------
 # PTB glue: thin async wrappers around BotCore.
 # ---------------------------------------------------------------------------
+
+
+def schedule_batch(application, core: BotCore) -> None:
+    """Open the overnight window (the README's "the window picks it up").
+
+    `/batch TICKER` queued, BATCH_START_HOUR and BATCH_END_HOUR were read by
+    the listing, and nothing ever ran in the window: the queue only moved on
+    `/batch run`. This checks every quarter of an hour, so a box that wakes
+    at 03:00 still runs the night's work; outside the window, or with
+    nothing queued, a pass does nothing and says nothing. An entry that
+    cannot run yet (no approval) stays queued, as `/batch` promises, and is
+    reported once a night rather than every pass.
+    """
+    settings = core.settings
+    if not settings.batch_enabled:
+        log.info("overnight batch disabled (BATCH_ENABLED)")
+        return
+    reported: set[str] = set()
+
+    async def batch_job(ctx) -> None:
+        from pipeline.standing import BatchQueue, in_batch_window
+
+        if not in_batch_window(settings) or not BatchQueue(settings).pending():
+            return
+        try:
+            queued, skipped, text = await core.run_batch()
+        except Exception as e:  # noqa: BLE001 - a pass that dies waits for the next
+            log.warning("overnight batch pass failed (%s)", e)
+            return
+        said = f"{date.today().isoformat()}|{'|'.join(sorted(skipped))}"
+        if not queued and said in reported:
+            return
+        reported.add(said)
+        for chat_id in settings.operator_chat_ids:
+            await ctx.bot.send_message(chat_id, text)
+
+    application.job_queue.run_repeating(
+        batch_job, interval=15 * 60, first=60, name="overnight_batch")
+    log.info("overnight batch window %02d:00-%02d:00 (machine clock)",
+             settings.batch_start_hour, settings.batch_end_hour)
 
 
 def _authorized(core: BotCore, chat_id: int) -> bool:
@@ -3025,6 +3241,12 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, reply)
 
     @guard
+    async def cmd_probe(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.probe_command, list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
     async def cmd_scheduled(update, ctx):
         await _send(update, core.scheduled_text())
 
@@ -3062,20 +3284,8 @@ def build_application(settings: Settings, core: BotCore):
     async def cmd_batch(update, ctx):
         args = list(ctx.args or [])
         if args and args[0].lower() == "run":
-            submittable, skipped, note = core.batch_plan()
-            queued = 0
-            for kind, ws, item in submittable:
-                try:
-                    await core.queue.submit(kind, ws.ticker, ws.workdate)
-                    core.batch_done(item.ticker, item.fmt)
-                    queued += 1
-                except ValueError as e:
-                    skipped.append(f"{item.ticker} {item.fmt.upper()}: {e}")
-            lines = [f"🌙 batch: {queued} queued, {len(skipped)} skipped"]
-            lines += [f"  ⛔ {s}" for s in skipped[:6]]
-            if note:
-                lines.append(f"  {note}")
-            await _send(update, Reply("\n".join(lines)))
+            _queued, _skipped, text = await core.run_batch()
+            await _send(update, Reply(text))
             return
         await _send(update, core.batch_text(args))
 
@@ -3325,6 +3535,7 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("proof", cmd_proof))
     app.add_handler(CommandHandler("repurpose", cmd_repurpose))
     app.add_handler(CommandHandler("upload", cmd_upload))
+    app.add_handler(CommandHandler("probe", cmd_probe))
     app.add_handler(CommandHandler("scheduled", cmd_scheduled))
     app.add_handler(CommandHandler("retention", cmd_retention))
     app.add_handler(CommandHandler("watch", cmd_watch))

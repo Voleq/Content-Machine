@@ -171,10 +171,6 @@ class RenderJobQueue:
                 cancelled.append(job)
         return cancelled
 
-    def is_cancelled(self, job_id: str) -> bool:
-        job = self.store.load(job_id)
-        return job is not None and job.status is JobStatus.CANCELLED
-
     def status_text(self) -> str:
         jobs = self.store.all()
         if not jobs:

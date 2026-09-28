@@ -806,9 +806,16 @@ def schedule_alerts(application, core) -> None:
         import asyncio
 
         from pipeline.alerts import (
-            Watchlist, digest, fetch_filings, fetch_quotes, poll_once,
+            Watchlist, digest, fetch_filings, fetch_quotes, in_quiet_hours,
+            poll_once,
         )
 
+        # Before the fetches, not only inside the poll: the poll says
+        # nothing overnight, and asking Yahoo and EDGAR about every watched
+        # name every few minutes all night and all weekend is how an
+        # unofficial endpoint gets a machine blocked.
+        if in_quiet_hours(settings):
+            return
         try:
             tickers = Watchlist(settings).all()
             quotes = await asyncio.to_thread(fetch_quotes, settings, tickers)

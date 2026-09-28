@@ -1008,9 +1008,6 @@ class CompanyData(BaseModel):
             any(v is not None for v in vals) for vals in self.quarters.values()
         )
 
-    def quarter_row(self, field: str) -> list[float | None]:
-        return self.quarters.get(field, [])
-
     def available_quarter_metrics(self) -> list[str]:
         """Quarterly metrics with enough of a series to compare.
 

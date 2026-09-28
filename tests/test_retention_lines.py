@@ -6,14 +6,15 @@ import json
 
 import pytest
 
+from pipeline.publish import byproduct_name
 from pipeline.retention_lines import (
-    EVIDENCE_FLOOR, HOOK_WINDOW_S, Span, hold_over, hook_bench,
-    hook_bench_text, line_holds, line_report, load_cues, load_words,
-    manifest_spans, rule_evidence, rule_evidence_text, runtime_evidence,
-    runtime_evidence_text, sentence_spans, shot_holds, shot_report,
-    worst_lines, write_words,
+    EVIDENCE_FLOOR, HOOK_WINDOW_S, Span, hold_over, holds_for_video,
+    hook_bench, hook_bench_text, line_holds, line_report, load_cues,
+    load_words, manifest_spans, narration_for, rule_evidence,
+    rule_evidence_text, runtime_evidence, runtime_evidence_text,
+    sentence_spans, shot_holds, shot_report, worst_lines, write_words,
 )
-from pipeline.youtube import VideoLog, VideoRecord
+from pipeline.youtube import VideoLog, VideoRecord, record_format
 
 
 class _W:
@@ -99,6 +100,16 @@ def test_no_srt_means_no_cues(tmp_path):
     assert load_cues(tmp_path) == []
 
 
+def test_each_format_reads_its_own_cues(tmp_path):
+    (tmp_path / "AAPL.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:02,000\nThe long one\n", encoding="utf-8")
+    (tmp_path / "AAPL.short.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:02,000\nThe short one\n", encoding="utf-8")
+
+    assert [c.text for c in load_cues(tmp_path)] == ["The long one"]
+    assert [c.text for c in load_cues(tmp_path, "short")] == ["The short one"]
+
+
 # ------------------------------------------------------------------ the join
 
 
@@ -158,11 +169,11 @@ def _published(settings, ticker, workdate, narration, *, duration, retention,
     (ws / f"script_{fmt}.json").write_text(
         json.dumps({"ticker": ticker, "format": fmt, key: narration}),
         encoding="utf-8")
-    write_words(_words_for(narration), ws / "words.json")
+    write_words(_words_for(narration), ws / byproduct_name("words", fmt))
     VideoLog(settings).record(VideoRecord(
-        ticker=ticker, video_id=f"vid-{ticker}", title=f"{ticker} video",
+        ticker=ticker, video_id=f"vid-{ticker}-{fmt}", title=f"{ticker} video",
         privacy="public", workdate=workdate, duration_s=duration,
-        retention=retention))
+        retention=retention, fmt=fmt))
 
 
 def test_the_bench_ranks_openers_by_what_they_held(settings):
@@ -209,6 +220,49 @@ def test_the_bench_text_says_when_it_is_not_evidence(settings):
 
 def test_the_bench_text_is_honest_when_empty(settings):
     assert "No openers" in hook_bench_text(settings)
+
+
+def test_a_short_and_a_long_on_one_date_are_not_each_others(settings):
+    """Both lanes can share a ticker and a date. The SHORT's retention was
+    read against whichever script matched first and the one `words.json`
+    in the folder, which was the LONG's; and the SHORT's bench took the
+    LONG's upload as a SHORT."""
+    _published(settings, "AAPL", "2026-09-01", "The short opener. More.",
+               duration=50.0, retention=_rows((0.0, 1.0), (0.05, 0.9),
+                                              (1.0, 0.5)))
+    _published(settings, "AAPL", "2026-09-01", "The long opener. More.",
+               duration=900.0, retention=_rows((0.0, 1.0), (0.001, 0.2),
+                                               (1.0, 0.1)), fmt="long")
+
+    shorts = hook_bench(settings, fmt="short")
+    assert [h.text for h in shorts] == ["The short opener."]
+    assert shorts[0].hold > 0.8, "scored on the SHORT's own curve"
+    assert [h.text for h in hook_bench(settings, fmt="long")] == \
+        ["The long opener."]
+
+    record = next(v for v in VideoLog(settings).all() if v.fmt == "short")
+    holds = holds_for_video(settings, record, narration_for(settings, record))
+    assert holds and holds[0].text == "The short opener."
+
+
+def test_a_row_from_before_the_format_was_recorded_is_inferred():
+    old = VideoRecord(ticker="A", video_id="v", title="t", privacy="public",
+                      duration_s=52.0)
+    assert record_format(old) == "short"
+    assert record_format(VideoRecord(ticker="A", video_id="v", title="t",
+                                     privacy="public",
+                                     duration_s=1400.0)) == "long"
+    assert record_format(VideoRecord(ticker="A", video_id="v", title="t",
+                                     privacy="public", duration_s=58.0,
+                                     experiment="pair-x")) == "clip"
+
+
+def test_a_clip_is_not_placed_on_the_longs_sentences(settings):
+    record = VideoRecord(ticker="AAPL", video_id="c1", title="t",
+                         privacy="public", workdate="2026-09-01",
+                         duration_s=58.0, fmt="clip",
+                         retention=_rows((0.0, 1.0), (1.0, 0.5)))
+    assert holds_for_video(settings, record, "Anything. At all.") == []
 
 
 # ------------------------------------------------------------ rules on trial

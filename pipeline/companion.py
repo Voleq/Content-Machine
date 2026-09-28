@@ -108,19 +108,38 @@ def build_page(manifest: dict, *, ticker: str = "", title: str = "",
              if prices.get("degraded") else "yes"),
         ]))
 
+    # THE RECORD AS THE RENDER WRITES IT. `Provenance.to_json` keeps the
+    # filings, the visuals and the voice as DICTS — counts by source, shots
+    # and references, the voice's tier and model under "audio" — and this
+    # page read them as lists and looked for the voice under "voice", so a
+    # real render printed a dict's keys as its filings and no narration
+    # block at all. Its own lines say it the way the operator already reads
+    # it; a list, the shape this page was first written against, still reads.
+    from pipeline.provenance import Provenance
+
+    record = Provenance.from_json({
+        k: v for k, v in prov.items()
+        if k in ("visuals", "filings", "audio") and isinstance(v, dict)})
+
     filings = prov.get("filings") or []
+    if isinstance(filings, dict):
+        filings = [bit for bit in record._filings_line().split(" · ") if bit]
     if filings:
         parts.append("<h2>Filings read</h2>" + _list(filings))
 
     visuals = prov.get("visuals") or prov.get("broll") or []
+    if isinstance(visuals, dict):
+        visuals = [bit for bit in record._visuals_line().split(" · ") if bit]
     if visuals:
         parts.append("<h2>Visuals</h2>" + _list(visuals))
 
-    voice = prov.get("voice") or prov.get("tts") or {}
+    voice = prov.get("voice") or prov.get("tts") or prov.get("audio") or {}
     if voice:
+        is_dict = isinstance(voice, dict)
         parts.append("<h2>Narration</h2>" + _rows([
-            ("Voice", voice.get("voice") if isinstance(voice, dict) else voice),
-            ("Model", voice.get("model") if isinstance(voice, dict) else ""),
+            ("Voice", voice.get("voice") if is_dict else voice),
+            ("Model", (voice.get("model") or voice.get("tier"))
+             if is_dict else ""),
             ("Synthetic", "yes — this narration is generated, not recorded"),
         ]))
     else:

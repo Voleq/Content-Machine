@@ -382,10 +382,6 @@ def reset_llm_calls(scope: str | None = None) -> None:
             _CALLS.pop(scope, None)
 
 
-def llm_calls(scope: str | None = None) -> list[dict]:
-    return list(_CALLS.get(current_scope() if scope is None else scope, []))
-
-
 def llm_summary(settings: Settings, scope: str | None = None) -> dict:
     """`{provider, model, calls, hosted_fallbacks, skipped}` for one scope.
 
@@ -412,28 +408,3 @@ def llm_summary(settings: Settings, scope: str | None = None) -> dict:
         "hosted_fallbacks": len(hosted) if local_first else 0,
         "skipped": [c["reason"] for c in tally if c["reason"] != OK],
     }
-
-
-def chat_json(prompt: str, settings: Settings, *, system: str = "",
-              purpose: str = "llm") -> dict | list | None:
-    """`chat`, parsed as JSON. Models fence their output often enough that
-    stripping a ``` wrapper is worth doing here rather than in every caller."""
-    raw = chat(prompt, settings, system=system, purpose=purpose)
-    if not raw:
-        return None
-    text = raw.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[-1].rsplit("```", 1)[0]
-    try:
-        return json.loads(text)
-    except ValueError:
-        start = min((i for i in (text.find("["), text.find("{")) if i >= 0),
-                    default=-1)
-        end = max(text.rfind("]"), text.rfind("}"))
-        if start >= 0 and end > start:
-            try:
-                return json.loads(text[start:end + 1])
-            except ValueError:
-                pass
-        log.warning("%s: response was not JSON", purpose)
-        return None

@@ -320,6 +320,16 @@ def test_execute_job_short_end_to_end(core, xlsx_bytes):
     assert job.delivered_link.startswith("file://"), "mock mode delivers locally"
     delivered = core.settings.workspace_dir / "_delivered" / "EXMPL" / ws.workdate / "short_final.mp4"
     assert delivered.exists()
+    # The SHORT's by-products, which it used to ship without: `/upload
+    # short` had no cover and no captions to send, and its retention could
+    # never be joined to a sentence. Under the SHORT's own names, so a LONG
+    # in the same folder keeps its own.
+    for name in ("EXMPL.short.srt", "words_short.json", "thumbnail_tall.png",
+                 "upload_package_short.txt", "companion_short.html",
+                 "EXMPL.short.transcript.txt"):
+        assert (ws.path / name).exists(), name
+        assert (delivered.parent / name).exists() or name == "words_short.json", name
+    assert not (ws.path / "EXMPL.srt").exists(), "the LONG's name is the LONG's"
 
 
 def test_unauthorized_helper():
@@ -588,3 +598,114 @@ def test_the_approval_recheck_does_not_pay_for_a_network_call(
     core.approve("short", "EXMPL", ws.workdate, sha8)
     assert seen.get("skeptic") is False
     assert ws.is_approved("short")
+
+
+# ------------------------------------------------ the batch, run for real
+
+
+def _approved_short(core, xlsx_bytes, short_valid_json):
+    core.start_lane(CHAT, "short", "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    core.intake_script(CHAT, short_valid_json)
+    ws = Workspace.latest_for(core.settings, "EXMPL")
+    core.approve("short", "EXMPL", ws.workdate,
+                 ws.load_short().content_sha()[:8])
+    return ws
+
+
+def test_the_batch_submits_what_it_holds_and_closes_it(
+        core, xlsx_bytes, short_valid_json):
+    """One runner for `/batch run` and the overnight window."""
+    import asyncio
+
+    from pipeline.jobs import RenderJobQueue
+    from pipeline.standing import BatchQueue
+
+    _approved_short(core, xlsx_bytes, short_valid_json)
+    core.queue = RenderJobQueue(core.settings, lambda job: "")
+    BatchQueue(core.settings).add("EXMPL", "short")
+
+    queued, skipped, text = asyncio.run(core.run_batch())
+
+    assert queued == 1 and skipped == []
+    assert "1 queued" in text
+    assert BatchQueue(core.settings).pending() == []
+
+
+def test_a_batch_entry_already_rendering_is_not_rendered_twice(
+        core, xlsx_bytes, short_valid_json):
+    """Left pending, it submitted a second copy the moment the first one
+    finished — a duplicate render and a duplicate delivery."""
+    import asyncio
+
+    from pipeline.jobs import RenderJobQueue
+    from pipeline.standing import BatchQueue
+
+    ws = _approved_short(core, xlsx_bytes, short_valid_json)
+    core.queue = RenderJobQueue(core.settings, lambda job: "")
+    asyncio.run(core.queue.submit(JobKind.RENDER_SHORT, "EXMPL", ws.workdate))
+    BatchQueue(core.settings).add("EXMPL", "short")
+
+    queued, skipped, _text = asyncio.run(core.run_batch())
+
+    assert queued == 0 and len(skipped) == 1
+    assert BatchQueue(core.settings).pending() == []
+
+
+def test_the_overnight_window_is_scheduled(core):
+    from bot.handlers import schedule_batch
+
+    class _JobQueue:
+        def __init__(self):
+            self.jobs = []
+
+        def run_repeating(self, callback, **kwargs):
+            self.jobs.append(kwargs.get("name"))
+
+    class _App:
+        job_queue = _JobQueue()
+
+    app = _App()
+    schedule_batch(app, core)
+    assert app.job_queue.jobs == ["overnight_batch"]
+
+
+def test_a_delivery_carries_its_own_formats_record(core):
+    """A folder holding both lanes answered a SHORT's delivery with the
+    LONG's provenance, because the LONG's manifest came first in a list."""
+    import json
+
+    from pipeline.models import JobRecord
+    from pipeline.provenance import Provenance
+
+    ws = Workspace(core.settings, "EXMPL", "2026-09-12")
+    ws.path.mkdir(parents=True, exist_ok=True)
+    for name, fmt in (("render_long_manifest.json", "long"),
+                      ("short_final.manifest.json", "short")):
+        record = Provenance(ticker="EXMPL", fmt=fmt, workdate="2026-09-12")
+        (ws.path / name).write_text(
+            json.dumps({"provenance": record.to_json()}), encoding="utf-8")
+
+    short = JobRecord(id="s", chat_id=1, ticker="EXMPL",
+                      workdate="2026-09-12", kind=JobKind.RENDER_SHORT)
+    long_ = JobRecord(id="l", chat_id=1, ticker="EXMPL",
+                      workdate="2026-09-12", kind=JobKind.RENDER_LONG)
+    assert "EXMPL · SHORT" in core._provenance_text(short)
+    assert "EXMPL · LONG" in core._provenance_text(long_)
+
+
+def test_retention_reads_the_final_cut_not_a_draft(core):
+    """`/shots` and `/stillness` took the first `*manifest*.json` in sorted
+    order, which in a folder holding a /draft is the draft's."""
+    ws = Workspace(core.settings, "EXMPL", "2026-09-12")
+    ws.path.mkdir(parents=True, exist_ok=True)
+    for name in ("render_long_draft_manifest.json",
+                 "render_long_manifest.json", "short_final.manifest.json"):
+        (ws.path / name).write_text("{}", encoding="utf-8")
+
+    assert core._manifest_for(ws, "long").name == "render_long_manifest.json"
+    assert core._manifest_for(ws, "short").name == "short_final.manifest.json"
+    (ws.path / "render_long_manifest.json").unlink()
+    assert core._manifest_for(ws, "long") is None
+    assert core._manifest_for(ws, "long", trials=True).name == \
+        "render_long_draft_manifest.json"

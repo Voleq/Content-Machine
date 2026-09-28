@@ -747,8 +747,9 @@ only the human-facing summary in the chat body.
 
 | command | what it does |
 |---|---|
-| `/upload TICKER [short\|long\|clip] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`, and a naive time is read in that zone rather than UTC. The thumbnail and the `.srt` go up with the video; a dropped upload resumes rather than starting a second one. |
+| `/upload TICKER [short\|long\|clip] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`, and a naive time is read in that zone rather than UTC. The format's own thumbnail and `.srt` go up with the video (a clip gets neither: the LONG's run on the wrong clock and shape for it), and the description is the render's package — the why, the transcript, and chapters cut to the rendered length. A dropped upload resumes rather than starting a second one. |
 | `/upload TICKER pair` | Ships **two** repurposed clips off one long, tagged as a pair, so `/experiments` can compare them. Two clips off one render cost no voice generation and no new composition and differ in exactly one thing — which minute of the argument they carry. The second one used to be thrown away. |
+| `/probe TICKER [short\|long]` | One **unlisted** upload of a finished render with the synthetic-media box ticked, to see where YouTube actually puts the AI label on this channel's output — under the player, or only in the expanded description. The answer is on the watch page, not in the API. Never public, never scheduled, not recorded as a published video; delete it when you have looked. |
 | `/scheduled` | What is queued to publish, and when. |
 | `/retention [TICKER]` | Per-chapter drop-off. No ticker aggregates the evidence across everything published. |
 | `/correct [TICKER <what was wrong>]` | Pins a correction on a video that has already shipped, amends its description and records it. No arguments lists every correction ever issued. Twelve gates stop a wrong number before it goes out; this is for the one that was right on Tuesday and restated on Friday. |
@@ -765,8 +766,8 @@ away.
 | `/hooks [short\|long]` | Openers ranked by what they held over their own first five seconds, rather than by the whole video's average. An opener's job ends early and a video that loses people at the end did not fail at the top. |
 | `/shots TICKER` | Which shots of a published video lose people, and how long each of them runs. The half of the retention loop the renderer never heard. |
 | `/stillness TICKER` | Every stretch where the audio runs and the picture holds still for more than eight seconds. Read off the manifest, so it works offline and on a video that has never shipped. |
-| `/rules` | What the voice rules are worth, measured. Mean hold on sentences carrying a turn, a direction tag, a question, a figure — against those without. Every threshold in the linter was a judgement; this is where they argue back. |
-| `/runtime` | Hold against how long the videos run, per band. Sixty to seventy-five seconds for a short is an assumption in a spec, not a finding. |
+| `/rules` | What the voice rules are worth, measured. Mean hold on sentences carrying a turn, a question, a spoken figure, first person — against those without. Every threshold in the linter was a judgement; this is where they argue back. |
+| `/runtime` | Hold against how long the videos run, per band. Forty-five to fifty-five seconds for a short is an assumption in a spec, not a finding. |
 | `/said <phrase>` | Every earlier use of a line, across every script ever shipped. The voice bible's *no construction twice* rule could only ever see inside one script. |
 | `/experiments` | Clip pairs cut from one long and shipped as a pair, and which one held. Two clips off one render cost no voice generation — the only free experiment in the system, and the second one used to be thrown away. |
 | `/scoreboard [YYYY-Qn]` | What we said and what happened, for a quarter. Every number in it was already gathered for the video it came from. It leads with the calls that were wrong, deliberately. |

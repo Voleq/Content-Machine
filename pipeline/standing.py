@@ -264,10 +264,6 @@ class ConfessionLedger:
         """Whether one is warranted. Roughly one video in three."""
         return self.videos_since_last() >= CONFESSION_EVERY - 1
 
-    def kinds_recently(self, limit: int = 6) -> list[str]:
-        """The kinds most recently used, newest first — what to vary from."""
-        return [c.kind for c in self.confessions(limit)]
-
     def repeats(self, text: str, *, overlap: float = 0.6) -> list[Confession]:
         """Recorded confessions this text is a re-telling of.
 
@@ -370,20 +366,6 @@ class ThesisBook:
         rows[t.ticker] = t.to_json()
         _write(self.path, rows)
         return t, moves
-
-    def set_status(self, ticker: str, status: str) -> None:
-        rows = self._all()
-        row = rows.get(ticker.upper())
-        if row:
-            row["status"] = status
-            _write(self.path, rows)
-
-    def forget(self, ticker: str) -> bool:
-        rows = self._all()
-        if rows.pop(ticker.upper(), None) is None:
-            return False
-        _write(self.path, rows)
-        return True
 
 
 def _status_for(moves: Sequence[Move]) -> str:

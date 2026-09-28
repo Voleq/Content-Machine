@@ -536,6 +536,89 @@ def test_upload_without_credentials_hands_back_the_package(core, settings,
     assert "by hand" in reply.text
 
 
+def _rendered_long(core, chat, long_valid_text, *, duration: float):
+    import shutil
+
+    core.start_lane(chat, "long", "EXMPL")
+    ws = core.context.get(chat)
+    shutil.copy(Path(__file__).resolve().parents[1] / "fixtures" /
+                "company_data" / "dennis_data.xlsx", ws.path / "dennis_data.xlsx")
+    core.intake_script(chat, long_valid_text)
+    (ws.path / "long_final.mp4").write_bytes(b"x")
+    (ws.path / "render_long_manifest.json").write_text(
+        json.dumps({"duration": duration}), encoding="utf-8")
+    return ws
+
+
+def test_the_package_upload_sends_is_the_one_the_render_built(
+        core, settings, long_valid_text):
+    """`/upload` rebuilt its package from the script alone, so the
+    description YouTube got had no "why this one", and its chapter list —
+    the one YouTube actually reads — was not cut to the rendered length."""
+    ws = _rendered_long(core, 7, long_valid_text, duration=90.0)
+    ws.set_why("Because the covenant is the whole story.")
+
+    package = core._upload_package(ws, "long", ws.path / "long_final.mp4")
+
+    assert "Because the covenant is the whole story." in package.description
+    assert "00:55" in package.description
+    assert "01:35" not in package.description, "past the end of the render"
+
+
+def test_a_clip_does_not_carry_the_longs_chapters(core, settings,
+                                                  long_valid_text):
+    ws = _rendered_long(core, 8, long_valid_text, duration=300.0)
+    clip = ws.path / "short_repurposed_1.mp4"
+    clip.write_bytes(b"x")
+
+    package = core._upload_package(ws, "clip", clip)
+
+    assert "Chapters" not in package.description
+    assert "00:25" not in package.description
+
+
+def test_each_format_uploads_its_own_cover_and_captions(core, settings,
+                                                        workspace):
+    from pipeline.workspace import Workspace
+
+    ws = Workspace.latest_for(settings, "EXMPL")
+    for name in ("EXMPL.srt", "EXMPL.short.srt", "thumbnail.png",
+                 "thumbnail_tall.png"):
+        (ws.path / name).write_bytes(b"x")
+
+    assert core._byproduct(ws, "captions", "long").name == "EXMPL.srt"
+    assert core._byproduct(ws, "captions", "short").name == "EXMPL.short.srt"
+    assert core._byproduct(ws, "thumbnail", "long").name == "thumbnail.png"
+    assert core._byproduct(ws, "thumbnail", "short").name == \
+        "thumbnail_tall.png"
+    # A clip is cut from the LONG: the LONG's captions run on the wrong
+    # clock for it and the LONG's cover is the wrong shape.
+    assert core._byproduct(ws, "captions", "clip") is None
+    assert core._byproduct(ws, "thumbnail", "clip") is None
+
+
+def test_the_probe_is_reachable_and_uploads_nothing_in_mock_mode(
+        core, settings, long_valid_text):
+    _rendered_long(core, 9, long_valid_text, duration=300.0)
+
+    reply = core.probe_command(["EXMPL"])
+
+    assert "Mock mode: no upload made" in reply.text
+    assert VideoLog(settings).all() == [], "a probe is not a published video"
+
+
+def test_a_record_from_a_newer_build_still_loads(settings):
+    log_ = VideoLog(settings)
+    log_.path.parent.mkdir(parents=True, exist_ok=True)
+    log_.path.write_text(json.dumps([
+        {"ticker": "AAPL", "video_id": "v1", "title": "t",
+         "privacy": "private", "a_field_from_the_future": 1}]),
+        encoding="utf-8")
+
+    assert log_.get("v1") is not None
+    assert len(log_.all()) == 1
+
+
 def test_upload_refuses_a_past_publish_time(core):
     reply = core.upload_command(["EXMPL", "2020-01-01", "10:00"])
     assert "in the past" in reply.text

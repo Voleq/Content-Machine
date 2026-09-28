@@ -171,6 +171,37 @@ def test_real_api_path_with_mock_transport(settings, alignment_sample, tmp_path)
     assert ledger.mtd_spend_usd() == pytest.approx(r.cost_usd)
 
 
+def test_the_ledger_names_the_video_the_voice_was_bought_for(
+        settings, alignment_sample, tmp_path):
+    """`/cost explain` groups "by video" on the ticker each row carries, and
+    no row ever carried one: the engine never passed it, so every video in
+    the month read as a blank name on a date."""
+    audio_b64 = _tiny_mp3_b64(tmp_path)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={
+            "audio_base64": audio_b64,
+            "alignment": alignment_sample["alignment"],
+        })
+
+    live = settings.model_copy(update={
+        "mock_mode": False,
+        "elevenlabs_api_key": "test-key",
+        "eleven_voice_id_short": "voiceX",
+    })
+    ledger = SpendLedger(live)
+    engine = TTSEngine(live, ledger=ledger,
+                       client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+    engine.synthesize(alignment_sample["text"], "short", ticker="exmpl")
+    engine.synthesize(alignment_sample["text"], "short", ticker="exmpl")
+
+    events = ledger._month(ledger._load())["events"]
+    assert len(events) == 2, "one generation, then one cache hit"
+    assert {e["ticker"] for e in events} == {"EXMPL"}
+    assert "EXMPL" in ledger.explain_text()
+
+
 def test_real_path_blocked_by_spend_cap(settings, alignment_sample):
     live = settings.model_copy(update={
         "mock_mode": False,

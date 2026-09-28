@@ -272,6 +272,20 @@ def extract_numbers(sentence: str) -> list[SpokenNumber]:
     return out
 
 
+def spoken_figures(text: str) -> list[SpokenNumber]:
+    """The numbers in a line that a viewer hears as a FIGURE.
+
+    `extract_numbers` finds every number, and narration written for the ear
+    is full of small ones that are not data — "one reason", "two things",
+    "no one". A lone number word under ten is dropped unless it is a
+    percentage; digits always count, and so does anything spoken as more
+    than one word ("one point four billion", "a hundred and sixty-two").
+    """
+    return [n for n in extract_numbers(text)
+            if n.is_percent or n.value >= 10 or len(n.text.split()) > 1
+            or any(ch.isdigit() for ch in n.text)]
+
+
 # --------------------------------------------------------------------------
 # Fact-check.
 # --------------------------------------------------------------------------

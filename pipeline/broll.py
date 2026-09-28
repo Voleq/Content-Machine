@@ -745,8 +745,8 @@ class ContentManager:
         # Both names carry the orientation (H1). The normalised output always
         # did; the raw download did not, so two renders of the same key at
         # different orientations wrote the same raw path and could read each
-        # other's half-written bytes. Latent at MAX_CONCURRENT_RENDERS=1 and
-        # a real corruption the moment anyone raises it.
+        # other's half-written bytes. Latent while renders run one at a time,
+        # and a real corruption the moment two ever overlap.
         raw = cdir / f"raw_{choice}{suffix}.mp4"
         norm = cdir / f"normalized_{choice}{suffix}.mp4"
         self.clip_client.download(file_url, raw)
@@ -896,10 +896,6 @@ class ContentManager:
         except (httpx.HTTPError, OSError, KeyError, json.JSONDecodeError) as e:
             log.warning("image %r failed (%s) — filler", query, e)
             return self.filler_image(query, kind)
-
-    @staticmethod
-    def _compact_number(value: float) -> str:
-        return _compact(value)
 
     def filler_image(self, query: str, kind: str = "img") -> Visual:
         from PIL import Image, ImageDraw
