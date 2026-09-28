@@ -1,6 +1,6 @@
 """How much of the plate library a script actually reaches.
 
-The library is 270 plates. A script that names six of them will look like the
+The library is several hundred plates. A script that names six of them will look like the
 last script that named six of them, and it did that for months without anybody
 noticing, because the number existed only inside a render manifest nobody
 opens. Nothing measured it before the render, nothing printed it after, so "the
@@ -48,7 +48,7 @@ class Reach:
     """What one script reaches of the kit."""
 
     keys: tuple[str, ...] = ()          # kit assets the script's tags name
-    scenes: tuple[str, ...] = ()        # the beat-library subset of those
+    scenes: tuple[str, ...] = ()        # the data-plate subset of those
     total: int = 0                      # assets in the kit
 
     @property

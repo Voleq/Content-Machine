@@ -19,17 +19,17 @@ from pathlib import Path
 
 import pytest
 
-from pipeline.byproducts import (BOIL_SAMPLE_FPS, BOIL_SCALE, held_spans,
+from pipeline.frame_checks import (BOIL_SAMPLE_FPS, BOIL_SCALE, held_spans,
                                  holds_past)
 
 SAMPLES = Path("samples")
 
-# The LONG is the tag-driven renderer's output, and its holds are the
-# writer's: its numbers are measured and printed but not enforced. Nothing
-# else may be added to this set without a reason attached.
+# The LONG is writer-driven: how long a beat holds is the writer's call, so
+# its numbers are measured and printed but not enforced. Nothing else may be
+# added to this set without a reason attached.
 #
-# Both entries are that renderer, at the two lengths it is driven at.
-NOT_YET_REWRITTEN = {"sample_long_EXMPL.mp4", "sample_long_full_EXMPL.mp4"}
+# Both entries are the long renderer, at the two lengths it is driven at.
+WRITER_HELD = {"sample_long_EXMPL.mp4", "sample_long_full_EXMPL.mp4"}
 
 # No composition in a vertical format may sit unchanged longer than this. It
 # is the loosest ceiling any shot in any of the three templates sets; a
@@ -47,7 +47,7 @@ HELD_FRACTION_MAX = 0.99
 
 def _samples() -> list[Path]:
     return sorted(p for p in SAMPLES.glob("*.mp4")
-                  if p.name not in NOT_YET_REWRITTEN)
+                  if p.name not in WRITER_HELD)
 
 
 def _duration(path: Path) -> float:
@@ -61,10 +61,9 @@ def _duration(path: Path) -> float:
 def _boil_spans(path: Path):
     """Measured the way a boiled render has to be measured.
 
-    The defaults on `held_spans` cannot see a boil: 96x171 puts a 2-3% line
-    move under a pixel, and 2fps aliases against 7fps so every other sample
-    pair lands on the same frame of three. Both invent holds that are not
-    there.
+    The defaults on `held_spans` cannot see a boil: 96x171 puts a line
+    redrawn by a few pixels under a pixel, and invents holds that are not
+    there (see the note above `BOIL_SAMPLE_FPS`).
     """
     return held_spans(path, sample_fps=BOIL_SAMPLE_FPS, scale=BOIL_SCALE)
 
@@ -114,13 +113,13 @@ def test_no_composition_holds_past_the_ceiling(sample):
 def test_the_sample_is_not_mostly_a_still_frame(sample):
     """How much of the cut is a frame that is not being redrawn.
 
-    THE V2 KIT FREEZES ITS DATA PLATES ON PURPOSE. 44 of the 140 are
-    `playback: static` — tables, charts, figures, structure — because a figure
-    that moves three times a second cannot be read, which is the whole job of a
-    figure. The old delivery re-baked every still plate as a three-frame boil,
-    so everything on screen moved and this fraction could be held near a third.
+    A DATA PLATE'S FIGURES DO NOT MOVE. The kit boils a data plate's frame and
+    keeps every figure on it pinned, and some plates are `playback: static`
+    outright, because a figure that moves cannot be read, which is the whole
+    job of a figure. At the sampling scale a pinned figure on a lightly
+    boiling frame can read as still.
 
-    A vertical cut is mostly data plates, so most of it is still by design, and
+    A vertical cut is mostly data plates, so much of it is still by design, and
     what keeps that from being a slideshow is the ceiling above rather than
     this number. It is kept because a cut that is ENTIRELY still has stopped
     cutting, and that is still worth failing on.
@@ -164,9 +163,9 @@ def test_a_hold_that_spans_a_cut_is_not_one_composition():
 
     This replaces a test that guarded the boil sampling constants against the
     old defaults — the argument being that a kit where every plate boiled
-    over-reported holds at 96x171. That kit is gone: 47 of the 143 v2 plates
-    are deliberately static, and the measurement's blind spot is the opposite
-    one. It cannot see a line of type change on a full-frame card, so a run of
+    over-reported holds at 96x171. That kit is gone, this one pins its
+    figures and draws some plates static outright, and the measurement's
+    blind spot is the opposite one. It cannot see a line of type change on a full-frame card, so a run of
     four cards reads as one held composition, and the manifest is what knows
     where each of them starts.
     """

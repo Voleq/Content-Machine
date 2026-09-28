@@ -260,10 +260,14 @@ class MockPexelsClient:
         return data
 
     def download(self, url: str, dest: Path) -> Path:
-        """Generate a self-documenting b-roll stand-in: a dark cinematic
-        brand gradient + film grain + vignette with the subject labelled in
-        Space Grotesk — never a test pattern, so mock renders read as
-        intentional footage placeholders rather than broken."""
+        """Generate a self-documenting b-roll stand-in: a slow gradient
+        between the kit's two grounds, grain and a vignette, with the subject
+        labelled in the kit's faces. Never a test pattern, so mock renders
+        read as intentional footage placeholders rather than broken. The hue
+        turn per subject keeps two stand-ins apart the way two real clips
+        would be."""
+        from pipeline.rasters import ARCHIVO, COURIER_BOLD, role
+
         self.download_calls.append(url)
         dest.parent.mkdir(parents=True, exist_ok=True)
         subject = url.split("/clip/", 1)[-1] if "/clip/" in url else url.rsplit("/", 1)[-1]
@@ -271,21 +275,23 @@ class MockPexelsClient:
         seed = int(hashlib.sha256(url.encode()).hexdigest()[:6], 16)
         hue = seed % 360
         dur = self.settings.broll_max_clip_s
-        body = str(self.settings.fonts_dir / "SpaceGrotesk-Bold.ttf")
-        kick = str(self.settings.fonts_dir / "SpaceMono-Bold.ttf")
+        body = str(self.settings.fonts_dir / ARCHIVO)
+        kick = str(self.settings.fonts_dir / COURIER_BOLD)
+        ff = {name: "0x%02x%02x%02x" % role(self.settings, name)
+              for name in ("ground", "second-ground", "structure", "neutral-data")}
         vf = (
             f"hue=h={hue},noise=alls=14:allf=t,vignette=PI/5,"
             f"eq=brightness=0.0:saturation=0.75,"
-            f"drawtext=fontfile='{kick}':text='B-ROLL':fontcolor=0x6b6b70:"
+            f"drawtext=fontfile='{kick}':text='B-ROLL':fontcolor={ff['neutral-data']}:"
             f"fontsize=26:x=(w-text_w)/2:y=(h-text_h)/2-66,"
-            f"drawtext=fontfile='{body}':text='{subject}':fontcolor=0xf2f2ef:"
+            f"drawtext=fontfile='{body}':text='{subject}':fontcolor={ff['structure']}:"
             f"fontsize=46:x=(w-text_w)/2:y=(h-text_h)/2:box=1:"
-            f"boxcolor=0x0a0a0b@0.5:boxborderw=24"
+            f"boxcolor={ff['ground']}@0.5:boxborderw=24"
         )
         run_ffmpeg([
             "-f", "lavfi",
-            "-i", (f"gradients=s=1280x720:c0=0x141a24:c1=0x1c3128:nb_colors=2:"
-                   f"speed=0.01:d={dur:.1f}:r=30"),
+            "-i", (f"gradients=s=1280x720:c0={ff['ground']}:c1={ff['second-ground']}:"
+                   f"nb_colors=2:speed=0.01:d={dur:.1f}:r=30"),
             "-vf", vf,
             "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
             "-an", str(dest),
@@ -429,14 +435,17 @@ class MockImageClient:
         return results
 
     def download(self, url: str, dest: Path) -> Path:
-        """On-brand imagery stand-in: a full-frame COLOURED card (subject
-        seeds a distinct deep-tone gradient) with the subject labelled in
-        Space Grotesk — so a MOCK long previews the real composition
-        (full-frame media, held still), not text on black."""
+        """Imagery stand-in: a full-frame COLOURED card (subject seeds a
+        distinct deep-tone gradient, the way two real photos differ) with the
+        subject labelled in the kit's faces and inks, so a MOCK long previews
+        the real composition (full-frame media, held still), not text on
+        black."""
         self.download_calls.append(url)
         import colorsys
 
-        from PIL import Image, ImageDraw, ImageFont
+        from PIL import Image, ImageDraw
+
+        from pipeline.rasters import ARCHIVO, COURIER_BOLD, load_font, role
 
         dest.parent.mkdir(parents=True, exist_ok=True)
         W, H = 1600, 900
@@ -452,22 +461,18 @@ class MockImageClient:
             t = y / H
             d.line([(0, y), (W, y)],
                    fill=tuple(int(top[i] + (bot[i] - top[i]) * t) for i in range(3)))
-        d.rounded_rectangle([28, 28, W - 29, H - 29], radius=18,
-                            outline=(242, 242, 239), width=2)
-        fonts = self.settings.assets_dir / "fonts"
-        try:
-            kick = ImageFont.truetype(str(fonts / "SpaceMono-Bold.ttf"), 34)
-            size = 72
-            body = ImageFont.truetype(str(fonts / "SpaceGrotesk-Bold.ttf"), size)
-            while size > 30 and d.textlength(subject, font=body) > W - 180:
-                size -= 4
-                body = ImageFont.truetype(str(fonts / "SpaceGrotesk-Bold.ttf"), size)
-        except OSError:  # fallback if brand fonts absent
-            kick = body = ImageFont.load_default()
-        d.text((72, 72), "IMAGERY", font=kick, fill=(242, 242, 239))
+        ink, ground = role(self.settings, "structure"), role(self.settings, "ground")
+        d.rectangle([28, 28, W - 29, H - 29], outline=ink, width=2)
+        kick = load_font(self.settings, COURIER_BOLD, 34)
+        size = 72
+        body = load_font(self.settings, ARCHIVO, size, weight=700)
+        while size > 30 and d.textlength(subject, font=body) > W - 180:
+            size -= 4
+            body = load_font(self.settings, ARCHIVO, size, weight=700)
+        d.text((72, 72), "IMAGERY", font=kick, fill=ink)
         tw = d.textlength(subject, font=body)
         d.text(((W - tw) / 2, H / 2 - body.size / 2), subject, font=body,
-               fill=(255, 255, 255), stroke_width=2, stroke_fill=(0, 0, 0))
+               fill=ink, stroke_width=2, stroke_fill=ground)
         img.save(dest, format="PNG")
         return dest
 
@@ -830,19 +835,25 @@ class ContentManager:
     def filler_clip(self, key: str) -> Visual:
         """Deterministic generic static filler — the never-fail floor.
 
-        On PAPER. This is production code, not a mock: it fires whenever a
-        real clip cannot be fetched, and it was `#0e1117` — so the fallback
-        for a failed b-roll lookup was a near-black hole in the middle of a
-        light-theme video. The same defect the seven dark cards had.
+        On the kit's GROUND. This is production code, not a mock: it fires
+        whenever a real clip cannot be fetched. It was paper white with a
+        paper grain, drawn for the light kit before this one, so on the
+        current dark kit a failed lookup cut to a white flash mid-video.
+        The file name carries the colour so a kit with another ground never
+        reuses a filler drawn for the old one.
         """
+        from pipeline.rasters import role
+
         W, H = self.settings.long_resolution
-        path = self.settings.cache_dir / "broll" / "filler" / "static_filler.mp4"
+        ground = "%02x%02x%02x" % role(self.settings, "ground")
+        path = (self.settings.cache_dir / "broll" / "filler"
+                / f"static_filler_{ground}.mp4")
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
             run_ffmpeg([
                 "-f", "lavfi",
-                "-i", f"color=c=0xF2F2EF:size={W}x{H}:rate={self.settings.fps}:duration={self.settings.broll_max_clip_s:.1f}",
-                # Grain and a whisper of vignette so it reads as paper stock
+                "-i", f"color=c=0x{ground}:size={W}x{H}:rate={self.settings.fps}:duration={self.settings.broll_max_clip_s:.1f}",
+                # Grain and a whisper of vignette so it reads as the wall
                 # rather than a dropped frame.
                 "-vf", "noise=alls=6:allf=t,vignette=PI/4.2",
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "26",
@@ -900,18 +911,25 @@ class ContentManager:
     def filler_image(self, query: str, kind: str = "img") -> Visual:
         from PIL import Image, ImageDraw
 
-        path = self.settings.cache_dir / "images" / "filler" / "image_filler.png"
+        from pipeline.rasters import COURIER_BOLD, load_font, role
+
+        # Keyed on the ground, like `filler_clip`: a card drawn for one kit
+        # is never served under another.
+        ground = role(self.settings, "ground")
+        path = (self.settings.cache_dir / "images" / "filler"
+                / ("image_filler_%02x%02x%02x.png" % ground))
         if not path.exists():
             W, H = self.settings.long_resolution
             path.parent.mkdir(parents=True, exist_ok=True)
-            from pipeline.rasters import role
-
-            img = Image.new("RGB", (W, H), role(self.settings, "ground"))
+            img = Image.new("RGB", (W, H), ground)
             d = ImageDraw.Draw(img)
             d.rectangle([16, 16, W - 17, H - 17],
                         outline=role(self.settings, "second-ground"), width=3)
-            d.text((W // 8, H // 2), "( imagery unavailable )",
-                   fill=role(self.settings, "neutral-data"))
+            font = load_font(self.settings, COURIER_BOLD, max(H // 30, 14))
+            text = "( imagery unavailable )"
+            d.text(((W - d.textlength(text, font=font)) / 2, H / 2), text,
+                   font=font, fill=role(self.settings, "neutral-data"),
+                   anchor="lm")
             img.save(path)
         return Visual(key=query, kind=kind, path=path, is_video=False, source="filler")
 
@@ -1021,7 +1039,7 @@ class ContentManager:
     def resolve_screengrab(self, slug: str) -> Visual:
         """[SCREENGRAB: slug] -> assets/custom/<slug>.* — an operator-
         supplied real screenshot or short screen-record (broker app, P&L,
-        a Google search). Images are pad-fitted; clips are normalized.
+        a Google search). Images fill the frame; clips are pad-fitted.
         Degrades to the filler card if it vanished since validation."""
         custom = self.settings.assets_dir / "custom"
         hits = sorted(custom.glob(f"{slug}.*")) if custom.is_dir() else []
@@ -1047,23 +1065,26 @@ class ContentManager:
         return self.filler_image(slug, "screengrab")
 
     def _normalize_screengrab_clip(self, src: Path, dest: Path) -> Path:
-        """Pad-fit a screen-record onto the dark canvas (never cover-crop a
+        """Pad-fit a screen-record onto the kit's ground (never cover-crop a
         phone capture), fps + duration cap, audio stripped."""
+        from pipeline.rasters import role
+
         W, H = self.settings.long_resolution
+        ground = "0x%02x%02x%02x" % role(self.settings, "ground")
         dest.parent.mkdir(parents=True, exist_ok=True)
         run_ffmpeg([
             "-i", str(src),
             "-t", f"{self.settings.broll_max_clip_s:.2f}",
             "-vf",
             f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
-            f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0x0b0d12,"
+            f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color={ground},"
             f"fps={self.settings.fps},setsar=1",
             "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
             str(dest),
         ])
         return dest
 
-    # ------------------------------------------------------------- doodles
+    # ------------------------------------------------------------ dispatch
     def resolve_visual(self, kind: str, value: str, *, ticker: str = "",
                        company_data=None, website: str = "",
                        choice: int = 0, style: str = "clean") -> Visual:

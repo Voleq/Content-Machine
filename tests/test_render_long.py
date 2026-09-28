@@ -115,8 +115,10 @@ def test_host_anchored_structure_with_all_kinds(rendered):
 def test_cue_times_reached_the_filtergraph(rendered):
     settings, script, tts, out, manifest = rendered
     filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
-    refin = next(s for s in manifest["segments"] if s["kind"] == "filing")
-    assert f"between(t,{refin['start']:.4f}" in filter_text  # the glitch flash
+    # A filing is cut to like any other evidence. The glitch flash on its
+    # reveal was the look before the kit, and the kit has no such move.
+    assert any(s["kind"] == "filing" for s in manifest["segments"])
+    assert "glitch" not in filter_text
     assert "subtitles=filename=" in filter_text
     # In segmented mode the beats are separate encodes concatenated with
     # -c copy, so the final graph carries only the overlays; in single-graph

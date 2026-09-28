@@ -1,4 +1,4 @@
-"""Golden frames, by-products and the status page (P3.6).
+"""Golden frames, the status page and delivery notes.
 
 The render tests assert on filter graphs and manifests, which catches a wrong
 argument and not a host who has gone invisible against a new backdrop — a bug
@@ -15,11 +15,9 @@ from pathlib import Path
 import pytest
 from PIL import Image, ImageDraw
 
-from pipeline.byproducts import (
-    BYPRODUCT_SOURCES,
+from pipeline.frame_checks import (
     DEFAULT_TOLERANCE,
     bless,
-    build_byproducts,
     check_report,
     compare_against_golden,
     frame_distance,
@@ -178,97 +176,6 @@ def test_the_stored_tolerance_is_used(settings, tmp_path):
 
 
 # --------------------------------------------------------------------------
-# By-products: the assets that already exist and go unused.
-# --------------------------------------------------------------------------
-
-
-def test_a_render_emits_the_whole_set(settings, tmp_path):
-    """Every by-product the kit CAN supply, not a fixed count.
-
-    The old assertion was `>= 20`, calibrated against a library that no longer
-    exists. A hardcoded floor here is the same defect as a hardcoded ask: it
-    passes until the artwork changes and then fails for a reason that has
-    nothing to do with the code.
-    """
-    made = build_byproducts(tmp_path, settings, ticker="EXMPL")
-    assert made.thumbnails, "no thumbnails"
-    assert made.social, "no social cards"
-    assert made.end_screens, "no end screens"
-    assert made.total() == sum(g["found"] for g in made.shortfall.values())
-
-
-def test_every_by_product_is_a_real_image(settings, tmp_path):
-    build_byproducts(tmp_path, settings, ticker="EXMPL")
-    files = list((tmp_path / "byproducts").glob("*.png"))
-    assert files
-    for f in files:
-        with Image.open(f) as img:
-            assert img.size[0] > 100 and img.size[1] > 100, f.name
-
-
-def test_the_ticker_reaches_the_artwork(settings, tmp_path):
-    """A bare room plate is not a by-product."""
-    from pipeline.plates import load_plates
-
-    build_byproducts(tmp_path, settings, ticker="EXMPL")
-    reg = load_plates(settings.assets_dir)
-    role_name = BYPRODUCT_SOURCES["thumbnails"][0]
-    stem = reg.room_roles[role_name][0]
-    key = reg.aspect_key(stem, "16x9")
-    plate = reg.require(key)
-    made = tmp_path / "byproducts" / f"thumbnails_{plate.name}.png"
-    assert made.exists()
-    assert frame_distance(plate.path, made) > 0, "nothing was drawn on it"
-
-
-def test_every_source_role_exists_in_the_registry(settings):
-    """The previous table asked for eight layouts across ("thumbnails",
-    "scenes") — neither of which is a family anybody ships — and reported a
-    shortfall of eight for ever. A source that resolves to nothing is that bug
-    coming back."""
-    from pipeline.plates import load_plates
-
-    reg = load_plates(settings.assets_dir)
-    for label, (role_name, cap) in BYPRODUCT_SOURCES.items():
-        stems = reg.room_roles.get(role_name, ())
-        assert stems, f"{label} draws from room role {role_name!r}, which is empty"
-        assert cap > 0
-
-
-def test_one_broken_layout_does_not_cost_the_others(settings, tmp_path,
-                                                    monkeypatch):
-    import pipeline.byproducts as bp
-
-    calls = {"n": 0}
-    real = bp._compose
-
-    def flaky(src, dest, **kw):
-        calls["n"] += 1
-        if calls["n"] % 3 == 0:
-            raise RuntimeError("bad layout")
-        return real(src, dest, **kw)
-
-    monkeypatch.setattr(bp, "_compose", flaky)
-    made = build_byproducts(tmp_path, settings, ticker="EXMPL")
-    # Every third compose raised, so two in three must still have landed.
-    supply = sum(g["found"] for g in made.shortfall.values())
-    assert made.total() >= supply * 2 // 3, \
-        f"one failure took the rest with it: {made.total()} of {supply}"
-
-
-def test_a_manifest_records_what_was_made(settings, tmp_path):
-    build_byproducts(tmp_path, settings, ticker="EXMPL")
-    payload = json.loads((tmp_path / "byproducts" / "byproducts.json").read_text(encoding="utf-8"))
-    assert set(payload) == {"thumbnails", "social", "end_screens", "shortfall"}
-
-
-def test_no_data_is_survivable(settings, tmp_path):
-    """A by-product with no shock metric is still a by-product."""
-    made = build_byproducts(tmp_path, settings, ticker="EXMPL", data=None)
-    assert made.total() > 0
-
-
-# --------------------------------------------------------------------------
 # The status page: read-only, loopback only.
 # --------------------------------------------------------------------------
 
@@ -354,40 +261,6 @@ def test_it_is_off_by_default_and_binds_loopback_when_on(settings):
         if server:
             server.shutdown()
             server.server_close()
-
-
-# --------------------------------------------------------------------------
-# What the kit could actually answer.
-# --------------------------------------------------------------------------
-
-
-def test_the_count_is_what_the_kit_can_supply_not_a_number_nobody_reaches(
-        settings, tmp_path):
-    """It reported a shortfall of eight against a family that did not exist.
-
-    The ask is now what the room angles actually supply, so `wanted` and
-    `found` agree and nothing is padded against an unreachable figure.
-    """
-    made = build_byproducts(tmp_path, settings, ticker="EXMPL")
-    for label, gap in made.shortfall.items():
-        assert gap["wanted"] == gap["found"], (
-            f"{label} asks for {gap['wanted']} and can supply {gap['found']} — "
-            f"an ask nobody can meet is a permanent false debt")
-    assert not made.owed(), made.owed()
-
-
-def test_the_shortfall_is_written_into_the_manifest(settings, tmp_path):
-    import json
-
-    from pipeline.byproducts import build_byproducts
-
-    build_byproducts(tmp_path, settings, ticker="EXMPL")
-    payload = json.loads((tmp_path / "byproducts" / "byproducts.json")
-                         .read_text(encoding="utf-8"))
-    assert "shortfall" in payload
-    assert set(payload["shortfall"]) == {"thumbnails", "social", "end_screens"}
-    for gap in payload["shortfall"].values():
-        assert gap["made"] <= gap["found"]
 
 
 def test_a_backend_s_own_note_survives_the_credits(settings, tmp_path):

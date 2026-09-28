@@ -352,7 +352,7 @@ def build_fill(reg: Registry, payload: str, *, aspect: str = "",
         # THERE IS NO PORTRAIT BRIDGE, and this is where that is enforced.
         # `structure/multiple-bridge` ships 16:9 only: a trailing-to-forward
         # walk is three figures and two connectors, and it does not belong in
-        # seventy-five seconds. The generic message below already refuses it —
+        # a fifty-second vertical cut. The generic message below already refuses it —
         # this names it, because "is 16x9 and this is a 9x16 cut" reads like a
         # missing file rather than a decision.
         only_aspect = not any(

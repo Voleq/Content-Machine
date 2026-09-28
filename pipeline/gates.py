@@ -1377,7 +1377,7 @@ def _declared_unit(values: dict[str, str]) -> float | None:
     """The multiplier the plate declares, or None when it declares none.
 
     Looked for in `unit` AND `kicker`, because the kit puts it in both:
-    `tables/numbers-sheet` has a `unit` slot reading "$M", and
+    each `tables/numbers-sheet-*` has a `unit` slot reading "$M", and
     `structure/row-spotlight` carries it in the kicker as "NET INCOME, $M".
     Reading only `unit` made every spotlight compare millions against dollars,
     and every correct one of them blocked.
@@ -1646,7 +1646,7 @@ def budget_check(script, settings: Settings) -> list[Finding]:
     """Copy that does not fit the box the kit drew for it. BLOCKING.
 
     THE BUDGET IS CHECKED HERE BECAUSE HERE IS WHERE IT IS CHEAP. The SHORT
-    already refused an over-budget fill at render time, and for a 75-second
+    already refused an over-budget fill at render time, and for a 50-second
     video that is a tolerable place to find out. A LONG is forty minutes: the
     same failure arriving as a `RenderError` after the encode costs the whole
     build to learn that one label is six characters too long. It is a property
@@ -1978,7 +1978,7 @@ def check_prices(script, settings: Settings, *, final: bool = True,
 # --------------------------------------------------------------------------
 
 # Families the renderer reaches for itself. A director writes `[PLATE:
-# tables/numbers-sheet-4r]`; nobody writes `[PLATE: room/wide]` or `[PLATE:
+# tables/numbers-sheet-4r]`; nobody writes `[PLATE: room/desk-wide]` or `[PLATE:
 # annotations/strike-out]` — the set, the host, the marks, the row band and
 # the frame a photograph goes in are the renderer's, and the chapter curation
 # lists them as universal for a different reason.
@@ -2141,8 +2141,8 @@ def reachable_plates(reg) -> dict[str, set[str]]:
     # `frames/` as universal because every chapter has a set, a host, marks and
     # a way to hold a photograph — but a director does not write a [PLATE] for
     # any of them, the renderer does. Counting them as tag-reachable is what
-    # made this report say every plate had a route when `room/high-desk-down`
-    # demonstrably did not.
+    # made this report say every plate had a route when a room angle no
+    # template named demonstrably did not.
     by_tag -= {k for k in by_tag
                if k.split("/", 1)[0] in RENDERER_OWNED_FAMILIES}
     return {"template": by_template, "tag": by_tag, "code": by_code}
@@ -2208,8 +2208,9 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
             findings.append(Finding(gate="kit", severity="warn", message=w))
 
     ledger = load_variant_ledger(settings)
-    # By the drawing: a render at dusk reached `cards/term-dusk-16x9`, which
-    # is `cards/term-16x9` drawn at another hour and not a different plate.
+    # By the drawing: a render at dusk reached `cards/definition-dusk-16x9`,
+    # which is `cards/definition-16x9` drawn at another hour and not a
+    # different plate.
     ever_used = reg.base_keys(used | ledger.all_used())
     never_used = [k for k in reg.keys() if k not in ever_used]
     renders_seen = len(ledger.recent("render"))
@@ -2284,7 +2285,7 @@ def kit_doctor_text(settings: Settings, script=None) -> str:
     lines += [f"  {u}" for u in unfilled[:20]] or ["  none"]
 
     # WHAT NOTHING CAN REACH — true on a fresh checkout, unlike the ledger
-    # below. `room/high-desk-down` sat in the kit for a delta with no template
+    # below. A room angle once sat in the kit for a delta with no template
     # naming its role: not an error, not a warning, just an angle that never
     # appeared. This is that class of defect, listed.
     no_template = stats.get("no_template") or []

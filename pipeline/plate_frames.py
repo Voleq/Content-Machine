@@ -2,8 +2,9 @@
 
 Two jobs that have to agree with each other, so they live together.
 
-**Playback.** 260 of the 270 plates loop, over three frames or five; 7 are the
-host's blink strips, which are composited rather than played; 3 are static.
+**Playback.** Most plates loop — a data plate over three drawings, a room over
+twelve; `once` plays through and holds (the wipes); `overlay` is the host's
+blink strips, which are composited rather than played; `static` is one frame.
 
 THE OLD BLANKET RULE IS GONE AND THIS PARAGRAPH USED TO CARRY IT — "96 of the
 143 plates are two-frame loops; the other 47 are data plates that deliberately
@@ -16,18 +17,19 @@ emitted at boil 0, bit for bit. A frozen table in a boiling room read as a
 screenshot pasted over a cartoon; a wobbling number is still unreadable. Both
 are true, which is why the gate is per-mark rather than per-plate.
 
-So the three static plates are not data plates. They are `overlays/row-band`
-and the two lower thirds — furniture that sits UNDER type held still, where any
-movement would be relative movement, and in the lower third's case a wobble at
-the edge of vision for forty minutes.
+So `static` is not a family's rule. It is the kit's call per plate: the lower
+thirds and the source tag sit UNDER type held still, where any movement would
+be relative movement and, for a strip on screen all video, a wobble at the
+edge of vision for forty minutes; the host's held poses, the marks and some
+dense figures are drawn once on purpose.
 
 The registry says which is which, at what rate and over how many
 frames, and :func:`frame_indices` turns that into one source-frame index per
 output frame. There is no per-family branch anywhere in this module: the next
-delivery adds artwork, not code. The counts above are a snapshot of the kit in
-the tree; `load_plates` is the live answer.
+delivery adds artwork, not code. There are no counts here to go stale;
+`load_plates` is the live answer.
 
-**Slots.** 3,033 declared boxes across the library, and every word on screen
+**Slots.** Thousands of declared boxes across the library, and every word on screen
 comes out of one — the plates carry no baked text at all. Filling one honours
 the plate's own ``typeRoles``: font, size, weight, colour ROLE, tracking, case
 and ``maxChars``.
@@ -77,9 +79,9 @@ _STATIC = {
 _FALLBACK = "CourierPrime-Regular.ttf"
 
 # When a plate declares no size for a role, the box decides — but that is the
-# exception, not the mechanism. 219 of 270 plates carry a typeRoles table; the
-# 51 without are the host cut-outs, whose slots are places to put him rather
-# than boxes to set words in.
+# exception, not the mechanism. Most plates carry a typeRoles table; the ones
+# without are the host cut-outs, the rooms and a few overlays, whose slots are
+# places to put something rather than boxes to set words in.
 _MIN_PT = 8
 _FIT_STEPS = 48
 

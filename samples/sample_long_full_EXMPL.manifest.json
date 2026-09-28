@@ -2,8 +2,50 @@
   "ticker": "EXMPL",
   "draft": false,
   "proof": false,
+  "hour": "night",
   "audio_tier": "mock",
   "draft_audio": false,
+  "engine": "segments",
+  "provenance": {
+    "ticker": "EXMPL",
+    "format": "long",
+    "workdate": "sample_long_full",
+    "duration_s": 1305.689,
+    "render": {
+      "engine": "segments"
+    },
+    "prices": {},
+    "visuals": {
+      "cache": 8,
+      "generated": 1,
+      "library": 1
+    },
+    "filings": {},
+    "audio": {
+      "tier": "mock",
+      "model": "mock",
+      "draft": false,
+      "cached": true,
+      "cost_usd": 0.0,
+      "chunks": null
+    },
+    "sound": {
+      "lufs": -23.0,
+      "effects": 24,
+      "bed": "",
+      "theme": false,
+      "room": "room_night.wav",
+      "placeholders": 10
+    },
+    "llm": {
+      "provider": "",
+      "model": "",
+      "calls": 0,
+      "hosted_fallbacks": 0,
+      "skipped": []
+    },
+    "gates": ""
+  },
   "duration": 1305.688753,
   "resolution": [
     1920,
@@ -113,7 +155,7 @@
           "input": "A depot signs",
           "box-1": "Seats provisioned",
           "box-2": "Monthly invoice",
-          "box-3": "Renewal in twelve months",
+          "box-3": "Renewal, month 12",
           "output": "Or it doesn't",
           "arrow-1": ".",
           "arrow-2": ".",
@@ -1026,16 +1068,16 @@
     {
       "kind": "host",
       "start": 0.0,
-      "end": 9.3307,
+      "end": 9.333333333333334,
       "attribution": "",
       "variant": 0,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.3307,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3307,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3307,trim=0:9.3307,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.3333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3333,trim=0:9.3333,scale=260:468[hfg];[2:v]trim=0:9.3333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1382:336:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 9.3307,
-      "end": 14.3307,
+      "start": 9.333333333333334,
+      "end": 14.333333333333334,
       "value": "tumbleweed",
       "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
@@ -1044,443 +1086,469 @@
     },
     {
       "kind": "plate",
-      "start": 14.3307,
-      "end": 21.3307,
+      "start": 14.333333333333334,
+      "end": 21.333333333333332,
       "value": "figures/big-number-l1-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "figures/big-number-l1-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 21.3307,
-      "end": 32.89345,
+      "start": 21.333333333333332,
+      "end": 32.9,
       "attribution": "",
       "variant": 1,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.5628,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5628,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5628,trim=0:11.5628,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.5667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5667,trim=0:11.5667,scale=313:564[hfg];[2:v]trim=0:11.5667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 32.89345,
-      "end": 44.456199999999995,
+      "start": 32.9,
+      "end": 44.46666666666667,
       "attribution": "",
       "variant": 2,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.5627,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5627,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5627,trim=0:11.5627,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.5667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5667,trim=0:11.5667,scale=313:564[hfg];[2:v]trim=0:11.5667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 44.456199999999995,
-      "end": 56.01895,
+      "start": 44.46666666666667,
+      "end": 56.03333333333333,
       "attribution": "",
       "variant": 3,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.5628,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5628,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5628,trim=0:11.5628,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.5667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5667,trim=0:11.5667,scale=313:564[hfg];[2:v]trim=0:11.5667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 56.01895,
-      "end": 67.5817,
+      "start": 56.03333333333333,
+      "end": 67.56666666666666,
       "attribution": "",
       "variant": 4,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.5628,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5628,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5628,trim=0:11.5628,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.5333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5333,trim=0:11.5333,scale=313:564[hfg];[2:v]trim=0:11.5333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 67.5817,
-      "end": 79.14445,
+      "start": 67.56666666666666,
+      "end": 79.13333333333334,
       "attribution": "",
       "variant": 5,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.5628,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5628,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5628,trim=0:11.5628,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.5667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5667,trim=0:11.5667,scale=313:564[hfg];[2:v]trim=0:11.5667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 79.14445,
-      "end": 90.7072,
+      "start": 79.13333333333334,
+      "end": 90.7,
       "attribution": "",
       "variant": 6,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.5627,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5627,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5627,trim=0:11.5627,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.5667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5667,trim=0:11.5667,scale=313:564[hfg];[2:v]trim=0:11.5667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 90.7072,
-      "end": 102.26995,
+      "start": 90.7,
+      "end": 102.26666666666667,
       "attribution": "",
       "variant": 7,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.5627,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5627,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5627,trim=0:11.5627,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.5667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5667,trim=0:11.5667,scale=313:564[hfg];[2:v]trim=0:11.5667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 102.26995,
-      "end": 113.83269999999999,
+      "start": 102.26666666666667,
+      "end": 113.83333333333333,
       "attribution": "",
       "variant": 8,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.5627,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5627,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5627,trim=0:11.5627,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.5667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5667,trim=0:11.5667,scale=313:564[hfg];[2:v]trim=0:11.5667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 113.83269999999999,
-      "end": 125.39544999999998,
+      "start": 113.83333333333333,
+      "end": 125.4,
       "attribution": "",
       "variant": 9,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.5627,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5627,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5627,trim=0:11.5627,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.5667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5667,trim=0:11.5667,scale=313:564[hfg];[2:v]trim=0:11.5667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 125.39544999999998,
-      "end": 136.9582,
+      "start": 125.4,
+      "end": 136.96666666666667,
       "attribution": "",
       "variant": 10,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.5628,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5628,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5628,trim=0:11.5628,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.5667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5667,trim=0:11.5667,scale=313:564[hfg];[2:v]trim=0:11.5667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 136.9582,
-      "end": 141.9582,
+      "start": 136.96666666666667,
+      "end": 141.96666666666667,
       "value": "tumbleweed",
       "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
-      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:605[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 141.9582,
-      "end": 152.2866,
+      "start": 141.96666666666667,
+      "end": 152.3,
       "attribution": "",
       "variant": 11,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.3284,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.3284,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.3284,trim=0:10.3284,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.3333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.3333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.3333,trim=0:10.3333,scale=313:564[hfg];[2:v]trim=0:10.3333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 152.2866,
-      "end": 159.2866,
+      "start": 152.3,
+      "end": 159.3,
       "value": "paper/headline-band-t1-16x9",
       "attribution": "",
       "layout": "two-shot",
       "animation": {
         "asset": "paper/headline-band-t1-16x9",
         "frames": 210,
-        "distinct": 2
+        "distinct": 3
       },
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=961:540[hfg];[hbg][hfg]overlay=60:270:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 159.2866,
-      "end": 169.21486,
+      "start": 159.3,
+      "end": 169.2,
       "attribution": "",
       "variant": 12,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.9283,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9283,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9283,trim=0:9.9283,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.9000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9000,trim=0:9.9000,scale=313:564[hfg];[2:v]trim=0:9.9000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 169.21486,
-      "end": 179.14311999999998,
+      "start": 169.2,
+      "end": 179.13333333333333,
       "attribution": "",
       "variant": 13,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.9283,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9283,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9283,trim=0:9.9283,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9333,trim=0:9.9333,scale=313:564[hfg];[2:v]trim=0:9.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 179.14311999999998,
-      "end": 189.07137999999998,
+      "start": 179.13333333333333,
+      "end": 189.06666666666666,
       "attribution": "",
       "variant": 14,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.9283,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9283,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9283,trim=0:9.9283,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9333,trim=0:9.9333,scale=1742:1507[hfg];[hbg][hfg]overlay=82:-8:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 189.07137999999998,
-      "end": 198.99964,
+      "start": 189.06666666666666,
+      "end": 199.0,
       "attribution": "",
       "variant": 15,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.9283,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9283,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9283,trim=0:9.9283,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9333,trim=0:9.9333,scale=313:564[hfg];[2:v]trim=0:9.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 198.99964,
-      "end": 208.9279,
+      "start": 199.0,
+      "end": 208.93333333333334,
       "attribution": "",
       "variant": 16,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.9283,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9283,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9283,trim=0:9.9283,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9333,trim=0:9.9333,scale=313:564[hfg];[2:v]trim=0:9.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
-      "start": 208.9279,
-      "end": 213.9279,
+      "start": 208.93333333333334,
+      "end": 213.93333333333334,
       "value": "EXMPL data center server racks",
       "source": "cache",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
       "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x171D2A,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
-      "start": 213.9279,
-      "end": 218.9279,
+      "start": 213.93333333333334,
+      "end": 218.93333333333334,
       "value": "EXMPL dispatch dashboard",
       "source": "cache",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
       "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x171D2A,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 218.9279,
-      "end": 222.535,
+      "start": 218.93333333333334,
+      "end": 222.53333333333333,
       "attribution": "",
       "variant": 17,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:3.6071,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.6071,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.6071,trim=0:3.6071,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:3.6000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.6000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.6000,trim=0:3.6000,scale=313:564[hfg];[2:v]trim=0:3.6000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 222.535,
-      "end": 229.535,
+      "start": 222.53333333333333,
+      "end": 229.53333333333333,
       "value": "cards/definition-16x9",
       "attribution": "",
       "layout": "two-shot",
       "animation": {
         "asset": "cards/definition-16x9",
         "frames": 210,
-        "distinct": 2
+        "distinct": 3
       },
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=971:546[hfg];[hbg][hfg]overlay=889:267:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 229.535,
-      "end": 233.1911,
+      "start": 229.53333333333333,
+      "end": 233.2,
       "attribution": "",
       "variant": 18,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:3.6561,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.6561,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.6561,trim=0:3.6561,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:3.6667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.6667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.6667,trim=0:3.6667,scale=313:564[hfg];[2:v]trim=0:3.6667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 233.1911,
-      "end": 240.1911,
+      "start": 233.2,
+      "end": 240.2,
       "value": "structure/flow-16x9",
       "attribution": "",
       "layout": "full-frame (annotated)",
       "layout_asked": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "structure/flow-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1649:928[hfg];[hbg][hfg]overlay=135:76:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 240.1911,
-      "end": 250.1342,
+      "start": 240.2,
+      "end": 250.13333333333333,
       "attribution": "",
       "variant": 19,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.9431,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9431,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9431,trim=0:9.9431,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9333,trim=0:9.9333,scale=313:564[hfg];[2:v]trim=0:9.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 250.1342,
-      "end": 260.0773,
+      "start": 250.13333333333333,
+      "end": 260.06666666666666,
       "attribution": "",
       "variant": 20,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.9431,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9431,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9431,trim=0:9.9431,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9333,trim=0:9.9333,scale=313:564[hfg];[2:v]trim=0:9.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 260.0773,
-      "end": 267.0773,
+      "start": 260.06666666666666,
+      "end": 267.06666666666666,
       "value": "cards/criteria-16x9",
       "attribution": "",
       "layout": "two-shot",
       "animation": {
         "asset": "cards/criteria-16x9",
         "frames": 210,
-        "distinct": 2
+        "distinct": 3
       },
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=972:546[hfg];[hbg][hfg]overlay=888:267:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 267.0773,
-      "end": 277.85159999999996,
+      "start": 267.06666666666666,
+      "end": 277.8666666666667,
       "attribution": "",
       "variant": 21,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.7743,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.7743,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.7743,trim=0:10.7743,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.8000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.8000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.8000,trim=0:10.8000,scale=313:564[hfg];[2:v]trim=0:10.8000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 277.85159999999996,
-      "end": 288.6259,
+      "start": 277.8666666666667,
+      "end": 288.6333333333333,
       "attribution": "",
       "variant": 22,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.7743,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.7743,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.7743,trim=0:10.7743,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.7667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.7667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.7667,trim=0:10.7667,scale=313:564[hfg];[2:v]trim=0:10.7667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 288.6259,
-      "end": 299.4002,
+      "start": 288.6333333333333,
+      "end": 299.4,
       "attribution": "",
       "variant": 23,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.7743,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.7743,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.7743,trim=0:10.7743,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.7667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.7667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.7667,trim=0:10.7667,scale=313:564[hfg];[2:v]trim=0:10.7667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 299.4002,
-      "end": 304.4002,
+      "start": 299.4,
+      "end": 304.4,
       "value": "boardroom_suits",
       "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
-      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:605[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 304.4002,
-      "end": 313.3546,
+      "start": 304.4,
+      "end": 313.3666666666667,
       "attribution": "",
       "variant": 24,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.9544,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9544,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9544,trim=0:8.9544,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.9667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9667,trim=0:8.9667,scale=313:564[hfg];[2:v]trim=0:8.9667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 313.3546,
-      "end": 322.30899999999997,
+      "start": 313.3666666666667,
+      "end": 322.3,
       "attribution": "",
       "variant": 25,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.9544,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9544,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9544,trim=0:8.9544,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9333,trim=0:8.9333,scale=313:564[hfg];[2:v]trim=0:8.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 322.30899999999997,
-      "end": 331.2634,
+      "start": 322.3,
+      "end": 331.26666666666665,
       "attribution": "",
       "variant": 26,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.9544,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9544,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9544,trim=0:8.9544,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.9667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9667,trim=0:8.9667,scale=313:564[hfg];[2:v]trim=0:8.9667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 331.2634,
-      "end": 338.2634,
+      "start": 331.26666666666665,
+      "end": 338.26666666666665,
       "value": "figures/compare-side-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "figures/compare-side-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1105:621[hfg];[hbg][hfg]overlay=755:229:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 338.2634,
-      "end": 349.67571666666663,
+      "start": 338.26666666666665,
+      "end": 349.6666666666667,
       "attribution": "",
       "variant": 27,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.4000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4000,trim=0:11.4000,scale=313:564[hfg];[2:v]trim=0:11.4000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 349.67571666666663,
-      "end": 361.0880333333333,
+      "start": 349.6666666666667,
+      "end": 361.1,
       "attribution": "",
       "variant": 28,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.4333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4333,trim=0:11.4333,scale=1742:1507[hfg];[hbg][hfg]overlay=82:-8:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 361.0880333333333,
-      "end": 372.50035,
+      "start": 361.1,
+      "end": 372.5,
       "attribution": "",
       "variant": 29,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.4000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4000,trim=0:11.4000,scale=313:564[hfg];[2:v]trim=0:11.4000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 372.50035,
-      "end": 383.91266666666667,
+      "start": 372.5,
+      "end": 383.9,
       "attribution": "",
       "variant": 30,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.4000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4000,trim=0:11.4000,scale=313:564[hfg];[2:v]trim=0:11.4000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 383.91266666666667,
-      "end": 395.3249833333333,
+      "start": 383.9,
+      "end": 395.3333333333333,
       "attribution": "",
       "variant": 31,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.4333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4333,trim=0:11.4333,scale=313:564[hfg];[2:v]trim=0:11.4333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 395.3249833333333,
-      "end": 406.7373,
+      "start": 395.3333333333333,
+      "end": 406.73333333333335,
       "attribution": "",
       "variant": 32,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.4000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4000,trim=0:11.4000,scale=313:564[hfg];[2:v]trim=0:11.4000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 406.7373,
-      "end": 413.7373,
+      "start": 406.73333333333335,
+      "end": 413.73333333333335,
       "value": "tables/numbers-sheet-6r-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "tables/numbers-sheet-6r-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 413.7373,
-      "end": 420.7373,
+      "start": 413.73333333333335,
+      "end": 420.73333333333335,
       "value": "charts/line-6y-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "charts/line-6y-16x9",
+        "moves": true,
+        "landed_at": 0.833,
+        "boils": true
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[2:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hld];[1:v]setpts=PTS-STARTPTS,scale=981:551[hmv];[hbg][hld]overlay=879:264:eof_action=repeat:enable='gte(t,0.8333)'[hmid];[hmid][hmv]overlay=879:264:eof_action=pass,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "chart",
-      "start": 420.7373,
-      "end": 427.7373,
+      "start": 420.73333333333335,
+      "end": 427.73333333333335,
       "value": "revenue",
       "source": "generated",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x171D2A,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "filing",
-      "start": 427.7373,
-      "end": 433.7373,
+      "start": 427.73333333333335,
+      "end": 433.73333333333335,
       "value": "income_statement.png",
       "attribution": "",
       "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x171D2A,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 433.7373,
-      "end": 438.7373,
+      "start": 433.73333333333335,
+      "end": 438.73333333333335,
       "value": "hamster_wheel",
       "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
@@ -1489,252 +1557,288 @@
     },
     {
       "kind": "plate",
-      "start": 438.7373,
-      "end": 445.7373,
+      "start": 438.73333333333335,
+      "end": 445.73333333333335,
       "value": "structure/row-spotlight-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "structure/row-spotlight-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1105:621[hfg];[hbg][hfg]overlay=755:229:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 445.7373,
-      "end": 452.7373,
+      "start": 445.73333333333335,
+      "end": 452.73333333333335,
       "value": "charts/bars-6y-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "charts/bars-6y-16x9",
+        "moves": true,
+        "landed_at": 1.083,
+        "boils": true
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[2:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hld];[1:v]setpts=PTS-STARTPTS,scale=981:551[hmv];[hbg][hld]overlay=879:264:eof_action=repeat:enable='gte(t,1.0833)'[hmid];[hmid][hmv]overlay=879:264:eof_action=pass,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 452.7373,
-      "end": 463.3707,
+      "start": 452.73333333333335,
+      "end": 463.3666666666667,
       "attribution": "",
       "variant": 33,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.6334,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.6334,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.6334,trim=0:10.6334,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.6333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.6333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.6333,trim=0:10.6333,scale=313:564[hfg];[2:v]trim=0:10.6333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 463.3707,
-      "end": 474.0041,
+      "start": 463.3666666666667,
+      "end": 474.0,
       "attribution": "",
       "variant": 34,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.6334,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.6334,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.6334,trim=0:10.6334,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.6333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.6333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.6333,trim=0:10.6333,scale=313:564[hfg];[2:v]trim=0:10.6333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 474.0041,
-      "end": 481.0041,
+      "start": 474.0,
+      "end": 481.0,
       "value": "tables/numbers-sheet-4r-16x9",
       "attribution": "",
       "layout": "full-frame (annotated)",
       "layout_asked": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "tables/numbers-sheet-4r-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1649:928[hfg];[hbg][hfg]overlay=135:76:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 481.0041,
-      "end": 492.7195,
+      "start": 481.0,
+      "end": 492.73333333333335,
       "attribution": "",
       "variant": 35,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.7154,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7154,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7154,trim=0:11.7154,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.7333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7333,trim=0:11.7333,scale=313:564[hfg];[2:v]trim=0:11.7333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 492.7195,
-      "end": 504.43489999999997,
+      "start": 492.73333333333335,
+      "end": 504.43333333333334,
       "attribution": "",
       "variant": 36,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.7154,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7154,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7154,trim=0:11.7154,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.7000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7000,trim=0:11.7000,scale=313:564[hfg];[2:v]trim=0:11.7000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 504.43489999999997,
-      "end": 516.1503,
+      "start": 504.43333333333334,
+      "end": 516.1666666666666,
       "attribution": "",
       "variant": 37,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.7154,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7154,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7154,trim=0:11.7154,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.7333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7333,trim=0:11.7333,scale=313:564[hfg];[2:v]trim=0:11.7333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 516.1503,
-      "end": 527.8657,
+      "start": 516.1666666666666,
+      "end": 527.8666666666667,
       "attribution": "",
       "variant": 38,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.7154,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7154,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7154,trim=0:11.7154,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.7000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7000,trim=0:11.7000,scale=313:564[hfg];[2:v]trim=0:11.7000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 527.8657,
-      "end": 539.5811,
+      "start": 527.8666666666667,
+      "end": 539.5666666666667,
       "attribution": "",
       "variant": 39,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.7154,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7154,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7154,trim=0:11.7154,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.7000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7000,trim=0:11.7000,scale=313:564[hfg];[2:v]trim=0:11.7000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 539.5811,
-      "end": 546.5811,
+      "start": 539.5666666666667,
+      "end": 546.5666666666667,
       "value": "figures/big-number-l2-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "figures/big-number-l2-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 546.5811,
-      "end": 556.277,
+      "start": 546.5666666666667,
+      "end": 556.2666666666667,
       "attribution": "",
       "variant": 40,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.6959,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.6959,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.6959,trim=0:9.6959,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.7000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.7000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.7000,trim=0:9.7000,scale=313:564[hfg];[2:v]trim=0:9.7000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 556.277,
-      "end": 565.9729,
+      "start": 556.2666666666667,
+      "end": 565.9666666666667,
       "attribution": "",
       "variant": 41,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.6959,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.6959,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.6959,trim=0:9.6959,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.7000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.7000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.7000,trim=0:9.7000,scale=1742:1507[hfg];[hbg][hfg]overlay=82:-8:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 565.9729,
-      "end": 572.9729,
+      "start": 565.9666666666667,
+      "end": 572.9666666666667,
       "value": "structure/unit-ladder-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "structure/unit-ladder-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 572.9729,
-      "end": 579.6515,
+      "start": 572.9666666666667,
+      "end": 579.6666666666666,
       "attribution": "",
       "variant": 42,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:6.6786,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.6786,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.6786,trim=0:6.6786,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:6.7000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.7000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.7000,trim=0:6.7000,scale=313:564[hfg];[2:v]trim=0:6.7000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 579.6515,
-      "end": 586.6515,
+      "start": 579.6666666666666,
+      "end": 586.6666666666666,
       "value": "tables/cash-flow-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "tables/cash-flow-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1105:621[hfg];[hbg][hfg]overlay=755:229:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 586.6515,
-      "end": 597.666475,
+      "start": 586.6666666666666,
+      "end": 597.6666666666666,
       "attribution": "",
       "variant": 43,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.0150,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0150,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0150,trim=0:11.0150,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0000,trim=0:11.0000,scale=313:564[hfg];[2:v]trim=0:11.0000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 597.666475,
-      "end": 608.68145,
+      "start": 597.6666666666666,
+      "end": 608.6666666666666,
       "attribution": "",
       "variant": 44,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.0150,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0150,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0150,trim=0:11.0150,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0000,trim=0:11.0000,scale=313:564[hfg];[2:v]trim=0:11.0000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 608.68145,
-      "end": 619.6964250000001,
+      "start": 608.6666666666666,
+      "end": 619.7,
       "attribution": "",
       "variant": 45,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.0150,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0150,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0150,trim=0:11.0150,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.0333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0333,trim=0:11.0333,scale=313:564[hfg];[2:v]trim=0:11.0333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 619.6964250000001,
-      "end": 630.7114,
+      "start": 619.7,
+      "end": 630.7,
       "attribution": "",
       "variant": 46,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.0150,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0150,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0150,trim=0:11.0150,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0000,trim=0:11.0000,scale=313:564[hfg];[2:v]trim=0:11.0000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 630.7114,
-      "end": 637.7114,
+      "start": 630.7,
+      "end": 637.7,
       "value": "structure/timeline-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "structure/timeline-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 637.7114,
-      "end": 648.83275,
+      "start": 637.7,
+      "end": 648.8333333333334,
       "attribution": "",
       "variant": 47,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.1214,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1214,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1214,trim=0:11.1214,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.1333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1333,trim=0:11.1333,scale=313:564[hfg];[2:v]trim=0:11.1333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 648.83275,
-      "end": 659.9541,
+      "start": 648.8333333333334,
+      "end": 659.9666666666667,
       "attribution": "",
       "variant": 48,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.1214,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1214,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1214,trim=0:11.1214,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.1333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1333,trim=0:11.1333,scale=313:564[hfg];[2:v]trim=0:11.1333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 659.9541,
-      "end": 671.07545,
+      "start": 659.9666666666667,
+      "end": 671.0666666666667,
       "attribution": "",
       "variant": 49,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.1214,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1214,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1214,trim=0:11.1214,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.1000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1000,trim=0:11.1000,scale=313:564[hfg];[2:v]trim=0:11.1000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 671.07545,
-      "end": 682.1967999999999,
+      "start": 671.0666666666667,
+      "end": 682.2,
       "attribution": "",
       "variant": 50,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.1213,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1213,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1213,trim=0:11.1213,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.1333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1333,trim=0:11.1333,scale=313:564[hfg];[2:v]trim=0:11.1333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 682.1967999999999,
-      "end": 693.31815,
+      "start": 682.2,
+      "end": 693.3333333333334,
       "attribution": "",
       "variant": 51,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.1214,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1214,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1214,trim=0:11.1214,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.1333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1333,trim=0:11.1333,scale=313:564[hfg];[2:v]trim=0:11.1333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 693.31815,
-      "end": 704.4395,
+      "start": 693.3333333333334,
+      "end": 704.4333333333333,
       "attribution": "",
       "variant": 52,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.1214,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1214,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1214,trim=0:11.1214,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.1000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1000,trim=0:11.1000,scale=313:564[hfg];[2:v]trim=0:11.1000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 704.4395,
-      "end": 711.4395,
+      "start": 704.4333333333333,
+      "end": 711.4333333333333,
       "value": "cards/quote-pull-16x9",
       "attribution": "",
       "layout": "full-frame (annotated)",
@@ -1742,45 +1846,50 @@
       "animation": {
         "asset": "cards/quote-pull-16x9",
         "frames": 210,
-        "distinct": 2
+        "distinct": 3
       },
       "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1649:928[hfg];[hbg][hfg]overlay=135:76:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 711.4395,
-      "end": 718.4395,
+      "start": 711.4333333333333,
+      "end": 718.4333333333333,
       "value": "structure/timeline-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "structure/timeline-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 718.4395,
-      "end": 729.793,
+      "start": 718.4333333333333,
+      "end": 729.8,
       "attribution": "",
       "variant": 53,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.3535,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.3535,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.3535,trim=0:11.3535,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.3667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.3667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.3667,trim=0:11.3667,scale=313:564[hfg];[2:v]trim=0:11.3667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 729.793,
-      "end": 741.1465,
+      "start": 729.8,
+      "end": 741.1333333333333,
       "attribution": "",
       "variant": 54,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.3535,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.3535,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.3535,trim=0:11.3535,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.3333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.3333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.3333,trim=0:11.3333,scale=313:564[hfg];[2:v]trim=0:11.3333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 741.1465,
+      "start": 741.1333333333333,
       "end": 752.5,
       "attribution": "",
       "variant": 55,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.3535,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.3535,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.3535,trim=0:11.3535,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.3667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.3667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.3667,trim=0:11.3667,scale=1742:1507[hfg];[hbg][hfg]overlay=82:-8:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "meme",
@@ -1790,80 +1899,80 @@
       "source": "library",
       "attribution": "owned meme library (harold-quick-flip-became-bagholder)",
       "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:3.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:3.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x171D2A,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
       "start": 755.5,
-      "end": 764.5637333333333,
+      "end": 764.5666666666667,
       "attribution": "",
       "variant": 56,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.0637,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.0637,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.0637,trim=0:9.0637,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.0667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.0667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.0667,trim=0:9.0667,scale=313:564[hfg];[2:v]trim=0:9.0667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 764.5637333333333,
-      "end": 773.6274666666667,
+      "start": 764.5666666666667,
+      "end": 773.6333333333333,
       "attribution": "",
       "variant": 57,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.0637,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.0637,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.0637,trim=0:9.0637,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.0667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.0667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.0667,trim=0:9.0667,scale=313:564[hfg];[2:v]trim=0:9.0667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 773.6274666666667,
-      "end": 782.6912,
+      "start": 773.6333333333333,
+      "end": 782.7,
       "attribution": "",
       "variant": 58,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.0637,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.0637,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.0637,trim=0:9.0637,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.0667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.0667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.0667,trim=0:9.0667,scale=313:564[hfg];[2:v]trim=0:9.0667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 782.6912,
-      "end": 789.6912,
+      "start": 782.7,
+      "end": 789.7,
       "value": "cards/quote-pull-16x9",
       "attribution": "",
       "layout": "two-shot",
       "animation": {
         "asset": "cards/quote-pull-16x9",
         "frames": 210,
-        "distinct": 2
+        "distinct": 3
       },
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1346:757[hfg];[hbg][hfg]overlay=514:161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1105:621[hfg];[hbg][hfg]overlay=755:229:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 789.6912,
-      "end": 800.9024666666667,
+      "start": 789.7,
+      "end": 800.9,
       "attribution": "",
       "variant": 59,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.2113,trim=0:11.2113,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.2000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.2000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.2000,trim=0:11.2000,scale=313:564[hfg];[2:v]trim=0:11.2000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 800.9024666666667,
-      "end": 812.1137333333334,
+      "start": 800.9,
+      "end": 812.1,
       "attribution": "",
       "variant": 60,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.2113,trim=0:11.2113,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.2000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.2000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.2000,trim=0:11.2000,scale=313:564[hfg];[2:v]trim=0:11.2000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 812.1137333333334,
-      "end": 823.325,
+      "start": 812.1,
+      "end": 823.3333333333334,
       "attribution": "",
       "variant": 61,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.2113,trim=0:11.2113,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.2333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.2333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.2333,trim=0:11.2333,scale=313:564[hfg];[2:v]trim=0:11.2333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 823.325,
-      "end": 828.325,
+      "start": 823.3333333333334,
+      "end": 828.3333333333334,
       "value": "boardroom_suits",
       "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
@@ -1872,493 +1981,533 @@
     },
     {
       "kind": "host",
-      "start": 828.325,
-      "end": 839.1712,
+      "start": 828.3333333333334,
+      "end": 839.1666666666666,
       "attribution": "",
       "variant": 62,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.8462,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.8462,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.8462,trim=0:10.8462,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.8333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.8333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.8333,trim=0:10.8333,scale=313:564[hfg];[2:v]trim=0:10.8333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 839.1712,
-      "end": 850.0174000000001,
+      "start": 839.1666666666666,
+      "end": 850.0333333333333,
       "attribution": "",
       "variant": 63,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.8462,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.8462,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.8462,trim=0:10.8462,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.8667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.8667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.8667,trim=0:10.8667,scale=313:564[hfg];[2:v]trim=0:10.8667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 850.0174000000001,
-      "end": 860.8636,
+      "start": 850.0333333333333,
+      "end": 860.8666666666667,
       "attribution": "",
       "variant": 64,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.8462,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.8462,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.8462,trim=0:10.8462,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.8333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.8333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.8333,trim=0:10.8333,scale=313:564[hfg];[2:v]trim=0:10.8333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "filing",
-      "start": 860.8636,
-      "end": 866.8636,
+      "start": 860.8666666666667,
+      "end": 866.8666666666667,
       "value": "risk_factors.png",
       "attribution": "",
       "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x171D2A,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 866.8636,
-      "end": 873.8636,
+      "start": 866.8666666666667,
+      "end": 873.8666666666667,
       "value": "paper/headline-band-t2-16x9",
       "attribution": "",
       "layout": "two-shot",
       "animation": {
         "asset": "paper/headline-band-t2-16x9",
         "frames": 210,
-        "distinct": 2
+        "distinct": 3
       },
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1345:756[hfg];[hbg][hfg]overlay=515:162:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1105:621[hfg];[hbg][hfg]overlay=755:229:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 873.8636,
-      "end": 882.759,
+      "start": 873.8666666666667,
+      "end": 882.7666666666667,
       "attribution": "",
       "variant": 65,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.8954,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.8954,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.8954,trim=0:8.8954,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.9000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9000,trim=0:8.9000,scale=313:564[hfg];[2:v]trim=0:8.9000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 882.759,
-      "end": 889.759,
+      "start": 882.7666666666667,
+      "end": 889.7666666666667,
       "value": "cards/quote-pull-16x9",
       "attribution": "",
       "layout": "two-shot",
       "animation": {
         "asset": "cards/quote-pull-16x9",
         "frames": 210,
-        "distinct": 2
+        "distinct": 3
       },
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=971:546[hfg];[hbg][hfg]overlay=889:267:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 889.759,
-      "end": 900.1658,
+      "start": 889.7666666666667,
+      "end": 900.1666666666666,
       "attribution": "",
       "variant": 66,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.4000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4000,trim=0:10.4000,scale=313:564[hfg];[2:v]trim=0:10.4000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 900.1658,
-      "end": 910.5726,
+      "start": 900.1666666666666,
+      "end": 910.5666666666667,
       "attribution": "",
       "variant": 67,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.4000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4000,trim=0:10.4000,scale=313:564[hfg];[2:v]trim=0:10.4000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 910.5726,
-      "end": 920.9793999999999,
+      "start": 910.5666666666667,
+      "end": 920.9666666666667,
       "attribution": "",
       "variant": 68,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.4000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4000,trim=0:10.4000,scale=1742:1507[hfg];[hbg][hfg]overlay=82:-8:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 920.9793999999999,
-      "end": 931.3862,
+      "start": 920.9666666666667,
+      "end": 931.4,
       "attribution": "",
       "variant": 69,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.4333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4333,trim=0:10.4333,scale=313:564[hfg];[2:v]trim=0:10.4333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 931.3862,
-      "end": 941.793,
+      "start": 931.4,
+      "end": 941.8,
       "attribution": "",
       "variant": 70,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.4000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4000,trim=0:10.4000,scale=313:564[hfg];[2:v]trim=0:10.4000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 941.793,
-      "end": 952.1998,
+      "start": 941.8,
+      "end": 952.2,
       "attribution": "",
       "variant": 71,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.4000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4000,trim=0:10.4000,scale=313:564[hfg];[2:v]trim=0:10.4000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 952.1998,
-      "end": 959.1998,
+      "start": 952.2,
+      "end": 959.2,
       "value": "structure/unit-ladder-16x9",
       "attribution": "",
       "layout": "full-frame (annotated)",
       "layout_asked": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "structure/unit-ladder-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1649:928[hfg];[hbg][hfg]overlay=135:76:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 959.1998,
-      "end": 971.1836333333333,
+      "start": 959.2,
+      "end": 971.2,
       "attribution": "",
       "variant": 72,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:12.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:12.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=12.0000,trim=0:12.0000,scale=313:564[hfg];[2:v]trim=0:12.0000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 971.1836333333333,
-      "end": 983.1674666666667,
+      "start": 971.2,
+      "end": 983.1666666666666,
       "attribution": "",
       "variant": 73,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.9667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9667,trim=0:11.9667,scale=313:564[hfg];[2:v]trim=0:11.9667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 983.1674666666667,
-      "end": 995.1513,
+      "start": 983.1666666666666,
+      "end": 995.1666666666666,
       "attribution": "",
       "variant": 74,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:12.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:12.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=12.0000,trim=0:12.0000,scale=313:564[hfg];[2:v]trim=0:12.0000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 995.1513,
-      "end": 1007.1351333333332,
+      "start": 995.1666666666666,
+      "end": 1007.1333333333333,
       "attribution": "",
       "variant": 75,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.9667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9667,trim=0:11.9667,scale=313:564[hfg];[2:v]trim=0:11.9667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1007.1351333333332,
-      "end": 1019.1189666666666,
+      "start": 1007.1333333333333,
+      "end": 1019.1333333333333,
       "attribution": "",
       "variant": 76,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:12.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:12.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=12.0000,trim=0:12.0000,scale=313:564[hfg];[2:v]trim=0:12.0000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1019.1189666666666,
-      "end": 1031.1028,
+      "start": 1019.1333333333333,
+      "end": 1031.1,
       "attribution": "",
       "variant": 77,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.9667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9667,trim=0:11.9667,scale=313:564[hfg];[2:v]trim=0:11.9667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 1031.1028,
-      "end": 1038.1028,
+      "start": 1031.1,
+      "end": 1038.1,
       "value": "figures/big-number-l2-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "figures/big-number-l2-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1038.1028,
-      "end": 1047.34925,
+      "start": 1038.1,
+      "end": 1047.3333333333333,
       "attribution": "",
       "variant": 78,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.2465,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.2465,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.2465,trim=0:9.2465,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.2333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.2333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.2333,trim=0:9.2333,scale=313:564[hfg];[2:v]trim=0:9.2333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1047.34925,
-      "end": 1056.5957,
+      "start": 1047.3333333333333,
+      "end": 1056.6,
       "attribution": "",
       "variant": 79,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.2465,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.2465,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.2465,trim=0:9.2465,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.2667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.2667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.2667,trim=0:9.2667,scale=313:564[hfg];[2:v]trim=0:9.2667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 1056.5957,
-      "end": 1063.5957,
+      "start": 1056.6,
+      "end": 1063.6,
       "value": "figures/big-fraction-16x9",
       "attribution": "",
       "layout": "full-frame (annotated)",
       "layout_asked": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "figures/big-fraction-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1649:928[hfg];[hbg][hfg]overlay=135:76:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1063.5957,
-      "end": 1069.3421,
+      "start": 1063.6,
+      "end": 1069.3333333333333,
       "attribution": "",
       "variant": 80,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:5.7464,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:5.7464,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.7464,trim=0:5.7464,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:5.7333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:5.7333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.7333,trim=0:5.7333,scale=313:564[hfg];[2:v]trim=0:5.7333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 1069.3421,
-      "end": 1076.3421,
+      "start": 1069.3333333333333,
+      "end": 1076.3333333333333,
       "value": "cycles/cycle-frame-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "cycles/cycle-frame-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1105:621[hfg];[hbg][hfg]overlay=755:229:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1076.3421,
-      "end": 1084.6502,
+      "start": 1076.3333333333333,
+      "end": 1084.6666666666667,
       "attribution": "",
       "variant": 81,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.3081,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.3081,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.3081,trim=0:8.3081,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.3333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.3333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.3333,trim=0:8.3333,scale=313:564[hfg];[2:v]trim=0:8.3333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1084.6502,
-      "end": 1092.9583,
+      "start": 1084.6666666666667,
+      "end": 1092.9666666666667,
       "attribution": "",
       "variant": 82,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.3081,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.3081,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.3081,trim=0:8.3081,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.3000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.3000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.3000,trim=0:8.3000,scale=313:564[hfg];[2:v]trim=0:8.3000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 1092.9583,
-      "end": 1099.9583,
+      "start": 1092.9666666666667,
+      "end": 1099.9666666666667,
       "value": "figures/big-fraction-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "figures/big-fraction-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1105:621[hfg];[hbg][hfg]overlay=755:229:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1099.9583,
-      "end": 1110.1696,
+      "start": 1099.9666666666667,
+      "end": 1110.1666666666667,
       "attribution": "",
       "variant": 83,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.2000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2000,trim=0:10.2000,scale=1742:1507[hfg];[hbg][hfg]overlay=82:-8:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1110.1696,
-      "end": 1120.3809,
+      "start": 1110.1666666666667,
+      "end": 1120.3666666666666,
       "attribution": "",
       "variant": 84,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.2000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2000,trim=0:10.2000,scale=313:564[hfg];[2:v]trim=0:10.2000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1120.3809,
-      "end": 1130.5922,
+      "start": 1120.3666666666666,
+      "end": 1130.6,
       "attribution": "",
       "variant": 85,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.2333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2333,trim=0:10.2333,scale=313:564[hfg];[2:v]trim=0:10.2333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1130.5922,
-      "end": 1140.8035,
+      "start": 1130.6,
+      "end": 1140.8,
       "attribution": "",
       "variant": 86,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.2000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2000,trim=0:10.2000,scale=313:564[hfg];[2:v]trim=0:10.2000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1140.8035,
-      "end": 1151.0148000000002,
+      "start": 1140.8,
+      "end": 1151.0,
       "attribution": "",
       "variant": 87,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.2000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2000,trim=0:10.2000,scale=313:564[hfg];[2:v]trim=0:10.2000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1151.0148000000002,
-      "end": 1161.2261,
+      "start": 1151.0,
+      "end": 1161.2333333333333,
       "attribution": "",
       "variant": 88,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.2333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2333,trim=0:10.2333,scale=313:564[hfg];[2:v]trim=0:10.2333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 1161.2261,
-      "end": 1168.2261,
+      "start": 1161.2333333333333,
+      "end": 1168.2333333333333,
       "value": "structure/both-true-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "structure/both-true-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 1168.2261,
-      "end": 1173.2261,
+      "start": 1168.2333333333333,
+      "end": 1173.2333333333333,
       "value": "growing_plant",
       "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
-      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:605[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1173.2261,
-      "end": 1175.1732,
+      "start": 1173.2333333333333,
+      "end": 1175.1666666666667,
       "attribution": "",
       "variant": 89,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:1.9471,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:1.9471,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=1.9471,trim=0:1.9471,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:1.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:1.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=1.9333,trim=0:1.9333,scale=313:564[hfg];[2:v]trim=0:1.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 1175.1732,
-      "end": 1182.1732,
+      "start": 1175.1666666666667,
+      "end": 1182.1666666666667,
       "value": "cards/criteria-16x9",
       "attribution": "",
       "layout": "two-shot",
       "animation": {
         "asset": "cards/criteria-16x9",
         "frames": 210,
-        "distinct": 2
+        "distinct": 3
       },
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=971:546[hfg];[hbg][hfg]overlay=889:267:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1182.1732,
-      "end": 1191.5162,
+      "start": 1182.1666666666667,
+      "end": 1191.5,
       "attribution": "",
       "variant": 90,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.3430,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3430,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3430,trim=0:9.3430,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.3333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3333,trim=0:9.3333,scale=313:564[hfg];[2:v]trim=0:9.3333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1191.5162,
-      "end": 1200.8591999999999,
+      "start": 1191.5,
+      "end": 1200.8666666666666,
       "attribution": "",
       "variant": 91,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.3430,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3430,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3430,trim=0:9.3430,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.3667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3667,trim=0:9.3667,scale=313:564[hfg];[2:v]trim=0:9.3667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1200.8591999999999,
-      "end": 1210.2022,
+      "start": 1200.8666666666666,
+      "end": 1210.2,
       "attribution": "",
       "variant": 92,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:9.3430,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3430,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3430,trim=0:9.3430,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:9.3333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3333,trim=0:9.3333,scale=313:564[hfg];[2:v]trim=0:9.3333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 1210.2022,
-      "end": 1217.2022,
+      "start": 1210.2,
+      "end": 1217.2,
       "value": "structure/closing-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "structure/closing-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1217.2022,
-      "end": 1227.43384,
+      "start": 1217.2,
+      "end": 1227.4333333333334,
       "attribution": "",
       "variant": 93,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.2316,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2316,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2316,trim=0:10.2316,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.2333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2333,trim=0:10.2333,scale=313:564[hfg];[2:v]trim=0:10.2333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1227.43384,
-      "end": 1237.66548,
+      "start": 1227.4333333333334,
+      "end": 1237.6666666666667,
       "attribution": "",
       "variant": 94,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.2316,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2316,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2316,trim=0:10.2316,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.2333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2333,trim=0:10.2333,scale=313:564[hfg];[2:v]trim=0:10.2333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1237.66548,
-      "end": 1247.89712,
+      "start": 1237.6666666666667,
+      "end": 1247.9,
       "attribution": "",
       "variant": 95,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.2316,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2316,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2316,trim=0:10.2316,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.2333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2333,trim=0:10.2333,scale=1742:1507[hfg];[hbg][hfg]overlay=82:-8:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1247.89712,
-      "end": 1258.12876,
+      "start": 1247.9,
+      "end": 1258.1333333333334,
       "attribution": "",
       "variant": 96,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.2316,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2316,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2316,trim=0:10.2316,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.2333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2333,trim=0:10.2333,scale=313:564[hfg];[2:v]trim=0:10.2333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1258.12876,
-      "end": 1268.3604,
+      "start": 1258.1333333333334,
+      "end": 1268.3666666666666,
       "attribution": "",
       "variant": 97,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.2316,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2316,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2316,trim=0:10.2316,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.2333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2333,trim=0:10.2333,scale=313:564[hfg];[2:v]trim=0:10.2333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 1268.3604,
-      "end": 1275.3604,
+      "start": 1268.3666666666666,
+      "end": 1275.3666666666666,
       "value": "structure/both-true-16x9",
       "attribution": "",
       "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "animation": {
+        "asset": "structure/both-true-16x9",
+        "frames": 210,
+        "distinct": 3
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=981:551[hfg];[hbg][hfg]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1275.3604,
-      "end": 1285.469851,
+      "start": 1275.3666666666666,
+      "end": 1285.4666666666667,
       "attribution": "",
       "variant": 98,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.1095,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.1095,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.1095,trim=0:10.1095,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.1000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.1000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.1000,trim=0:10.1000,scale=313:564[hfg];[2:v]trim=0:10.1000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1285.469851,
-      "end": 1295.5793019999999,
+      "start": 1285.4666666666667,
+      "end": 1295.5666666666666,
       "attribution": "",
       "variant": 99,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.1095,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.1095,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.1095,trim=0:10.1095,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.1000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.1000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.1000,trim=0:10.1000,scale=313:564[hfg];[2:v]trim=0:10.1000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=365:264:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 1295.5793019999999,
-      "end": 1305.688753,
+      "start": 1295.5666666666666,
+      "end": 1305.7,
       "attribution": "",
       "variant": 100,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.1095,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.1095,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.1095,trim=0:10.1095,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.1333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.1333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.1333,trim=0:10.1333,scale=1742:1507[hfg];[hbg][hfg]overlay=82:-8:eof_action=repeat,setsar=1,format=yuv420p[out]"
     }
   ],
   "segmented": true,
-  "segment_cache_hits": 61,
+  "segment_cache_hits": 140,
   "segment_failures": [],
   "layers": [
     {
@@ -2370,71 +2519,57 @@
     },
     {
       "name": "chapter_1",
-      "t_start": 9.3307,
-      "t_end": 10.9307,
+      "t_start": 9.333333333333334,
+      "t_end": 10.933333333333334,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_2",
-      "t_start": 189.07137999999998,
-      "t_end": 190.67137999999997,
+      "t_start": 189.06666666666666,
+      "t_end": 191.06666666666666,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_3",
-      "t_start": 361.0880333333333,
-      "t_end": 362.68803333333335,
+      "t_start": 361.1,
+      "t_end": 363.1,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_4",
-      "t_start": 572.9729,
-      "t_end": 574.5729,
+      "t_start": 572.9666666666667,
+      "t_end": 574.9666666666667,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_5",
       "t_start": 752.5,
-      "t_end": 754.1,
+      "t_end": 754.5,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_6",
-      "t_start": 920.9793999999999,
-      "t_end": 922.5794,
+      "t_start": 920.9666666666667,
+      "t_end": 922.9666666666667,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_7",
-      "t_start": 1110.1696,
-      "t_end": 1111.7695999999999,
+      "t_start": 1110.1666666666667,
+      "t_end": 1112.1666666666667,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_8",
-      "t_start": 1247.89712,
-      "t_end": 1249.49712,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "glitch@427.74",
-      "t_start": 427.7373,
-      "t_end": 428.2373,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "glitch@860.86",
-      "t_start": 860.8636,
-      "t_end": 861.3636,
+      "t_start": 1247.9,
+      "t_end": 1249.9,
       "x": 0,
       "y": 0
     },
@@ -2442,7 +2577,7 @@
       "name": "scribble_0",
       "t_start": 238.6831,
       "t_end": 241.1831,
-      "x": 1449,
+      "x": 1458,
       "y": 433
     },
     {
@@ -2477,8 +2612,8 @@
       "name": "scribble_5",
       "t_start": 711.1059,
       "t_end": 713.6059,
-      "x": 170,
-      "y": 345
+      "x": 280,
+      "y": 372
     },
     {
       "name": "scribble_6",
@@ -2521,6 +2656,301 @@
       "t_end": 1305.688753,
       "x": 36,
       "y": 1036
+    },
+    {
+      "name": "wipe-sweep@2.60",
+      "t_start": 2.35,
+      "t_end": 3.0166666666666666,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "wipe-page@1295.57",
+      "t_start": 1295.3166666666666,
+      "t_end": 1295.9833333333333,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "wipe-blinds@189.07",
+      "t_start": 188.81666666666666,
+      "t_end": 189.48333333333332,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "wipe-blinds@361.10",
+      "t_start": 360.85,
+      "t_end": 361.5166666666667,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "wipe-blinds@572.97",
+      "t_start": 572.7166666666667,
+      "t_end": 573.3833333333333,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "wipe-blinds@752.50",
+      "t_start": 752.25,
+      "t_end": 752.9166666666666,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "wipe-blinds@920.97",
+      "t_start": 920.7166666666667,
+      "t_end": 921.3833333333333,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "wipe-blinds@1110.17",
+      "t_start": 1109.9166666666667,
+      "t_end": 1110.5833333333335,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "wipe-blinds@1247.90",
+      "t_start": 1247.65,
+      "t_end": 1248.3166666666668,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "audio": [
+    {
+      "name": "voice",
+      "start": 0.0,
+      "gain_db": 0.0,
+      "loop": false,
+      "file": "audio.m4a"
+    },
+    {
+      "name": "room_tone",
+      "start": 0.0,
+      "gain_db": -40.0,
+      "loop": true,
+      "file": "room_night.wav"
+    },
+    {
+      "name": "chapter_cue@9.33",
+      "start": 9.33,
+      "gain_db": -4.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 0.962,
+      "trim_db": -0.1
+    },
+    {
+      "name": "chapter_cue@189.07",
+      "start": 189.07,
+      "gain_db": -4.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 1.008,
+      "trim_db": -0.9
+    },
+    {
+      "name": "chapter_cue@361.10",
+      "start": 361.1,
+      "gain_db": -4.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 0.986,
+      "trim_db": 1.4
+    },
+    {
+      "name": "chapter_cue@572.97",
+      "start": 572.97,
+      "gain_db": -4.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 1.036,
+      "trim_db": 0.2
+    },
+    {
+      "name": "chapter_cue@752.50",
+      "start": 752.5,
+      "gain_db": -4.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 1.016,
+      "trim_db": 0.9
+    },
+    {
+      "name": "chapter_cue@920.97",
+      "start": 920.97,
+      "gain_db": -4.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 0.966,
+      "trim_db": -0.1
+    },
+    {
+      "name": "chapter_cue@1110.17",
+      "start": 1110.17,
+      "gain_db": -4.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 1.037,
+      "trim_db": 1.0
+    },
+    {
+      "name": "chapter_cue@1247.90",
+      "start": 1247.9,
+      "gain_db": -4.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 1.01,
+      "trim_db": -0.6
+    },
+    {
+      "name": "move:tick-over@189.57",
+      "start": 189.57,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "flip.wav",
+      "rate": 0.993,
+      "trim_db": 1.3
+    },
+    {
+      "name": "move:tick-over@361.60",
+      "start": 361.6,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "flip.wav",
+      "rate": 1.013,
+      "trim_db": -0.3
+    },
+    {
+      "name": "move:line-draw@413.73",
+      "start": 413.73,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "marker_draw.wav",
+      "rate": 0.991,
+      "trim_db": -0.3
+    },
+    {
+      "name": "move:bars-grow@446.73",
+      "start": 446.73,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "knock.wav",
+      "rate": 0.964,
+      "trim_db": -0.2
+    },
+    {
+      "name": "move:tick-over@573.47",
+      "start": 573.47,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "flip.wav",
+      "rate": 1.038,
+      "trim_db": 1.0
+    },
+    {
+      "name": "move:tick-over@753.00",
+      "start": 753.0,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "flip.wav",
+      "rate": 0.981,
+      "trim_db": 0.4
+    },
+    {
+      "name": "move:tick-over@921.47",
+      "start": 921.47,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "flip.wav",
+      "rate": 0.976,
+      "trim_db": 1.1
+    },
+    {
+      "name": "move:tick-over@1110.67",
+      "start": 1110.67,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "flip.wav",
+      "rate": 1.039,
+      "trim_db": 1.2
+    },
+    {
+      "name": "move:tick-over@1248.40",
+      "start": 1248.4,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "flip.wav",
+      "rate": 0.966,
+      "trim_db": 0.3
+    },
+    {
+      "name": "wipe@2.60",
+      "start": 2.35,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.967,
+      "trim_db": 1.2
+    },
+    {
+      "name": "wipe@1295.57",
+      "start": 1295.32,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.973,
+      "trim_db": 0.1
+    },
+    {
+      "name": "windows_error@248.44",
+      "start": 248.44,
+      "gain_db": -6.0,
+      "loop": false,
+      "file": "windows_error.wav",
+      "rate": 0.994,
+      "trim_db": 0.9
+    },
+    {
+      "name": "sad_trombone@611.51",
+      "start": 611.51,
+      "gain_db": -6.0,
+      "loop": false,
+      "file": "sad_trombone.wav",
+      "rate": 1.024,
+      "trim_db": -0.5
+    },
+    {
+      "name": "windows_error@651.43",
+      "start": 651.43,
+      "gain_db": -6.0,
+      "loop": false,
+      "file": "windows_error.wav",
+      "rate": 1.019,
+      "trim_db": -0.7
+    },
+    {
+      "name": "vine_boom@752.50",
+      "start": 752.5,
+      "gain_db": -4.0,
+      "loop": false,
+      "file": "vine_boom.wav",
+      "rate": 0.968,
+      "trim_db": -0.3
+    },
+    {
+      "name": "record_scratch@752.50",
+      "start": 752.15,
+      "gain_db": -6.0,
+      "loop": false,
+      "file": "record_scratch.wav",
+      "rate": 1.02,
+      "trim_db": 0.1
     }
   ],
   "marks": [
@@ -2598,6 +3028,7 @@
       "warnings": []
     }
   ],
+  "sources": [],
   "marks_out_of_band": [],
   "segment_warnings": [
     "116s with no visual from 21s to 137s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
@@ -2660,7 +3091,7 @@
     },
     {
       "t": 920.0,
-      "title": "the covenant, four hundred pages in",
+      "title": "the covenant, page 400",
       "type": "risk"
     },
     {
@@ -2674,6 +3105,9 @@
       "type": "resigned-close"
     }
   ],
+  "writer_moves": [],
+  "move_warnings": [],
+  "cold_open_room": "room/desk-wide-16x9",
   "plates_used": [
     "cards/criteria-16x9",
     "cards/definition-16x9",
@@ -2688,21 +3122,22 @@
     "frames/media-frame-t1-16x9",
     "frames/media-frame-t2-16x9",
     "frames/media-frame-t3-16x9",
+    "host/arms-crossed",
+    "host/checking-a-figure",
     "host/close-up",
+    "host/considering",
     "host/hands-in-pockets",
     "host/holding-a-page",
     "host/leaning-on-desk",
-    "host/medium-glance-left",
-    "host/medium-glance-right",
     "host/pointing-down-at-desk",
+    "host/sitting-at-desk",
+    "host/turn-to-screen",
     "paper/headline-band-t1-16x9",
     "paper/headline-band-t2-16x9",
-    "room/corner-perspective-16x9",
-    "room/desk-corner-16x9",
-    "room/desk-front-16x9",
-    "room/low-desk-height-16x9",
-    "room/whiteboard-wall-16x9",
-    "room/wide-16x9",
+    "room/board-side-16x9",
+    "room/desk-wide-16x9",
+    "room/panel-left-16x9",
+    "room/window-wall-16x9",
     "structure/both-true-16x9",
     "structure/closing-16x9",
     "structure/flow-16x9",
@@ -2713,6 +3148,7 @@
     "tables/numbers-sheet-4r-16x9",
     "tables/numbers-sheet-6r-16x9"
   ],
+  "kit_reach": "Kit: 38 of 704 plates \u00b7 10 families \u00b7 10 data plates",
   "stingers": [
     {
       "type": "cold-open",
@@ -2730,7 +3166,7 @@
       "type": "the-numbers",
       "title": "six years, one direction",
       "script_t": 360.0,
-      "t": 361.09
+      "t": 361.1
     },
     {
       "type": "capital-allocation",
@@ -2746,9 +3182,9 @@
     },
     {
       "type": "risk",
-      "title": "the covenant, four hundred pages in",
+      "title": "the covenant, page 400",
       "script_t": 920.0,
-      "t": 920.98
+      "t": 920.97
     },
     {
       "type": "valuation",
@@ -2763,959 +3199,2423 @@
       "t": 1247.9
     }
   ],
-  "transitions": [],
-  "animated_segments": 8,
-  "longest_host_beat_s": 11.98,
+  "transitions": [
+    {
+      "transition": "wipe-sweep",
+      "cut": 2.6,
+      "start": 2.35,
+      "at": "cold open"
+    },
+    {
+      "transition": "wipe-page",
+      "cut": 1295.567,
+      "start": 1295.317,
+      "at": "end"
+    },
+    {
+      "transition": "wipe-blinds",
+      "cut": 189.067,
+      "start": 188.817,
+      "at": "chapter_2"
+    },
+    {
+      "transition": "wipe-blinds",
+      "cut": 361.1,
+      "start": 360.85,
+      "at": "chapter_3"
+    },
+    {
+      "transition": "wipe-blinds",
+      "cut": 572.967,
+      "start": 572.717,
+      "at": "chapter_4"
+    },
+    {
+      "transition": "wipe-blinds",
+      "cut": 752.5,
+      "start": 752.25,
+      "at": "chapter_5"
+    },
+    {
+      "transition": "wipe-blinds",
+      "cut": 920.967,
+      "start": 920.717,
+      "at": "chapter_6"
+    },
+    {
+      "transition": "wipe-blinds",
+      "cut": 1110.167,
+      "start": 1109.917,
+      "at": "chapter_7"
+    },
+    {
+      "transition": "wipe-blinds",
+      "cut": 1247.9,
+      "start": 1247.65,
+      "at": "chapter_8"
+    }
+  ],
+  "moves": {
+    "moves": [
+      {
+        "move": "tick-over",
+        "start": 189.317,
+        "shot_id": "chapter_2",
+        "slot": "num"
+      },
+      {
+        "move": "tick-over",
+        "start": 361.35,
+        "shot_id": "chapter_3",
+        "slot": "num"
+      },
+      {
+        "move": "line-draw",
+        "start": 413.733,
+        "shot_id": "segment_45",
+        "slot": "plot-area",
+        "frames": 10
+      },
+      {
+        "move": "bars-grow",
+        "start": 445.733,
+        "shot_id": "segment_50",
+        "slot": "plot-area",
+        "frames": 13
+      },
+      {
+        "move": "tick-over",
+        "start": 573.217,
+        "shot_id": "chapter_4",
+        "slot": "num"
+      },
+      {
+        "move": "tick-over",
+        "start": 752.75,
+        "shot_id": "chapter_5",
+        "slot": "num"
+      },
+      {
+        "move": "tick-over",
+        "start": 921.217,
+        "shot_id": "chapter_6",
+        "slot": "num"
+      },
+      {
+        "move": "tick-over",
+        "start": 1110.417,
+        "shot_id": "chapter_7",
+        "slot": "num"
+      },
+      {
+        "move": "tick-over",
+        "start": 1248.15,
+        "shot_id": "chapter_8",
+        "slot": "num"
+      }
+    ],
+    "wipes": [
+      {
+        "transition": "wipe-sweep",
+        "cut": 2.6,
+        "start": 2.35
+      },
+      {
+        "transition": "wipe-page",
+        "cut": 1295.567,
+        "start": 1295.317
+      },
+      {
+        "transition": "wipe-blinds",
+        "cut": 189.067,
+        "start": 188.817
+      },
+      {
+        "transition": "wipe-blinds",
+        "cut": 361.1,
+        "start": 360.85
+      },
+      {
+        "transition": "wipe-blinds",
+        "cut": 572.967,
+        "start": 572.717
+      },
+      {
+        "transition": "wipe-blinds",
+        "cut": 752.5,
+        "start": 752.25
+      },
+      {
+        "transition": "wipe-blinds",
+        "cut": 920.967,
+        "start": 920.717
+      },
+      {
+        "transition": "wipe-blinds",
+        "cut": 1110.167,
+        "start": 1109.917
+      },
+      {
+        "transition": "wipe-blinds",
+        "cut": 1247.9,
+        "start": 1247.65
+      }
+    ],
+    "skipped": []
+  },
+  "animated_segments": 29,
+  "longest_host_beat_s": 12.0,
   "host_motion": [
     {
       "segment": 0,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 136,
+      "talk_frames": 246,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 5,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 3,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 172,
+      "talk_frames": 328,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 4,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 175,
+      "talk_frames": 328,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 5,
-      "pose": "host/holding-a-page",
+      "pose": "host/sitting-at-desk",
       "spoke": true,
-      "talk_frames": 171,
+      "talk_frames": 307,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 6,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 175,
+      "talk_frames": 321,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 7,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 171,
+      "talk_frames": 325,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 8,
-      "pose": "host/holding-a-page",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 175,
+      "talk_frames": 328,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 9,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 172,
+      "talk_frames": 316,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 10,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 174,
+      "talk_frames": 310,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 11,
-      "pose": "host/holding-a-page",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 172,
+      "talk_frames": 324,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 12,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 174,
+      "talk_frames": 324,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 14,
-      "pose": "host/holding-a-page",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 154,
+      "talk_frames": 286,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 16,
       "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 148,
+      "talk_frames": 281,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 17,
       "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 148,
+      "talk_frames": 282,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 18,
       "pose": "host/close-up",
       "spoke": true,
-      "talk_frames": 150,
+      "talk_frames": 286,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 19,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 150,
+      "talk_frames": 275,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 20,
-      "pose": "host/holding-a-page",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 148,
+      "talk_frames": 283,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 23,
-      "pose": "host/holding-a-page",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 54,
+      "talk_frames": 96,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 25,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 54,
+      "talk_frames": 103,
       "idle_frames": 0,
+      "blinks": 0,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 27,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 149,
+      "talk_frames": 274,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 28,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 148,
+      "talk_frames": 280,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 30,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 162,
+      "talk_frames": 308,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 31,
       "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 157,
+      "talk_frames": 284,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 5,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 32,
       "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 162,
+      "talk_frames": 308,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 34,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 133,
+      "talk_frames": 251,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 35,
-      "pose": "host/holding-a-page",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 134,
+      "talk_frames": 254,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 36,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 136,
+      "talk_frames": 243,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 38,
-      "pose": "host/holding-a-page",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 172,
+      "talk_frames": 327,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 39,
       "pose": "host/close-up",
       "spoke": true,
-      "talk_frames": 172,
+      "talk_frames": 329,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 40,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 172,
+      "talk_frames": 324,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 41,
-      "pose": "host/holding-a-page",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 171,
+      "talk_frames": 313,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 42,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 172,
+      "talk_frames": 322,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 43,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 171,
+      "talk_frames": 310,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 51,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 158,
+      "talk_frames": 296,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 52,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 159,
+      "talk_frames": 293,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 54,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 175,
+      "talk_frames": 342,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 55,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 175,
+      "talk_frames": 325,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 56,
-      "pose": "host/holding-a-page",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 175,
+      "talk_frames": 326,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 57,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 175,
+      "talk_frames": 340,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 58,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 175,
+      "talk_frames": 322,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 60,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 146,
+      "talk_frames": 265,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 61,
       "pose": "host/close-up",
       "spoke": true,
-      "talk_frames": 146,
+      "talk_frames": 266,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 63,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 99,
+      "talk_frames": 186,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 65,
-      "pose": "host/holding-a-page",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 162,
+      "talk_frames": 305,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 2,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 66,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 164,
+      "talk_frames": 300,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 67,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 164,
+      "talk_frames": 305,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 68,
-      "pose": "host/holding-a-page",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 165,
+      "talk_frames": 294,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 70,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 167,
+      "talk_frames": 319,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 71,
-      "pose": "host/holding-a-page",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 168,
+      "talk_frames": 303,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 72,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 167,
+      "talk_frames": 315,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 73,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 167,
+      "talk_frames": 311,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 74,
-      "pose": "host/holding-a-page",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 167,
+      "talk_frames": 317,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 75,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 167,
+      "talk_frames": 299,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 78,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 169,
+      "talk_frames": 326,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 79,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 170,
+      "talk_frames": 318,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 80,
       "pose": "host/close-up",
       "spoke": true,
-      "talk_frames": 171,
+      "talk_frames": 325,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 82,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 136,
+      "talk_frames": 245,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 83,
-      "pose": "host/holding-a-page",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 138,
+      "talk_frames": 260,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 84,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 136,
+      "talk_frames": 261,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 86,
-      "pose": "host/holding-a-page",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 168,
+      "talk_frames": 317,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 87,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 169,
+      "talk_frames": 314,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 88,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 169,
+      "talk_frames": 317,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 90,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 163,
+      "talk_frames": 303,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 91,
       "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 163,
+      "talk_frames": 300,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 92,
       "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 162,
+      "talk_frames": 306,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 95,
-      "pose": "host/holding-a-page",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 129,
+      "talk_frames": 247,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 4,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 97,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 157,
+      "talk_frames": 302,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 98,
-      "pose": "host/holding-a-page",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 154,
+      "talk_frames": 292,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 99,
       "pose": "host/close-up",
       "spoke": true,
-      "talk_frames": 158,
+      "talk_frames": 290,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 100,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 156,
+      "talk_frames": 289,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 101,
-      "pose": "host/holding-a-page",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 156,
+      "talk_frames": 301,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 102,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 156,
+      "talk_frames": 272,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 104,
-      "pose": "host/holding-a-page",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 180,
+      "talk_frames": 329,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 105,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 180,
+      "talk_frames": 337,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 106,
       "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 180,
+      "talk_frames": 326,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 107,
       "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 180,
+      "talk_frames": 335,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 108,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 180,
+      "talk_frames": 339,
       "idle_frames": 0,
+      "blinks": 4,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 109,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 180,
+      "talk_frames": 325,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 111,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 138,
+      "talk_frames": 262,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 112,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 137,
+      "talk_frames": 264,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 114,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 85,
+      "talk_frames": 164,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 116,
-      "pose": "host/holding-a-page",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 125,
+      "talk_frames": 243,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 117,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 124,
+      "talk_frames": 229,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 119,
       "pose": "host/close-up",
       "spoke": true,
-      "talk_frames": 154,
+      "talk_frames": 280,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 120,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 152,
+      "talk_frames": 299,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 121,
       "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 152,
+      "talk_frames": 283,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 122,
       "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 154,
+      "talk_frames": 291,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 123,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 154,
+      "talk_frames": 288,
       "idle_frames": 0,
+      "blinks": 3,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 124,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 152,
+      "talk_frames": 289,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 127,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 28,
+      "talk_frames": 54,
       "idle_frames": 0,
+      "blinks": 0,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 129,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 139,
+      "talk_frames": 258,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 130,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 139,
+      "talk_frames": 264,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 131,
-      "pose": "host/holding-a-page",
+      "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 141,
+      "talk_frames": 252,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 133,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 153,
+      "talk_frames": 299,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 134,
-      "pose": "host/holding-a-page",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 155,
+      "talk_frames": 291,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 135,
       "pose": "host/close-up",
       "spoke": true,
-      "talk_frames": 154,
+      "talk_frames": 298,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 136,
       "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 153,
+      "talk_frames": 291,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 137,
       "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 153,
+      "talk_frames": 284,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 139,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/arms-crossed",
       "spoke": true,
-      "talk_frames": 150,
+      "talk_frames": 280,
       "idle_frames": 0,
+      "blinks": 1,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 140,
-      "pose": "host/holding-a-page",
+      "pose": "host/considering",
       "spoke": true,
-      "talk_frames": 153,
+      "talk_frames": 291,
       "idle_frames": 0,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     },
     {
       "segment": 141,
       "pose": "host/close-up",
       "spoke": true,
-      "talk_frames": 150,
-      "idle_frames": 0,
+      "talk_frames": 283,
+      "idle_frames": 1,
+      "blinks": 2,
       "has_talk": true,
-      "has_idle": true
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": [],
+      "cast": ""
     }
   ],
   "panel_hosts": {
-    "2": "host/leaning-on-desk",
-    "15": "host/medium-glance-left",
+    "2": "host/checking-a-figure",
+    "15": "host/turn-to-screen",
     "24": "host/pointing-down-at-desk",
     "29": "host/holding-a-page",
     "37": "host/holding-a-page",
     "44": "host/pointing-down-at-desk",
     "45": "host/holding-a-page",
-    "46": "host/leaning-on-desk",
+    "46": "host/checking-a-figure",
     "49": "host/holding-a-page",
-    "50": "host/leaning-on-desk",
-    "59": "host/medium-glance-right",
-    "62": "host/leaning-on-desk",
+    "50": "host/checking-a-figure",
+    "59": "host/turn-to-screen",
+    "62": "host/checking-a-figure",
     "64": "host/pointing-down-at-desk",
     "69": "host/holding-a-page",
     "77": "host/holding-a-page",
     "85": "host/holding-a-page",
-    "94": "host/leaning-on-desk",
+    "94": "host/checking-a-figure",
     "96": "host/pointing-down-at-desk",
-    "110": "host/leaning-on-desk",
-    "115": "host/medium-glance-left",
-    "118": "host/leaning-on-desk",
+    "110": "host/checking-a-figure",
+    "115": "host/turn-to-screen",
+    "118": "host/checking-a-figure",
     "125": "host/holding-a-page",
     "128": "host/pointing-down-at-desk",
     "132": "host/pointing-down-at-desk",
-    "138": "host/leaning-on-desk"
+    "138": "host/checking-a-figure"
   },
-  "glances": [
-    "host/medium-glance-left",
-    "host/medium-glance-right"
-  ],
-  "blinks": 0,
-  "shots_with_blink": 0,
+  "glances": [],
+  "blinks": 200,
+  "shots_with_blink": 101,
   "shots_with_idle": 101,
   "attributions": [
     "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
     "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
     "owned meme library (harold-quick-flip-became-bagholder)"
   ],
+  "visual_sources": {
+    "cache": 8,
+    "generated": 1,
+    "library": 1
+  },
   "filter_script": "/home/user/Content-Machine/workspace/EXMPL/sample_long_full/long_final.filter.txt",
-  "output": "/home/user/Content-Machine/workspace/EXMPL/sample_long_full/long_final.mp4"
+  "output": "/home/user/Content-Machine/workspace/EXMPL/sample_long_full/long_final.mp4",
+  "placement": "MOCK TIMINGS \u2014 every cue time in this manifest came from interpolated mock TTS word timestamps, not from a voice. Composition, type fit and kit coverage are real; WHERE anything lands is not. Judge placement from a real render only."
 }

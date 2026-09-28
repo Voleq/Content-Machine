@@ -926,3 +926,43 @@ def test_no_numbers_sheet_rotates_in_with_more_rows_than_a_short_draws(
             rows = [n for n in plate.slots if re.fullmatch(r"label-\d+", n)]
             assert len(rows) <= SHEET_ROWS, \
                 f"{fmt_name}/{shot.id} rotates onto {v.plate} ({len(rows)} rows)"
+
+
+def _compare_resolver(tmp_path, rows, reported=None):
+    from types import SimpleNamespace
+
+    from pipeline.render_short import ShortResolver
+
+    script = SimpleNamespace(
+        numbers=[SimpleNamespace(label=l, values=v) for l, v in rows],
+        reported=reported)
+    return ShortResolver(script=script, workdir=tmp_path, settings=None)
+
+
+def test_then_and_now_are_read_from_the_periods_a_row_fills(tmp_path):
+    """A row may leave its early periods blank. The then-and-now card took the
+    first period whatever it held, and printed "It was ." on screen."""
+    r = _compare_resolver(tmp_path, [("P/E", ["", "", "18x", "21x", "", "24x"])])
+    assert r.text_for("compare.light") == "It was 18x."
+    assert r.text_for("compare.heavy") == "P/E is 24x now."
+
+
+def test_a_row_with_one_figure_states_no_then_and_now(tmp_path):
+    r = _compare_resolver(tmp_path, [("P/E", ["", "", "", "", "", "24x"])])
+    assert r.text_for("compare.light") is None
+    assert r.text_for("compare.heavy") is None
+
+
+def test_the_print_is_labelled_only_by_the_row_it_came_from(tmp_path):
+    """The print's label was the sheet's first row whatever printed, so an EPS
+    beat went out labelled "Revenue". It names a row only when that row's
+    latest figure is the print."""
+    rows = [("Revenue", ["$9.1B", "$9.8B", ""]), ("EPS", ["$1.20", "$1.42", ""])]
+    assert _compare_resolver(tmp_path, rows, "$1.42") \
+        .text_for("compare.print_label") == "EPS"
+    assert _compare_resolver(tmp_path, rows, "$1.39") \
+        .text_for("compare.print_label") is None
+    assert _compare_resolver(tmp_path, rows) \
+        .text_for("compare.print_label") is None
+    assert _compare_resolver(tmp_path, rows) \
+        .text_for("compare.reported") == "$9.8B"

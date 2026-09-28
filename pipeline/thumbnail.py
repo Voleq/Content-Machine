@@ -54,7 +54,7 @@ TALL = (1080, 1920)
 # room roles so a kit that renames its angles still finds one.
 BACKDROP_ROLES = ("establish", "talk")
 
-# Whole-figure mascot poses — the same cut-outs the two-shot uses. A host
+# Whole-figure host poses — the same cut-outs the two-shot uses. A host
 # chapter card would bring its own headline and its own baked furniture into a
 # frame that already has copy on it.
 # Which host role the cover uses. `beat` is him presenting, which is what a

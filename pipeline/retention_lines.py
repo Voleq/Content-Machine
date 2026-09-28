@@ -18,7 +18,7 @@ That join is the substrate. Four questions become slices of it:
   those thresholds was a judgement call and none has ever been checked
   against whether it holds anybody. Here each sentence carries its features
   and its hold, so the rules can be asked to justify themselves.
-* **Runtime** — hold against duration, per lane. Sixty to seventy-five
+* **Runtime** — hold against duration, per lane. Forty-five to fifty-five
   seconds is an assumption in a spec, not a finding.
 * **The cut** — retention mapped onto the render manifest's own shot spans,
   so the evidence reaches pacing and not only the outline.

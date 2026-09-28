@@ -238,7 +238,7 @@ on the plate. What sits on the rail comes from you, as a PAIR OF NUMBERS:
   than a long.
 * **There is no portrait bridge.** `structure/multiple-bridge` is 16:9 only. A
   trailing-to-forward walk is three figures and two connectors and does not
-  belong in seventy-five seconds.
+  belong in a fifty-second vertical cut.
 
 #### Plates that DRAW numbers — read the `data:` line
 

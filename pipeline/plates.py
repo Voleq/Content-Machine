@@ -570,10 +570,10 @@ class Plate:
     def refuses_host(self) -> bool:
         """Whether the plate says, in the field, that nobody stands here.
 
-        `room/high-desk-down` is the camera looking down at the desk: there is
+        `room/desk-top-down` is the camera looking down at the desk: there is
         no floor in shot, so there is nowhere for him to stand and the plate
         says `hostAnchor: false` rather than leaving the field out.
-        `room/wall-of-calls` refuses for the same reason.
+        `room/board` refuses for the same reason.
 
         A refusal is DATA and is different from an omission. Reading them as
         the same thing is how a renderer ends up compositing a man onto a
@@ -1540,7 +1540,7 @@ class Registry:
 
             # A ROOM SAYS WHETHER ANYONE STANDS IN IT, ONE WAY OR THE OTHER.
             #
-            # `room/high-desk-down` is the camera above the desk: there is no
+            # `room/desk-top-down` is the camera above the desk: there is no
             # floor in shot, so it declares `hostAnchor: false`. That refusal
             # is DATA. A room carrying neither an anchor nor the refusal has
             # not been decided about, and the renderer's only options are to
@@ -1624,37 +1624,6 @@ def load_variant_ledger(settings) -> VariantLedger:
 # The registry file is rewritten by every install, so its mtime is the whole
 # signal. One `stat` per `load_plates` against a parse of a ~10MB JSON.
 _CACHE: dict[Path, tuple[float, Registry]] = {}
-
-
-def wall_of_calls(settings, *, limit: int = 7) -> dict[str, str]:
-    """`room/wall-of-calls`'s slot values, from the thesis book.
-
-    Seven index cards on a wall: a ticker, the date it was covered, and one
-    word for how it went. Every one of them is a video this channel actually
-    published — the book already records the ticker, the date and whether the
-    thesis is intact, cracking or broken, and until now nothing put it on
-    screen. A wall of invented calls would be the exact opposite of the
-    segment: it is credible because it is the receipts.
-
-    Empty when the book is empty, which is the honest render of a channel that
-    has not covered anything yet — seven blank cards, not seven made-up ones.
-    """
-    try:
-        from pipeline.standing import ThesisBook
-
-        book = ThesisBook(settings)
-        rows = [book.get(t) for t in book.tickers()]
-    except Exception:                              # noqa: BLE001 — never fatal
-        return {}
-
-    rows = [t for t in rows if t is not None]
-    rows.sort(key=lambda t: (t.workdate or t.recorded_at or ""), reverse=True)
-    values: dict[str, str] = {"kicker": "THE WALL"}
-    for i, t in enumerate(rows[:limit], start=1):
-        values[f"ticker-{i}"] = t.ticker
-        values[f"date-{i}"] = (t.workdate or (t.recorded_at or "")[:10])[-5:]
-        values[f"outcome-{i}"] = (t.status or "intact").split()[0][:8]
-    return values
 
 
 # THE HOUR OF THE EPISODE BEING RENDERED, for every registry loaded inside it.
