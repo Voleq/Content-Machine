@@ -650,14 +650,18 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
         # 5. THE SOURCE SLIDES IN under the figure once it has landed, where
         #    design says the plate has room for it; where it has none, on the
         #    next shot that does.
+        # A later beat with a source of its own ends the carry: the carried
+        # line names the figure before it, and resting it under a shot after
+        # this one would cite the wrong figure.
+        if own and carried is not None and carried[1] != beat:
+            plan.skipped.append(
+                f"{shot.id}: the source carried from {carried[1]} gave way "
+                f"to this shot's own")
+            carried = None
         src, whose = (own, beat) if own else (carried or (None, None))
         if src and whose not in tagged:
             if not tag_clear(plate):
                 if own:
-                    if carried is not None and carried[1] != beat:
-                        plan.skipped.append(
-                            f"{shot.id}: the source carried from {carried[1]} gave way "
-                            f"to this shot's own")
                     carried = (own, beat)
                 continue
             tag = _source_tag(reg, fmt, plate, shot.id, src, lane, t0, t1, earliest)
@@ -666,6 +670,12 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
                 tagged.add(whose)
                 if not own:
                     carried = None
+            elif own:
+                plan.skipped.append(
+                    f"{shot.id}: no source tag, "
+                    + ("the plate prints a source line of its own"
+                       if plate.slot("source") is not None
+                       else "the shot is too short to slide one in and read it"))
     if carried is not None:
         plan.skipped.append(
             f"{carried[1]}: no source tag, its plate has no clear spot for one "
