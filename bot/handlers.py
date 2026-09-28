@@ -1106,6 +1106,13 @@ class BotCore:
             log.warning("filing brief: cross-check failed for %s (%s)",
                         ws.ticker, e)
         parts = [f"{brief.sections} sections"]
+        if brief.points:
+            kept = (f"{len(brief.points)} points, each with its filing "
+                    "sentence")
+            if brief.dropped:
+                kept += (f" ({brief.dropped} dropped: their sentence is not "
+                         "in the filing)")
+            parts.append(kept)
         if brief.contradictions:
             parts.append("cross-checked against your numbers")
         if brief.grading:

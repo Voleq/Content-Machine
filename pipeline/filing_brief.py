@@ -40,6 +40,7 @@ import logging
 import queue
 import re
 import threading
+import unicodedata
 from concurrent.futures import Future
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -69,40 +70,285 @@ _RESERVE_TOKENS = 1024
 
 _SECTION_SYSTEM = (
     "You read one section of an SEC filing for a deadpan financial video. "
-    "In at most six short bullet points, state only what the section SAYS: "
-    "specific risks, specific numbers, specific changes in wording. No "
+    "Write at most six points, each stating only what the section SAYS: a "
+    "specific risk, a specific number, a specific change in wording. No "
     "opinion, no hype, no investment advice, and never name a data terminal "
-    "or vendor. If the section says nothing notable, say 'nothing notable'."
+    "or vendor.\n"
+    "Every point is exactly two lines:\n"
+    "POINT: <what the section says, in your own words, with any figure>\n"
+    "SOURCE: \"<the one sentence it comes from, copied word for word>\"\n"
+    "Copy the sentence exactly as the section has it: no shortening, no "
+    "ellipsis, no rewording. Leave out any point you cannot back with one "
+    "sentence from the section. If the section says nothing notable, write "
+    "'nothing notable'."
 )
 
 _DIFF_SYSTEM = (
     "You compare two years of one company's SEC filings for a deadpan "
-    "financial video. Using ONLY the section notes given, write four short "
+    "financial video. Using ONLY the numbered points given, write four short "
     "labelled paragraphs:\n"
     "RISK SHIFT: which risk factors are new, dropped, or reworded, and how.\n"
     "LANGUAGE: where management's tone or hedging changed.\n"
     "SEGMENTS: which parts of the business moved, with the figures given.\n"
     "OPEN QUESTION: the single thing a sceptical reader would want asked.\n"
-    "If the notes do not support a paragraph, write 'not visible in these "
-    "filings' for it rather than inventing one."
+    "After every statement, give the numbers of the points it rests on in "
+    "square brackets, like [P3] or [P3, P7]. If the points do not support a "
+    "paragraph, write 'not visible in these filings' for it rather than "
+    "inventing one."
 )
 
 _CONTRADICTION_SYSTEM = (
     "You cross-check a company's own filing against a separate set of "
     "numbers. Using ONLY what you are given, list every place the filing "
     "and the numbers disagree, or appear to. One line each: what the "
-    "numbers say, what the filing says, and why it matters. If nothing "
-    "disagrees, write exactly 'no contradictions found'. Never invent a "
-    "figure that is not in front of you."
+    "numbers say, what the filing says with the number of the point it "
+    "comes from in square brackets (like [P4]), and why it matters. If "
+    "nothing disagrees, write exactly 'no contradictions found'. Never "
+    "invent a figure that is not in front of you."
 )
 
 _GRADING_SYSTEM = (
     "You are checking whether a company's latest filings support or "
-    "undermine claims a previous video made. Using ONLY the section notes "
+    "undermine claims a previous video made. Using ONLY the numbered points "
     "and the prior claims given, take each claim in turn and say: "
     "SUPPORTED, UNDERMINED, or NOT ADDRESSED, followed by one line of "
-    "evidence from the notes. Never invent a figure."
+    "evidence from the points with their numbers in square brackets (like "
+    "[P4]). Never invent a figure."
 )
+
+
+# --------------------------------------------------------------------------
+# Points: what the local model says a section says, and the sentence behind it.
+# --------------------------------------------------------------------------
+#
+# WHY EVERY POINT CARRIES ITS SENTENCE. The brief is written by a 12B model
+# on the operator's own box, and it is the input the angle is chosen from.
+# A small model's summary reads exactly as confident when it misreads a
+# figure as when it gets one right, and nothing downstream could tell. So
+# each point now names the one sentence it came from; code throws out any
+# point whose sentence is not actually in the section the model was shown;
+# and the angle prompt has the writer (Claude, in the operator's own chat,
+# at no extra cost) check each surviving point against its sentence before
+# building on it. Code proves the sentence is real; the writer judges
+# whether the point reads it right. Neither half can do the other's job.
+
+# A shorter "sentence" matches too easily to prove anything.
+_MIN_SOURCE_WORDS = 5
+
+# Past this the full sentence is a table row or a run-on the segmenter
+# glued together, and the model's own span is the more useful thing to show.
+_MAX_SENTENCE_CHARS = 700
+
+_WORD = re.compile(r"[a-z0-9]+", re.I)
+_BULLET = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s*")
+# The labels in capitals or title case only: "the main source: of cash" in a
+# point's own words is not a label.
+_POINT_LINE = re.compile(r"^\**\s*(?:POINT|Point)\s*\**\s*[:\-–]\s*\**\s*(.*)$")
+_SOURCE_AT = re.compile(r"\**\s*(?:SOURCE|Source)\s*\**\s*[:\-–]\s*\**\s*")
+_QUOTES = "\"'“”‘’`"
+# Where a sentence ends: terminal punctuation, maybe a closing quote, then
+# whitespace and something that starts a sentence. "$89.0" and "1.5x" never
+# qualify, because nothing follows the period but a digit.
+_SENTENCE_END = re.compile(r"[.!?][\"”’)]?(?=\s+[A-Z0-9\"“(]|\s*$)")
+# A citation is P-numbers inside brackets: "[P3]", "[P3, P7]", "[P3][P7]",
+# and the "(P3)" a small model writes instead. Loose in a sentence, "P500"
+# is as likely to be the S&P.
+_CITE_GROUP = re.compile(r"[\[(]([^\])]*)[\])]")
+_CITE = re.compile(r"\bP(\d+)\b", re.I)
+
+
+@dataclass
+class Point:
+    """One thing a filing section says, and the sentence it says it."""
+
+    n: int = 0
+    # "10-K 2025-12-31" and "Risk Factors": which year's filing matters as
+    # much as the sentence, because the brief compares two of them.
+    filing: str = ""
+    section: str = ""
+    text: str = ""
+    # The WHOLE sentence from the filing, not the model's copy of part of
+    # it: a clause cut from "Although we expected margins to recover, they
+    # did not" reads the opposite way on its own.
+    source: str = ""
+    # Figures in the point that its own sentence does not carry. A hint for
+    # the writer's check, never a reason to drop: a point can fairly restate
+    # "$89.0 million" as "$89 million".
+    unmatched: list[str] = field(default_factory=list)
+
+    @property
+    def tag(self) -> str:
+        return f"P{self.n}"
+
+    def to_json(self) -> dict:
+        return {"n": self.n, "filing": self.filing, "section": self.section,
+                "text": self.text, "source": self.source,
+                "unmatched": list(self.unmatched)}
+
+    @classmethod
+    def from_json(cls, data: dict) -> "Point":
+        return cls(n=int(data.get("n") or 0),
+                   filing=str(data.get("filing") or ""),
+                   section=str(data.get("section") or ""),
+                   text=str(data.get("text") or ""),
+                   source=str(data.get("source") or ""),
+                   unmatched=[str(x) for x in (data.get("unmatched") or [])])
+
+
+def _parse_points(answer: str) -> list[tuple[str, str]]:
+    """`(point, source)` pairs out of a section answer, source "" when the
+    model gave none.
+
+    Takes the two-line POINT/SOURCE shape the instruction asks for, and the
+    shapes a small model drifts into instead: both on one line, bulleted,
+    bolded, a sentence wrapped onto a second line, or a bare bullet with no
+    source at all (kept here so the caller counts it as dropped rather than
+    never seeing it).
+    """
+    pairs: list[list[str]] = []
+    for raw in (answer or "").splitlines():
+        bulleted = bool(_BULLET.match(raw))
+        line = _BULLET.sub("", raw.strip()).strip()
+        if not line or line.lower().startswith("nothing notable"):
+            continue
+        m = _POINT_LINE.match(line)
+        body = m.group(1) if m else line
+        parts = _SOURCE_AT.split(body, maxsplit=1)
+        if len(parts) > 1:
+            head, source = parts[0].strip(), parts[1].strip()
+            if head or m:
+                pairs.append([head, source])
+            elif pairs and not pairs[-1][1]:
+                # "SOURCE: ..." on its own line belongs to the point above.
+                pairs[-1][1] = source
+            continue
+        if m or bulleted:
+            pairs.append([body, ""])
+        elif pairs and pairs[-1][1] and not _closed(pairs[-1][1]):
+            pairs[-1][1] += " " + line       # a sentence wrapped in two
+        elif pairs and not pairs[-1][1]:
+            pairs[-1][0] += " " + line       # a point wrapped in two
+        elif not line.endswith(":"):         # a "Here are the points:" preamble
+            pairs.append([line, ""])
+    out = []
+    for text, source in pairs:
+        text = text.strip().rstrip(" -–|").strip()
+        if not text or text.lower().startswith("nothing notable"):
+            continue
+        out.append((text, source.strip().strip(_QUOTES).strip()))
+    return out
+
+
+def _closed(source: str) -> bool:
+    """Whether a quoted source already ended on the line it started."""
+    tail = source.rstrip()
+    return len(tail) > 1 and tail[-1] in _QUOTES
+
+
+def _words(text: str) -> list[str]:
+    return _WORD.findall(unicodedata.normalize("NFKC", text or "").lower())
+
+
+def find_sentence(section: str, quote: str) -> str | None:
+    """The sentence of `section` that `quote` was copied from, or None.
+
+    VERBATIM TO THE WORD, NOT TO THE BYTE. The words have to appear in the
+    section in the same order with nothing between them; punctuation, curly
+    quotes, dashes, spacing and case do not count, because the model's copy
+    of "$89.0 million — up 3%" differs from the filing's in exactly those
+    and in nothing that matters. An ellipsis is a cut, and a cut is not a
+    copy.
+    """
+    if "..." in quote or "…" in quote:
+        return None
+    needle = _words(quote)
+    if len(needle) < _MIN_SOURCE_WORDS:
+        return None
+    text = unicodedata.normalize("NFKC", section or "")
+    spans = [(m.group(0).lower(), m.start(), m.end())
+             for m in _WORD.finditer(text)]
+    words = [w for w, _, _ in spans]
+    k = len(needle)
+    first = needle[0]
+    for i, w in enumerate(words):
+        if w != first or words[i:i + k] != needle:
+            continue
+        start, end = spans[i][1], spans[i + k - 1][2]
+        before = [m.end() for m in _SENTENCE_END.finditer(text, 0, start)]
+        s0 = before[-1] if before else 0
+        after = _SENTENCE_END.search(text, end)
+        s1 = after.end() if after else len(text)
+        whole = text[s0:s1].strip()
+        if len(whole) > _MAX_SENTENCE_CHARS:
+            whole = text[start:end].strip()
+        return whole
+    return None
+
+
+def _check_points(pairs: list[tuple[str, str]], packed: str, filing: str,
+                  section: str) -> tuple[list[Point], int]:
+    """Keep the points whose sentence is in what the model was shown.
+
+    Checked against `packed`, the clipped text the model actually read, not
+    the whole section: a "quote" from past the clip is one the model cannot
+    have copied, however real it is.
+    """
+    from pipeline.recall import unsupported_numbers
+
+    kept: list[Point] = []
+    dropped = 0
+    for text, quote in pairs:
+        sentence = find_sentence(packed, quote) if quote else None
+        if sentence is None:
+            dropped += 1
+            continue
+        kept.append(Point(filing=filing, section=section, text=text,
+                          source=sentence,
+                          unmatched=unsupported_numbers(
+                              text, f"{sentence} {filing}")))
+    return kept, dropped
+
+
+def _points_listing(points: list[Point]) -> str:
+    """The points without their sentences, grouped by filing and section —
+    what the condensation, cross-check and grading calls read. The
+    sentences stay out of those: they would triple the prompt, and the
+    small model has nothing to do with them."""
+    lines: list[str] = []
+    head = None
+    for p in points:
+        if (p.filing, p.section) != head:
+            head = (p.filing, p.section)
+            lines.append(f"\n### {p.filing} — {p.section}")
+        lines.append(f"[{p.tag}] {p.text}")
+    return "\n".join(lines).strip()
+
+
+def _cited(text: str) -> set[int]:
+    return {int(n) for group in _CITE_GROUP.findall(text or "")
+            for n in _CITE.findall(group)}
+
+
+def _keep_cited_lines(text: str, points: list[Point]) -> tuple[str, int]:
+    """Drop the contradiction lines that cite no point in the brief.
+
+    A contradiction is the line the angle is most likely to be built on,
+    and one with no point behind it has no sentence the writer can check
+    it against — so it goes, and the brief says how many went.
+    """
+    real = {p.n for p in points}
+    body = (text or "").strip()
+    if not body or body.lower().startswith("no contradictions found"):
+        return body, 0
+    kept, dropped = [], 0
+    for line in body.splitlines():
+        if not line.strip():
+            continue
+        if _cited(line) & real:
+            kept.append(line)
+        else:
+            dropped += 1
+    return "\n".join(kept), dropped
 
 
 @dataclass
@@ -122,6 +368,14 @@ class FilingBrief:
     body: str = ""
     contradictions: str = ""
     grading: str = ""
+    # Every point the paragraphs above may cite, each with the filing
+    # sentence it came from; and how many the model offered that code threw
+    # out because their sentence is not in the filing. Empty on a brief
+    # written before points carried sentences.
+    points: list[Point] = field(default_factory=list)
+    dropped: int = 0
+    # Contradiction lines that cited no point, and so were thrown out.
+    unbacked: int = 0
     # Why there is no body, when there is not one. `skipped` is a normal
     # outcome here, never an error.
     reason: str = ""
@@ -135,7 +389,10 @@ class FilingBrief:
                 "accessions": list(self.accessions),
                 "sections": self.sections, "context_held": self.context_held,
                 "body": self.body, "contradictions": self.contradictions,
-                "grading": self.grading, "reason": self.reason}
+                "grading": self.grading,
+                "points": [p.to_json() for p in self.points],
+                "dropped": self.dropped, "unbacked": self.unbacked,
+                "reason": self.reason}
 
     @classmethod
     def from_json(cls, data: dict) -> "FilingBrief":
@@ -148,6 +405,10 @@ class FilingBrief:
             body=str(data.get("body") or ""),
             contradictions=str(data.get("contradictions") or ""),
             grading=str(data.get("grading") or ""),
+            points=[Point.from_json(p) for p in (data.get("points") or [])
+                    if isinstance(p, dict)],
+            dropped=int(data.get("dropped") or 0),
+            unbacked=int(data.get("unbacked") or 0),
             reason=str(data.get("reason") or ""))
 
     def render_text(self) -> str:
@@ -157,6 +418,10 @@ class FilingBrief:
         carry a fallback explaining that quotes arrive after the angle is
         picked — text that is simply wrong once a brief can be present, and
         that taught the model to expect an empty slot (K4).
+
+        The points come LAST, with their sentences, because they are what
+        the writer checks everything above against; a paragraph citing a
+        point that is not in the brief is named rather than silently kept.
         """
         if not self.body:
             return f"(no filing brief — {self.reason or 'not run'})"
@@ -169,14 +434,52 @@ class FilingBrief:
                          "model's context window, so the notes below may be "
                          "built from partial text. Treat them as leads, not "
                          "as facts.")
+        if not self.points:
+            lines.append("(this brief was written before its points carried "
+                         "the filing sentence behind them, so nothing below "
+                         "can be checked: treat all of it as leads)")
         lines.append(self.body.strip())
         if self.contradictions:
             lines.append("\nAGAINST OUR NUMBERS:\n"
                          + self.contradictions.strip())
+        if self.unbacked:
+            lines.append(f"({self.unbacked} more contradiction "
+                         f"{'line' if self.unbacked == 1 else 'lines'} cited "
+                         "no point, so there was nothing to check "
+                         f"{'it' if self.unbacked == 1 else 'them'} against, "
+                         "and the bot dropped "
+                         f"{'it' if self.unbacked == 1 else 'them'}.)")
         if self.grading:
             lines.append("\nAGAINST WHAT WE SAID LAST TIME:\n"
                          + self.grading.strip())
+        if self.points:
+            lines.append(self._points_text())
         return "\n".join(ln for ln in lines if ln)
+
+    def _points_text(self) -> str:
+        real = {p.n for p in self.points}
+        ghosts = sorted(_cited("\n".join((self.body, self.contradictions,
+                                          self.grading))) - real)
+        out = ["\nTHE POINTS, EACH WITH THE FILING SENTENCE IT CAME FROM "
+               "(the bot confirmed every sentence is in the filing; it did "
+               "not confirm the point reads it right):"]
+        for p in self.points:
+            out.append(f"{p.tag} · {p.filing} · {p.section}\n"
+                       f"  Point: {p.text}\n"
+                       f"  Sentence: \"{p.source}\"")
+            if p.unmatched:
+                out.append("  (not in the sentence: "
+                           + ", ".join(p.unmatched) + ")")
+        if self.dropped:
+            out.append(f"({self.dropped} more "
+                       f"{'point was' if self.dropped == 1 else 'points were'}"
+                       " dropped: the sentence the model gave is not in the "
+                       "filing it read.)")
+        if ghosts:
+            out.append("(cited above but not a point in this brief: "
+                       + ", ".join(f"P{n}" for n in ghosts)
+                       + ". Whatever rests only on those is unsupported.)")
+        return "\n".join(out)
 
 
 # --------------------------------------------------------------------------
@@ -198,9 +501,16 @@ def cache_path(accessions: list[str], settings: Settings) -> Path:
     mistake the defect it guards against was made of: a load-bearing value
     in one place and the thing it governs in another.
     """
-    material = "|".join(sorted(accessions)) + f"@{_budget(settings)}"
+    material = ("|".join(sorted(accessions)) + f"@{_budget(settings)}"
+                + f"#v{_BRIEF_VERSION}")
     key = hashlib.sha256(material.encode()).hexdigest()[:16]
     return settings.cache_dir / "filing_briefs" / f"{key}.json"
+
+
+# Part of the cache key. v2: points carry the filing sentence behind them, so
+# a brief cached before that has nothing for the writer to check and has to
+# be read again rather than served.
+_BRIEF_VERSION = 2
 
 
 def _budget(settings: Settings) -> int:
@@ -273,8 +583,9 @@ def _sections_to_read(sections: list[dict], settings: Settings) -> list[dict]:
 
 
 def _summarise_sections(ref, sections: list[dict], settings: Settings,
-                        counters: dict) -> tuple[list[str], bool]:
-    """One summary per section. Returns `(notes, every_prompt_fit)`.
+                        counters: dict) -> tuple[list[Point], bool, int, int]:
+    """One reading per section. Returns `(points, every_prompt_fit,
+    points_dropped, sections_answered)`.
 
     SEGMENT FIRST, SUMMARISE PER SECTION, CONDENSE AFTER — two full 10-Ks
     fit no local context window, and the condensation pass has to hold every
@@ -284,8 +595,10 @@ def _summarise_sections(ref, sections: list[dict], settings: Settings,
     from pipeline.filings import _compress_sections
     from pipeline.llm import chat
 
-    notes: list[str] = []
+    points: list[Point] = []
     held = True
+    dropped = answered = 0
+    filing = f"{ref.form} {ref.period or ref.filed}"
     budget = _budget(settings)
     for section in sections:
         # ASK WHETHER THE SECTION FIT, not whether the packed result did.
@@ -305,28 +618,33 @@ def _summarise_sections(ref, sections: list[dict], settings: Settings,
                    purpose="filing-brief-section")
         if not out:
             continue
-        notes.append(f"### {ref.form} {ref.period or ref.filed} — "
-                     f"{section['title']}\n{out.strip()}")
-    return notes, held
+        answered += 1
+        kept, lost = _check_points(_parse_points(out), packed, filing,
+                                   section["title"])
+        points.extend(kept)
+        dropped += lost
+    return points, held, dropped, answered
 
 
 def _read_one(ref, workspace: Path, settings: Settings,
-              counters: dict) -> tuple[list[str], int, bool]:
-    """Fetch, segment and summarise one filing. Never raises."""
+              counters: dict) -> tuple[list[Point], int, bool, int, int]:
+    """Fetch, segment and read one filing. Never raises. Returns `(points,
+    sections, every_prompt_fit, points_dropped, sections_answered)`."""
     from pipeline.filings import download_filing, segment_filing
 
     counters["download"] = counters.get("download", 0) + 1
     path = download_filing(ref, workspace, settings)
     if path is None:
         log.info("filing brief: could not download %s", ref.label)
-        return [], 0, True
+        return [], 0, True, 0, 0
     html = path.read_text(errors="replace", encoding="utf-8")
     sections = _sections_to_read(segment_filing(html), settings)
     if not sections:
         log.info("filing brief: %s had no readable sections", ref.label)
-        return [], 0, True
-    notes, held = _summarise_sections(ref, sections, settings, counters)
-    return notes, len(sections), held
+        return [], 0, True, 0, 0
+    points, held, dropped, answered = _summarise_sections(
+        ref, sections, settings, counters)
+    return points, len(sections), held, dropped, answered
 
 
 def build_brief(ticker: str, workspace: Path, settings: Settings, *,
@@ -362,20 +680,31 @@ def build_brief(ticker: str, workspace: Path, settings: Settings, *,
                      out.ticker, ", ".join(out.accessions))
             return cached
 
-        notes: list[str] = []
+        answered = 0
         for ref in refs:
-            got, n, held = _read_one(ref, workspace, settings, counters)
-            notes.extend(got)
+            got, n, held, lost, heard = _read_one(ref, workspace, settings,
+                                                  counters)
+            out.points.extend(got)
             out.sections += n
             out.context_held = out.context_held and held
-        if not notes:
+            out.dropped += lost
+            answered += heard
+        if not answered:
             # The daemon is down, the token is missing, or MOCK_MODE is on.
             # All three mean the same thing to the caller and none is an
             # error: a normal angle prompt, with the slot saying why.
             out.reason = "no LLM answered — the filing was not read"
             return out
+        if not out.points:
+            out.reason = ("the model answered, but none of its points named "
+                          "a sentence that is actually in the filing"
+                          if out.dropped else
+                          "the model found nothing notable in the filing")
+            return out
+        for i, point in enumerate(out.points, 1):
+            point.n = i
 
-        joined = "\n\n".join(notes)
+        joined = _points_listing(out.points)
         if not _fits(joined, settings):
             # The condensation call is the one that gets tight: every
             # section summary from up to four filings at once.
@@ -457,12 +786,29 @@ def cross_check(brief: FilingBrief, data, settings: Settings, *,
     if not numbers.strip():
         return brief
     counters["llm"] = counters.get("llm", 0) + 1
-    out = chat(f"OUR NUMBERS:\n{numbers}\n\nFROM THE FILINGS:\n{brief.body}",
+    out = chat(f"OUR NUMBERS:\n{numbers}\n\nFROM THE FILINGS:\n"
+               f"{_filing_side(brief, settings)}",
                settings, system=_CONTRADICTION_SYSTEM,
                purpose="filing-brief-crosscheck")
     if out:
-        brief.contradictions = out.strip()
+        if brief.points:
+            brief.contradictions, brief.unbacked = _keep_cited_lines(
+                out, brief.points)
+        else:
+            brief.contradictions = out.strip()
     return brief
+
+
+def _filing_side(brief: FilingBrief, settings: Settings) -> str:
+    """What the cross-check and the grading read from the filing: the
+    numbered points, so every line they write can cite one; the condensed
+    body only for a brief from before points existed."""
+    if not brief.points:
+        return brief.body
+    # Half the window: the other half is the numbers or the prior claims,
+    # and the answer. Ollama would clip an overflow silently, from the front.
+    text = _points_listing(brief.points)
+    return text[:context_budget_chars(settings) // 2]
 
 
 def grade_prior_coverage(brief: FilingBrief, prior: str, settings: Settings, *,
@@ -485,7 +831,7 @@ def grade_prior_coverage(brief: FilingBrief, prior: str, settings: Settings, *,
         return brief
     counters["llm"] = counters.get("llm", 0) + 1
     out = chat(f"WHAT WE SAID LAST TIME:\n{prior.strip()}\n\n"
-               f"FROM THE FILINGS:\n{brief.body}",
+               f"FROM THE FILINGS:\n{_filing_side(brief, settings)}",
                settings, system=_GRADING_SYSTEM,
                purpose="filing-brief-grade")
     if out:

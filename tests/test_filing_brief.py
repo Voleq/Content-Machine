@@ -20,6 +20,17 @@ import pytest
 from pipeline.filing_brief import build_brief, load_brief
 
 
+def _sourced(prompt: str,
+             point: str = "revenue concentration is named for the first time"
+             ) -> str:
+    """A section answer in the shape the instruction asks for, whose SOURCE
+    is the first sentence of the section the prompt carries: a real one, so
+    the point survives the check that its sentence is in the filing."""
+    body = prompt.split("\n## ", 1)[1].split("\n", 1)[1]
+    first = body.split(". ", 1)[0] + "."
+    return f'POINT: {point}\nSOURCE: "{first}"'
+
+
 @pytest.fixture()
 def answering(monkeypatch):
     """An LLM that answers, and a tally of what it was asked.
@@ -35,17 +46,17 @@ def answering(monkeypatch):
     def _chat_result(prompt, settings, *, system="", purpose="llm"):
         calls.append(purpose)
         if purpose == "filing-brief-section":
-            body = "- revenue concentration is named for the first time"
+            body = _sourced(prompt)
         elif purpose == "filing-brief-condense":
-            body = ("RISK SHIFT: a supplier-concentration factor is new.\n"
-                    "LANGUAGE: 'expect' became 'may'.\n"
-                    "SEGMENTS: services grew, licences fell.\n"
+            body = ("RISK SHIFT: a supplier-concentration factor is new. [P1]\n"
+                    "LANGUAGE: 'expect' became 'may'. [P2]\n"
+                    "SEGMENTS: services grew, licences fell. [P2, P3]\n"
                     "OPEN QUESTION: who is the supplier?")
         elif purpose == "filing-brief-crosscheck":
             body = ("- the numbers show FCF at -15M; the filing calls cash "
-                    "generation 'improving'")
+                    "generation 'improving' [P2]")
         elif purpose == "filing-brief-grade":
-            body = "- claim 1: UNDERMINED — the margin kept falling"
+            body = "- claim 1: UNDERMINED — the margin kept falling [P3]"
         else:
             body = "ok"
         return llm.LLMResult(text=body, provider="ollama", model="gemma4:12b",
@@ -135,8 +146,8 @@ def test_a_condensation_that_does_not_answer_is_its_own_reason(
     def _chat_result(prompt, settings, *, system="", purpose="llm"):
         if purpose == "filing-brief-condense":
             return llm.LLMResult(reason=llm.TIMEOUT, provider="ollama")
-        return llm.LLMResult(text="- a note", provider="ollama",
-                             model="m", reason=llm.OK)
+        return llm.LLMResult(text=_sourced(prompt, "a note"),
+                             provider="ollama", model="m", reason=llm.OK)
 
     monkeypatch.setattr(llm, "chat_result", _chat_result)
     brief = build_brief("EXMPL", tmp_path, live)
@@ -393,9 +404,11 @@ def test_the_upload_folds_in_the_half_that_needed_the_workbook(
     from bot.handlers import BotCore
 
     def _chat_result(prompt, settings, *, system="", purpose="llm"):
-        body = {"filing-brief-section": "- a note",
-                "filing-brief-condense": "RISK SHIFT: a new one.",
-                "filing-brief-crosscheck": "- FCF disagrees"}.get(purpose, "")
+        body = ({"filing-brief-condense": "RISK SHIFT: a new one. [P1]",
+                 "filing-brief-crosscheck": "- FCF disagrees [P1]"}
+                .get(purpose, "")
+                if purpose != "filing-brief-section"
+                else _sourced(prompt, "a note"))
         return llm.LLMResult(text=body, provider="ollama", model="m",
                              reason=llm.OK if body else llm.EMPTY)
 
@@ -406,6 +419,7 @@ def test_the_upload_folds_in_the_half_that_needed_the_workbook(
     reply = core.handle_upload(4242, "dennis_data.xlsx", xlsx)
 
     assert "filing brief ready" in reply.text
+    assert "points, each with its filing sentence" in reply.text
     assert "cross-checked against your numbers" in reply.text
     ws = core.context.get(4242)
     brief = load_brief(ws.path)
@@ -582,3 +596,256 @@ def test_a_cancelled_reading_lets_the_upload_through(settings, monkeypatch):
 
     note = core._finish_filing_read(ws)
     assert "no filing brief" in note or "cancelled" in note
+
+
+# --------------------------------------------------------------------------
+# Every point carries the filing sentence it came from.
+#
+# The brief is written by a small local model and the angle is chosen from
+# it. Code proves each point's sentence is really in the filing and drops
+# the ones that are not; the writer, in the operator's own chat, checks
+# that each surviving point reads its sentence right.
+# --------------------------------------------------------------------------
+
+_RISK = ("We have incurred net losses in each year since inception, and we "
+         "may never achieve or sustain profitability.")
+
+
+def _risk_only(monkeypatch, section_answer, seen=None, **others):
+    """An LLM whose Risk Factors answer is `section_answer`, which says
+    nothing notable about any other section, and which records every
+    prompt by purpose in `seen`."""
+    import pipeline.llm as llm
+
+    def _chat_result(prompt, settings, *, system="", purpose="llm"):
+        if seen is not None:
+            seen.setdefault(purpose, []).append(prompt)
+        if purpose == "filing-brief-section":
+            body = (section_answer if "\n## Risk Factors\n" in prompt
+                    else "nothing notable")
+        else:
+            body = others.get(purpose.replace("filing-brief-", ""),
+                              "RISK SHIFT: losses are named. [P1]")
+        return llm.LLMResult(text=body, provider="ollama", model="m",
+                             reason=llm.OK)
+
+    monkeypatch.setattr(llm, "chat_result", _chat_result)
+
+
+def test_a_point_whose_sentence_is_not_in_the_filing_is_dropped(
+        live, monkeypatch, tmp_path):
+    """Three points: one quoting the filing, one quoting a sentence the
+    filing never wrote, one quoting nothing. Only the first survives, and
+    the brief says how many went and why."""
+    _risk_only(monkeypatch, "\n".join([
+        "POINT: the company may never be profitable",
+        f'SOURCE: "{_RISK}"',
+        "POINT: management now expects profitability in 2027",
+        'SOURCE: "We expect to reach profitability in fiscal 2027."',
+        "- dilution is getting worse",
+    ]))
+    brief = build_brief("EXMPL", tmp_path, live)
+    assert brief.ok, brief.reason
+    assert [p.text for p in brief.points] == \
+        ["the company may never be profitable"] * len(brief.points)
+    assert brief.points and all(p.source == _RISK for p in brief.points)
+    assert brief.dropped == 2 * len(brief.points)
+    text = brief.render_text()
+    assert "P1 · 10-K" in text and "· Risk Factors" in text
+    assert f'Sentence: "{_RISK}"' in text
+    assert "points were dropped: the sentence the model gave is not in " \
+           "the filing" in text
+    assert "profitability in 2027" not in text
+
+
+def test_nothing_kept_is_its_own_reason(live, monkeypatch, tmp_path):
+    """A model that answers every section and backs nothing is not the same
+    failure as a model that never answered."""
+    _risk_only(monkeypatch, "POINT: losses are shrinking\n"
+               'SOURCE: "Our losses shrank every year since inception."')
+    brief = build_brief("EXMPL", tmp_path, live)
+    assert brief.ok is False
+    assert "none of its points named a sentence" in brief.reason
+
+
+def test_the_sentence_shown_is_the_filings_whole_sentence(live, monkeypatch,
+                                                         tmp_path):
+    """The model copied half a sentence, in capitals, with curly quotes.
+    Case and punctuation do not make a copy wrong, and the writer is shown
+    the WHOLE sentence from the filing, because a clause read on its own can
+    say the opposite of the sentence it was cut from."""
+    _risk_only(monkeypatch, "POINT: profitability may never come\n"
+               "SOURCE: “WE MAY NEVER ACHIEVE OR SUSTAIN PROFITABILITY”")
+    brief = build_brief("EXMPL", tmp_path, live)
+    assert brief.ok, brief.reason
+    assert brief.points[0].source == _RISK
+
+
+def test_a_cut_is_not_a_copy():
+    """An ellipsis means words were left out, so the quote is not verbatim;
+    and a four-word "sentence" matches too easily to prove anything."""
+    from pipeline.filing_brief import find_sentence
+
+    section = f"Investing involves a high degree of risk. {_RISK} Next."
+    assert find_sentence(section, "We have incurred net losses … "
+                                  "profitability") is None
+    assert find_sentence(section, "we may never achieve") is None
+    assert find_sentence(section, "we may never achieve or sustain") == _RISK
+    # Word for word means every word, in order, with nothing between.
+    assert find_sentence(section, "we may never achieve sustained "
+                                  "profitability") is None
+    # "$89.0" is not the end of a sentence.
+    money = ("Our net losses were $89.0 million, $70.0 million, and $49.0 "
+             "million for the years ended December 31, 2025, 2024, and 2023, "
+             "respectively.")
+    assert find_sentence(f"{section} {money} After.",
+                         "our net losses were $89.0 million") == money
+
+
+def test_a_quote_from_past_what_the_model_was_shown_is_dropped():
+    """The check runs on the clipped text the model actually read. A quote
+    from beyond the clip may be real, but the model cannot have copied it."""
+    from pipeline.filing_brief import _check_points
+
+    shown = "Investing involves a high degree of risk. You should consider it."
+    kept, dropped = _check_points([("never profitable", _RISK)], shown,
+                                  "10-K 2025-12-31", "Risk Factors")
+    assert kept == [] and dropped == 1
+
+
+def test_a_figure_its_own_sentence_does_not_carry_is_flagged(
+        live, monkeypatch, tmp_path):
+    """The sentence is real and the point misreads it: $98 for $89. Code
+    cannot judge a reading, but it can point at the figure to check, and
+    the writer is told to check that point hardest."""
+    _risk_only(monkeypatch, "POINT: net losses were $98.0 million in 2025\n"
+               'SOURCE: "Our net losses were $89.0 million, $70.0 million, '
+               'and $49.0 million for the years ended December 31, 2025, '
+               '2024, and 2023, respectively."')
+    brief = build_brief("EXMPL", tmp_path, live)
+    assert brief.ok, brief.reason
+    assert brief.points[0].unmatched == ["$98.0"]
+    assert "(not in the sentence: $98.0)" in brief.render_text()
+
+
+def test_the_later_calls_read_numbered_points_not_sentences(
+        live, monkeypatch, workspace):
+    """The condensation, the cross-check and the grading read `[P1] point`
+    lines, so each thing they write can cite the point it rests on. The
+    sentences stay out of those prompts: they would triple them, and the
+    small model has nothing to do with them."""
+    from pipeline.company_data import load_company_data
+    from pipeline.filing_brief import cross_check, grade_prior_coverage
+
+    seen: dict = {}
+    _risk_only(monkeypatch, f'POINT: may never be profitable\nSOURCE: "{_RISK}"',
+               seen)
+    brief = build_brief("EXMPL", workspace, live)
+    cross_check(brief, load_company_data(workspace), live)
+    grade_prior_coverage(brief, "CLAIM: it turns profitable next year.", live)
+    for purpose in ("filing-brief-condense", "filing-brief-crosscheck",
+                    "filing-brief-grade"):
+        prompt = seen[purpose][-1]
+        assert "[P1] may never be profitable" in prompt, purpose
+        assert "achieve or sustain profitability" not in prompt, purpose
+
+
+def test_a_contradiction_that_cites_no_point_is_dropped(live, monkeypatch,
+                                                        workspace):
+    """The contradiction is the line an angle is most likely to be built on.
+    One that cites no point has no sentence to be checked against."""
+    from pipeline.company_data import load_company_data
+    from pipeline.filing_brief import cross_check
+
+    _risk_only(monkeypatch, f'POINT: may never be profitable\nSOURCE: "{_RISK}"',
+               crosscheck="\n".join([
+                   "- the numbers show a loss; the filing agrees it may "
+                   "never end [P1]",
+                   "- the numbers show FCF at -15M; the filing calls cash "
+                   "generation 'improving'",
+                   "- margins are falling; the filing says rising [P99]",
+               ]))
+    brief = build_brief("EXMPL", workspace, live)
+    cross_check(brief, load_company_data(workspace), live)
+    assert brief.contradictions == ("- the numbers show a loss; the filing "
+                                    "agrees it may never end [P1]")
+    assert brief.unbacked == 2
+    text = brief.render_text()
+    assert "improving" not in text
+    assert "2 more contradiction lines cited no point" in text
+
+
+def test_a_citation_to_a_point_that_does_not_exist_is_named(
+        live, monkeypatch, tmp_path):
+    """The condensed paragraphs are kept whole, so a citation to a point the
+    brief does not have is named where the writer checks the points."""
+    _risk_only(monkeypatch, f'POINT: may never be profitable\nSOURCE: "{_RISK}"',
+               condense="RISK SHIFT: losses are named. [P1]\n"
+                        "SEGMENTS: services grew 40%. [P7]")
+    brief = build_brief("EXMPL", tmp_path, live)
+    assert "cited above but not a point in this brief: P7" in \
+        brief.render_text()
+
+
+def test_the_parser_takes_the_shapes_a_small_model_drifts_into():
+    from pipeline.filing_brief import _parse_points
+
+    answer = "\n".join([
+        "Here are the points:",
+        "1. **POINT:** losses continue **SOURCE:** \"Our losses continue.\"",
+        "- POINT: leverage is high",
+        "  SOURCE: \"We have a substantial amount of indebtedness, and our",
+        "  leverage could adversely affect our business.\"",
+        "* dilution keeps growing",
+        "nothing notable",
+    ])
+    assert _parse_points(answer) == [
+        ("losses continue", "Our losses continue."),
+        ("leverage is high", "We have a substantial amount of indebtedness, "
+                             "and our leverage could adversely affect our "
+                             "business."),
+        ("dilution keeps growing", ""),
+    ]
+
+
+def test_a_brief_from_before_the_sentences_says_it_cannot_be_checked(
+        tmp_path):
+    """A workspace brief saved before this change has paragraphs and no
+    points. It still renders, and says there is nothing to check it
+    against, rather than inviting a check of points that are not there."""
+    import json
+
+    (tmp_path / "filing_brief.json").write_text(json.dumps({
+        "ticker": "EXMPL", "filings": "10-K 2025-12-31", "sections": 3,
+        "body": "RISK SHIFT: a new factor."}), encoding="utf-8")
+    text = load_brief(tmp_path).render_text()
+    assert "RISK SHIFT: a new factor." in text
+    assert "nothing below can be checked" in text
+    assert "THE POINTS" not in text
+
+
+def test_the_prompts_have_the_writer_check_each_point_first(
+        live, answering, workspace):
+    """The other half of the check, and the half that needs a better reader
+    than the one that wrote the brief: the writer, in the operator's own
+    chat, at no extra cost."""
+    from pipeline.company_data import load_company_data
+    from pipeline.filing_brief import save_brief
+
+    from bot.prompts import fill_prompt
+
+    brief = build_brief("EXMPL", workspace, live)
+    save_brief(workspace, brief, live)
+    data = load_company_data(workspace)
+
+    angle = fill_prompt("long_angle", "EXMPL", data, workspace, live)
+    assert "CHECK THE BRIEF FIRST" in angle
+    assert "Sentence: \"" in angle and "P1 · 10-K" in angle
+    head = angle.index("## OUTPUT")
+    assert angle.index("Brief check:", head) < angle.index("pick an angle",
+                                                           head)
+
+    update = fill_prompt("update", "EXMPL", data, workspace, live)
+    assert "CHECK THE BRIEF FIRST" in update
+    assert "Put the `Brief check:` and the HOOK OPTIONS menu in the chat" \
+        in update

@@ -67,6 +67,7 @@ Excel; the refresh happens on the operator's own machine.)
 | A price chart drawn from the synthetic floor rather than the live feed **blocks** a final render | `pipeline/gates.py` `check_prices`; `PriceSeries.degraded` survives the cache and rides on the manifest |
 | Every finished render carries a provenance record — where the prices came from, what the visuals were, which filings, which voice at what cost, which LLM provider, and which gates actually ran — on the manifest and in the delivery message, unasked | `pipeline/provenance.py`; written by both renderers, read back off the manifest by `_finish` so the two cannot drift |
 | The angle prompt is built with the filings already read, not blind to them; a brief built from a section that overflowed the model's context says so in its own first line | `pipeline/filing_brief.py` `context_held`; `scripts/check_llm_context.py` proves `num_ctx` is in force |
+| Every point in the filing brief carries the filing sentence it came from; a point whose sentence is not in the filing is dropped, and the angle and update prompts have the writer check each surviving point against its sentence before building on it | `pipeline/filing_brief.py` `find_sentence`, `Point`; "CHECK THE BRIEF FIRST" in `master_prompt_long_angle.md` and `master_prompt_update.md` |
 | Two filings downloaded into one workspace never collide | `pipeline/filings.py` `filing_path` — keyed on the accession, which is also the per-accession cache |
 | 1–2 memes max per LONG (information-first) | `validate_long_script` meme cap |
 | GIF-provider visuals are counted, reported and capped per video | `CostReport.visual_counts`, `gif_ceiling_warnings`, `GIF_MAX_PER_VIDEO` |
@@ -205,7 +206,9 @@ pipeline/
                          incl. the Q4 case) + the auto-screenshot pipeline
   filing_brief.py        THE PRE-ANGLE BRIEF — reads the filings BEFORE the
                          angle is chosen: risk shift, language, segments, and
-                         what contradicts the workbook
+                         what contradicts the workbook; every point carries
+                         the filing sentence it came from, for the writer
+                         to check
   broll.py               the content engine: [CLIP], [IMG]/[PRODUCT], [MEME],
                          [SCREENGRAB] — cached, attributed
   memes.py               owned meme library (meme_index.json) + providers
