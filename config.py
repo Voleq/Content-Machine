@@ -321,10 +321,7 @@ class Settings(BaseSettings):
     data_max_age_days: int = Field(default=10, alias="DATA_MAX_AGE_DAYS")
     data_stale_blocks: bool = Field(default=True, alias="DATA_STALE_BLOCKS")
 
-    # ------------------------------------- by-products + status page (P3.6)
-    # Every finished render emits the kit's thumbnail layouts, social cards
-    # and end screens — free, since the artwork and the data already exist.
-    byproducts_enabled: bool = Field(default=True, alias="BYPRODUCTS_ENABLED")
+    # ------------------------------------------ golden frames + status page
     # Where golden reference frames live. Blank = fixtures/golden. Overridden
     # in tests so a run can never bless frames into the repo's own fixtures.
     golden_dir: str = Field(default="", alias="GOLDEN_DIR")

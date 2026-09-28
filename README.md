@@ -229,7 +229,7 @@ pipeline/
   delivery.py            gdrive (default) / s3 / telegram / local
   repurpose.py           best ~58s of a LONG -> 9:16 SHORT (free)
   thumbnail.py           the cover — a frame from the video
-  byproducts.py          golden-frame regression + thumbnails and end screens
+  frame_checks.py        golden-frame compare + held-composition measurement
   status_page.py         read-only localhost view (loopback, no auth)
   cleanup.py             RETENTION_DAYS disk hygiene (keeps caches)
 bot/
@@ -916,7 +916,6 @@ number, which is exactly the case the gate exists to catch.
 | `ALERT_MOVE_PCT` / `ALERT_COOLDOWN_MINUTES` | 6.0 / 180 | when it speaks, and how rarely it repeats |
 | `FRED_API_KEY` | — | free macro series for `/headline macro`; absent = unavailable |
 | `YOUTUBE_ENABLED` / `YOUTUBE_CREDENTIALS` | false / — | upload as private or scheduled; never public |
-| `BYPRODUCTS_ENABLED` | true | thumbnails, social cards, end screens per render |
 | `STATUS_PAGE_ENABLED` / `STATUS_PAGE_PORT` | false / 8787 | read-only localhost view |
 | `DISCLAIMER_TEXT` | Opinion / entertainment… | burned into every frame |
 

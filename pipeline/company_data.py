@@ -46,7 +46,6 @@ from dataclasses import field as dc_field
 from pathlib import Path
 
 from openpyxl import load_workbook
-from PIL import ImageDraw, ImageFont
 
 from config import Settings
 from pipeline.models import (
@@ -1038,40 +1037,49 @@ def load_company_data(workspace: Path) -> CompanyData:
 
 
 # ---------------------------------------------------------------------------
-# Screenshot prep: raw data screenshots -> normalized full-screen flashes
-# with a GENERIC source label — the vendor is never named on screen (§3).
+# Screenshot prep: raw data screenshots -> normalized full-screen cards with
+# a GENERIC source — the filing, never the vendor (§3).
 # ---------------------------------------------------------------------------
 
-FILING_LABEL = "FROM THE 10-K"
+# What the source tag names: the document, as design's tag reads
+# ("SOURCE · 10-K FY25, note 14, page 96").
+FILING_SOURCE = "10-K"
 
 
 def prepare_screenshot(src: Path, dest: Path, settings: Settings) -> Path:
-    """Full-frame designed filing card: the screenshot fitted sharp over a
-    blurred, brand-tinted cover of itself (never a letterboxed black frame),
-    a subtle border, and the generic '10-K' chip. Deterministic output."""
+    """Full-frame filing card: the screenshot fitted sharp over a blurred cover
+    of itself (never a letterboxed black frame), with design's source tag,
+    SOURCE · 10-K, where the kit rests it on a frame with no plate under it.
+    Deterministic output.
+
+    The tag used to be the bot's own chip, terminal green on slate in Space
+    Mono: the look from before the kit, on every filing in every long. A kit
+    with no source tag gets the card without one rather than a stand-in.
+    """
+    from PIL import Image
+
+    from pipeline.moves import tag_rect
+    from pipeline.plate_frames import render_frame
+    from pipeline.plates import load_plates
     from pipeline.rasters import cover_fill_frame, role
 
     W, H = settings.long_resolution
-    margin = int(H * 0.05)
     canvas = cover_fill_frame(src, W, H, keep_min=1.1,   # always contain-on-fill
                               ground=role(settings, "ground"),
-                              line=role(settings, "structure"))
-    d = ImageDraw.Draw(canvas)
-
-    # generic source chip — "the filing", never the vendor
-    font = ImageFont.truetype(str(settings.fonts_dir / "SpaceMono-Bold.ttf"),
-                              max(int(H * 0.026), 14))
-    pad = int(H * 0.012)
-    tw = d.textlength(FILING_LABEL, font=font)
-    cx0, cy0 = margin // 2, margin // 2
-    d.rounded_rectangle(
-        [cx0, cy0, cx0 + tw + 2 * pad, cy0 + font.size + 2 * pad],
-        radius=8, fill=(24, 28, 36), outline=(96, 106, 122), width=2,
-    )
-    d.text((cx0 + pad, cy0 + pad), FILING_LABEL, font=font, fill=(47, 213, 118))
+                              line=role(settings, "structure")).convert("RGBA")
+    reg = load_plates(settings.assets_dir)
+    key = reg.aspect_key("overlays/source-tag", "16x9")
+    tag = reg.get(key) if key else None
+    if tag is not None:
+        x, y, w, h = tag_rect(tag, None, (W, H), reg)
+        img = render_frame(tag, 0, {"label": "SOURCE", "source": FILING_SOURCE},
+                           settings, reg).convert("RGBA")
+        if img.size != (w, h):
+            img = img.resize((max(w, 1), max(h, 1)), Image.LANCZOS)
+        canvas.alpha_composite(img, (x, y))
 
     dest.parent.mkdir(parents=True, exist_ok=True)
-    canvas.save(dest)
+    canvas.convert("RGB").save(dest)
     return dest
 
 

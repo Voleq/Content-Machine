@@ -60,7 +60,7 @@ def build(video: Path, every: float, out: Path) -> Path:
 
     holds: list[tuple[float, float]] = []
     try:
-        from pipeline.byproducts import (BOIL_SAMPLE_FPS, BOIL_SCALE,
+        from pipeline.frame_checks import (BOIL_SAMPLE_FPS, BOIL_SCALE,
                                          held_spans)
         holds = held_spans(video, sample_fps=BOIL_SAMPLE_FPS, scale=BOIL_SCALE)
     except Exception:                                       # noqa: BLE001

@@ -47,7 +47,7 @@ from pipeline.models import JobKind, TagType
 from pipeline.parser_long import LongScriptError, parse_long_script, validate_long_script
 from pipeline.parser_short import ScriptParseError, parse_short_script
 from pipeline.plates import PlateError
-from pipeline.rasters import load_font
+from pipeline.rasters import COURIER_BOLD, load_font
 from pipeline.render_long import render_long
 from pipeline.script_edit import (
     EditError,
@@ -1208,7 +1208,7 @@ class BotCore:
         tw, th, label_h = 320, 180, 30
         sheet = Image.new("RGB", (cols * tw, rows * (th + label_h)), (18, 18, 22))
         d = ImageDraw.Draw(sheet)
-        font = load_font(self.settings, "DejaVuSansMono-Bold.ttf", 16)
+        font = load_font(self.settings, COURIER_BOLD, 16)
         for k, (i, s, img) in enumerate(imgs):
             x, y = (k % cols) * tw, (k // cols) * (th + label_h)
             sheet.paste(img.resize((tw, th)), (x, y))
@@ -1299,7 +1299,7 @@ class BotCore:
         tw, th, label_h = 320, 180, 30
         sheet = Image.new("RGB", (cols * tw, rows * (th + label_h)), (18, 18, 22))
         d = ImageDraw.Draw(sheet)
-        font = load_font(self.settings, "DejaVuSansMono-Bold.ttf", 18)
+        font = load_font(self.settings, COURIER_BOLD, 18)
         for i, (visual, img) in enumerate(thumbs):
             x, y = (i % cols) * tw, (i // cols) * (th + label_h)
             sheet.paste(img.resize((tw, th)), (x, y))
@@ -1629,20 +1629,6 @@ class BotCore:
             checkpoint("delivery")
             extra = self._publish_byproducts(job, ws, script, tts, manifest,
                                              "long")
-            # The rest of the kit's by-products (P3.6): eight thumbnail
-            # layouts, the social cards, the end screens. All free — same data,
-            # artwork already drawn — and the alternative is making them by
-            # hand at midnight.
-            if self.settings.byproducts_enabled:
-                try:
-                    from pipeline.byproducts import build_byproducts
-
-                    made = build_byproducts(ws.path, self.settings,
-                                            ticker=job.ticker, script=script,
-                                            data=data)
-                    checkpoint(f"by-products: {made.total()} assets")
-                except Exception:  # noqa: BLE001 - never lose a finished render
-                    log.exception("by-products failed — delivering anyway")
             result = deliver(out, job.ticker, job.workdate, self.settings,
                              attributions=self._attributions(manifest),
                              extra_files=extra)
@@ -2533,9 +2519,6 @@ class BotCore:
 
         name = byproduct_name(kind, fmt, ws.ticker)
         candidates = [ws.path / name] if name else []
-        if kind == "thumbnail" and fmt == "long":
-            # The kit's own cover layouts (P3.6), when the drawn one is gone.
-            candidates += sorted(ws.path.glob("*_thumb.png"))
         for found in candidates:
             if found.is_file() and found.stat().st_size:
                 return found

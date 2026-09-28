@@ -304,17 +304,20 @@ class MockMemeClient:
         self.download_calls.append(url)
         from PIL import Image, ImageDraw
 
+        from pipeline.rasters import COURIER_BOLD, load_font
+
         seed = int(hashlib.sha256(url.encode()).hexdigest()[:6], 16)
         dest.parent.mkdir(parents=True, exist_ok=True)
         label = url.rsplit("/", 1)[-1][:40]
         animated = "mock://gif/" in url
+        font = load_font(self.settings, COURIER_BOLD, 28)
 
         def frame(i: int) -> Image.Image:
             img = Image.new("RGB", (720, 540),
                             ((seed % 80) + 40, 40, (seed % 60) + 60))
             d = ImageDraw.Draw(img)
             d.rectangle([12, 12, 707, 527], outline=(240, 240, 240), width=4)
-            d.text((30, 250), label, fill=(240, 240, 240))
+            d.text((30, 250), label, font=font, fill=(240, 240, 240))
             if animated:
                 # A bar that walks across the frame. Anything that samples two
                 # frames of this and finds them identical has frozen the clip.
@@ -444,13 +447,24 @@ class MemeManager:
     def filler(self, key: str) -> MemeAsset:
         from PIL import Image, ImageDraw
 
-        path = self.settings.cache_dir / "memes" / "filler" / "meme_filler.png"
+        from pipeline.rasters import COURIER_BOLD, load_font, role
+
+        # The kit's ground, second ground and neutral ink, and keyed on the
+        # ground so a card drawn for one kit is never served under another.
+        ground = role(self.settings, "ground")
+        path = (self.settings.cache_dir / "memes" / "filler"
+                / ("meme_filler_%02x%02x%02x.png" % ground))
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
-            img = Image.new("RGB", (720, 540), (24, 26, 32))
+            img = Image.new("RGB", (720, 540), ground)
             d = ImageDraw.Draw(img)
-            d.rectangle([10, 10, 709, 529], outline=(120, 126, 138), width=3)
-            d.text((40, 250), "( meme unavailable )", fill=(170, 176, 188))
+            d.rectangle([10, 10, 709, 529],
+                        outline=role(self.settings, "second-ground"), width=3)
+            font = load_font(self.settings, COURIER_BOLD, 26)
+            text = "( meme unavailable )"
+            d.text(((720 - d.textlength(text, font=font)) / 2, 270), text,
+                   font=font, fill=role(self.settings, "neutral-data"),
+                   anchor="lm")
             img.save(path)
         return MemeAsset(key=key, path=path, source="filler")
 

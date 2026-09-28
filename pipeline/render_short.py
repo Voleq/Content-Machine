@@ -68,10 +68,6 @@ def host_shots(fmt) -> tuple[str, ...]:
 
 HOST_SHOTS = ("the-turn",)
 
-# One definition, in marks, so the fitter and the budget measurement agree.
-BODY_FONT = mk.BODY_FONT
-DISPLAY_FONT = mk.DISPLAY_FONT
-
 _FIGURE = re.compile(r"^(-?)([$€£]?)([\d.,]+)([KMBT]?)(%?)$")
 
 
@@ -810,9 +806,6 @@ def _draw_text(canvas: Image.Image, layer: Layer, settings, reg,
     in the face and size the kit declares for it. This is the remainder: a
     line the format places itself, sized as a fraction of frame height.
     """
-
-    from pipeline import marks as mk
-
     draw = ImageDraw.Draw(canvas)
     want = max(int(round(layer.size_fh * canvas.height)), _type_floor(canvas))
     lines, font, size = mk.fit_lines(
@@ -1000,7 +993,7 @@ def held_over_ceiling(video: Path, spans,
     entry names the shot it happens in and where. `None` means the frames
     could not be read, which is not the same answer as "none held".
     """
-    from pipeline.byproducts import (BOIL_SAMPLE_FPS, BOIL_SCALE, held_spans,
+    from pipeline.frame_checks import (BOIL_SAMPLE_FPS, BOIL_SCALE, held_spans,
                                      holds_past)
 
     try:

@@ -7,7 +7,7 @@ from PIL import Image
 
 from pipeline.company_data import (
     CompanyDataError,
-    FILING_LABEL,
+    FILING_SOURCE,
     find_export,
     list_screenshots,
     load_company_data,
@@ -386,18 +386,31 @@ def test_the_shipped_template_peer_table_maps_every_field():
     wb.close()
 
 
-def test_screenshot_gets_generic_filing_label(workspace, settings, tmp_path):
+def test_screenshot_gets_design_s_source_tag(workspace, settings, tmp_path):
+    """The filing, never the vendor, on design's own tag where the kit rests it.
+
+    It was a bot-drawn chip in terminal green and Space Mono, the look from
+    before the kit. The tag's spot is `moves.tag_rect` with no plate under it.
+    """
+    from pipeline.moves import tag_rect
+    from pipeline.plates import load_plates
+
     src = tmp_path / "raw.png"
     Image.new("RGB", (1400, 800), (30, 34, 40)).save(src)
     out = prepare_screenshot(src, tmp_path / "norm.png", settings)
-    img = Image.open(out)
+    img = Image.open(out).convert("RGB")
     assert img.size == settings.long_resolution
-    assert FILING_LABEL == "FROM THE 10-K"
-    # the label chip is drawn in the top-left margin — the corner must no
-    # longer be the plain canvas color
-    corner = img.crop((0, 0, 200, 60))
-    colors = corner.getcolors(maxcolors=4096)
-    assert colors and len(colors) > 2, "label chip must be present"
+    assert FILING_SOURCE == "10-K"
+
+    reg = load_plates(settings.assets_dir)
+    tag = reg.get(reg.aspect_key("overlays/source-tag", "16x9"))
+    x, y, w, h = tag_rect(tag, None, img.size, reg)
+    # The flat screenshot is one colour; the tag's ground and type are others.
+    colors = img.crop((x, y, x + w, y + h)).getcolors(maxcolors=65536)
+    assert colors and len(colors) > 2, "the source tag must be on the card"
+    # And nothing is drawn in the corner the old chip sat in.
+    corner = img.crop((0, 0, 200, 60)).getcolors(maxcolors=65536)
+    assert corner and len(corner) <= 2
 
 
 def test_list_screenshots_excludes_exports(workspace):

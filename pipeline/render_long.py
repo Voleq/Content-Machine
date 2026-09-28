@@ -110,7 +110,6 @@ from pipeline.render_common import (
     encode_profile,
     ffprobe_duration,
     render_thread_budget,
-    run_ffmpeg,
 )
 from pipeline.segments import (
     CACHE_DIRNAME as SEG_CACHE_DIRNAME,
@@ -331,7 +330,7 @@ def _globalise(chain: str, offset: int, index: int) -> str:
 
 
 def _segment_fallback(spec: SegmentSpec, backdrop_for, W: int, H: int,
-                      fps: int) -> SegmentSpec | None:
+                      fps: int, ground: str) -> SegmentSpec | None:
     """What a failed segment becomes: the designed backdrop, held.
 
     One unresolvable asset should cost one beat, not the whole cut.
@@ -346,18 +345,26 @@ def _segment_fallback(spec: SegmentSpec, backdrop_for, W: int, H: int,
         inputs=(("-loop", "1", "-framerate", str(fps),
                  "-t", f"{spec.duration + 0.2:.4f}", "-i", str(bg)),),
         filter_chain=_hold_still_chain(0, spec.duration, W, H,
-                                       ",setsar=1,format=yuv420p[out]"),
+                                       ",setsar=1,format=yuv420p[out]",
+                                       ground=ground),
         layout="host-full",
         extra_identity=("fallback",),
     )
 
 
-def _hold_still_chain(i: int, seg_len: float, W: int, H: int, tail: str) -> str:
-    """A still, held: contain-fit onto the paper, no movement at all."""
+def _hold_still_chain(i: int, seg_len: float, W: int, H: int, tail: str, *,
+                      ground: str) -> str:
+    """A still, held: contain-fit onto the kit's ground, no movement at all.
+
+    `ground` is the palette's `ground` as ffmpeg takes it (`0x171D2A`). The pad
+    was a hard-coded paper white, the ground of the light kit two deliveries
+    back, so a still that did not fill the frame sat between white bars in a
+    night video.
+    """
     return (
         f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
         f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
-        f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF{tail}"
+        f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color={ground}{tail}"
     )
 
 
@@ -664,6 +671,8 @@ def _render_long(
     overrides = broll_overrides or {}
     reg = load_plates(settings.assets_dir)
     aspect = "16x9"
+    # The ground a held still is padded onto, as ffmpeg takes a colour.
+    ground_ff = "0x" + reg.colour_hex("ground").lstrip("#")
 
     # THE WRITER'S MOVES, on the real clock. Each `[MOVE]` is paired with the
     # plate segment it acts on and timed off the spoken word; the list goes on
@@ -1030,7 +1039,7 @@ def _render_long(
     def _still_chain(input_i: int, seg, seg_len: float, seg_i: int,
                      tail: str) -> str:
         """Every still is held. There is no drift on anything."""
-        return _hold_still_chain(input_i, seg_len, W, H, tail)
+        return _hold_still_chain(input_i, seg_len, W, H, tail, ground=ground_ff)
 
     # ------------------------------------------------------- the host rig
     # Dennis is composited per segment onto the ROOM, lip-synced to that
@@ -1731,7 +1740,8 @@ def _render_long(
         seg_run = encode_segments(
             seg_specs, settings.cache_dir / SEG_CACHE_DIRNAME, profile,
             total_threads=render_thread_budget(),
-            fallback=lambda spec: _segment_fallback(spec, _backdrop_path, W, H, fps),
+            fallback=lambda spec: _segment_fallback(spec, _backdrop_path, W, H, fps,
+                                                    ground_ff),
             on_progress=progress,
             # Detection proves the GPU can open one encode session, not
             # `workers` of them at once. If it runs out partway through, the
@@ -1863,22 +1873,6 @@ def _render_long(
             ))
         stinger_meta.append({"type": ctype, "title": title,
                              "script_t": round(target, 2), "t": round(t, 2)})
-
-    # glitch flash on every filing reveal (pre-rendered overlay)
-    glitch = settings.assets_dir / "overlays" / "glitch_noise.mov"
-    if glitch.exists():
-        glitch_big = rdir / "glitch_scaled.mov"
-        if not glitch_big.exists():
-            run_ffmpeg(["-i", str(glitch),
-                        "-vf", f"scale={W}:{H}:flags=neighbor",
-                        "-c:v", "png", "-pix_fmt", "rgba", str(glitch_big)])
-        for seg in segments:
-            if seg.kind == "filing":
-                layers.append(OverlayLayer(
-                    path=glitch_big, x=0, y=0,
-                    t_start=seg.start, t_end=min(seg.start + 0.5, duration),
-                    is_video=True, name=f"glitch@{seg.start:.2f}",
-                ))
 
     # THE SOURCE SLIDES IN UNDER THE FIGURE (item 14): design's tag, off the
     # frame's left edge with its small overshoot, where the writer's
