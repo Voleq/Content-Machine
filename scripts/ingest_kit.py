@@ -636,6 +636,22 @@ def _chapter_types(roles: dict, notes: dict, held: dict) -> dict:
     return out
 
 
+def _pose_fits(poses: dict, drawn_for: dict) -> dict:
+    """roles.json's poses, each with the rooms design drew it for.
+
+    `drawn_for` is the kit's own (kit-model.js `fits`, emitted by the engine).
+    A `fits` roles.json writes is ours and wins, as a purpose does; every
+    other pose takes design's. The long's writer is shown these when he picks
+    a scene, so they come with each drop instead of being retyped.
+    """
+    out = {k: dict(v) if isinstance(v, dict) else v for k, v in poses.items()}
+    for key, rooms in drawn_for.items():
+        spec = out.setdefault(key, {})
+        if isinstance(spec, dict) and not spec.get("fits"):
+            spec["fits"] = list(rooms)
+    return out
+
+
 def _install(built: dict, delivery: Path, staged_out: Path, dest: Path,
              notes: dict | None = None, motion: dict | None = None) -> dict:
     """Replace the installed kit with what was just drawn.
@@ -665,9 +681,10 @@ def _install(built: dict, delivery: Path, staged_out: Path, dest: Path,
     notes = notes or {}
     held_plates, held_rooms = _held_back(roles)
     registry = {k: v for k, v in built.items()
-                if k not in ("problems", "checkedAgainstExport")}
+                if k not in ("problems", "checkedAgainstExport", "poseFits")}
     registry["hostRoles"] = own("hostRoles")
-    registry["hostPoses"] = roles.get("hostPoses", {})
+    registry["hostPoses"] = _pose_fits(roles.get("hostPoses", {}),
+                                       built.get("poseFits") or {})
     registry["roomRoles"] = own("roomRoles")
     # THE HOUR, ONE PER EPISODE, AND NOW FOR EVERY PLATE. The suffixes are the
     # kit's (every plate is drawn at every hour the tokens declare); which of

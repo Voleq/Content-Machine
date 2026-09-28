@@ -1180,6 +1180,16 @@ async function main() {
     await drawClose(ctx, write);
   }
 
+  /* WHICH ROOMS EACH POSE WAS DRAWN FOR, as design wrote it (kit-model.js
+   * POSES[pose].fits, by angle stem). The writer of a long picks his scenes
+   * from these, so they travel with the kit rather than being retyped into
+   * roles.json on every drop. */
+  const poseFits = {};
+  for (const pose of M.poseKeys) {
+    const fits = String((M.POSES[pose] || {}).fits || "");
+    poseFits["host/" + pose] = fits.split("·").map((s) => s.trim()).filter(Boolean).map((s) => "room/" + s);
+  }
+
   const palettes = {};
   for (const hour of hours) {
     const p = PORT.palFor(tokens, hour);
@@ -1204,6 +1214,7 @@ async function main() {
     palette: { surface: "night-card", roles: palettes[BASE_HOUR] },
     palettes: palettes,
     families: families,
+    poseFits: poseFits,
     assets: assets,
     checkedAgainstExport: checked,
     problems: ctx.problems,

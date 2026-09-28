@@ -302,6 +302,13 @@ draws and where the drawing reads it from.
                         say where the figure is from in the sentence instead ("the 10-K shows").
                         Name the document, never just "company filings", and add the page or
                         note ("FY24 10-K, note 7") when you read the figure there yourself.
+[SCENE: room | pose=name]  WHERE DENNIS IS AND WHAT HE IS DOING, from here until your next [SCENE].
+                        You direct him: the room angle and the pose are yours, off THE SCENES below.
+                        [SCENE: desk-side | pose=holding-a-filing] The 10-K has a note on this.
+                        Put it right before the word the shot should cut on. It holds across every
+                        cutaway in between: when the evidence goes away, he is back where you left
+                        him, so a new [SCENE] is a new picture, not a formality. Leave pose= off only
+                        in a room nobody stands in, where the scene is the room itself.
 
 DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
 The full vocabulary is in DELIVERY DIRECTION near the top of this prompt, with
@@ -329,8 +336,39 @@ same type may appear twice in one video under different titles.
 
 {{chapter_types}}
 
+## THE SCENES — where Dennis is, and what he is doing
+Every beat of him is a scene, and you imagine it. The office has several
+angles of the same room, and he has a set of poses; you pick the angle and the
+pose for each stretch of him with [SCENE], the way a screenplay's scene heading
+says where we are. The bot only shoots it: it never picks a room or a pose
+for a beat you directed. Where you name none, it picks for you, and the
+validator will tell you where that happened.
+
+{{scene_catalogue}}
+
+How to use them:
+- OPEN the video with a [SCENE] before the first word. The wide rooms and a
+  to-camera pose make an opening; a pose that looks up from the desk makes a
+  cold open that starts mid-thought.
+- CLOSE it with one too. The exit is drawn: the doorway, walking out of frame,
+  is the end of the video and nothing else. Head-in-hands is the one beat in a
+  video where the numbers beat him; it has no mouth, so give it a few words or
+  a [BEAT] and nothing more.
+- READ in the reading rooms. When he reads a filing, a quote or a figure off a
+  page, put him where design drew reading: at the side of the desk, close on
+  the page, or turned to the screen. Argue on the board when the chapter is
+  argued on the board.
+- The two rooms nobody stands in (the desk from above, the board up close) are
+  inserts: the papers on the desk, the wall of calls. Your line plays over the
+  room; keep them to a sentence or two.
+- A new [SCENE] when the thought turns: at the top of each chapter at least,
+  and wherever he would move in a real room. One pose for a whole chapter is a
+  still photograph.
+- Match the pose to the line. A mug is a man settling in, a filing held up is
+  evidence, counting on his fingers is a list, a shrug is the "but".
+
 ## DIRECTION RULES — DENNIS IS ON SCREEN; EVIDENCE IS THE CUTAWAY
-This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidence, and comes back. **Untagged narration IS the host** — the renderer puts him on screen and lip-syncs him to your words. You are not filling dead air; you are choosing the few moments worth leaving his face for.
+This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidence, and comes back. **Untagged narration IS the host**, lip-synced to your words, **in the scene you set with [SCENE]**. You are not filling dead air; you are directing him, and choosing the few moments worth leaving his face for.
 
 - **Every chapter OPENS and CLOSES on Dennis talking.** Start each chapter with untagged narration (he sets it up), and end it untagged (he lands it) before the next chapter's opener. Never begin or end a chapter on a cutaway.
 - **DELIBERATE PACING — do NOT tag every sentence.** A visual tag means "leave the host and hold this on screen long enough to read it." Roughly ONE cutaway per idea, not per sentence: 2–5 sentences of host, then the evidence, then back. A chart, a table or a diagram needs five to eight seconds of narration over it — write that narration. If a tag has one clause behind it, you have made a flash card, not a cut.

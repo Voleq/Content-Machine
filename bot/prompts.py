@@ -254,6 +254,18 @@ def _for_company(plate, sector: str) -> bool:
     return not sector or not plate.sectors or sector in plate.sectors
 
 
+def scene_catalogue_block(settings: Settings) -> str:
+    """Every room and pose a LONG's writer may name in [SCENE], off the kit."""
+    from pipeline.plates import PlateError, load_plates
+    from pipeline.scenes import scene_catalogue
+
+    try:
+        return scene_catalogue(load_plates(settings.assets_dir))
+    except PlateError as exc:
+        return (f"(the kit is not installed, so there are no rooms to name: "
+                f"{exc}. Write no [SCENE]; the bot picks every one.)")
+
+
 def plate_catalogue(settings: Settings, *, fmt: str = "long",
                     sector: str = "", only: frozenset[str] | None = None) -> str:
     """Every plate the director may name: what it is for, when not to use it,
@@ -1074,6 +1086,11 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                      sector=_sector(c),
                      only=(template_plates(c.settings, "short")
                            if c.fmt == "short" else None))),
+    # The writer's menu of rooms and poses for [SCENE]: the long is the
+    # writer's to direct, so the prompt lists every angle and pose the kit
+    # draws, and design's limits on each, off the registry itself.
+    PayloadBlock("{{scene_catalogue}}", _LONG_FORM,
+                 lambda c: scene_catalogue_block(c.settings)),
     PayloadBlock("{{scribble_styles}}", _LONG_FORM,
                  lambda c: scribble_styles(c.settings)),
     PayloadBlock("{{chapter_title_max}}", _LONG_FORM,

@@ -643,10 +643,23 @@ def test_a_tag_route_is_not_credited_for_the_set_or_the_host(settings):
     from pipeline.gates import reachable_plates
     from pipeline.plates import load_plates
 
+    from pipeline.scenes import scene_poses, scene_rooms
+
     reg = load_plates(settings.assets_dir)
     routes = reachable_plates(reg)
-    assert not [k for k in routes["tag"]
-                if k.split("/", 1)[0] in ("room", "host", "annotations")]
+    assert not [k for k in routes["tag"] if k.startswith("annotations/")]
+    # The ones a [SCENE] names are the writer's to reach, and no others: a
+    # room the long cannot be shot in is not credited because a chapter
+    # type lists `room/` as universal.
+    named = {f"{k}{strip}" for k in scene_poses(reg)
+             for strip in ("", "-talk", "-idle", "-blink")}
+    for stem in scene_rooms(reg):
+        key = reg.aspect_key(stem, "16x9")
+        named |= {key, *reg.twins_of(key)}
+    stray = [k for k in routes["tag"]
+             if k.split("/", 1)[0] in ("room", "host") and k not in named]
+    assert not stray, stray
+    assert "room/window-talk-9x16" not in routes["tag"]
 
 
 # --------------------------------------------------------------------------

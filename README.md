@@ -1014,6 +1014,26 @@ env var, case-insensitive).
   `[MEME: bagholder | hold=2.0]` — seconds on screen, clamped to 0.8–5.0 with a
   warning outside it, because `hold=30` is a slipped decimal point rather than
   an instruction. The bare forms are unchanged and take the format's default.
+- **The writer directs Dennis on the long.** `[SCENE: desk-side | pose=holding-a-mug]`
+  names the room angle he is shot in and the pose he stands in, from that word
+  until the next `[SCENE]`, across the cutaways in between. The renderer picks
+  no room and no pose for a beat the writer directed; it picks only where the
+  writer named none, and the validator says where. The menu in both long prompts is
+  generated off the registry (`pipeline/scenes.py`): every 16:9 angle, which
+  ones nobody can stand in (the board, the desk from above: the room alone, or
+  the close-up), every pose, and design's limits on each (no mouth, once a
+  video, the rooms each pose was drawn for). The pose-to-room pairs live in
+  the kit's `kit-model.js`, so the ingest carries them into the registry:
+  **rerun `python scripts/ingest_kit.py kit` after pulling this.** A pose the
+  kit caps that has had its turn falls back to the bot's pick, and the
+  manifest's `scenes` says so per beat. The short stays template-driven and
+  strips `[SCENE]`.
+- **The long's lower third is design's.** `overlays/lower-third` with the
+  ticker and the channel's line in its slots, top-left and 640 px wide on a
+  1920 frame (design's 820 runs into the close-up's head), on the beats of
+  him only (over a plate or a chapter card it would cover their top-left
+  corner), sliding in the first time. A ticker longer than the slot falls
+  back to the old line of type.
 - **Delivery direction is declared, never inferred.** The writer places
   `[BEAT]`, `[CURIOUS]`, `[SIGH]` and the rest inline; nothing downstream reads
   a sentence and decides it wants one. `pipeline/direction.py` is the single

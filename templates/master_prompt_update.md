@@ -83,7 +83,7 @@ Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below:
 {{craft_rules}}
 
 ## TAG GRAMMAR — identical to the long-form prompt; place inline, immediately before the word it should hit
-[PLATE: name | slot=value | …] · [IMG: query] · [PRODUCT: query] · [MEME: key | hold=2.0] · [CLIP: key or subject | hold=2.5] · [CHART: metric] · [SHOW FILING: file.png] · [SCREENGRAB: slug] · [SOUND: key] · [SCRIBBLE: mark -> target]
+[PLATE: name | slot=value | …] · [IMG: query] · [PRODUCT: query] · [MEME: key | hold=2.0] · [CLIP: key or subject | hold=2.5] · [CHART: metric] · [SHOW FILING: file.png] · [SCREENGRAB: slug] · [SOUND: key] · [SCRIBBLE: mark -> target] · [SCENE: room | pose=name]
 
 `hold` is seconds on screen, 0.8–5.0, and is optional on those two — write one when you know whether this is a glance or a beat to sit in. A meme is STILL (the freeze is the joke's timing); a clip MOVES, and its subject need not be a palette key — a specific moment ("lebron shooting a three") is reachable and is the point of the tag.
 
@@ -99,8 +99,13 @@ The vocabulary, the modes and the ceilings are in DELIVERY DIRECTION above. It
 is generated from the table the pipeline actually performs the tags from, so a
 tag that is not on that list is a tag nothing will honour.
 
+## THE SCENES — where Dennis is, and what he is doing
+[SCENE: room | pose=name] sets the room angle he is in and the pose he is in, from that word until your next [SCENE], across every cutaway in between. You imagine each scene; the bot only shoots it, and picks for any beat you leave undirected. Open the video with one before the first word and put one at the top of each movement at least. The exit (the doorway, walking out of frame) is for the end only; head-in-hands is once a video and has no mouth; the reading rooms are for reading a filing or a figure off the page; the two rooms nobody stands in are inserts over a sentence or two.
+
+{{scene_catalogue}}
+
 ## DIRECTION RULES — unchanged from long-form
-This is a TALKING HOST show. **Untagged narration IS the host**, lip-synced to your words; a visual tag means "leave his face and hold this long enough to read it". Roughly ONE cutaway per idea, not per sentence. Every movement OPENS and CLOSES on Dennis talking. Nothing flashes by — when you tag a [CHART] or a [SHOW FILING], keep talking about it, because the renderer holds it for as long as your words about it last. Real photographs run raw and full-frame.
+This is a TALKING HOST show. **Untagged narration IS the host**, lip-synced to your words, in the scene you set with [SCENE]; a visual tag means "leave his face and hold this long enough to read it". Roughly ONE cutaway per idea, not per sentence. Every movement OPENS and CLOSES on Dennis talking. Nothing flashes by — when you tag a [CHART] or a [SHOW FILING], keep talking about it, because the renderer holds it for as long as your words about it last. A photograph, a clip or a filing lands inside one of the kit's drawn frames, never raw and full-frame.
 
 ## RULES
 - LENGTH IS AN OUTPUT. An update is usually SHORTER than the original — six to twelve minutes is normal, because three of the four movements are narrow. Do not pad it back up to a full deep dive; if there is genuinely a full second video's worth of new material, that is a new video and not an update.

@@ -124,6 +124,9 @@ _TAG_TO_KIND = {
     # The same kind of instruction: where the figure on that plate comes from.
     # plan_writer_sources pairs it with its beat.
     TagType.SOURCE: CueKind.SOURCE,
+    # The writer's room and pose for every beat of Dennis from here on. It
+    # claims no frame; `plan_long_segments` cuts the beat of him it lands in.
+    TagType.SCENE: CueKind.SCENE,
 }
 
 # Tag types that draw nothing on the LONG timeline BY DESIGN, and why.
@@ -420,6 +423,23 @@ def quantise_to_frames(segments: list[Segment], fps: int,
         prev_frame = end_frame
     return out
 
+def scene_in_force(cues: list[Cue], t: float) -> Cue | None:
+    """The writer's [SCENE] a beat of him starting at `t` is shot in, or None.
+
+    The latest one said by then. A scene said within a beat's first moments
+    claims the whole beat: the word is where the writer wanted the cut, and a
+    sliver of the old scene in front of it would be a cut nobody asked for.
+    """
+    got = None
+    for c in sorted((c for c in cues if c.kind is CueKind.SCENE),
+                    key=lambda c: (c.t, c.payload.get("order", 0))):
+        if c.t <= t + MIN_HOST_BEAT_S:
+            got = c
+        else:
+            break
+    return got
+
+
 def plan_long_segments(
     cues: list[Cue],
     duration: float,
@@ -469,6 +489,14 @@ def plan_long_segments(
     segments: list[Segment] = []
     host_i = 0
 
+    # THE WRITER'S SCENES, in the order they are said. Each holds for every
+    # beat of Dennis after it until the next, across the cutaways between.
+    scenes = sorted((c for c in cues if c.kind is CueKind.SCENE),
+                    key=lambda c: (c.t, c.payload.get("order", 0)))
+
+    def scene_at(t: float) -> Cue | None:
+        return scene_in_force(scenes, t)
+
     def add_host(a: float, b: float) -> None:
         """Host beats for the gap — never chopped into filler cuts, but never
         one frame for a minute and a half either.
@@ -477,6 +505,10 @@ def plan_long_segments(
         They are still all Dennis talking, so this is not a cut away from him;
         it is the shot changing, which the bank and the `variant` counter
         already do between gaps and never did inside one.
+
+        A [SCENE] said inside the gap cuts it on the scene's word, and a beat
+        the writer directed is one shot however long it runs: the room and the
+        pose are his, and splitting it would cut his picture against itself.
         """
         nonlocal host_i
         span = b - a
@@ -487,6 +519,46 @@ def plan_long_segments(
             # blinking to the host and straight back out
             segments[-1].end = b
             return
+        # Two scenes said a breath apart are one cut, to the later of them.
+        edges = [a]
+        for t in sorted({c.t for c in scenes
+                         if a + MIN_HOST_BEAT_S < c.t < b - MIN_HOST_BEAT_S}):
+            if t - edges[-1] >= MIN_HOST_BEAT_S:
+                edges.append(t)
+        edges.append(b)
+        for p0, p1 in zip(edges, edges[1:]):
+            scene = scene_at(p0)
+            if scene is None:
+                _undirected(p0, p1)
+                continue
+            # A chapter that starts inside a scene still gets its cut: the
+            # chapter's card lands on the first cut at or after its time, and
+            # one shot held across the boundary would push the card past it.
+            inner = [t for t in starts if p0 + MIN_HOST_BEAT_S < t < p1 - MIN_HOST_BEAT_S]
+            pts = [p0, *sorted(inner), p1]
+            for q0, q1 in zip(pts, pts[1:]):
+                _directed(q0, q1, scene)
+
+    def _directed(a: float, b: float, scene: Cue) -> None:
+        """One beat of him, shot as the writer's scene has it."""
+        nonlocal host_i
+        if b - a > HOST_GAP_WARN_S:
+            warnings.append(
+                f"one scene held {b - a:.0f}s from {a:.0f}s to {b:.0f}s "
+                f"({scene.payload.get('value', '')}) — nothing on screen "
+                f"changes; a [SCENE] or a visual in that stretch moves the "
+                f"picture")
+        segments.append(Segment(
+            start=a, end=b, kind="host",
+            payload={"variant": host_i, "layout": "host-full",
+                     "scene": dict(scene.payload.get("values") or {}),
+                     "scene_order": scene.payload.get("order", 0)}))
+        host_i += 1
+
+    def _undirected(a: float, b: float) -> None:
+        """Beats of him the writer left to the bot: even parts, as ever."""
+        nonlocal host_i
+        span = b - a
         if span > HOST_GAP_WARN_S:
             warnings.append(
                 f"{span:.0f}s with no visual from {a:.0f}s to {b:.0f}s — the "

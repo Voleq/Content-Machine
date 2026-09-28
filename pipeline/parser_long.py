@@ -298,6 +298,20 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
             # holding the frame here, and checked against it in validation.
             payload = " ".join(payload.split())
             values = {"plate": holder_plate, "on": holder_type}
+        elif rt.type is TagType.SCENE:
+            # The writer's room and pose, resolved against the kit here so a
+            # room it does not draw is named at intake, not found as a cut
+            # to the wrong set. A scene claims no frame, so a [MOVE] after it
+            # still acts on the plate before it.
+            from pipeline.scenes import resolve_scene
+
+            scene = resolve_scene(load_plates(settings.assets_dir), payload)
+            warnings.extend(scene.warnings)
+            if not scene.ok:
+                warnings.extend(scene.problems)
+                continue
+            payload = scene.room
+            values = scene.values
         if rt.type is TagType.SCREENGRAB:
             slug = normalize_slug(payload)
             if not _SLUG_RE.match(slug):
@@ -872,6 +886,11 @@ def validate_long_script(
     source_warnings, source_blocking = source_problems(script, reg, settings)
     warnings.extend(source_warnings)
     blocking.extend(source_blocking)
+    from pipeline.scenes import scene_problems
+
+    scene_warnings, scene_blocking = scene_problems(script, reg)
+    warnings.extend(scene_warnings)
+    blocking.extend(scene_blocking)
 
     warnings.extend(density_warnings(script, settings))
 

@@ -310,6 +310,21 @@
    "room/board"
   ]
  },
+ "purposes": {
+  "_note": [
+   "What a plate is for, where design's fragment says nothing. Design's own purpose",
+   "wins everywhere else; one written here wins over it. These six are the angles",
+   "rebuild-21 drew before the fragment carried purposes, described by what the",
+   "floor plan says each one sees (kit-model.js PLAN.sees). The long's writer picks",
+   "his scenes from these lines, so a room with none is a room he cannot imagine."
+  ],
+  "room/desk-front-16x9": "the main TALK angle: square on to him at his desk, the monitor behind his head, the lamp and the window in frame.",
+  "room/desk-side-16x9": "the first READ angle: the desk from the side, monitor and lamp beside him, no window. For reading off the page or the screen.",
+  "room/desk-wide-16x9": "the ESTABLISHING angle: the whole desk, monitor, lamp and window, pulled back, with a chapter card above him.",
+  "room/doorway-16x9": "the EXIT angle: by the door to the corridor, the desk and monitor behind him. Where he leaves.",
+  "room/turn-to-screen-16x9": "the third READ angle: at the desk turned to the monitor, the window beyond it. For what is on the screen.",
+  "room/window-wall-16x9": "the WINDOW angle: the window beside him, the desk and monitor in frame, no lamp. The hour and the weather read here."
+ },
  "heldBack": {
   "_note": [
    "Plates and rooms the kit ships that no shot may reach yet, each with the",
@@ -330,7 +345,7 @@
   ],
   "plates": {},
   "rooms": {
-   "room/board-wide": "design: open on it only when the chapter will be argued on the board. The opener role picks by seed, so in it this would open chapters that never go near the board. Night only as well (duskSafe false), like board-side.",
+   "room/board-wide": "design: open on it only when the chapter will be argued on the board. The opener role picks by seed, so in it this would open chapters that never go near the board. The writer knows which chapter that is, so he may still name it with a [SCENE]. Night only as well (duskSafe false), like board-side.",
    "room/board-wide-christmas": "SEASONAL, and the twin of board-wide, which is held back above: December shoots an angle's twin in its place, so this is reached when board-wide is, and not before."
   }
  },

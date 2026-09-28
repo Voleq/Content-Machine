@@ -2145,6 +2145,20 @@ def reachable_plates(reg) -> dict[str, set[str]]:
     # template named demonstrably did not.
     by_tag -= {k for k in by_tag
                if k.split("/", 1)[0] in RENDERER_OWNED_FAMILIES}
+
+    # A [SCENE] DOES NAME THEM, on the long. Its writer picks the room angle
+    # he is shot in and the pose he stands in, off the menu the prompt prints
+    # from `pipeline.scenes`, so every angle a long can be shot in (with the
+    # twin December shoots in its place) and every pose (with the strips it is
+    # played through) is a tag route: reachable when somebody chooses it.
+    from pipeline.scenes import SCENE_ASPECT, scene_poses, scene_rooms
+    for stem in scene_rooms(reg):
+        key = reg.aspect_key(stem, SCENE_ASPECT)
+        if key:
+            by_tag.update((key, *reg.twins_of(key)))
+    for key in scene_poses(reg):
+        by_tag.update(k for k in (key, f"{key}-talk", f"{key}-idle",
+                                  f"{key}-blink") if k in reg)
     return {"template": by_template, "tag": by_tag, "code": by_code}
 
 
