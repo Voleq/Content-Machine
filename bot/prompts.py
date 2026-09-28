@@ -1030,7 +1030,9 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{beat_order}}", ("short", "headline"), beat_order_block),
 
     # --- craft rules
-    PayloadBlock("{{tagging_density}}", ("short", "long_write", "update"),
+    # Long only: it asks for a plate on every figure and [SHOW FILING] on
+    # every quote, which a short's writer is told it cannot place.
+    PayloadBlock("{{tagging_density}}", _LONG_FORM,
                  lambda c: TAGGING_DENSITY),
     PayloadBlock("{{craft_rules}}", _WRITING,
                  lambda c: expressivity_and_pacing()),

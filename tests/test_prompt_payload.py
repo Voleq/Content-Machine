@@ -329,3 +329,14 @@ def test_the_prompt_example_is_marked_and_in_the_word_band(fmt):
     clean, _tags, _w = tokenize_tags(example.group(1))
     assert 140 <= len(clean.split()) <= 160
     assert len(clean) <= 1100
+
+
+def test_the_short_is_not_asked_for_a_plate_per_figure():
+    """The tagging-density rule asks for a plate on every figure and
+    [SHOW FILING] on every quote. The short prompt tells its writer the
+    template places every frame, so the rule is the long's alone."""
+    for fmt in ("short", "headline"):
+        assert "{{tagging_density}}" not in payload_tokens(fmt)
+        text = (TEMPLATES / f"master_prompt_{fmt}.md").read_text(encoding="utf-8")
+        assert "{{tagging_density}}" not in text
+    assert "{{tagging_density}}" in payload_tokens("long_write")

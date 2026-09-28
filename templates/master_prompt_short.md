@@ -44,8 +44,6 @@ look like as you write to it — the frames a viewer will actually see:
 
 {{plate_catalogue}}
 
-{{tagging_density}}
-
 ## CRAFT — expressivity and pacing
 {{craft_rules}}
 
