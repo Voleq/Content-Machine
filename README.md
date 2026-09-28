@@ -1029,10 +1029,11 @@ env var, case-insensitive).
   manifest's `scenes` says so per beat. The short stays template-driven and
   strips `[SCENE]`.
 - **The long's lower third is design's.** `overlays/lower-third` with the
-  ticker and the channel's line in its slots, top-left and 500 px wide on a
-  1920 frame, on the beats of him only (over a plate or a chapter card it
-  would cover their top-left corner), sliding in the first time. A ticker
-  longer than the slot falls back to the old line of type.
+  ticker and the channel's line in its slots, top-left and 640 px wide on a
+  1920 frame (design's 820 runs into the close-up's head), on the beats of
+  him only (over a plate or a chapter card it would cover their top-left
+  corner), sliding in the first time. A ticker longer than the slot falls
+  back to the old line of type.
 - **Delivery direction is declared, never inferred.** The writer places
   `[BEAT]`, `[CURIOUS]`, `[SIGH]` and the rest inline; nothing downstream reads
   a sentence and decides it wants one. `pipeline/direction.py` is the single

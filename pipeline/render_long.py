@@ -184,11 +184,11 @@ def _cleared(t: float, covers: list[tuple[float, float]]) -> float:
 INTRO_CARD_S = 2.6
 
 # THE LOWER THIRD'S SIZE AND PLACE, in the 1920-wide design's pixels. Design
-# drew it 820 wide; at that size its right edge reaches the close-up's head
-# and its foot the heads on the left-hand angles (panel-left stands him at
-# y 228). At 500 it clears both and still sets the ticker larger than the
-# line of type it replaces.
-LOWER_THIRD_W = 500
+# drew it 820 wide, and at that size its right edge runs into the close-up's
+# head (from x 780). At 640 it clears the head, its foot (y 182) clears every
+# standing figure (panel-left, the highest, stands him from y 228), and the
+# channel's line is still legible; at 500 it was not.
+LOWER_THIRD_W = 640
 LOWER_THIRD_AT = (24, 20)
 # A window of him shorter than this gets no lower third: on and off inside a
 # second reads as a flicker, not a strip.
