@@ -1130,6 +1130,26 @@ def test_the_long_has_one_engine(settings):
     assert not hasattr(settings, "long_render_engine")
 
 
+def test_every_role_the_long_casts_from_is_declared_for_the_kit_audit(settings):
+    """The kit audit reads `LONG_ROOM_ROLES` and `LONG_HOST_ROLES`, not the
+    calls, so a role asked for in the renderer and missing from them is a
+    drawing every long puts on screen that the audit calls stranded. And a
+    declared role nothing asks for credits drawings no long ever draws."""
+    import ast
+    from pathlib import Path
+
+    from pipeline.plates import load_plates
+    from pipeline.render_long import LONG_HOST_ROLES, LONG_ROOM_ROLES
+
+    reg = load_plates(settings.assets_dir)
+    roles = set(reg.room_roles) | set(reg.host_roles)
+    tree = ast.parse(Path("pipeline/render_long.py").read_text())
+    named = {n.value for n in ast.walk(tree)
+             if isinstance(n, ast.Constant) and n.value in roles}
+    declared = {*LONG_ROOM_ROLES, *LONG_HOST_ROLES, "opener", "establish"}
+    assert named == declared, (named ^ declared)
+
+
 def test_the_manifest_names_the_engine_that_drew_it(rendered):
     """P4: which renderer drew a video is a fact about the artefact, and it
     was recoverable from neither the manifest nor the provenance record."""

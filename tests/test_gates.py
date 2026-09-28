@@ -567,16 +567,50 @@ def test_a_plate_named_only_through_a_room_role_is_reachable(settings):
     """A template writes `room/talk`, not `room/desk-front-16x9`.
 
     A walk that only read plate keys would report every angle as
-    unreachable and bury the one that actually is.
+    unreachable and bury the one that actually is. The long has no shot
+    file, so its rooms come in through the roles it declares it casts from:
+    `panel-left` is only ever the long's panel beat, and the retired chapter
+    templates never named that role, so it read as stranded all along.
     """
     from pipeline.gates import reachable_plates
     from pipeline.plates import load_plates
 
     reg = load_plates(settings.assets_dir)
     routes = reachable_plates(reg)
-    for key in ("room/desk-front-16x9", "room/doorway-wide-16x9",
-                "room/desk-top-down-16x9", "room/desk-front-9x16"):
+    for key in ("room/desk-front-16x9", "room/desk-front-9x16",
+                "room/panel-left-16x9", "room/window-wide-16x9"):
         assert key in routes["template"], f"{key} has no route through a role"
+
+
+def test_the_long_s_standing_poses_are_reached_through_its_roles(settings):
+    """`pick_shot(reg, "beat")` and `"panel"` stand him in these on every long."""
+    from pipeline.gates import reachable_plates
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    routes = reachable_plates(reg)
+    for key in ("host/considering", "host/arms-crossed-talk",
+                "host/checking-a-figure", "host/turn-to-screen-blink"):
+        assert key in routes["template"], f"{key} reads as unreachable"
+
+
+def test_a_pose_the_words_cast_and_a_wipe_are_not_gaps(settings):
+    """Both are the renderer's, and neither is named whole in its source.
+
+    A cast pose is chosen by a cue in what he says (`host.cast_pose`), and a
+    wipe is asked for by its move's name and prefixed where it is looked up.
+    Reading them as stranded put fifteen drawings on the list that both lanes
+    draw.
+    """
+    from pipeline.gates import reachable_plates
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    routes = reachable_plates(reg)
+    for key in ("host/shrug", "host/counting-on-fingers-talk",
+                "host/gesturing-at-plate", "overlays/wipe-sweep-16x9",
+                "overlays/wipe-page-short-9x16", "overlays/wipe-blinds-16x9"):
+        assert key in routes["code"], f"{key} reads as unreachable"
 
 
 def test_a_plate_the_renderer_reaches_by_name_is_not_a_gap(settings):
