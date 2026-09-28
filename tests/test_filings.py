@@ -14,7 +14,7 @@ import json
 import pytest
 
 from pipeline import filings as F
-from pipeline.company_data import FILING_LABEL, list_screenshots
+from pipeline.company_data import FILING_SOURCE, list_screenshots
 
 
 # --------------------------------------------------------------- resolve
@@ -132,10 +132,11 @@ def test_auto_filings_happy_path(settings, tmp_path):
     assert manifest["ticker"] == "EXMPL" and manifest["form"] == "10-K"
     assert len(manifest["shots"]) == len(shots)
 
-    # the vendor is NEVER named — only the generic filing chip. (EDGAR is the
-    # SEC's free public system, not a data-terminal vendor, so it's fine that
-    # the internal manifest URL carries it; it never reaches the screen.)
-    assert FILING_LABEL == "FROM THE 10-K"
+    # the vendor is NEVER named — only the filing, in design's source tag.
+    # (EDGAR is the SEC's free public system, not a data-terminal vendor, so
+    # it's fine that the internal manifest URL carries it; it never reaches
+    # the screen.)
+    assert FILING_SOURCE == "10-K"
     blob = json.dumps(manifest).lower()
     for brand in ("refinitiv", "lseg", "eikon", "capital iq", "bloomberg terminal"):
         assert brand not in blob

@@ -57,9 +57,9 @@
       "max_hold_s": 7,
       "anchor": "reported",
       "bind": {
-        "kicker": "?numbers.headline_kicker",
+        "kicker": "?compare.reported_label",
         "value": "compare.reported",
-        "label": "?numbers.headline_label",
+        "label": "?compare.print_label",
         "caption": "?script.move_summary"
       },
       "notes": "The number that printed, at the size it deserves.",
@@ -67,9 +67,9 @@
         {
           "plate": "figures/big-number-l2-9x16",
           "bind": {
-            "kicker": "?numbers.headline_kicker",
+            "kicker": "?compare.reported_label",
             "value": "compare.reported",
-            "label": "?numbers.headline_label",
+            "label": "?compare.print_label",
             "caption": "?script.move_summary"
           },
           "notes": "The same figure with a detail rule under it, for a print that has a verdict to carry."
@@ -82,14 +82,14 @@
       "max_hold_s": 7,
       "anchor": "expected",
       "bind": {
-        "kicker": "?compare.kicker",
-        "label-1": "?numbers.headline_label",
+        "kicker": "?script.ticker",
+        "label-1": "?compare.reported_label",
         "value-1": "compare.reported",
         "label-2": "?compare.expected_label",
         "value-2": "?compare.expected",
         "caption": "?script.cheap_or_trap"
       },
-      "notes": "Print against consensus, stacked. The delta slot holds eight characters and takes the gap.",
+      "notes": "Print against consensus, stacked, each under its own word, as the before-after alternate does. The sheet's first row is not what printed, so it does not label the print. The delta slot stays empty: the gap is a figure nobody wrote, and the pipeline does not compute one.",
       "alts": [
         {
           "plate": "figures/compare-side-9x16",
@@ -141,8 +141,8 @@
       "max_hold_s": 7,
       "anchor": "guidance",
       "bind": {
-        "kicker": "?compare.kicker",
-        "term": "?numbers.headline_label",
+        "kicker": "?script.ticker",
+        "term": "?compare.guidance_label",
         "body": "script.guidance"
       },
       "notes": "What they said about next year, in the card drawn for a term and its meaning.",
@@ -151,8 +151,8 @@
           "plate": "cards/quote-pull-9x16",
           "bind": {
             "body": "script.guidance",
-            "attribution": "?numbers.headline_label",
-            "source": "?source.guidance|numbers.unit"
+            "attribution": "?script.ticker",
+            "source": "?source.guidance"
           },
           "notes": "Guidance as a line worth pulling out rather than a term and its meaning."
         }

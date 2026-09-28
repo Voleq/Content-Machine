@@ -1,144 +1,489 @@
 {
- "ticker": "EXMPL",
- "format": "earnings",
- "beats": 8,
- "shots_count": 8,
- "anchored_shots": 1,
- "kit": "v2-plates",
- "duration_s": 64.458,
- "frame": {
-  "w": 1080,
-  "h": 1920
- },
- "shots": [
-  {
-   "id": "open",
-   "plate": "shorts/hook-card-t2",
-   "start_s": 0.0,
-   "end_s": 8.057,
-   "anchored": true,
-   "max_hold_s": 7.0,
-   "layers": [
-    "open:ground",
-    "open:plate:shorts/hook-card-t2"
-   ]
+  "ticker": "EXMPL",
+  "format": "earnings",
+  "hour": "night",
+  "beats": 8,
+  "engine": "shots",
+  "shots_count": 8,
+  "anchored_shots": 1,
+  "kit": "v2-plates",
+  "prices": {
+    "source": "",
+    "degraded": false
   },
-  {
-   "id": "the-print",
-   "plate": "figures/big-number-l1-9x16",
-   "start_s": 8.057,
-   "end_s": 16.115,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "the-print:ground",
-    "the-print:plate:figures/big-number-l1-9x16",
-    "the-print:caption"
-   ]
+  "provenance": {
+    "ticker": "EXMPL",
+    "format": "earnings",
+    "workdate": "sample_earnings",
+    "duration_s": 56.308,
+    "render": {
+      "engine": "shots",
+      "format": "earnings"
+    },
+    "prices": {},
+    "visuals": {
+      "library": 1
+    },
+    "filings": {},
+    "audio": {
+      "tier": "mock",
+      "model": "mock",
+      "draft": false,
+      "cached": true,
+      "cost_usd": 0.0,
+      "chunks": null
+    },
+    "sound": {
+      "lufs": -23.0,
+      "effects": 14,
+      "bed": "",
+      "theme": false,
+      "room": "room_night.wav",
+      "placeholders": 7
+    },
+    "llm": {
+      "provider": "",
+      "model": "",
+      "calls": 0,
+      "hosted_fallbacks": 0,
+      "skipped": []
+    },
+    "gates": ""
   },
-  {
-   "id": "vs-expected",
-   "plate": "figures/compare-stacked-9x16",
-   "start_s": 16.115,
-   "end_s": 24.172,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "vs-expected:ground",
-    "vs-expected:plate:figures/compare-stacked-9x16",
-    "vs-expected:caption"
-   ]
+  "duration_s": 56.308,
+  "frame": {
+    "w": 1080,
+    "h": 1920
   },
-  {
-   "id": "the-sheet",
-   "plate": "tables/numbers-sheet-4r-9x16",
-   "start_s": 24.172,
-   "end_s": 32.229,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "the-sheet:ground",
-    "the-sheet:plate:tables/numbers-sheet-4r-9x16",
-    "the-sheet:caption"
-   ]
+  "shots": [
+    {
+      "id": "open",
+      "plate": "shorts/hook-card-t2",
+      "start_s": 0.0,
+      "end_s": 7.0,
+      "anchored": true,
+      "max_hold_s": 7.0,
+      "layers": [
+        "open:ground",
+        "open:plate:shorts/hook-card-t2"
+      ]
+    },
+    {
+      "id": "the-print",
+      "plate": "figures/big-number-l1-9x16",
+      "start_s": 7.0,
+      "end_s": 14.0,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "the-print:ground",
+        "the-print:plate:figures/big-number-l1-9x16"
+      ]
+    },
+    {
+      "id": "vs-expected",
+      "plate": "figures/compare-stacked-9x16",
+      "start_s": 14.0,
+      "end_s": 21.0,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "vs-expected:ground",
+        "vs-expected:plate:figures/compare-stacked-9x16"
+      ]
+    },
+    {
+      "id": "the-sheet",
+      "plate": "tables/numbers-sheet-4r-9x16",
+      "start_s": 21.0,
+      "end_s": 28.039,
+      "anchored": false,
+      "max_hold_s": 14.0,
+      "layers": [
+        "the-sheet:ground",
+        "the-sheet:plate:tables/numbers-sheet-4r-9x16",
+        "the-sheet:caption"
+      ]
+    },
+    {
+      "id": "guidance",
+      "plate": "cards/definition-9x16",
+      "start_s": 28.039,
+      "end_s": 35.039,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "guidance:ground",
+        "guidance:plate:cards/definition-9x16",
+        "guidance:caption"
+      ]
+    },
+    {
+      "id": "the-turn",
+      "plate": "room/talk",
+      "start_s": 35.039,
+      "end_s": 42.308,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "the-turn:ground",
+        "the-turn:plate:room/desk-front-9x16",
+        "the-turn:host:close-up",
+        "the-turn:caption"
+      ]
+    },
+    {
+      "id": "so-what",
+      "plate": "structure/both-true-9x16",
+      "start_s": 42.308,
+      "end_s": 49.308,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "so-what:ground",
+        "so-what:plate:structure/confession-statement-9x16",
+        "so-what:caption",
+        "so-what:meme-frame:frames/media-frame-t3-9x16",
+        "so-what:meme:harold-100k-goal-still-152k-to-go"
+      ]
+    },
+    {
+      "id": "close",
+      "plate": "structure/closing-9x16",
+      "start_s": 49.308,
+      "end_s": 56.308,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "close:ground",
+        "close:plate:cards/quote-pull-9x16",
+        "close:caption"
+      ]
+    }
+  ],
+  "layers": 24,
+  "plates_used": [
+    "cards/definition-9x16",
+    "cards/quote-pull-9x16",
+    "figures/big-number-l1-9x16",
+    "figures/compare-stacked-9x16",
+    "frames/media-frame-t3-9x16",
+    "host/close-up",
+    "room/desk-front-9x16",
+    "shorts/hook-card-t2",
+    "structure/confession-statement-9x16",
+    "tables/numbers-sheet-4r-9x16"
+  ],
+  "shot_order": "as-authored",
+  "moves": {
+    "moves": [
+      {
+        "move": "highlight",
+        "start": 0.35,
+        "shot_id": "open",
+        "slot": "hook",
+        "frames": 6
+      },
+      {
+        "move": "count-up",
+        "start": 7.0,
+        "shot_id": "the-print",
+        "slot": "value",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 14.0,
+        "shot_id": "vs-expected",
+        "slot": "value-1",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 14.733,
+        "shot_id": "vs-expected",
+        "slot": "value-2",
+        "frames": 7
+      },
+      {
+        "move": "pen-circle",
+        "start": 15.467,
+        "shot_id": "vs-expected",
+        "slot": "value-1",
+        "frames": 8
+      },
+      {
+        "move": "highlight",
+        "start": 21.25,
+        "shot_id": "the-sheet",
+        "slot": "band-1",
+        "frames": 6
+      },
+      {
+        "move": "highlight",
+        "start": 23.463,
+        "shot_id": "the-sheet",
+        "slot": "band-2",
+        "frames": 6
+      },
+      {
+        "move": "highlight",
+        "start": 28.389,
+        "shot_id": "guidance",
+        "slot": "body",
+        "frames": 6
+      },
+      {
+        "move": "highlight",
+        "start": 51.52,
+        "shot_id": "close",
+        "slot": "body",
+        "frames": 6
+      }
+    ],
+    "wipes": [
+      {
+        "transition": "overlays/wipe-page-short-9x16",
+        "cut": 21.0,
+        "start": 20.917,
+        "shot_out": "vs-expected",
+        "shot_in": "the-sheet"
+      },
+      {
+        "transition": "overlays/wipe-sweep-short-9x16",
+        "cut": 42.308,
+        "start": 42.225,
+        "shot_out": "the-turn",
+        "shot_in": "so-what"
+      }
+    ],
+    "skipped": [
+      "the-print: no pen-circle, value is too big a part of the plate to ring without ringing the plate"
+    ]
   },
-  {
-   "id": "guidance",
-   "plate": "cards/definition-9x16",
-   "start_s": 32.229,
-   "end_s": 40.286,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "guidance:ground",
-    "guidance:plate:cards/definition-9x16",
-    "guidance:caption"
-   ]
+  "meme": {
+    "key": "harold-100k-goal-still-152k-to-go",
+    "file": "harold-100k-goal-still-152k-to-go.jpg",
+    "source": "library",
+    "shot": "so-what",
+    "start_s": 47.808,
+    "end_s": 49.308,
+    "frame": "frames/media-frame-t3-9x16",
+    "score": 4,
+    "matched": [
+      "beat-sold-off (hiding-the-pain)",
+      "guidance-cut (hiding-the-pain)"
+    ],
+    "why": "scored 4 on beat-sold-off (hiding-the-pain); guidance-cut (hiding-the-pain)"
   },
-  {
-   "id": "the-turn",
-   "plate": "room/talk",
-   "start_s": 40.286,
-   "end_s": 48.344,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "the-turn:ground",
-    "the-turn:plate:room/desk-corner-9x16",
-    "the-turn:host:close-up",
-    "the-turn:caption"
-   ]
+  "beat_order": [],
+  "audio": [
+    {
+      "name": "voice",
+      "start": 0.0,
+      "gain_db": 0.0,
+      "loop": false,
+      "file": "audio.m4a"
+    },
+    {
+      "name": "room_tone",
+      "start": 0.0,
+      "gain_db": -40.0,
+      "loop": true,
+      "file": "room_night.wav",
+      "gaps": [
+        [
+          41.81,
+          42.31
+        ]
+      ]
+    },
+    {
+      "name": "screen_buzz@35.04",
+      "start": 35.04,
+      "gain_db": -34.0,
+      "loop": true,
+      "file": "screen_buzz.wav",
+      "gaps": [
+        [
+          41.81,
+          42.31
+        ]
+      ]
+    },
+    {
+      "name": "hook_hit@0.00",
+      "start": 0.0,
+      "gain_db": -6.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 0.984,
+      "trim_db": -0.6
+    },
+    {
+      "name": "whoosh@6.90",
+      "start": 6.9,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 1.025,
+      "trim_db": 0.9
+    },
+    {
+      "name": "whoosh@13.90",
+      "start": 13.9,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.981,
+      "trim_db": 0.6
+    },
+    {
+      "name": "wipe@21.00",
+      "start": 20.92,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.977,
+      "trim_db": -0.2
+    },
+    {
+      "name": "whoosh@27.94",
+      "start": 27.94,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 1.01,
+      "trim_db": -1.2
+    },
+    {
+      "name": "whoosh@34.94",
+      "start": 34.94,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 1.002,
+      "trim_db": -1.3
+    },
+    {
+      "name": "payoff_hit@42.31",
+      "start": 42.31,
+      "gain_db": -6.0,
+      "loop": false,
+      "file": "impact.wav",
+      "rate": 1.007,
+      "trim_db": 0.2
+    },
+    {
+      "name": "whoosh@49.21",
+      "start": 49.21,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.991,
+      "trim_db": -0.5
+    },
+    {
+      "name": "move:highlight@0.35",
+      "start": 0.35,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "marker_draw.wav",
+      "rate": 1.03,
+      "trim_db": -1.2
+    },
+    {
+      "name": "move:count-up@14.73",
+      "start": 14.73,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "tick_roll.wav",
+      "rate": 0.969,
+      "trim_db": 1.0
+    },
+    {
+      "name": "move:pen-circle@15.47",
+      "start": 15.47,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "marker_circle.wav",
+      "rate": 1.015,
+      "trim_db": -0.5
+    },
+    {
+      "name": "move:highlight@23.46",
+      "start": 23.46,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "marker_draw.wav",
+      "rate": 1.02,
+      "trim_db": -1.5
+    },
+    {
+      "name": "move:highlight@28.39",
+      "start": 28.39,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "marker_draw.wav",
+      "rate": 1.033,
+      "trim_db": -1.2
+    },
+    {
+      "name": "move:highlight@51.52",
+      "start": 51.52,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "marker_draw.wav",
+      "rate": 0.989,
+      "trim_db": -1.1
+    }
+  ],
+  "kit_reach": "Kit: 10 of 704 plates, 8 families, 9 animated layers",
+  "skipped": [
+    "open.move <- chart.move",
+    "the-print.label <- compare.print_label",
+    "vs-expected.caption <- script.cheap_or_trap",
+    "the-sheet.unit <- numbers.unit",
+    "the-sheet.label-3 <- numbers.label.2",
+    "the-sheet.row-3 <- numbers.figures.2",
+    "the-sheet.label-4 <- numbers.label.3",
+    "the-sheet.row-4 <- numbers.figures.3",
+    "so-what.caption <- script.cheap_or_trap"
+  ],
+  "dropped_shots": [],
+  "text_overflow": {},
+  "host_faces": {
+    "the-turn:host:close-up": {
+      "pose": "host/close-up",
+      "spoke": true,
+      "talk_frames": 202,
+      "idle_frames": 0,
+      "blinks": 2,
+      "has_talk": true,
+      "has_idle": true,
+      "has_blink": true,
+      "held_frames": 0,
+      "mouths": [
+        "mouthClosed",
+        "mouthEE",
+        "mouthFV",
+        "mouthMid",
+        "mouthO",
+        "mouthWide"
+      ],
+      "mouths_stood_in": []
+    }
   },
-  {
-   "id": "so-what",
-   "plate": "structure/both-true-9x16",
-   "start_s": 48.344,
-   "end_s": 56.401,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "so-what:ground",
-    "so-what:plate:structure/both-true-9x16",
-    "so-what:caption"
-   ]
+  "longest_layer_hold_s": 0.0,
+  "pacing": {
+    "shots": 8,
+    "longest_span_s": 7.27,
+    "longest_still_span_s": 7.04,
+    "spans_over_their_ceiling": [
+      "the-turn 7.3s over 7.0s"
+    ],
+    "hold_ceiling_s": 8.0,
+    "held_over_ceiling": []
   },
-  {
-   "id": "close",
-   "plate": "structure/closing-9x16",
-   "start_s": 56.401,
-   "end_s": 64.458,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "close:ground",
-    "close:plate:structure/closing-9x16",
-    "close:caption"
-   ]
-  }
- ],
- "layers": 24,
- "plates_used": [
-  "cards/definition-9x16",
-  "figures/big-number-l1-9x16",
-  "figures/compare-stacked-9x16",
-  "host/close-up",
-  "room/desk-corner-9x16",
-  "shorts/hook-card-t2",
-  "structure/both-true-9x16",
-  "structure/closing-9x16",
-  "tables/numbers-sheet-4r-9x16"
- ],
- "kit_reach": "Kit: 9 of 140 plates, 7 families, 4 animated layers",
- "skipped": [
-  "vs-expected.caption <- script.cheap_or_trap",
-  "the-sheet.unit <- numbers.unit",
-  "the-sheet.label-3 <- numbers.label.2",
-  "the-sheet.row-3 <- numbers.figures.2",
-  "the-sheet.label-4 <- numbers.label.3",
-  "the-sheet.row-4 <- numbers.figures.3",
-  "so-what.caption <- script.cheap_or_trap"
- ],
- "dropped_shots": [],
- "text_overflow": {},
- "longest_layer_hold_s": 8.057
+  "placement": "MOCK TIMINGS \u2014 every cue time in this manifest came from interpolated mock TTS word timestamps, not from a voice. Composition, type fit and kit coverage are real; WHERE anything lands is not. Judge placement from a real render only."
 }

@@ -73,6 +73,11 @@ HOST_SHOTS = ("the-turn",)
 _FIGURE = re.compile(r"^(-?)([$€£]?)([\d.,]+)([KMBT]?)(%?)$")
 
 
+def _latest(row) -> str:
+    """A row's most recent figure, skipping periods it leaves blank."""
+    return next((str(v) for v in reversed(row.values) if str(v).strip()), "")
+
+
 def _unit_of(rows) -> str:
     """The unit every flow row on this sheet shares, or "".
 
@@ -363,9 +368,23 @@ class ShortResolver:
         # own fields when the script carries them.
         if which == "reported":
             return (getattr(self.script, "reported", None)
-                    or (rows[0].values[-1] if rows else None))
+                    or (_latest(rows[0]) if rows else None))
         if which == "expected":
             return getattr(self.script, "expected", None)
+        if which == "print_label":
+            # WHAT THE PRINT IS, only when the sheet says so: the row whose
+            # latest figure is the reported one. It used to be the sheet's
+            # first row whatever the print was, so an earnings short put an
+            # EPS beat of $1.42 on screen labelled "Revenue", under "LTM".
+            # No row matching leaves the label empty; the caption carries the
+            # move summary, which says what printed.
+            reported = (getattr(self.script, "reported", None) or "").strip()
+            for r in rows:
+                if reported and _latest(r).strip() == reported:
+                    return r.label
+            return None
+        if which == "guidance_label":
+            return "Guidance"
         pick = None
         for r in rows:
             lab = r.label.lower()
@@ -384,10 +403,20 @@ class ShortResolver:
         # `structure/both-true` takes two STATEMENTS, not two stacked figures.
         # The plate wraps them itself in the face it declares, so a newline
         # here would be a second opinion about the line break.
+        #
+        # From the FIGURES THE ROW HAS. A row is six periods wide and may
+        # leave its early ones blank (a macro series with four years of
+        # history, an earnings sheet from FY22), and the first period was
+        # taken whatever it held: "It was ." on the earnings and macro cut.
+        # With fewer than two figures there is no then-and-now to state, and
+        # the beat takes its other plate or none.
+        figures = [v for v in pick.values if str(v).strip()]
+        if which in ("heavy", "light") and len(figures) < 2:
+            return None
         if which == "heavy":
-            return f"{pick.label} is {pick.values[-1]} now."
+            return f"{pick.label} is {figures[-1]} now."
         if which == "light":
-            return f"It was {pick.values[0]}."
+            return f"It was {figures[0]}."
         return None
 
     # -- images -----------------------------------------------------------
