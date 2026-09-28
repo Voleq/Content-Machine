@@ -128,13 +128,10 @@
         "label-4": "?numbers.label.3",
         "row-4": "?numbers.figures.3"
       },
-      "notes": "Every row up at once — an earnings cut has no time for a walk down them. ROWS LIGHT AS THEY ARE READ (item 10): each row's band comes up when its label is said and stays up, so the sheet is never a still while the voice walks it, and it ends with every row lit. That is why it may hold past the 7 s other beats take.",
+      "notes": "Every row up at once — an earnings cut has no time for a walk down them. ROWS LIGHT AS THEY ARE READ (item 10): each row's band comes up when its label is said and stays up, so the sheet is never a still while the voice walks it, and it ends with every row lit. That is why it may hold past the 7 s other beats take. The five-row sheet is not an alternate: every short draws four rows, so it showed an empty fifth, and design's caution says five rows at 9:16 fall under readable size.",
       "alts": [
         {
           "plate": "tables/numbers-sheet-4r-spark-9x16"
-        },
-        {
-          "plate": "tables/numbers-sheet-5r-9x16"
         }
       ]
     },
@@ -155,7 +152,7 @@
           "bind": {
             "body": "script.guidance",
             "attribution": "?numbers.headline_label",
-            "source": "?numbers.unit"
+            "source": "?source.guidance|numbers.unit"
           },
           "notes": "Guidance as a line worth pulling out rather than a term and its meaning."
         }

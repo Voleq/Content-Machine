@@ -167,9 +167,25 @@ class ShortResolver:
 
     # -- text -------------------------------------------------------------
     def text_for(self, src: str) -> str | None:
+        if "|" in src:
+            # `a|b`: the first alternative that says something. How a card
+            # prints the writer's source for its beat where there is one and
+            # its own line where there is not.
+            for alt in src.split("|"):
+                got = self.text_for(alt.strip())
+                if got is not None and str(got).strip():
+                    return got
+            return None
         parts = src.split(".")
         if parts[0] == "channel":
             return self.handle or None
+        if parts[0] == "source":
+            # The writer's `sources` line for a beat. A plate with a source
+            # line of its own gets no slide-in tag, so this is the only way
+            # the writer's source reaches the screen on one.
+            got = (getattr(self.script, "sources", None) or {}).get(
+                ".".join(parts[1:]))
+            return got or None
         if parts[0] == "compare":
             return self._compare(parts[1])
         if parts[0] == "numbers":

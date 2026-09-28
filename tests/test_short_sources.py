@@ -139,9 +139,45 @@ def test_a_carried_source_stops_at_the_next_beat_with_its_own(short_valid_json,
     assert any("gave way" in s for s in plan.skipped), plan.skipped
     # the comment's own line is still cited: under it, or in the plate's own
     # source slot where the plate prints one
-    plate = reg.get(MV.shot_plates(result)["the-comment"].entry_key)
-    assert plate.slot("source") is not None or \
-        [(t.shot_id, t.text) for t in plan.tags] == [("the-comment", "FY25 10-K")]
+    layer = MV.shot_plates(result)["the-comment"]
+    plate = reg.get(layer.entry_key)
+    if plate.slot("source") is not None:
+        assert layer.values.get("source") == "FY25 10-K"
+    else:
+        assert [(t.shot_id, t.text) for t in plan.tags] == \
+            [("the-comment", "FY25 10-K")]
+
+
+@pytest.mark.parametrize("fmt_name", ["short", "earnings", "macro"])
+def test_a_card_with_its_own_source_line_prints_the_writer_s(fmt_name):
+    """The quote card has a source line, so no tag slides in over it (moves
+    skips it: "the plate prints a source line of its own"). That line has to
+    be the writer's source for the beat, or the source reaches no frame."""
+    from pipeline.shots import load_format
+
+    fmt = load_format(fmt_name)
+    for shot in fmt.shots:
+        if not shot.anchor:
+            continue            # no beat, so nothing a writer can source
+        for v in (shot, *shot.alts):
+            bind = v.resolved(shot)[0] if v is not shot else shot.bind
+            if "source" in bind:
+                assert f"source.{shot.anchor}" in bind["source"], \
+                    f"{fmt_name}/{shot.id} {getattr(v, 'plate', '')}"
+
+
+def test_the_writer_s_source_wins_and_the_card_s_own_line_is_the_fallback(
+        short_valid_json, settings, tmp_path):
+    from pipeline.render_short import ShortResolver
+
+    src = "source.numbers_comment|numbers.unit"
+    bare, _ = parse_short_script(short_valid_json, settings)
+    sourced, _ = parse_short_script(
+        _with_sources(short_valid_json, {"numbers_comment": "FY25 10-K"}), settings)
+    plain = ShortResolver(script=bare, workdir=tmp_path, settings=settings)
+    cited = ShortResolver(script=sourced, workdir=tmp_path, settings=settings)
+    assert cited.text_for(src) == "FY25 10-K"
+    assert plain.text_for(src) == plain.text_for("numbers.unit")
 
 
 def test_the_tag_rests_where_design_puts_it(settings):

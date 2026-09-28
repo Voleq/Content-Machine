@@ -152,7 +152,7 @@
           "bind": {
             "body": "script.mechanism.0",
             "attribution": "?numbers.headline_label",
-            "source": "?script.mechanism.1"
+            "source": "?source.turn|script.mechanism.1"
           }
         }
       ]
@@ -165,7 +165,8 @@
       "anchor": "consequences",
       "bind": {
         "body": "script.consequences.$n-1",
-        "attribution": "?script.ticker"
+        "attribution": "?script.ticker",
+        "source": "?source.consequences"
       },
       "repeat": {
         "src": "script.consequences",
