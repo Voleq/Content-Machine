@@ -473,3 +473,19 @@ def test_the_character_budget_is_eleven_hundred(short_valid_json, settings):
     data["audio_script"] += " " + "x" * 400
     with pytest.raises(ScriptParseError, match="over the SHORT budget of 1100"):
         parse_short_script(json.dumps(data), settings)
+
+
+def test_rows_past_the_sheet_are_named(short_valid_json, settings):
+    """Every short template binds four numbers rows. A fifth validates and
+    never reaches the screen, so the writer is told which rows will not."""
+    from pipeline.parser_short import SHEET_ROWS
+
+    data = json.loads(short_valid_json)
+    row = dict(data["numbers"][0], label="Buybacks")
+    data["numbers"] = (data["numbers"] * 2)[:SHEET_ROWS] + [row]
+    _, warnings = parse_short_script(json.dumps(data), settings)
+    (w,) = [w for w in warnings if "the sheet draws" in w]
+    assert "Buybacks" in w
+    data["numbers"] = data["numbers"][:SHEET_ROWS]
+    _, warnings = parse_short_script(json.dumps(data), settings)
+    assert not any("the sheet draws" in w for w in warnings)
