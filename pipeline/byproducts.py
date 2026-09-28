@@ -502,11 +502,6 @@ def held_spans(video: Path, *, sample_fps: float = HOLD_SAMPLE_FPS,
     return spans
 
 
-def longest_hold(video: Path, **kw) -> float:
-    spans = held_spans(video, **kw)
-    return max((b - a for a, b in spans), default=0.0)
-
-
 def holds_past(spans: Sequence[tuple[float, float]], cuts: Sequence[float],
                ceiling: float) -> list[tuple[float, float]]:
     """Every held composition longer than `ceiling`, split at the cuts.
