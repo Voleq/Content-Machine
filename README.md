@@ -1017,8 +1017,8 @@ env var, case-insensitive).
 - **The writer directs Dennis on the long.** `[SCENE: desk-side | pose=holding-a-mug]`
   names the room angle he is shot in and the pose he stands in, from that word
   until the next `[SCENE]`, across the cutaways in between. The renderer picks
-  no room and no pose for a beat the writer directed; it picks only where he
-  named none, and the validator says where. The menu in both long prompts is
+  no room and no pose for a beat the writer directed; it picks only where the
+  writer named none, and the validator says where. The menu in both long prompts is
   generated off the registry (`pipeline/scenes.py`): every 16:9 angle, which
   ones nobody can stand in (the board, the desk from above: the room alone, or
   the close-up), every pose, and design's limits on each (no mouth, once a

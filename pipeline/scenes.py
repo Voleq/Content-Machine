@@ -13,7 +13,7 @@ in (`hostAnchor`), which poses it draws, and which rooms design drew each pose
 for (`fits`, carried from kit-model.js by the ingest). A new drop brings its
 own rooms and poses, and the writer's menu follows it with no edit here.
 
-Where the writer names no scene — before his first one, or in a script that
+Where the writer names no scene — before the first one, or in a script that
 names none — the renderer picks his room and pose the way it always has.
 """
 

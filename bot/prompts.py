@@ -1086,9 +1086,9 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                      sector=_sector(c),
                      only=(template_plates(c.settings, "short")
                            if c.fmt == "short" else None))),
-    # The writer's menu of rooms and poses for [SCENE]: the long is his to
-    # direct, so he is told every angle and pose the kit draws, and design's
-    # limits on each, off the registry itself.
+    # The writer's menu of rooms and poses for [SCENE]: the long is the
+    # writer's to direct, so the prompt lists every angle and pose the kit
+    # draws, and design's limits on each, off the registry itself.
     PayloadBlock("{{scene_catalogue}}", _LONG_FORM,
                  lambda c: scene_catalogue_block(c.settings)),
     PayloadBlock("{{scribble_styles}}", _LONG_FORM,

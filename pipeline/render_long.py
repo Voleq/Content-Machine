@@ -831,8 +831,8 @@ def _render_long(
         return reg.plate_at(key, reg.hour_for(script.ticker,
                                                  avoid=_avoid_recent))
 
-    # THE WRITER OPENS THE VIDEO WHEN HE NAMES THE FIRST SCENE: the cold
-    # open's first beat is shot where he put it, and recorded as the room it
+    # THE WRITER OPENS THE VIDEO BY NAMING THE FIRST SCENE: the cold
+    # open's first beat is shot where the script puts it, and recorded as the room it
     # opened in, so the next video's turn on the wide rooms still reads true.
     if cold_i is not None:
         _opened = _scene_room(segments[cold_i].payload.get("scene"))
@@ -1227,7 +1227,7 @@ def _render_long(
         variant, so on two beats in three he was placed on one angle and
         drawn over another.
 
-        `pose` is the WRITER'S, off his [SCENE]: taken as given, never cast
+        `pose` is the WRITER'S, off the [SCENE]: taken as given, never cast
         from the words and never swapped for the close-up a chapter rests
         on. The role is only what he falls back to if the kit cannot draw it.
         """
@@ -2469,7 +2469,7 @@ def _render_long(
         "cold_open_room": (reg.base_key(cold_room.key)
                            if cold_room is not None else ""),
         # THE WRITER'S SCENES as they were shot: per directed beat of him,
-        # the room, the pose he asked for and what was drawn — the pose, the
+        # the room, the pose the script asked for and what was drawn — the pose, the
         # room alone, or the bot's pick and why.
         "scenes": scene_meta,
         # WHAT THIS RENDER ACTUALLY REACHED. The doctor diffs the library
