@@ -24,16 +24,11 @@ from pipeline.byproducts import (BOIL_SAMPLE_FPS, BOIL_SCALE, held_spans,
 
 SAMPLES = Path("samples")
 
-# The LONG is still the tag-driven renderer's output; it is rewritten in
-# Stage 3. Its numbers are measured and printed but not enforced, and this
-# exemption comes off with the renderer that earns it. Nothing else may be
-# added to this set without a stage attached.
+# The LONG is the tag-driven renderer's output, and its holds are the
+# writer's: its numbers are measured and printed but not enforced. Nothing
+# else may be added to this set without a reason attached.
 #
-# Both entries are that renderer, at the two lengths it is driven at: it
-# writes `segments` where the shot engine writes `shots`, which is the same
-# fact this exemption is about. The shot engine's own full-length cut,
-# `sample_long_full_shots_EXMPL.mp4`, is NOT here and is measured like
-# everything else.
+# Both entries are that renderer, at the two lengths it is driven at.
 NOT_YET_REWRITTEN = {"sample_long_EXMPL.mp4", "sample_long_full_EXMPL.mp4"}
 
 # No composition in a vertical format may sit unchanged longer than this. It
@@ -84,13 +79,6 @@ def test_there_is_a_sample_for_every_vertical_format():
             f"scripts/render_samples.py {name}")
 
 
-# The shots-based LONG is on the plate registry now, so the xfail that stood
-# here is gone rather than relaxed. What it recorded: `render_long_shots.py`
-# -> `compose.py` -> `kit_manifest.py` was a SECOND visual system, and
-# `templates/shots/long.json` expanded a FIXED list of nine v1 chapter names,
-# so six of the sixteen types a director may write expanded to nothing at all
-# and the compositor held the last frame it had. All sixteen have a file, the
-# register kit is deleted, and the sample is cut from the one library.
 @pytest.mark.parametrize("sample", _samples(), ids=lambda p: p.stem)
 def test_no_composition_holds_past_the_ceiling(sample):
     """The longest a single COMPOSITION stays on screen.

@@ -198,6 +198,25 @@ INTRO_CARD_S = 2.6
 # held back by the curation and never reaches the role, so it is not here.
 COLD_OPEN_PREFERRED = "room/window-wide"
 
+# THE ROLES THE LONG CASTS FROM. The long has no shot file (the chapter
+# template engine that had one is retired), so the kit audit cannot read its
+# rooms and poses off a template the way it reads a short's: every room and
+# every standing pose below is asked for by ROLE, and the kit answers with an
+# angle. `gates.reachable_plates` reads these instead. A role asked for below
+# and missing here is a drawing every long puts on screen that the audit
+# reports as having no route to one.
+LONG_ROOM_ROLES = ("talk", "panel")          # and the opener, `opener_role`
+LONG_HOST_ROLES = ("beat", "panel", "rests-on")
+
+
+def opener_role(reg) -> str:
+    """The role the cold open and a chapter card's room are cast from.
+
+    `opener` where the kit publishes one: the rooms with a `title` slot.
+    `establish` also holds rooms with no slot, so it is only the fallback.
+    """
+    return "opener" if reg.room_roles.get("opener") else "establish"
+
 
 def cold_open_room(reg, aspect: str, *, recent=(), kept: str = "") -> str:
     """The base key of the room the cold open's first shot is in, or "".
@@ -210,7 +229,7 @@ def cold_open_room(reg, aspect: str, *, recent=(), kept: str = "") -> str:
 
     Only angles someone can stand in: the first shot is Dennis talking.
     """
-    role_name = "opener" if reg.room_roles.get("opener") else "establish"
+    role_name = opener_role(reg)
     options = [k for k in reg.angles_for(role_name, aspect, reg.hour)
                if (p := reg.get(k)) is not None and not p.refuses_host]
     if not options:
@@ -735,7 +754,7 @@ def _render_long(
             # THROUGH `room_for`, with every other angle of the role avoided,
             # so whatever else decides a room — the hour, the season — decides
             # this one too, rather than a second path that forgets to ask.
-            _role = "opener" if reg.room_roles.get("opener") else "establish"
+            _role = opener_role(reg)
             cold_room = reg.room_for(
                 _role, aspect, seed=script.ticker, episode=script.ticker,
                 avoid=[k for k in reg.angles_for(_role, aspect, reg.hour)
@@ -861,7 +880,7 @@ def _render_long(
         # window-wide since rebuild-39; board-wide has one too and is held back).
         # `establish` also holds rooms with no slot, and a pick of one of those
         # was a chapter whose title silently never reached the screen.
-        role_name = "opener" if reg.room_roles.get("opener") else "establish"
+        role_name = opener_role(reg)
         plate = _room_plate(role_name, seed=f"{script.ticker}|{title}")
         if "title" not in plate.slots:
             log.warning("chapters: %s has no title slot, so %r is not on "
@@ -954,7 +973,7 @@ def _render_long(
         return dest, True, (W, H), tuple(plan), plate.key
 
     # ------------------------------------------------ foreign media, framed
-    # [CLIP], [IMG], [SHOW ARTICLE] and [SHOW FILING] land INSIDE a frames/
+    # [CLIP], [IMG], [SHOW FILING] and [SCREENGRAB] land INSIDE a frames/
     # plate. Raw and full-frame they destroy the drawn surface the rest of the
     # video is built on, and the treatments rotate so consecutive ones differ.
     frame_rotation = FrameRotation()
@@ -2245,9 +2264,8 @@ def _render_long(
         # THE WHOLE RECORD (N3): what in this video was real. Machine-
         # readable here, and the same thing in words on the delivery
         # message, so the two surfaces cannot drift.
-        # WHICH ENGINE DREW IT (P4). `LONG_RENDER_ENGINE` switches between
-        # this and the shot-template path, and "which branch did that run
-        # take" should be answerable from the artefact.
+        # WHICH ENGINE DREW IT (P4): this one for a LONG, the shot engine for
+        # every SHORT, answerable from the artefact.
         "engine": "segments",
         "provenance": provenance.to_json(),
         "duration": duration,

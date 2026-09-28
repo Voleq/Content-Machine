@@ -508,10 +508,9 @@ def test_a_render_that_left_no_record_says_nothing(settings):
 
 
 def test_the_record_names_the_engine_and_the_template():
-    """P4: `LONG_RENDER_ENGINE` and the SHORT's shot template are both
-    switchable, and a first production run should not have to discover which
-    branch it took. `render_long_shots` in particular is wired up and has no
-    production mileage — a surprise should be attributable."""
+    """P4: the LONG's renderer and the SHORT's shot template are different
+    code, and a first production run should not have to discover which one
+    drew it — a surprise should be attributable."""
     from pipeline.provenance import build
 
     seg = build(ticker="EXMPL", fmt="long", workdate="d", duration_s=1.0,

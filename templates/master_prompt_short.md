@@ -83,7 +83,7 @@ what a viewer sees is the structured fields below — `hook_text`,
 
 **Nothing you write places a visual, in either form.**
 
-`[PLATE]`, `[IMG]`, `[MEME]`, `[CLIP]`, `[SHOW FILING]`, `[SHOW ARTICLE]`,
+`[PLATE]`, `[IMG]`, `[MEME]`, `[CLIP]`, `[SHOW FILING]`,
 `[SCREENGRAB]` and `[SCRIBBLE]` written inside `audio_script` are LONG-form
 grammar. A short parses them, reports them as ignored, and draws none.
 

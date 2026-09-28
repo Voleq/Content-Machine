@@ -298,10 +298,9 @@ class BotCore:
             return None
         # Workbook headlines first, the free sources filling the gap (M5).
         # An 8-K IS the news for a thinly-covered ticker, and a thin News
-        # sheet hurt twice: the writer composed the headline beat unaided,
-        # and `[SHOW ARTICLE]` had fewer candidates to match against so the
-        # tag degraded to nothing. Cached and gracefully degrading, so a
-        # dead feed is a thinner prompt rather than a failed load.
+        # sheet left the writer composing the headline beat unaided. Cached
+        # and gracefully degrading, so a dead feed is a thinner prompt rather
+        # than a failed load.
         try:
             from pipeline.company_data import merge_free_news
 
@@ -1618,24 +1617,12 @@ class BotCore:
                 if done == total or done % 5 == 0:
                     checkpoint(f"render {done}/{total} segments")
 
-            if self.settings.long_render_engine == "shots" and not draft:
-                # The chapter-template engine (D6). Behind a setting rather
-                # than deleted: it is newer architecture, it shares the
-                # SHORT's compositor, and it had committed samples and no
-                # route from any command at all.
-                from pipeline.render_long_shots import render_long_shots
-
-                out, manifest = render_long_shots(
-                    script, tts, ws.path, self.settings,
-                    content=self.content, company_data=data,
-                )
-            else:
-                out, manifest = render_long(
-                    script, tts, ws.path, self.settings, content=self.content,
-                    draft=draft, broll_overrides=ws.broll_overrides(),
-                    as_of=as_of, company_data=data,
-                    on_progress=seg_progress,
-                )
+            out, manifest = render_long(
+                script, tts, ws.path, self.settings, content=self.content,
+                draft=draft, broll_overrides=ws.broll_overrides(),
+                as_of=as_of, company_data=data,
+                on_progress=seg_progress,
+            )
             if draft:
                 job.delivered_link = f"file://{out}"
                 return str(out)
@@ -2666,7 +2653,7 @@ class BotCore:
             try:
                 import json as _json
                 data = _json.loads(manifest.read_text(encoding="utf-8"))
-                # The segments engine says "duration"; the shots engine,
+                # The LONG's manifest says "duration"; the shot engine,
                 # which cuts every SHORT, says "duration_s".
                 got = float(data.get("duration_s") or data.get("duration")
                             or 0)

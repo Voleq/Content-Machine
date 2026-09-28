@@ -143,14 +143,12 @@ _LONG_NO_CUE_REASONS: dict[TagType, str] = {
     # tag inherits the exclusion instead of crashing the render.
     **{t: "delivery direction — consumed by TTS, never drawn"
        for t in DELIVERY_TAG_TYPES},
-    # No renderer draws it. The short's article cutaway went with the shot
-    # templates, and the long never had one. It still parses (it is
-    # self-resolving, so a bare tag needs no payload), so it can arrive
-    # here — skipped, and said out loud, not mapped to a segment kind the
-    # long renderer cannot paint.
+    # Retired from the grammar; the tokenizer strips it. Only a script saved
+    # before the retirement can still carry one, and it is skipped, said out
+    # loud, rather than mapped to a segment kind nothing paints.
     TagType.SHOW_ARTICLE: (
-        "[SHOW ARTICLE] draws nothing — there is no article screenshot in "
-        "either format. Use [SCREENGRAB] with the capture, or cut the tag"),
+        "[SHOW ARTICLE] is retired and draws nothing. Use [SCREENGRAB] with "
+        "the capture, or cut the tag"),
 }
 
 

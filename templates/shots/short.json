@@ -168,13 +168,10 @@
         "label-4": "?numbers.label.3",
         "row-4": "?numbers.figures.3"
       },
-      "notes": "THE NUMBERS ARE ONE SHEET THAT MOVES (items 7 and 10). This beat was the 3-row sheet three times, one row lit and moved in on each time, and then the 4-row sheet with every row lit: four near-identical frames of one layout. Now the rows light as they are read, each band coming up on its label and staying up, and the shot ends on the whole sheet lit, which is the pull-back `the-sheet` used to be. It may hold past the 7 s other beats take because it is never still while the voice walks it.",
+      "notes": "THE NUMBERS ARE ONE SHEET THAT MOVES (items 7 and 10). This beat was the 3-row sheet three times, one row lit and moved in on each time, and then the 4-row sheet with every row lit: four near-identical frames of one layout. Now the rows light as they are read, each band coming up on its label and staying up, and the shot ends on the whole sheet lit, which is the pull-back `the-sheet` used to be. It may hold past the 7 s other beats take because it is never still while the voice walks it. The five-row sheet is not an alternate: every short draws four rows, so it showed an empty fifth, and design's caution says five rows at 9:16 fall under readable size.",
       "alts": [
         {
           "plate": "tables/numbers-sheet-4r-spark-9x16"
-        },
-        {
-          "plate": "tables/numbers-sheet-5r-9x16"
         }
       ],
       "lit": "read"
@@ -187,7 +184,7 @@
       "bind": {
         "body": "script.numbers_comment",
         "attribution": "?script.ticker",
-        "source": "?numbers.unit"
+        "source": "?source.numbers_comment|numbers.unit"
       },
       "notes": "What the sheet meant, in the plate drawn for a line worth pulling out. The numbers comment is written at two hundred characters and there is nowhere on a sheet to put one.",
       "alts": [

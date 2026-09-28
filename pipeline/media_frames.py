@@ -1,6 +1,6 @@
 """Foreign media gets a frame.
 
-`[CLIP]`, `[IMG]`, `[SHOW ARTICLE]` and `[SHOW FILING]` bring in something this
+`[CLIP]`, `[IMG]`, `[SHOW FILING]` and `[SCREENGRAB]` bring in something this
 engine did not draw — a photograph, a stock shot, a screenshot of a filing. All
 four used to land raw and full-frame, which destroys the drawn surface the rest
 of the video is built on: thirty minutes of hand-drawn ink, and then a 4K stock
@@ -47,9 +47,8 @@ MEDIA_TREATMENTS = ("frames/media-frame-t1", "frames/media-frame-t2",
 # one with a headline slot, a body slot and a mark for what you are pointing at
 # inside it. Putting a filing excerpt in a media frame throws that away and
 # leaves the operator captioning it from outside.
-CAPTURE_TAGS = frozenset({TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
-                          TagType.SCREENGRAB})
-CAPTURE_KINDS = frozenset({CueKind.FILING, CueKind.ARTICLE, CueKind.SCREENGRAB})
+CAPTURE_TAGS = frozenset({TagType.SHOW_FILING, TagType.SCREENGRAB})
+CAPTURE_KINDS = frozenset({CueKind.FILING, CueKind.SCREENGRAB})
 
 
 class FrameRotation:

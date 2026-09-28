@@ -263,21 +263,20 @@ def test_unclosed_json_still_rejected(settings):
         parse_short_script('prose then {"ticker": "EXMPL", "format": "short"', settings)
 
 
-def test_a_bare_show_article_survives_the_parser(settings, short_valid_json):
-    """`[SHOW ARTICLE]` takes no payload, so a bare one is not a tag missing
-    its key. Neither format draws it now; the short says so."""
+def test_show_article_is_retired_and_stripped(settings, short_valid_json):
+    """Nothing drew it in either format, so it left the grammar. A writer who
+    still types it is told so; the tag is stripped, never spoken or kept."""
     import json
 
     data = json.loads(short_valid_json)
     data["audio_script"] = "The news is a partnership. [SHOW ARTICLE] " + \
         data["audio_script"]
     script, warnings = parse_short_script(json.dumps(data), settings)
-    articles = [e for e in script.inline_events
+    assert not [e for e in script.inline_events
                 if e.type is TagType.SHOW_ARTICLE]
-    assert len(articles) == 1
-    assert articles[0].payload == ""
-    assert not any("carries no key" in w for w in warnings)
-    assert any("not drawn" in w and "SHOW ARTICLE" in w for w in warnings)
+    assert "SHOW ARTICLE" not in script.audio_script
+    assert any("[SHOW ARTICLE] is no longer part of the grammar" in w
+               for w in warnings), warnings
 
 
 # --------------------------------------------------------------------------

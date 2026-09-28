@@ -1120,21 +1120,38 @@ def test_a_short_says_which_of_its_tags_will_not_be_drawn(settings,
     assert any("not drawn" in w for w in warnings), warnings
 
 
-def test_the_second_long_engine_has_a_route_now(settings):
-    """D6: `render_long_shots` was reachable only from the sample script."""
+def test_the_long_has_one_engine(settings):
+    """The chapter-template engine was retired: it had no production mileage
+    and moved the writer-driven long toward fixed templates."""
     from pathlib import Path
 
-    from bot import handlers
+    assert not Path("pipeline/render_long_shots.py").exists()
+    assert not Path("templates/shots/long.json").exists()
+    assert not hasattr(settings, "long_render_engine")
 
-    assert settings.long_render_engine == "segments", "the default does not move"
-    src = Path(handlers.__file__).read_text(encoding="utf-8")
-    assert "render_long_shots" in src, \
-        "a render engine with no caller is a render engine nobody can trust"
+
+def test_every_role_the_long_casts_from_is_declared_for_the_kit_audit(settings):
+    """The kit audit reads `LONG_ROOM_ROLES` and `LONG_HOST_ROLES`, not the
+    calls, so a role asked for in the renderer and missing from them is a
+    drawing every long puts on screen that the audit calls stranded. And a
+    declared role nothing asks for credits drawings no long ever draws."""
+    import ast
+    from pathlib import Path
+
+    from pipeline.plates import load_plates
+    from pipeline.render_long import LONG_HOST_ROLES, LONG_ROOM_ROLES
+
+    reg = load_plates(settings.assets_dir)
+    roles = set(reg.room_roles) | set(reg.host_roles)
+    tree = ast.parse(Path("pipeline/render_long.py").read_text(encoding="utf-8"))
+    named = {n.value for n in ast.walk(tree)
+             if isinstance(n, ast.Constant) and n.value in roles}
+    declared = {*LONG_ROOM_ROLES, *LONG_HOST_ROLES, "opener", "establish"}
+    assert named == declared, (named ^ declared)
 
 
 def test_the_manifest_names_the_engine_that_drew_it(rendered):
-    """P4: `LONG_RENDER_ENGINE` picks between the segmented renderer and the
-    shot-template engine. Which one ran is a fact about the artefact, and it
+    """P4: which renderer drew a video is a fact about the artefact, and it
     was recoverable from neither the manifest nor the provenance record."""
     _settings, _script, _tts, _out, manifest = rendered
 

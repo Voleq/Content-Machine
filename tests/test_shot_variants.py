@@ -637,7 +637,7 @@ def test_a_sequence_repeat_steps_its_alternates_binds_too():
     for n, shot in enumerate(steps, 1):
         for variant in shot.variants:
             bind, _lit, _focus = variant.resolved(shot)
-            placed = [v for v in bind.values() if "consequences" in v]
+            placed = [v for v in bind.values() if "script.consequences" in v]
             assert placed, (shot.id, variant.plate)
             for body in placed:
                 assert "$n" not in body, (shot.id, variant.plate, body)
@@ -906,3 +906,23 @@ def test_a_line_a_slot_plate_takes_a_passage_broken_at_its_width(tmp_path):
     assert all(l is None or len(l) <= 34 for l in lines)
     assert " ".join(l for l in lines if l) == said
     assert r.text_for("wrap.34.4.0.script.consequences.1") is None
+
+
+@pytest.mark.parametrize("fmt_name", ["short", "earnings", "macro"])
+def test_no_numbers_sheet_rotates_in_with_more_rows_than_a_short_draws(
+        reg, fmt_name):
+    """The five-row sheet sat in the rotation about one short in three. Every
+    short fills four rows, so it drew an empty fifth, on a plate design's own
+    caution calls unreadable at 9:16."""
+    import re
+
+    from pipeline.parser_short import SHEET_ROWS
+
+    for shot in load_format(fmt_name).shots:
+        for v in shot.variants:
+            plate = reg.get(v.plate) if v.plate else None
+            if plate is None:
+                continue
+            rows = [n for n in plate.slots if re.fullmatch(r"label-\d+", n)]
+            assert len(rows) <= SHEET_ROWS, \
+                f"{fmt_name}/{shot.id} rotates onto {v.plate} ({len(rows)} rows)"

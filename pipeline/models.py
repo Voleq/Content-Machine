@@ -65,7 +65,9 @@ class TagType(str, Enum):
     BROLL = "BROLL"              # alias of CLIP (legacy spelling)
     CHART = "CHART"              # a data path drawn into a charts/ plate
     SHOW_FILING = "SHOW FILING"  # the (unnamed-source) data screenshot
-    SHOW_ARTICLE = "SHOW ARTICLE"  # a screenshot of the real article's headline
+    # RETIRED (2026-09-28): no renderer drew it after the shot templates. Kept
+    # only so a script saved with one still loads; the tokenizer strips it.
+    SHOW_ARTICLE = "SHOW ARTICLE"
     SCREENGRAB = "SCREENGRAB"    # operator-supplied app/screen capture (blocks if missing)
     SOUND = "SOUND"              # sfx palette
     SCRIBBLE = "SCRIBBLE"        # an annotations/ mark on a number or a word
@@ -125,7 +127,7 @@ class TagType(str, Enum):
 VISUAL_TAG_TYPES = frozenset({
     TagType.PLATE,
     TagType.IMG, TagType.PRODUCT, TagType.MEME, TagType.CLIP, TagType.BROLL,
-    TagType.CHART, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
+    TagType.CHART, TagType.SHOW_FILING,
     TagType.SCREENGRAB,
 })
 
@@ -157,18 +159,18 @@ DELIVERY_TAG_TYPES = frozenset({
 SHORT_TAG_TYPES = frozenset(
     OVERLAY_TAG_TYPES | DELIVERY_TAG_TYPES | {
         TagType.PLATE, TagType.IMG, TagType.PRODUCT, TagType.SHOW_FILING,
-        TagType.SHOW_ARTICLE, TagType.SCREENGRAB, TagType.MEME, TagType.CLIP,
+        TagType.SCREENGRAB, TagType.MEME, TagType.CLIP,
         TagType.BROLL, TagType.CHART,
     })
 
-# Tags that mean something with no payload at all, because the renderer can
-# work out what they point at.
-#
-# `[SHOW ARTICLE]` is the only one: the export already carries the news rows the
-# script was written from, and `script.headlines` is the writer's paraphrase of
-# those same rows, so demanding a pasted URL asked the writer to go and find
-# something the pipeline was already holding.
-SELF_RESOLVING_TAG_TYPES = frozenset({TagType.SHOW_ARTICLE})
+# Tags taken out of the grammar, with the reason the writer is given. The
+# tokenizer strips them like an unknown tag, so no new script carries one;
+# the member stays on TagType so a script saved before the retirement loads.
+RETIRED_TAG_TYPES: dict[TagType, str] = {
+    TagType.SHOW_ARTICLE: (
+        "retired: nothing drew an article screenshot in either format. Say "
+        "what the article says, or use [SCREENGRAB] with a capture"),
+}
 
 
 class ScribbleStyle(str, Enum):
@@ -741,7 +743,6 @@ class CueKind(str, Enum):
     IMG = "img"
     CHART = "chart"
     FILING = "filing"
-    ARTICLE = "article"          # a screenshot of the real article's headline
     SCREENGRAB = "screengrab"
     # One kind for every plate the director names. There is deliberately not a
     # kind per family: TERM/BIGNUM/TABLE/PROP were four kinds for four tags that

@@ -1997,16 +1997,19 @@ def reachable_plates(reg) -> dict[str, set[str]]:
     Three routes, and the difference between them matters to whoever reads
     the report:
 
-    * ``template`` — a shot file names it, or a role it fills does. This is
-      the format putting it on screen with no help from a writer.
+    * ``template`` — a shot file names it, or a role it fills does, or the
+      long casts from that role (`render_long.LONG_ROOM_ROLES`). This is the
+      format putting it on screen with no help from a writer.
     * ``tag``      — the chapter-type curation offers it, so a director can
       write a `[PLATE]` for it. Reachable, but only if somebody chooses it.
     * ``code``     — the renderer reaches for it by name: the annotations a
       SCRIBBLE resolves to, the frame a photograph gets, the band that lights
-      under a row. No template mentions these and none should.
+      under a row, the pose a spoken cue casts. No template mentions these
+      and none should.
 
     What is in none of the three is drawn artwork with no way to the screen.
     """
+    from pipeline.moves import SHORT_WIPE_SUFFIX
     from pipeline.plates import CHAPTER_TYPES
     from pipeline.rasters import SCRIBBLE_MARKS
     from pipeline.shots import available_formats, load_format
@@ -2068,6 +2071,20 @@ def reachable_plates(reg) -> dict[str, set[str]]:
                     if key in reg:
                         _pose(key)
 
+    # THE LONG HAS NO SHOT FILE. It casts its rooms and his standing poses by
+    # role in code, so they are credited from the roles it declares. Before
+    # its chapter-template engine was retired they were credited through that
+    # engine's shot file, which no default render ever used; reading the
+    # renderer that does draw them is the honest route.
+    from pipeline.render_long import (LONG_HOST_ROLES, LONG_ROOM_ROLES,
+                                      opener_role)
+    for role in (opener_role(reg), *LONG_ROOM_ROLES):
+        _named(f"room/{role}", "16x9")
+    for role in LONG_HOST_ROLES:
+        for key in reg.host_roles.get(role, ()):
+            if key in reg:
+                _pose(key)
+
     for ctype in CHAPTER_TYPES:
         by_tag |= set(reg.plates_for_chapter(ctype))
 
@@ -2089,6 +2106,15 @@ def reachable_plates(reg) -> dict[str, set[str]]:
         if any(f'{q}{name}' in source
                for q in ('"', "'") for name in ({key, stem})):
             by_code.add(key)
+        # AN OVERLAY FETCHED BY ITS MOVE'S NAME. The wipes are asked for as
+        # `"wipe-sweep"` and prefixed where they are looked up
+        # (`moves.wipe_plate`, `bumper.wipe_frames`), with the four-frame
+        # `-short` cut taken on a vertical frame, so the scan above never
+        # sees `overlays/wipe-sweep` and called all nine wipes stranded.
+        if key.startswith("overlays/"):
+            move = stem.split("/", 1)[1].removesuffix(SHORT_WIPE_SUFFIX)
+            if any(f"{q}{move}{q}" in source for q in ('"', "'")):
+                by_code.add(key)
         # A plate another plate's SLOT names. `overlays/row-band` is reached
         # by neither a template nor a source literal: a sheet's row slot
         # declares it as its `overlay`, and the renderer follows that.
@@ -2096,6 +2122,19 @@ def reachable_plates(reg) -> dict[str, set[str]]:
             if any(slot.overlay == key for slot in other.slots.values()):
                 by_code.add(key)
                 break
+
+    # A POSE THE WORDS CAST. `host.cast_pose` stands him in one of these, in
+    # either lane, when what he says gives its cue (a count, a "but", the
+    # filing) and the room is one it was drawn for. No role and no template
+    # names them, so they are the renderer's, reachable wherever a room they
+    # fit is; counting them as gaps put six drawn poses on the stranded list.
+    from pipeline.host import castable
+    rooms = {k.rsplit("-16x9", 1)[0].rsplit("-9x16", 1)[0]
+             for k in reg.base_keys(by_template) if k.startswith("room/")}
+    for key, spec in castable(reg).items():
+        if key in reg and rooms & set(spec.get("fits") or ()):
+            by_code.update(k for k in (key, f"{key}-talk", f"{key}-idle",
+                                       f"{key}-blink") if k in reg)
 
     # A `[PLATE]` TAG CANNOT NAME THE SET OR THE MAN STANDING IN IT. The
     # chapter curation lists `room/`, `host/`, `annotations/`, `overlays/` and

@@ -167,9 +167,25 @@ class ShortResolver:
 
     # -- text -------------------------------------------------------------
     def text_for(self, src: str) -> str | None:
+        if "|" in src:
+            # `a|b`: the first alternative that says something. How a card
+            # prints the writer's source for its beat where there is one and
+            # its own line where there is not.
+            for alt in src.split("|"):
+                got = self.text_for(alt.strip())
+                if got is not None and str(got).strip():
+                    return got
+            return None
         parts = src.split(".")
         if parts[0] == "channel":
             return self.handle or None
+        if parts[0] == "source":
+            # The writer's `sources` line for a beat. A plate with a source
+            # line of its own gets no slide-in tag, so this is the only way
+            # the writer's source reaches the screen on one.
+            got = (getattr(self.script, "sources", None) or {}).get(
+                ".".join(parts[1:]))
+            return got or None
         if parts[0] == "compare":
             return self._compare(parts[1])
         if parts[0] == "numbers":
@@ -963,9 +979,8 @@ def _provenance(script, settings, workspace: Path, duration: float,
         workdate=workspace.name, duration_s=duration,
         # WHICH CODE DREW THIS (P4). The shot template is picked per video
         # from the headline mode, so `short`, `earnings` and `macro` are
-        # three different beat orders out of one renderer — and `long` means
-        # this is `render_long_shots`, the engine with no production
-        # mileage. None of that was recoverable from the artefact.
+        # three different beat orders out of one renderer, which was not
+        # recoverable from the artefact.
         render={"engine": "shots", "format": format_name},
         prices=prices,
         # A SHORT's visuals are the shot template's plates plus whatever came
@@ -1054,13 +1069,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # anywhere below, and a fourth format is a JSON file and this argument.
     fmt: Format = load_format(format_name)
     # BEATS and SHOTS are different counts and both matter. A beat is an idea
-    # the format has; a shot is a frame. A chapter-based format's beats are
-    # its CHAPTERS; a shot-based one's are the shots it was authored with,
-    # before a repeat expands them. Counted here, off the format actually
-    # being rendered — re-reading the file at manifest time is a second parse
-    # that can disagree with the first.
-    n_beats = (len({sh.chapter_n for sh in fmt.shots if sh.chapter_n})
-               or len(fmt))
+    # the format has; a shot is a frame. The beats are the shots the format
+    # was authored with, before a repeat expands them. Counted here, off the
+    # format actually being rendered — re-reading the file at manifest time
+    # is a second parse that can disagree with the first.
+    n_beats = len(fmt)
 
     words = list(getattr(tts, "words", []) or [])
     duration = float(getattr(tts, "duration_s", 0.0) or 0.0)
@@ -1271,13 +1284,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # THE MIX, not the voice alone. See `pipeline/sound.py` for what this
     # replaced and why it is the LONG's mixer rather than a second one.
     # Sound reads the spans AFTER composition, so whatever pacing the shots
-    # land on, the swish lands on the cut. A chaptered format (the LONG
-    # through this engine) gets chapter hits and the theme instead.
+    # land on, the swish lands on the cut.
     # The move record is what the sound is timed to: design's move ids and
     # the programme time of each first frame, and the wipes with their cuts.
     wiped = {round(w.cut, 3): (w.start, w.end) for w in plan.wipes}
     cuts = [Cut(shot_id=sp.shot.id, start=sp.start, end=sp.end,
-                chapter_n=int(getattr(sp.shot, "chapter_n", 0) or 0),
                 tags=frozenset(_sound_tags(result, reg, sp.shot.id)),
                 part=int(getattr(sp.shot, "part", 0) or 0),
                 wipe=wiped.get(round(sp.start, 3)))
@@ -1286,8 +1297,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
              for r in plan.record()["moves"]]
     tracks = short_mix(tts, settings, cuts=cuts, hour=reg.hour,
                        seed=script.content_sha(),
-                       chapters=any(sh.chapter_n for sh in fmt.shots),
-                       duration=duration, workspace=workspace, moves=moves)
+                       workspace=workspace, moves=moves)
     if tracks:
         mix_under_picture(silent, tracks, part, duration=duration,
                           audio_bitrate=settings.audio_bitrate,
@@ -1319,12 +1329,9 @@ def _render_short(script, tts, workspace: Path, settings, *,
         "hour": reg.hour,
         # "Who it hits" is one beat told across four shots because four cards
         # cannot share a frame legibly — so a nine-beat format cutting to
-        # fourteen shots is the design working, not drift. Reporting
-        # post-expansion shots as beats made the long look like 38 ideas
-        # instead of nine.
+        # fourteen shots is the design working, not drift.
         "beats": n_beats,
-        # The engine, beside the template it ran. `render_long_shots`
-        # delegates here with format_name="long" (P4).
+        # The engine, beside the template it ran (P4).
         "engine": "shots",
         "shots_count": len(spans),
         "anchored_shots": sum(1 for sp in spans if sp.anchored),
@@ -1400,10 +1407,9 @@ def _render_short(script, tts, workspace: Path, settings, *,
         "host_faces": faces,
         "longest_layer_hold_s": round(
             max((b - a for a, b, _ in held_layer_spans(result)), default=0.0), 3),
-        # PACING, WHICH IS A PROPERTY OF THE CUT AND NOT OF THE SUITE. A
-        # twelve-minute script through sixteen three-beat chapters gives every
-        # composition about fifteen seconds, and the only place that shows is
-        # here or in the video. `still` is the number that matters: a shot with
+        # PACING, WHICH IS A PROPERTY OF THE CUT AND NOT OF THE SUITE. The
+        # only place it shows is here or in the video. `still` is the number
+        # that matters: a shot with
         # a host in it is alive at fifteen seconds and a static data plate is a
         # held photograph at eight.
         "pacing": {
