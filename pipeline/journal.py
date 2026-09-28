@@ -56,6 +56,8 @@ KINDS: dict[str, str] = {
     "thesis": "a thesis was pinned when a video shipped",
     "ai": "the local model ran one of its passes",
     "asked": "the operator asked the bot a question with /ask",
+    "lessons": "the weekly note to the writer on where viewers left was "
+               "rewritten",
 }
 
 _LOCK = threading.Lock()

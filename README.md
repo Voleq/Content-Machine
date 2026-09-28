@@ -226,6 +226,8 @@ pipeline/
   script_edit.py         in-chat revision: line/range edits, find-replace, undo
   publish.py             subtitles and the upload metadata package
   youtube.py             upload (private/scheduled, never public) + retention
+  retention_notes.py     the weekly note to the writer: which sentences lost
+                         viewers, what they share, into the next prompt
   delivery.py            gdrive (default) / s3 / telegram / local
   repurpose.py           best ~58s of a LONG -> 9:16 SHORT (free)
   thumbnail.py           the cover — a frame from the video
@@ -766,6 +768,7 @@ away.
 | `/stillness TICKER` | Every stretch where the audio runs and the picture holds still for more than eight seconds. Read off the manifest, so it works offline and on a video that has never shipped. |
 | `/rules` | What the voice rules are worth, measured. Mean hold on sentences carrying a turn, a question, a spoken figure, first person — against those without. Every threshold in the linter was a judgement; this is where they argue back. |
 | `/runtime` | Hold against how long the videos run, per band. Forty-five to fifty-five seconds for a short is an assumption in a spec, not a finding. |
+| `/lessons [now]` | The note every writing prompt carries about where viewers left, per lane. Once a week the bot pulls fresh retention, takes the steepest-drop sentences across the lane's recent videos, counts what they share against every other sentence (length, a figure, a turn, a question, where they sit), and has the local model say what they have in common. Counts come from code; a number the model writes that is not in them is flagged. A lane needs three videos with retention before it says anything. `now` rewrites it immediately. Free: the model call never falls through to a paid hosted tier. |
 | `/said <phrase>` | Every earlier use of a line, across every script ever shipped. The voice bible's *no construction twice* rule could only ever see inside one script. |
 | `/experiments` | Clip pairs cut from one long and shipped as a pair, and which one held. Two clips off one render cost no voice generation — the only free experiment in the system, and the second one used to be thrown away. |
 | `/scoreboard [YYYY-Qn]` | What we said and what happened, for a quarter. Every number in it was already gathered for the video it came from. It leads with the calls that were wrong, deliberately. |

@@ -148,3 +148,8 @@ plan above — and on an UPDATE it is sharper than usual, because this is a name
 the channel already has retention data for.
 
 {{retention}}
+
+### WHERE VIEWERS HAVE LEFT, SENTENCE BY SENTENCE
+Finer than the chapter averages: the lines people stopped watching on across the channel's recent long videos, and what those lines share. The counts come from code; any reading under them is the bot's model.
+
+{{retention_note}}

@@ -189,12 +189,9 @@ class LineHold:
 
 
 def _rows_of(retention: dict) -> list[dict]:
-    rows = (retention or {}).get("rows") or []
-    return sorted((r for r in rows
-                   if isinstance(r, dict)
-                   and isinstance(r.get("elapsed_ratio"), (int, float))
-                   and isinstance(r.get("watch_ratio"), (int, float))),
-                  key=lambda r: r["elapsed_ratio"])
+    from pipeline.youtube import retention_rows
+
+    return sorted(retention_rows(retention), key=lambda r: r["elapsed_ratio"])
 
 
 def hold_over(rows: list[dict], duration_s: float,

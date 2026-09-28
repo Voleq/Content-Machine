@@ -97,6 +97,11 @@ above.
 
 {{retention}}
 
+### WHERE VIEWERS HAVE LEFT, SENTENCE BY SENTENCE
+Finer than the chapter averages: the lines people stopped watching on across the channel's recent long videos, and what those lines share. The counts come from code; any reading under them is the bot's model.
+
+{{retention_note}}
+
 ## THE ANALYTICAL SPINE — what makes this depth rather than commentary
 Run these through the whole script, not as a checklist chapter:
 

@@ -340,6 +340,13 @@ class Settings(BaseSettings):
     youtube_category_id: str = Field(default="25", alias="YOUTUBE_CATEGORY_ID")  # News & Politics
     # How far back the Analytics query looks when pulling retention.
     retention_window_days: int = Field(default=28, alias="RETENTION_WINDOW_DAYS")
+    # The weekly note to the writer (`pipeline/retention_notes.py`): pull the
+    # curve for recent uploads, find the sentences people left on, and put
+    # what they share into the next writing prompt. Free: the Analytics API
+    # and the local model. Off means the prompts say no note exists.
+    retention_notes_enabled: bool = Field(default=True,
+                                          alias="RETENTION_NOTES_ENABLED")
+    retention_note_days: int = Field(default=7, alias="RETENTION_NOTE_DAYS")
 
     # ------------------------------------------------ free sources (P3.4)
     # 8-K/EX-99.1 and Form 4 reuse the EDGAR client above (SEC_USER_AGENT and
