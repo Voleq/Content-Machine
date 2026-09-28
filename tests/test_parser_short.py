@@ -30,27 +30,16 @@ def test_inline_plate_and_scribble_stripped_and_anchored(short_doodles_json, set
     assert after.startswith("The news")
 
 
-def test_chart_style_marker_parsed(short_doodles_json, settings):
+def test_chart_style_still_parses_though_nothing_draws_it(short_valid_json,
+                                                          short_doodles_json,
+                                                          settings):
+    """There is one price chart now, the kit's, so `chart_style` selects
+    nothing. It stays on the model because the script's hash covers it: an
+    approval recorded against an older script must still match."""
     script, _ = parse_short_script(short_doodles_json, settings)
     assert script.chart_style is ChartStyle.MARKER
-
-
-def test_chart_style_defaults_to_the_house_language(short_valid_json, settings):
-    """A script that says nothing gets the marker chart.
-
-    The default was CLEAN, and the short holds its chart from the stage open
-    to the gut check — one of the longest single holds in the video. So unless
-    a writer thought to ask, every short spent that hold on the machine-drawn
-    card in a channel whose whole argument is that a person drew this.
-    """
     script, _ = parse_short_script(short_valid_json, settings)
     assert script.chart_style is ChartStyle.MARKER
-
-
-def test_clean_is_still_selectable(short_valid_json, settings):
-    """Two chart STYLES is fine — precision is a legitimate register."""
-    import json
-
     data = json.loads(short_valid_json)
     data["chart_style"] = "clean"
     script, _ = parse_short_script(json.dumps(data), settings)
@@ -217,11 +206,19 @@ def test_reject_empty(settings):
         parse_short_script("   \n ", settings)
 
 
-def test_warning_on_missing_anchor(short_valid_json, settings):
-    raw = short_valid_json.replace('"anchor_word": "today"', '"anchor_word": "zebra"')
-    script, warnings = parse_short_script(raw, settings)
-    assert script.missing_anchor_words() == ["zebra"]
-    assert any("zebra" in w and "fallback" in w for w in warnings)
+def test_fields_no_template_draws_are_reported_not_placed(short_valid_json,
+                                                           settings):
+    """A short draws neither scribbles nor a chosen chart style, so an anchor
+    word for one is not checked, and the fields are named as unbound."""
+    import json
+
+    data = json.loads(short_valid_json.replace('"anchor_word": "today"',
+                                               '"anchor_word": "zebra"'))
+    data["chart_style"] = "clean"
+    _, warnings = parse_short_script(json.dumps(data), settings)
+    assert not any("zebra" in w for w in warnings)
+    (unbound,) = [w for w in warnings if "no shot template binds" in w]
+    assert "annotations" in unbound and "chart_style" in unbound
 
 
 def test_warning_on_word_count(short_valid_json, settings):

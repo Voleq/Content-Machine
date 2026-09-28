@@ -941,9 +941,10 @@ env var, case-insensitive).
   seeded walk with no invented spike on the final bar, it is flagged
   `degraded` all the way through the cache and onto the render manifest,
   and it **blocks** a final render outside `MOCK_MODE`: a fabricated chart
-  on a channel whose premise is real numbers is not a warning-level event. Two styles: the clean
-  branded card and a crude hand-drawn "marker" napkin chart on black;
-  a SHORT picks via `chart_style`, a LONG via `[CHART: metric style=marker]`.
+  on a channel whose premise is real numbers is not a warning-level event. There
+  is one look, the kit's hand-drawn price plate; a script's `chart_style` or
+  `style=` token no longer selects a second one. The `earnings` and `macro`
+  shorts draw no price chart, so a dead feed does not stop them.
 - **The director names the plate.** `[PLATE: numbers-sheet-4r-16x9 | unit=$M
   | head=FY21,…,LTM | label-1=Revenue | row-1=400,452,471,491,496,496 |
   band=3]` — the tag carries its own content and the renderer only places it.

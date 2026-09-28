@@ -930,6 +930,32 @@ def expand_sequences(fmt: Format, items_for) -> Format:
     return replace(fmt, shots=tuple(out))
 
 
+# The `chart.*` fields the writer's move summary fills (`ShortResolver`). Every
+# other `chart.*` field is drawn from the price series.
+_MOVE_FIELDS = frozenset({"move", "move_rest", "move_up", "move_down",
+                          "move_detail"})
+
+
+def draws_prices(fmt: Format) -> bool:
+    """Whether any beat of this format can put the price series on screen.
+
+    The plain short's move beat is a price line; `earnings` and `macro` show
+    the move as the writer's figure and draw no prices at all, so a dead
+    price feed is nothing to them.
+    """
+    for shot in fmt.shots:
+        binds = [v.bind or {} for v in shot.variants]
+        if shot.repeat is not None:
+            binds.append(shot.repeat.bind)
+        srcs = [str(s) for b in binds for s in b.values()]
+        srcs += [t.src for t in shot.text]
+        for src in srcs:
+            head, _, name = src.lstrip("?").partition(".")
+            if head == "chart" and name not in _MOVE_FIELDS:
+                return True
+    return False
+
+
 def available_formats(root: Path | str = ".") -> list[str]:
     d = Path(root) / TEMPLATE_DIR
     return sorted(p.stem for p in d.glob("*.json")) if d.is_dir() else []

@@ -52,8 +52,8 @@ look like as you write to it — the frames a viewer will actually see:
 ## THE FORMAT — "Noise or signal?"
 A trending stock gets ~45–55 seconds. **The video opens on the hook card — your `hook_text`, the ticker and the move — and ends on the sign-off card, which prints your `conclusion`. Dennis is on camera for one shot in the middle, between the news and the numbers.** Everything else is the evidence. Your words run under all of it, so the first sentence IS the hook, heard from the first frame. Five beats — what each part of the short does; the ORDER this video is cut in is under THE CUT below:
 
-1. HOOK — the first sentence, spoken over the hook card; then the price chart, which is the hero. Write it as a spoken line, not a caption. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. `chart_style` defaults to "marker" — the hand-drawn napkin chart, which is the channel's own language and what the short holds for its longest single beat. Ask for "clean" (the polished branded card) only when the point of the beat is precision.
-2. WHY — the headline(s) that caused the move get overlaid ON the chart; you say what each actually means for the stock (usually less than the crowd thinks; occasionally more).
+1. HOOK — the first sentence, spoken over the hook card; then the price chart, which is the hero. Write it as a spoken line, not a caption. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe.
+2. WHY — the headline(s) that caused the move go on screen on their own card; you say what each actually means for the stock (usually less than the crowd thinks; occasionally more).
 3. GUT CHECK — the MULTI-YEAR numbers appear on a designed numbers sheet, **held ~4–5 seconds so they can be read**. Comment on them AS A WHOLE: is the business actually going anywhere, or is this just a move? If the PEER PERCENTILES sharpen the read, you MAY drop a SINGLE percentile one-liner here — at most one, never a table.
 4. CHEAP OR TRAP — the value-trap beat, **also held ~4–5 seconds**. Is the multiple a bargain or a trap? Name the multiple, then say what would have to be true for it to be cheap. Cheap and trapped look identical from the front; this is the beat that separates them. Goes in `cheap_or_trap`.
 5. PAYOFF — noise (just market activity) or signal (actually one to watch). Deadpan free text, spoken over the payoff figure; the sign-off card then prints it. There is NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
@@ -89,10 +89,10 @@ what a viewer sees is the structured fields below — `hook_text`,
 `[SCREENGRAB]` and `[SCRIBBLE]` written inside `audio_script` are LONG-form
 grammar. A short parses them, reports them as ignored, and draws none.
 
-The JSON fields `meme`, `broll` and `annotations` are the same story one
-level up: they validate, they are counted on the cost report, and no shot
-template binds them, so they reach no frame either. They are accepted and
-reported as ignored. Do not spend a decision on them.
+The JSON fields `meme`, `broll`, `annotations` and `chart_style` are the
+same story one level up: they validate, and no shot template binds them, so
+they reach no frame either. They are accepted and reported as ignored. Leave
+them out.
 
 Either way it is work asked of you for nothing, so this prompt no longer
 asks. Write the fields the template binds.
@@ -106,12 +106,11 @@ asks. Write the fields the template binds.
 4. `numbers`: 1–6 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The longer runtime has room for ONE more row than before IF it changes the read; don't pad.
 5. `numbers_comment`: the holistic read of the trend, ≤ 300 chars.
 6. `conclusion`: free text, ≤ 220 chars, opening with the call the way you'd mutter it ("Noise." / "Signal, unfortunately." / "Mostly noise, one number worth watching."). NEVER a label from a taxonomy.
-7. `chart_style`: "marker" or "clean". Omit it and you get "marker", the napkin chart. Ask for "clean" when the beat needs a precise read of the line.
-8. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — the vendor unnamed, and `sources` names only the filing.
-9. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
-10. Both-ways honesty: if the numbers are genuinely good, the joke is the market ignoring five clean years — praise through gritted teeth, sarcasm aimed at the crowd's blindness, never manufactured doom.
-11. **EVERY FIGURE IN `audio_script` IS WRITTEN THE WAY IT IS SAID.** The spoken line is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to `audio_script`: `numbers` values, `move_summary` and every `[PLATE]` slot are ON SCREEN and stay as display strings ("$1.2B", "-18%").
-12. `sources` (optional): where the figures on screen come from, keyed by the beat that shows them, e.g. `{"numbers": "10-K filings, FY21–FY25"}`. ≤ 40 chars each. The filing or the public agency — never a data vendor, terminal or data product, and never a document the figure did not come from: leave a beat out rather than guess. Name the document, never just "company filings". It slides in under that beat's plate once its figures land.
+7. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — the vendor unnamed, and `sources` names only the filing.
+8. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
+9. Both-ways honesty: if the numbers are genuinely good, the joke is the market ignoring five clean years — praise through gritted teeth, sarcasm aimed at the crowd's blindness, never manufactured doom.
+10. **EVERY FIGURE IN `audio_script` IS WRITTEN THE WAY IT IS SAID.** The spoken line is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to `audio_script`: `numbers` values, `move_summary` and every `[PLATE]` slot are ON SCREEN and stay as display strings ("$1.2B", "-18%").
+11. `sources` (optional): where the figures on screen come from, keyed by the beat that shows them, e.g. `{"numbers": "10-K filings, FY21–FY25"}`. ≤ 40 chars each. The filing or the public agency — never a data vendor, terminal or data product, and never a document the figure did not come from: leave a beat out rather than guess. Name the document, never just "company filings". It slides in under that beat's plate once its figures land.
 
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
 The operator ratifies or regenerates, so make your reasoning legible. Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:
@@ -119,7 +118,7 @@ The operator ratifies or regenerates, so make your reasoning legible. Emit these
 1. ANGLE & NUMBERS — one line naming the story, then the 3–5 `numbers` rows you'll feature and one clause each on WHY (each must be a chartable metric from the list above).
 2. HOOK OPTIONS — 2–3 muted-safe `hook_text` candidates (≤ 90 chars each); mark the one you'll use with ★.
 3. SCRIPT — the `audio_script` (140–160 words), written with the ★ hook as its first sentence, a `[BEAT: key]` marker where each beat starts in the order under THE CUT, ONE mid-point re-hook (~20–25s), and — optionally — a single second-look line right before the verbatim conclusion.
-4. TAGS — one line noting the doodle/scribble/meme keys you placed and why (all from the catalogs).
+4. TAGS — one line noting the delivery tags you placed and why.
 
 THEN the strict JSON object below — keys exactly as shown, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
 
@@ -140,9 +139,8 @@ Put the four prose sections in the chat and the JSON object in the `.txt` file.
   "ticker": "{{ticker}}",
   "format": "short",
   "hook_text": "<= 90 chars, mute-safe>",
-  "audio_script": "<140-160 spoken words, <= 1100 chars, a [BEAT: key] marker at the start of each beat in the order under THE CUT, one mid-point re-hook, ends with the conclusion verbatim; may embed [PLATE:]/[SCRIBBLE:] inline>",
+  "audio_script": "<140-160 spoken words, <= 1100 chars, a [BEAT: key] marker at the start of each beat in the order under THE CUT, one mid-point re-hook, ends with the conclusion verbatim>",
   "move_summary": "<how much / how active>",
-  "chart_style": "marker",
   "headlines": [
     {"text": "<on-screen headline>", "meaning": "<what it actually means>"}
   ],
@@ -153,13 +151,7 @@ Put the four prose sections in the chat and the JSON object in the `.txt` file.
   "numbers_comment": "<holistic read of the trend>",
   "cheap_or_trap": "<the value-trap beat: name the multiple, then what would have to be true for it to be cheap; <= 260 chars>",
   "conclusion": "<noise-or-signal, free text>",
-  "sources": {"numbers": "<the filing the rows are from, <= 40 chars>"},
-  "meme": {"key": "<meme key>", "anchor_word": "<word>"},
-  "broll": null,
-  "annotations": [
-    {"target": "chart", "anchor_word": "<word in audio_script>", "note": "<= 40 chars"},
-    {"target": "numbers", "row_index": 1, "anchor_word": "<word>", "note": "<= 40 chars"}
-  ]
+  "sources": {"numbers": "<the filing the rows are from, <= 40 chars>"}
 }
 
 ## STRUCTURE EXAMPLE — illustrative only, replace every value (do not reuse these numbers)
@@ -170,7 +162,6 @@ Note how each fact is taught straight, then undercut flat; each beat opens on it
   "hook_text": "EXMPL is up 29% today. The business is not.",
   "audio_script": "[BEAT: hook] EXMPL is up twenty nine percent today, so the internet has decided it is a technology company again. [BEAT: move] Five times average volume, straight up, no pullback. [BEAT: headline] The news is an AI partnership, which is a press release, not a purchase order. Plus a squeeze, because eleven percent of the float was short. [BEAT: turn] But here is the part nobody screenshots. [BEAT: numbers] Revenue went four hundred million to four ninety six in five years. Losses got wider every year. Free cash flow went negative and stayed there. [BEAT: numbers_comment] That is not growth, that is a plateau in a costume, and you pay them to own it. [BEAT: cheap_or_trap] Ninetieth percentile on price, twentieth on margins. I know a value trap; my own account went from twenty five k to zero. [BEAT: conclusion] The chart went vertical. The business went sideways. Noise. A press release and a squeeze, stapled to five years of drift.",
   "move_summary": "+29% today · 5× average volume",
-  "chart_style": "marker",
   "headlines": [
     {"text": "EXMPL announces AI partnership", "meaning": "A press release, not a purchase order — no revenue attached."},
     {"text": "Squeeze chatter on retail forums", "meaning": "11% of the float is short. The crowd noticed and piled in."}
@@ -185,11 +176,5 @@ Note how each fact is taught straight, then undercut flat; each beat opens on it
   "turn_line": "But here is the part nobody screenshots.",
   "cheap_or_trap": "Ninetieth percentile on price, twentieth on margins. Cheap needs the losses to stop.",
   "conclusion": "Noise. A press release and a squeeze, stapled to five years of drift.",
-  "sources": {"numbers": "10-K filings, FY21–FY25"},
-  "meme": {"key": "stonks-man-up-only", "anchor_word": "vertical"},
-  "broll": null,
-  "annotations": [
-    {"target": "chart", "anchor_word": "today", "note": "this candle"},
-    {"target": "numbers", "row_index": 1, "anchor_word": "wider", "note": "every year"}
-  ]
+  "sources": {"numbers": "10-K filings, FY21–FY25"}
 }

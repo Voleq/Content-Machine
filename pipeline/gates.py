@@ -1902,18 +1902,26 @@ def check_audio(settings: Settings, *, final: bool = True) -> list[Finding]:
 # --------------------------------------------------------------------------
 
 
-def _reaches_a_price_chart(script) -> bool:
+def _reaches_a_price_chart(script, format_name: str = "") -> bool:
     """Would this script put a price series on screen?
 
-    A SHORT always does — the price chart is beat 2 of the plain short
-    template and the renderer fills it whether or not the writer asked. A
-    LONG only does when it carries `[CHART: price]`. Anything else never
-    touches the feed, and a gate that fired on it would be reporting on
-    data the video does not contain.
+    A SHORT does when its shot template draws one: the plain short's move
+    beat is a price line, filled whether or not the writer asked, and the
+    `earnings` and `macro` templates draw no prices at all. With no
+    `format_name` a SHORT is assumed to. A LONG only does when it carries
+    `[CHART: price]`. Anything else never touches the feed, and a gate that
+    fired on it would be reporting on data the video does not contain.
     """
     fmt = (getattr(script, "format", "") or "").lower()
     if fmt == "short" or type(script).__name__ == "ShortScript":
-        return True
+        if not format_name:
+            return True
+        from pipeline.shots import TemplateError, draws_prices, load_format
+
+        try:
+            return draws_prices(load_format(format_name))
+        except TemplateError:
+            return True
     for event in getattr(script, "events", []) or []:
         if getattr(getattr(event, "type", None), "value", "") == "CHART" \
                 and str(getattr(event, "payload", "")).strip().lower() == "price":
@@ -1921,8 +1929,8 @@ def _reaches_a_price_chart(script) -> bool:
     return False
 
 
-def check_prices(script, settings: Settings, *,
-                 final: bool = True) -> list[Finding]:
+def check_prices(script, settings: Settings, *, final: bool = True,
+                 format_name: str = "") -> list[Finding]:
     """Whether the price chart in this video is drawn from real prices.
 
     When Yahoo fails, `YahooPriceSource.history()` falls back to
@@ -1939,7 +1947,7 @@ def check_prices(script, settings: Settings, *,
     warning there is honest, blocking there would only teach the operator to
     skip gates.
     """
-    if not _reaches_a_price_chart(script):
+    if not _reaches_a_price_chart(script, format_name):
         return []
     ticker = (getattr(script, "ticker", "") or "").strip()
     if not ticker:
@@ -2356,7 +2364,7 @@ def skeptic_notes(narration: str, settings: Settings,
 
 def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
               skeptic: bool = True, workspace: Path | None = None,
-              final: bool = True) -> GateReport:
+              final: bool = True, format_name: str = "") -> GateReport:
     """Every gate, in cost order. Silence means proceed.
 
     `final` says whether what follows approval is a publishable render. It
@@ -2365,6 +2373,9 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     final. A draft never comes through here (it skips approval entirely, which
     is the point of a draft), and the flag is what keeps the audio gate from
     blocking one if it ever does.
+
+    `format_name` is the shot template a SHORT renders through, which
+    decides whether it draws prices at all.
     """
     narration = getattr(script, "narration", None) or getattr(script, "audio_script", "")
     report = GateReport()
@@ -2388,7 +2399,8 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     report.findings += report.record("audio",
                                      check_audio(settings, final=final))
     report.findings += report.record(
-        "prices", check_prices(script, settings, final=final))
+        "prices", check_prices(script, settings, final=final,
+                               format_name=format_name))
     kit_findings, kit_stats = kit_doctor(script, settings)
     report.findings += report.record("kit", kit_findings)
     # THE FOUR THAT ARE ABOUT WATCHABILITY, not truth (01, 30, 31, 35).

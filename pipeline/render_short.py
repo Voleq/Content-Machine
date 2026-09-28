@@ -41,8 +41,8 @@ from pipeline.sound import (Cut, Move, manifest_rows, measure_lufs,
                             normalises, placeholders_played, short_mix,
                             shot_tags, sound_summary)
 from pipeline.shots import (Format, apply_order, beat_keys, choose_order,
-                            expand_sequences, load_format, order_by_marks,
-                            resolve_spans, voice_keys)
+                            draws_prices, expand_sequences, load_format,
+                            order_by_marks, resolve_spans, voice_keys)
 
 log = logging.getLogger(__name__)
 
@@ -1070,8 +1070,10 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # Prices before the resolver: the resolver holds them, and a resolver
     # built with None leaves THE MOVE's chart slot unfilled.
     # `get_price_history` never raises — worst case is a labelled synthetic
-    # series — so the slot is always fillable.
-    if prices is None:
+    # series — so the slot is always fillable. A format that draws no prices
+    # (`earnings`, `macro`) fetches none, so its record does not report on a
+    # feed that is not in the picture.
+    if prices is None and draws_prices(fmt):
         from pipeline.prices import get_price_history
         prices = get_price_history(getattr(script, "ticker", ""), settings)
 

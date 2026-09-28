@@ -22,7 +22,6 @@ def test_short_script_valid(short_valid_json: str):
         "six periods: four fiscal years, the last full year, LTM"
     assert script.years == ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"]
     assert script.meme is not None and script.meme.key == "fomo-stages-wish-i-bought-doodle"
-    assert script.missing_anchor_words() == []
     assert "noise" in script.conclusion.lower()
     # The budget counts the SPOKEN text. Validated straight off the JSON like
     # this, `audio_script` still carries its inline tags — the parser is what
@@ -73,13 +72,6 @@ def test_short_script_hook_length_cap(short_valid_json: str):
         ShortScript.model_validate(raw)
 
 
-def test_short_script_anchor_words_include_cutaways(short_valid_json: str):
-    script = ShortScript.model_validate(json.loads(short_valid_json))
-    anchors = script.anchor_words()
-    assert "today" in anchors and "wider" in anchors
-    assert "vertical" in anchors  # the meme anchor
-
-
 def test_company_data_missing_classification():
     data = CompanyData(values={"company_name": "X", "price": 1.0})
     assert "ticker" in data.blocking_missing
@@ -119,7 +111,6 @@ def test_cost_report_render_text_short():
         headline_count=2,
         numbers_rows=4,
         numbers_years=5,
-        annotation_note='Scribble -> chart "today" ✓ (anchor found)',
         est_render_minutes=0.7,
         mtd_spend_usd=3.10,
         monthly_cap_usd=50.0,
@@ -164,35 +155,15 @@ def test_candidate_why():
 
 
 # --------------------------------------------------------------------------
-# The approval report describes the chart that was actually requested.
+# The approval report describes only what the short draws.
 # --------------------------------------------------------------------------
-# It said "Chart: branded, from cached prices ✓" unconditionally, so a script
-# with "chart_style": "marker" — the crude hand-drawn napkin chart — was shown
-# a line describing the other chart entirely. The approval screen is the one
-# place in this system that has to be true: it is what the operator reads
-# immediately before authorising the only spend in the pipeline.
+# It named a chart style ("branded" or "hand-drawn napkin") and listed each
+# scribble with its anchor. The short draws one price chart, the kit's, and no
+# scribbles, and the approval screen is what the operator reads immediately
+# before authorising the only spend in the pipeline.
 
 
-def _chart_line(report) -> str:
-    return next(l for l in report.render_text().splitlines() if l.startswith("Chart:"))
-
-
-def test_the_report_names_the_chart_that_was_asked_for():
-    from pipeline.models import ChartStyle, CostReport
-
-    common = dict(ticker="EXMPL", fmt="short", words=180, chars=900,
-                  tts_cached=True, est_tts_usd=0.0, headline_count=2,
-                  numbers_rows=4, numbers_years=5)
-    branded = CostReport(chart_style=ChartStyle.CLEAN.value, **common)
-    napkin = CostReport(chart_style=ChartStyle.MARKER.value, **common)
-
-    assert "branded" in _chart_line(branded)
-    assert "branded" not in _chart_line(napkin)
-    assert "napkin" in _chart_line(napkin)
-
-
-def test_the_requested_style_reaches_the_report(settings):
-    """Not just capable of it — the builder has to pass it through."""
+def test_the_short_report_claims_no_chart_style_and_no_scribbles(settings):
     import json
     from pathlib import Path
 
@@ -202,10 +173,13 @@ def test_the_requested_style_reaches_the_report(settings):
 
     raw = json.loads((Path(__file__).resolve().parents[1] / "fixtures" /
                       "scripts" / "short_valid.json").read_text(encoding="utf-8"))
-    for style, expected in (("clean", "branded"), ("marker", "napkin")):
+    for style in ("clean", "marker"):
         raw["chart_style"] = style
         script, warnings = parse_short_script(json.dumps(raw), settings)
-        report = build_short_report(script, warnings, settings,
-                                    SpendLedger(settings), TTSEngine(settings))
-        assert report.chart_style == style
-        assert expected in _chart_line(report)
+        assert script.annotations, "fixture: the script sets scribbles"
+        text = build_short_report(script, warnings, settings,
+                                  SpendLedger(settings),
+                                  TTSEngine(settings)).render_text()
+        assert not any(line.startswith(("Chart:", "Scribble"))
+                       for line in text.splitlines())
+        assert "napkin" not in text and "branded" not in text

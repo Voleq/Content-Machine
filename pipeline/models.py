@@ -529,19 +529,6 @@ class ShortScript(BaseModel):
     def char_count(self) -> int:
         return len(self.audio_script)
 
-    def anchor_words(self) -> list[str]:
-        """Every anchor the timeline will try to resolve."""
-        anchors = [a.anchor_word for a in self.annotations]
-        for tag in (self.meme, self.broll):
-            if tag is not None and tag.anchor_word:
-                anchors.append(tag.anchor_word)
-        return anchors
-
-    def missing_anchor_words(self) -> list[str]:
-        """Anchors not found verbatim (case-insensitive) in audio_script."""
-        script = self.audio_script.lower()
-        return [a for a in self.anchor_words() if a.lower() not in script]
-
     def scribble_events(self) -> list[TagEvent]:
         return [e for e in self.inline_events if e.type is TagType.SCRIBBLE]
 
@@ -1299,11 +1286,6 @@ class CostReport(BaseModel):
     headline_count: int = 0
     numbers_rows: int = 0
     numbers_years: int = 0
-    annotation_note: str = ""
-    # Which chart the script actually asked for. The report used to state
-    # "branded" unconditionally, so a script with "chart_style": "marker" —
-    # the crude napkin chart — was shown a line describing the other one.
-    chart_style: str = ChartStyle.CLEAN.value
     # LONG specifics
     visuals: list[VisualPlanItem] = Field(default_factory=list)
     filing_overlays: int = 0
@@ -1379,17 +1361,13 @@ class CostReport(BaseModel):
 
         if self.fmt == "short":
             # The approval screen is the one place in this system that has to
-            # be true, so it reports the chart that was REQUESTED rather than
-            # a hardcoded description of one of the two.
-            chart = ("hand-drawn napkin" if self.chart_style == ChartStyle.MARKER.value
-                     else "branded")
+            # be true. It named a chart style and listed scribbles, and the
+            # short draws neither: one price chart, the kit's, and no
+            # scribbles. A dead price feed is the price gate's to report.
             lines.append(
-                f"Chart: {chart}, from cached prices ✓   "
                 f"Headlines: {self.headline_count} ✓   "
                 f"Numbers: {self.numbers_rows} rows × {self.numbers_years}yr"
             )
-            if self.annotation_note:
-                lines.append(self.annotation_note)
         if self.visuals:
             c = self.visual_counts
             line = (f"Visuals: {len(self.visuals)} "

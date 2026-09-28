@@ -165,7 +165,6 @@ def test_framing_produces_valid_short_json(settings, mode, ticker):
     assert script.format == "short"
     assert script.char_count <= settings.short_max_chars
     assert script.audio_script.rstrip().endswith(script.conclusion)
-    assert script.missing_anchor_words() == []
     assert not any("words" in w for w in warnings)  # in the 130–170 band
 
 

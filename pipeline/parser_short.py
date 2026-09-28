@@ -217,12 +217,12 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
 
     # THE STRUCTURED FIELDS ARE THE SAME STORY ONE LEVEL UP (P3).
     #
-    # `meme`, `broll` and `annotations` validate, and `build_short_report`
-    # counts a meme against `meme_cap` — so the operator is shown "Memes:
-    # 1/2" for a cutaway no frame contains. A short's visuals come from its
-    # shot template, and no template in `templates/shots/` binds any of the
-    # three. The writing prompts no longer offer them; a script written
-    # before that change, or by a model working from memory, still can.
+    # `meme`, `broll`, `annotations` and `chart_style` validate, and a
+    # short's visuals come from its shot template: no template in
+    # `templates/shots/` binds any of them, and there is one price chart, the
+    # kit's. The writing prompts no longer offer them; a script written
+    # before that change, or by a model working from memory, still can. The
+    # fields stay on the model because the script's hash covers them.
     #
     # Reported rather than rejected: refusing a whole script over a field
     # that changes nothing would be worse than the silence it replaces.
@@ -233,6 +233,8 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
         unbound.append("broll")
     if getattr(script, "annotations", None):
         unbound.append("annotations")
+    if "chart_style" in script.model_fields_set:
+        unbound.append("chart_style")
     if unbound:
         out.append(
             f"{', '.join(unbound)} {'are' if len(unbound) > 1 else 'is'} set "
@@ -537,11 +539,6 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
 
     warnings: list[str] = list(inline_warnings)
     warnings.extend(_tag_warnings(script, settings))
-    for anchor in script.missing_anchor_words():
-        warnings.append(
-            f'anchor_word "{anchor}" not found in audio_script — the cue will '
-            f"use a proportional fallback position"
-        )
     if not SHORT_WORDS_MIN <= script.word_count <= SHORT_WORDS_MAX:
         warnings.append(
             f"audio_script is {script.word_count} words (target ~140–160 for "

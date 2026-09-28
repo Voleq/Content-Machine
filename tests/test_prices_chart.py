@@ -379,6 +379,37 @@ def test_a_synthetic_series_blocks_a_final_render_outside_mock_mode(
     assert check_prices(script, live, final=True) == []
 
 
+def test_a_short_format_with_no_price_chart_is_not_blocked_on_one(
+        settings, short_valid_json, tmp_path):
+    """`earnings` and `macro` show the move as the writer's figure and draw no
+    prices, so a dead feed must not stop them, and they fetch no prices to
+    report on. The plain short's move beat is a price line, so it still
+    stops."""
+    from pipeline.gates import check_prices
+    from pipeline.parser_short import parse_short_script
+    from pipeline.prices import PriceSeries
+    from pipeline.shots import draws_prices, load_format
+
+    assert draws_prices(load_format("short"))
+    assert not draws_prices(load_format("earnings"))
+    assert not draws_prices(load_format("macro"))
+
+    script, _ = parse_short_script(short_valid_json, settings=settings)
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "cache_dir": tmp_path / "c"})
+    cdir = live.cache_dir / "prices"
+    cdir.mkdir(parents=True)
+    fake = PriceSeries(ticker=script.ticker,
+                       dates=["2026-01-01", "2026-01-02"],
+                       closes=[10.0, 11.0], source="synthetic", degraded=True)
+    (cdir / f"{script.ticker}_{live.price_history_days}.json").write_text(
+        fake.to_json(), encoding="utf-8")
+
+    assert check_prices(script, live, final=True, format_name="earnings") == []
+    assert check_prices(script, live, final=True, format_name="macro") == []
+    assert check_prices(script, live, final=True, format_name="short")
+
+
 # --------------------------------------------------------------------------
 # A data region with no slot path is a build failure, not an empty chart.
 # --------------------------------------------------------------------------

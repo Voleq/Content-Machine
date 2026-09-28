@@ -1233,7 +1233,8 @@ class BotCore:
         data = self._company_data(ws)
         gates = run_gates(script, self.settings, data=data,
                           as_of=str((data.get("as_of_date") if data else "") or ""),
-                          workspace=ws.path)
+                          workspace=ws.path,
+                          format_name=self.short_format_name(ws))
         report = build_short_report(script, warnings, self.settings,
                                     self.ledger, self.tts, gate_report=gates)
         (ws.path / "report_short.txt").write_text(report.render_text(), encoding="utf-8")
@@ -1363,7 +1364,9 @@ class BotCore:
                 gates = run_gates(
                     script, self.settings, data=data,
                     as_of=str((data.get("as_of_date") if data else "") or ""),
-                    workspace=ws.path, skeptic=False)
+                    workspace=ws.path, skeptic=False,
+                    format_name=(self.short_format_name(ws)
+                                 if fmt == "short" else ""))
         except Exception:  # noqa: BLE001
             log.exception("could not re-check the gates for %s %s — "
                           "letting the approval through on the report",
@@ -1560,7 +1563,7 @@ class BotCore:
             script = ws.load_short()
             if script is None or not ws.is_approved("short"):
                 raise RuntimeError("script/approval vanished before render")
-            self._refuse_synthetic_prices(script)
+            self._refuse_synthetic_prices(script, self.short_format_name(ws))
             checkpoint("tts")
             tts = self.tts.synthesize(script.audio_script, "short",
                                       events=script.inline_events,
@@ -1717,7 +1720,7 @@ class BotCore:
 
         raise RuntimeError(f"unknown job kind {job.kind}")
 
-    def _refuse_synthetic_prices(self, script) -> None:
+    def _refuse_synthetic_prices(self, script, format_name: str = "") -> None:
         """Stop a final whose price chart would be the synthetic floor.
 
         Approval runs the price gate, but a final can render hours later —
@@ -1727,7 +1730,8 @@ class BotCore:
         """
         from pipeline.gates import check_prices
 
-        blocks = [f for f in check_prices(script, self.settings, final=True)
+        blocks = [f for f in check_prices(script, self.settings, final=True,
+                                          format_name=format_name)
                   if f.severity == "block"]
         if blocks:
             raise RuntimeError(blocks[0].message)
