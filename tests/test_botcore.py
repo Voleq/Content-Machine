@@ -11,7 +11,7 @@ import pytest
 from pipeline.models import JobKind, JobRecord
 from pipeline.workspace import Workspace
 
-from bot.handlers import BotCore, Reply
+from bot.handlers import BotCore
 
 CHAT = 4242
 

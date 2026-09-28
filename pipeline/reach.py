@@ -29,6 +29,10 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # A figure as it is written on screen: 29, +29%, 5×, $1.1B, -$15M, 365M.
 # Deliberately not run over `audio_script`, where every number is spelled out

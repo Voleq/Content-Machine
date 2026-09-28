@@ -46,7 +46,7 @@ from dataclasses import field as dc_field
 from pathlib import Path
 
 from openpyxl import load_workbook
-from PIL import Image, ImageDraw, ImageFont
+from PIL import ImageDraw, ImageFont
 
 from config import Settings
 from pipeline.models import (

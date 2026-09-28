@@ -18,7 +18,6 @@ from PIL import Image, ImageDraw
 from pipeline.byproducts import (
     BYPRODUCT_SOURCES,
     DEFAULT_TOLERANCE,
-    ByProducts,
     bless,
     build_byproducts,
     check_report,

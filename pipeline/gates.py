@@ -1353,9 +1353,9 @@ def direction_lint(script) -> list[Finding]:
             if e.type is TagType.QUIET and getattr(e, "char_offset", 0) < opening:
                 findings.append(Finding(
                     gate="direction", severity="warn",
-                    message=(f"[QUIET] in the opening chapter — dark calm is "
-                             f"the register the video earns its way down to, "
-                             f"and it has nothing to drop from yet")))
+                    message=("[QUIET] in the opening chapter — dark calm is "
+                             "the register the video earns its way down to, "
+                             "and it has nothing to drop from yet")))
     return findings
 
 

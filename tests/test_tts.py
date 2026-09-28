@@ -1,11 +1,10 @@
 import base64
-import json
 
 import httpx
 import pytest
 
 from pipeline.cost import BudgetExceededError, SpendCapExceededError, SpendLedger
-from pipeline.render_common import ffprobe_duration, run_ffmpeg
+from pipeline.render_common import run_ffmpeg
 from pipeline.tts import (
     TTSEngine,
     cache_key,

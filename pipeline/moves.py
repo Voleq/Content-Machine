@@ -41,7 +41,7 @@ import re
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Sequence
 
 from pipeline import motion as M
 
@@ -158,10 +158,6 @@ class Move:
             return None
         return min(f, self.frames - 1)
 
-    def t_at(self, t: float) -> float | None:
-        f = self.frame_at(t)
-        return None if f is None else M.t_of_frame(f, self.frames)
-
     def row(self) -> dict:
         return {"move": self.move, "start": round(self.start, 3),
                 "shot_id": self.shot_id, "slot": self.slot, "frames": self.frames}
@@ -236,9 +232,6 @@ class MovePlan:
     # Why a move a plate offered did not play, for the manifest: a circle
     # that sat this video out is a decision, not a bug, and says so.
     skipped: list[str] = field(default_factory=list)
-
-    def for_layer(self, name: str) -> list[Move]:
-        return [m for m in self.moves if m.layer == name]
 
     @property
     def layers(self) -> set[str]:

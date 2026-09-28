@@ -293,22 +293,6 @@ def draw_range_mark(img, area: PlotArea, t: float, median: float | None,
     return True
 
 
-def draw_cycle_arc(img, area: PlotArea, values: list[float | None], colour,
-                   *, seed: str = "cycle") -> tuple[int, float] | None:
-    """`series.cycleArc` — every period between the two moments, one colour.
-
-    Returns the trough `(index, value)` so the caller can label it on real
-    coordinates. ONE colour for the whole path: colouring the fall in `down` and
-    the recovery in `up` makes the frame argue for the recovery, and the reason
-    this plate exists is that the line went somewhere else first.
-    """
-    draw_line(img, area, values, colour, width=6, seed=seed)
-    present = [(i, v) for i, v in enumerate(values) if v is not None]
-    if not present:
-        return None
-    return min(present, key=lambda p: p[1])
-
-
 def trough_point(area: PlotArea, values: list[float | None],
                  index: int) -> tuple[float, float] | None:
     """Where the trough sits in the plot area, for the label's drop line."""

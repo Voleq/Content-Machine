@@ -196,7 +196,6 @@ def test_the_short_report_states_what_the_script_reaches(settings, short_valid_j
     # reach line look like a regression on the day the operator ingests it.
     # What the line is for is that the numerator is small against whatever
     # the library currently holds.
-    from pipeline.plates import load_plates
 
     total = len(load_plates(settings.assets_dir).keys())
     assert f"of {total} plates" in line
@@ -235,7 +234,6 @@ def test_the_long_report_carries_the_same_line(settings, long_valid_text, worksp
     from pipeline.plates import load_plates
 
     assert report.kit_reach.startswith("Kit: ")
-    from pipeline.plates import load_plates
 
     assert f"of {len(load_plates(settings.assets_dir).keys())} plates" \
         in report.kit_reach

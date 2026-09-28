@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 from pipeline.corpus import (
-    Corpus, Overlap, ScriptEntry, build_index, compare, jaccard, mask_data,
+    Corpus, ScriptEntry, build_index, compare, jaccard, mask_data,
     sentences, shingles,
 )
 

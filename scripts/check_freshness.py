@@ -106,8 +106,8 @@ def main(argv: list[str]) -> int:
     print("\nBLOCKED — this workbook stops a render.", file=sys.stderr)
     if parsed is None:
         print(
-            f"\nThe date could not be PARSED, which is a different problem "
-            f"from a stale one. The gate accepts:\n  "
+            "\nThe date could not be PARSED, which is a different problem "
+            "from a stale one. The gate accepts:\n  "
             + "\n  ".join(_AS_OF_FORMATS)
             + "\n  a raw Excel serial (days since 1899-12-30)\n\n"
               "Either re-save the as-of cell in one of those shapes — "

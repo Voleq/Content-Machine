@@ -12,7 +12,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from PIL import Image
 
 from pipeline.models import Cue, CueKind, TagType
 from pipeline.parser_long import (LongScriptError, parse_long_script,

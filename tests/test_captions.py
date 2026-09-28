@@ -369,9 +369,6 @@ class _Stub:
     def list_for(self, src: str):
         return None
 
-    def frac_box_for(self, src: str):
-        return (0.4, 0.3, 0.12, 0.09)
-
 
 @pytest.fixture(scope="module")
 def reg():

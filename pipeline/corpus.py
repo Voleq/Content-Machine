@@ -250,9 +250,6 @@ class Corpus:
     def __len__(self) -> int:
         return len(self.entries)
 
-    def for_format(self, fmt: str) -> list[ScriptEntry]:
-        return [e for e in self.entries if e.fmt == fmt]
-
     def recent(self, n: int, *, fmt: str = "",
                exclude: str = "") -> list[ScriptEntry]:
         """The n most recent entries, newest last. `exclude` drops one key —

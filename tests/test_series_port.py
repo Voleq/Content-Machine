@@ -163,7 +163,7 @@ def test_a_mark_is_drawn_in_the_ink_its_slot_publishes():
     assert [n["attrs"]["fill"] for n in nodes] == ["#A", "#S1", "#Q", "#A"]
 
 
-def test_small_multiples_draw_one_line_per_panel_on_one_scale():
+def test_the_data_layer_draws_each_panel_on_the_shared_scale():
     """Every panel on the plate's one min-max unless the data scales a panel
     of its own, in the ink the panel publishes."""
     panel = {"x": 0, "y": 0, "w": 200, "h": 100, "tone": "quiet"}

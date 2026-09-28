@@ -37,7 +37,6 @@ import hashlib
 import json
 import logging
 import os
-import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -399,7 +398,3 @@ def cache_size_mb(cache_dir: Path) -> float:
     if not cache_dir.is_dir():
         return 0.0
     return sum(f.stat().st_size for f in cache_dir.glob("*.mp4")) / 1e6
-
-
-def clear_cache(cache_dir: Path) -> None:
-    shutil.rmtree(cache_dir, ignore_errors=True)

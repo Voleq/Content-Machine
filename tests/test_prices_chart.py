@@ -344,7 +344,6 @@ def test_the_synthetic_floor_no_longer_fakes_an_event_move(settings):
 def test_a_synthetic_series_blocks_a_final_render_outside_mock_mode(
         settings, short_valid_json, tmp_path):
     """B1/N4: informational everywhere else, a blocker here."""
-    import json as _json
 
     from pipeline.gates import check_prices
     from pipeline.parser_short import parse_short_script

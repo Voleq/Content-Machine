@@ -403,7 +403,7 @@ def _check_beat_marks(text: str, marks: list[dict],
     fits = [name for name, beats in formats.items() if set(keys) <= set(beats)]
     if not fits:
         return [
-            f"the beat markers mix formats — "
+            "the beat markers mix formats — "
             + "; ".join(f"{name} knows "
                         f"{', '.join(k for k in keys if k in beats) or 'none'}"
                         for name, beats in sorted(formats.items()))

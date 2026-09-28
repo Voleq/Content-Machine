@@ -533,7 +533,6 @@ def test_the_doctor_names_the_gap_list_the_next_batch_is_drawn_from(settings):
 
 
 def test_an_unknown_plate_blocks_and_is_named(settings):
-    from pipeline.gates import kit_doctor
     from pipeline.models import TagEvent, TagType
 
     class _S:

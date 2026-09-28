@@ -29,9 +29,9 @@ import json
 import logging
 import re
 from dataclasses import asdict, dataclass, field
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Iterable, Sequence
 
 from config import Settings
 

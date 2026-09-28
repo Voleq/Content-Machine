@@ -12,9 +12,7 @@ of them being broken.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-import pytest
 
 from pipeline.sources import (
     FRED_SERIES,

@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from pipeline.compose import build_layers, check_invariants, held_layer_spans
-from pipeline.render_short import HOST_SHOTS, build_anchors
+from pipeline.render_short import HOST_SHOTS
 from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, expand_sequences,
                             load_format, parse_format, resolve_spans,
                             TemplateError)
@@ -71,9 +71,6 @@ class StubResolver:
 
     def image_for(self, src: str):
         return self.chart if src == "chart.price" else None
-
-    def frac_box_for(self, src: str):
-        return (0.4, 0.3, 0.12, 0.09)
 
 
 @pytest.fixture()

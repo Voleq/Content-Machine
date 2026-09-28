@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 from pipeline.byproducts import (BOIL_SAMPLE_FPS, BOIL_SCALE, held_spans,
-                                 holds_past, longest_hold)
+                                 holds_past)
 
 SAMPLES = Path("samples")
 

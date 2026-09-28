@@ -14,8 +14,14 @@ import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from config import Settings
+
+if TYPE_CHECKING:
+    from datetime import date
+
+    from pipeline.models import CostReport
 
 log = logging.getLogger(__name__)
 

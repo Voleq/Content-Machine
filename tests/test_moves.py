@@ -308,7 +308,6 @@ def test_the_record_is_what_the_sound_reads(short, reg, settings):
 
 
 def test_recent_moves_reads_the_last_render_and_never_its_own(tmp_path, settings):
-    from dataclasses import replace
 
     from pipeline.reach import recent_moves
 

@@ -122,9 +122,6 @@ SET_LAYERS: dict[str, str] = {
     "screen-flicker": "screen_buzz",
 }
 
-AMBIENCE_KEYS: tuple[str, ...] = tuple(dict.fromkeys(
-    (*ROOM_BY_HOUR.values(), *SET_LAYERS.values())))
-
 # The owned score (`scripts/make_score.py`). The theme is two cuts of one
 # piece, so the intro and the outro are the same motif by construction.
 THEME_INTRO = "theme-intro.m4a"

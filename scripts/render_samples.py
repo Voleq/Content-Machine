@@ -113,10 +113,6 @@ def render_vertical_sample(format_name: str = "short") -> Path:
     return dest
 
 
-def render_short_sample() -> Path:
-    return render_vertical_sample("short")
-
-
 def _long_inputs(fixture: str = "long_sample"):
     """Script, workspace and data export for the deep-dive fixture.
 

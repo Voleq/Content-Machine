@@ -55,7 +55,6 @@ site:
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from config import Settings
 from pipeline.plates import Plate, Registry, Slot
@@ -594,34 +593,9 @@ def unfilled_slots(plate: Plate, values: dict[str, str] | None) -> list[str]:
                   if (s.is_text or s.renderer) and empty(n))
 
 
-def render_clip(plate: Plate, values: dict[str, str] | None, duration_s: float,
-                settings: Settings, reg: Registry, out: Path, fps: int = 24) -> Path:
-    """A plate played for `duration_s`, as a PNG sequence directory."""
-    out.mkdir(parents=True, exist_ok=True)
-    cache: dict[int, object] = {}
-    for i, src in enumerate(frame_indices(plate, duration_s, fps)):
-        if src not in cache:
-            cache[src] = render_frame(plate, src, values, settings, reg)
-        cache[src].save(out / f"f{i:05d}.png")
-    return out
-
-
 # --------------------------------------------------------------------------
 # Fitting
 # --------------------------------------------------------------------------
-def fit_into(img, box_w: int, box_h: int):
-    """Contain `img` inside a box, preserving aspect. Never upscales past 1:1."""
-    from PIL import Image
-
-    if box_w <= 0 or box_h <= 0:
-        return img
-    ratio = min(box_w / img.width, box_h / img.height)
-    if ratio >= 1.0:
-        return img
-    return img.resize((max(int(img.width * ratio), 1),
-                       max(int(img.height * ratio), 1)), Image.LANCZOS)
-
-
 def _resize_to(img, width: int | None, height: int | None):
     """Resize to a target width or height, preserving aspect."""
     from PIL import Image
@@ -650,13 +624,3 @@ def cover_into(img, box_w: int, box_h: int):
     scaled = img.resize((w, h), Image.LANCZOS)
     left, top = (w - box_w) // 2, (h - box_h) // 2
     return scaled.crop((left, top, left + box_w, top + box_h))
-
-
-def paste_into_slot(base, plate: Plate, slot_name: str, image):
-    """Composite an image into a named region — cover-fitted to its box."""
-    slot = plate.slot(slot_name)
-    if slot is None:
-        raise KeyError(f"{plate.key} has no slot {slot_name!r}")
-    x, y, w, h = slot.scaled()
-    base.alpha_composite(cover_into(image.convert("RGBA"), w, h), (x, y))
-    return base

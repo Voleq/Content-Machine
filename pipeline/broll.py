@@ -39,7 +39,7 @@ import httpx
 from config import Settings
 from pipeline.cost import SpendCapExceededError, SpendLedger
 from pipeline.memes import MemeManager, animated_providers
-from pipeline.render_common import RenderError, ffprobe_duration, run_ffmpeg
+from pipeline.render_common import RenderError, run_ffmpeg
 
 log = logging.getLogger(__name__)
 

@@ -17,7 +17,6 @@ the pipeline follows, and it is what keeps the suite offline.
 
 from __future__ import annotations
 
-import json
 import logging
 import threading
 from collections import OrderedDict

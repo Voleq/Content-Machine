@@ -15,7 +15,6 @@ An ffmpeg encode already in flight finishes its stage first.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import uuid
 from pathlib import Path

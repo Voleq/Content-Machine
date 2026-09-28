@@ -19,9 +19,8 @@ import logging
 import math
 import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, timedelta
-from pathlib import Path
 from typing import Protocol
 
 from config import Settings
@@ -40,18 +39,6 @@ class PriceSeries:
     @property
     def last(self) -> float:
         return self.closes[-1]
-
-    @property
-    def pct_change_1d(self) -> float:
-        if len(self.closes) < 2 or not self.closes[-2]:
-            return 0.0
-        return (self.closes[-1] - self.closes[-2]) / self.closes[-2] * 100.0
-
-    @property
-    def pct_change_period(self) -> float:
-        if len(self.closes) < 2 or not self.closes[0]:
-            return 0.0
-        return (self.closes[-1] - self.closes[0]) / self.closes[0] * 100.0
 
     def to_json(self) -> str:
         # `degraded` travels with the series (B1). It used to be dropped

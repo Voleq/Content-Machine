@@ -20,19 +20,14 @@ script's own anchors — no scene time is ever hardcoded in a renderer.
 
 from __future__ import annotations
 
-import hashlib
 import math
-import re
 from dataclasses import dataclass, field
 
 from pipeline.models import (
     DELIVERY_TAG_TYPES,
-    OVERLAY_TAG_TYPES,
-    AnnotationTarget,
     Cue,
     CueKind,
     LongScript,
-    ShortScript,
     TagEvent,
     TagType,
     WordTimestamp,
@@ -282,10 +277,6 @@ class Segment:
 
 MIN_SEGMENT_S = 0.25
 
-# size of the renderer's DESIGNED-backdrop pool (each of rasters'
-# LONG_BACKDROP_FAMILIES families is drawn with several seeds). Kept as a bare
-# int so this module stays pure logic — no PIL/raster import.
-LONG_FILLER_LOOKS = 12
 
 # How long each visual kind holds before cutting back to the host WHEN THE
 # DIRECTOR DID NOT SAY. These are roughly double the old values: the show is a

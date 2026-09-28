@@ -129,16 +129,6 @@ VISUAL_TAG_TYPES = frozenset({
     TagType.SCREENGRAB,
 })
 
-# Foreign media — anything not drawn by the kit's own engine. All four are
-# composited INSIDE a frames/ plate rather than landing full-frame, because a
-# raw photograph over the whole frame destroys the drawn surface the rest of the
-# video is built on. See pipeline.media_frames.
-FOREIGN_MEDIA_TAG_TYPES = frozenset({
-    TagType.CLIP, TagType.BROLL, TagType.IMG, TagType.PRODUCT,
-    TagType.SHOW_ARTICLE, TagType.SHOW_FILING, TagType.SCREENGRAB,
-    TagType.MEME,
-})
-
 # Tags that take a `| hold=<seconds>` field.
 #
 # The joke and the illustration, which are the two the writer actually times.
@@ -179,14 +169,6 @@ SHORT_TAG_TYPES = frozenset(
 # those same rows, so demanding a pasted URL asked the writer to go and find
 # something the pipeline was already holding.
 SELF_RESOLVING_TAG_TYPES = frozenset({TagType.SHOW_ARTICLE})
-
-# Tags that claim the SHORT's frame for a beat (as opposed to riding on top of
-# whatever is showing). Delivery tags claim nothing — they are audio.
-SHORT_SEGMENT_TAG_TYPES = frozenset({
-    TagType.PLATE, TagType.IMG, TagType.PRODUCT, TagType.SHOW_FILING,
-    TagType.SHOW_ARTICLE, TagType.SCREENGRAB, TagType.MEME, TagType.CLIP,
-    TagType.BROLL, TagType.CHART,
-})
 
 
 class ScribbleStyle(str, Enum):
