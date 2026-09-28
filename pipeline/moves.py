@@ -1416,3 +1416,55 @@ def source_tag_clip(reg, settings, out: Path, *, text: str, plate, aspect: str,
         out_frames.append((canvas, 1 / FPS))
     held_frames_to_alpha_clip(out_frames, out, fps=FPS)
     return TagClip(path=out, x=0, y=py + y, frames=frames)
+
+
+# ---------------------------------------------------------------------------
+# The LONG's lower third
+# ---------------------------------------------------------------------------
+
+def lower_third_image(reg, settings, *, ticker: str, tagline: str, aspect: str):
+    """Design's `overlays/lower-third` with the ticker and the channel's line
+    set in its slots, at its delivered size. None when the kit has no lower
+    third at this aspect, or the ticker is longer than its slot is drawn for
+    (the slot must not wrap, and design kept it too narrow for a name)."""
+    from pipeline.plate_frames import render_frame
+
+    key = reg.aspect_key("overlays/lower-third", aspect) if hasattr(reg, "aspect_key") else None
+    plate = reg.get(key) if key else None
+    if plate is None:
+        return None
+    slot = plate.slot("ticker")
+    budget = int(getattr(slot, "max_chars", 0) or 0) if slot is not None else 0
+    if slot is None or (budget and len(ticker) > budget):
+        return None
+    return render_frame(plate, 0, {"ticker": ticker, "tagline": tagline},
+                        settings, reg).convert("RGBA")
+
+
+def lower_third_clip(img, out: Path, *, x: int, y: int,
+                     size: tuple[int, int], reg=None) -> TagClip:
+    """The lower third sliding in to (`x`, `y`) at `size`, design's slide-in:
+    from off the frame's left edge, landing with its small overshoot. Its last
+    frame is the strip at rest, which the overlay holds."""
+    from PIL import Image
+
+    from pipeline.rasters import held_frames_to_alpha_clip
+
+    w, h = size
+    if img.size != (w, h):
+        img = img.resize((max(w, 1), max(h, 1)), Image.LANCZOS)
+    spec = (getattr(reg, "motion_moves", None) or {}).get("slide-in") or {}
+    frames = int(spec.get("frames") or 6)
+    over = int(math.ceil(0.25 * (w + 40)))
+    strip = (x + w + over, h)
+    out_frames = []
+    for f in range(frames):
+        dx = int(round(M.slide_x(w, M.t_of_frame(f, frames))))
+        canvas = Image.new("RGBA", strip, (0, 0, 0, 0))
+        at = x + dx
+        if at + w > 0:
+            canvas.alpha_composite(img, (at, 0)) if at >= 0 else \
+                canvas.alpha_composite(img.crop((-at, 0, w, h)), (0, 0))
+        out_frames.append((canvas, 1 / FPS))
+    held_frames_to_alpha_clip(out_frames, out, fps=FPS)
+    return TagClip(path=out, x=0, y=y, frames=frames)

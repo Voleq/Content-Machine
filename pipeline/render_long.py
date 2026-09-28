@@ -119,6 +119,7 @@ from pipeline.timeline import (
     plan_long_segments,
     plan_writer_moves,
     plan_writer_sources,
+    scene_in_force,
     unrenderable_long_tags,
 )
 
@@ -181,6 +182,50 @@ def _cleared(t: float, covers: list[tuple[float, float]]) -> float:
 # How long the opening title holds over the first frames. It is opaque, so
 # whatever the first host beat is shot in is not seen until it lifts.
 INTRO_CARD_S = 2.6
+
+# THE LOWER THIRD'S SIZE AND PLACE, in the 1920-wide design's pixels. Design
+# drew it 820 wide; at that size its right edge reaches the close-up's head
+# and its foot the heads on the left-hand angles (panel-left stands him at
+# y 228). At 500 it clears both and still sets the ticker larger than the
+# line of type it replaces.
+LOWER_THIRD_W = 500
+LOWER_THIRD_AT = (24, 20)
+# A window of him shorter than this gets no lower third: on and off inside a
+# second reads as a flicker, not a strip.
+LOWER_THIRD_MIN_S = 1.5
+
+
+def _on_him(segments, covers: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """The stretches the frame is a beat of him with nothing covering it.
+
+    Consecutive beats of him are one stretch, so the strip does not blink on
+    the cut between two of his shots; a cover (the opening title, a chapter
+    card, a wipe) is taken out of it.
+    """
+    runs: list[list[float]] = []
+    for sg in segments:
+        if sg.kind != "host":
+            continue
+        if runs and abs(runs[-1][1] - sg.start) < 1e-6:
+            runs[-1][1] = sg.end
+        else:
+            runs.append([sg.start, sg.end])
+    out: list[tuple[float, float]] = []
+    for a, b in runs:
+        pieces = [(a, b)]
+        for ca, cb in sorted(covers):
+            nxt = []
+            for pa, pb in pieces:
+                if cb <= pa or ca >= pb:
+                    nxt.append((pa, pb))
+                    continue
+                if ca > pa:
+                    nxt.append((pa, ca))
+                if cb < pb:
+                    nxt.append((cb, pb))
+            pieces = nxt
+        out.extend((pa, pb) for pa, pb in pieces if pb - pa >= LOWER_THIRD_MIN_S)
+    return out
 
 # THE COLD OPEN STARTS WIDE. A long opened on the same talking-head angle as
 # the hundred host beats after it, so its first frame said nothing about
@@ -763,6 +808,37 @@ def _render_long(
                 avoid=[k for k in reg.angles_for(_role, aspect, reg.hour)
                        if reg.base_key(k) != reg.base_key(_opening)])
 
+    def _scene_in_force(t: float) -> dict | None:
+        """The writer's scene as `{room, pose}` at programme time `t`, or None."""
+        c = scene_in_force(cues, t)
+        return dict(c.payload.get("values") or {}) if c is not None else None
+
+    def _scene_room(scene: dict | None):
+        """The room the writer's [SCENE] named, at this episode's hour and
+        season; None when the beat is not directed or the kit lost the room.
+
+        By its key, not by a role: the writer named the angle, so nothing
+        here rotates it. The hour and the December twin still apply, because
+        they are the episode's and not the writer's.
+        """
+        stem = (scene or {}).get("room") or ""
+        key = reg.aspect_key(stem, aspect) if stem else None
+        if key is None:
+            if stem:
+                log.warning("scene: the kit has no %s at %s — the bot picks "
+                            "the room", stem, aspect)
+            return None
+        return reg.plate_at(key, reg.hour_for(script.ticker,
+                                                 avoid=_avoid_recent))
+
+    # THE WRITER OPENS THE VIDEO WHEN HE NAMES THE FIRST SCENE: the cold
+    # open's first beat is shot where he put it, and recorded as the room it
+    # opened in, so the next video's turn on the wide rooms still reads true.
+    if cold_i is not None:
+        _opened = _scene_room(segments[cold_i].payload.get("scene"))
+        if _opened is not None:
+            cold_room = _opened
+
     def _room_plate(role_name: str = "talk", seed: str = ""):
         # THE TICKER IS THE EPISODE, and it is passed separately from the seed
         # on purpose. Every caller below mixes a variant or a chapter title
@@ -869,7 +945,7 @@ def _render_long(
             room_cache[key] = dest
         return room_cache[key]
 
-    def _chapter_opener(title: str, seg_i: int) -> Path:
+    def _chapter_opener(title: str, seg_i: int, at: float | None = None) -> Path:
         """A chapter opener is THE ROOM WITH THE TITLE IN ITS SLOT.
 
         Not a separate stinger family. The old path drew a full-frame card from
@@ -884,7 +960,13 @@ def _render_long(
         # `establish` also holds rooms with no slot, and a pick of one of those
         # was a chapter whose title silently never reached the screen.
         role_name = opener_role(reg)
-        plate = _room_plate(role_name, seed=f"{script.ticker}|{title}")
+        # THE WRITER'S ROOM, when the scene he is in as the chapter opens is
+        # one with a title slot: the card is that room with the title in it.
+        # Any other room cannot carry the title, so the opener role picks.
+        plate = next((p for p in [_scene_room(_scene_in_force(at))]
+                      if p is not None and "title" in p.slots), None) \
+            if at is not None else None
+        plate = plate or _room_plate(role_name, seed=f"{script.ticker}|{title}")
         if "title" not in plate.slots:
             log.warning("chapters: %s has no title slot, so %r is not on "
                         "screen", plate.key, title)
@@ -1091,8 +1173,48 @@ def _render_long(
     # without noticing, so the manifest records it.
     host_motion: list[dict] = []
 
+    # What each directed beat was shot as, against what the writer asked:
+    # the manifest's `scenes`, so a pose that fell back is findable.
+    scene_meta: list[dict] = []
+
+    def _scene_pose(scene: dict | None, room, seg_i: int) -> tuple[str | None, bool]:
+        """(the writer's pose for this beat or None, whether it is the room alone).
+
+        The room alone where nobody can stand in it — the board, the desk from
+        above — unless he is in close-up, which is a camera distance and
+        stands nowhere. A pose the kit caps (head-in-hands, once a video) that
+        has had its turn falls back to the bot's pick, and says so.
+        """
+        if not scene:
+            return None, False
+        from pipeline.scenes import is_framing, pose_spec, stands_in
+
+        asked = scene.get("pose") or ""
+        plate = reg.get(asked) if asked else None
+        framed = plate is not None and is_framing(plate)
+        row = {"segment": seg_i, "room": reg.base_key(room.key), "asked": asked}
+        scene_meta.append(row)
+        if not stands_in(room) and not framed:
+            row["shot"] = "room alone"
+            return None, True
+        if asked and plate is None:
+            row["shot"] = "bot's pick: the kit does not draw that pose"
+            log.warning("scene: %s is not in the kit — the bot picks his pose",
+                        asked)
+            return None, False
+        limit = pose_spec(reg, asked).get("limit") if asked else None
+        shown = sum(n for k, n in host_used.items() if reg.base_key(k) == asked)
+        if limit and shown >= int(limit):
+            row["shot"] = f"bot's pick: {asked} is used at most {int(limit)} a video"
+            log.warning("scene: %s is capped at %d a video — the bot picks "
+                        "his pose on the beat at %.1fs", asked, int(limit),
+                        segments[seg_i].start)
+            return None, False
+        row["shot"] = asked or "bot's pick: the scene names no pose"
+        return (asked or None), False
+
     def _host_input(seg_i: int, seg, seg_len: float, *, room,
-                    panel: bool = False):
+                    panel: bool = False, pose: str | None = None):
         """Add the host clip as an input.
 
         Returns (index, x, y, w, h, front) or None, where `front` is the
@@ -1104,8 +1226,13 @@ def _render_long(
         the segment number while the background was picked with the beat's
         variant, so on two beats in three he was placed on one angle and
         drawn over another.
+
+        `pose` is the WRITER'S, off his [SCENE]: taken as given, never cast
+        from the words and never swapped for the close-up a chapter rests
+        on. The role is only what he falls back to if the kit cannot draw it.
         """
         role_name = ("panel" if panel
+                     else "beat" if pose
                      else "rests-on" if seg_i in lands_a_chapter
                      else "beat")
         # A STANDING BEAT MAY BE CAST BY ITS WORDS — a count on his fingers,
@@ -1116,11 +1243,12 @@ def _render_long(
                           closing=seg_i == closing_beat, used=host_used,
                           avoid=_avoid_recent, previous=_shown_before(seg_i),
                           seed=f"{script.ticker}|{seg_i}")
-                if role_name == "beat" else None)
+                if role_name == "beat" and not pose else None)
+        chosen = pose or (cast.pose if cast else None)
         # He is composited per output frame, so he is loaded at the size he
         # will be SHOWN at rather than at his delivered 2160x3840. Without
         # this every frame of every host beat is a 4K RGBA resize.
-        shot_probe = ((host_shot(reg, cast.pose) if cast else None)
+        shot_probe = ((host_shot(reg, chosen) if chosen else None)
                       or pick_shot(reg, role_name, seg_i, used=host_used))
         target_h = H
         if shot_probe is not None and shot_probe.is_framing:
@@ -1136,7 +1264,7 @@ def _render_long(
             tts.words, seg.start, seg.end, rdir / f"host_{seg_i}.mov",
             reg=reg, settings=settings, fps=fps, display_h=target_h,
             role=role_name, shot_index=seg_i, used=host_used, report=motion,
-            pose=cast.pose if cast else None,
+            pose=chosen,
         )
         if built is None:
             return None
@@ -1145,6 +1273,9 @@ def _render_long(
             # built — so a count that never reaches the screen is findable.
             motion["cast"] = (cast.cue if cast and reg.base_key(
                 motion.get("pose", "")) == cast.pose else "")
+            # And whether the writer's own pose is the one that was built.
+            motion["directed"] = bool(pose) and reg.base_key(
+                motion.get("pose", "")) == pose
             host_motion.append({"segment": seg_i, **motion})
             plates_used.add(motion.get("pose", ""))
             host_used[motion.get("pose", "")] = (
@@ -1517,11 +1648,19 @@ def _render_long(
             variant = seg.payload.get("variant", 0)
             # ONE ROOM FOR THE BEAT: the one drawn behind him is the one he is
             # placed on, and the one whose desk is drawn in front of him.
-            room = (cold_room if i == cold_i and cold_room is not None
-                    else _room_plate("talk",
-                                     seed=f"{script.ticker}|{variant % 3}"))
+            # THE WRITER'S, where a [SCENE] directs this beat; the bot's
+            # rotation only where none does.
+            scene = seg.payload.get("scene") or None
+            room = _scene_room(scene) if scene else None
+            if room is None:
+                scene = None
+                room = (cold_room if i == cold_i and cold_room is not None
+                        else _room_plate("talk",
+                                         seed=f"{script.ticker}|{variant % 3}"))
+            pose, alone = _scene_pose(scene, room, i)
             bg_i = _room_input(room)
-            host = _host_input(i, seg, seg_len, room=room)
+            host = (None if alone
+                    else _host_input(i, seg, seg_len, room=room, pose=pose))
             if host is None:
                 chain = _still_chain(bg_i, seg, seg_len, i, tail)
             else:
@@ -1859,7 +1998,7 @@ def _render_long(
         else:
             # A chapter opener is the room with the title in its slot, and a
             # room that loops (snow, rain, flicker) is a clip.
-            cs_path = _chapter_opener(title, k)
+            cs_path = _chapter_opener(title, k, at=t)
             layers.append(OverlayLayer(
                 path=cs_path, x=0, y=0, t_start=t,
                 t_end=min(t + CHAPTER_OPENER_S, duration),
@@ -2054,19 +2193,48 @@ def _render_long(
         t_start=0.0, t_end=duration, name="corner_bug",
     ))
 
-    # Branded strip: ticker + channel tagline. Persistent, TOP-left — moved
-    # off the bottom so it can never clip or stack with the caption band.
-    # Plain type on the ground, not a drawn card: the frame under it is already
-    # a drawn room, and a second card on top of it is a second surface.
-    lt = simple_text(settings, f"${script.ticker} · {settings.brand_tagline.lower()}",
-                     font_size=px(34), fill=(*role(settings, "structure"), 220),
-                     stroke_width=0)
-    lt_path = rdir / "lower_third.png"
-    lt.save(lt_path)
-    layers.append(OverlayLayer(
-        path=lt_path, x=px(36), y=px(30),
-        t_start=0.0, t_end=duration, name="lower_third",
-    ))
+    # THE LOWER THIRD: design's strip, the ticker and the channel's line in
+    # its slots, TOP-left where the plain-type strip used to run, clear of
+    # the captions. It is a solid card, so it rides the beats of HIM and no
+    # others: over a plate or a two-shot it would sit on the evidence's own
+    # top-left corner, and over a chapter card on its title. It slides in
+    # the first time, as design's slide-in has it, and cuts with the shot
+    # after that. A ticker longer than design's slot falls back to the old
+    # line of type, which runs the whole video.
+    from pipeline.moves import lower_third_clip, lower_third_image
+
+    lt_img = lower_third_image(reg, settings, ticker=f"${script.ticker}",
+                               tagline=settings.brand_tagline.lower(),
+                               aspect=aspect)
+    if lt_img is not None:
+        plates_used.add(reg.aspect_key("overlays/lower-third", aspect))
+        lt_w = px(LOWER_THIRD_W)
+        lt_size = (lt_w, max(int(lt_img.height * lt_w / lt_img.width), 1))
+        lt_x, lt_y = px(LOWER_THIRD_AT[0]), px(LOWER_THIRD_AT[1])
+        lt_clip = lower_third_clip(lt_img, rdir / "lower_third.mov",
+                                   x=lt_x, y=lt_y, size=lt_size, reg=reg)
+        lt_still = rdir / "lower_third.png"
+        lt_img.resize(lt_size, Image.LANCZOS).save(lt_still)
+        for n, (a, b) in enumerate(_on_him(segments, covers)):
+            first = n == 0
+            layers.append(OverlayLayer(
+                path=lt_clip.path if first else lt_still,
+                x=0 if first else lt_x, y=lt_y, t_start=a, t_end=b,
+                is_video=first, hold=first, name="lower_third"))
+            if first:
+                long_moves.append({"move": "slide-in", "start": round(a, 3),
+                                   "shot_id": "lower_third", "slot": "",
+                                   "frames": lt_clip.frames})
+    else:
+        lt = simple_text(settings, f"${script.ticker} · {settings.brand_tagline.lower()}",
+                         font_size=px(34), fill=(*role(settings, "structure"), 220),
+                         stroke_width=0)
+        lt_path = rdir / "lower_third.png"
+        lt.save(lt_path)
+        layers.append(OverlayLayer(
+            path=lt_path, x=px(36), y=px(30),
+            t_start=0.0, t_end=duration, name="lower_third",
+        ))
 
     disc = simple_text(settings, settings.disclaimer_text, font_size=px(26),
                        fill=(*role(settings, "neutral-data"), 235),
@@ -2301,6 +2469,10 @@ def _render_long(
         # next pass of THIS video reads it to open on the same one.
         "cold_open_room": (reg.base_key(cold_room.key)
                            if cold_room is not None else ""),
+        # THE WRITER'S SCENES as they were shot: per directed beat of him,
+        # the room, the pose he asked for and what was drawn — the pose, the
+        # room alone, or the bot's pick and why.
+        "scenes": scene_meta,
         # WHAT THIS RENDER ACTUALLY REACHED. The doctor diffs the library
         # against this across recent renders to answer "what have we drawn and
         # never used" — which is the gap list the next design batch is drawn

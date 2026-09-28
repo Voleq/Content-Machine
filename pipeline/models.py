@@ -82,6 +82,12 @@ class TagType(str, Enum):
     # tag slides in under that plate once its moves have landed. LONG only; a
     # SHORT's sources are a field on its script.
     SOURCE = "SOURCE"
+    # WHERE DENNIS IS AND WHAT HE IS DOING — [SCENE: desk-side | pose=holding-a-mug],
+    # placed before the word the cut lands on. The writer picks the room angle
+    # and the pose; the renderer stands him there and does nothing else. It
+    # holds for every beat of him until the next [SCENE], across the cutaways
+    # in between, the way a scene heading holds in a screenplay. LONG only.
+    SCENE = "SCENE"
     # DELIVERY DIRECTION — stripped from captions, passed to TTS.
     #
     # What each one becomes is in pipeline/direction.py, one table, per model
@@ -758,6 +764,9 @@ class CueKind(str, Enum):
     MOVE = "move"
     # A writer's [SOURCE] under the plate on screen. No segment either.
     SOURCE = "source"
+    # A writer's [SCENE]: the room and pose every later beat of him is shot
+    # in. It claims no frame of its own; it cuts the beat of him it lands in.
+    SCENE = "scene"
 
 
 class Cue(BaseModel):
