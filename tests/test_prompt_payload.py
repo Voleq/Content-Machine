@@ -129,8 +129,7 @@ def test_the_news_sheet_reaches_the_writer(settings, fixtures_dir, tmp_path):
 
     assert "[news ·" in text
     assert data.news[0]["headline"] in text
-    # The URL is what `[SHOW ARTICLE]` resolves against server-side, and a
-    # model handed one will put it on screen.
+    # A model handed the URL will put it on screen.
     assert data.news[0]["url"] not in text
 
 
@@ -141,7 +140,7 @@ def test_the_news_sheet_reaches_the_writer(settings, fixtures_dir, tmp_path):
 # The tags a prompt can name as unavailable, and the shapes in which the same
 # prompt could then go on to offer them.
 _TAG_NAMES = ("PLATE", "IMG", "PRODUCT", "MEME", "CLIP", "BROLL",
-              "SHOW FILING", "SHOW ARTICLE", "SCREENGRAB", "SCRIBBLE")
+              "SHOW FILING", "SCREENGRAB", "SCRIBBLE")
 
 
 def _forbidden_tags(text: str) -> set[str]:

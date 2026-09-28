@@ -954,7 +954,7 @@ def _render_long(
         return dest, True, (W, H), tuple(plan), plate.key
 
     # ------------------------------------------------ foreign media, framed
-    # [CLIP], [IMG], [SHOW ARTICLE] and [SHOW FILING] land INSIDE a frames/
+    # [CLIP], [IMG], [SHOW FILING] and [SCREENGRAB] land INSIDE a frames/
     # plate. Raw and full-frame they destroy the drawn surface the rest of the
     # video is built on, and the treatments rotate so consecutive ones differ.
     frame_rotation = FrameRotation()

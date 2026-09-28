@@ -298,10 +298,9 @@ class BotCore:
             return None
         # Workbook headlines first, the free sources filling the gap (M5).
         # An 8-K IS the news for a thinly-covered ticker, and a thin News
-        # sheet hurt twice: the writer composed the headline beat unaided,
-        # and `[SHOW ARTICLE]` had fewer candidates to match against so the
-        # tag degraded to nothing. Cached and gracefully degrading, so a
-        # dead feed is a thinner prompt rather than a failed load.
+        # sheet left the writer composing the headline beat unaided. Cached
+        # and gracefully degrading, so a dead feed is a thinner prompt rather
+        # than a failed load.
         try:
             from pipeline.company_data import merge_free_news
 

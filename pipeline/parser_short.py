@@ -22,7 +22,6 @@ from config import Settings
 from pipeline.models import (
     DELIVERY_TAG_TYPES,
     HOLDABLE_TAG_TYPES,
-    SELF_RESOLVING_TAG_TYPES,
     SHORT_TAG_TYPES,
     ShortScript,
     TagEvent,
@@ -173,7 +172,7 @@ def vendor_name_hits(script: ShortScript) -> list[str]:
 # Tag types a SHORT may carry that its renderer does not draw (D4). Delivery
 # tags are deliberately absent: those DO reach the voice.
 SHORT_IGNORED_TAG_TYPES = frozenset({
-    TagType.PLATE, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
+    TagType.PLATE, TagType.SHOW_FILING,
     TagType.SCREENGRAB, TagType.IMG, TagType.PRODUCT, TagType.MEME,
     TagType.CLIP, TagType.BROLL, TagType.SCRIBBLE, TagType.CHART,
 })
@@ -469,9 +468,7 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
                     continue
             elif rt.type not in DELIVERY_TAG_TYPES:
                 payload, style = parse_chart_payload(payload)
-            if (rt.type not in DELIVERY_TAG_TYPES
-                    and rt.type not in SELF_RESOLVING_TAG_TYPES
-                    and not payload):
+            if rt.type not in DELIVERY_TAG_TYPES and not payload:
                 inline_warnings.append(
                     f"[{rt.type.value}] at char {rt.char_offset} carries no "
                     f"key — skipped")

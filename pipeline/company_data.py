@@ -913,10 +913,8 @@ def merge_free_news(news: list[dict], ticker: str, website: str,
     extraction and `ir_feed`/`parse_rss`. An 8-K IS the news for a thinly
     covered ticker — it is the company announcing the thing the headline is
     about, with a date and a URL, and often the only primary source there
-    is. Thinness hurt twice: the writer composed the "headlines that caused
-    the move" beat unaided, and `[SHOW ARTICLE]` had fewer candidates to
-    token-match against, so the tag failed to resolve and degraded to
-    nothing.
+    is. A thin News sheet left the writer composing the "headlines that
+    caused the move" beat unaided.
 
     THE VENDOR BLOCK APPLIES. Parsers hard-reject a data-terminal brand in a
     script because it would be spoken and captioned, and `_read_news` notes

@@ -418,13 +418,21 @@ def test_a_delivery_tag_on_a_long_renders_instead_of_crashing(long_valid_text, s
 
 def test_an_unmapped_long_tag_is_reported_not_swallowed(settings):
     """A tag with no CueKind and no recorded reason is a blocker at approval —
-    before the paid TTS call — because at render time it is already too late."""
+    before the paid TTS call — because at render time it is already too late.
+
+    `[SHOW ARTICLE]` is retired, so only a script saved before that can still
+    carry one; it loads, and is skipped with its reason."""
+    from pipeline.models import LongScript, TagEvent, TagType
     from pipeline.timeline import unrenderable_long_tags
 
     script, _ = parse_long_script(
-        "The filing says one thing. [SHOW ARTICLE] The tape says another.",
-        "EXMPL", settings,
+        "The filing says one thing. The tape says another.", "EXMPL", settings,
     )
+    saved = script.model_dump(mode="json")
+    saved["events"].append(TagEvent(
+        type=TagType.SHOW_ARTICLE, payload="", char_offset=27,
+        raw_offset=27).model_dump(mode="json"))
+    script = LongScript.model_validate_json(json.dumps(saved))
     reported = unrenderable_long_tags(script)
     assert [e.type.value for e, _ in reported] == ["SHOW ARTICLE"]
     # decided-and-skipped carries a reason; unmapped carries none, and
@@ -527,3 +535,13 @@ def test_a_bare_tag_still_gets_the_format_s_own_default(settings):
             assert "hold" not in c.payload
 
 
+
+
+def test_the_long_parser_strips_a_retired_tag_and_says_so(settings):
+    script, warnings = parse_long_script(
+        "The filing says one thing. [SHOW ARTICLE] The tape says another.",
+        "EXMPL", settings,
+    )
+    assert not [e for e in script.events if e.type.value == "SHOW ARTICLE"]
+    assert any("[SHOW ARTICLE] is no longer part of the grammar" in w
+               for w in warnings), warnings

@@ -21,7 +21,7 @@ import math
 import re
 from dataclasses import dataclass
 
-from pipeline.models import TagType
+from pipeline.models import RETIRED_TAG_TYPES, TagType
 
 # A broad net so unknown tag types are stripped rather than spoken. The
 # payload is optional: delivery directives ([BEAT], [SIGH]) carry none.
@@ -89,6 +89,12 @@ def tokenize_tags(
                 warnings.append(
                     f"unknown tag [{type_str}: {payload}] at char {m.start()} — skipped"
                 )
+            continue
+        if tag_type in RETIRED_TAG_TYPES:
+            warnings.append(
+                f"[{type_str}] is no longer part of the grammar — "
+                f"{RETIRED_TAG_TYPES[tag_type]}. Stripped, so nothing was drawn."
+            )
             continue
         if allowed is not None and tag_type not in allowed:
             warnings.append(
