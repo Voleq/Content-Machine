@@ -54,8 +54,9 @@
       "note": "vs lowered est"
     }
   ],
-  "reported": "$1.42",
-  "expected": "$1.28",
+  "reported": "$0.06",
+  "expected": "$0.04",
   "verdict": "Beat, and it did not matter.",
-  "guidance": "Guided below the street"
+  "guidance": "Guided below the street",
+  "turn_line": "A beat is against the estimate, not against reality."
 }

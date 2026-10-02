@@ -289,6 +289,11 @@ def column_bars(columns, values, ink, *, min=None, max=None, accent=None, tone=N
         if not c or num(v) is None:
             continue
         base = c["baselineY"] if c.get("baselineY") is not None else c["y"] + c["h"]
+        # A LOSS HANGS FROM ZERO. On a scale that runs below zero the bar
+        # starts at the zero line, not at the foot of the plot: a net loss of
+        # $8M drawn up from -$100M was the tallest bar on the card.
+        if e.lo < 0 <= e.hi:
+            base = c["y"] + c["h"] - ((0 - e.lo) / e.span) * c["h"]
         top = c["y"] + c["h"] - ((v - e.lo) / e.span) * c["h"]
         y0, hgt = builtin_min(base, top), builtin_max(3, abs(base - top))
         fill = (_ink(ink, "attention", "#F07A5A") if i == accent

@@ -44,7 +44,7 @@ class TemplateError(RuntimeError):
 # Every key any of these objects may carry is listed, and anything else is an
 # error naming the key and the shot it is in.
 FORMAT_KEYS = frozenset({"format", "aspect", "frame", "shots", "notes",
-                         "orders"})
+                         "orders", "safe"})
 SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
                        "lit", "anchor", "max_hold_s", "captions", "notes",
                        "repeat", "stagger_s", "focus", "alts", "meme"})
@@ -52,7 +52,7 @@ SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
 # `bind` because interchangeable plates rarely name their slots the same way:
 # `structure/closing` writes `line-1` and `structure/end-card` writes `line`,
 # and a shared bind map would name a slot one of them does not declare.
-ALT_KEYS = frozenset({"plate", "bind", "lit", "focus", "notes"})
+ALT_KEYS = frozenset({"plate", "bind", "lit", "focus", "notes", "prefer"})
 ORDER_KEYS = frozenset({"name", "shots", "notes"})
 TEXT_KEYS = frozenset({"name", "src", "size_fh", "align", "halign",
                        "max_lines", "draw_on_s", "color", "slot"})
@@ -65,7 +65,7 @@ MEME_KEYS = frozenset({"at", "notes"})
 MEME_AT = ("start", "end")
 REPEAT_KEYS = frozenset({"concept", "src", "max", "bind", "arrange",
                          "stagger_s", "lit", "connector", "within",
-                         "focus"})
+                         "focus", "anchor"})
 
 
 def _reject_unknown(obj: dict, allowed: frozenset, where: str) -> None:
@@ -160,6 +160,11 @@ class RepeatSpec:
     # row carries a box are one shot with extra runtime — the composition has
     # to change, not just the highlight.
     focus: str | None = None
+    # WHAT EACH STEP AFTER THE FIRST LISTENS FOR, with `$n` the step. The
+    # first step keeps the shot's own anchor, so a `[BEAT: numbers]` marker
+    # still finds it; step two of `numbers.$n-1` listens for `numbers.1`, the
+    # second row's own words, and a card lands as its row is read.
+    anchor: str | None = None
 
     @property
     def spatial(self) -> bool:
@@ -193,6 +198,11 @@ class Variant:
     lit: str | None = None
     focus: str | None = None
     notes: str = ""
+    # A drawing only THIS video's own figures can fill (the implied growth off
+    # the workbook, the print against the street) is taken whenever it can
+    # be, ahead of the rotation: it is the beat's substance, not one more
+    # layout for it. The authored plate stays the fallback.
+    prefer: bool = False
 
     def resolved(self, shot: "Shot") -> tuple[dict[str, str], str | None,
                                               str | None]:
@@ -340,6 +350,11 @@ class Format:
     # the format and not of the frame: a future 16:9 format that is ninety
     # seconds long has nowhere to travel, and guessing from the aspect ratio
     # would switch four devices on for it in silence.
+    # THE ROWS A PHONE SHOWS CLEAR, `(top, bottom)` in frame pixels, or None.
+    # A short's words stay inside it (item 27): YouTube lays its title,
+    # channel name and buttons over the bottom of a Short and its search bar
+    # over the top, so a footnote at 1,740 px is a footnote nobody sees.
+    safe: tuple[int, int] | None = None
 
     def __len__(self) -> int:
         return len(self.shots)
@@ -458,7 +473,8 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
                     lit=rep_raw.get("lit"),
                     connector=rep_raw.get("connector"),
                     within=rep_raw.get("within"),
-                    focus=rep_raw.get("focus"))
+                    focus=rep_raw.get("focus"),
+                    anchor=rep_raw.get("anchor"))
             except KeyError as exc:
                 raise TemplateError(f"{where} repeat missing {exc}") from exc
             if repeat.spatial and not repeat.concept:
@@ -489,7 +505,7 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
                 plate=alt_plate,
                 bind=dict(a["bind"]) if a.get("bind") is not None else None,
                 lit=a.get("lit"), focus=a.get("focus"),
-                notes=a.get("notes", "")))
+                notes=a.get("notes", ""), prefer=bool(a.get("prefer", False))))
         alt_keys = [v.plate for v in alts]
         if len(set(alt_keys)) != len(alt_keys) or plate in alt_keys:
             raise TemplateError(
@@ -518,10 +534,20 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
             f"{name}: {len(meme_shots)} shots name a meme place "
             f"({meme_shots}). A format has one place for a meme at most.")
 
+    safe = None
+    if raw.get("safe") is not None:
+        try:
+            safe = (int(raw["safe"]["top"]), int(raw["safe"]["bottom"]))
+        except (KeyError, TypeError, ValueError) as exc:
+            raise TemplateError(
+                f"{name}: `safe` takes {{\"top\": px, \"bottom\": px}}") from exc
+        if not 0 <= safe[0] < safe[1] <= frame[1]:
+            raise TemplateError(f"{name}: `safe` {safe} is not a band inside "
+                                f"the {frame[1]} px frame")
     fmt = Format(name=name, aspect=raw.get("aspect", "9:16"), frame=frame,
                  shots=tuple(shots), source=source,
                  orders=_parse_orders(raw.get("orders"), name, tuple(shots)),
-                 )
+                 safe=safe)
 
     for sh in fmt.shots:
         if not (sh.plate or sh.text or sh.bind or sh.repeat or sh.host):
@@ -853,7 +879,8 @@ def expand_sequences(fmt: Format, items_for) -> Format:
                           if v.bind is not None else None),
                     lit=_sub(v.lit, i), focus=_sub(v.focus, i))
                     for v in shot.alts),
-                anchor=shot.anchor if i == 1 else None,
+                anchor=(shot.anchor if i == 1
+                        else _sub(rep.anchor, i) if rep.anchor else None),
                 # A wipe marks the change of subject INTO the sequence, not
                 # each step of it.
                 enter=shot.enter if i == 1 else None,
@@ -917,6 +944,7 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
                   anchors: dict[str, str] | None = None, *,
                   ordered: bool = False,
                   punch_in: "Callable[[Shot], str | None] | None" = None,
+                  host_lines: dict[str, str] | None = None,
                   ) -> list[Span]:
     """Give every shot a start and an end, off the spoken audio.
 
@@ -940,6 +968,11 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
 
     `punch_in(shot)` names the slot a beat that runs long can move in on; see
     `_split_long_beats`. Without it a long beat holds.
+
+    `host_lines` maps a host shot's anchor to the line he says on camera
+    (`{"turn": script.turn_line}`). His shot then ends when that line does,
+    and the shots after him take the rest of the stretch; see
+    `_host_says_his_line`. Without it he holds the whole stretch, as before.
     """
     from pipeline.timeline import clamp, find_anchor_time
 
@@ -1014,9 +1047,72 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
     # a beat that is still too long becomes two pictures of one drawing
     # (`_split_long_beats`) or, where it has nothing to move in on, holds —
     # which `held_over_ceiling` measures on the frames and reports.
+    if host_lines:
+        spans = _host_says_his_line(spans, words, host_lines)
     if punch_in is not None:
         spans = _split_long_beats(spans, words, punch_in)
     return spans
+
+
+# How long he stays on after the last word of his line, and the least he is
+# ever on for. A cut on the last syllable reads as a mistake; a close-up under
+# two and a half seconds reads as a flash.
+HOST_TAIL_S = 0.6
+HOST_MIN_S = 2.5
+
+
+def _host_says_his_line(spans: list[Span], words: Sequence[Any],
+                        host_lines: dict[str, str]) -> list[Span]:
+    """He is on camera for his line, and the evidence takes what follows.
+
+    THE TURN WAS 15.9 SECONDS OF ONE CLOSE-UP (item 28). His shot starts on
+    the turn line and the next picture waited for the next anchored words, so
+    every figure he read after the turn was read over his face, and the
+    run's slack went to him on purpose (`_run_shares`). The line is one
+    sentence and takes four or five seconds to say. So his shot ends a beat
+    after its last word, and the unanchored shots after him share the time
+    up to the next anchored start: the cards the figures are on come up as
+    he reads them.
+
+    Nothing anchored moves. When the shot after him starts on its own words,
+    there is nothing to hand the time to, and he keeps it.
+    """
+    from pipeline.timeline import _norm
+
+    out = list(spans)
+    for i, sp in enumerate(out):
+        sh = sp.shot
+        line = host_lines.get(sh.anchor or "") if sh.host else None
+        if not line or not sp.anchored:
+            continue
+        n = sum(1 for tok in str(line).split() if _norm(tok))
+        spoken = [w for w in words
+                  if float(getattr(w, "start", 0.0)) >= sp.start - 0.05
+                  and _norm(str(getattr(w, "word", "")))]
+        if n == 0 or len(spoken) < n:
+            continue
+        last = spoken[n - 1]
+        end = float(getattr(last, "end", getattr(last, "start", 0.0))) + HOST_TAIL_S
+        end = max(end, sp.start + HOST_MIN_S)
+        run = []
+        for j in range(i + 1, len(out)):
+            if out[j].anchored:
+                break
+            run.append(j)
+        if not run or end >= sp.end - MIN_SHOT_S:
+            continue
+        stop = out[run[-1]].end
+        share = (stop - end) / len(run)
+        if share < MIN_SHOT_S:
+            continue
+        out[i] = Span(sh, sp.start, end, sp.anchored)
+        t = end
+        for k in run:
+            out[k] = Span(out[k].shot, t, t + share, out[k].anchored)
+            t += share
+        out[run[-1]] = Span(out[run[-1]].shot, out[run[-1]].start, stop,
+                            out[run[-1]].anchored)
+    return out
 
 
 def _ordered_anchor_times(shots: Sequence[Shot], words: Sequence[Any],

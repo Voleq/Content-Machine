@@ -50,8 +50,10 @@ from openpyxl import load_workbook
 from config import Settings
 from pipeline.models import (
     ALL_DATA_FIELDS,
+    CONSENSUS_FIELDS,
     DATA_REQUIRED,
     HISTORY_FIELDS,
+    PERIOD_LABEL_FIELDS,
     QUARTER_FIELDS,
     CompanyData,
     _STRING_FIELDS,
@@ -625,7 +627,38 @@ def _read_periods(ws, allowed: list[str], what: str
 
 
 def _read_history(ws) -> tuple[list[str], dict[str, list[float | None]]]:
-    return _read_periods(ws, HISTORY_FIELDS, "history")
+    periods, rows = _read_periods(ws, HISTORY_FIELDS + PERIOD_LABEL_FIELDS,
+                                  "history")
+    return _named_periods(periods, rows)
+
+
+def _named_periods(periods: list[str], rows: dict[str, list[float | None]]
+                   ) -> tuple[list[str], dict[str, list[float | None]]]:
+    """Put real names on relative period headers, and take the label rows off.
+
+    The template's headers are `FY-4 … FY-0, LTM` and `Q-7 … Q-0`, because the
+    add-in fills every column relative to today, and `FY-4` is not something
+    to print under a bar. A sheet that carries `fiscal_year` (and on Quarters
+    `fiscal_quarter`) says which year and quarter each column is, so the
+    header becomes `FY21` / `Q2 FY25`. A column the rows say nothing sane
+    about keeps its header (LTM has no fiscal year), and so does every column
+    of a sheet without the rows: older workbooks read exactly as before.
+    """
+    years = rows.pop("fiscal_year", None) or []
+    quarters = rows.pop("fiscal_quarter", None) or []
+    named = list(periods)
+    for i in range(len(named)):
+        y = years[i] if i < len(years) else None
+        if y is None or not 1900 <= y <= 2200 or y != int(y):
+            continue
+        q = quarters[i] if i < len(quarters) else None
+        if quarters:
+            if q is None or q not in (1, 2, 3, 4):
+                continue
+            named[i] = f"Q{int(q)} FY{int(y) % 100:02d}"
+        else:
+            named[i] = f"FY{int(y) % 100:02d}"
+    return named, rows
 
 
 def _read_quarters(ws) -> tuple[list[str], dict[str, list[float | None]]]:
@@ -637,7 +670,9 @@ def _read_quarters(ws) -> tuple[list[str], dict[str, list[float | None]]]:
     verify a word of either — the writer supplied the print from its own
     training knowledge and nothing objected (O0).
     """
-    return _read_periods(ws, QUARTER_FIELDS, "quarters")
+    periods, rows = _read_periods(
+        ws, QUARTER_FIELDS + CONSENSUS_FIELDS + PERIOD_LABEL_FIELDS, "quarters")
+    return _named_periods(periods, rows)
 
 
 def _read_dashboard(ws) -> dict[str, object]:

@@ -1237,7 +1237,15 @@ class BotCore:
         # blocks, because it would be spoken and captioned — or run on stale
         # data, and nothing objected. SHORTs are the higher-volume output.
         data = self._company_data(ws)
-        gates = run_gates(script, self.settings, data=data,
+        # THE SHEET ON SCREEN IS THE WORKBOOK'S (item 23), so the gates check
+        # the rows the render will draw, and a row whose typed figures the
+        # workbook replaces says so here, before approval.
+        checked = script
+        if data is not None:
+            from pipeline.short_data import fill_numbers
+            checked, notes = fill_numbers(script, data)
+            warnings = warnings + notes
+        gates = run_gates(checked, self.settings, data=data,
                           as_of=str((data.get("as_of_date") if data else "") or ""),
                           workspace=ws.path,
                           format_name=self.short_format_name(ws))
@@ -1577,7 +1585,8 @@ class BotCore:
             checkpoint("render")
             out, manifest = render_short(
                 script, tts, ws.path, self.settings, content=self.content,
-                format_name=self.short_format_name(ws))
+                format_name=self.short_format_name(ws),
+                company_data=self._company_data(ws))
             checkpoint("delivery")
             extra = self._publish_byproducts(job, ws, script, tts, manifest,
                                              "short")
@@ -1821,7 +1830,8 @@ class BotCore:
             # pass, which `/upload` would then send to YouTube.
             out, manifest = render_short(
                 script, tts, ws.path, self.settings, content=self.content,
-                proof=True, format_name=self.short_format_name(ws))
+                proof=True, format_name=self.short_format_name(ws),
+                company_data=self._company_data(ws))
             held = _frame_holds(manifest)
         else:
             data = self._company_data(ws)
