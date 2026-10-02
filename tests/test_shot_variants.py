@@ -57,7 +57,8 @@ class StubResolver:
         if src == "numbers.header":
             return "\tFY-4\tFY-3\tFY-2\tFY-1\tFY-0"
         parts = set(src.split("."))
-        if {"series", "figures"} & parts:
+        # Today's session in the six points the move plates draw.
+        if {"series", "figures", "path-6"} & parts:
             return ",".join(str(10 + i * 3) for i in range(6))
         if {"heads", "axis"} & parts:
             return "a,b,c,d"

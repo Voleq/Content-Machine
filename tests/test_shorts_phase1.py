@@ -281,3 +281,36 @@ def test_a_change_is_printed_only_where_a_percentage_is_honest():
     assert short_data.change("net_income", -8.0, -89.0) is None
     assert short_data.change("net_income", 12.0, -15.0) is None
     assert short_data.change("revenue", 0.0, 5.0) is None
+
+
+def test_the_move_card_draws_the_session_in_the_six_points_its_box_holds(settings):
+    """`figures/move-on-the-day*` reserve the lower half of the frame for the
+    session and draw six points. Handed the seven of `charts/intraday`, the
+    plate drew nothing and the box sat empty under the figure."""
+    from config import Settings
+    from pipeline import series as S
+    from pipeline.plates import load_plates
+    from pipeline.prices import get_intraday
+
+    session = get_intraday("EXMPL", settings)
+    card = short_data.session_card(
+        session, _script(move_summary="+29% today · 5× average volume"))
+    six = [float(x) for x in card["path-6"].split(",")]
+    assert len(six) == 6
+    assert six[-1] == pytest.approx(session.move * 100, abs=0.01)
+    assert six[0] == pytest.approx(float(card["plot-area"].split(",")[0]), abs=0.01)
+
+    reg = load_plates(Settings(_env_file=None).assets_dir)
+    for key in ("figures/move-on-the-day-up-9x16", "figures/move-on-the-day-9x16"):
+        got = S.plate_data(reg.get(key), {"plot-area": card["path-6"]})
+        assert got.data and len(got.data["series"]) == 6, (key, got)
+
+
+def test_the_move_plates_take_the_session_where_there_is_one():
+    from pipeline.shots import load_format
+
+    shot = next(s for s in load_format("short").shots if s.id == "the-move")
+    for v in shot.variants:
+        if v.plate.startswith("figures/move-on-the-day"):
+            # Optional: a short with no session keeps its move card.
+            assert v.bind.get("plot-area") == "?chart.session.path-6", v.plate

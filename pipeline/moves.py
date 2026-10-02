@@ -48,6 +48,24 @@ from pipeline import motion as M
 log = logging.getLogger(__name__)
 
 FPS = M.FPS
+# THE VIDEO'S RATE, which the moves are PLAYED at. Design draws a move as N
+# frames at 12 a second, and played as drawn every draw-on, count-up, slide and
+# push-in stepped two and a half video frames at a time: the short read as
+# choppy on a phone (2 Oct 2026). Each move is a pure function of where it is,
+# from 0 to 1 (`motion.t_of_frame` takes a fractional frame), so the frames in
+# between come from design's own functions, and every move still starts and
+# lands on the same instant, which is what the sound is cut to. A wipe is
+# drawn frames, not a function, and keeps design's twelve.
+OUT_FPS = 30
+
+
+def _position(t: float, start: float, frames: int, fps: int) -> float | None:
+    """Where a once-played move is at `t`, in its own frames: fractional while
+    it plays, the last frame held once it has landed, None before it starts."""
+    pos = (t - start) * fps
+    if pos + 1e-9 < 0:
+        return None
+    return min(max(pos, 0.0), float(max(frames - 1, 0)))
 
 # The frames, ease and playback of each move are the kit's, from
 # `emit/motion.json` through the registry. These are the fallbacks for a kit
@@ -153,13 +171,11 @@ class Move:
     def end(self) -> float:
         return self.start + self.frames / self.fps
 
-    def frame_at(self, t: float) -> int | None:
-        """Which of its frames shows at `t`: None before it starts, and the
-        last one held from then on — a move lands and stays landed."""
-        f = math.floor((t - self.start) * self.fps + 1e-9)
-        if f < 0:
-            return None
-        return min(f, self.frames - 1)
+    def frame_at(self, t: float) -> float | None:
+        """Where in its frames the move is at `t` (see `OUT_FPS`): None before
+        it starts, and the last frame held from then on — a move lands and
+        stays landed."""
+        return _position(t, self.start, self.frames, self.fps)
 
     def row(self) -> dict:
         return {"move": self.move, "start": round(self.start, 3),
@@ -217,10 +233,10 @@ class Tag:
     h: int
     frames: int = 6
 
-    def frame_at(self, t: float) -> int | None:
+    def frame_at(self, t: float) -> float | None:
         if not (self.start <= t < self.end):
             return None
-        return min(math.floor((t - self.start) * FPS + 1e-9), self.frames - 1)
+        return _position(t, self.start, self.frames, FPS)
 
     def move(self) -> Move:
         return Move("slide-in", self.shot_id, "", "source", self.start,
@@ -1208,18 +1224,23 @@ class MoveCompositor:
         stroke(img, [(x * s, y * s) for x, y in pts], 7 * s, self._ink(plate, "attention"))
 
     # -- the whole frame --------------------------------------------------------
-    def draw_overlays(self, canvas, t: float) -> None:
-        """Source tags, then wipes, over everything else on the frame."""
+    def draw_overlays(self, canvas, t: float, *, scale: float = 1.0) -> None:
+        """Source tags, then wipes, over everything else on the frame.
+
+        `scale` is output pixels per layout pixel (`render_short.render_frames`):
+        a tag's box is in the layout's; a wipe is drawn at the canvas."""
         for tag in self.plan.tags:
             f = tag.frame_at(t)
             if f is None:
                 continue
+            tx, ty = int(round(tag.x * scale)), int(round(tag.y * scale))
+            tw, th = int(round(tag.w * scale)), int(round(tag.h * scale))
             img = self.cache.plate(tag.key, 0, {"label": "SOURCE", "source": tag.text},
-                                   tag.w, tag.h)
+                                   tw, th)
             if img is not None:
-                x = tag.x + int(round(M.slide_x(tag.w, M.t_of_frame(f, tag.frames))))
-                canvas.alpha_composite(img, (x, tag.y)) if x >= 0 else \
-                    canvas.alpha_composite(img.crop((-x, 0, tag.w, tag.h)), (0, tag.y))
+                x = tx + int(round(M.slide_x(tw, M.t_of_frame(f, tag.frames))))
+                canvas.alpha_composite(img, (x, ty)) if x >= 0 else \
+                    canvas.alpha_composite(img.crop((-x, 0, tw, th)), (0, ty))
         for w in self.plan.wipes:
             f = w.frame_at(t)
             if f is None:
@@ -1337,29 +1358,30 @@ def render_segment(plate, values: dict, moves: Sequence[Move], *, seg_len: float
         return int(math.floor(t * boil_fps + 1e-9)) % boils if boils > 1 else 0
 
     landed = max(m.end for m in moves)
-    count = int(math.ceil(min(landed, seg_len) * FPS)) + 1
+    count = int(math.ceil(min(landed, seg_len) * OUT_FPS)) + 1
     held: list[tuple[object, float]] = []
     last = None
     for k in range(count):
-        t = k / FPS
+        t = k / OUT_FPS
         key = (comp.state(layer, t), boil(t))
         if key == last:
             img, secs = held[-1]
-            held[-1] = (img, secs + 1 / FPS)
+            held[-1] = (img, secs + 1 / OUT_FPS)
             continue
         img = comp.frame(layer, t, key[1])
         if img is None:
             return None
-        held.append((img.copy(), 1 / FPS))
+        held.append((img.copy(), 1 / OUT_FPS))
         last = key
     out_dir.mkdir(parents=True, exist_ok=True)
-    moving = held_frames_to_alpha_clip(held, out_dir / f"{stem}_moves.mov", fps=FPS)
+    moving = held_frames_to_alpha_clip(held, out_dir / f"{stem}_moves.mov",
+                                       fps=OUT_FPS)
     if boils <= 1:
-        return SegmentClips(moving, None, count / FPS, FPS)
+        return SegmentClips(moving, None, count / OUT_FPS, OUT_FPS)
     done = 1e9
     loop = [comp.frame(layer, done, b) for b in range(boils)]
     landed_clip = frames_to_alpha_clip(loop, boil_fps, out_dir / f"{stem}_landed.mov")
-    return SegmentClips(moving, landed_clip, (count - 1) / FPS, FPS)
+    return SegmentClips(moving, landed_clip, (count - 1) / OUT_FPS, OUT_FPS)
 
 
 def stroke(img, pts: list[tuple[float, float]], width: float,
@@ -1412,6 +1434,15 @@ def recent_circled(settings, exclude=None) -> bool:
 TAG_READ_S = 1.5
 
 
+def _played_frames(frames: int) -> list[float]:
+    """A move of `frames` design frames, sampled at the video's rate: the same
+    span, from its first frame to its last, with the in-betweens filled."""
+    if frames <= 1:
+        return [0.0]
+    n = max(int(round((frames - 1) * OUT_FPS / FPS)), 1)
+    return [(frames - 1) * k / n for k in range(n + 1)]
+
+
 @dataclass(frozen=True)
 class TagClip:
     """A source tag sliding in, as a clip for the LONG's overlay stack.
@@ -1459,15 +1490,15 @@ def source_tag_clip(reg, settings, out: Path, *, text: str, plate, aspect: str,
     over = int(math.ceil(0.25 * (w + 40)))
     strip = (left + w + over, h)
     out_frames = []
-    for f in range(frames):
+    for f in _played_frames(frames):
         dx = int(round(M.slide_x(w, M.t_of_frame(f, frames))))
         canvas = Image.new("RGBA", strip, (0, 0, 0, 0))
         at = left + dx
         if at + w > 0:
             canvas.alpha_composite(img, (at, 0)) if at >= 0 else \
                 canvas.alpha_composite(img.crop((-at, 0, w, h)), (0, 0))
-        out_frames.append((canvas, 1 / FPS))
-    held_frames_to_alpha_clip(out_frames, out, fps=FPS)
+        out_frames.append((canvas, 1 / OUT_FPS))
+    held_frames_to_alpha_clip(out_frames, out, fps=OUT_FPS)
     return TagClip(path=out, x=0, y=py + y, frames=frames)
 
 
@@ -1511,13 +1542,13 @@ def lower_third_clip(img, out: Path, *, x: int, y: int,
     over = int(math.ceil(0.25 * (w + 40)))
     strip = (x + w + over, h)
     out_frames = []
-    for f in range(frames):
+    for f in _played_frames(frames):
         dx = int(round(M.slide_x(w, M.t_of_frame(f, frames))))
         canvas = Image.new("RGBA", strip, (0, 0, 0, 0))
         at = x + dx
         if at + w > 0:
             canvas.alpha_composite(img, (at, 0)) if at >= 0 else \
                 canvas.alpha_composite(img.crop((-at, 0, w, h)), (0, 0))
-        out_frames.append((canvas, 1 / FPS))
-    held_frames_to_alpha_clip(out_frames, out, fps=FPS)
+        out_frames.append((canvas, 1 / OUT_FPS))
+    held_frames_to_alpha_clip(out_frames, out, fps=OUT_FPS)
     return TagClip(path=out, x=0, y=y, frames=frames)

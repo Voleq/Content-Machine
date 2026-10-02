@@ -10,10 +10,11 @@ that plate declares. There is no second kit and no register to pick: the
 renderer places the plate and says what goes in it, and the kit decides the
 face, the size, the weight and the colour role.
 
-Frames are composed in memory and piped straight into the encoder — 2,000
-uncompressed 1080x1920 frames is not something to put on a disk on the way
-past — and the captions are burned after, from the same phrase builder the
-LONG uses.
+Frames are composed in memory and piped straight into a lossless encode —
+2,000 uncompressed frames is not something to put on a disk on the way past —
+and the captions are burned after, from the same phrase builder the LONG uses,
+in the one lossy encode the short gets. The layout is the format's 1080x1920;
+the file is drawn at `short_delivery_height` (1440x2560).
 """
 
 from __future__ import annotations
@@ -35,8 +36,7 @@ from pipeline.compose import (MEME_SRC, BuildResult, Layer, build_layers,
                               punch_in_slot)
 from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
-from pipeline.render_common import (RenderError, encode_profile,
-                                    mix_under_picture, run_ffmpeg)
+from pipeline.render_common import RenderError, mix_under_picture, run_ffmpeg
 from pipeline.sound import (Cut, Move, manifest_rows, measure_lufs,
                             normalises, placeholders_played, short_mix,
                             shot_tags, sound_summary)
@@ -1188,8 +1188,108 @@ def _type_floor(canvas: Image.Image) -> int:
     return max(12, int(MIN_TYPE_FH * canvas.height))
 
 
+# ONE LOSSY ENCODE, NOT TWO. The frames went to x264 at veryfast/CRF 20 and
+# the captions were burned in a second pass at CRF 20: every picture was
+# compressed twice, at 0.16 Mbit/s, and the dark ground came out blocky.
+# (2 Oct 2026: "the video seems laggy and not quality".) The frames now go to
+# a lossless file — still x264, so a held card costs nothing — in RGB, so
+# the colour is converted once, in the final pass.
+def lossless_args() -> tuple[str, ...]:
+    """The encoder arguments for the frames' lossless file."""
+    if _has_encoder("libx264rgb"):
+        return ("-c:v", "libx264rgb", "-preset", "ultrafast", "-qp", "0",
+                "-pix_fmt", "rgb24")
+    return ("-c:v", "libx264", "-preset", "ultrafast", "-qp", "0",
+            "-pix_fmt", "yuv444p")
+
+
+_ENCODERS: dict[str, bool] = {}
+
+
+def _has_encoder(name: str) -> bool:
+    if name not in _ENCODERS:
+        try:
+            out = subprocess.run(["ffmpeg", "-hide_banner", "-encoders"],
+                                 capture_output=True, text=True, timeout=30).stdout
+        except (OSError, subprocess.SubprocessError):
+            out = ""
+        _ENCODERS[name] = any(line.split()[1:2] == [name]
+                              for line in out.splitlines() if line.strip())
+    return _ENCODERS[name]
+
+
+def delivery_scale(settings, frame: tuple[int, int], *, proof: bool = False) -> float:
+    """Output pixels per layout pixel: `short_delivery_height` over the frame's.
+
+    YouTube gives a 1440p upload a better encode than a 1080p one, and
+    design's art is delivered at twice the canvas, so drawing the same layout
+    at 1440x2560 costs no sharpness. A proof stays at the layout's size: it
+    asks whether the type reads, and buys its speed back where it can.
+    """
+    want = int(getattr(settings, "short_delivery_height", 0) or 0)
+    if proof or want <= frame[1]:
+        return 1.0
+    return want / frame[1]
+
+
+def _even(v: float) -> int:
+    return max(int(round(v / 2.0)) * 2, 2)
+
+
+def delivered_size(frame: tuple[int, int], scale: float) -> tuple[int, int]:
+    """The file's size for a layout `frame` drawn at `scale`."""
+    if scale == 1.0:
+        return frame
+    return _even(frame[0] * scale), _even(frame[1] * scale)
+
+
+def _scaled(layer: Layer, scale: float) -> Layer:
+    """`layer` with its box in output pixels. Edges are rounded, not sizes,
+    so two layers that met in the layout still meet."""
+    if scale == 1.0:
+        return layer
+    from dataclasses import replace
+    x0, y0 = int(round(layer.x * scale)), int(round(layer.y * scale))
+    x1 = int(round((layer.x + layer.w) * scale))
+    y1 = int(round((layer.y + layer.h) * scale))
+    return replace(layer, x=x0, y=y0, w=x1 - x0, h=y1 - y0)
+
+
+def final_encode(src: Path, out: Path, settings, *, captions: Path | None = None) -> Path:
+    """The short's one lossy encode: the captions burned, the colour
+    converted to BT.709 and tagged so, at `short_crf` with x264's
+    `short_final_preset`.
+
+    `-tune animation` and `aq-mode=3` are for what the short is: flat colour
+    on a dark ground, where x264's defaults starve the dark and band it.
+    """
+    vf = []
+    if captions is not None:
+        # The filter takes a PATH, and a Windows drive letter or a colon in a
+        # workspace name is a filtergraph separator. Escaped the way libavfilter
+        # asks rather than by hoping the path is plain.
+        spec = str(captions).replace("\\", "/").replace(":", "\\:")
+        # THE KIT'S FONTS, BY DIRECTORY. The style names Archivo Narrow, which
+        # no install puts on the system, and without `fontsdir` libass fell
+        # back to DejaVu Sans: every short's captions were set in a face that
+        # runs a line nearly twice as wide as the one they were placed for.
+        # The LONG has always passed it (`render_common`).
+        fonts = str(settings.fonts_dir).replace("\\", "/").replace(":", "\\:")
+        vf.append(f"ass='{spec}':fontsdir='{fonts}'")
+    vf.append("scale=out_color_matrix=bt709:out_range=tv,format=yuv420p")
+    run_ffmpeg(["-i", str(src), "-vf", ",".join(vf), "-an",
+                "-c:v", "libx264",
+                "-preset", str(getattr(settings, "short_final_preset", "slow")),
+                "-crf", str(getattr(settings, "short_crf", 17)),
+                "-tune", "animation", "-x264-params", "aq-mode=3",
+                "-colorspace", "bt709", "-color_primaries", "bt709",
+                "-color_trc", "bt709", "-color_range", "tv", str(out)])
+    return out
+
+
 def render_frames(result: BuildResult, resolver, duration: float,
-                  out_video: Path, settings, *, reg, words=(), plan=None) -> Path:
+                  out_video: Path, settings, *, reg, words=(), plan=None,
+                  scale: float = 1.0) -> Path:
     """Compose every frame and pipe it into the encoder.
 
     Frames are composed in memory and go straight into ffmpeg — 2,000
@@ -1200,17 +1300,24 @@ def render_frames(result: BuildResult, resolver, duration: float,
     moves on it is drawn by the move compositor, and its source tags and
     wipes go over everything else on the frame. Without one, every plate is
     the still it always was.
+
+    `scale` is how many output pixels each layout pixel gets
+    (:func:`delivery_scale`). The layout is the format's frame and nothing
+    in it moves; each layer is drawn at its box times `scale`, from design's
+    art, which is delivered at twice the canvas.
+
+    `out_video` is LOSSLESS (:func:`lossless_args`): the one lossy encode is
+    :func:`final_encode`, after the captions.
     """
     from pipeline.host import face_plan, host_shot
     from pipeline.moves import MoveCompositor
 
-    w, h = result.frame
+    w, h = delivered_size(result.frame, scale)
     n = max(int(round(duration * FPS)), 1)
     cache = _Cache(settings, reg)
     mover = (MoveCompositor(plan, reg, settings, cache)
              if plan is not None and (plan.moves or plan.wipes or plan.tags)
              else None)
-    profile = encode_profile(settings, "short")
     paper = reg.colour("ground")
 
     # WHAT HIS FACE DOES, per host layer, planned once: which frame of which
@@ -1231,16 +1338,14 @@ def render_frames(result: BuildResult, resolver, duration: float,
 
     cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
            "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{w}x{h}",
-           "-r", str(FPS), "-i", "-",
-           "-an", "-c:v", "libx264", "-preset", getattr(profile, "preset", "medium"),
-           "-crf", str(getattr(profile, "crf", 20)),
-           "-pix_fmt", "yuv420p", str(out_video)]
+           "-r", str(FPS), "-i", "-", "-an", *lossless_args(), str(out_video)]
     out_video.parent.mkdir(parents=True, exist_ok=True)
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
                             stderr=subprocess.PIPE)
     assert proc.stdin is not None
 
-    ordered = sorted(result.layers, key=lambda l: (l.z, l.t_start))
+    ordered = [_scaled(l, scale)
+               for l in sorted(result.layers, key=lambda l: (l.z, l.t_start))]
     lost: dict[str, int] = {}
     try:
         for i in range(n):
@@ -1259,7 +1364,7 @@ def render_frames(result: BuildResult, resolver, duration: float,
                 _draw_layer(canvas, layer, t, cache, reg=reg, settings=settings,
                             face=face, lost=lost)
             if mover is not None:
-                mover.draw_overlays(canvas, t)
+                mover.draw_overlays(canvas, t, scale=scale)
             proc.stdin.write(canvas.tobytes())
     finally:
         proc.stdin.close()
@@ -1638,9 +1743,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
                       sources=shot_sources(script, fmt),
                       recent_circled=recent_circled(settings, exclude=workspace))
 
-    silent = workdir / "video_silent.mp4"
+    silent = workdir / "video_frames.mkv"
+    scale = delivery_scale(settings, result.frame, proof=proof)
+    delivered = delivered_size(result.frame, scale)
     render_frames(result, resolver, duration, silent, settings, reg=reg,
-                  words=words, plan=plan)
+                  words=words, plan=plan, scale=scale)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}
     faces = getattr(render_frames, "last_faces", {}) or {}
     # THE CEILING, MEASURED ON THE FRAMES the shots drew, before captions
@@ -1690,22 +1797,10 @@ def _render_short(script, tts, workspace: Path, settings, *,
         margin_h=int(W * CAPTION_SIDE_FW), max_words=4, min_words=2,
         max_chars=24, key_words=True,
         duration=duration, windows=bands), encoding="utf-8")
-    if spoken:
-        burned = workdir / "video_captioned.mp4"
-        # The filter takes a PATH, and a Windows drive letter or a colon in a
-        # workspace name is a filtergraph separator. Escaped the way libavfilter
-        # asks rather than by hoping the path is plain.
-        spec = str(ass).replace("\\", "/").replace(":", "\\:")
-        # THE KIT'S FONTS, BY DIRECTORY. The style names Archivo Narrow, which
-        # no install puts on the system, and without `fontsdir` libass fell
-        # back to DejaVu Sans: every short's captions were set in a face that
-        # runs a line nearly twice as wide as the one they were placed for.
-        # The LONG has always passed it (`render_common`).
-        fonts = str(settings.fonts_dir).replace("\\", "/").replace(":", "\\:")
-        run_ffmpeg(["-i", str(silent), "-vf", f"ass='{spec}':fontsdir='{fonts}'",
-                    "-c:v", "libx264", "-preset", "medium",
-                    "-crf", "20", "-pix_fmt", "yuv420p", str(burned)])
-        silent = burned
+    # Always run, captions or not: the frames' file is lossless, and this is
+    # the encode that makes the picture the viewer gets.
+    silent = final_encode(silent, workdir / "video.mp4", settings,
+                          captions=ass if spoken else None)
 
     # Write beside the target and `os.replace` into position (D2). Muxing
     # straight over the existing file meant any failure past this point left
@@ -1782,6 +1877,9 @@ def _render_short(script, tts, workspace: Path, settings, *,
         "provenance": provenance.to_json(),
         "duration_s": round(duration, 3),
         "frame": {"w": result.frame[0], "h": result.frame[1]},
+        # The file's own size: the layout above, drawn at `delivery_scale`.
+        # Every box in this manifest is in the layout's pixels.
+        "delivered": {"w": delivered[0], "h": delivered[1]},
         # A beat split for running long shows as both its parts: `part` 1 is
         # the wide picture under the beat's own id, `part` 2 the move in,
         # under `<id>-in` with `part_of` naming the beat. Unsplit shots carry

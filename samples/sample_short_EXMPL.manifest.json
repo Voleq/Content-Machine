@@ -40,7 +40,7 @@
     },
     "sound": {
       "lufs": -23.0,
-      "effects": 24,
+      "effects": 25,
       "bed": "",
       "theme": false,
       "room": "room_night.wav",
@@ -59,6 +59,10 @@
   "frame": {
     "w": 1080,
     "h": 1920
+  },
+  "delivered": {
+    "w": 1440,
+    "h": 2560
   },
   "shots": [
     {
@@ -135,7 +139,8 @@
       "max_hold_s": 7.0,
       "layers": [
         "numbers-1:ground",
-        "numbers-1:plate:figures/compare-stacked-9x16"
+        "numbers-1:plate:charts/bars-6y-9x16",
+        "numbers-1:caption"
       ]
     },
     {
@@ -147,8 +152,7 @@
       "max_hold_s": 7.0,
       "layers": [
         "numbers-2:ground",
-        "numbers-2:plate:charts/bars-6y-9x16",
-        "numbers-2:caption"
+        "numbers-2:plate:figures/big-number-l1-9x16"
       ]
     },
     {
@@ -160,7 +164,7 @@
       "max_hold_s": 7.0,
       "layers": [
         "numbers-3:ground",
-        "numbers-3:plate:figures/big-number-l1-9x16"
+        "numbers-3:plate:figures/compare-stacked-9x16"
       ]
     },
     {
@@ -172,7 +176,8 @@
       "max_hold_s": 7.0,
       "layers": [
         "numbers-4:ground",
-        "numbers-4:plate:figures/compare-stacked-9x16"
+        "numbers-4:plate:charts/bars-6y-9x16",
+        "numbers-4:caption"
       ]
     },
     {
@@ -243,7 +248,7 @@
       ]
     }
   ],
-  "layers": 38,
+  "layers": 39,
   "plates_used": [
     "cards/definition-9x16",
     "charts/bars-6y-9x16",
@@ -277,8 +282,15 @@
         "frames": 6
       },
       {
-        "move": "count-up",
+        "move": "line-draw",
         "start": 5.251,
+        "shot_id": "the-move",
+        "slot": "plot-area",
+        "frames": 10
+      },
+      {
+        "move": "count-up",
+        "start": 6.234,
         "shot_id": "the-move",
         "slot": "value",
         "frames": 7
@@ -291,80 +303,80 @@
         "frames": 6
       },
       {
-        "move": "count-up",
+        "move": "bars-grow",
         "start": 13.845,
         "shot_id": "numbers-1",
-        "slot": "value-1",
-        "frames": 7
-      },
-      {
-        "move": "count-up",
-        "start": 14.578,
-        "shot_id": "numbers-1",
-        "slot": "value-2",
-        "frames": 7
-      },
-      {
-        "move": "count-up",
-        "start": 15.311,
-        "shot_id": "numbers-1",
-        "slot": "delta",
-        "frames": 7
-      },
-      {
-        "move": "bars-grow",
-        "start": 19.557,
-        "shot_id": "numbers-2",
         "slot": "plot-area",
         "frames": 13
       },
       {
         "move": "count-up",
-        "start": 20.79,
-        "shot_id": "numbers-2",
+        "start": 15.078,
+        "shot_id": "numbers-1",
         "slot": "value-1",
         "frames": 7
       },
       {
         "move": "count-up",
-        "start": 21.524,
-        "shot_id": "numbers-2",
+        "start": 15.811,
+        "shot_id": "numbers-1",
         "slot": "value-2",
         "frames": 7
       },
       {
         "move": "count-up",
-        "start": 22.257,
-        "shot_id": "numbers-2",
+        "start": 16.544,
+        "shot_id": "numbers-1",
         "slot": "value-6",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 19.557,
+        "shot_id": "numbers-2",
+        "slot": "value",
         "frames": 7
       },
       {
         "move": "count-up",
         "start": 25.52,
         "shot_id": "numbers-3",
-        "slot": "value",
+        "slot": "value-1",
         "frames": 7
       },
       {
         "move": "count-up",
+        "start": 26.253,
+        "shot_id": "numbers-3",
+        "slot": "value-2",
+        "frames": 7
+      },
+      {
+        "move": "bars-grow",
         "start": 30.568,
+        "shot_id": "numbers-4",
+        "slot": "plot-area",
+        "frames": 13
+      },
+      {
+        "move": "count-up",
+        "start": 31.801,
         "shot_id": "numbers-4",
         "slot": "value-1",
         "frames": 7
       },
       {
         "move": "count-up",
-        "start": 31.301,
+        "start": 32.534,
         "shot_id": "numbers-4",
         "slot": "value-2",
         "frames": 7
       },
       {
         "move": "count-up",
-        "start": 32.034,
+        "start": 33.268,
         "shot_id": "numbers-4",
-        "slot": "delta",
+        "slot": "value-6",
         "frames": 7
       },
       {
@@ -413,7 +425,7 @@
       }
     ],
     "skipped": [
-      "numbers-3: no pen-circle, value is too big a part of the plate to ring without ringing the plate",
+      "numbers-3: pen-circle sits this video out (about one short in 3, never two running)",
       "payoff: no pen-circle, num is too big a part of the plate to ring without ringing the plate"
     ]
   },
@@ -595,43 +607,43 @@
       "trim_db": 1.1
     },
     {
+      "name": "move:count-up@6.23",
+      "start": 6.23,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "tick_roll.wav",
+      "rate": 0.984
+    },
+    {
       "name": "move:highlight@8.48",
       "start": 8.48,
       "gain_db": -18.0,
       "loop": false,
       "file": "marker_draw.wav",
-      "rate": 0.984
-    },
-    {
-      "name": "move:count-up@14.58",
-      "start": 14.58,
-      "gain_db": -18.0,
-      "loop": false,
-      "file": "tick_roll.wav",
       "rate": 1.011,
       "trim_db": 0.1
     },
     {
-      "name": "move:count-up@15.31",
-      "start": 15.31,
+      "name": "move:bars-grow@14.85",
+      "start": 14.85,
       "gain_db": -18.0,
       "loop": false,
-      "file": "tick_roll.wav",
+      "file": "knock.wav",
       "rate": 0.979,
       "trim_db": -0.9
     },
     {
-      "name": "move:bars-grow@20.56",
-      "start": 20.56,
+      "name": "move:count-up@15.81",
+      "start": 15.81,
       "gain_db": -18.0,
       "loop": false,
-      "file": "knock.wav",
+      "file": "tick_roll.wav",
       "rate": 0.969,
       "trim_db": -0.2
     },
     {
-      "name": "move:count-up@21.52",
-      "start": 21.52,
+      "name": "move:count-up@16.54",
+      "start": 16.54,
       "gain_db": -18.0,
       "loop": false,
       "file": "tick_roll.wav",
@@ -639,8 +651,8 @@
       "trim_db": 1.2
     },
     {
-      "name": "move:count-up@22.26",
-      "start": 22.26,
+      "name": "move:count-up@26.25",
+      "start": 26.25,
       "gain_db": -18.0,
       "loop": false,
       "file": "tick_roll.wav",
@@ -648,17 +660,17 @@
       "trim_db": -1.0
     },
     {
-      "name": "move:count-up@31.30",
-      "start": 31.3,
+      "name": "move:bars-grow@31.57",
+      "start": 31.57,
       "gain_db": -18.0,
       "loop": false,
-      "file": "tick_roll.wav",
+      "file": "knock.wav",
       "rate": 0.974,
       "trim_db": -1.3
     },
     {
-      "name": "move:count-up@32.03",
-      "start": 32.03,
+      "name": "move:count-up@32.53",
+      "start": 32.53,
       "gain_db": -18.0,
       "loop": false,
       "file": "tick_roll.wav",
@@ -666,13 +678,22 @@
       "trim_db": 0.6
     },
     {
+      "name": "move:count-up@33.27",
+      "start": 33.27,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "tick_roll.wav",
+      "rate": 1.026,
+      "trim_db": 0.3
+    },
+    {
       "name": "move:highlight@38.08",
       "start": 38.08,
       "gain_db": -18.0,
       "loop": false,
       "file": "marker_draw.wav",
-      "rate": 1.026,
-      "trim_db": 0.3
+      "rate": 0.995,
+      "trim_db": -0.5
     },
     {
       "name": "move:highlight@45.48",
@@ -680,12 +701,14 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "marker_draw.wav",
-      "rate": 0.995,
-      "trim_db": -0.5
+      "rate": 0.994,
+      "trim_db": -1.3
     }
   ],
   "kit_reach": "Kit: 13 of 704 plates, 9 families, 14 animated layers",
-  "skipped": [],
+  "skipped": [
+    "numbers-3.delta <- numbers.change.2"
+  ],
   "dropped_shots": [],
   "workbook": {
     "file": "dennis_data.xlsx",
@@ -701,7 +724,8 @@
     "bottom": 1480,
     "outside": [],
     "shrunk_to_fit": [
-      "numbers-2"
+      "numbers-1",
+      "numbers-4"
     ]
   },
   "attributions": [

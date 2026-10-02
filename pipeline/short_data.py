@@ -782,6 +782,14 @@ def session_card(session, script=None) -> dict[str, str] | None:
     }
     for i in (1, 3, 5, 7):
         out[f"head-{i}"] = pts[i - 1][0]
+    # THE SAME SESSION IN SIX POINTS, for the move plates
+    # (`figures/move-on-the-day*`), which reserve a box under the figure for
+    # the session and draw six. It sat empty on every short that cut to them,
+    # half the frame of nothing (2 Oct 2026, "it still looks too empty").
+    six = session_points(session, 6) or []
+    if len(six) == 6:
+        out["path-6"] = ",".join(f"{(p / session.prior_close - 1) * 100:.2f}"
+                                 for _t, p in six)
     return out
 
 

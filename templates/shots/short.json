@@ -116,16 +116,18 @@
           "bind": {
             "kicker": "?script.ticker",
             "value": "chart.move_up",
-            "label": "?chart.move_detail"
+            "label": "?chart.move_detail",
+            "plot-area": "?chart.session.path-6"
           },
-          "notes": "THE MOVE AS ONE FIGURE, WITH ITS ARROW. The arrow is drawn, so the plate has to match the sign: `chart.move_up` is the move summary's leading figure only when it opens on a `+`, and nothing otherwise, which makes this plate ineligible on a fall. The rest of the summary is the label. It needs no price data, so a short rendered without prices still has a picture for this beat. The session path the plate reserves room for stays empty: the price data is daily closes, and six of those in a box drawn for one session would read as a day."
+          "notes": "THE MOVE AS ONE FIGURE, WITH ITS ARROW. The arrow is drawn, so the plate has to match the sign: `chart.move_up` is the move summary's leading figure only when it opens on a `+`, and nothing otherwise, which makes this plate ineligible on a fall. The rest of the summary is the label. It needs no price data, so a short rendered without prices still has a picture for this beat. The box under the figure is drawn for ONE SESSION, so it takes today's session in six points (`chart.session.path-6`, the same tape and the same agreement check as `charts/intraday`), never the daily closes, which would read as a day. Without a session it stays empty, as it always did (2 Oct 2026: it was empty on every cut, and read as half a frame of nothing)."
         },
         {
           "plate": "figures/move-on-the-day-9x16",
           "bind": {
             "kicker": "?script.ticker",
             "value": "chart.move_down",
-            "label": "?chart.move_detail"
+            "label": "?chart.move_detail",
+            "plot-area": "?chart.session.path-6"
           },
           "notes": "The falling twin, eligible only on a move summary that opens on a minus."
         },

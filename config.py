@@ -489,7 +489,17 @@ class Settings(BaseSettings):
     # encoders are auto-detected at startup and used when present.
     final_preset: str = "veryfast"
     draft_preset: str = "ultrafast"
-    short_crf: int = 20
+    # THE SHORT'S ONE LOSSY ENCODE (`render_short.final_encode`). It was
+    # veryfast/CRF 20 twice over, 0.16 Mbit/s, and looked it on a phone
+    # (2 Oct 2026). A short is under a minute and mostly held cards, so the
+    # slow preset costs little time.
+    short_final_preset: str = "slow"
+    # The short's layout is its format's 1080x1920; this is the height the
+    # file is DRAWN at. YouTube encodes a 1440p upload better than a 1080p
+    # one, and design's art is delivered at twice the canvas, so 2560 is
+    # sharp. 1920 (or 0) renders at the layout's size.
+    short_delivery_height: int = 2560
+    short_crf: int = 17
     long_crf: int = 22
     draft_crf: int = 32
     draft_scale: float = 0.5               # draft renders at half resolution
