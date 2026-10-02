@@ -499,6 +499,10 @@ class Settings(BaseSettings):
     # one, and design's art is delivered at twice the canvas, so 2560 is
     # sharp. 1920 (or 0) renders at the layout's size.
     short_delivery_height: int = 2560
+    # Small type on a 9:16 card starts at this times the kit's size and
+    # shrinks to fit its box (`plate_frames.phone_size`, item 35). 1.0 sets
+    # every line at the kit's size, as before 2 Oct 2026.
+    short_type_grow: float = 1.8
     short_crf: int = 17
     long_crf: int = 22
     draft_crf: int = 32

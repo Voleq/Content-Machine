@@ -478,6 +478,23 @@ def test_the_underline_sits_under_the_line_the_copy_ends_on(reg, settings, text)
     assert line.y < ink.y + ink.h <= line.y + line.h + 8
 
 
+@pytest.mark.parametrize("key, text", [
+    ("shorts/hook-card-t5", "EXMPL is up 29% today. The business is not."),
+    ("shorts/hook-card-t3", "EXMPL beat and raised. The five-year chart didn't notice."),
+    ("paper/press-release-9x16",
+     "Example Corp Announces AI Partnership with a Cloud Provider")])
+def test_the_underline_never_runs_through_or_above_the_words(reg, settings, key, text):
+    """A slot set in the middle of its box puts its last line away from the
+    anchor's lines. The rule went through the hook's second line on one
+    card and above its first on another (2 Oct 2026): it goes under the ink."""
+    plate = reg.get(key)
+    slot = plate.motion["highlight"]["slot"]
+    line = MV.underline_line(plate, slot, text, settings, reg)
+    ink = MV._ink_box(plate, slot, text, settings, reg)
+    foot = ink.y + ink.h
+    assert foot <= line.y + line.h <= foot + 8
+
+
 @pytest.mark.parametrize("name, frames", [("wipe-sweep", 8), ("wipe-page", 8),
                                           ("wipe-blinds", 8),
                                           ("wipe-sweep-short", 4),

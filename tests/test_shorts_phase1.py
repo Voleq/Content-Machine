@@ -314,3 +314,67 @@ def test_the_move_plates_take_the_session_where_there_is_one():
         if v.plate.startswith("figures/move-on-the-day"):
             # Optional: a short with no session keeps its move card.
             assert v.bind.get("plot-area") == "?chart.session.path-6", v.plate
+
+
+# ---------------------------------------------------------------------------
+# Type that fills its box on a phone card (item 35)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def kit():
+    from config import Settings
+    from pipeline.plates import load_plates
+    return load_plates(Settings(_env_file=None).assets_dir)
+
+
+def test_small_type_on_a_phone_card_starts_bigger_and_stays_under_its_betters(kit):
+    from config import Settings
+    from pipeline.plate_frames import PHONE_GROW_MAX, phone_size
+
+    s = Settings(_env_file=None)
+    release = kit.get("paper/press-release-9x16")
+    # Body grows; the headline (62) is not small and keeps its size.
+    assert phone_size(release, 30, s) > 30
+    assert phone_size(release, 62, s) == 62
+    assert phone_size(release, 30, s) <= min(PHONE_GROW_MAX, int(62 * 0.9))
+    # The closing card's lines stay under the date figure it sets at 44.
+    closing = kit.get("structure/closing-9x16")
+    assert 30 < phone_size(closing, 30, s) < 44
+    # A landscape plate is the long's, and keeps the kit's sizes.
+    wide = next(p for k in kit.keys() if (p := kit.get(k)).canvas[0] > p.canvas[1])
+    assert phone_size(wide, 30, s) == 30
+    # And it can be switched off.
+    assert phone_size(release, 30, Settings(_env_file=None, short_type_grow=1.0)) == 30
+
+
+def test_a_grown_paragraph_fills_more_of_its_box(kit):
+    from config import Settings
+    from pipeline.plate_frames import drawn_box
+
+    release = kit.get("paper/press-release-9x16")
+    body = release.slots["body"]
+    text = ("Example Corp today announced a strategic partnership to bring "
+            "generative AI features to its routing platform.")
+    kit_size = drawn_box(release, body, text, Settings(_env_file=None, short_type_grow=1.0), kit)
+    grown = drawn_box(release, body, text, Settings(_env_file=None), kit)
+    assert grown[3] > kit_size[3] * 1.4
+    s = max(int(release.export_scale or 1), 1)
+    # Still inside the box design drew.
+    assert grown[1] + grown[3] <= (body.y + body.h) * s
+    assert grown[0] + grown[2] <= (body.x + body.w) * s
+
+
+def test_grown_labels_side_by_side_never_run_together(kit):
+    """A bar chart's value labels sit in boxes edge to edge, one per column."""
+    from config import Settings
+    from pipeline.plate_frames import drawn_box
+
+    bars = kit.get("charts/bars-6y-9x16")
+    names = sorted((n for n, sl in bars.slots.items()
+                    if sl.is_text and n.startswith("value-")),
+                   key=lambda n: bars.slots[n].x)
+    assert len(names) >= 2
+    boxes = [drawn_box(bars, bars.slots[n], "-$89M", Settings(_env_file=None), kit)
+             for n in names]
+    for a, b in zip(boxes, boxes[1:]):
+        assert a[0] + a[2] < b[0], "two value labels touch"

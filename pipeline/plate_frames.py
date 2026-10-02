@@ -85,6 +85,43 @@ _FALLBACK = "CourierPrime-Regular.ttf"
 _MIN_PT = 8
 _FIT_STEPS = 48
 
+# ON A PHONE CARD, SMALL TYPE GROWS INTO ITS BOX (item 35, 2 Oct 2026).
+#
+# The kit sets body, label, caption and kicker lines at 26 to 34 units, and a
+# 9:16 card is watched on a phone: 30 units is under 3% of the frame's width.
+# The boxes around those lines are drawn for far more (the closing card's
+# lines are 30-unit type in boxes 190 tall), so the cards read as a few
+# whispers on an empty ground — "it still looks too empty". On a portrait
+# plate a line the kit sets at `PHONE_SMALL` or under starts at
+# `short_type_grow` times its size and shrinks until it fits its own box, the
+# same fit every line already gets. It never passes `PHONE_GROW_MAX`, nor 90%
+# of the next size up on the same card, so a label stays under the figure it
+# labels and a paragraph under its headline. Landscape plates are untouched.
+PHONE_SMALL = 40
+PHONE_GROW_MAX = 54
+PHONE_BELOW_BIGGER = 0.9
+# A grown line fills this much of its box's width, not all of it: the kit's
+# boxes sit edge to edge (a bar chart's value labels, one per column), and
+# type grown to the full width ran "-$8M-$25M-$49M" into one string.
+PHONE_FIT_W = 0.88
+
+
+def phone_size(plate: Plate, declared: int, settings: Settings | None = None) -> int:
+    """The size a line the kit sets at `declared` starts from on `plate`."""
+    grow = float(getattr(settings, "short_type_grow", 1.8) or 1.0)
+    cw, ch = plate.canvas
+    if grow <= 1.0 or ch <= cw or declared > PHONE_SMALL:
+        return declared
+    roles = plate.type_roles or {}
+    used = {sl.role for sl in plate.slots.values() if sl.is_text}
+    bigger = [int(roles[r]["size"]) for r in used
+              if isinstance(roles.get(r), dict) and roles[r].get("size")
+              and int(roles[r]["size"]) > PHONE_SMALL]
+    cap = PHONE_GROW_MAX
+    if bigger:
+        cap = min(cap, int(min(bigger) * PHONE_BELOW_BIGGER))
+    return max(declared, min(int(declared * grow), cap))
+
 
 # --------------------------------------------------------------------------
 # Playback
@@ -394,7 +431,10 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
     fill = (*rgb, max(0, min(alpha, 255)))
 
     declared = tr.get("size")
-    size = int(int(declared) * scale) if declared else max(int(bh * 0.8), _MIN_PT)
+    start = phone_size(plate, int(declared), settings) if declared else 0
+    grows = bool(declared) and start > int(declared)
+    size = int(start * scale) if declared else max(int(bh * 0.8), _MIN_PT)
+    fit_w = int(bw * PHONE_FIT_W) if grows else bw
     declared_lines = tr.get("maxLines")
 
     lines = [text]
@@ -416,19 +456,29 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
         # names a smaller number.
         capacity = max(1, (bh - ink_h) // line_h + 1)
         max_lines = int(declared_lines) if declared_lines else capacity
+        above_kit = grows and size > int(declared) * scale
+        if above_kit:
+            # A grown line wraps to as many lines as its box holds: the kit's
+            # count was for its own, smaller size.
+            max_lines = max(max_lines, capacity)
         wrap = max_lines > 1 or bool(tr.get("maxCharsPerLine"))
 
-        lines = _wrap_to(draw, text, font, bw) if wrap else [text]
+        # Back at the kit's size, the kit's whole box, as it always was.
+        w_lim = fit_w if above_kit else bw
+        lines = _wrap_to(draw, text, font, w_lim) if wrap else [text]
         widest = max(_tracked_width(draw, ln, font, tracking_px) for ln in lines)
         block_h = (len(lines) - 1) * line_h + ink_h
-        fits = widest <= bw and block_h <= bh and len(lines) <= max_lines
+        fits = widest <= w_lim and block_h <= bh and len(lines) <= max_lines
         if fits or size <= _MIN_PT:
-            if step and declared:
+            if step and declared and size // scale < int(declared):
                 warnings.append(
                     f"{plate.key} {slot.name}: set at {size // scale}pt instead "
                     f"of the declared {declared}pt to fit {len(text)} characters")
             break
-        size = max(int(size * 0.94), _MIN_PT)
+        nxt = max(int(size * 0.94), _MIN_PT)
+        if above_kit and nxt < int(declared) * scale:
+            nxt = int(declared) * scale      # and from there, the kit's own fit
+        size = nxt
 
     font = _load(settings, family, weight, size)
     tracking_px = _em(tr.get("tracking"), size)

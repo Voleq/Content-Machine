@@ -911,6 +911,14 @@ def underline_line(plate, slot_name: str, value: str, settings, reg):
         for l in lines:
             if l["y"] < foot:
                 pick = l
+        # THE TYPE IS NOT WHERE THE ANCHOR'S LINES ARE. Design's lines assume
+        # the copy set from the top of its box; a slot set in the middle of
+        # its box, with fewer lines than it holds, puts its last line
+        # somewhere else, and the rule went through the words or above them
+        # (the hook and the release, 2 Oct 2026). Then the rule goes under
+        # the ink, at the anchor's line width.
+        if not pick["y"] < foot <= pick["y"] + pick["h"] + 8:
+            return M.Box(pick["x"], foot - pick["h"], pick["w"], pick["h"])
     return M.Box(pick["x"], pick["y"], pick["w"], pick["h"])
 
 
