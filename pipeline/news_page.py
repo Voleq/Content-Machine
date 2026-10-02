@@ -31,8 +31,10 @@ from urllib.parse import urlparse
 
 log = logging.getLogger(__name__)
 
-# The press-release card's boxes, as the kit declares them.
-RELEASE_BODY_CHARS = 438
+# The press-release card's boxes, as the kit declares them. The body is
+# two lines of 74 at 30 px: its `maxChars` says 438, and 377 characters set
+# into those two lines came out at 12 px, so the lines are the budget.
+RELEASE_BODY_CHARS = 2 * 74
 RELEASE_SOURCE_CHARS = 23
 RELEASE_DATE_CHARS = 21
 
@@ -177,6 +179,30 @@ def fetch_release(url: str, settings) -> dict[str, str] | None:
 # Fitting it to the cards
 # ---------------------------------------------------------------------------
 
+# What opens nearly every release and says nothing the card does not: the
+# dateline ("SPRINGFIELD, July 6, 2026 --", "July 14 (Reuters) -"), the
+# listing ("(NASDAQ: EXMPL)") and the boilerplate description of the company
+# between its name and its verb (", a provider of routing software,").
+_DATELINE = re.compile(
+    r"^\s*(?:[A-Z][A-Za-z .'-]{1,40},\s*){0,2}"
+    r"(?:[A-Z][a-z]{2,8}\.? \d{1,2}(?:,? \d{4})?)?"
+    r"\s*(?:\([A-Za-z ]+\))?\s*(?:--|-|–|—)\s+")
+_LISTING = re.compile(r"\s*\((?:NASDAQ|NYSE|Nasdaq|NYSE American|TSX|LSE|OTC\w*)"
+                      r"\s*:\s*[A-Z.]+\)")
+_APPOSITIVE = re.compile(r"^([A-Z][^,]{1,60}),\s+(?:a|an|the)\s+[^,]{3,160},\s+")
+
+
+def lead(text: str) -> str:
+    """A release's first paragraph without its dateline, its listing and the
+    company's boilerplate self-description. Only whole clauses come out; no
+    word of what was announced is changed."""
+    text = " ".join(str(text or "").split())
+    text = _DATELINE.sub("", text, count=1)
+    text = _LISTING.sub("", text)
+    text = _APPOSITIVE.sub(r"\1 ", text, count=1)
+    return text[:1].upper() + text[1:] if text else text
+
+
 def fit_sentences(text: str, limit: int) -> str | None:
     """As many whole sentences as fit in `limit`; never a cut sentence."""
     text = " ".join(str(text or "").split())
@@ -238,7 +264,7 @@ def release_card(data, script, settings) -> dict[str, str] | None:
     page = fetch_release(row["url"], settings)
     if not page:
         return None
-    body = fit_sentences(page["body"], RELEASE_BODY_CHARS)
+    body = fit_sentences(lead(page["body"]), RELEASE_BODY_CHARS)
     if not body:
         return None
     when = _as_date(row.get("date"))

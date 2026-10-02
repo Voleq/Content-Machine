@@ -46,7 +46,7 @@ def test_dashboard_valuation_peers_surfaced(workspace):
 def test_news_parsing_skips_blanks_and_coerces_dates(workspace):
     data = load_company_data(workspace)
     # the blank spill row AND the NA-headline row are skipped
-    assert len(data.news) == 4
+    assert len(data.news) == 5
     first = data.news[0]
     assert set(first) == {"date", "headline", "source", "url"}
     # real dates coerce to ISO day strings
@@ -57,7 +57,7 @@ def test_news_parsing_skips_blanks_and_coerces_dates(workspace):
     assert all(n["headline"] for n in data.news)
     # a news outlet as Source is fine; a data-terminal brand never reaches a field
     assert [n["source"] for n in data.news] == [
-        "Reuters", "Bloomberg", "Associated Press", "CNBC",
+        "Reuters", "Bloomberg", "Associated Press", "CNBC", "Business Wire",
     ]
     blob = " ".join(str(v) for n in data.news for v in n.values()).lower()
     for brand in ("refinitiv", "lseg", "capital iq"):

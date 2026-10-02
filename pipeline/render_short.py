@@ -226,6 +226,8 @@ class ShortResolver:
             return self._news(parts[1:])
         if parts[0] == "pic":
             return self._picture_line(parts[1:])
+        if parts[0] == "fred":
+            return self._fred(parts[1:])
         if parts[0] != "script":
             return None
         obj: object = self.script
@@ -259,6 +261,41 @@ class ShortResolver:
             return None
         got = card.get(".".join(rest[1:]))
         return got if got not in (None, "") else None
+
+    def _fred(self, rest: list[str]) -> str | None:
+        """`fred.<slot>`: the official series behind a macro print (item 6),
+        off FRED, for `charts/macro-series`."""
+        from pipeline import macro_series
+
+        if not rest:
+            return None
+        if "_fred_card" not in self.__dict__:
+            try:
+                self.__dict__["_fred_card"] = macro_series.card(
+                    self.script, self.settings)
+            except Exception as e:                       # noqa: BLE001
+                log.warning("the macro series could not be read: %s", e)
+                self.__dict__["_fred_card"] = None
+        card = self.__dict__["_fred_card"] or {}
+        return card.get(".".join(rest)) or None
+
+    def _session(self, rest: list[str]) -> str | None:
+        """`chart.session.<slot>`: today's session against the prior close
+        (item 4), for `charts/intraday`. None without a real session, or when
+        the session disagrees with the move the writer narrates."""
+        from pipeline.prices import get_intraday
+        from pipeline.short_data import session_card
+
+        if "_session_card" not in self.__dict__:
+            try:
+                self.__dict__["_session_card"] = session_card(
+                    get_intraday(self.script.ticker, self.settings),
+                    self.script)
+            except Exception as e:                       # noqa: BLE001
+                log.warning("the session chart could not be filled: %s", e)
+                self.__dict__["_session_card"] = None
+        card = self.__dict__["_session_card"] or {}
+        return card.get(".".join(rest)) or None
 
     def _news(self, rest: list[str]) -> str | None:
         """The news beat's own material (item 5).
@@ -562,6 +599,8 @@ class ShortResolver:
         if not rest:
             return None
         field = rest[0]
+        if field == "session":
+            return self._session(rest[1:])
         # THE MOVE, which is the writer's figure and needs no price data: a
         # short with no prices loaded still has one, in its move summary.
         if field in ("move_up", "move_down", "move_detail"):

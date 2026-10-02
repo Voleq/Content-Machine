@@ -103,8 +103,8 @@ the payoff is what turns a sentence into a joke.
 1. `audio_script`: 140–160 spoken words, ≤ 1100 characters, first sentence = the hook, a `[BEAT: key]` marker at the start of every beat in the order under THE CUT, ONE mid-point re-hook (~20–25s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts SPOKEN words only — delivery tags and beat markers are stripped before counting.
 2. `move_summary`: one line of context for the news, e.g. "Q3 print · guide raised" or "CPI 3.4% vs 3.1% expected". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the headline as reported (short). `meaning` = what it actually means, in your voice.
-4. `numbers`: 1–4 rows, each with SIX values OLDEST → NEWEST as display strings, under six `years`. company/earnings: from the history table above, matching a chartable metric — the table's six periods (four fiscal years, the last full year, LTM), with `years` the six period heads as the table labels them. macro: OPTIONAL/index-based — six readings of the index or macro series (e.g. "CPI YoY": ["3.7%","3.2%","3.1%","3.4%","3.0%","2.9%"]), with `years` the six matching period labels. Where there is no figure, write "" in that place rather than closing the gap: five figures under six heads put every one under the wrong year, and the bot refuses the script. The sheet shows four rows; a fifth is never drawn. Don't pad.
-5. `numbers_comment`: the holistic read, ≤ 300 chars. (macro: the read on the index/macro series.)
+4. `numbers`: 1–4 rows, each with SIX values OLDEST → NEWEST as display strings, under six `years`. company/earnings: from the history table above, matching a chartable metric — the table's six periods (four fiscal years, the last full year, LTM), with `years` the six period heads as the table labels them — and with each row's History key in `field` (`revenue`, `net_income`, `fcf`): the bot draws that row's figures from the operator's workbook, and the typed ones only where it has no such row. macro: OPTIONAL/index-based — six readings of the index or macro series (e.g. "CPI YoY": ["3.7%","3.2%","3.1%","3.4%","3.0%","2.9%"]), with `years` the six matching period labels. Where there is no figure, write "" in that place rather than closing the gap: five figures under six heads put every one under the wrong year, and the bot refuses the script. Each row is its own card on screen, coming up as you say its name, so name each row when you get to it. A fifth is never drawn. Don't pad.
+5. `numbers_comment`: the holistic read, ≤ 150 chars, SPOKEN WORD FOR WORD in `audio_script` right after the numbers: in the company short it is printed on a card as the line being said, with no captions under it. (macro: the read on the index/macro series.)
 6. `conclusion`: free text, ≤ 220 chars, opening with the verdict the way you'd mutter it ("Priced in." / "Nothingburger." / "This one actually matters." / "Noise, but the guide is real."). NEVER a label from a taxonomy.
 7. NEVER name any data vendor, terminal, or data product. A news `Source` (Reuters, Bloomberg, AP) is fine; a data terminal is not. On screen, filings are "from the 10-K" — the vendor unnamed, and `sources` names only the filing or the agency.
 8. The kit is fixed — do NOT request custom assets; this is a SHORT.
@@ -149,9 +149,9 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
   ],
   "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
   "numbers": [
-    {"label": "Revenue", "values": ["<oldest>", "<...>", "<...>", "<...>", "<...>", "<LTM>"]}
+    {"label": "Revenue", "field": "revenue", "values": ["<oldest>", "<...>", "<...>", "<...>", "<...>", "<LTM>"]}
   ],
-  "numbers_comment": "<holistic read>",
+  "numbers_comment": "<holistic read, <= 150 chars, spoken word for word>",
   "cheap_or_trap": "<the value-trap beat: name the multiple, then what would have to be true for it to be cheap; <= 260 chars>",
   "conclusion": "<the verdict, free text>",
   "sources": {"numbers": "<the filing, release or agency the rows are from, <= 40 chars>"},
@@ -175,10 +175,10 @@ A company-news example: each beat opens on its marker, in the company short's as
   ],
   "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
   "numbers": [
-    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M", "$498M"]},
-    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M", "-$94M"]}
+    {"label": "Revenue", "field": "revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M", "$498M"]},
+    {"label": "Net income", "field": "net_income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M", "-$94M"]}
   ],
-  "numbers_comment": "Revenue has been flat for three years and losses keep widening. A partnership with no terms doesn't touch either line.",
+  "numbers_comment": "A plateau wearing a growth costume, and a press release does not move a plateau.",
   "conclusion": "Priced in, and then some. A partnership to explore, stapled to five years of flat.",
   "sources": {"numbers": "10-K and 10-Q filings, FY21–LTM"}
 }

@@ -18,9 +18,11 @@ Two kinds of source, and only one of them is the writer's:
   budget it has to fit. A `source.<beat>` bind is the writer's `sources` line
   for that beat, which is one field, `script.sources`.
 * **SUPPLIED** — `numbers.*` and `compare.*` come from the data export,
-  `chart.*` and `media.*` off the workspace, `plate.*` out of the kit,
-  `channel.*` from settings. The writer never sees these and must never be
-  asked to invent them.
+  `data.*` (cards the workbook fills on its own) and `news.*` (the release
+  and the wires off its News sheet) from the operator's workbook, `chart.*`,
+  `media.*` and `pic.*` off the workspace and the picture chain, `plate.*`
+  out of the kit, `channel.*` from settings. The writer never sees these and
+  must never be asked to invent them.
 
 The budget is the point. It is the kit's own `maxChars` per slot, measured by
 real fitter against the real templates; the same numbers gate the render
@@ -112,8 +114,20 @@ def _budgets(name: str, root: Path | str = ".") -> dict[str, int]:
             # video.
             if i:
                 bind = {k: v for k, v in bind.items() if not v.startswith("?")}
+            # ONLY A BOX THE WRITER'S WORDS GO IN. The budgets are keyed by
+            # slot name across the whole format, so a `source` box on the
+            # picture frame, which carries the photo's credit, quoted its 23
+            # characters as the writer's sources line on the comment card.
+            bind = {k: v for k, v in bind.items() if _writer_bind(v)}
             _slot_budgets(out, plate, bind, slot_limit)
     return out
+
+
+def _writer_bind(expr: str) -> bool:
+    """Whether any alternative in a bind is a field the writer fills."""
+    return any(alt.strip().startswith(tuple(f"{r}." for r in WRITER_ROOTS)
+                                      + ("source.",))
+               for alt in expr.lstrip("?").split("|"))
 
 
 def _slot_budgets(out: dict[str, int], plate, binds, slot_limit) -> None:
@@ -168,6 +182,13 @@ def form_for(name: str, root: Path | str = ".") -> list[Field]:
         wrapped = re.match(r"^wrap\.\d+\.\d+\.\d+\.(.+)$", src)
         if wrapped:
             src, dest = wrapped.group(1), "wrap:" + dest.split(":", 1)[-1]
+        # ONE SENTENCE A SLOT (`sent.3.0.script.conclusion`) is the same: the
+        # writer's field, set a sentence a line, and only on a drawing that
+        # has exactly that many lines (item 25). Its line boxes do not narrow
+        # the ask either; a conclusion with another count takes another card.
+        split = re.match(r"^sent\.\d+\.\d+\.(.+)$", src)
+        if split:
+            src, dest = split.group(1), "sent:" + dest.split(":", 1)[-1]
         dests, shots = seen.setdefault(src, ([], []))
         if dest not in dests:
             dests.append(dest)

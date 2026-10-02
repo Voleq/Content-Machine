@@ -70,6 +70,10 @@ class StubResolver:
         return f"words for {leaf}"
 
     def image_for(self, src: str):
+        # The company's picture (item 34) is a required slot on the second
+        # beat; a stub that fills everything hands it a file.
+        if src.startswith("photo."):
+            return Path(f"{src}.png")
         return self.chart if src == "chart.price" else None
 
 
@@ -77,9 +81,8 @@ class StubResolver:
 def fmt():
     """The SHORT as it is CUT, not as it is authored.
 
-    Nine shots are authored and nine are cut: the numbers beat is one sheet
-    whose rows light as they are read (item 7), so nothing repeats. The
-    expansion is still run, as the renderer runs it.
+    Ten shots are authored and thirteen are cut: the numbers beat is one card
+    a row (item 26), so four rows the writer names are four shots.
     """
     return expand_sequences(load_format("short"),
                             lambda src: ["m1", "m2", "m3", "m4"])
@@ -112,18 +115,22 @@ def _build(fmt, reg, chart: Path | None = None, duration: float = 70.0):
 # The template itself
 # ---------------------------------------------------------------------------
 
-def test_the_numbers_beat_is_one_sheet_whose_rows_light_as_read(fmt, authored):
-    """Item 7. The walk down the sheet was the 3-row sheet three times, one
-    row lit and moved in on each time, then the 4-row sheet all lit: four
-    near-identical frames of one layout. It is one shot now, its rows lighting
-    as they are read (`lit: "read"`), ending on every row lit."""
+def test_the_numbers_beat_is_one_card_a_row(fmt, authored):
+    """Item 26. The sheet set four rows of six figures at table size and held
+    it for eleven seconds: on a phone nobody could read it, and its empty
+    rows were the "revenue ... net income" frames. Each row the writer names
+    is a card of its own now, coming up as that row is read."""
     assert [s.id for s in authored] == [
-        "hook", "the-move", "the-news", "the-turn", "numbers",
+        "hook", "the-picture", "the-move", "the-news", "the-turn", "numbers",
         "the-comment", "cheap-or-trap", "payoff", "close"]
-    numbers = next(s for s in fmt if s.id == "numbers")
-    assert numbers.lit == "read" and numbers.repeat is None
-    assert not [s.id for s in fmt if s.id.startswith("numbers-")]
-    assert len(fmt) == len(authored)
+    rows = [s for s in fmt if s.id.startswith("numbers-")]
+    assert [s.id for s in rows] == ["numbers-1", "numbers-2", "numbers-3",
+                                    "numbers-4"]
+    # Each card listens for its own row's name, so it lands as it is read.
+    assert [s.anchor for s in rows] == ["numbers", "numbers.1", "numbers.2",
+                                        "numbers.3"]
+    assert all(s.repeat is None for s in rows)
+    assert len(fmt) == len(authored) + 3
 
 
 def test_every_plate_the_template_names_is_in_the_kit(fmt, reg):
@@ -355,10 +362,10 @@ def test_the_template_is_data_not_code():
     raw = json.loads(Path("templates/shots/short.json").read_text(
         encoding="utf-8"))
     assert raw["format"] == "short"
-    # Nine authored, nine cut: the numbers beat is one sheet that moves.
-    assert len(raw["shots"]) == 9
+    assert len(raw["shots"]) == 10
     assert all("plate" in s for s in raw["shots"])
-    assert not [s for s in raw["shots"] if s.get("repeat")]
+    # One sequence, the numbers: one card a row (item 26).
+    assert [s["id"] for s in raw["shots"] if s.get("repeat")] == ["numbers"]
 
 
 # ---------------------------------------------------------------------------

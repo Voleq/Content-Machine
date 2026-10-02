@@ -650,6 +650,12 @@ def safe_placement(plate: Plate, values: dict, required, frame: tuple[int, int],
     return got, dropped
 
 
+# How close to the frame's side a moved-in word may come. A punch-in that
+# put a card's body against the left edge read as cropped even with every
+# letter on screen.
+PUNCH_EDGE = 0.04
+
+
 def _focus_placement(plate: Plate, slot_name: str,
                      stage: tuple[int, int, int, int],
                      placed: tuple[int, int, int, int],
@@ -664,12 +670,16 @@ def _focus_placement(plate: Plate, slot_name: str,
     figures on is not a row anybody moved in on. Where the slot is already full
     width the move is a PAN — the composition still changes, and every figure
     stays on screen.
+
+    And it stops `PUNCH_EDGE` short of the sides: a quote card's body moved
+    in until it touched both edges was a cut, not a closer look, so the move
+    goes as far as the slot stays clear of them.
     """
     gx, gy, gw2, gh2 = stage
     w, h = placed[2], placed[3]
     sx, sy, sw, sh_px = _slot_in_frame(plate, slot_name, placed)
     by_height = (gh2 * FOCUS_FILL) / max(sh_px, 1)
-    by_width = gw2 / max(sw, 1)
+    by_width = gw2 * (1 - 2 * PUNCH_EDGE) / max(sw, 1)
     k = max(min(by_height, by_width, FOCUS_MAX_SCALE), 1.0)
     nw, nh = int(w * k), int(h * k)
     base = (gx + (gw2 - nw) // 2, gy + (gh2 - nh) // 2, nw, nh)
@@ -760,27 +770,39 @@ def punch_in_slot(reg: Registry, shot: Shot, frame: tuple[int, int],
         close = _focus_placement(plate, name, (0, 0, fw, fh), wide)
         if close[2] < wide[2] * PUNCH_MIN_SCALE:
             continue
-        if _cuts_a_filled_slot(plate, values, close, frame):
+        if _cuts_a_filled_slot(plate, values, close, frame, safe=safe):
             continue
         return name
     return None
 
 
+
 def _cuts_a_filled_slot(plate: Plate, values: dict,
                         placed: tuple[int, int, int, int],
-                        frame: tuple[int, int]) -> bool:
+                        frame: tuple[int, int],
+                        safe: tuple[int, int] | None = None) -> bool:
     """Does this placement leave a filled slot part on and part off the frame?
+
+    "On" means clear of the frame's sides by `PUNCH_EDGE` and, where the
+    format declares a clear area (item 27), inside it: a move that lands a
+    word under YouTube's title is a cut, not a punch-in.
 
     A band is left out: it is the lit row's highlight, drawn edge to edge, and
     the figures in it are slots of their own that this checks one by one.
     """
     fw, fh = frame
+    m = int(fw * PUNCH_EDGE)
+    top, bottom = safe if safe else (0, fh)
     for name, value in values.items():
         slot = plate.slot(name)
         if slot is None or slot.is_band or not str(value).strip():
             continue
         x, y, w, h = _slot_in_frame(plate, name, placed)
-        inside = x >= 0 and y >= 0 and x + w <= fw and y + h <= fh
+        if slot.region or slot.control:
+            inside = x >= 0 and y >= 0 and x + w <= fw and y + h <= fh
+        else:
+            inside = (x >= m and x + w <= fw - m
+                      and y >= top and y + h <= bottom)
         outside = x + w <= 0 or y + h <= 0 or x >= fw or y >= fh
         if not inside and not outside:
             return True

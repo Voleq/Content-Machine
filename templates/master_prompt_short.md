@@ -106,8 +106,9 @@ asks. Write the fields the template binds.
 1. `audio_script`: 140–160 spoken words, ≤ 1100 characters, first sentence = the hook, a `[BEAT: key]` marker at the start of every beat in the order under THE CUT, ONE mid-point re-hook (~20–25s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — delivery tags and beat markers are stripped before counting.
 2. `move_summary`: how much / how active, e.g. "+34% today · 6× average volume". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the on-screen headline (short, as reported). `meaning` = what it actually means for the stock, in your voice.
-4. `numbers`: 1–4 rows from the history table above, each with SIX values OLDEST → NEWEST — the table's six periods: four fiscal years, the last full year, LTM — as display strings ("$1.2B", "-18%", "365M"). Set `years` to those six period heads as the table labels them. Where the table has no figure, write "" in that place rather than closing the gap: five figures under six heads put every one under the wrong year, and the bot refuses the script. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The sheet shows four rows; a fifth is never drawn. Don't pad.
-5. `numbers_comment`: the holistic read of the trend, ≤ 300 chars.
+4. `numbers`: 1–4 rows from the history table above. Name each one's History row in `field`, by the table's own key (`revenue`, `net_income`, `fcf`, `diluted_shares`): the bot draws that row's figures straight from the operator's workbook, so the screen cannot disagree with it. Still type its SIX values OLDEST → NEWEST — the table's six periods: four fiscal years, the last full year, LTM — as display strings ("$1.2B", "-18%", "365M"); they are used only where the workbook has no such row. Set `years` to those six period heads as the table labels them. Where the table has no figure, write "" in that place rather than closing the gap: five figures under six heads put every one under the wrong year, and the bot refuses the script. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. EACH ROW IS ITS OWN CARD on screen, coming up as you say its name, so say the rows in the order you list them and name each one when you get to it. A fifth is never drawn. Don't pad.
+5. `numbers_comment`: the holistic read of the trend, ≤ 150 chars, and SPOKEN WORD FOR WORD in `audio_script` right after the numbers: it is printed on a card as the line being said, with no captions under it, so a card that says one thing while the voice says another reads as a mistake.
+5b. `payoff_row` (optional): the `numbers` row the verdict turns on, by its label or its `field`. The payoff card shows that row's latest figure; leave it out and it shows the first row's.
 6. `conclusion`: free text, ≤ 220 chars, opening with the call the way you'd mutter it ("Noise." / "Signal, unfortunately." / "Mostly noise, one number worth watching."). NEVER a label from a taxonomy.
 7. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — the vendor unnamed, and `sources` names only the filing.
 8. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
@@ -118,7 +119,7 @@ asks. Write the fields the template binds.
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
 The operator ratifies or regenerates, so make your reasoning legible. Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:
 
-1. ANGLE & NUMBERS — one line naming the story, then the 3–4 `numbers` rows you'll feature and one clause each on WHY (each must be a chartable metric from the list above).
+1. ANGLE & NUMBERS — one line naming the story, then the 3–4 `numbers` rows you'll feature (with each one's `field`) and one clause each on WHY (each must be a chartable metric from the list above).
 2. HOOK OPTIONS — 2–3 muted-safe `hook_text` candidates (≤ 90 chars each); mark the one you'll use with ★.
 3. SCRIPT — the `audio_script` (140–160 words), written with the ★ hook as its first sentence, a `[BEAT: key]` marker where each beat starts in the order under THE CUT, ONE mid-point re-hook (~20–25s), and — optionally — a single second-look line right before the verbatim conclusion.
 4. TAGS — one line noting the delivery tags you placed and why.
@@ -149,9 +150,10 @@ Put the four prose sections in the chat and the JSON object in the `.txt` file.
   ],
   "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
   "numbers": [
-    {"label": "Revenue", "values": ["<oldest>", "<...>", "<...>", "<...>", "<...>", "<LTM>"]}
+    {"label": "Revenue", "field": "revenue", "values": ["<oldest>", "<...>", "<...>", "<...>", "<...>", "<LTM>"]}
   ],
-  "numbers_comment": "<holistic read of the trend>",
+  "payoff_row": "<the row the verdict turns on, optional>",
+  "numbers_comment": "<holistic read of the trend, <= 150 chars, spoken word for word>",
   "cheap_or_trap": "<the value-trap beat: name the multiple, then what would have to be true for it to be cheap; <= 260 chars>",
   "conclusion": "<noise-or-signal, free text>",
   "sources": {"numbers": "<the filing the rows are from, <= 40 chars>"}
@@ -171,11 +173,12 @@ Note how each fact is taught straight, then undercut flat; each beat opens on it
   ],
   "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
   "numbers": [
-    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M", "$498M"]},
-    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M", "-$94M"]},
-    {"label": "Shares out", "values": ["298M", "315M", "330M", "346M", "365M", "371M"]}
+    {"label": "Revenue", "field": "revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M", "$498M"]},
+    {"label": "Net income", "field": "net_income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M", "-$94M"]},
+    {"label": "Free cash flow", "field": "fcf", "values": ["$12M", "-$3M", "-$31M", "-$52M", "-$68M", "-$71M"]}
   ],
-  "numbers_comment": "Revenue has flatlined for three years while losses widen and the share count grows six percent a year. The business is going sideways; the stock is going vertical.",
+  "payoff_row": "Free cash flow",
+  "numbers_comment": "That is not growth, that is a plateau in a costume, and you pay them to own it.",
   "turn_line": "But here is the part nobody screenshots.",
   "cheap_or_trap": "Ninetieth percentile on price, twentieth on margins. Cheap needs the losses to stop.",
   "conclusion": "Noise. A press release and a squeeze, stapled to five years of drift.",

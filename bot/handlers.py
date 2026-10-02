@@ -1245,10 +1245,19 @@ class BotCore:
             from pipeline.short_data import fill_numbers
             checked, notes = fill_numbers(script, data)
             warnings = warnings + notes
+        fmt_name = self.short_format_name(ws)
+        if fmt_name == "macro":
+            # The print against FRED's own latest reading (item 6), before
+            # approval: the macro chart draws FRED's series, so a typed print
+            # that disagrees with it would disagree on screen too.
+            from pipeline.macro_series import print_check
+            note = print_check(script, self.settings)
+            if note:
+                warnings = warnings + [note]
         gates = run_gates(checked, self.settings, data=data,
                           as_of=str((data.get("as_of_date") if data else "") or ""),
                           workspace=ws.path,
-                          format_name=self.short_format_name(ws))
+                          format_name=fmt_name)
         report = build_short_report(script, warnings, self.settings,
                                     self.ledger, self.tts, gate_report=gates)
         (ws.path / "report_short.txt").write_text(report.render_text(), encoding="utf-8")

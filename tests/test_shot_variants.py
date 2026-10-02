@@ -15,6 +15,7 @@ picture that arrives over the wrong sentence.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -63,6 +64,25 @@ class StubResolver:
         if "years" in parts:
             return "a,b,c,d,e,f"
         leaf = src.rsplit(".", 1)[-1]
+        # ONE METRIC A CARD (item 26): `numbers.<field>.<row>` is a figure or
+        # a period's name, the shape the workbook gives, not a sentence.
+        row = re.match(r"^numbers\.(\w+)\.\d+", src)
+        if row:
+            return ("FY2021" if row.group(1).endswith(("label", "since"))
+                    else "Revenue" if row.group(1) in ("title", "kicker")
+                    else "3.4%")
+        # The workbook's own cards (`data.<card>.<slot>`) are figures and
+        # short labels, never prose.
+        if src.startswith("data."):
+            # A scale, and a range and a mark placed on it.
+            shaped = {"band": "2.0%,6.0%", "axis-low": "0%",
+                      "axis-high": "10%", "marker": "4.0%"}
+            if leaf in shaped:
+                return shaped[leaf]
+            return "Q1 25" if leaf.startswith("head-") else "3.4%"
+        # A figure under a bar is what the bar is drawn from.
+        if leaf.startswith("value-"):
+            return "12.5"
         if leaf in ("versus", "reported", "expected", "latest", "label",
                     "headline_figure", "headline_label", "headline_kicker",
                     "last", "unit", "ticker", "kicker", "expected_label"):
@@ -70,7 +90,19 @@ class StubResolver:
         return f"words for {leaf}"
 
     def image_for(self, src: str):
-        return None
+        # The company's picture (item 34) is a required slot on the second
+        # beat of every vertical cut.
+        return Path(f"{src}.png") if src.startswith("photo.") else None
+
+
+class NoWorkbook(StubResolver):
+    """The same stub with no workbook behind it: nothing off the operator's
+    sheets, so only the writer's cards can be drawn."""
+
+    def text_for(self, src: str) -> str | None:
+        if src.startswith(("data.", "news.")):
+            return None
+        return super().text_for(src)
 
 
 @pytest.fixture(scope="module")
@@ -107,13 +139,17 @@ def test_a_beat_with_alternates_does_not_draw_the_same_plate_every_time(
     rotating = {sh.id for sh in base.shots if sh.alts}
     assert rotating, f"{name} declares no alternates at all"
 
+    # A card the workbook fills is PREFERRED where it can be drawn, so on
+    # those beats the variety is what a video without the workbook gets.
     seen: dict[str, set[str]] = {}
-    for i in range(12):
-        _fmt, _result, plates = _cut(base, reg, f"seed-{i}")
-        for shot_id, key in plates.items():
-            seen.setdefault(shot_id.rsplit("-", 1)[0]
-                            if shot_id[-1].isdigit() else shot_id,
-                            set()).add(key)
+    for resolver in (StubResolver(), NoWorkbook()):
+        for i in range(12):
+            _fmt, _result, plates = _cut(base, reg, f"seed-{i}",
+                                         resolver=resolver)
+            for shot_id, key in plates.items():
+                seen.setdefault(shot_id.rsplit("-", 1)[0]
+                                if shot_id[-1].isdigit() else shot_id,
+                                set()).add(key)
 
     for shot_id in rotating:
         assert len(seen.get(shot_id, set())) > 1, (
@@ -237,7 +273,7 @@ def test_an_alternate_whose_box_cannot_hold_the_line_is_not_chosen(reg):
 
     for i in range(8):
         _f, _r, plates = _cut(fmt, reg, f"s{i}", resolver=Long())
-        assert plates["close"] == "structure/closing-9x16"
+        assert plates["close"] == "structure/closing-t2-9x16"
     reached = {_cut(fmt, reg, f"s{i}", resolver=Short())[2]["close"]
                for i in range(8)}
     assert "structure/end-card-9x16" in reached
@@ -261,7 +297,7 @@ def test_an_alternate_missing_from_the_kit_is_dropped_not_raised_on(reg):
 
     for i in range(6):
         _fmt, _result, plates = _cut(fmt, reg, f"s{i}")
-        assert plates["close"] == "structure/closing-9x16"
+        assert plates["close"] == "structure/closing-t2-9x16"
 
 
 def test_an_alternate_binding_a_slot_its_plate_lacks_is_not_drawn(reg):
@@ -590,8 +626,9 @@ def test_the_markers_put_the_beats_where_the_narration_speaks_them():
     fmt = load_format("short")
     heard = ["hook", "headline", "move", "turn", "numbers",
              "numbers_comment", "cheap_or_trap", "conclusion"]
+    # The company's picture listens for nothing, so it rides with the hook.
     assert [s.id for s in order_by_marks(fmt, heard).shots] == [
-        "hook", "the-news", "the-move", "the-turn", "numbers",
+        "hook", "the-picture", "the-news", "the-move", "the-turn", "numbers",
         "the-comment", "cheap-or-trap", "payoff", "close"]
 
 
@@ -604,8 +641,10 @@ def test_a_shot_listening_for_nothing_stays_behind_the_beat_before_it():
     assert ids[0] == "hook"
     assert ids.index("close") == ids.index("payoff") + 1
     assert ids.index("payoff") < ids.index("cheap-or-trap")
-    # The move, news and turn were not marked: they ride with the hook.
-    assert ids[:4] == ["hook", "the-move", "the-news", "the-turn"]
+    # The picture, move, news and turn were not marked: they ride with the
+    # hook.
+    assert ids[:5] == ["hook", "the-picture", "the-move", "the-news",
+                       "the-turn"]
 
 
 @pytest.mark.parametrize("name", VERTICAL)
@@ -690,7 +729,6 @@ def test_the_reachability_report_counts_an_alternate_as_a_template_route(reg):
     routes = reachable_plates(reg)
     for key in ("shorts/hook-card-t3", "figures/compare-side-9x16",
                 "cards/definition-9x16", "paper/headline-band-t3-9x16",
-                "tables/numbers-sheet-4r-spark-9x16",
                 "structure/confession-statement-9x16",
                 # round one's phone plates
                 "shorts/hook-card-t5", "figures/move-on-the-day-9x16",
@@ -859,13 +897,31 @@ def test_before_and_after_is_only_drawn_against_a_real_expectation(name, reg):
     as a comparison against a number the plate invented. So the consensus is a
     REQUIRED bind there, and a script without one never lands on it."""
     base = load_format(name)
-    reached = {_cut(base, reg, f"s{i}")[2]["vs-expected"] for i in range(12)}
+    # Without the workbook: with it, the print against consensus is drawn.
+    reached = {_cut(base, reg, f"s{i}", resolver=NoWorkbook())[2]["vs-expected"]
+               for i in range(12)}
     assert "structure/before-after-9x16" in reached
-    blind = StubResolver(missing={"compare.expected"})
+    blind = NoWorkbook(missing={"compare.expected"})
     for i in range(12):
         _f, _result, plates = _cut(base, reg, f"s{i}", resolver=blind)
         assert plates["vs-expected"] != "structure/before-after-9x16"
 
+
+
+@pytest.mark.parametrize("name, shot_id, card", [
+    ("short", "cheap-or-trap", "structure/implied-9x16"),
+    ("earnings", "vs-expected", "figures/print-vs-consensus-9x16"),
+])
+def test_a_card_the_workbook_fills_is_drawn_wherever_it_can_be(
+        name, shot_id, card, reg):
+    """`prefer` (items 1 and 3): the figures the operator filled in beat a
+    sentence on a card. Where the workbook can fill the card it is drawn,
+    every video; where it cannot, the rotation is what it always was."""
+    base = load_format(name)
+    for i in range(8):
+        assert _cut(base, reg, f"s{i}")[2][shot_id] == card
+        assert _cut(base, reg, f"s{i}",
+                    resolver=NoWorkbook())[2][shot_id] != card
 
 # ---------------------------------------------------------------------------
 # No layout twice in one short (item 7)

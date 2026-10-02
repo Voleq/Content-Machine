@@ -189,3 +189,120 @@ def get_price_history(ticker: str, settings: Settings,
     cdir.mkdir(parents=True, exist_ok=True)
     cfile.write_text(series.to_json(), encoding="utf-8")
     return series
+
+
+# ---------------------------------------------------------------------------
+# One session (item 4)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class IntradaySession:
+    """One trading session, as the exchange printed it.
+
+    `times` are the exchange's own clock ("09:30"), `prices` the last trade
+    in each bar, `prior_close` the close the session is read against. There
+    is NO synthetic session: a day that never happened, drawn on the beat
+    about what happened today, is invented news, so a session that cannot be
+    read is None and the beat keeps its other drawings.
+    """
+
+    ticker: str
+    day: str                  # ISO date of the session
+    times: list[str]
+    prices: list[float]
+    prior_close: float
+    source: str = "yahoo"     # yahoo | fixture
+    complete: bool = True     # False while the session is still trading
+
+    def to_json(self) -> str:
+        return json.dumps(self.__dict__)
+
+    @classmethod
+    def from_json(cls, raw: str) -> "IntradaySession":
+        d = json.loads(raw)
+        return cls(ticker=d["ticker"], day=d["day"], times=list(d["times"]),
+                   prices=[float(x) for x in d["prices"]],
+                   prior_close=float(d["prior_close"]),
+                   source=d.get("source", "yahoo"),
+                   complete=bool(d.get("complete", True)))
+
+    @property
+    def move(self) -> float:
+        """The session's move from the prior close, as a fraction."""
+        return self.prices[-1] / self.prior_close - 1.0
+
+
+# A session older than this is not "today" for a short about today's move.
+INTRADAY_MAX_AGE_DAYS = 4
+# A short is cut while the story is live, so the cache is short too.
+INTRADAY_TTL_S = 900
+
+
+def _yahoo_session(ticker: str) -> IntradaySession | None:
+    import yfinance as yf
+
+    t = yf.Ticker(ticker)
+    bars = t.history(period="1d", interval="5m", auto_adjust=False,
+                     prepost=False)
+    days = t.history(period="5d", interval="1d", auto_adjust=False)
+    if bars is None or bars.empty or days is None or len(days) < 2:
+        return None
+    day = bars.index[-1].date()
+    session = bars[[ix.date() == day for ix in bars.index]]
+    closes = [float(c) for c in session["Close"].tolist()]
+    times = [ix.strftime("%H:%M") for ix in session.index]
+    # The prior close is the last DAILY close before this session's day: the
+    # daily table carries today's partial bar too, so it is skipped by date.
+    prior = [float(c) for ix, c in zip(days.index, days["Close"].tolist())
+             if ix.date() < day]
+    if len(closes) < 8 or not prior:
+        return None
+    return IntradaySession(ticker=ticker.upper(), day=day.isoformat(),
+                           times=times, prices=[round(c, 4) for c in closes],
+                           prior_close=round(prior[-1], 4), source="yahoo",
+                           complete=times[-1] >= "15:55")
+
+
+def get_intraday(ticker: str, settings: Settings) -> IntradaySession | None:
+    """Today's session for `ticker`, or None. Never raises, never invents.
+
+    MOCK_MODE reads fixtures/prices/<TICKER>_intraday.json and nothing else:
+    with no fixture there is no session, where the daily history would fall
+    back to a synthetic walk.
+    """
+    ticker = (ticker or "").upper()
+    if not ticker:
+        return None
+    if settings.mocking_prices:
+        fixture = settings.fixtures_dir / "prices" / f"{ticker}_intraday.json"
+        if not fixture.exists():
+            return None
+        try:
+            got = IntradaySession.from_json(fixture.read_text(encoding="utf-8"))
+        except (ValueError, KeyError, OSError) as e:
+            log.warning("intraday fixture for %s unreadable: %s", ticker, e)
+            return None
+        got.source = "fixture"
+        return got
+
+    cfile = settings.cache_dir / "prices" / f"{ticker}_intraday.json"
+    try:
+        if cfile.exists() and time.time() - cfile.stat().st_mtime < INTRADAY_TTL_S:
+            return IntradaySession.from_json(cfile.read_text(encoding="utf-8"))
+    except (ValueError, KeyError, OSError):
+        pass
+    try:
+        got = _yahoo_session(ticker)
+    except Exception as e:                                # noqa: BLE001
+        log.warning("intraday for %s failed (%s); no session chart", ticker, e)
+        return None
+    if got is None:
+        return None
+    age = (date.today() - date.fromisoformat(got.day)).days
+    if age > INTRADAY_MAX_AGE_DAYS:
+        log.info("intraday for %s is %s days old; no session chart", ticker, age)
+        return None
+    cfile.parent.mkdir(parents=True, exist_ok=True)
+    cfile.write_text(got.to_json(), encoding="utf-8")
+    return got
+

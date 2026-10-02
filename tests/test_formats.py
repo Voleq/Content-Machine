@@ -62,7 +62,9 @@ class StubResolver:
         return "3.4%"
 
     def image_for(self, src):
-        return None
+        # THE COMPANY'S PICTURE (item 34) is a required slot on the short's
+        # second beat, so a resolver that fills everything hands it a file.
+        return Path(f"{src}.png") if src.startswith("photo.") else None
 
     def list_for(self, src):
         return ["one", "two", "three"]
@@ -244,8 +246,11 @@ def test_the_template_is_data_not_code():
         encoding="utf-8"))
     assert raw["format"] == "short"
     assert all("plate" in s for s in raw["shots"])
-    # The numbers beat is one sheet that moves now (item 7), not a repeat.
-    assert not [s for s in raw["shots"] if s.get("repeat")]
+    # The numbers beat is one card a row (item 26): a sequence the writer's
+    # rows drive, never a sheet of four rows at table size.
+    repeats = [s for s in raw["shots"] if s.get("repeat")]
+    assert [s["id"] for s in repeats] == ["numbers"]
+    assert repeats[0]["repeat"]["arrange"] == "sequence"
 
 
 def test_the_short_manifest_names_the_template_it_rendered(settings, tmp_path,

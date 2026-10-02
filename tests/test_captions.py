@@ -357,6 +357,9 @@ class _Stub:
         if "years" in parts:
             return "a,b,c,d,e,f"
         leaf = src.rsplit(".", 1)[-1]
+        # A figure under a bar is what the bar is drawn from.
+        if leaf.startswith("value-"):
+            return "12.5"
         if leaf in ("versus", "reported", "expected", "latest", "label",
                     "headline_figure", "headline_label", "headline_kicker",
                     "last", "unit", "ticker", "kicker", "expected_label"):
@@ -364,7 +367,9 @@ class _Stub:
         return f"words for {leaf}"
 
     def image_for(self, src: str):
-        return None
+        # The company's picture (item 34) is a required slot on the second
+        # beat of every vertical cut.
+        return Path(f"{src}.png") if src.startswith("photo.") else None
 
     def list_for(self, src: str):
         return None
@@ -385,10 +390,14 @@ def _build(reg, name: str, seed: str):
     return build_layers(fmt, spans, _Stub(), reg, aspect=fmt.aspect, seed=seed)
 
 
-def _band_for(reg, result, shot_id: str, box_h: int) -> tuple[int, int]:
+def _band_for(reg, result, shot_id: str, box_h: int,
+              name: str = "") -> tuple[int, int]:
+    """The band a caption may sit in: the plate's own, inside the clear area
+    the format declares (item 27), where it declares one."""
     plate = next((reg.get(l.entry_key) for l in result.for_shot(shot_id)
                   if l.kind == "plate"), None)
-    return caption_band(plate, result.frame, box_h)
+    safe = getattr(load_format(name), "safe", None) if name else None
+    return caption_band(plate, result.frame, box_h, safe=safe)
 
 
 CUTS = [(name, seed) for name in ("short", "earnings", "macro")
@@ -404,7 +413,7 @@ def test_every_caption_sits_inside_the_band_the_phone_leaves_clear(reg, name, se
     caps = result.of_kind("caption")
     assert caps
     for l in caps:
-        top, bottom = _band_for(reg, result, l.shot_id, l.h)
+        top, bottom = _band_for(reg, result, l.shot_id, l.h, name)
         assert top <= l.y and l.y + l.h <= bottom, (l.shot_id, l.y, l.h)
         assert l.h == caption_box_height(int(result.frame[1] * CAPTION_TYPE_FH))
 
@@ -424,7 +433,7 @@ def test_a_caption_covers_nothing_where_anywhere_is_free_and_least_where_not(
     pad = int(round(fh * CAPTION_CLEARANCE_FH))
     for cap in result.of_kind("caption"):
         obstacles = caption_obstacles(reg, result.for_shot(cap.shot_id))
-        top, bottom = _band_for(reg, result, cap.shot_id, cap.h)
+        top, bottom = _band_for(reg, result, cap.shot_id, cap.h, name)
 
         def profile(grow: int):
             mask = np.zeros((fh, fw - 2 * side), dtype=bool)

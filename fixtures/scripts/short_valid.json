@@ -77,6 +77,7 @@
     "anchor_word": "vertical"
   },
   "broll": null,
+  "payoff_row": "Free cash flow",
   "annotations": [
     {
       "target": "chart",
@@ -89,6 +90,5 @@
       "anchor_word": "wider",
       "note": "every year"
     }
-  ],
-  "payoff_row": "Free cash flow"
+  ]
 }

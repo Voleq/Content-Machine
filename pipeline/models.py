@@ -435,7 +435,10 @@ class ShortScript(BaseModel):
     headlines: list[Headline] = Field(min_length=1, max_length=3)
     numbers: list[NumberRow] = Field(min_length=1, max_length=6)
     years: list[str] = Field(default_factory=list, max_length=6)  # sheet columns
-    numbers_comment: str = Field(min_length=1, max_length=300)    # holistic read
+    # The holistic read, printed on its own card as the line being said
+    # (item 8). 156 is that card's body: a longer read left the beat with no
+    # card it fits, so it is refused here, before the voice is paid for.
+    numbers_comment: str = Field(min_length=1, max_length=156)
     # the CHEAP-OR-TRAP beat: is the multiple a bargain or a value trap? Held
     # on screen ~4-5s so it can actually be read. Optional so scripts written
     # against the four-beat format still parse.

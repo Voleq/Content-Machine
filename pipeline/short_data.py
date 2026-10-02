@@ -22,11 +22,14 @@ for its slots, the plate is then not fillable, and the rotation draws another.
 from __future__ import annotations
 
 import datetime as _dt
+import logging
 import math
 import re
 from typing import Any
 
 from pipeline.models import RATE_FIELDS
+
+log = logging.getLogger(__name__)
 
 # What each History row is called on screen. The workbook's own labels are a
 # spreadsheet's ("Stock-Based Comp", "Net Debt / EBITDA"); these are the ones a
@@ -594,8 +597,9 @@ def quarter_bars(data, field: str = "revenue", script=None) -> dict[str, str] | 
     name = FIELD_LABELS.get(field, field).upper()
     out = {"kicker": f"{name} · last 8 quarters"[:25],
            "unit": "USD" if field not in RATE_FIELDS else "%"}
+    # The bars are drawn through the figures the plate prints under them
+    # (`value-N`), so there is nothing to bind to the columns themselves.
     for i, (v, h) in enumerate(zip(vals, heads), start=1):
-        out[f"bar-{i}"] = fmt(field, v)
         out[f"head-{i}"] = h
         out[f"value-{i}"] = fmt(field, v)
     return out
@@ -687,6 +691,96 @@ def print_vs_consensus(data, script=None) -> dict[str, str] | None:
         "delta-label": "beat by" if gap >= 0 else "missed by",
         "delta": delta,
     }
+
+
+# ---------------------------------------------------------------------------
+# One session (item 4)
+# ---------------------------------------------------------------------------
+
+# `charts/intraday` draws seven points, one a column, and labels every other
+# one with a time. Its prior-close rule is drawn into the plate 62% of the
+# way down the plot, which is why the figures go in as the move from that
+# close: zero is the rule (`pipeline.series.PINNED_ZERO`).
+SESSION_POINTS = 7
+# Where the writer's move and the tape may differ before the chart is
+# withheld: a narration saying +29% over a session that closed +3% is a
+# stale tape or a wrong script, and either way the drawing would contradict
+# the voice.
+SESSION_AGREE_PTS = 3.0
+
+
+def _minutes(hhmm: str) -> int:
+    h, m = hhmm.split(":")
+    return int(h) * 60 + int(m)
+
+
+def _clock(minutes: float) -> str:
+    m = int(round(minutes))
+    return f"{m // 60:02d}:{m % 60:02d}"
+
+
+def session_points(session, n: int = SESSION_POINTS
+                   ) -> list[tuple[str, float]] | None:
+    """`n` evenly spaced readings across the session, as (time, price).
+
+    Read off the tape by straight-line interpolation between the two bars
+    either side of each time, so a label under a point is the time that
+    point is for.
+    """
+    ts = [_minutes(t) for t in session.times]
+    ps = list(session.prices)
+    if len(ts) < 2 or len(ts) != len(ps) or ts[-1] <= ts[0]:
+        return None
+    out = []
+    for i in range(n):
+        at = ts[0] + (ts[-1] - ts[0]) * i / (n - 1)
+        j = next(k for k in range(1, len(ts)) if ts[k] >= at - 1e-9)
+        a, b = ts[j - 1], ts[j]
+        f = 0.0 if b == a else (at - a) / (b - a)
+        out.append((_clock(at), ps[j - 1] + (ps[j] - ps[j - 1]) * f))
+    return out
+
+
+def _signed_pct(frac: float) -> str:
+    v = round(frac * 100.0, 1)
+    return f"{'+' if v > 0 else '−' if v < 0 else ''}{abs(v):.1f}%"
+
+
+def session_card(session, script=None) -> dict[str, str] | None:
+    """`charts/intraday`: today's session against the prior close.
+
+    None when there is no session, or when the session's move does not
+    agree with the move the writer is narrating.
+    """
+    if session is None or not session.prior_close:
+        return None
+    pts = session_points(session)
+    if not pts:
+        return None
+    move = session.move
+    claimed = None
+    summary = str(getattr(script, "move_summary", "") or "")
+    m = re.match(r"^\s*([+\-−–])\s*(\d+(?:\.\d+)?)\s*%", summary)
+    if m:
+        claimed = float(m.group(2)) * (1 if m.group(1) == "+" else -1)
+    if claimed is not None and abs(claimed - move * 100.0) > SESSION_AGREE_PTS:
+        log.info("the session closed %s and the script says %s%%: no session "
+                 "chart", _signed_pct(move), claimed)
+        return None
+    when = _dt.date.fromisoformat(session.day)
+    ticker = (session.ticker or str(getattr(script, "ticker", "") or "")).upper()
+    out = {
+        "kicker": f"{ticker} · {when.day} {when:%B}".upper()[:25],
+        "unit": "price, one session" if session.complete else "price, so far today",
+        "figure": _signed_pct(move),
+        "plot-area": ",".join(f"{(p / session.prior_close - 1) * 100:.2f}"
+                              for _t, p in pts),
+        "event-label": f"At {pts[2][0]}, {_signed_pct(pts[2][1] / session.prior_close - 1)}",
+        "caption": f"The line across is the prior close, ${session.prior_close:,.2f}",
+    }
+    for i in (1, 3, 5, 7):
+        out[f"head-{i}"] = pts[i - 1][0]
+    return out
 
 
 CARDS = {
