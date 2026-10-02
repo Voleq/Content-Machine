@@ -834,7 +834,8 @@ def _real(script, tmp_path):
     ("Q3 print · guide raised", "charts/line-dense-9x16"),
 ])
 def test_the_move_is_drawn_with_the_arrow_its_sign_calls_for(summary, want, reg,
-                                                             tmp_path):
+                                                             tmp_path,
+                                                             monkeypatch):
     """The two move plates DRAW their arrow, so each is the right picture for
     one direction only. The figure is offered to a plate only when the move
     summary opens on a sign that says which; a summary that opens on words, or
@@ -846,12 +847,36 @@ def test_the_move_is_drawn_with_the_arrow_its_sign_calls_for(summary, want, reg,
     """
     from pipeline.compose import choose_variant
 
+    # Nor today's session: the fixture has one for EXMPL, and it is a picture
+    # of its own (below).
+    monkeypatch.setattr("pipeline.prices.get_intraday", lambda *_a, **_k: None)
     fmt = load_format("short")
     shot = next(s for s in fmt.shots if s.id == "the-move")
     resolver = _real(_script(move_summary=summary), tmp_path)
     for i in range(6):
         assert choose_variant(reg, shot, fmt.aspect, resolver,
                               seed=f"s{i}").plate == want
+
+
+@pytest.mark.parametrize("summary, drawn", [
+    ("+29% today · 5× average volume", True),
+    ("Q3 print · guide raised", True),
+    ("+34% today · 6× average volume", False),
+    ("-8.5% · guidance cut", False),
+])
+def test_today_s_session_is_offered_only_where_it_agrees_with_the_voice(
+        summary, drawn, reg, tmp_path):
+    """The fixture's session closed up 29%. A move the writer names within
+    three points of that, or no figure at all, may draw it; one further off
+    never does, because the chart would contradict the line being spoken."""
+    from pipeline.compose import _fillable, resolve_plate
+
+    fmt = load_format("short")
+    shot = next(s for s in fmt.shots if s.id == "the-move")
+    variant = next(v for v in shot.variants if v.plate == "charts/intraday-9x16")
+    plate = resolve_plate(reg, variant.plate, fmt.aspect)
+    resolver = _real(_script(move_summary=summary), tmp_path)
+    assert _fillable(variant, shot, plate, resolver, reg) is drawn
 
 
 def test_the_move_figure_and_its_label_come_off_the_summary(tmp_path):

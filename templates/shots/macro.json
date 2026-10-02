@@ -134,6 +134,38 @@
         },
         {
           "plate": "paper/headline-band-t3-9x16"
+        },
+        {
+          "plate": "charts/macro-series-9x16",
+          "bind": {
+            "kicker": "fred.kicker",
+            "unit": "?fred.unit",
+            "series": "fred.series",
+            "y-1": "fred.y-1",
+            "y-2": "fred.y-2",
+            "y-3": "fred.y-3",
+            "y-4": "fred.y-4",
+            "y-5": "fred.y-5",
+            "head-1": "fred.head-1",
+            "head-2": "fred.head-2",
+            "head-3": "fred.head-3",
+            "head-4": "fred.head-4",
+            "head-5": "fred.head-5",
+            "head-6": "fred.head-6",
+            "head-7": "fred.head-7",
+            "head-8": "fred.head-8",
+            "head-9": "fred.head-9",
+            "head-10": "fred.head-10",
+            "band-1": "?fred.band-1",
+            "band-2": "?fred.band-2",
+            "band-3": "?fred.band-3",
+            "band-4": "?fred.band-4",
+            "source": "fred.source",
+            "caption": "?fred.caption"
+          },
+          "prefer": true,
+          "captions": false,
+          "notes": "THE SERIES BEHIND THE PRINT (item 6): 27 years of it off FRED's public CSV, recessions shaded, picked from what the headline names (CPI, core CPI, PCE, unemployment, fed funds, the 10-year, GDP, oil). Preferred wherever FRED has it: one print means something only against the line it belongs to. The source line is required, so a chart nobody can check is never drawn. The KICKER IS REQUIRED TOO: the drawing runs from its title to its source line, taller than the clear band, and shrunk to fit it with the title optional the title was the line dropped, leaving a chart with no name. And NO CAPTION while it is up: the chart fills the band, so any caption sat over its years or its line."
         }
       ],
       "notes": "The statement itself, in the band drawn for it. NO `headline-stack` ALTERNATE HERE, unlike the SHORT: the stack needs a second headline, and a required bind is a field on the writer's form — which takes MACRO to thirteen, past the dozen at which a form is a document again and gets filled in like one."
@@ -166,7 +198,7 @@
           "bind": {
             "body": "script.mechanism.0",
             "attribution": "?numbers.headline_label",
-            "source": "?source.turn|script.mechanism.1"
+            "source": "?source.mechanism|source.turn|script.mechanism.1"
           }
         }
       ]

@@ -20,7 +20,8 @@ Two kinds of source, and only one of them is the writer's:
 * **SUPPLIED** — `numbers.*` and `compare.*` come from the data export,
   `data.*` (cards the workbook fills on its own) and `news.*` (the release
   and the wires off its News sheet) from the operator's workbook, `chart.*`,
-  `media.*` and `pic.*` off the workspace and the picture chain, `plate.*`
+  `media.*` and `pic.*` off the workspace and the picture chain, `fred.*`
+  (the series behind a macro print) off FRED, `plate.*`
   out of the kit, `channel.*` from settings. The writer never sees these and
   must never be asked to invent them.
 

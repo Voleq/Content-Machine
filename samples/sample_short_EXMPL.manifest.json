@@ -2,10 +2,10 @@
   "ticker": "EXMPL",
   "format": "short",
   "hour": "night",
-  "beats": 9,
+  "beats": 10,
   "engine": "shots",
-  "shots_count": 9,
-  "anchored_shots": 4,
+  "shots_count": 14,
+  "anchored_shots": 6,
   "kit": "v2-plates",
   "prices": {
     "source": "fixture",
@@ -40,11 +40,11 @@
     },
     "sound": {
       "lufs": -23.0,
-      "effects": 13,
+      "effects": 24,
       "bed": "",
       "theme": false,
       "room": "room_night.wav",
-      "placeholders": 5
+      "placeholders": 7
     },
     "llm": {
       "provider": "",
@@ -65,37 +65,50 @@
       "id": "hook",
       "plate": "shorts/hook-card-t1",
       "start_s": 0.0,
-      "end_s": 3.501,
+      "end_s": 2.626,
       "anchored": true,
       "max_hold_s": 7.0,
       "layers": [
         "hook:ground",
-        "hook:plate:shorts/hook-card-t3"
+        "hook:plate:shorts/hook-card-t5"
+      ]
+    },
+    {
+      "id": "the-picture",
+      "plate": "frames/media-frame-t1-9x16",
+      "start_s": 2.626,
+      "end_s": 5.251,
+      "anchored": false,
+      "max_hold_s": 6.0,
+      "layers": [
+        "the-picture:ground",
+        "the-picture:plate:frames/media-frame-t1-9x16",
+        "the-picture:media:media",
+        "the-picture:caption"
       ]
     },
     {
       "id": "the-move",
       "plate": "charts/line-dense-9x16",
-      "start_s": 3.501,
-      "end_s": 7.002,
+      "start_s": 5.251,
+      "end_s": 7.877,
       "anchored": false,
       "max_hold_s": 7.0,
       "layers": [
         "the-move:ground",
-        "the-move:plate:charts/line-dense-9x16",
-        "the-move:caption"
+        "the-move:plate:figures/move-on-the-day-up-9x16"
       ]
     },
     {
       "id": "the-news",
       "plate": "paper/headline-band-t1-9x16",
-      "start_s": 7.002,
+      "start_s": 7.877,
       "end_s": 10.502,
       "anchored": false,
       "max_hold_s": 7.0,
       "layers": [
         "the-news:ground",
-        "the-news:plate:paper/headline-stack-3-9x16",
+        "the-news:plate:paper/press-release-9x16",
         "the-news:caption"
       ]
     },
@@ -103,7 +116,7 @@
       "id": "the-turn",
       "plate": "room/talk",
       "start_s": 10.502,
-      "end_s": 26.422,
+      "end_s": 13.595,
       "anchored": true,
       "max_hold_s": 7.0,
       "layers": [
@@ -114,30 +127,80 @@
       ]
     },
     {
-      "id": "numbers",
-      "plate": "tables/numbers-sheet-4r-9x16",
-      "start_s": 26.422,
-      "end_s": 37.882,
+      "id": "numbers-1",
+      "plate": "charts/bars-6y-9x16",
+      "start_s": 13.595,
+      "end_s": 19.557,
       "anchored": false,
-      "max_hold_s": 14.0,
+      "max_hold_s": 7.0,
       "layers": [
-        "numbers:ground",
-        "numbers:plate:tables/numbers-sheet-4r-spark-9x16",
-        "numbers:caption"
+        "numbers-1:ground",
+        "numbers-1:plate:figures/compare-stacked-9x16"
+      ]
+    },
+    {
+      "id": "numbers-2",
+      "plate": "charts/bars-6y-9x16",
+      "start_s": 19.557,
+      "end_s": 25.52,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "numbers-2:ground",
+        "numbers-2:plate:charts/bars-6y-9x16",
+        "numbers-2:caption"
+      ]
+    },
+    {
+      "id": "numbers-3",
+      "plate": "charts/bars-6y-9x16",
+      "start_s": 25.52,
+      "end_s": 30.568,
+      "anchored": true,
+      "max_hold_s": 7.0,
+      "layers": [
+        "numbers-3:ground",
+        "numbers-3:plate:figures/big-number-l1-9x16"
+      ]
+    },
+    {
+      "id": "numbers-4",
+      "plate": "charts/bars-6y-9x16",
+      "start_s": 30.568,
+      "end_s": 37.725,
+      "anchored": true,
+      "max_hold_s": 7.0,
+      "layers": [
+        "numbers-4:ground",
+        "numbers-4:plate:figures/compare-stacked-9x16"
       ]
     },
     {
       "id": "the-comment",
       "plate": "cards/quote-pull-9x16",
-      "start_s": 37.882,
-      "end_s": 44.882,
+      "start_s": 37.725,
+      "end_s": 39.898,
       "anchored": false,
       "max_hold_s": 7.0,
       "layers": [
         "the-comment:ground",
-        "the-comment:plate:cards/quote-pull-9x16",
-        "the-comment:caption"
-      ]
+        "the-comment:plate:cards/definition-9x16"
+      ],
+      "part": 1
+    },
+    {
+      "id": "the-comment-in",
+      "plate": "cards/quote-pull-9x16",
+      "start_s": 39.898,
+      "end_s": 44.882,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "the-comment-in:ground",
+        "the-comment-in:plate:cards/definition-9x16"
+      ],
+      "part": 2,
+      "part_of": "the-comment"
     },
     {
       "id": "cheap-or-trap",
@@ -148,7 +211,7 @@
       "max_hold_s": 7.0,
       "layers": [
         "cheap-or-trap:ground",
-        "cheap-or-trap:plate:structure/both-true-9x16",
+        "cheap-or-trap:plate:structure/implied-9x16",
         "cheap-or-trap:caption"
       ]
     },
@@ -161,14 +224,14 @@
       "max_hold_s": 7.0,
       "layers": [
         "payoff:ground",
-        "payoff:plate:figures/big-number-l2-9x16",
-        "payoff:meme-frame:frames/media-frame-t2-9x16",
+        "payoff:plate:shorts/short-number-9x16",
+        "payoff:meme-frame:frames/media-frame-t1-9x16",
         "payoff:meme:fomo-stages-wish-i-bought-doodle"
       ]
     },
     {
       "id": "close",
-      "plate": "structure/closing-9x16",
+      "plate": "structure/closing-t2-9x16",
       "start_s": 54.124,
       "end_s": 57.423,
       "anchored": false,
@@ -180,106 +243,178 @@
       ]
     }
   ],
-  "layers": 28,
+  "layers": 38,
   "plates_used": [
-    "cards/quote-pull-9x16",
-    "charts/line-dense-9x16",
-    "figures/big-number-l2-9x16",
-    "frames/media-frame-t2-9x16",
+    "cards/definition-9x16",
+    "charts/bars-6y-9x16",
+    "figures/big-number-l1-9x16",
+    "figures/compare-stacked-9x16",
+    "figures/move-on-the-day-up-9x16",
+    "frames/media-frame-t1-9x16",
     "host/close-up",
-    "paper/headline-stack-3-9x16",
+    "paper/press-release-9x16",
     "room/window-talk-9x16",
-    "shorts/hook-card-t3",
-    "structure/both-true-9x16",
+    "shorts/hook-card-t5",
+    "shorts/short-number-9x16",
     "structure/closing-9x16",
-    "tables/numbers-sheet-4r-spark-9x16"
+    "structure/implied-9x16"
   ],
   "shot_order": "as-authored",
   "moves": {
     "moves": [
       {
+        "move": "count-up",
+        "start": 0.0,
+        "shot_id": "hook",
+        "slot": "move",
+        "frames": 7
+      },
+      {
         "move": "highlight",
-        "start": 0.15,
+        "start": 0.733,
         "shot_id": "hook",
         "slot": "hook",
         "frames": 6
       },
       {
-        "move": "line-draw",
-        "start": 3.501,
+        "move": "count-up",
+        "start": 5.251,
         "shot_id": "the-move",
+        "slot": "value",
+        "frames": 7
+      },
+      {
+        "move": "highlight",
+        "start": 8.477,
+        "shot_id": "the-news",
+        "slot": "headline",
+        "frames": 6
+      },
+      {
+        "move": "count-up",
+        "start": 13.845,
+        "shot_id": "numbers-1",
+        "slot": "value-1",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 14.578,
+        "shot_id": "numbers-1",
+        "slot": "value-2",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 15.311,
+        "shot_id": "numbers-1",
+        "slot": "delta",
+        "frames": 7
+      },
+      {
+        "move": "bars-grow",
+        "start": 19.557,
+        "shot_id": "numbers-2",
         "slot": "plot-area",
-        "frames": 10
+        "frames": 13
+      },
+      {
+        "move": "count-up",
+        "start": 20.79,
+        "shot_id": "numbers-2",
+        "slot": "value-1",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 21.524,
+        "shot_id": "numbers-2",
+        "slot": "value-2",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 22.257,
+        "shot_id": "numbers-2",
+        "slot": "value-6",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 25.52,
+        "shot_id": "numbers-3",
+        "slot": "value",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 30.568,
+        "shot_id": "numbers-4",
+        "slot": "value-1",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 31.301,
+        "shot_id": "numbers-4",
+        "slot": "value-2",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 32.034,
+        "shot_id": "numbers-4",
+        "slot": "delta",
+        "frames": 7
       },
       {
         "move": "highlight",
-        "start": 26.672,
-        "shot_id": "numbers",
-        "slot": "band-1",
-        "frames": 6
-      },
-      {
-        "move": "highlight",
-        "start": 28.884,
-        "shot_id": "numbers",
-        "slot": "band-2",
-        "frames": 6
-      },
-      {
-        "move": "highlight",
-        "start": 31.096,
-        "shot_id": "numbers",
-        "slot": "band-3",
-        "frames": 6
-      },
-      {
-        "move": "highlight",
-        "start": 31.746,
-        "shot_id": "numbers",
-        "slot": "band-4",
-        "frames": 6
-      },
-      {
-        "move": "highlight",
-        "start": 38.232,
+        "start": 38.075,
         "shot_id": "the-comment",
         "slot": "body",
+        "frames": 6
+      },
+      {
+        "move": "highlight",
+        "start": 45.482,
+        "shot_id": "cheap-or-trap",
+        "slot": "statement",
         "frames": 6
       },
       {
         "move": "count-up",
         "start": 50.825,
         "shot_id": "payoff",
-        "slot": "value",
+        "slot": "num",
         "frames": 7
       }
     ],
     "wipes": [
       {
-        "transition": "overlays/wipe-page-short-9x16",
-        "cut": 7.002,
-        "start": 6.918,
+        "transition": "overlays/wipe-sweep-short-9x16",
+        "cut": 7.877,
+        "start": 7.793,
         "shot_out": "the-move",
         "shot_in": "the-news"
       },
       {
-        "transition": "overlays/wipe-sweep-short-9x16",
-        "cut": 26.422,
-        "start": 26.339,
+        "transition": "overlays/wipe-page-short-9x16",
+        "cut": 13.595,
+        "start": 13.511,
         "shot_out": "the-turn",
-        "shot_in": "numbers"
+        "shot_in": "numbers-1"
       },
       {
-        "transition": "overlays/wipe-page-short-9x16",
+        "transition": "overlays/wipe-sweep-short-9x16",
         "cut": 44.882,
         "start": 44.799,
-        "shot_out": "the-comment",
+        "shot_out": "the-comment-in",
         "shot_in": "cheap-or-trap"
       }
     ],
     "skipped": [
-      "numbers: pen-circle sits this video out (about one short in 3, never two running)",
-      "payoff: no pen-circle, value is too big a part of the plate to ring without ringing the plate"
+      "numbers-3: no pen-circle, value is too big a part of the plate to ring without ringing the plate",
+      "payoff: no pen-circle, num is too big a part of the plate to ring without ringing the plate"
     ]
   },
   "meme": {
@@ -289,7 +424,7 @@
     "shot": "payoff",
     "start_s": 53.024,
     "end_s": 54.124,
-    "frame": "frames/media-frame-t2-9x16",
+    "frame": "frames/media-frame-t1-9x16",
     "score": 6,
     "matched": [
       "short-squeeze (chasing)",
@@ -340,26 +475,34 @@
       "gain_db": -6.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 0.989,
-      "trim_db": -0.9
+      "rate": 0.964,
+      "trim_db": -1.1
     },
     {
-      "name": "whoosh@3.40",
-      "start": 3.4,
+      "name": "whoosh@2.53",
+      "start": 2.53,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.98,
+      "trim_db": -0.1
+    },
+    {
+      "name": "whoosh@5.15",
+      "start": 5.15,
       "gain_db": -14.0,
       "loop": false,
       "file": "whoosh.wav",
       "rate": 1.004,
-      "trim_db": -1.2
+      "trim_db": -0.7
     },
     {
-      "name": "wipe@7.00",
-      "start": 6.92,
+      "name": "wipe@7.88",
+      "start": 7.79,
       "gain_db": -14.0,
       "loop": false,
       "file": "whoosh.wav",
-      "rate": 1.01,
-      "trim_db": 0.2
+      "rate": 0.961
     },
     {
       "name": "whoosh@10.40",
@@ -367,26 +510,53 @@
       "gain_db": -14.0,
       "loop": false,
       "file": "whoosh.wav",
-      "rate": 0.963,
-      "trim_db": 0.1
-    },
-    {
-      "name": "wipe@26.42",
-      "start": 26.34,
-      "gain_db": -14.0,
-      "loop": false,
-      "file": "whoosh.wav",
-      "rate": 1.006,
-      "trim_db": 0.1
-    },
-    {
-      "name": "whoosh@37.78",
-      "start": 37.78,
-      "gain_db": -14.0,
-      "loop": false,
-      "file": "whoosh.wav",
-      "rate": 0.969,
+      "rate": 0.976,
       "trim_db": 0.3
+    },
+    {
+      "name": "wipe@13.59",
+      "start": 13.51,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.996,
+      "trim_db": -0.6
+    },
+    {
+      "name": "whoosh@19.46",
+      "start": 19.46,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 1.025,
+      "trim_db": -1.4
+    },
+    {
+      "name": "whoosh@25.42",
+      "start": 25.42,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.981,
+      "trim_db": 1.4
+    },
+    {
+      "name": "whoosh@30.47",
+      "start": 30.47,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 1.026,
+      "trim_db": -1.0
+    },
+    {
+      "name": "whoosh@37.62",
+      "start": 37.62,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.982,
+      "trim_db": -0.9
     },
     {
       "name": "wipe@44.88",
@@ -394,8 +564,8 @@
       "gain_db": -14.0,
       "loop": false,
       "file": "whoosh.wav",
-      "rate": 0.986,
-      "trim_db": -0.6
+      "rate": 1.002,
+      "trim_db": -0.4
     },
     {
       "name": "payoff_hit@50.83",
@@ -403,8 +573,8 @@
       "gain_db": -6.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 0.965,
-      "trim_db": 0.9
+      "rate": 0.973,
+      "trim_db": 0.4
     },
     {
       "name": "whoosh@54.02",
@@ -412,61 +582,139 @@
       "gain_db": -14.0,
       "loop": false,
       "file": "whoosh.wav",
-      "rate": 1.023,
-      "trim_db": 0.9
+      "rate": 0.972,
+      "trim_db": -0.8
     },
     {
-      "name": "move:highlight@28.88",
-      "start": 28.88,
+      "name": "move:highlight@0.73",
+      "start": 0.73,
       "gain_db": -18.0,
       "loop": false,
       "file": "marker_draw.wav",
-      "rate": 1.014,
-      "trim_db": -1.4
+      "rate": 0.979,
+      "trim_db": 1.1
     },
     {
-      "name": "move:highlight@31.10",
-      "start": 31.1,
+      "name": "move:highlight@8.48",
+      "start": 8.48,
       "gain_db": -18.0,
       "loop": false,
       "file": "marker_draw.wav",
-      "rate": 0.962,
-      "trim_db": -1.1
+      "rate": 0.984
     },
     {
-      "name": "move:highlight@31.75",
-      "start": 31.75,
+      "name": "move:count-up@14.58",
+      "start": 14.58,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "tick_roll.wav",
+      "rate": 1.011,
+      "trim_db": 0.1
+    },
+    {
+      "name": "move:count-up@15.31",
+      "start": 15.31,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "tick_roll.wav",
+      "rate": 0.979,
+      "trim_db": -0.9
+    },
+    {
+      "name": "move:bars-grow@20.56",
+      "start": 20.56,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "knock.wav",
+      "rate": 0.969,
+      "trim_db": -0.2
+    },
+    {
+      "name": "move:count-up@21.52",
+      "start": 21.52,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "tick_roll.wav",
+      "rate": 0.981,
+      "trim_db": 1.2
+    },
+    {
+      "name": "move:count-up@22.26",
+      "start": 22.26,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "tick_roll.wav",
+      "rate": 0.992,
+      "trim_db": -1.0
+    },
+    {
+      "name": "move:count-up@31.30",
+      "start": 31.3,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "tick_roll.wav",
+      "rate": 0.974,
+      "trim_db": -1.3
+    },
+    {
+      "name": "move:count-up@32.03",
+      "start": 32.03,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "tick_roll.wav",
+      "rate": 0.971,
+      "trim_db": 0.6
+    },
+    {
+      "name": "move:highlight@38.08",
+      "start": 38.08,
       "gain_db": -18.0,
       "loop": false,
       "file": "marker_draw.wav",
       "rate": 1.026,
-      "trim_db": -1.5
+      "trim_db": 0.3
     },
     {
-      "name": "move:highlight@38.23",
-      "start": 38.23,
+      "name": "move:highlight@45.48",
+      "start": 45.48,
       "gain_db": -18.0,
       "loop": false,
       "file": "marker_draw.wav",
-      "rate": 0.998,
-      "trim_db": -0.2
+      "rate": 0.995,
+      "trim_db": -0.5
     }
   ],
-  "kit_reach": "Kit: 11 of 704 plates, 10 families, 10 animated layers",
-  "skipped": [
-    "the-news.headline-3 <- script.headlines.2.text",
-    "numbers.label-3 <- numbers.label.2 (14 > 13 chars)",
-    "payoff.detail <- script.verdict"
-  ],
+  "kit_reach": "Kit: 13 of 704 plates, 9 families, 14 animated layers",
+  "skipped": [],
   "dropped_shots": [],
+  "workbook": {
+    "file": "dennis_data.xlsx",
+    "notes": [
+      "Revenue: shown from the workbook ($400M, $452M, $471M, $491M, $496M, $496M) instead of the typed $400M, $431M, $458M, $472M, $486M, $496M",
+      "Net income: shown from the workbook (-$8M, -$25M, -$49M, -$70M, -$89M, -$89M) instead of the typed -$8M, -$25M, -$49M, -$70M, -$89M, -$94M",
+      "Free cash flow: shown from the workbook ($12M, -$2M, -$6M, -$11M, -$15M, -$15M) instead of the typed $12M, -$3M, -$31M, -$52M, -$68M, -$71M",
+      "Share count: shown from the workbook (298M, 315M, 330M, 346M, 365M, 365M) instead of the typed 298M, 312M, 328M, 344M, 358M, 365M"
+    ]
+  },
+  "safe_area": {
+    "top": 170,
+    "bottom": 1480,
+    "outside": [],
+    "shrunk_to_fit": [
+      "numbers-2"
+    ]
+  },
+  "attributions": [
+    "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
+  ],
   "text_overflow": {},
   "host_faces": {
     "the-turn:host:close-up": {
       "pose": "host/close-up",
       "spoke": true,
-      "talk_frames": 455,
+      "talk_frames": 85,
       "idle_frames": 0,
-      "blinks": 4,
+      "blinks": 1,
       "has_talk": true,
       "has_idle": true,
       "has_blink": true,
@@ -474,7 +722,6 @@
       "mouths": [
         "mouthClosed",
         "mouthEE",
-        "mouthFV",
         "mouthMid",
         "mouthO",
         "mouthWide"
@@ -482,23 +729,16 @@
       "mouths_stood_in": []
     }
   },
-  "longest_layer_hold_s": 0.0,
+  "longest_layer_hold_s": 5.943,
   "pacing": {
-    "shots": 9,
-    "longest_span_s": 15.92,
-    "longest_still_span_s": 11.46,
+    "shots": 14,
+    "longest_span_s": 7.16,
+    "longest_still_span_s": 7.16,
     "spans_over_their_ceiling": [
-      "the-turn 15.9s over 7.0s"
+      "numbers-4 7.2s over 7.0s"
     ],
     "hold_ceiling_s": 8.0,
-    "held_over_ceiling": [
-      {
-        "shot": "numbers",
-        "start_s": 26.8,
-        "end_s": 37.8,
-        "held_s": 11.0
-      }
-    ]
+    "held_over_ceiling": []
   },
   "placement": "MOCK TIMINGS \u2014 every cue time in this manifest came from interpolated mock TTS word timestamps, not from a voice. Composition, type fit and kit coverage are real; WHERE anything lands is not. Judge placement from a real render only."
 }

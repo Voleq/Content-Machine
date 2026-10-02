@@ -20,7 +20,7 @@ Sure! Here's the short-form script for BORV in the requested JSON format:
     {"label": "Free cash flow", "values": ["", "$140M", "$168M", "$195M", "$228M", "$262M"]},
     {"label": "Shares out", "values": ["", "210M", "205M", "199M", "194M", "190M"]}
   ],
-  "numbers_comment": "Five straight years of growing revenue, expanding margins, compounding cash flow and a shrinking share count. It is the rarest chart on this channel: everything pointing the right way.",
+  "numbers_comment": "Five years of growing revenue, wider margins, more cash and fewer shares. The rarest chart on this channel: everything pointing the right way.",
   "conclusion": "Signal. Through gritted teeth: the boring machine keeps printing, and it did not need your attention to do it.",
   "meme": {"key": "leo-cheers-to-buybacks", "anchor_word": "back"},
   "broll": null,

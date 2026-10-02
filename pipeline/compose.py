@@ -924,7 +924,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             # A sheet that lit its rows as they were read ends part 1 with
             # every row up, so the close-up opens on all of them lit.
             shot = replace(shot, plate=first.plate, alts=(),
-                           bind=dict(first.bind),
+                           bind=dict(first.bind), captions=first.captions,
                            lit="all" if first.lit == "read" else first.lit)
         elif shot.plate and shot.alts:
             picked = (variants.get(shot.id) if shot.id in variants
@@ -933,7 +933,9 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             if picked is not None and picked.plate != shot.plate:
                 bind, lit, focus = picked.resolved(shot)
                 shot = replace(shot, plate=picked.plate, alts=(),
-                               bind=bind, lit=lit, focus=focus)
+                               bind=bind, lit=lit, focus=focus,
+                               captions=(shot.captions if picked.captions is None
+                                         else picked.captions))
         # Part 1 is the WIDE picture: the move in is what part 2 is for, and
         # a part 1 already moved in would make the cut between them a cut to
         # the same frame.

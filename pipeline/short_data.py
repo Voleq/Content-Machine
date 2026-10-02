@@ -219,14 +219,16 @@ def change(field: str, first: float | None, last: float | None) -> str | None:
 
     A rate moves in POINTS: a margin from 58 to 52 is "-6 pts", never a
     percentage change of a percentage. A quantity that crosses zero or starts
-    at zero has no honest percentage either, so it gets none.
+    at zero has no honest percentage either, so it gets none; nor does a loss,
+    because a loss from $8M to $89M printed "-1012%", which reads as the
+    opposite of what happened.
     """
     if first is None or last is None:
         return None
     if field in RATE_FIELDS:
         d = last - first
         return f"{d:+.0f} pts" if abs(d) >= 1 else f"{d:+.1f} pts"
-    if first == 0 or (first < 0) != (last < 0):
+    if first <= 0 or last < 0:
         return None
     pct = (last - first) / abs(first) * 100.0
     return f"{pct:+.0f}%"

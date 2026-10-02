@@ -24,7 +24,7 @@ def test_every_source_is_either_written_or_supplied(name):
     """No third category. A source belonging to neither is a field nobody
     has been asked for and nothing fills — a drawn, empty box."""
     supplied_roots = {"plate", "chart", "media", "channel", "compare",
-                      "numbers", "data", "news", "pic"}
+                      "numbers", "data", "news", "pic", "fred"}
     for f in form_for(name):
         root = f.src.split(".", 1)[0]
         assert root in set(WRITER_ROOTS) | supplied_roots, (

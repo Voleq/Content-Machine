@@ -2,10 +2,10 @@
   "ticker": "EXMPL",
   "format": "earnings",
   "hour": "night",
-  "beats": 8,
+  "beats": 10,
   "engine": "shots",
-  "shots_count": 8,
-  "anchored_shots": 1,
+  "shots_count": 11,
+  "anchored_shots": 2,
   "kit": "v2-plates",
   "prices": {
     "source": "",
@@ -21,9 +21,7 @@
       "format": "earnings"
     },
     "prices": {},
-    "visuals": {
-      "library": 1
-    },
+    "visuals": {},
     "filings": {},
     "audio": {
       "tier": "mock",
@@ -35,11 +33,11 @@
     },
     "sound": {
       "lufs": -23.0,
-      "effects": 14,
+      "effects": 17,
       "bed": "",
       "theme": false,
       "room": "room_night.wav",
-      "placeholders": 7
+      "placeholders": 6
     },
     "llm": {
       "provider": "",
@@ -60,70 +58,107 @@
       "id": "open",
       "plate": "shorts/hook-card-t2",
       "start_s": 0.0,
-      "end_s": 7.0,
+      "end_s": 5.94,
       "anchored": true,
       "max_hold_s": 7.0,
       "layers": [
         "open:ground",
-        "open:plate:shorts/hook-card-t2"
+        "open:plate:shorts/hook-card-t3"
+      ]
+    },
+    {
+      "id": "the-picture",
+      "plate": "frames/media-frame-t1-9x16",
+      "start_s": 5.94,
+      "end_s": 11.88,
+      "anchored": false,
+      "max_hold_s": 6.0,
+      "layers": [
+        "the-picture:ground",
+        "the-picture:plate:frames/media-frame-t3-9x16",
+        "the-picture:media:media",
+        "the-picture:caption"
       ]
     },
     {
       "id": "the-print",
       "plate": "figures/big-number-l1-9x16",
-      "start_s": 7.0,
-      "end_s": 14.0,
+      "start_s": 11.88,
+      "end_s": 17.82,
       "anchored": false,
       "max_hold_s": 7.0,
       "layers": [
         "the-print:ground",
-        "the-print:plate:figures/big-number-l1-9x16"
+        "the-print:plate:figures/big-number-l2-9x16"
       ]
     },
     {
       "id": "vs-expected",
       "plate": "figures/compare-stacked-9x16",
-      "start_s": 14.0,
-      "end_s": 21.0,
+      "start_s": 17.82,
+      "end_s": 23.76,
       "anchored": false,
       "max_hold_s": 7.0,
       "layers": [
         "vs-expected:ground",
-        "vs-expected:plate:figures/compare-stacked-9x16"
+        "vs-expected:plate:figures/print-vs-consensus-9x16"
       ]
     },
     {
-      "id": "the-sheet",
-      "plate": "tables/numbers-sheet-4r-9x16",
-      "start_s": 21.0,
-      "end_s": 28.039,
+      "id": "the-quarter",
+      "plate": "charts/quarter-bars-8q-9x16",
+      "start_s": 23.76,
+      "end_s": 29.7,
       "anchored": false,
-      "max_hold_s": 14.0,
+      "max_hold_s": 7.0,
       "layers": [
-        "the-sheet:ground",
-        "the-sheet:plate:tables/numbers-sheet-4r-9x16",
-        "the-sheet:caption"
+        "the-quarter:ground",
+        "the-quarter:plate:figures/qoq-yoy-9x16"
+      ]
+    },
+    {
+      "id": "the-sheet-1",
+      "plate": "charts/bars-6y-9x16",
+      "start_s": 29.7,
+      "end_s": 35.639,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "the-sheet-1:ground",
+        "the-sheet-1:plate:figures/big-number-l1-9x16"
+      ]
+    },
+    {
+      "id": "the-sheet-2",
+      "plate": "charts/bars-6y-9x16",
+      "start_s": 35.639,
+      "end_s": 41.579,
+      "anchored": false,
+      "max_hold_s": 7.0,
+      "layers": [
+        "the-sheet-2:ground",
+        "the-sheet-2:plate:figures/compare-stacked-9x16"
       ]
     },
     {
       "id": "guidance",
       "plate": "cards/definition-9x16",
-      "start_s": 28.039,
-      "end_s": 35.039,
+      "start_s": 41.579,
+      "end_s": 47.519,
       "anchored": false,
       "max_hold_s": 7.0,
       "layers": [
         "guidance:ground",
-        "guidance:plate:cards/definition-9x16",
+        "guidance:plate:cards/quote-pull-9x16",
         "guidance:caption"
       ]
     },
     {
       "id": "the-turn",
       "plate": "room/talk",
-      "start_s": 35.039,
-      "end_s": 42.308,
-      "anchored": false,
+      "start_s": 47.519,
+      "end_s": 50.449,
+      "anchored": true,
       "max_hold_s": 7.0,
       "layers": [
         "the-turn:ground",
@@ -135,44 +170,44 @@
     {
       "id": "so-what",
       "plate": "structure/both-true-9x16",
-      "start_s": 42.308,
-      "end_s": 49.308,
+      "start_s": 50.449,
+      "end_s": 53.378,
       "anchored": false,
       "max_hold_s": 7.0,
       "layers": [
         "so-what:ground",
-        "so-what:plate:structure/confession-statement-9x16",
-        "so-what:caption",
-        "so-what:meme-frame:frames/media-frame-t3-9x16",
-        "so-what:meme:harold-100k-goal-still-152k-to-go"
+        "so-what:plate:structure/both-true-9x16",
+        "so-what:caption"
       ]
     },
     {
       "id": "close",
-      "plate": "structure/closing-9x16",
-      "start_s": 49.308,
+      "plate": "structure/closing-t2-9x16",
+      "start_s": 53.378,
       "end_s": 56.308,
       "anchored": false,
       "max_hold_s": 7.0,
       "layers": [
         "close:ground",
-        "close:plate:cards/quote-pull-9x16",
+        "close:plate:structure/closing-t2-9x16",
         "close:caption"
       ]
     }
   ],
-  "layers": 24,
+  "layers": 29,
   "plates_used": [
-    "cards/definition-9x16",
     "cards/quote-pull-9x16",
     "figures/big-number-l1-9x16",
+    "figures/big-number-l2-9x16",
     "figures/compare-stacked-9x16",
+    "figures/print-vs-consensus-9x16",
+    "figures/qoq-yoy-9x16",
     "frames/media-frame-t3-9x16",
     "host/close-up",
     "room/desk-front-9x16",
-    "shorts/hook-card-t2",
-    "structure/confession-statement-9x16",
-    "tables/numbers-sheet-4r-9x16"
+    "shorts/hook-card-t3",
+    "structure/both-true-9x16",
+    "structure/closing-t2-9x16"
   ],
   "shot_order": "as-authored",
   "moves": {
@@ -186,95 +221,100 @@
       },
       {
         "move": "count-up",
-        "start": 7.0,
+        "start": 11.88,
         "shot_id": "the-print",
         "slot": "value",
         "frames": 7
       },
       {
         "move": "count-up",
-        "start": 14.0,
+        "start": 17.82,
         "shot_id": "vs-expected",
+        "slot": "reported",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 18.553,
+        "shot_id": "vs-expected",
+        "slot": "delta",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 19.286,
+        "shot_id": "vs-expected",
+        "slot": "expected",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 23.76,
+        "shot_id": "the-quarter",
+        "slot": "figure",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 29.95,
+        "shot_id": "the-sheet-1",
+        "slot": "value",
+        "frames": 7
+      },
+      {
+        "move": "count-up",
+        "start": 35.639,
+        "shot_id": "the-sheet-2",
         "slot": "value-1",
         "frames": 7
       },
       {
         "move": "count-up",
-        "start": 14.733,
-        "shot_id": "vs-expected",
+        "start": 36.373,
+        "shot_id": "the-sheet-2",
         "slot": "value-2",
         "frames": 7
       },
       {
-        "move": "pen-circle",
-        "start": 15.467,
-        "shot_id": "vs-expected",
-        "slot": "value-1",
-        "frames": 8
-      },
-      {
         "move": "highlight",
-        "start": 21.25,
-        "shot_id": "the-sheet",
-        "slot": "band-1",
-        "frames": 6
-      },
-      {
-        "move": "highlight",
-        "start": 23.463,
-        "shot_id": "the-sheet",
-        "slot": "band-2",
-        "frames": 6
-      },
-      {
-        "move": "highlight",
-        "start": 28.389,
+        "start": 41.929,
         "shot_id": "guidance",
         "slot": "body",
         "frames": 6
       },
       {
         "move": "highlight",
-        "start": 51.52,
+        "start": 53.728,
         "shot_id": "close",
-        "slot": "body",
+        "slot": "statement",
         "frames": 6
       }
     ],
     "wipes": [
       {
         "transition": "overlays/wipe-page-short-9x16",
-        "cut": 21.0,
-        "start": 20.917,
-        "shot_out": "vs-expected",
-        "shot_in": "the-sheet"
+        "cut": 29.7,
+        "start": 29.616,
+        "shot_out": "the-quarter",
+        "shot_in": "the-sheet-1"
       },
       {
         "transition": "overlays/wipe-sweep-short-9x16",
-        "cut": 42.308,
-        "start": 42.225,
+        "cut": 50.449,
+        "start": 50.365,
         "shot_out": "the-turn",
         "shot_in": "so-what"
       }
     ],
     "skipped": [
-      "the-print: no pen-circle, value is too big a part of the plate to ring without ringing the plate"
+      "the-print: no pen-circle, value is too big a part of the plate to ring without ringing the plate",
+      "vs-expected: pen-circle sits this video out (about one short in 3, never two running)"
     ]
   },
   "meme": {
-    "key": "harold-100k-goal-still-152k-to-go",
-    "file": "harold-100k-goal-still-152k-to-go.jpg",
-    "source": "library",
-    "shot": "so-what",
-    "start_s": 47.808,
-    "end_s": 49.308,
-    "frame": "frames/media-frame-t3-9x16",
-    "score": 4,
-    "matched": [
-      "beat-sold-off (hiding-the-pain)",
-      "guidance-cut (hiding-the-pain)"
-    ],
-    "why": "scored 4 on beat-sold-off (hiding-the-pain); guidance-cut (hiding-the-pain)"
+    "key": null,
+    "why": "no room: 2.93s span, clear of the payoff, holds under 1.0s",
+    "picked": "harold-100k-goal-still-152k-to-go"
   },
   "beat_order": [],
   "audio": [
@@ -293,21 +333,21 @@
       "file": "room_night.wav",
       "gaps": [
         [
-          41.81,
-          42.31
+          49.95,
+          50.45
         ]
       ]
     },
     {
-      "name": "screen_buzz@35.04",
-      "start": 35.04,
+      "name": "screen_buzz@47.52",
+      "start": 47.52,
       "gain_db": -34.0,
       "loop": true,
       "file": "screen_buzz.wav",
       "gaps": [
         [
-          41.81,
-          42.31
+          49.95,
+          50.45
         ]
       ]
     },
@@ -317,71 +357,97 @@
       "gain_db": -6.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 0.984,
-      "trim_db": -0.6
+      "rate": 1.031,
+      "trim_db": 1.0
     },
     {
-      "name": "whoosh@6.90",
-      "start": 6.9,
-      "gain_db": -14.0,
-      "loop": false,
-      "file": "whoosh.wav",
-      "rate": 1.025,
-      "trim_db": 0.9
-    },
-    {
-      "name": "whoosh@13.90",
-      "start": 13.9,
-      "gain_db": -14.0,
-      "loop": false,
-      "file": "whoosh.wav",
-      "rate": 0.981,
-      "trim_db": 0.6
-    },
-    {
-      "name": "wipe@21.00",
-      "start": 20.92,
-      "gain_db": -14.0,
-      "loop": false,
-      "file": "whoosh.wav",
-      "rate": 0.977,
-      "trim_db": -0.2
-    },
-    {
-      "name": "whoosh@27.94",
-      "start": 27.94,
+      "name": "whoosh@5.84",
+      "start": 5.84,
       "gain_db": -14.0,
       "loop": false,
       "file": "whoosh.wav",
       "rate": 1.01,
-      "trim_db": -1.2
+      "trim_db": 1.2
     },
     {
-      "name": "whoosh@34.94",
-      "start": 34.94,
+      "name": "whoosh@11.78",
+      "start": 11.78,
       "gain_db": -14.0,
       "loop": false,
       "file": "whoosh.wav",
-      "rate": 1.002,
-      "trim_db": -1.3
+      "rate": 0.969,
+      "trim_db": -0.9
     },
     {
-      "name": "payoff_hit@42.31",
-      "start": 42.31,
+      "name": "whoosh@17.72",
+      "start": 17.72,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 1.027,
+      "trim_db": -0.6
+    },
+    {
+      "name": "whoosh@23.66",
+      "start": 23.66,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.996,
+      "trim_db": -1.4
+    },
+    {
+      "name": "wipe@29.70",
+      "start": 29.62,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.988,
+      "trim_db": -0.9
+    },
+    {
+      "name": "whoosh@35.54",
+      "start": 35.54,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.969
+    },
+    {
+      "name": "whoosh@41.48",
+      "start": 41.48,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 1.015,
+      "trim_db": -0.6
+    },
+    {
+      "name": "whoosh@47.42",
+      "start": 47.42,
+      "gain_db": -14.0,
+      "loop": false,
+      "file": "whoosh.wav",
+      "rate": 0.999,
+      "trim_db": -0.5
+    },
+    {
+      "name": "payoff_hit@50.45",
+      "start": 50.45,
       "gain_db": -6.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 1.007,
+      "rate": 1.016,
       "trim_db": 0.2
     },
     {
-      "name": "whoosh@49.21",
-      "start": 49.21,
+      "name": "whoosh@53.28",
+      "start": 53.28,
       "gain_db": -14.0,
       "loop": false,
       "file": "whoosh.wav",
-      "rate": 0.991,
-      "trim_db": -0.5
+      "rate": 0.961,
+      "trim_db": 0.2
     },
     {
       "name": "move:highlight@0.35",
@@ -389,76 +455,91 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "marker_draw.wav",
-      "rate": 1.03,
-      "trim_db": -1.2
+      "rate": 0.974,
+      "trim_db": 0.6
     },
     {
-      "name": "move:count-up@14.73",
-      "start": 14.73,
+      "name": "move:count-up@18.55",
+      "start": 18.55,
       "gain_db": -18.0,
       "loop": false,
       "file": "tick_roll.wav",
-      "rate": 0.969,
-      "trim_db": 1.0
+      "rate": 0.975,
+      "trim_db": -0.7
     },
     {
-      "name": "move:pen-circle@15.47",
-      "start": 15.47,
+      "name": "move:count-up@19.29",
+      "start": 19.29,
       "gain_db": -18.0,
       "loop": false,
-      "file": "marker_circle.wav",
-      "rate": 1.015,
-      "trim_db": -0.5
+      "file": "tick_roll.wav",
+      "rate": 0.974,
+      "trim_db": 0.8
     },
     {
-      "name": "move:highlight@23.46",
-      "start": 23.46,
+      "name": "move:count-up@36.37",
+      "start": 36.37,
       "gain_db": -18.0,
       "loop": false,
-      "file": "marker_draw.wav",
-      "rate": 1.02,
-      "trim_db": -1.5
+      "file": "tick_roll.wav",
+      "rate": 0.964,
+      "trim_db": 1.1
     },
     {
-      "name": "move:highlight@28.39",
-      "start": 28.39,
-      "gain_db": -18.0,
-      "loop": false,
-      "file": "marker_draw.wav",
-      "rate": 1.033,
-      "trim_db": -1.2
-    },
-    {
-      "name": "move:highlight@51.52",
-      "start": 51.52,
+      "name": "move:highlight@41.93",
+      "start": 41.93,
       "gain_db": -18.0,
       "loop": false,
       "file": "marker_draw.wav",
-      "rate": 0.989,
-      "trim_db": -1.1
+      "rate": 1.031,
+      "trim_db": -1.0
+    },
+    {
+      "name": "move:highlight@53.73",
+      "start": 53.73,
+      "gain_db": -18.0,
+      "loop": false,
+      "file": "marker_draw.wav",
+      "rate": 0.964,
+      "trim_db": -0.2
     }
   ],
-  "kit_reach": "Kit: 10 of 704 plates, 8 families, 9 animated layers",
+  "kit_reach": "Kit: 12 of 704 plates, 7 families, 11 animated layers",
   "skipped": [
-    "open.move <- chart.move",
     "the-print.label <- compare.print_label",
-    "vs-expected.caption <- script.cheap_or_trap",
-    "the-sheet.unit <- numbers.unit",
-    "the-sheet.label-3 <- numbers.label.2",
-    "the-sheet.row-3 <- numbers.figures.2",
-    "the-sheet.label-4 <- numbers.label.3",
-    "the-sheet.row-4 <- numbers.figures.3",
-    "so-what.caption <- script.cheap_or_trap"
+    "the-print.caption <- outside the clear area",
+    "the-sheet-2.delta <- numbers.change.1",
+    "guidance.source <- source.guidance",
+    "so-what.caption <- script.cheap_or_trap",
+    "so-what.meme <- no room: 2.93s span, clear of the payoff, holds under 1.0s"
   ],
   "dropped_shots": [],
+  "workbook": {
+    "file": "dennis_data.xlsx",
+    "notes": [
+      "Revenue: shown from the workbook ($400M, $452M, $471M, $491M, $496M, $496M) instead of the typed $400M, $452M, $471M, $491M, $496M",
+      "Net income: shown from the workbook (-$8M, -$25M, -$49M, -$70M, -$89M, -$89M) instead of the typed -$8M, -$25M, -$49M, -$70M, -$89M"
+    ]
+  },
+  "safe_area": {
+    "top": 170,
+    "bottom": 1480,
+    "outside": [],
+    "shrunk_to_fit": [
+      "open"
+    ]
+  },
+  "attributions": [
+    "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
+  ],
   "text_overflow": {},
   "host_faces": {
     "the-turn:host:close-up": {
       "pose": "host/close-up",
       "spoke": true,
-      "talk_frames": 202,
+      "talk_frames": 84,
       "idle_frames": 0,
-      "blinks": 2,
+      "blinks": 1,
       "has_talk": true,
       "has_idle": true,
       "has_blink": true,
@@ -466,7 +547,6 @@
       "mouths": [
         "mouthClosed",
         "mouthEE",
-        "mouthFV",
         "mouthMid",
         "mouthO",
         "mouthWide"
@@ -476,12 +556,10 @@
   },
   "longest_layer_hold_s": 0.0,
   "pacing": {
-    "shots": 8,
-    "longest_span_s": 7.27,
-    "longest_still_span_s": 7.04,
-    "spans_over_their_ceiling": [
-      "the-turn 7.3s over 7.0s"
-    ],
+    "shots": 11,
+    "longest_span_s": 5.94,
+    "longest_still_span_s": 5.94,
+    "spans_over_their_ceiling": [],
     "hold_ceiling_s": 8.0,
     "held_over_ceiling": []
   },

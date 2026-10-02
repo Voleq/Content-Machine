@@ -52,7 +52,8 @@ SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
 # `bind` because interchangeable plates rarely name their slots the same way:
 # `structure/closing` writes `line-1` and `structure/end-card` writes `line`,
 # and a shared bind map would name a slot one of them does not declare.
-ALT_KEYS = frozenset({"plate", "bind", "lit", "focus", "notes", "prefer"})
+ALT_KEYS = frozenset({"plate", "bind", "lit", "focus", "notes", "prefer",
+                      "captions"})
 ORDER_KEYS = frozenset({"name", "shots", "notes"})
 TEXT_KEYS = frozenset({"name", "src", "size_fh", "align", "halign",
                        "max_lines", "draw_on_s", "color", "slot"})
@@ -203,6 +204,11 @@ class Variant:
     # be, ahead of the rotation: it is the beat's substance, not one more
     # layout for it. The authored plate stays the fallback.
     prefer: bool = False
+    # A drawing that fills the clear band with data (27 years of a series,
+    # axis to source line) leaves the caption nowhere to go but over the
+    # figures. `False` lets that one drawing go uncaptioned; None keeps the
+    # shot's own setting.
+    captions: bool | None = None
 
     def resolved(self, shot: "Shot") -> tuple[dict[str, str], str | None,
                                               str | None]:
@@ -505,7 +511,9 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
                 plate=alt_plate,
                 bind=dict(a["bind"]) if a.get("bind") is not None else None,
                 lit=a.get("lit"), focus=a.get("focus"),
-                notes=a.get("notes", ""), prefer=bool(a.get("prefer", False))))
+                notes=a.get("notes", ""), prefer=bool(a.get("prefer", False)),
+                captions=(None if a.get("captions") is None
+                          else bool(a["captions"]))))
         alt_keys = [v.plate for v in alts]
         if len(set(alt_keys)) != len(alt_keys) or plate in alt_keys:
             raise TemplateError(

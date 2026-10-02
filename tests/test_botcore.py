@@ -53,7 +53,7 @@ def test_upload_on_a_short_lane_yields_exactly_the_short_prompt(core, xlsx_bytes
 
     assert "Ticker: EXMPL" in short_prompt and "ps_ttm = 62.0" in short_prompt
     assert "[history" in short_prompt, "the 5y history feeds the gut check"
-    assert "numbers-sheet" in short_prompt        # the plate catalogue
+    assert "bars-6y" in short_prompt              # the plate catalogue
     # THE MEME AND B-ROLL CATALOGUES ARE NOT HERE, and that is the fix (P3).
     # Both were offered to the SHORT lane while the same prompt, forty lines
     # later, told the writer the inline form of those two tags was LONG-form

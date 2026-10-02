@@ -154,6 +154,22 @@
             "short-label": "data.short_interest.short-label"
           },
           "notes": "SHORT INTEREST (item 4), only above 10% of the float, off the Snapshot sheet. Days to cover and the cost to borrow stay empty: the workbook carries no float volume or borrow rate, and an invented one is the thing this channel never prints."
+        },
+        {
+          "plate": "charts/intraday-9x16",
+          "bind": {
+            "kicker": "?chart.session.kicker",
+            "unit": "?chart.session.unit",
+            "figure": "chart.session.figure",
+            "plot-area": "chart.session.plot-area",
+            "head-1": "chart.session.head-1",
+            "head-3": "chart.session.head-3",
+            "head-5": "chart.session.head-5",
+            "head-7": "chart.session.head-7",
+            "event-label": "?chart.session.event-label",
+            "caption": "?chart.session.caption"
+          },
+          "notes": "TODAY'S SESSION (item 4), open to close against the prior close, off Yahoo's free five-minute prices. Never synthetic, and withheld when the session's move and the writer's move disagree by more than three points: a chart contradicting the voice is worse than another chart."
         }
       ]
     },

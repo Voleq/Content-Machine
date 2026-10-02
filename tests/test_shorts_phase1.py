@@ -70,6 +70,26 @@ def test_the_release_card_is_read_off_the_page_the_news_sheet_links(
     assert card["date"] and card["source"]
 
 
+def test_the_push_in_on_a_release_never_cuts_its_date_in_half(settings):
+    """Pushing in on the headline took the date off the side of the frame
+    at "6 July 202". A push that leaves a line half in view is not taken;
+    the headline is highlighted instead."""
+    from pipeline import moves
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    plate = reg.get("paper/press-release-9x16")
+    values = {"source": "BUSINESS WIRE", "date": "6 July 2026",
+              "headline": "Example Corp Announces AI Partnership with a "
+                          "Cloud Provider",
+              "body": "Example Corp today announced a strategic partnership."}
+    box = moves._ink_box(plate, "headline", values["headline"], settings, reg)
+    assert moves._zoom_cuts_a_line(plate, box, "headline", values, settings, reg)
+    alone = {"headline": values["headline"]}
+    assert not moves._zoom_cuts_a_line(plate, box, "headline", alone,
+                                       settings, reg)
+
+
 def test_a_wire_strip_is_the_latest_rows_oldest_first_or_nothing(data):
     rows = news_page.wire_rows(data, 5, 65)
     assert rows is not None and len(rows) == 5
@@ -215,3 +235,49 @@ def test_a_box_holding_a_supplied_value_does_not_narrow_the_writer():
     assert _writer_bind("?source.numbers_comment")
     assert not _writer_bind("pic.company.source")
     assert not _writer_bind("?data.week52.kicker")
+
+
+def test_the_macro_chart_keeps_its_name_and_goes_uncaptioned(
+        settings, fixtures_dir, tmp_path):
+    """The chart runs from its title to its source line, taller than the
+    clear band. Shrunk to fit with the title optional, the title was the line
+    dropped; and with the chart filling the band, a caption had nowhere to go
+    but over its years."""
+    from pipeline.compose import build_layers
+    from pipeline.parser_short import parse_short_script
+    from pipeline.plates import load_plates
+    from pipeline.render_short import ShortResolver
+    from pipeline.shots import expand_sequences, load_format, resolve_spans
+
+    reg = load_plates(settings.assets_dir)
+    script, _ = parse_short_script(
+        (fixtures_dir / "scripts" / "macro_valid.json").read_text(encoding="utf-8"),
+        settings)
+    resolver = ShortResolver(script=script, workdir=tmp_path, settings=settings,
+                             prices=None, handle="@channel")
+    fmt = expand_sequences(load_format("macro"), lambda _s: ["a", "b", "c"])
+    shot = next(s for s in fmt.shots if s.id == "the-statement")
+    chart = next(v for v in shot.alts if v.plate == "charts/macro-series-9x16")
+    assert chart.captions is False
+    words = [NS(word=f"w{i}", start=i * 0.25, end=i * 0.25 + 0.2,
+                char_start=0, char_end=0) for i in range(240)]
+    spans = resolve_spans(fmt, words, 60.0, {})
+    built = build_layers(fmt, spans, resolver, reg, aspect=fmt.aspect,
+                         seed="macro", variants={"the-statement": chart})
+    mine = [l for l in built.layers if l.shot_id == "the-statement"]
+    plate = next(l for l in mine if l.kind == "plate")
+    assert plate.entry_key == "charts/macro-series-9x16"
+    assert plate.values.get("kicker", "").startswith("US CPI")
+    assert not [l for l in mine if l.kind == "caption"]
+    # Every other beat keeps its captions.
+    assert [l for l in built.layers if l.kind == "caption"
+            and l.shot_id == "the-mechanism"]
+
+
+def test_a_change_is_printed_only_where_a_percentage_is_honest():
+    assert short_data.change("revenue", 400.0, 496.0) == "+24%"
+    assert short_data.change("gross_margin", 58.0, 52.0) == "-6 pts"
+    # A loss that widened is not "-1012%", and a crossing has no percentage.
+    assert short_data.change("net_income", -8.0, -89.0) is None
+    assert short_data.change("net_income", 12.0, -15.0) is None
+    assert short_data.change("revenue", 0.0, 5.0) is None

@@ -564,13 +564,21 @@ def test_a_rendered_short_carries_its_mix(settings, tmp_path, short_valid_json):
     assert sum(n.startswith("wipe@") for n in names) == len(wipes)
 
     # Every move sound is a move the record says the picture played.
-    record = {(r["move"], r["start"]) for r in manifest["moves"]["moves"]}
+    record = {(r["move"], r["start"], r.get("frames") or 0)
+              for r in manifest["moves"]["moves"]}
     heard = [a for a in manifest["audio"] if a["name"].startswith("move:")]
+
+    def at_s(cue, move, frames):
+        # A bars-grow lands on its last column: a frame later for every
+        # column after the first (`move_cues`).
+        return (frames - 1) / 12 if move == "bars-grow" and frames > 1 else cue.at_s
+
     for a in heard:
         move = a["name"][len("move:"):].split("@")[0]
         cue = MOVE_CUES[move]
-        began = a["start"] if cue.drawn else a["start"] - cue.at_s
-        assert any(m == move and abs(t - began) < 0.01 for m, t in record), a
+        assert any(m == move and abs(t - (a["start"] if cue.drawn
+                                          else a["start"] - at_s(cue, m, f))) < 0.01
+                   for m, t, f in record), a
     assert len(heard) <= len(record)
 
     assert "audio" in _streams(out)

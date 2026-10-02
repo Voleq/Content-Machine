@@ -844,9 +844,15 @@ def build_anchors(script: ShortScript) -> dict[str, str]:
     if script.numbers:
         out["numbers"] = script.numbers[0].label
         # Each later row's card listens for its own name (item 26), so it
-        # comes up as that row is read rather than on an even share.
+        # comes up as that row is read rather than on an even share. In a
+        # MARKED script only where the name is said inside the numbers beat:
+        # a row first named after the next marker is talked about in another
+        # beat, and a card that waited for it would push that beat's own
+        # shot off its marker.
+        inside = _beat_text(script, "numbers")
         for i, row in enumerate(script.numbers[1:], start=1):
-            out[f"numbers.{i}"] = row.label
+            if inside is None or row.label.lower() in inside:
+                out[f"numbers.{i}"] = row.label
     if script.numbers_comment:
         out["numbers_comment"] = script.numbers_comment
     if script.cheap_or_trap:
@@ -882,6 +888,18 @@ def build_anchors(script: ShortScript) -> dict[str, str]:
         if len(heard.split()) >= 2:
             out[mark.key] = heard
     return out
+
+
+def _beat_text(script, key: str) -> str | None:
+    """What a marked beat says, lower-cased, from its marker to the next; None
+    when the script does not mark that beat."""
+    marks = sorted(getattr(script, "beat_marks", None) or (),
+                   key=lambda m: m.char_offset)
+    for i, m in enumerate(marks):
+        if m.key == key:
+            end = marks[i + 1].char_offset if i + 1 < len(marks) else None
+            return script.audio_script[m.char_offset:end].lower()
+    return None
 
 
 def marked_beats(script, fmt: Format) -> list[str]:

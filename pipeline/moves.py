@@ -85,6 +85,9 @@ CIRCLE_MAX_AREA = 0.10   # of its area
 # payoff is about to say, or the gap in a reported-against-expected pair. The
 # full sheet is `numbers` in the stock short and `the-sheet` in earnings.
 CIRCLE_SHOTS = ("numbers", "the-sheet", "vs-expected", "payoff", "the-print")
+# ONE METRIC A CARD (item 26): the numbers beat is cut into `numbers-1` …
+# `numbers-4`, one card a row, and the verdict's figure is on the card of the
+# row it names, printed under its bar or as the card's latest figure.
 VERDICT_SHOTS = ("payoff", "the-print")
 
 # A push-in that barely moves is a wobble, and one that goes too far sets the
@@ -393,12 +396,26 @@ def figure_number(text: str) -> float | None:
     return -v if neg else v
 
 
+def _verdict_figure(values: dict) -> str:
+    """The payoff's figure: `value` on the big-number cards, `num` on
+    `shorts/short-number`."""
+    return str(values.get("value") or values.get("num") or "")
+
+
+_STEP = re.compile(r"^(numbers|the-sheet)-\d+$")
+_VALUE_N = re.compile(r"^value-(\d+)$")
+
+
 def _circle_slot(shot_id: str, plate, values: dict, verdict: float | None) -> str | None:
     """Which slot the pen may ring on this shot, if any. See `CIRCLE_SHOTS`."""
+    step = _STEP.match(shot_id)
+    if step:
+        shot_id = step.group(1)
     if shot_id not in CIRCLE_SHOTS:
         return None
     if shot_id in VERDICT_SHOTS:
-        return "value" if is_one_figure(values.get("value", "")) else None
+        slot = "num" if "num" in values and "value" not in values else "value"
+        return slot if is_one_figure(values.get(slot, "")) else None
     if shot_id == "vs-expected":
         return next((n for n in ("delta", "value-1")
                      if is_one_figure(values.get(n, ""))), None)
@@ -408,6 +425,12 @@ def _circle_slot(shot_id: str, plate, values: dict, verdict: float | None) -> st
         return None
     cells = sorted(((int(m.group(2)), int(m.group(1)), n) for n in values
                     if (m := _CELL.match(n))), reverse=True)
+    # A one-metric card prints its figures as `value-N` under the bars, or
+    # one latest figure as `value-2` / `value`: latest first, the same rule.
+    cells += sorted(((int(m.group(1)), 0, n) for n in values
+                     if (m := _VALUE_N.match(n))), reverse=True)
+    if "value" in values:
+        cells.append((0, 0, "value"))
     return next((n for _, _, n in cells
                  if figure_number(values[n]) == verdict), None)
 
@@ -464,6 +487,34 @@ def _zoom_factor(plate, box) -> float:
     return plate.canvas[0] / max(vw, 1.0)
 
 
+def _zoom_cuts_a_line(plate, box, target: str, values: dict, settings,
+                      reg) -> bool:
+    """Whether pushing in on `target` would leave another line half in view.
+
+    The push frames one passage and lets the rest of the plate go off the
+    edges, which is the move. A line it cuts through is not: the press
+    release's date ended "6 July 202" at the side of the frame. Such a
+    passage gets the highlight instead.
+    """
+    vx, vy, vw, vh = M.zoom_box(plate.canvas, box, 1.0,
+                                zoom_pad(plate.canvas, box, _zoom_pad_of(plate)))
+    for name, text in values.items():
+        slot = plate.slot(name)
+        if (name == target or slot is None or slot.region or slot.control
+                or not str(text).strip()):
+            continue
+        ink = _ink_box(plate, name, str(text), settings, reg)
+        if ink is None:
+            continue
+        apart = (ink.x + ink.w <= vx or ink.x >= vx + vw
+                 or ink.y + ink.h <= vy or ink.y >= vy + vh)
+        inside = (ink.x >= vx - 1 and ink.x + ink.w <= vx + vw + 1
+                  and ink.y >= vy - 1 and ink.y + ink.h <= vy + vh + 1)
+        if not apart and not inside:
+            return True
+    return False
+
+
 class _Lane:
     """The moves on one plate, placed one after another without overlap."""
 
@@ -512,7 +563,7 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
     plate_layers = shot_plates(result)
     circle_ok = _circle_this_video(seed, recent_circled)
     circled = False
-    verdict = next((figure_number(plate_layers[s].values.get("value", ""))
+    verdict = next((figure_number(_verdict_figure(plate_layers[s].values))
                     for s in VERDICT_SHOTS if s in plate_layers), None)
 
     # WIPES FIRST: a shot a wipe opens holds its moves until the cover goes.
@@ -629,7 +680,9 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
             zbox = None
             if plate.family == "paper" and settings is not None:
                 zbox = _ink_box(plate, hl, text, settings, reg)
-            if zbox is not None and ZOOM_MIN <= _zoom_factor(plate, zbox):
+            if zbox is not None and ZOOM_MIN <= _zoom_factor(plate, zbox) \
+                    and not _zoom_cuts_a_line(plate, zbox, hl, values,
+                                              settings, reg):
                 done = lane.place(new("zoom-to-slot", hl),
                                   at if at is not None else earliest + 0.6) is not None
             if not done:
