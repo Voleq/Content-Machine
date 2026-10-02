@@ -150,6 +150,12 @@ class EncodeProfile:
     preset: str
     crf: int
     pix_fmt: str = "yuv420p"
+    # x264 only. `tune` and `x264_params` for flat animation on a dark
+    # ground; `bt709` tags the stream's colour, which the filtergraph that
+    # feeds it converts to (`composite_video`).
+    tune: str = ""
+    x264_params: str = ""
+    bt709: bool = False
 
     @property
     def is_hardware(self) -> bool:
@@ -159,10 +165,17 @@ class EncodeProfile:
         args = ["-c:v", self.vcodec, "-pix_fmt", self.pix_fmt]
         if self.vcodec == "libx264":
             args += ["-preset", self.preset, "-crf", str(self.crf)]
+            if self.tune:
+                args += ["-tune", self.tune]
+            if self.x264_params:
+                args += ["-x264-params", self.x264_params]
         elif self.vcodec == HARDWARE_ENCODER:
             # NVENC has its own preset ladder (p1 fastest … p7 slowest) and
             # rate control; -crf means nothing to it, -cq is the equivalent.
             args += ["-preset", "p4", "-cq", str(self.crf)]
+        if self.bt709:
+            args += ["-colorspace", "bt709", "-color_primaries", "bt709",
+                     "-color_trc", "bt709", "-color_range", "tv"]
         return args
 
     def software_equivalent(self, settings: Settings) -> "EncodeProfile":
@@ -285,6 +298,42 @@ def encode_profile(settings: Settings, fmt: str, draft: bool = False,
     return EncodeProfile(vcodec=vcodec, preset=settings.final_preset, crf=crf)
 
 
+# THE LONG'S TWO ENCODES (2 Oct 2026, "fix the fps and quality for the longs
+# as well"). Every beat was encoded at veryfast/CRF 22 and the whole cut
+# encoded again over it at the same setting: 0.11 to 0.18 Mbit/s at 1080p,
+# and the dark ground came out blocky. The beats are now an intermediate at
+# `long_segment_crf`, close to lossless, on whatever encoder the render has
+# (the GPU when there is one); the one encode the viewer sees is the last.
+
+
+def segment_profile(settings: Settings, profile: EncodeProfile) -> EncodeProfile:
+    """The per-beat intermediate for a final long: `profile`'s encoder at
+    `long_segment_crf`."""
+    return EncodeProfile(vcodec=profile.vcodec, preset=profile.preset,
+                         crf=int(settings.long_segment_crf), pix_fmt=profile.pix_fmt)
+
+
+def final_long_profile(settings: Settings) -> EncodeProfile:
+    """The long's last encode: x264 at `long_final_preset` and `long_crf`,
+    tuned for flat animation, colour converted to BT.709 and tagged so."""
+    return EncodeProfile(vcodec="libx264", preset=settings.long_final_preset,
+                         crf=settings.long_crf, tune="animation",
+                         x264_params="aq-mode=3", bt709=True)
+
+
+def delivery_size(settings: Settings, frame: tuple[int, int]) -> tuple[int, int] | None:
+    """The long's file size when it is drawn at `frame` and delivered at
+    `long_delivery_height`, or None when it stays as drawn.
+
+    Only a frame drawn at full HD or more is scaled: a smaller one is a test
+    or a cheap pass, and blowing it up buys nothing."""
+    want = int(getattr(settings, "long_delivery_height", 0) or 0)
+    if want <= frame[1] or frame[1] < 1080:
+        return None
+    w = int(round(frame[0] * want / frame[1] / 2.0)) * 2
+    return (w, want)
+
+
 # --------------------------------------------------------------------------
 # Overlay compositing: one filtergraph, one encode.
 # --------------------------------------------------------------------------
@@ -350,6 +399,9 @@ class CompositeSpec:
     fonts_dir: Path | None = None
     duration: float = 0.0
     fps: int = 30
+    # Scaled to this after the overlays and before the captions, so libass
+    # sets the type at the delivered size (`delivery_size`).
+    out_size: tuple[int, int] | None = None
     # Master bus. -14 LUFS is the streaming reference (YouTube normalises to
     # roughly this); -1.5 dBTP leaves headroom for lossy encoding artefacts.
     loudness_lufs: float = -14.0
@@ -546,11 +598,18 @@ def composite_video(
         idx += 1
 
     v_label = f"[v{len(spec.layers)}]"
+    if spec.out_size is not None:
+        w, h = spec.out_size
+        lines.append(f"{v_label}scale={w}:{h}:flags=lanczos[vsz]")
+        v_label = "[vsz]"
+    # The colour, converted once, here, to what the encoder tags it as.
+    tail = (",scale=out_color_matrix=bt709:out_range=tv,format=yuv420p"
+            if profile.bt709 else "")
     if spec.ass_path is not None:
         fonts = f":fontsdir='{spec.fonts_dir}'" if spec.fonts_dir else ""
-        lines.append(f"{v_label}subtitles=filename='{spec.ass_path}'{fonts}[vout]")
+        lines.append(f"{v_label}subtitles=filename='{spec.ass_path}'{fonts}{tail}[vout]")
     else:
-        lines.append(f"{v_label}null[vout]")
+        lines.append(f"{v_label}null{tail}[vout]")
 
     a_inputs, a_lines = audio_graph(spec, first_input=idx)
     inputs += a_inputs

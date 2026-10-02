@@ -101,9 +101,12 @@ from pipeline.render_common import (
     OverlayLayer,
     RenderError,
     composite_video,
+    delivery_size,
     encode_profile,
     ffprobe_duration,
+    final_long_profile,
     render_thread_budget,
+    segment_profile,
 )
 from pipeline.segments import (
     CACHE_DIRNAME as SEG_CACHE_DIRNAME,
@@ -1867,6 +1870,13 @@ def _render_long(
     # segment.
     profile = encode_profile(settings, "long", draft=draft, preview=preview,
                              proof=proof)
+    # A FINAL encodes twice, and only the last one is lossy in a way anyone
+    # sees: the beats are an intermediate close to lossless, on whatever
+    # encoder the render has, and the whole cut is encoded once at the end
+    # for quality. Draft, preview and proof keep their one cheap profile.
+    final = not (draft or preview or proof)
+    out_profile = final_long_profile(settings) if final else profile
+    profile = segment_profile(settings, profile) if final else profile
     seg_run: SegmentRun | None = None
     base_video: Path | None = None
     if settings.render_segmented:
@@ -2355,6 +2365,7 @@ def _render_long(
         fps=fps,
         normalise_audio=not (settings.mocking_tts or draft or preview
                              or getattr(tts, "draft", False)),
+        out_size=delivery_size(settings, (W, H)) if final else None,
     )
     out_path = workspace / ("long_draft.mp4" if draft
                             else "long_proof.mp4" if proof
@@ -2367,7 +2378,7 @@ def _render_long(
     # lose twice. `segments._encode_one` already worked this way.
     part = out_path.with_suffix(".part.mp4")
     part.unlink(missing_ok=True)
-    composite_video(spec, profile, settings.audio_bitrate, part)
+    composite_video(spec, out_profile, settings.audio_bitrate, part)
 
     rendered = ffprobe_duration(part)
     if abs(rendered - duration) > 0.7:
@@ -2425,6 +2436,10 @@ def _render_long(
         "provenance": provenance.to_json(),
         "duration": duration,
         "resolution": [W, H],
+        # THE FILE'S SIZE, when a final is drawn at `resolution` and scaled up
+        # for delivery (`long_delivery_height`); absent when they are the same.
+        **({"delivered": {"w": spec.out_size[0], "h": spec.out_size[1]}}
+           if spec.out_size else {}),
         "cues": [c.model_dump() for c in cues],
         "segments": seg_meta,
         "segmented": bool(settings.render_segmented),

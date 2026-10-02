@@ -504,7 +504,18 @@ class Settings(BaseSettings):
     # every line at the kit's size, as before 2 Oct 2026.
     short_type_grow: float = 1.8
     short_crf: int = 17
-    long_crf: int = 22
+    # The long's last encode (`render_common.final_long_profile`): x264 at
+    # this preset and `long_crf`, whatever encoder drew the beats. Was the
+    # beats' own veryfast/CRF 22, applied twice (2 Oct 2026).
+    long_crf: int = 18
+    long_final_preset: str = "slow"
+    # Each beat is an intermediate the last encode reads, so it is kept close
+    # to lossless; a cached beat re-encodes when this changes.
+    long_segment_crf: int = 12
+    # Drawn at 1920x1080, delivered at this height: YouTube gives a 1440p
+    # upload its better encode at every size it serves. 1080 (or 0) delivers
+    # at the drawn size.
+    long_delivery_height: int = 1440
     draft_crf: int = 32
     draft_scale: float = 0.5               # draft renders at half resolution
     # PREVIEW is a third, cheaper tier below draft: 480p at 15fps, for

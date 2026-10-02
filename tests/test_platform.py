@@ -353,6 +353,39 @@ def test_the_software_equivalent_keeps_the_quality_target():
     assert sw.preset == s.final_preset
 
 
+def test_the_long_is_encoded_once_for_quality_over_a_near_lossless_cut():
+    """2 Oct 2026: every beat was veryfast/CRF 22 and the whole cut was
+    encoded again over it, 0.11 to 0.18 Mbit/s at 1080p."""
+    from pipeline.render_common import (
+        EncodeProfile, final_long_profile, segment_profile)
+
+    s = Settings(_env_file=None)
+    hw = EncodeProfile(vcodec="h264_nvenc", preset="veryfast", crf=22)
+    seg = segment_profile(s, hw)
+    assert seg.vcodec == hw.vcodec and seg.crf == s.long_segment_crf < 22
+
+    out = final_long_profile(s)
+    args = out.video_args()
+    assert out.vcodec == "libx264" and out.crf == s.long_crf
+    assert args[args.index("-preset") + 1] == s.long_final_preset
+    assert args[args.index("-tune") + 1] == "animation"
+    assert args[args.index("-colorspace") + 1] == "bt709"
+    # the cheap profiles stay untagged and untuned
+    assert "-tune" not in hw.video_args() and "-colorspace" not in hw.video_args()
+
+
+def test_a_full_hd_long_is_delivered_at_1440_and_a_small_one_as_drawn():
+    from pipeline.render_common import delivery_size
+
+    s = Settings(_env_file=None)
+    assert delivery_size(s, (1920, 1080)) == (2560, 1440)
+    assert delivery_size(s, (640, 360)) is None
+    assert delivery_size(s.model_copy(update={"long_delivery_height": 1080}),
+                         (1920, 1080)) is None
+    assert delivery_size(s.model_copy(update={"long_delivery_height": 0}),
+                         (1920, 1080)) is None
+
+
 def test_the_probe_asks_for_a_frame_nvenc_will_accept(monkeypatch,
                                                      _no_encoder_cache):
     """The probe used to answer None on hardware that works.
