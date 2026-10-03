@@ -70,7 +70,7 @@
       "t": 0.15,
       "kind": "scene",
       "payload": {
-        "order": 0,
+        "order": 1,
         "value": "room/desk-wide",
         "tag": "SCENE",
         "values": {
@@ -84,7 +84,7 @@
       "t": 8.9188,
       "kind": "clip",
       "payload": {
-        "order": 1,
+        "order": 2,
         "value": "tumbleweed",
         "tag": "CLIP",
         "values": {}
@@ -95,7 +95,7 @@
       "t": 13.3033,
       "kind": "plate",
       "payload": {
-        "order": 2,
+        "order": 3,
         "value": "figures/big-number-l1-16x9",
         "tag": "PLATE",
         "values": {
@@ -111,7 +111,7 @@
       "t": 22.5419,
       "kind": "scene",
       "payload": {
-        "order": 3,
+        "order": 4,
         "value": "room/desk-front",
         "tag": "SCENE",
         "values": {
@@ -125,7 +125,7 @@
       "t": 30.7627,
       "kind": "scene",
       "payload": {
-        "order": 5,
+        "order": 6,
         "value": "room/desk-side",
         "tag": "SCENE",
         "values": {
@@ -139,7 +139,7 @@
       "t": 37.6525,
       "kind": "img",
       "payload": {
-        "order": 6,
+        "order": 7,
         "value": "EXMPL data center server racks",
         "tag": "IMG",
         "values": {}
@@ -150,7 +150,7 @@
       "t": 42.2718,
       "kind": "img",
       "payload": {
-        "order": 7,
+        "order": 8,
         "value": "EXMPL dispatch dashboard",
         "tag": "PRODUCT",
         "values": {}
@@ -161,7 +161,7 @@
       "t": 48.3004,
       "kind": "scene",
       "payload": {
-        "order": 8,
+        "order": 9,
         "value": "room/read-close",
         "tag": "SCENE",
         "values": {
@@ -175,7 +175,7 @@
       "t": 50.6492,
       "kind": "plate",
       "payload": {
-        "order": 9,
+        "order": 10,
         "value": "cards/definition-16x9",
         "tag": "PLATE",
         "values": {
@@ -191,7 +191,7 @@
       "t": 60.8273,
       "kind": "plate",
       "payload": {
-        "order": 10,
+        "order": 11,
         "value": "structure/flow-16x9",
         "tag": "PLATE",
         "values": {
@@ -214,7 +214,7 @@
       "t": 66.073,
       "kind": "scribble",
       "payload": {
-        "order": 11,
+        "order": 12,
         "value": "scrawl-oval-wide -> Or it doesn't",
         "tag": "SCRIBBLE",
         "values": {},
@@ -226,7 +226,7 @@
       "t": 75.3899,
       "kind": "scene",
       "payload": {
-        "order": 12,
+        "order": 13,
         "value": "room/desk-front",
         "tag": "SCENE",
         "values": {
@@ -240,7 +240,7 @@
       "t": 80.3223,
       "kind": "plate",
       "payload": {
-        "order": 13,
+        "order": 14,
         "value": "tables/numbers-sheet-4r-16x9",
         "tag": "PLATE",
         "values": {
@@ -288,7 +288,7 @@
       "t": 84.9416,
       "kind": "plate",
       "payload": {
-        "order": 14,
+        "order": 15,
         "value": "charts/line-6y-16x9",
         "tag": "PLATE",
         "values": {
@@ -318,7 +318,7 @@
       "t": 87.7602,
       "kind": "chart",
       "payload": {
-        "order": 15,
+        "order": 16,
         "value": "revenue",
         "tag": "CHART",
         "values": {}
@@ -329,7 +329,7 @@
       "t": 87.7602,
       "kind": "filing",
       "payload": {
-        "order": 16,
+        "order": 17,
         "value": "income_statement.png",
         "tag": "SHOW FILING",
         "values": {}
@@ -340,7 +340,7 @@
       "t": 97.1554,
       "kind": "sound",
       "payload": {
-        "order": 17,
+        "order": 18,
         "value": "windows_error",
         "tag": "SOUND",
         "values": {}
@@ -351,7 +351,7 @@
       "t": 104.7498,
       "kind": "clip",
       "payload": {
-        "order": 19,
+        "order": 20,
         "value": "hamster_wheel",
         "tag": "CLIP",
         "values": {}
@@ -362,7 +362,7 @@
       "t": 104.7498,
       "kind": "plate",
       "payload": {
-        "order": 20,
+        "order": 21,
         "value": "structure/row-spotlight-16x9",
         "tag": "PLATE",
         "values": {
@@ -389,7 +389,7 @@
       "t": 104.7498,
       "kind": "scribble",
       "payload": {
-        "order": 21,
+        "order": 22,
         "value": "underline-tight -> -89",
         "tag": "SCRIBBLE",
         "values": {},
@@ -401,7 +401,7 @@
       "t": 104.7498,
       "kind": "scene",
       "payload": {
-        "order": 22,
+        "order": 23,
         "value": "room/desk-front",
         "tag": "SCENE",
         "values": {
@@ -415,7 +415,7 @@
       "t": 108.5862,
       "kind": "plate",
       "payload": {
-        "order": 23,
+        "order": 24,
         "value": "figures/big-number-l2-16x9",
         "tag": "PLATE",
         "values": {
@@ -433,7 +433,7 @@
       "t": 129.4122,
       "kind": "scene",
       "payload": {
-        "order": 25,
+        "order": 26,
         "value": "room/desk-front-b",
         "tag": "SCENE",
         "values": {
@@ -447,7 +447,7 @@
       "t": 137.3199,
       "kind": "clip",
       "payload": {
-        "order": 27,
+        "order": 28,
         "value": "boardroom_suits",
         "tag": "CLIP",
         "values": {}
@@ -458,7 +458,7 @@
       "t": 141.2345,
       "kind": "plate",
       "payload": {
-        "order": 29,
+        "order": 30,
         "value": "tables/multiples-strip-16x9",
         "tag": "PLATE",
         "values": {
@@ -498,7 +498,7 @@
       "t": 146.167,
       "kind": "scribble",
       "payload": {
-        "order": 30,
+        "order": 31,
         "value": "bracket-rows -> Revenue growth",
         "tag": "SCRIBBLE",
         "values": {},
@@ -510,7 +510,7 @@
       "t": 146.167,
       "kind": "scene",
       "payload": {
-        "order": 31,
+        "order": 32,
         "value": "room/desk-wide",
         "tag": "SCENE",
         "values": {
@@ -524,7 +524,7 @@
       "t": 147.1065,
       "kind": "plate",
       "payload": {
-        "order": 32,
+        "order": 33,
         "value": "cards/quote-pull-16x9",
         "tag": "PLATE",
         "values": {
@@ -539,7 +539,7 @@
       "t": 153.6832,
       "kind": "plate",
       "payload": {
-        "order": 33,
+        "order": 34,
         "value": "structure/timeline-16x9",
         "tag": "PLATE",
         "values": {
@@ -565,7 +565,7 @@
       "t": 153.6832,
       "kind": "scribble",
       "payload": {
-        "order": 34,
+        "order": 35,
         "value": "box-scrawl -> Durable growth",
         "tag": "SCRIBBLE",
         "values": {},
@@ -577,7 +577,7 @@
       "t": 157.5978,
       "kind": "scene",
       "payload": {
-        "order": 35,
+        "order": 36,
         "value": "room/turn-to-screen",
         "tag": "SCENE",
         "values": {
@@ -591,7 +591,7 @@
       "t": 159.3986,
       "kind": "plate",
       "payload": {
-        "order": 36,
+        "order": 37,
         "value": "structure/unit-ladder-16x9",
         "tag": "PLATE",
         "values": {
@@ -619,7 +619,7 @@
       "t": 166.2101,
       "kind": "scribble",
       "payload": {
-        "order": 37,
+        "order": 38,
         "value": "strike-out -> 212",
         "tag": "SCRIBBLE",
         "values": {},
@@ -631,7 +631,7 @@
       "t": 172.7084,
       "kind": "plate",
       "payload": {
-        "order": 38,
+        "order": 39,
         "value": "tables/cash-flow-16x9",
         "tag": "PLATE",
         "values": {
@@ -723,7 +723,7 @@
       "t": 181.0858,
       "kind": "scene",
       "payload": {
-        "order": 39,
+        "order": 40,
         "value": "room/window-wide",
         "tag": "SCENE",
         "values": {
@@ -737,7 +737,7 @@
       "t": 183.5912,
       "kind": "plate",
       "payload": {
-        "order": 40,
+        "order": 41,
         "value": "structure/both-true-16x9",
         "tag": "PLATE",
         "values": {
@@ -757,7 +757,7 @@
       "t": 183.5912,
       "kind": "clip",
       "payload": {
-        "order": 41,
+        "order": 42,
         "value": "growing_plant",
         "tag": "CLIP",
         "values": {}
@@ -768,7 +768,7 @@
       "t": 185.4702,
       "kind": "meme",
       "payload": {
-        "order": 42,
+        "order": 43,
         "value": "harold-quick-flip-became-bagholder",
         "tag": "MEME",
         "values": {}
@@ -779,7 +779,7 @@
       "t": 185.4702,
       "kind": "sound",
       "payload": {
-        "order": 43,
+        "order": 44,
         "value": "sad_trombone",
         "tag": "SOUND",
         "values": {}
@@ -790,7 +790,7 @@
       "t": 185.4702,
       "kind": "scene",
       "payload": {
-        "order": 44,
+        "order": 45,
         "value": "room/desk-wide",
         "tag": "SCENE",
         "values": {
@@ -804,7 +804,7 @@
       "t": 187.1144,
       "kind": "chart",
       "payload": {
-        "order": 45,
+        "order": 46,
         "value": "price",
         "tag": "CHART",
         "values": {}
@@ -815,7 +815,7 @@
       "t": 197.4491,
       "kind": "plate",
       "payload": {
-        "order": 46,
+        "order": 47,
         "value": "figures/big-fraction-16x9",
         "tag": "PLATE",
         "values": {
@@ -834,7 +834,7 @@
       "t": 203.8692,
       "kind": "scribble",
       "payload": {
-        "order": 47,
+        "order": 48,
         "value": "scrawl-oval-tight -> 14%",
         "tag": "SCRIBBLE",
         "values": {},
@@ -846,7 +846,7 @@
       "t": 203.8692,
       "kind": "scene",
       "payload": {
-        "order": 48,
+        "order": 49,
         "value": "room/desk-front",
         "tag": "SCENE",
         "values": {
@@ -860,7 +860,7 @@
       "t": 210.2109,
       "kind": "plate",
       "payload": {
-        "order": 49,
+        "order": 50,
         "value": "cycles/cycle-frame-16x9",
         "tag": "PLATE",
         "values": {
@@ -887,7 +887,7 @@
       "t": 216.7093,
       "kind": "scene",
       "payload": {
-        "order": 50,
+        "order": 51,
         "value": "room/desk-wide",
         "tag": "SCENE",
         "values": {
@@ -901,7 +901,7 @@
       "t": 222.503,
       "kind": "filing",
       "payload": {
-        "order": 51,
+        "order": 52,
         "value": "risk_factors.png",
         "tag": "SHOW FILING",
         "values": {}
@@ -912,7 +912,7 @@
       "t": 222.503,
       "kind": "plate",
       "payload": {
-        "order": 52,
+        "order": 53,
         "value": "cards/quote-pull-16x9",
         "tag": "PLATE",
         "values": {
@@ -927,7 +927,7 @@
       "t": 231.0369,
       "kind": "scene",
       "payload": {
-        "order": 53,
+        "order": 54,
         "value": "room/turn-to-screen",
         "tag": "SCENE",
         "values": {
@@ -941,7 +941,7 @@
       "t": 236.2826,
       "kind": "scene",
       "payload": {
-        "order": 55,
+        "order": 56,
         "value": "room/desk-front",
         "tag": "SCENE",
         "values": {
@@ -955,7 +955,7 @@
       "t": 241.1368,
       "kind": "plate",
       "payload": {
-        "order": 56,
+        "order": 57,
         "value": "structure/closing-16x9",
         "tag": "PLATE",
         "values": {
@@ -973,7 +973,7 @@
       "t": 266.5038,
       "kind": "scene",
       "payload": {
-        "order": 58,
+        "order": 59,
         "value": "room/doorway",
         "tag": "SCENE",
         "values": {
@@ -992,7 +992,7 @@
       "attribution": "",
       "variant": 0,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9333,trim=0:8.9333,scale=260:468[hfg];[2:v]trim=0:8.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1382:336:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9333,trim=0:8.9333,scale=251:453[hfg];[2:v]trim=0:8.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1212:420:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
@@ -1025,7 +1025,7 @@
       "attribution": "",
       "variant": 1,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.5000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5000,trim=0:2.5000,scale=386:696[hfg];[2:v]trim=0:2.5000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1205:180:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.5000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5000,trim=0:2.5000,scale=618:1112[hfg];[2:v]trim=0:2.5000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=703:229:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
@@ -1034,7 +1034,7 @@
       "attribution": "",
       "variant": 2,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:5.7667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:5.7667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.7667,trim=0:5.7667,scale=386:696[hfg];[2:v]trim=0:5.7667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1205:180:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:5.7667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:5.7667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.7667,trim=0:5.7667,scale=618:1112[hfg];[2:v]trim=0:5.7667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=703:229:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
@@ -1043,7 +1043,7 @@
       "attribution": "",
       "variant": 3,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:6.9000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.9000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.9000,trim=0:6.9000,scale=313:564[hfg];[2:v]trim=0:6.9000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1451:300:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:6.9000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.9000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.9000,trim=0:6.9000,scale=658:1185[hfg];[2:v]trim=0:6.9000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=782:72:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
@@ -1072,7 +1072,7 @@
       "attribution": "",
       "variant": 4,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.9667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.9667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.9667,trim=0:2.9667,scale=333:600[hfg];[2:v]trim=0:2.9667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1238:240:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.9667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.9667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.9667,trim=0:2.9667,scale=1078:1941[hfg];[2:v]trim=0:2.9667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=287:88:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -1095,7 +1095,7 @@
       "attribution": "",
       "variant": 5,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:5.2000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:5.2000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.2000,trim=0:5.2000,scale=333:600[hfg];[2:v]trim=0:5.2000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1238:240:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:5.2000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:5.2000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.2000,trim=0:5.2000,scale=1078:1941[hfg];[2:v]trim=0:5.2000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=287:88:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -1118,7 +1118,7 @@
       "attribution": "",
       "variant": 6,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:4.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:4.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=4.9333,trim=0:4.9333,scale=386:696[hfg];[2:v]trim=0:4.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1205:180:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:4.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:4.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=4.9333,trim=0:4.9333,scale=618:1112[hfg];[2:v]trim=0:4.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=703:229:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -1166,7 +1166,7 @@
       "attribution": "",
       "variant": 7,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.1667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.1667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.1667,trim=0:2.1667,scale=386:696[hfg];[2:v]trim=0:2.1667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1205:180:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.1667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.1667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.1667,trim=0:2.1667,scale=618:1112[hfg];[2:v]trim=0:2.1667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=703:229:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "filing",
@@ -1208,7 +1208,7 @@
       "attribution": "",
       "variant": 8,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.7667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.7667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.7667,trim=0:2.7667,scale=386:696[hfg];[2:v]trim=0:2.7667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1205:180:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.7667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.7667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.7667,trim=0:2.7667,scale=618:1112[hfg];[2:v]trim=0:2.7667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=703:229:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -1223,7 +1223,7 @@
         "frames": 357,
         "distinct": 3
       },
-      "filter": "[0:v]trim=0:11.9000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9000,trim=0:11.9000,scale=353:636[hfg];[2:v]trim=0:11.9000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=466:228:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat[tsbase];[3:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:11.9000,setpts=PTS-STARTPTS,scale=981:551[tsev];[tsbase][tsev]overlay=879:264:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:11.9000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9000,trim=0:11.9000,scale=465:838[hfg];[2:v]trim=0:11.9000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=421:345:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat[tsbase];[3:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:11.9000,setpts=PTS-STARTPTS,scale=914:514[tsev];[tsbase][tsev]overlay=946:283:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
@@ -1232,7 +1232,7 @@
       "attribution": "",
       "variant": 9,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:7.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:7.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=7.9333,trim=0:7.9333,scale=373:672[hfg];[2:v]trim=0:7.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1493:192:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.9333,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:7.9333,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=7.9333,trim=0:7.9333,scale=553:996[hfg];[2:v]trim=0:7.9333,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=730:257:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
@@ -1307,7 +1307,7 @@
       "attribution": "",
       "variant": 10,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.5000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5000,trim=0:2.5000,scale=326:588[hfg];[2:v]trim=0:2.5000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=280:252:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.5000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5000,trim=0:2.5000,scale=763:1374[hfg];[2:v]trim=0:2.5000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=31:98:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
@@ -1316,7 +1316,7 @@
       "attribution": "",
       "variant": 11,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.7000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.7000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.7000,trim=0:2.7000,scale=326:588[hfg];[2:v]trim=0:2.7000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=280:252:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.7000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.7000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.7000,trim=0:2.7000,scale=763:1374[hfg];[2:v]trim=0:2.7000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=31:98:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -1339,7 +1339,7 @@
       "attribution": "",
       "variant": 12,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.5000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5000,trim=0:2.5000,scale=250:451[hfg];[2:v]trim=0:2.5000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=484:427:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.5000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5000,trim=0:2.5000,scale=270:486[hfg];[2:v]trim=0:2.5000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=719:438:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -1372,7 +1372,7 @@
       "attribution": "",
       "variant": 13,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:1.4000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:1.4000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=1.4000,trim=0:1.4000,scale=260:468[hfg];[2:v]trim=0:1.4000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1382:336:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:1.4000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:1.4000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=1.4000,trim=0:1.4000,scale=251:453[hfg];[2:v]trim=0:1.4000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1212:420:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
@@ -1381,7 +1381,7 @@
       "attribution": "",
       "variant": 14,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.5000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5000,trim=0:2.5000,scale=260:468[hfg];[2:v]trim=0:2.5000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1382:336:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.5000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5000,trim=0:2.5000,scale=251:453[hfg];[2:v]trim=0:2.5000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1212:420:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "meme",
@@ -1438,7 +1438,7 @@
       "attribution": "",
       "variant": 15,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:3.3000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.3000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.3000,trim=0:3.3000,scale=260:468[hfg];[2:v]trim=0:3.3000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1382:336:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:3.3000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.3000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.3000,trim=0:3.3000,scale=251:453[hfg];[2:v]trim=0:3.3000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1212:420:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
@@ -1447,7 +1447,7 @@
       "attribution": "",
       "variant": 16,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.5000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5000,trim=0:2.5000,scale=260:468[hfg];[2:v]trim=0:2.5000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1382:336:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.5000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5000,trim=0:2.5000,scale=251:453[hfg];[2:v]trim=0:2.5000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1212:420:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "filing",
@@ -1479,7 +1479,7 @@
       "attribution": "",
       "variant": 17,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:4.8667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:4.8667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=4.8667,trim=0:4.8667,scale=386:696[hfg];[2:v]trim=0:4.8667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1205:180:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:4.8667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:4.8667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=4.8667,trim=0:4.8667,scale=618:1112[hfg];[2:v]trim=0:4.8667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=703:229:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -1502,7 +1502,7 @@
       "attribution": "",
       "variant": 18,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:20.3667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:20.3667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=20.3667,trim=0:20.3667,scale=386:696[hfg];[2:v]trim=0:20.3667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1205:180:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:20.3667,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:20.3667,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=20.3667,trim=0:20.3667,scale=618:1112[hfg];[2:v]trim=0:20.3667,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=703:229:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
@@ -1511,11 +1511,11 @@
       "attribution": "",
       "variant": 19,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.2000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.2000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.2000,trim=0:2.2000,scale=333:600[hfg];[2:v]trim=0:2.2000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1250:228:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.2000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.2000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.2000,trim=0:2.2000,scale=371:669[hfg];[2:v]trim=0:2.2000,setpts=PTS-STARTPTS,format=rgba,scale=1920:1080[hfr];[hbg][hfg]overlay=1023:347:eof_action=repeat[hmid];[hmid][hfr]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     }
   ],
   "segmented": true,
-  "segment_cache_hits": 46,
+  "segment_cache_hits": 27,
   "segment_failures": [],
   "layers": [
     {
@@ -1848,7 +1848,8 @@
       "gain_db": -4.0,
       "loop": false,
       "file": "impact.wav",
-      "trim_db": 1.3
+      "rate": 0.994,
+      "trim_db": -1.0
     },
     {
       "name": "chapter_cue@25.00",
@@ -1856,8 +1857,8 @@
       "gain_db": -4.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 1.006,
-      "trim_db": -0.2
+      "rate": 0.996,
+      "trim_db": -0.3
     },
     {
       "name": "chapter_cue@55.63",
@@ -1865,8 +1866,8 @@
       "gain_db": -4.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 0.971,
-      "trim_db": -0.4
+      "rate": 0.982,
+      "trim_db": 0.7
     },
     {
       "name": "chapter_cue@95.33",
@@ -1874,8 +1875,8 @@
       "gain_db": -4.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 1.016,
-      "trim_db": -0.5
+      "rate": 0.985,
+      "trim_db": -1.4
     },
     {
       "name": "chapter_cue@117.50",
@@ -1883,7 +1884,7 @@
       "gain_db": -4.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 0.967,
+      "rate": 0.984,
       "trim_db": -0.7
     },
     {
@@ -1892,8 +1893,8 @@
       "gain_db": -4.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 1.029,
-      "trim_db": 0.6
+      "rate": 1.019,
+      "trim_db": -1.1
     },
     {
       "name": "chapter_cue@170.00",
@@ -1901,8 +1902,8 @@
       "gain_db": -4.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 1.002,
-      "trim_db": 0.6
+      "rate": 0.989,
+      "trim_db": -0.8
     },
     {
       "name": "chapter_cue@195.00",
@@ -1910,8 +1911,8 @@
       "gain_db": -4.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 1.032,
-      "trim_db": 0.2
+      "rate": 1.006,
+      "trim_db": 0.9
     },
     {
       "name": "chapter_cue@220.00",
@@ -1919,8 +1920,8 @@
       "gain_db": -4.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 0.999,
-      "trim_db": -0.2
+      "rate": 1.031,
+      "trim_db": 0.5
     },
     {
       "name": "chapter_cue@246.13",
@@ -1928,8 +1929,8 @@
       "gain_db": -4.0,
       "loop": false,
       "file": "impact.wav",
-      "rate": 1.032,
-      "trim_db": 1.2
+      "rate": 1.038,
+      "trim_db": -0.4
     },
     {
       "name": "move:slide-in@2.93",
@@ -1937,8 +1938,8 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "whoosh.wav",
-      "rate": 1.036,
-      "trim_db": -1.3
+      "rate": 1.005,
+      "trim_db": 0.8
     },
     {
       "name": "move:tick-over@25.50",
@@ -1946,8 +1947,8 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "flip.wav",
-      "rate": 1.029,
-      "trim_db": -1.2
+      "rate": 1.001,
+      "trim_db": -0.2
     },
     {
       "name": "move:tick-over@56.13",
@@ -1955,7 +1956,8 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "flip.wav",
-      "rate": 0.961
+      "rate": 0.965,
+      "trim_db": -0.3
     },
     {
       "name": "move:line-draw@85.33",
@@ -1963,8 +1965,8 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "marker_draw.wav",
-      "rate": 1.038,
-      "trim_db": 0.7
+      "rate": 1.031,
+      "trim_db": -1.3
     },
     {
       "name": "move:tick-over@95.83",
@@ -1972,8 +1974,8 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "flip.wav",
-      "rate": 0.971,
-      "trim_db": 0.5
+      "rate": 1.024,
+      "trim_db": -0.8
     },
     {
       "name": "move:tick-over@118.00",
@@ -1981,8 +1983,8 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "flip.wav",
-      "rate": 0.96,
-      "trim_db": -0.6
+      "rate": 1.025,
+      "trim_db": -1.4
     },
     {
       "name": "move:tick-over@143.00",
@@ -1990,8 +1992,8 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "flip.wav",
-      "rate": 1.009,
-      "trim_db": -0.9
+      "rate": 1.022,
+      "trim_db": 0.3
     },
     {
       "name": "move:tick-over@170.50",
@@ -1999,8 +2001,8 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "flip.wav",
-      "rate": 0.97,
-      "trim_db": 0.5
+      "rate": 1.011,
+      "trim_db": -0.1
     },
     {
       "name": "move:tick-over@195.50",
@@ -2008,8 +2010,8 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "flip.wav",
-      "rate": 0.996,
-      "trim_db": 1.4
+      "rate": 0.997,
+      "trim_db": 0.1
     },
     {
       "name": "move:tick-over@220.50",
@@ -2017,7 +2019,7 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "flip.wav",
-      "rate": 1.016,
+      "rate": 0.986,
       "trim_db": -0.4
     },
     {
@@ -2026,8 +2028,8 @@
       "gain_db": -18.0,
       "loop": false,
       "file": "flip.wav",
-      "rate": 1.034,
-      "trim_db": 0.4
+      "rate": 0.972,
+      "trim_db": -0.5
     },
     {
       "name": "wipe@2.60",
@@ -2035,8 +2037,8 @@
       "gain_db": -14.0,
       "loop": false,
       "file": "whoosh.wav",
-      "rate": 1.015,
-      "trim_db": -0.7
+      "rate": 1.004,
+      "trim_db": -0.5
     },
     {
       "name": "wipe@266.50",
@@ -2044,8 +2046,8 @@
       "gain_db": -14.0,
       "loop": false,
       "file": "whoosh.wav",
-      "rate": 0.97,
-      "trim_db": -0.5
+      "rate": 1.013,
+      "trim_db": -1.5
     },
     {
       "name": "windows_error@97.16",
@@ -2053,8 +2055,8 @@
       "gain_db": -6.0,
       "loop": false,
       "file": "windows_error.wav",
-      "rate": 0.985,
-      "trim_db": 0.3
+      "rate": 0.997,
+      "trim_db": -0.2
     },
     {
       "name": "sad_trombone@185.47",
@@ -2062,8 +2064,8 @@
       "gain_db": -6.0,
       "loop": false,
       "file": "sad_trombone.wav",
-      "rate": 0.98,
-      "trim_db": 0.9
+      "rate": 1.002,
+      "trim_db": -1.0
     },
     {
       "name": "vine_boom@197.50",
@@ -2071,7 +2073,8 @@
       "gain_db": -4.0,
       "loop": false,
       "file": "vine_boom.wav",
-      "rate": 0.982
+      "rate": 0.971,
+      "trim_db": 1.2
     },
     {
       "name": "record_scratch@197.50",
@@ -2079,8 +2082,8 @@
       "gain_db": -6.0,
       "loop": false,
       "file": "record_scratch.wav",
-      "rate": 1.034,
-      "trim_db": -0.7
+      "rate": 1.033,
+      "trim_db": -0.1
     }
   ],
   "marks": [

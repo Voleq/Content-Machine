@@ -527,9 +527,16 @@ def test_the_preflight_notices_an_installed_kit_from_a_different_pack(tmp_path):
     from pipeline.plates import load_plates
 
     try:
-        installed = set(load_plates(
-            Settings(MOCK_MODE=True, _env_file=None).assets_dir).keys())
+        reg = load_plates(Settings(MOCK_MODE=True, _env_file=None).assets_dir)
+        installed = set(reg.keys())
+        flat = [k for k, p in reg.assets.items()
+                if p.family == "room" and p.aspect == ingest.ROOM3D_ASPECT
+                and p.author != ingest.ROOM3D_AUTHOR]
     except PlateError:
+        installed, flat = set(), []
+
+    # The 3D rooms only arrive with an ingest too (item 36).
+    if flat and (ingest.ROOM3D / "rooms.json").exists():
         installed = set()
 
     if shipped <= installed:

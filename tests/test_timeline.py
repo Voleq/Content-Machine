@@ -447,13 +447,16 @@ def test_adjacent_same_type_real_cuts_are_flagged():
 
 def test_every_tag_type_is_drawn_or_deliberately_not_on_long():
     from pipeline.models import DELIVERY_TAG_TYPES, TagType
-    from pipeline.timeline import _LONG_NO_CUE_REASONS, _TAG_TO_KIND
+    from pipeline.timeline import EPISODE_TAG_TYPES, _LONG_NO_CUE_REASONS, _TAG_TO_KIND
 
+    # An episode tag ([BOARD]) is decided too: read once by the render for
+    # the whole video, never a cue.
     undecided = sorted(
         t.value for t in TagType
         if t not in _TAG_TO_KIND
         and t not in DELIVERY_TAG_TYPES
         and t not in _LONG_NO_CUE_REASONS
+        and t not in EPISODE_TAG_TYPES
     )
     assert not undecided, (
         f"{undecided} reach a LONG script but build_long_timeline has no "

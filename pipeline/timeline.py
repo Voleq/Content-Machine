@@ -156,6 +156,12 @@ _LONG_NO_CUE_REASONS: dict[TagType, str] = {
 }
 
 
+# Tags that dress the whole video rather than a moment of it: read once by
+# the render (the [BOARD] is written on the board in every room it is in shot)
+# and never a cue, so they are neither unmapped nor dropped.
+EPISODE_TAG_TYPES = frozenset({TagType.BOARD})
+
+
 def unrenderable_long_tags(script: LongScript) -> list[tuple[TagEvent, str]]:
     """Every tag on a LONG that will not become a cue, with the reason.
 
@@ -170,7 +176,8 @@ def unrenderable_long_tags(script: LongScript) -> list[tuple[TagEvent, str]]:
     """
     out: list[tuple[TagEvent, str]] = []
     for e in script.events:
-        if e.type in _TAG_TO_KIND or e.type in DELIVERY_TAG_TYPES:
+        if e.type in _TAG_TO_KIND or e.type in DELIVERY_TAG_TYPES \
+                or e.type in EPISODE_TAG_TYPES:
             continue
         out.append((e, _LONG_NO_CUE_REASONS.get(e.type, "")))
     return out

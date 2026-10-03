@@ -272,6 +272,11 @@ scripts/
   render_samples.py      render the committed samples from fixtures
   gen_assets.py          procedural placeholders for everything not drawn
   gen_fixtures.py, fetch_sfx.py, contact_sheet.py
+room3d/                  the long's 16:9 rooms, one room built in 3D:
+                         build.py (Blender as a Python module, run when the
+                         room changes, never on the render box), renders/
+                         (what the ingest installs under the kit's room
+                         names), fonts/ (the room's own hand)
 workspace|cache|state/   runtime (gitignored)
 ```
 
@@ -1028,6 +1033,20 @@ env var, case-insensitive).
   kit caps that has had its turn falls back to the bot's pick, and the
   manifest's `scenes` says so per beat. The short stays template-driven and
   strips `[SCENE]`.
+- **The long's rooms are one room, built in 3D.** All of the kit's 16:9 room
+  names, 17 angles and their 15 December twins, are now cameras in one modelled
+  room (`room3d/`), dressed from the voice bible: the filings, the adding-machine
+  tape, the sticky notes, the framed margin call. The rules design's rooms kept
+  stay: his floor and anchor per angle, the layer in front of him, the screen
+  flicker and the bulbs at the kit's speeds, rain and snow on the glass, the
+  chapter title on the slate (dusk uses the night picture). The board and the
+  monitor are rendered blank and written per video, in the room's perspective
+  and light (`pipeline/room_dressing.py`): the episode number, the ticker, the
+  video's question, the chapter titles and a hand-drawn 5-year price line on
+  the board, the 5-year chart on the monitor. The writer sets the question with
+  `[BOARD: what are we paying for?]` (that is also the default); the short
+  strips it. No Blender is needed here: the renders are committed and
+  **rerun `python scripts/ingest_kit.py kit` after pulling this.**
 - **The long's lower third is design's.** `overlays/lower-third` with the
   ticker and the channel's line in its slots, top-left and 640 px wide on a
   1920 frame (design's 820 runs into the close-up's head), on the beats of

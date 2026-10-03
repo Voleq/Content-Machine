@@ -1,0 +1,2928 @@
+{
+ "board": {
+  "anchor": null,
+  "angle": "board",
+  "camera": {
+   "lens": 33,
+   "location": [
+    -1.95,
+    -0.25,
+    1.47
+   ],
+   "target": [
+    -1.95,
+    2.0,
+    1.47
+   ]
+  },
+  "headCovered": null,
+  "masks": {
+   "board": "board_mask_board.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "board.jpg",
+    "tag": ""
+   },
+   {
+    "png": "board_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "board_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      509.1,
+      152.4
+     ],
+     [
+      1664.0,
+      152.4
+     ],
+     [
+      1664.0,
+      927.6
+     ],
+     [
+      509.1,
+      927.6
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   }
+  },
+  "title": null
+ },
+ "board-side": {
+  "anchor": {
+   "h": 1329,
+   "w": 251,
+   "x": 581,
+   "y": 258
+  },
+  "angle": "board-side",
+  "camera": {
+   "lens": 28,
+   "location": [
+    -3.0,
+    -0.55,
+    1.55
+   ],
+   "target": [
+    -1.4,
+    2.0,
+    1.38
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "board-side_mask_board.png",
+   "front": "board-side_mask_front.png",
+   "window": "board-side_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "board-side.jpg",
+    "tag": ""
+   },
+   {
+    "png": "board-side_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "board-side_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      369.9,
+      196.6
+     ],
+     [
+      1103.2,
+      260.5
+     ],
+     [
+      1100.7,
+      722.3
+     ],
+     [
+      383.3,
+      807.6
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   }
+  },
+  "title": null
+ },
+ "board-side-christmas": {
+  "anchor": {
+   "h": 1329,
+   "w": 251,
+   "x": 581,
+   "y": 258
+  },
+  "angle": "board-side",
+  "camera": {
+   "lens": 28,
+   "location": [
+    -3.0,
+    -0.55,
+    1.55
+   ],
+   "target": [
+    -1.4,
+    2.0,
+    1.38
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "board-side-christmas_mask_board.png",
+   "front": "board-side-christmas_mask_front.png",
+   "window": "board-side-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "board-side-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "board-side-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "board-side-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "board-side-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "board-side-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "board-side-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "board-side-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      369.9,
+      196.6
+     ],
+     [
+      1103.2,
+      260.5
+     ],
+     [
+      1100.7,
+      722.3
+     ],
+     [
+      383.3,
+      807.6
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   }
+  },
+  "title": null
+ },
+ "board-wide": {
+  "anchor": {
+   "h": 515,
+   "w": 97,
+   "x": 599,
+   "y": 421
+  },
+  "angle": "board-wide",
+  "camera": {
+   "lens": 24,
+   "location": [
+    -1.45,
+    -3.2,
+    1.6
+   ],
+   "target": [
+    -1.1,
+    2.0,
+    1.36
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "board-wide_mask_board.png",
+   "front": "board-wide_mask_front.png",
+   "screen": "board-wide_mask_screen.png",
+   "window": "board-wide_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "board-wide.jpg",
+    "tag": ""
+   },
+   {
+    "png": "board-wide_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "board-wide_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      602.7,
+      390.1
+     ],
+     [
+      970.3,
+      391.8
+     ],
+     [
+      970.2,
+      633.5
+     ],
+     [
+      605.8,
+      636.4
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1902.7,
+      486.5
+     ],
+     [
+      2111.2,
+      486.8
+     ],
+     [
+      2107.1,
+      586.2
+     ],
+     [
+      1899.5,
+      581.3
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": {
+   "groundBox": {
+    "h": 203,
+    "w": 373,
+    "x": 1007,
+    "y": 335
+   },
+   "h": 133,
+   "w": 297,
+   "x": 1044,
+   "y": 371
+  }
+ },
+ "board-wide-christmas": {
+  "anchor": {
+   "h": 515,
+   "w": 97,
+   "x": 599,
+   "y": 421
+  },
+  "angle": "board-wide",
+  "camera": {
+   "lens": 24,
+   "location": [
+    -1.45,
+    -3.2,
+    1.6
+   ],
+   "target": [
+    -1.1,
+    2.0,
+    1.36
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "board-wide-christmas_mask_board.png",
+   "front": "board-wide-christmas_mask_front.png",
+   "screen": "board-wide-christmas_mask_screen.png",
+   "window": "board-wide-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "board-wide-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "board-wide-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "board-wide-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "board-wide-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "board-wide-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "board-wide-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "board-wide-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      602.7,
+      390.1
+     ],
+     [
+      970.3,
+      391.8
+     ],
+     [
+      970.2,
+      633.5
+     ],
+     [
+      605.8,
+      636.4
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1902.7,
+      486.5
+     ],
+     [
+      2111.2,
+      486.8
+     ],
+     [
+      2107.1,
+      586.2
+     ],
+     [
+      1899.5,
+      581.3
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": {
+   "groundBox": {
+    "h": 203,
+    "w": 373,
+    "x": 1007,
+    "y": 335
+   },
+   "h": 133,
+   "w": 297,
+   "x": 1044,
+   "y": 371
+  }
+ },
+ "desk-front": {
+  "anchor": {
+   "h": 1112,
+   "w": 210,
+   "x": 907,
+   "y": 229
+  },
+  "angle": "desk-front",
+  "camera": {
+   "lens": 30,
+   "location": [
+    1.7,
+    -1.05,
+    1.52
+   ],
+   "target": [
+    1.9,
+    2.0,
+    1.28
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "desk-front_mask_front.png",
+   "screen": "desk-front_mask_screen.png",
+   "window": "desk-front_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "desk-front.jpg",
+    "tag": ""
+   },
+   {
+    "png": "desk-front_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "desk-front_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1196.6,
+      368.4
+     ],
+     [
+      1675.2,
+      363.4
+     ],
+     [
+      1665.6,
+      639.5
+     ],
+     [
+      1193.7,
+      617.5
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "desk-front-b": {
+  "anchor": {
+   "h": 996,
+   "w": 188,
+   "x": 913,
+   "y": 257
+  },
+  "angle": "desk-front-b",
+  "camera": {
+   "lens": 30,
+   "location": [
+    0.6,
+    -0.9,
+    1.48
+   ],
+   "target": [
+    2.2,
+    2.0,
+    1.28
+   ]
+  },
+  "headCovered": 0.034,
+  "masks": {
+   "front": "desk-front-b_mask_front.png",
+   "screen": "desk-front-b_mask_screen.png",
+   "window": "desk-front-b_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "desk-front-b.jpg",
+    "tag": ""
+   },
+   {
+    "png": "desk-front-b_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "desk-front-b_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1227.4,
+      377.6
+     ],
+     [
+      1595.1,
+      378.7
+     ],
+     [
+      1590.0,
+      591.4
+     ],
+     [
+      1225.3,
+      593.8
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "desk-front-b-christmas": {
+  "anchor": {
+   "h": 996,
+   "w": 188,
+   "x": 913,
+   "y": 257
+  },
+  "angle": "desk-front-b",
+  "camera": {
+   "lens": 30,
+   "location": [
+    0.6,
+    -0.9,
+    1.48
+   ],
+   "target": [
+    2.2,
+    2.0,
+    1.28
+   ]
+  },
+  "headCovered": 0.034,
+  "masks": {
+   "front": "desk-front-b-christmas_mask_front.png",
+   "screen": "desk-front-b-christmas_mask_screen.png",
+   "window": "desk-front-b-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "desk-front-b-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "desk-front-b-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "desk-front-b-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "desk-front-b-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "desk-front-b-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "desk-front-b-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "desk-front-b-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1227.4,
+      377.6
+     ],
+     [
+      1595.1,
+      378.7
+     ],
+     [
+      1590.0,
+      591.4
+     ],
+     [
+      1225.3,
+      593.8
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "desk-front-christmas": {
+  "anchor": {
+   "h": 1112,
+   "w": 210,
+   "x": 907,
+   "y": 229
+  },
+  "angle": "desk-front",
+  "camera": {
+   "lens": 30,
+   "location": [
+    1.7,
+    -1.05,
+    1.52
+   ],
+   "target": [
+    1.9,
+    2.0,
+    1.28
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "desk-front-christmas_mask_front.png",
+   "screen": "desk-front-christmas_mask_screen.png",
+   "window": "desk-front-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "desk-front-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "desk-front-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "desk-front-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "desk-front-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "desk-front-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "desk-front-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "desk-front-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1196.6,
+      368.4
+     ],
+     [
+      1675.2,
+      363.4
+     ],
+     [
+      1665.6,
+      639.5
+     ],
+     [
+      1193.7,
+      617.5
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "desk-front-low": {
+  "anchor": {
+   "h": 1218,
+   "w": 230,
+   "x": 987,
+   "y": 269
+  },
+  "angle": "desk-front-low",
+  "camera": {
+   "lens": 28,
+   "location": [
+    1.05,
+    -0.65,
+    0.95
+   ],
+   "target": [
+    2.0,
+    2.0,
+    1.45
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "desk-front-low_mask_front.png",
+   "screen": "desk-front-low_mask_screen.png",
+   "window": "desk-front-low_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "desk-front-low.jpg",
+    "tag": ""
+   },
+   {
+    "png": "desk-front-low_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "desk-front-low_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1292.7,
+      342.3
+     ],
+     [
+      1731.4,
+      330.2
+     ],
+     [
+      1754.4,
+      574.8
+     ],
+     [
+      1302.4,
+      580.9
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "desk-front-low-christmas": {
+  "anchor": {
+   "h": 1218,
+   "w": 230,
+   "x": 987,
+   "y": 269
+  },
+  "angle": "desk-front-low",
+  "camera": {
+   "lens": 28,
+   "location": [
+    1.05,
+    -0.65,
+    0.95
+   ],
+   "target": [
+    2.0,
+    2.0,
+    1.45
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "desk-front-low-christmas_mask_front.png",
+   "screen": "desk-front-low-christmas_mask_screen.png",
+   "window": "desk-front-low-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "desk-front-low-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "desk-front-low-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "desk-front-low-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "desk-front-low-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "desk-front-low-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "desk-front-low-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "desk-front-low-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1292.7,
+      342.3
+     ],
+     [
+      1731.4,
+      330.2
+     ],
+     [
+      1754.4,
+      574.8
+     ],
+     [
+      1302.4,
+      580.9
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "desk-side": {
+  "anchor": {
+   "h": 1185,
+   "w": 224,
+   "x": 999,
+   "y": 72
+  },
+  "angle": "desk-side",
+  "camera": {
+   "lens": 30,
+   "location": [
+    2.55,
+    -0.6,
+    1.55
+   ],
+   "target": [
+    1.35,
+    1.35,
+    1.15
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "desk-side_mask_board.png",
+   "front": "desk-side_mask_front.png",
+   "screen": "desk-side_mask_screen.png",
+   "window": "desk-side_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "desk-side.jpg",
+    "tag": ""
+   },
+   {
+    "png": "desk-side_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "desk-side_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      -48.9,
+      119.0
+     ],
+     [
+      261.9,
+      92.0
+     ],
+     [
+      290.5,
+      485.1
+     ],
+     [
+      -14.0,
+      450.4
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1497.1,
+      229.0
+     ],
+     [
+      2186.6,
+      215.5
+     ],
+     [
+      2126.6,
+      679.2
+     ],
+     [
+      1478.5,
+      557.9
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "desk-side-christmas": {
+  "anchor": {
+   "h": 1185,
+   "w": 224,
+   "x": 999,
+   "y": 72
+  },
+  "angle": "desk-side",
+  "camera": {
+   "lens": 30,
+   "location": [
+    2.55,
+    -0.6,
+    1.55
+   ],
+   "target": [
+    1.35,
+    1.35,
+    1.15
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "desk-side-christmas_mask_board.png",
+   "front": "desk-side-christmas_mask_front.png",
+   "screen": "desk-side-christmas_mask_screen.png",
+   "window": "desk-side-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "desk-side-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "desk-side-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "desk-side-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "desk-side-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "desk-side-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "desk-side-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "desk-side-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      -48.9,
+      119.0
+     ],
+     [
+      261.9,
+      92.0
+     ],
+     [
+      290.5,
+      485.1
+     ],
+     [
+      -14.0,
+      450.4
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1497.1,
+      229.0
+     ],
+     [
+      2186.6,
+      215.5
+     ],
+     [
+      2126.6,
+      679.2
+     ],
+     [
+      1478.5,
+      557.9
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "desk-top-down": {
+  "anchor": null,
+  "angle": "desk-top-down",
+  "camera": {
+   "lens": 30,
+   "location": [
+    1.85,
+    0.5,
+    2.35
+   ],
+   "target": [
+    1.92,
+    0.8,
+    1.04
+   ]
+  },
+  "headCovered": null,
+  "masks": {
+   "screen": "desk-top-down_mask_screen.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "desk-top-down.jpg",
+    "tag": ""
+   },
+   {
+    "png": "desk-top-down_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "desk-top-down_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1261.5,
+      -227.9
+     ],
+     [
+      2327.8,
+      -36.1
+     ],
+     [
+      1953.7,
+      224.3
+     ],
+     [
+      1180.9,
+      78.0
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "desk-wide": {
+  "anchor": {
+   "h": 453,
+   "w": 86,
+   "x": 1295,
+   "y": 420
+  },
+  "angle": "desk-wide",
+  "camera": {
+   "lens": 24,
+   "location": [
+    -0.2,
+    -3.3,
+    1.62
+   ],
+   "target": [
+    0.6,
+    2.0,
+    1.32
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "desk-wide_mask_board.png",
+   "front": "desk-wide_mask_front.png",
+   "screen": "desk-wide_mask_screen.png",
+   "window": "desk-wide_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "desk-wide.jpg",
+    "tag": ""
+   },
+   {
+    "png": "desk-wide_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "desk-wide_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      145.6,
+      378.4
+     ],
+     [
+      545.8,
+      382.2
+     ],
+     [
+      550.2,
+      628.8
+     ],
+     [
+      154.7,
+      635.9
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1420.2,
+      479.1
+     ],
+     [
+      1596.0,
+      479.5
+     ],
+     [
+      1593.3,
+      574.2
+     ],
+     [
+      1418.3,
+      570.5
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": {
+   "groundBox": {
+    "h": 207,
+    "w": 384,
+    "x": 584,
+    "y": 324
+   },
+   "h": 132,
+   "w": 307,
+   "x": 625,
+   "y": 363
+  }
+ },
+ "desk-wide-christmas": {
+  "anchor": {
+   "h": 453,
+   "w": 86,
+   "x": 1295,
+   "y": 420
+  },
+  "angle": "desk-wide",
+  "camera": {
+   "lens": 24,
+   "location": [
+    -0.2,
+    -3.3,
+    1.62
+   ],
+   "target": [
+    0.6,
+    2.0,
+    1.32
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "desk-wide-christmas_mask_board.png",
+   "front": "desk-wide-christmas_mask_front.png",
+   "screen": "desk-wide-christmas_mask_screen.png",
+   "window": "desk-wide-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "desk-wide-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "desk-wide-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "desk-wide-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "desk-wide-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "desk-wide-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "desk-wide-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "desk-wide-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      145.6,
+      378.4
+     ],
+     [
+      545.8,
+      382.2
+     ],
+     [
+      550.2,
+      628.8
+     ],
+     [
+      154.7,
+      635.9
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1420.2,
+      479.1
+     ],
+     [
+      1596.0,
+      479.5
+     ],
+     [
+      1593.3,
+      574.2
+     ],
+     [
+      1418.3,
+      570.5
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": {
+   "groundBox": {
+    "h": 207,
+    "w": 384,
+    "x": 584,
+    "y": 324
+   },
+   "h": 132,
+   "w": 307,
+   "x": 625,
+   "y": 363
+  }
+ },
+ "doorway": {
+  "anchor": {
+   "h": 669,
+   "w": 126,
+   "x": 1146,
+   "y": 347
+  },
+  "angle": "doorway",
+  "camera": {
+   "lens": 28,
+   "location": [
+    1.3,
+    0.4,
+    1.55
+   ],
+   "target": [
+    -3.2,
+    -0.9,
+    1.25
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "doorway_mask_front.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "doorway.jpg",
+    "tag": ""
+   },
+   {
+    "png": "doorway_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "doorway_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {},
+  "title": null
+ },
+ "doorway-christmas": {
+  "anchor": {
+   "h": 669,
+   "w": 126,
+   "x": 1146,
+   "y": 347
+  },
+  "angle": "doorway",
+  "camera": {
+   "lens": 28,
+   "location": [
+    1.3,
+    0.4,
+    1.55
+   ],
+   "target": [
+    -3.2,
+    -0.9,
+    1.25
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "doorway-christmas_mask_front.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "doorway-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "doorway-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "doorway-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "doorway-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "doorway-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "doorway-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "doorway-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {},
+  "title": null
+ },
+ "doorway-wide": {
+  "anchor": {
+   "h": 481,
+   "w": 91,
+   "x": 1257,
+   "y": 401
+  },
+  "angle": "doorway-wide",
+  "camera": {
+   "lens": 24,
+   "location": [
+    2.2,
+    -0.7,
+    1.6
+   ],
+   "target": [
+    -3.2,
+    -0.75,
+    1.25
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "doorway-wide_mask_board.png",
+   "front": "doorway-wide_mask_front.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "doorway-wide.jpg",
+    "tag": ""
+   },
+   {
+    "png": "doorway-wide_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "doorway-wide_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      1706.4,
+      358.0
+     ],
+     [
+      2040.3,
+      313.0
+     ],
+     [
+      2019.4,
+      700.4
+     ],
+     [
+      1696.4,
+      625.3
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   }
+  },
+  "title": null
+ },
+ "doorway-wide-christmas": {
+  "anchor": {
+   "h": 481,
+   "w": 91,
+   "x": 1257,
+   "y": 401
+  },
+  "angle": "doorway-wide",
+  "camera": {
+   "lens": 24,
+   "location": [
+    2.2,
+    -0.7,
+    1.6
+   ],
+   "target": [
+    -3.2,
+    -0.75,
+    1.25
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "doorway-wide-christmas_mask_board.png",
+   "front": "doorway-wide-christmas_mask_front.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "doorway-wide-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "doorway-wide-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "doorway-wide-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "doorway-wide-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "doorway-wide-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "doorway-wide-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "doorway-wide-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      1706.4,
+      358.0
+     ],
+     [
+      2040.3,
+      313.0
+     ],
+     [
+      2019.4,
+      700.4
+     ],
+     [
+      1696.4,
+      625.3
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   }
+  },
+  "title": null
+ },
+ "panel-left": {
+  "anchor": {
+   "h": 838,
+   "w": 158,
+   "x": 575,
+   "y": 345
+  },
+  "angle": "panel-left",
+  "camera": {
+   "lens": 30,
+   "location": [
+    -1.6,
+    -2.0,
+    1.5
+   ],
+   "target": [
+    0.9,
+    2.0,
+    1.35
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "panel-left_mask_board.png",
+   "front": "panel-left_mask_front.png",
+   "screen": "panel-left_mask_screen.png",
+   "window": "panel-left_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "panel-left.jpg",
+    "tag": ""
+   },
+   {
+    "png": "panel-left_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "panel-left_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      -651.0,
+      232.3
+     ],
+     [
+      235.3,
+      286.8
+     ],
+     [
+      241.5,
+      715.8
+     ],
+     [
+      -633.7,
+      776.3
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1504.1,
+      460.8
+     ],
+     [
+      1694.5,
+      461.3
+     ],
+     [
+      1692.8,
+      575.9
+     ],
+     [
+      1502.8,
+      577.2
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "panel-left-christmas": {
+  "anchor": {
+   "h": 838,
+   "w": 158,
+   "x": 575,
+   "y": 345
+  },
+  "angle": "panel-left",
+  "camera": {
+   "lens": 30,
+   "location": [
+    -1.6,
+    -2.0,
+    1.5
+   ],
+   "target": [
+    0.9,
+    2.0,
+    1.35
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "panel-left-christmas_mask_board.png",
+   "front": "panel-left-christmas_mask_front.png",
+   "screen": "panel-left-christmas_mask_screen.png",
+   "window": "panel-left-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "panel-left-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "panel-left-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "panel-left-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "panel-left-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "panel-left-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "panel-left-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "panel-left-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      -651.0,
+      232.3
+     ],
+     [
+      235.3,
+      286.8
+     ],
+     [
+      241.5,
+      715.8
+     ],
+     [
+      -633.7,
+      776.3
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1504.1,
+      460.8
+     ],
+     [
+      1694.5,
+      461.3
+     ],
+     [
+      1692.8,
+      575.9
+     ],
+     [
+      1502.8,
+      577.2
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "read-close": {
+  "anchor": {
+   "h": 1941,
+   "w": 367,
+   "x": 643,
+   "y": 88
+  },
+  "angle": "read-close",
+  "camera": {
+   "lens": 34,
+   "location": [
+    1.85,
+    -0.2,
+    1.45
+   ],
+   "target": [
+    1.95,
+    2.0,
+    1.38
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "read-close_mask_front.png",
+   "screen": "read-close_mask_screen.png",
+   "window": "read-close_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "read-close.jpg",
+    "tag": ""
+   },
+   {
+    "png": "read-close_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "read-close_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1311.1,
+      295.8
+     ],
+     [
+      2313.9,
+      256.4
+     ],
+     [
+      2300.4,
+      828.8
+     ],
+     [
+      1308.2,
+      769.0
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "read-close-christmas": {
+  "anchor": {
+   "h": 1941,
+   "w": 367,
+   "x": 643,
+   "y": 88
+  },
+  "angle": "read-close",
+  "camera": {
+   "lens": 34,
+   "location": [
+    1.85,
+    -0.2,
+    1.45
+   ],
+   "target": [
+    1.95,
+    2.0,
+    1.38
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "read-close-christmas_mask_front.png",
+   "screen": "read-close-christmas_mask_screen.png",
+   "window": "read-close-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "read-close-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "read-close-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "read-close-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "read-close-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "read-close-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "read-close-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "read-close-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1311.1,
+      295.8
+     ],
+     [
+      2313.9,
+      256.4
+     ],
+     [
+      2300.4,
+      828.8
+     ],
+     [
+      1308.2,
+      769.0
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "turn-to-screen": {
+  "anchor": {
+   "h": 1374,
+   "w": 260,
+   "x": 283,
+   "y": 98
+  },
+  "angle": "turn-to-screen",
+  "camera": {
+   "lens": 32,
+   "location": [
+    0.15,
+    -0.6,
+    1.5
+   ],
+   "target": [
+    2.15,
+    1.2,
+    1.2
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "turn-to-screen_mask_front.png",
+   "screen": "turn-to-screen_mask_screen.png",
+   "window": "turn-to-screen_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "turn-to-screen.jpg",
+    "tag": ""
+   },
+   {
+    "png": "turn-to-screen_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "turn-to-screen_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1028.0,
+      295.8
+     ],
+     [
+      1348.7,
+      300.2
+     ],
+     [
+      1343.7,
+      502.5
+     ],
+     [
+      1027.1,
+      515.7
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "turn-to-screen-christmas": {
+  "anchor": {
+   "h": 1374,
+   "w": 260,
+   "x": 283,
+   "y": 98
+  },
+  "angle": "turn-to-screen",
+  "camera": {
+   "lens": 32,
+   "location": [
+    0.15,
+    -0.6,
+    1.5
+   ],
+   "target": [
+    2.15,
+    1.2,
+    1.2
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "turn-to-screen-christmas_mask_front.png",
+   "screen": "turn-to-screen-christmas_mask_screen.png",
+   "window": "turn-to-screen-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "turn-to-screen-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "turn-to-screen-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "turn-to-screen-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "turn-to-screen-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "turn-to-screen-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "turn-to-screen-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "turn-to-screen-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1028.0,
+      295.8
+     ],
+     [
+      1348.7,
+      300.2
+     ],
+     [
+      1343.7,
+      502.5
+     ],
+     [
+      1027.1,
+      515.7
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "window-talk": {
+  "anchor": {
+   "h": 1053,
+   "w": 199,
+   "x": 739,
+   "y": 337
+  },
+  "angle": "window-talk",
+  "camera": {
+   "lens": 30,
+   "location": [
+    0.55,
+    -1.3,
+    1.52
+   ],
+   "target": [
+    1.3,
+    2.0,
+    1.45
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "window-talk_mask_front.png",
+   "screen": "window-talk_mask_screen.png",
+   "window": "window-talk_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "window-talk.jpg",
+    "tag": ""
+   },
+   {
+    "png": "window-talk_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "window-talk_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1585.5,
+      470.2
+     ],
+     [
+      1974.9,
+      468.5
+     ],
+     [
+      1972.1,
+      678.5
+     ],
+     [
+      1583.9,
+      670.6
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "window-talk-christmas": {
+  "anchor": {
+   "h": 1053,
+   "w": 199,
+   "x": 739,
+   "y": 337
+  },
+  "angle": "window-talk",
+  "camera": {
+   "lens": 30,
+   "location": [
+    0.55,
+    -1.3,
+    1.52
+   ],
+   "target": [
+    1.3,
+    2.0,
+    1.45
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "window-talk-christmas_mask_front.png",
+   "screen": "window-talk-christmas_mask_screen.png",
+   "window": "window-talk-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "window-talk-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "window-talk-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "window-talk-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "window-talk-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "window-talk-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "window-talk-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "window-talk-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1585.5,
+      470.2
+     ],
+     [
+      1974.9,
+      468.5
+     ],
+     [
+      1972.1,
+      678.5
+     ],
+     [
+      1583.9,
+      670.6
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "window-wall": {
+  "anchor": {
+   "h": 1077,
+   "w": 203,
+   "x": 488,
+   "y": 335
+  },
+  "angle": "window-wall",
+  "camera": {
+   "lens": 28,
+   "location": [
+    -0.35,
+    -1.1,
+    1.5
+   ],
+   "target": [
+    1.6,
+    2.0,
+    1.45
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "window-wall_mask_front.png",
+   "screen": "window-wall_mask_screen.png",
+   "window": "window-wall_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "window-wall.jpg",
+    "tag": ""
+   },
+   {
+    "png": "window-wall_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "window-wall_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1416.1,
+      481.4
+     ],
+     [
+      1672.4,
+      482.3
+     ],
+     [
+      1671.4,
+      636.1
+     ],
+     [
+      1415.5,
+      638.7
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "window-wall-christmas": {
+  "anchor": {
+   "h": 1077,
+   "w": 203,
+   "x": 488,
+   "y": 335
+  },
+  "angle": "window-wall",
+  "camera": {
+   "lens": 28,
+   "location": [
+    -0.35,
+    -1.1,
+    1.5
+   ],
+   "target": [
+    1.6,
+    2.0,
+    1.45
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "front": "window-wall-christmas_mask_front.png",
+   "screen": "window-wall-christmas_mask_screen.png",
+   "window": "window-wall-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "window-wall-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "window-wall-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "window-wall-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "window-wall-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "window-wall-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "window-wall-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "window-wall-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1416.1,
+      481.4
+     ],
+     [
+      1672.4,
+      482.3
+     ],
+     [
+      1671.4,
+      636.1
+     ],
+     [
+      1415.5,
+      638.7
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": null
+ },
+ "window-wide": {
+  "anchor": {
+   "h": 486,
+   "w": 92,
+   "x": 808,
+   "y": 438
+  },
+  "angle": "window-wide",
+  "camera": {
+   "lens": 24,
+   "location": [
+    -1.2,
+    -3.1,
+    1.6
+   ],
+   "target": [
+    1.2,
+    2.0,
+    1.4
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "window-wide_mask_board.png",
+   "front": "window-wide_mask_front.png",
+   "screen": "window-wide_mask_screen.png",
+   "window": "window-wide_mask_window.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "window-wide.jpg",
+    "tag": ""
+   },
+   {
+    "png": "window-wide_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "window-wide_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      -109.8,
+      379.7
+     ],
+     [
+      398.3,
+      395.1
+     ],
+     [
+      402.5,
+      664.6
+     ],
+     [
+      -100.6,
+      690.7
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1270.8,
+      499.3
+     ],
+     [
+      1414.1,
+      499.3
+     ],
+     [
+      1413.1,
+      581.3
+     ],
+     [
+      1270.1,
+      581.4
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": {
+   "groundBox": {
+    "h": 224,
+    "w": 398,
+    "x": 442,
+    "y": 333
+   },
+   "h": 132,
+   "w": 317,
+   "x": 485,
+   "y": 385
+  }
+ },
+ "window-wide-christmas": {
+  "anchor": {
+   "h": 486,
+   "w": 92,
+   "x": 808,
+   "y": 438
+  },
+  "angle": "window-wide",
+  "camera": {
+   "lens": 24,
+   "location": [
+    -1.2,
+    -3.1,
+    1.6
+   ],
+   "target": [
+    1.2,
+    2.0,
+    1.4
+   ]
+  },
+  "headCovered": 0.0,
+  "masks": {
+   "board": "window-wide-christmas_mask_board.png",
+   "front": "window-wide-christmas_mask_front.png",
+   "screen": "window-wide-christmas_mask_screen.png",
+   "window": "window-wide-christmas_mask_window.png"
+  },
+  "season": "christmas",
+  "states": [
+   {
+    "png": "window-wide-christmas_t0.jpg",
+    "tag": "_t0"
+   },
+   {
+    "png": "window-wide-christmas_t0_dip.jpg",
+    "tag": "_t0_dip"
+   },
+   {
+    "png": "window-wide-christmas_t1.jpg",
+    "tag": "_t1"
+   },
+   {
+    "png": "window-wide-christmas_t1_dip2.jpg",
+    "tag": "_t1_dip2"
+   },
+   {
+    "png": "window-wide-christmas_t2_dip.jpg",
+    "tag": "_t2_dip"
+   },
+   {
+    "png": "window-wide-christmas_t2_dip2.jpg",
+    "tag": "_t2_dip2"
+   },
+   {
+    "png": "window-wide-christmas_t2.jpg",
+    "tag": "_t2"
+   }
+  ],
+  "surfaces": {
+   "board": {
+    "paper": [
+     238,
+     241,
+     242
+    ],
+    "quad": [
+     [
+      -109.8,
+      379.7
+     ],
+     [
+      398.3,
+      395.1
+     ],
+     [
+      402.5,
+      664.6
+     ],
+     [
+      -100.6,
+      690.7
+     ]
+    ],
+    "size": [
+     1.46,
+     0.98
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      1270.8,
+      499.3
+     ],
+     [
+      1414.1,
+      499.3
+     ],
+     [
+      1413.1,
+      581.3
+     ],
+     [
+      1270.1,
+      581.4
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
+  "title": {
+   "groundBox": {
+    "h": 224,
+    "w": 398,
+    "x": 442,
+    "y": 333
+   },
+   "h": 132,
+   "w": 317,
+   "x": 485,
+   "y": 385
+  }
+ }
+}
