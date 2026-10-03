@@ -111,7 +111,7 @@ def test_a_count_up_needs_one_figure_to_count_to(reg, settings):
     assert moves == [] and "not one figure" in skipped[0]
 
 
-def test_the_beat_s_clip_steps_at_twelve_frames_and_ends_landed(reg, settings, tmp_path,
+def test_the_beat_s_clip_draws_every_video_frame_and_ends_landed(reg, settings, tmp_path,
                                                                monkeypatch):
     got: dict = {}
 
@@ -130,14 +130,16 @@ def test_the_beat_s_clip_steps_at_twelve_frames_and_ends_landed(reg, settings, t
     moves, _ = _plan(reg, settings, BARS, earliest=0.5)
     clips = MV.render_segment(plate, values, moves, seg_len=6.0, size=(480, 270),
                               settings=settings, reg=reg, out_dir=tmp_path, stem="p")
-    assert got["fps"] == 12
+    # Drawn at design's 12 fps, played at the video's: every frame of the
+    # move is a new drawing, not a 12 fps step held for two or three frames.
+    assert got["fps"] == MV.OUT_FPS
     secs = [s for _, s in got["held"]]
-    # Every hold is a whole number of design's frames, and the clip runs
+    # Every hold is a whole number of the video's frames, and the clip runs
     # until the last move has landed.
-    assert all(abs(s * 12 - round(s * 12)) < 1e-6 for s in secs)
+    assert all(abs(s * MV.OUT_FPS - round(s * MV.OUT_FPS)) < 1e-6 for s in secs)
     landed = max(m.end for m in moves)
     assert sum(secs) >= landed - 1e-6
-    assert clips.landed_at == pytest.approx(sum(secs) - 1 / 12)
+    assert clips.landed_at == pytest.approx(sum(secs) - 1 / MV.OUT_FPS)
     # A boiling chart goes on boiling once the bars are up: its loop is the
     # plate's own boil, and the clip's last frame is one of its frames.
     frames, fps = got["loop"]

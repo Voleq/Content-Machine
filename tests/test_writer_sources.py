@@ -134,8 +134,10 @@ def test_the_tag_slides_in_from_the_left_and_rests_on_the_plate_s_margin(
     panel = (100, 60, 960, 540)
     clip = MV.source_tag_clip(reg, settings, tmp_path / "s.mov", text="FY24 10-K",
                               plate=plate, aspect="16x9", panel=panel)
-    assert clip is not None and got["fps"] == 12 and len(got["frames"]) == clip.frames
-    assert all(abs(d * 12 - 1) < 1e-9 for _, d in got["frames"])
+    # design's six frames of slide, played at the video's rate
+    assert clip is not None and got["fps"] == MV.OUT_FPS
+    assert len(got["frames"]) == len(MV._played_frames(clip.frames))
+    assert all(abs(d * MV.OUT_FPS - 1) < 1e-9 for _, d in got["frames"])
     tag = reg.get(reg.aspect_key("overlays/source-tag", "16x9"))
     x, y, w, h = MV.tag_rect(tag, plate, panel[2:], reg)
     assert clip.y == panel[1] + y and clip.y + h <= panel[1] + panel[3]
