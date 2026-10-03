@@ -349,16 +349,30 @@ def test_the_talk_rooms_flicker_behind_him_in_the_short(installed, stem):
 
 
 def test_the_flicker_is_motion_js_frame_for_frame(installed):
-    """desk-front has a screen and a lit lamp: it changes on exactly the
-    frames SCREEN_PULSE and LAMP_FLICKER mark, and on no other."""
-    room = installed.get("room/desk-front-16x9")
+    """The short's desk-front (design's room; the long's is the 3D room, which
+    plays no flicker) changes on exactly the frames SCREEN_PULSE marks, and on
+    no other. Its crop leaves the lamp out, so LAMP_FLICKER moves nothing."""
+    room = installed.get("room/desk-front-9x16")
     if not room.loops:
         pytest.skip("the installed kit predates the room loops; re-run the ingest")
-    screen, lamp = _published("SCREEN_PULSE"), _published("LAMP_FLICKER")
+    screen = _published("SCREEN_PULSE")
 
     changed = [i for i, f in enumerate(room.frames) if f.png != room.frames[0].png]
-    assert changed == [i for i in range(12) if screen[i] or lamp[i]]
-    assert room.frames[3].png != room.frames[7].png, "the screen and the lamp are two moves"
+    assert changed == [i for i in range(12) if screen[i]]
+
+
+def test_the_longs_3d_rooms_hold_the_screen_still(installed):
+    """The 3D room plays no flicker (3 Oct 2026): desk-front's screen and lamp
+    are one picture all loop long, and no 16:9 room names the move."""
+    room = installed.get("room/desk-front-16x9")
+    if room.author != "room3d":
+        pytest.skip("the installed kit predates the 3D room; re-run the ingest")
+    assert len({f.png for f in room.frames}) == 1
+    longs = [p for p in installed.all_plates().values()
+             if p.family == "room" and p.aspect == "16x9"]
+    assert longs and not [p.key for p in longs if "screen-flicker" in (p.loops or ())]
+    assert not [p.key for p in longs for w in (p.weathers or {}).values()
+                if "screen-flicker" in (w.loops or ())]
 
 
 def test_the_windows_are_the_only_rooms_with_weather(installed):

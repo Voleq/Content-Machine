@@ -152,6 +152,9 @@ CHRISTMAS = ("desk-front", "desk-wide", "desk-side", "turn-to-screen", "window-w
 # The light groups a loop moves. Everything that lights the room is in one.
 GROUPS = ("room", "window", "lamp", "screen", "xmasA", "xmasB", "xmasC")
 REST = {g: 1.0 for g in GROUPS}
+# (The ingest plays none of the dips since 3 Oct 2026: the monitor holds
+# still in the 3D room, `ROOM3D_DROPS_LOOPS` in scripts/ingest_kit.py. They
+# stay rendered, at no cost, being light-group sums.)
 # The kit's screen-flicker has two dips, a deep one and a shallow one, on
 # these of its twelve frames (its `_f04` and `_f08` pictures)...
 DIPS = ({}, dict(screen=0.55, lamp=0.86), dict(screen=0.74, lamp=0.93))

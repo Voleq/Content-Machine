@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import importlib.util
 import json
@@ -107,12 +106,11 @@ def test_every_room_is_the_render_under_the_kit_name(tmp_path):
         "a room with no render must be a problem, not a flat fallback"
     e = assets["room/desk-wide-16x9"]
     assert e["author"] == ingest.ROOM3D_AUTHOR
-    pngs = [f["png"] for f in e["frames"]]
-    # The dips land on the kit's frames: 4 and 9 one picture, 8 and 10 another.
-    assert pngs[3] == pngs[8] != pngs[0] and pngs[7] == pngs[9] != pngs[3]
-    assert len(set(pngs)) == 3 and e["files"]["png"] == pngs[0] == "desk-wide-16x9.png"
-    for f in e["frames"]:
-        assert Image.open(room / f["png"]).size == SIZE
+    # The kit flickered this room's screen; the 3D room holds it still, so a
+    # dry night with nothing else moving is one picture.
+    assert [f["png"] for f in e["frames"]] == ["desk-wide-16x9.png"] == [e["files"]["png"]]
+    assert e["playback"] == "static" and "loops" not in e
+    assert Image.open(room / e["files"]["png"]).size == SIZE
     # The anchor and the slate are the 3D camera's.
     assert e["slots"]["host-anchor"]["h"] == 15 and e["floorLineY"] == 23
     assert e["slots"]["title"]["groundBox"]["w"] == 14
@@ -129,8 +127,8 @@ def test_dusk_is_the_night_render_under_the_same_files(tmp_path):
 def test_the_front_is_the_frame_cut_by_the_mask_with_straight_alpha(tmp_path):
     assets, room, _ = _install(tmp_path)
     e = assets["room/desk-wide-16x9"]
-    front = _px(room / e["frames"][3]["front"])
-    frame = _px(room / e["frames"][3]["png"])
+    front = _px(room / e["frames"][0]["front"])
+    frame = _px(room / e["frames"][0]["png"])
     mask = _px(tmp_path / "renders" / "desk-wide_mask_front.png")
     assert (front[..., 3] == mask).all(), "the alpha is not the mask (squared?)"
     on = mask > 0
@@ -144,12 +142,12 @@ def test_rain_and_snow_fall_only_on_the_glass_and_the_same_every_install(tmp_pat
     win = _px(tmp_path / "renders" / "desk-wide_mask_window.png") > 0
     e = assets["room/desk-wide-16x9"]
     rain = e["weathers"]["rain"]
-    assert rain["frameCount"] == 12 and rain["loops"] == ["screen-flicker", "window-rain"]
+    assert rain["frameCount"] == 12 and rain["loops"] == ["window-rain"]
     plain = _px(room / e["frames"][0]["png"])
     wet = _px(room / rain["frames"][0]["png"])
     assert (wet[~win] == plain[~win]).all() and (wet[win] != plain[win]).any()
-    # The rain dips with the screen on the same frames as the dry room.
-    assert rain["frames"][3]["front"] == e["frames"][3]["front"]
+    # Only the glass moves: the room in front of him is the dry room's.
+    assert {f["front"] for f in rain["frames"]} == {e["frames"][0]["front"]}
 
     xmas = assets["room/desk-wide-christmas-16x9"]
     snowy = _px(room / xmas["frames"][0]["png"])
@@ -164,17 +162,17 @@ def test_rain_and_snow_fall_only_on_the_glass_and_the_same_every_install(tmp_pat
     assert hashlib.sha256((room2 / rain["frames"][1]["png"]).read_bytes()).hexdigest() == first
 
 
-def test_december_dips_on_its_plain_rooms_frames(tmp_path):
-    """The twin is processed after its plain room has been rewritten, and still
-    reads the kit's flicker."""
+def test_december_twinkles_and_its_screen_holds_still(tmp_path):
+    """The bulbs step every four frames, the kit's twinkle; the screen never
+    dips, on the twin as on its plain room."""
     assets, _, problems = _install(tmp_path)
     assert not [p for p in problems if "christmas" in p]
     xmas = assets["room/desk-wide-christmas-16x9"]
     fronts = [f["front"] for f in xmas["frames"]]
-    # t0 rest x3, t0 dip; t1 rest x3, t1 dip2; t2 dip, t2 dip2, t2 rest x2.
-    assert fronts[0] == fronts[1] == fronts[2] != fronts[3]
-    assert fronts[4] == fronts[5] == fronts[6] != fronts[7]
-    assert len(set(fronts)) == 7
+    assert fronts[0] == fronts[1] == fronts[2] == fronts[3] != fronts[4]
+    assert fronts[4] == fronts[7] != fronts[8] == fronts[11]
+    assert len(set(fronts)) == 3
+    assert xmas["loops"] == ["lights-twinkle", "window-snow"]
 
 
 def test_the_board_is_writable(tmp_path):
@@ -184,13 +182,10 @@ def test_the_board_is_writable(tmp_path):
     assert Image.open(room / w["board"]["mask"]).size == SIZE
 
 
-def test_the_plan_never_asks_for_a_state_the_render_skipped():
+def test_the_plan_steps_the_bulbs_and_never_dips_the_screen():
     states = dict.fromkeys(CHRISTMAS)
-    levels = [0, 0, 0, 1, 0, 0, 0, 2, 1, 2, 0, 0]
-    plan = ingest._room3d_plan(("screen-flicker", "lights-twinkle"), levels, 12, states)
-    assert [t for t, _, _ in plan] == ["_t0", "_t0", "_t0", "_t0_dip", "_t1", "_t1", "_t1",
-                                       "_t1_dip2", "_t2_dip", "_t2_dip2", "_t2", "_t2"]
-    # A level the render has no state for falls back to the bulbs at rest.
-    off = copy.copy(levels)
-    off[0] = 2
-    assert ingest._room3d_plan(("screen-flicker", "lights-twinkle"), off, 12, states)[0][0] == "_t0"
+    plan = ingest._room3d_plan(("screen-flicker", "lights-twinkle"), 12, states)
+    assert [t for t, _, _ in plan] == ["_t0"] * 4 + ["_t1"] * 4 + ["_t2"] * 4
+    # A bulb state the render did not make falls back to the room at rest.
+    assert ingest._room3d_plan(("lights-twinkle",), 12, {"": None})[0][0] == ""
+    assert "screen-flicker" in ingest.ROOM3D_DROPS_LOOPS
