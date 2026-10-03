@@ -29,7 +29,11 @@ NOTHING HERE TRUSTS ANYTHING, and it runs in this order:
    chapter types, sector) is filed under the key it names and checked against
    the vocabulary it claims; `roles.json` adds who stands where and what is
    held back.
-5. The host and the rooms are checked against the roles that use them.
+5. The long's 16:9 rooms are replaced by the 3D room (`room3d/`, item 36):
+   one model rendered from every angle the kit names, committed as pictures,
+   so the names, the roles and the writer's menu stay as they were and only
+   the drawing changes. The short keeps the kit's 9:16 rooms.
+6. The host and the rooms are checked against the roles that use them.
 
 Every problem from every stage is collected and printed together, because a
 drop that fails is a message to design, and a message that stops at the first
@@ -76,6 +80,18 @@ BASE_HOUR = "night"
 # manifests alone; this reads the flat model and the tokens, and a delivery
 # without them is not something this script knows how to draw.
 REBUILD_MARKERS = ("engine/kit-model.js", "engine/port.js", "design-tokens.json")
+
+# THE LONG'S ROOMS ARE THE 3D ROOM (item 36). `room3d/build.py` renders every
+# 16:9 angle the kit names from one Blender model and commits the pictures
+# here, with the anchors and title slots it solved from each camera. Nothing
+# is rendered on the box that installs them.
+ROOM3D = REPO / "room3d" / "renders"
+ROOM3D_ASPECT = "16x9"
+ROOM3D_AUTHOR = "room3d"
+# The kit's title slot (desk-wide, rebuild-21) is 504 units wide at size 76:
+# the title's size on the slate keeps that ratio, and two lines fit its height.
+_TITLE_W_PER_SIZE = 504 / 76
+_TITLE_LINE = 1.12
 
 
 def _node(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
@@ -173,6 +189,342 @@ def _kit_proves_itself(staged: Path) -> list[str]:
     if proc.returncode != 0:
         problems.append(f"`node engine/export.js` fails (exit {proc.returncode}): "
                         f"{(proc.stderr or proc.stdout).strip()[-300:]}")
+    return problems
+
+
+_DIP_TAGS = ("", "_dip", "_dip2")
+
+
+def _flicker_levels(entry: dict | None, n: int) -> list[int]:
+    """The screen's level on each of a room's `n` frames, 0 at rest.
+
+    Read off the kit's own loop: the first picture is the room at rest, and
+    each new picture after it is the next dip (the kit draws two, `_f04` and
+    `_f08`), so the 3D room dips on exactly the frames the kit's did. A room
+    the kit does not flicker stays at rest.
+    """
+    if not entry or "screen-flicker" not in (entry.get("loops") or ()):
+        return [0] * n
+    seen: dict[str, int] = {}
+    out = []
+    for fr in (entry.get("frames") or [])[:n]:
+        png = str(fr.get("png"))
+        if png not in seen:
+            seen[png] = min(len(seen), 2)
+        out.append(seen[png])
+    return out + [0] * (n - len(out))
+
+
+def _room3d_plan(loops, levels: list[int], n: int, states: dict, precip: str = "") -> list[tuple]:
+    """What each frame of a loop shows: (state tag, weather, phase).
+
+    The state is the render's lights: the screen's dip, and in December which
+    bulb string is lit (the kit's `lights-twinkle` steps every four frames).
+    The weather is drawn on the glass at install, `phase` frames into its own
+    loop: rain repeats every six frames, snow falls a whole window in twelve.
+    A pairing the render did not make (a dip on a bulb state the kit's own
+    twelve frames never reach) falls back to that bulb state at rest.
+    """
+    plan = []
+    for i in range(n):
+        lead = f"_t{(i // 4) % 3}" if "lights-twinkle" in loops else ""
+        tag = lead + _DIP_TAGS[levels[i]]
+        if tag not in states:
+            tag = lead
+        if precip == "snow":
+            plan.append((tag, "snow", i % 12))
+        elif precip == "rain":
+            plan.append((tag, "rain", i % 6))
+        else:
+            plan.append((tag, "", 0))
+    return plan
+
+
+def _precipitation(img, mask, kind: str, phase: int, seed: int):
+    """Rain or snow on the night through the window, `phase` frames on.
+
+    Drawn where the window's mask is, so the frame, the mullions and anything
+    in front of the glass stay in front of it. Every drop moves a whole
+    number of window heights over its loop, so frame 12 runs into frame 1.
+    """
+    import random
+
+    import numpy as np
+    from PIL import Image, ImageDraw
+
+    m = np.asarray(mask, dtype=np.float32) / 255.0
+    ys, xs = np.nonzero(m > 0.02)
+    if len(ys) == 0:
+        return img
+    x0, x1, y0, y1 = int(xs.min()), int(xs.max()) + 1, int(ys.min()), int(ys.max()) + 1
+    w, h = x1 - x0, y1 - y0
+    rnd = random.Random(seed)
+    layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    if kind == "rain":
+        for _ in range(max(40, w * h // 9000)):
+            x, y = rnd.uniform(0, w), rnd.uniform(0, h)
+            ln = rnd.uniform(30, 58)
+            y = (y + phase * h / 6) % h
+            for yy in (y, y - h):
+                d.line([(x, yy), (x - ln * 0.21, yy + ln)], fill=(186, 202, 226, rnd.randint(70, 130)), width=2)
+    else:
+        for _ in range(max(30, w * h // 14000)):
+            x, y, r = rnd.uniform(0, w), rnd.uniform(0, h), rnd.choice((2.5, 3.5, 4.5, 6.0))
+            sway, ph = rnd.uniform(6, 18), rnd.uniform(0, 6.283)
+            y = (y + phase * h / 12) % h
+            x = x + sway * np.sin(ph + phase * 6.283 / 12)
+            for yy in (y, y - h):
+                d.ellipse([x - r, yy - r, x + r, yy + r], fill=(236, 240, 246, 225))
+    a = (np.asarray(layer.getchannel("A"), dtype=np.float32) / 255.0) * m[y0:y1, x0:x1]
+    rgb = np.asarray(layer.convert("RGB"), dtype=np.float32)
+    out = np.asarray(img.convert("RGB"), dtype=np.float32).copy()
+    out[y0:y1, x0:x1] = out[y0:y1, x0:x1] * (1 - a[..., None]) + rgb * a[..., None]
+    return Image.fromarray(out.clip(0, 255).astype(np.uint8))
+
+
+def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
+    """Put the 3D room in place of every 16:9 room the engine drew.
+
+    BY THE KIT'S OWN NAMES. Each angle `room3d/build.py` rendered is installed
+    under the key the kit drew it as, with the anchor solved from its camera
+    (never the kit's, which was measured on a different drawing), the slate's
+    title slot on the angles that open chapters, how much of his head the
+    front layer covers, and where the board and the screen are so each video
+    can write on them (`pipeline/room_dressing.py`). The roles, the [SCENE]
+    menu and every caller keep naming the same rooms.
+
+    The loops are the kit's, frame for frame: the screen dips on the frames
+    its did, December's bulbs step every four frames, snow falls past the
+    window where the kit had `window-snow`, and the rooms the kit rained on
+    keep their `rain` weather. Every frame is a render state (lights are
+    light groups, so no frame is a second render) with the weather drawn on
+    the glass here, and every front layer is that frame cut by the render's
+    own mask of what stands in front of him.
+
+    The dusk hour is the night render: no episode is shot at dusk
+    (`roles.json` hours), so it gets the same pictures rather than a second
+    lighting nobody has watched. A room with no render is a problem, not a
+    fallback to the flat drawing: one flat room among 3D ones is the thing
+    this replaces.
+    """
+    import numpy as np
+    from PIL import Image
+
+    manifest = renders / "rooms.json"
+    if not manifest.exists():
+        return [f"{manifest.relative_to(REPO)} is missing: the long's rooms are the "
+                f"3D room, rendered by room3d/build.py and committed"]
+    rooms = json.loads(manifest.read_text(encoding="utf-8"))
+    problems: list[str] = []
+    room_dir = drawn / "room"
+    assets = built.get("assets") or {}
+    flat = {k: e for k, e in assets.items()
+            if e.get("family") == "room" and e.get("aspect") == ROOM3D_ASPECT}
+    # The engine's drawings of these rooms go first, every file of them: a
+    # flat frame left on disk under a name the 3D room reuses would be
+    # installed in its place, and one under a name it does not is an
+    # unregistered file the verify refuses.
+    for e in flat.values():
+        names = {(e.get("files") or {}).get("png")}
+        names |= {v for k, v in (e.get("layers") or {}).items() if k != "split"}
+        for fr in e.get("frames") or []:
+            names |= {fr.get("png"), fr.get("front")}
+        for w in (e.get("weathers") or {}).values():
+            for fr in w.get("frames") or []:
+                names |= {fr.get("png"), fr.get("front")}
+        for n in names:
+            if isinstance(n, str) and n and (room_dir / n).exists():
+                (room_dir / n).unlink()
+    # THE KIT'S FLICKER, READ BEFORE ANY ROOM IS REWRITTEN: a December twin
+    # dips on its plain room's frames, and the plain room may already be the
+    # 3D room by the time the twin comes round.
+    kit_levels = {k: _flicker_levels(e, len(e.get("frames") or []) or 1) for k, e in flat.items()}
+    plain_of = {(str(e.get("angle") or ""), str(e.get("hour") or "")): k
+                for k, e in flat.items() if not e.get("season")}
+    cache: dict[tuple, object] = {}
+    # Files by the name they are installed under. Dusk is the night render
+    # under the night's names, so its frames find the night's files here
+    # rather than writing a second copy, or a different state, over them.
+    on_disk: dict[tuple, str] = {}
+    claimed: set[str] = set()
+
+    def claim(fname: str) -> str:
+        while fname in claimed:
+            fname += "b"
+        claimed.add(fname)
+        return fname
+
+    def picture(stem: str, tag: str, size) -> "Image.Image":
+        k = ("pic", stem, tag, size)
+        if k not in cache:
+            png = rooms[stem]["_states"][tag]
+            im = Image.open(renders / png).convert("RGB")
+            cache[k] = im if im.size == size else im.resize(size, Image.LANCZOS)
+        return cache[k]
+
+    def mask(stem: str, which: str, size) -> "Image.Image | None":
+        k = ("mask", stem, which, size)
+        if k not in cache:
+            f = (rooms[stem].get("masks") or {}).get(which)
+            im = Image.open(renders / f).convert("L") if f else None
+            cache[k] = im.resize(size, Image.BILINEAR) if im is not None and im.size != size else im
+        return cache[k]
+
+    replaced = 0
+    for key, e in sorted(flat.items()):
+        season = str(e.get("season") or "")
+        angle = str(e.get("angle") or "")
+        if season:
+            angle = angle.removesuffix(f"-{season}")
+        stem = f"{angle}-{season}" if season else angle
+        r = rooms.get(stem)
+        if r is None:
+            problems.append(f"{key}: room3d rendered no {stem}; render it "
+                            f"(python3 room3d/build.py --cam {angle})")
+            continue
+        r["_states"] = {st["tag"]: st["png"] for st in r.get("states") or []}
+        size = tuple(e["delivered"])
+        name = key.split("/", 1)[1].replace("-dusk", "") if e.get("hour") != BASE_HOUR \
+            else key.split("/", 1)[1]
+        loops = tuple(e.get("loops") or ())
+        n = len(e.get("frames") or []) or 1
+        twin_plain = plain_of.get((angle, str(e.get("hour") or ""))) or plain_of.get((angle, BASE_HOUR))
+        levels = (kit_levels.get(twin_plain) if season else kit_levels[key]) or [0] * n
+        levels = [levels[i % len(levels)] for i in range(n)]
+        front_mask = mask(stem, "front", size)
+        window = mask(stem, "window", size)
+        # The snow and rain are the same fall on every hour of one angle.
+        seed = int.from_bytes(hashlib.sha256(stem.encode()).digest()[:2], "big")
+
+        def install(plan: list[tuple], prefix: str) -> list[dict] | None:
+            """The loop's frames on disk, each distinct picture once."""
+            frames = []
+            for i, (tag, precip, phase) in enumerate(plan):
+                if tag not in r["_states"]:
+                    problems.append(f"{key}: room3d has no {stem} state {tag!r}")
+                    return None
+                k = (name, prefix, tag, precip, phase) if precip and window is not None \
+                    else (name, prefix, tag, "", 0)
+                if k not in on_disk:
+                    first = not any(o[:2] == (name, prefix) for o in on_disk)
+                    fname = claim(f"{name}{prefix}" + ("" if first and not prefix else f"_f{i + 1:02d}"))
+                    im = picture(stem, tag, size)
+                    if k[3]:
+                        im = _precipitation(im, window, k[3], k[4], seed=seed)
+                    im.save(room_dir / f"{fname}.png", compress_level=6)
+                    on_disk[k] = f"{fname}.png"
+                fk = (name, "front", tag)
+                if front_mask is not None and fk not in on_disk:
+                    first = not any(o[:2] == (name, "front") for o in on_disk)
+                    fname = claim(f"{name}_front" + ("" if first else f"_f{i + 1:02d}"))
+                    # Straight alpha off the mask, nothing where it is clear,
+                    # so the layer composites to exactly the frame's pixels.
+                    rgba = np.asarray(picture(stem, tag, size).convert("RGB")).copy()
+                    a = np.asarray(front_mask)
+                    rgba[a == 0] = 0
+                    out = Image.fromarray(np.dstack([rgba, a]).astype(np.uint8), "RGBA")
+                    out.save(room_dir / f"{fname}.png", compress_level=6)
+                    on_disk[fk] = f"{fname}.png"
+                fr = {"tag": f"_f{i + 1:02d}" if n > 1 else "", "png": on_disk[k], "svg": None}
+                if front_mask is not None:
+                    fr["front"] = on_disk[fk]
+                frames.append(fr)
+            return frames
+
+        precip = "snow" if "window-snow" in loops else ""
+        frames = install(_room3d_plan(loops, levels, n, r["_states"], precip), "")
+        if frames is None:
+            continue
+        moves = len({f["png"] for f in frames}) > 1 or len({f.get("front") for f in frames}) > 1
+        if not moves:
+            frames = [dict(frames[0], tag="")]
+        e["frames"] = frames
+        e["files"] = {"png": frames[0]["png"], "svg": None, "baseIsFrame": "_f01" if moves else None}
+        e["playback"] = "loop" if moves else "static"
+        e["fps"] = e.get("fps") if moves else 0
+        e["frameCount"] = len(frames)
+        if not moves:
+            e.pop("loops", None)
+        rain = (e.get("weathers") or {}).get("rain")
+        if rain and window is not None:
+            wn = len(rain.get("frames") or []) or 12
+            wlevels = [levels[i % len(levels)] for i in range(wn)]
+            wframes = install(_room3d_plan(tuple(rain.get("loops") or ()), wlevels, wn,
+                                           r["_states"], "rain"), "_rain")
+            if wframes is None:
+                continue
+            e["weathers"] = {"rain": {"loops": list(rain.get("loops") or ["window-rain"]), "playback": "loop",
+                                      "fps": rain.get("fps") or 12, "frameCount": len(wframes),
+                                      "frames": wframes}}
+        else:
+            e.pop("weathers", None)
+        e["author"] = ROOM3D_AUTHOR
+        e["duskSafe"] = None
+
+        anc = r.get("anchor")
+        e["slots"].pop("host-anchor", None)
+        e.pop("occlusion", None)
+        e.pop("layersNote", None)
+        if anc:
+            e["slots"]["host-anchor"] = {
+                "role": "host-anchor", "region": True, "scales": "host",
+                "note": "composite a host cut-out here. This region's HEIGHT is his "
+                        "target height: scale him so (host.floorLineY - "
+                        "host.slots.figure.y) equals it, then sit his floorLineY on "
+                        "this region's bottom edge. Width is advisory and never "
+                        "scales him. Solved from the 3D camera: his feet on the floor "
+                        "where he stands, his height a 1.78 m man's.",
+                "x": anc["x"], "y": anc["y"], "w": anc["w"], "h": anc["h"]}
+            e["floorLineY"] = anc["y"] + anc["h"]
+            e["hostAnchor"] = {"targetHeight": anc["h"],
+                               "scales": "host.floorLineY - host.slots.figure.y"}
+            if r.get("headCovered") is not None:
+                e["occlusion"] = {"pose": "to-camera", "headCovered": r["headCovered"]}
+        else:
+            e["hostAnchor"] = False
+            e.pop("floorLineY", None)
+        first_front = frames[0].get("front")
+        e["layers"] = {"front": first_front} if first_front else None
+
+        # WHERE EACH VIDEO WRITES: the board's clear area and the screen's
+        # chart, as four corners in canvas units, the colour they are painted,
+        # and the mask of what the camera sees of each.
+        writable = {}
+        for which, surf in (r.get("surfaces") or {}).items():
+            m = mask(stem, which, size)
+            if m is None:
+                continue
+            dest = room_dir / f"{name}_mask_{which}.png"
+            if not dest.exists():
+                m.save(dest, compress_level=9)
+            writable[which] = dict(surf, mask=dest.name)
+        if writable:
+            e["writable"] = writable
+        else:
+            e.pop("writable", None)
+
+        title = e["slots"].get("title")
+        if title is not None:
+            t = r.get("title")
+            if not t:
+                problems.append(f"{key}: the kit opens chapters here and room3d "
+                                f"solved no slate for {stem}")
+            else:
+                title.update({k: t[k] for k in ("x", "y", "w", "h")})
+                title["groundBox"] = dict(t["groundBox"])
+                title["ground"] = "card"
+                title["note"] = ("chapter opener writes here: the slate on the wall, "
+                                 "chalked in the title's own type. Solved from the 3D "
+                                 "camera.")
+                tr = dict((e.get("typeRoles") or {}).get("title") or {})
+                if tr:
+                    tr["size"] = int(min(tr.get("size") or 76, t["w"] / _TITLE_W_PER_SIZE,
+                                         t["h"] / (2 * _TITLE_LINE)))
+                    e.setdefault("typeRoles", {})["title"] = tr
+        replaced += 1
+    if replaced:
+        print(f"  room3d: {replaced} {ROOM3D_ASPECT} rooms are the 3D room")
     return problems
 
 
@@ -882,6 +1234,10 @@ def _verify(repo: Path) -> int:
         # he is meant to be behind.
         for layer in a.layers.values():
             expect(key, d / layer, delivered, "layer")
+        # WHERE EACH VIDEO WRITES, masked at the frame's size or the writing
+        # lands beside the board it is meant to be on.
+        for which in a.writable:
+            expect(key, a.writable_mask(which), delivered, f"{which} mask")
         if a.base_is_frame and base.exists():
             # f01 BYTE-IDENTICAL TO BASE. Not "the same drawing" — the same
             # bytes. A base that is its own render pops on the first frame of
@@ -988,6 +1344,8 @@ def build(delivery: Path, only: str = "") -> int:
         drawn = STAGE / "plates"
         built = _draw(staged, drawn, only=only)
         problems += built.get("problems") or []
+        if not only or only == "room":
+            problems += _rooms_3d(built, drawn)
         shipped = _shipped_slot_tables(delivery)
         if only:
             shipped = {k: v for k, v in shipped.items() if k.split("/", 1)[0] == only}

@@ -88,6 +88,12 @@ class TagType(str, Enum):
     # holds for every beat of him until the next [SCENE], across the cutaways
     # in between, the way a scene heading holds in a screenplay. LONG only.
     SCENE = "SCENE"
+    # WHAT THE BOARD IN THE ROOM ASKS — [BOARD: who is paying for the buyback?],
+    # anywhere in the script, once. Written on the whiteboard under the
+    # episode number and the ticker, in every room the board is in shot
+    # (pipeline/room_dressing.py). It is the video's question, not a figure.
+    # LONG only; without one the board asks what we are paying for.
+    BOARD = "BOARD"
     # DELIVERY DIRECTION — stripped from captions, passed to TTS.
     #
     # What each one becomes is in pipeline/direction.py, one table, per model

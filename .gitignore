@@ -48,3 +48,6 @@ assets/plates/
 
 # Build-time rasteriser for the kit engine. Never in the render path.
 node_modules/
+
+# room3d/build.py renders through here; only room3d/renders/ is committed.
+room3d/.scratch/

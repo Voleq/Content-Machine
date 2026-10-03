@@ -59,7 +59,7 @@ jobs:
           path: assets/plates
           # Everything the plates are built FROM. A kit change misses and
           # rebuilds; anything else hits and the ingest is skipped entirely.
-          key: plates-${{ hashFiles('kit/**', 'scripts/ingest_kit.py', 'scripts/kit_engine.js', 'package-lock.json') }}
+          key: plates-${{ hashFiles('kit/**', 'room3d/renders/**', 'scripts/ingest_kit.py', 'scripts/kit_engine.js', 'package-lock.json') }}
 
       - name: Node dependencies
         # Always, not only on a kit rebuild: `tests/test_budgets.py` runs the

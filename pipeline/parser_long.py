@@ -312,6 +312,14 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
             # holding the frame here, and checked against it in validation.
             payload = " ".join(payload.split())
             values = {"plate": holder_plate, "on": holder_type}
+        elif rt.type is TagType.BOARD:
+            # The writer's words, written on the board as typed; only the
+            # spacing is tidied. It claims no frame and no moment.
+            payload = " ".join(payload.split())
+            if not payload:
+                warnings.append("[BOARD] with nothing in it — skipped; the board "
+                                "asks its default question")
+                continue
         elif rt.type is TagType.SCENE:
             # The writer's room and pose, resolved against the kit here so a
             # room it does not draw is named at intake, not found as a cut
@@ -359,6 +367,10 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
     # A [SOURCE] is not narration, so the check above never sees it — and it
     # is the one tag whose whole job is to put a source's name on screen.
     for e in events:
+        if e.type is TagType.BOARD and any(w in e.payload.lower() for w in VENDOR_WORDS):
+            raise LongScriptError(
+                f"[BOARD: {e.payload}] names the data vendor — it would be "
+                f"written on the board in shot. Ask the question, never the vendor.")
         if e.type is TagType.SOURCE and any(w in e.payload.lower()
                                             for w in VENDOR_WORDS):
             raise LongScriptError(
@@ -962,6 +974,19 @@ def validate_long_script(
 
     warnings.extend(density_warnings(script, settings))
     warnings.extend(dennis_alone_warnings(script, settings))
+
+    from pipeline.room_dressing import BOARD_MAX_CHARS
+
+    boards = [e for e in script.events if e.type is TagType.BOARD]
+    if len(boards) > 1:
+        warnings.append(
+            f"{len(boards)} [BOARD] tags — the board is written once, with the "
+            f"first: {boards[0].payload!r}. Keep one.")
+    if boards and len(boards[0].payload) > BOARD_MAX_CHARS:
+        warnings.append(
+            f"[BOARD: {boards[0].payload}] is {len(boards[0].payload)} characters; "
+            f"the board fits about {BOARD_MAX_CHARS}, so it is written small. "
+            f"Cut it to the question.")
 
     for e, reason in unrenderable_long_tags(script):
         where = f"char {e.char_offset}"

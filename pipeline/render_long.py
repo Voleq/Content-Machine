@@ -508,12 +508,17 @@ CHAPTER_OPENER_S = 1.6
 
 
 def _provenance(script, settings, workspace: Path, duration: float,
-                seg_meta: list[dict], tts, *, draft: bool, proof: bool):
-    """The render's provenance record (N3)."""
+                seg_meta: list[dict], tts, *, draft: bool, proof: bool,
+                room_prices=None):
+    """The render's provenance record (N3).
+
+    `room_prices` is the series the room's board and monitor drew, when they
+    drew one: a price line on screen whether or not the script charts it.
+    """
     from pipeline import provenance as prov
     from pipeline.filings import load_manifest
 
-    prices = None
+    prices = room_prices
     if _reaches_a_price_chart_safe(script):
         from pipeline.prices import get_price_history
 
@@ -870,9 +875,46 @@ def _render_long(
         return _room_file(_room_plate(role_name,
                                       seed=f"{script.ticker}|{variant % 3}"))
 
+    # THE EPISODE IN THE ROOM (item 36): the board says this video's number,
+    # ticker, question and chapters, and the monitor shows its price. Every
+    # read of a room's pixels below goes through `_written`, so the room
+    # behind him, the desk in front of him and the chapter opener agree.
+    written_rooms: dict[tuple[str, str], object] = {}
+    room_dressing: list = []
+
+    def _dressing():
+        if not room_dressing:
+            from pipeline.prices import get_price_history, long_history_days
+            from pipeline.room_dressing import Dressing, board_question, episode_number
+
+            days = long_history_days(settings)
+            series = get_price_history(script.ticker, settings, days=days)
+            # A series the feed failed to give is not drawn: a made-up line
+            # on his monitor is a made-up chart.
+            closes = () if series.degraded else tuple(series.closes)
+            room_dressing.append((Dressing(
+                episode=episode_number(settings, script.ticker, workspace.name),
+                ticker=script.ticker.upper(), question=board_question(script),
+                chapters=tuple(t for _, t, _ in chapters), closes=closes,
+                span=f"{max(round(days / 365), 1)}Y"), series))
+        return room_dressing[0][0]
+
+    def _written(plate):
+        """`plate` with the episode written on its board and monitor."""
+        if plate is None or not getattr(plate, "writable", None):
+            return plate
+        k = (plate.key, plate.weather)
+        if k not in written_rooms:
+            from pipeline.room_dressing import written_room
+
+            written_rooms[k] = written_room(plate, _dressing(), rdir / "written",
+                                            settings.fonts_dir)
+        return written_rooms[k]
+
     def _room_file(plate) -> Path:
         """A room plate rasterised at the frame's size, once per video."""
         plates_used.add(plate.key)
+        plate = _written(plate)
         key = (plate.key, "")
         if key not in room_cache:
             # The cache filename carries a hash of the SOURCE PLATE (D3).
@@ -921,6 +963,7 @@ def _render_long(
         """
         if not plate.animated or plate.plays_once:
             return None
+        plate = _written(plate)
         return _loop_of(plate, plate.frame_paths(), "room", "RGB")
 
     def _front_loop(room) -> Path | None:
@@ -932,6 +975,7 @@ def _render_long(
         """
         if not room.animated or room.plays_once:
             return None
+        room = _written(room)
         fronts = [room.front_path(i) for i in range(len(room.frames))]
         if any(f is None or not f.exists() for f in fronts) \
                 or len({str(f) for f in fronts}) < 2:
@@ -945,7 +989,7 @@ def _render_long(
         whole room plus this layer: he goes between them, and pasting him over
         the whole room put the desk behind his legs.
         """
-        src = front_of(room)
+        src = front_of(_written(room))
         if src is None:
             return None
         key = (room.key, "front")
@@ -984,6 +1028,7 @@ def _render_long(
                         "screen", plate.key, title)
             return _room_still(seg_i, role_name)
         plates_used.add(plate.key)
+        plate = _written(plate)
         if plate.animated and not plate.plays_once:
             # A LOOPING OPENER IS A CLIP, the title set on each picture of
             # the loop once. The opener angles are the wide ones, with the
@@ -2529,8 +2574,15 @@ def _render_long(
     attributions = sorted({m["attribution"] for m in seg_meta
                            if m.get("attribution")})
     price_provenance = _price_provenance(script, settings)
+    # The board and the monitor draw the price's run too (item 36).
+    room_series = (room_dressing[0][1] if room_dressing and room_dressing[0][0].closes
+                   else None)
+    if room_series is not None and not price_provenance:
+        price_provenance = {"source": room_series.source, "degraded": False,
+                            "days": len(room_series.closes),
+                            "drawn": "the room's board and monitor"}
     provenance = _provenance(script, settings, workspace, duration, seg_meta,
-                             tts, draft=draft, proof=proof)
+                             tts, draft=draft, proof=proof, room_prices=room_series)
     audio_rows = manifest_rows(audio)
     # WHAT THE MIX DID, on the delivery message. Measured off the file, not
     # assumed from the graph; a draft is not worth the extra pass.

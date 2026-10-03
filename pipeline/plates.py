@@ -549,6 +549,12 @@ class Plate:
     # as its frames (`in_weather`), so every renderer plays it unchanged.
     weathers: dict = field(default_factory=dict)
     weather: str = ""
+    # WHERE EACH VIDEO WRITES (the 3D room): `board` and `screen`, each its
+    # four corners in canvas units (top left, top right, bottom right, bottom
+    # left), the colour the surface is painted (`paper`, `backlight`) and the
+    # mask file of what the camera sees of it. `pipeline/room_dressing.py`
+    # writes the episode on them. Empty on a room with neither in shot.
+    writable: dict = field(default_factory=dict)
 
     @property
     def base_key(self) -> str:
@@ -620,6 +626,11 @@ class Plate:
             frame_count=w.frame_count, frames=w.frames,
             files_png=w.frames[0].png, base_is_frame=w.frames[0].tag,
             layers=layers)
+
+    def writable_mask(self, which: str) -> Path | None:
+        """The mask of `which` surface (``board``, ``screen``), or None."""
+        f = (self.writable.get(which) or {}).get("mask")
+        return self.root / self.family / f if f else None
 
     def front_path(self, frame_index: int = 0) -> Path | None:
         """The front layer as it is on frame `frame_index`, or None.
@@ -1081,6 +1092,8 @@ class Registry:
             season=str(e.get("season") or ""),
             dressed_from=str(e.get("dressedFrom") or ""),
             weathers=weathers,
+            writable={str(k): dict(v) for k, v in (e.get("writable") or {}).items()
+                      if isinstance(v, dict) and v.get("quad") and v.get("mask")},
         )
 
     # ---------------------------------------------------------------- basics
@@ -1526,6 +1539,9 @@ class Registry:
             for i, fr in enumerate(p.frames):
                 if fr.front and not p.front_path(i).exists():
                     problems.append(f"{key}: missing front layer of {fr.tag} {p.front_path(i)}")
+            for which in p.writable:
+                if not p.writable_mask(which).exists():
+                    problems.append(f"{key}: missing {which} mask {p.writable_mask(which)}")
             for w in p.weathers.values():
                 seen = p.in_weather(w.name)
                 for i, fr in enumerate(seen.frames):

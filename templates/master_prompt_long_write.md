@@ -316,6 +316,12 @@ draws and where the drawing reads it from.
                         cutaway in between: when the evidence goes away, he is back where you left
                         him, so a new [SCENE] is a new picture, not a formality. Leave pose= off only
                         in a room nobody stands in, where the scene is the room itself.
+[BOARD: question]       WHAT THE WHITEBOARD IN HIS OFFICE ASKS, once, anywhere in the script.
+                        [BOARD: who pays for the buyback?]
+                        The bot writes it on the board under the episode number and the ticker,
+                        with the chapter titles and the share price's run beside it, in every room
+                        the board is in shot. The video's question in his words, 48 characters at
+                        most, never a figure. Without one the board asks "what are we paying for?".
 
 DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
 The full vocabulary is in DELIVERY DIRECTION near the top of this prompt, with

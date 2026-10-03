@@ -1,0 +1,219 @@
+"""The episode written in the 3D room: the board and the monitor (item 36)."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import numpy as np
+import pytest
+from PIL import Image
+
+from pipeline import room_dressing as rd
+from pipeline.plates import Frame, Plate
+
+ROOT = Path(__file__).resolve().parent.parent
+FONTS = ROOT / "assets" / "fonts"
+
+PAPER = (238, 241, 242)
+BACKLIGHT = (148, 158, 170)
+CLOSES = tuple(10 + i % 7 + i / 40 for i in range(300))
+
+
+def _dressing(**kw) -> rd.Dressing:
+    return rd.Dressing(**{"episode": 7, "ticker": "EXMPL",
+                          "question": "who pays for the buyback?",
+                          "chapters": ("The setup", "The cash", "The catch"),
+                          "closes": CLOSES, **kw})
+
+
+def _lin(c):
+    c = np.asarray(c, dtype=np.float64) / 255
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+def test_the_board_is_ink_on_a_clear_layer():
+    img = rd.board_ink(_dressing(), FONTS, (900, 600))
+    assert img.mode == "RGBA" and img.size == (900, 600)
+    a = np.asarray(img)[..., 3]
+    assert 0.02 < (a > 0).mean() < 0.5, "the board is blank or painted over"
+    red = np.asarray(img)[..., :3][a > 0]
+    assert ((red[:, 0] > 150) & (red[:, 1] < 60)).any(), "no red line for the price's run"
+
+
+def test_no_price_line_without_a_real_series():
+    with_line = np.asarray(rd.board_ink(_dressing(), FONTS, (900, 600)))
+    without = np.asarray(rd.board_ink(_dressing(closes=()), FONTS, (900, 600)))
+    red = lambda im: ((im[..., 0] > 150) & (im[..., 1] < 60) & (im[..., 3] > 0)).sum()  # noqa: E731
+    assert red(with_line) > 0 and red(without) == 0
+    chart = np.asarray(rd.screen_chart(_dressing(closes=()), FONTS, (640, 450)))
+    assert not ((chart[..., 1] > 180) & (chart[..., 2] > 220)).any(), \
+        "the monitor drew a line with no series"
+
+
+def test_a_long_episode_question_still_fits_the_board():
+    img = rd.board_ink(_dressing(question="x" * 40 + " what is this company worth"),
+                       FONTS, (900, 600))
+    a = np.asarray(img)[..., 3]
+    assert a[:, -2:].max() == 0, "the writing ran off the board"
+
+
+def test_the_warp_lands_on_its_corners():
+    tex = Image.new("RGB", (100, 50), (255, 255, 255))
+    quad = [(40.0, 30.0), (160.0, 40.0), (150.0, 100.0), (50.0, 90.0)]
+    px, (x0, y0) = rd._warp(tex, quad, (200, 150))
+    a = px[..., 3]
+    assert a[60 - y0, 100 - x0] > 0.99, "the middle of the quad is not covered"
+    assert a[0, 0] == 0 and a[-1, -1] == 0, "the warp painted outside its quad"
+
+
+def _plate(tmp: Path, *, frames=("r.png", "r.png", "r_f03.png"), front=True) -> Plate:
+    """A two-state room 200x100 canvas, delivered at 400x200, board on the
+    left and screen on the right."""
+    fam = tmp / "room"
+    fam.mkdir(parents=True)
+    paper = np.zeros((200, 400, 3), np.uint8)
+    paper[:, :200] = PAPER
+    paper[:, 200:] = BACKLIGHT
+    Image.fromarray(paper).save(fam / "r.png")
+    dim = (_lin(paper) * 0.55)
+    dim8 = np.where(dim <= 0.0031308, dim * 12.92, 1.055 * dim ** (1 / 2.4) - 0.055)
+    Image.fromarray((dim8 * 255 + 0.5).astype(np.uint8)).save(fam / "r_f03.png")
+    mask_b = np.zeros((200, 400), np.uint8)
+    mask_b[:, :200] = 255
+    mask_b[:, 90:110] = 0          # something stands in front of the board here
+    Image.fromarray(mask_b).save(fam / "r_mask_board.png")
+    mask_s = np.zeros((200, 400), np.uint8)
+    mask_s[:, 200:] = 255
+    mask_s[10:30, 210:240] = 0     # a sticky note on the glass
+    Image.fromarray(mask_s).save(fam / "r_mask_screen.png")
+    if front:
+        fr = np.zeros((200, 400, 4), np.uint8)
+        fr[150:, 250:350, :3] = BACKLIGHT
+        fr[150:, 250:350, 3] = 255
+        Image.fromarray(fr, "RGBA").save(fam / "r_front.png")
+    writable = {
+        "board": {"quad": [[5, 5], [95, 5], [95, 95], [5, 95]], "paper": list(PAPER),
+                  "size": [1.4, 1.0], "mask": "r_mask_board.png"},
+        "screen": {"quad": [[105, 5], [195, 5], [195, 95], [105, 95]],
+                   "backlight": list(BACKLIGHT), "size": [1332, 928],
+                   "mask": "r_mask_screen.png"},
+    }
+    return Plate(
+        key="room/r-16x9", family="room", name="r-16x9", canvas=(200, 100),
+        delivered=(400, 200), export_scale=2, aspect="16x9", playback="loop",
+        fps=12.0, frame_count=len(frames),
+        frames=tuple(Frame(tag=f"_f{i + 1:02d}", png=f,
+                           front="r_front.png" if front else "")
+                     for i, f in enumerate(frames)),
+        files_png="r.png", files_svg="", base_is_frame="_f01", slots={},
+        type_roles={}, root=tmp, layers={"front": "r_front.png"} if front else {},
+        writable=writable)
+
+
+def test_a_written_room_is_the_same_room_rooted_elsewhere(tmp_path):
+    plate = _plate(tmp_path / "kit")
+    out = rd.written_room(plate, _dressing(), tmp_path / "written", FONTS)
+    assert out is not plate and out.root != plate.root
+    assert out.key == plate.key and out.frames == plate.frames and not out.writable
+    for p in [out.path, *out.frame_paths(), out.front_path(0)]:
+        assert p.exists() and Image.open(p).size == (400, 200)
+    # Written once: a second call finds it and writes nothing.
+    stamp = out.path.stat().st_mtime_ns
+    again = rd.written_room(plate, _dressing(), tmp_path / "written", FONTS)
+    assert again.root == out.root and again.path.stat().st_mtime_ns == stamp
+    # Another episode is another set of pictures.
+    other = rd.written_room(plate, _dressing(episode=8), tmp_path / "written", FONTS)
+    assert other.root != out.root
+
+
+def test_the_writing_follows_the_room_light_and_what_stands_in_front(tmp_path):
+    plate = _plate(tmp_path / "kit")
+    out = rd.written_room(plate, _dressing(), tmp_path / "written", FONTS)
+    before = np.asarray(Image.open(plate.path).convert("RGB")).astype(int)
+    after = np.asarray(Image.open(out.path).convert("RGB")).astype(int)
+    board = (slice(10, 190), slice(10, 190))
+    assert (after[board] < before[board] - 8).any(), "nothing was written on the board"
+    assert (after[:, 90:110] == before[:, 90:110]).all(), \
+        "the board's writing was drawn over what stands in front of it"
+    assert (after[12:28, 212:238] == before[12:28, 212:238]).all(), \
+        "the chart was drawn over the sticky note"
+    # Off the surfaces nothing changes.
+    assert (after[:5] == before[:5]).all()
+
+    # THE DIP: the screen frame at 55% shows the same chart at 55%.
+    bright = _lin(after[40:190, 215:385])
+    dim = _lin(np.asarray(Image.open(out.frame_paths()[2]).convert("RGB"))[40:190, 215:385])
+    big = bright > 0.05
+    assert np.allclose(dim[big] / bright[big], 0.55, atol=0.06)
+
+
+def test_the_front_carries_the_written_monitor_and_stays_clear_elsewhere(tmp_path):
+    plate = _plate(tmp_path / "kit")
+    out = rd.written_room(plate, _dressing(), tmp_path / "written", FONTS)
+    front = np.asarray(Image.open(out.front_path(0)))
+    room = np.asarray(Image.open(out.path).convert("RGB"))
+    assert front.shape[2] == 4
+    assert (front[150:190, 250:350, :3] == room[150:190, 250:350]).all(), \
+        "the desk in front of him shows a different monitor from the room behind"
+    assert (front[..., 3] == 0).sum() and (front[front[..., 3] == 0][:, :3] == 0).all()
+
+
+def test_a_room_with_nothing_to_write_on_is_itself(tmp_path):
+    plate = _plate(tmp_path / "kit")
+    from dataclasses import replace
+
+    bare = replace(plate, writable={})
+    assert rd.written_room(bare, _dressing(), tmp_path / "w", FONTS) is bare
+
+
+def test_the_episode_number_counts_the_longs(settings):
+    rows = [
+        {"ticker": "AAA", "video_id": "1", "title": "a", "privacy": "public",
+         "workdate": "2026-09-01", "uploaded_at": "2026-09-01T10:00", "fmt": "long"},
+        {"ticker": "BBB", "video_id": "2", "title": "b", "privacy": "public",
+         "workdate": "2026-09-02", "uploaded_at": "2026-09-02T10:00", "fmt": "short"},
+        {"ticker": "CCC", "video_id": "3", "title": "c", "privacy": "public",
+         "workdate": "2026-09-03", "uploaded_at": "2026-09-03T10:00", "fmt": "long"},
+        # The same long, uploaded again, keeps its number.
+        {"ticker": "AAA", "video_id": "4", "title": "a2", "privacy": "public",
+         "workdate": "2026-09-01", "uploaded_at": "2026-09-04T10:00", "fmt": "long"},
+    ]
+    from pipeline.youtube import RECORDS_FILE
+
+    path = settings.state_dir / RECORDS_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(rows), encoding="utf-8")
+    assert rd.episode_number(settings, "aaa", "2026-09-01") == 1
+    assert rd.episode_number(settings, "CCC", "2026-09-03") == 2
+    assert rd.episode_number(settings, "DDD", "2026-10-03") == 3
+
+
+def test_the_writer_sets_the_board(long_valid_text, settings):
+    from pipeline.models import TagType
+    from pipeline.parser_long import parse_long_script
+
+    text = "[BOARD:   who pays   for the buyback? ]\n" + long_valid_text
+    script, _ = parse_long_script(text, "EXMPL", settings)
+    boards = [e for e in script.events if e.type is TagType.BOARD]
+    assert [e.payload for e in boards] == ["who pays for the buyback?"]
+    assert rd.board_question(script) == "who pays for the buyback?"
+    plain, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    assert rd.board_question(plain) == rd.BOARD_DEFAULT_QUESTION
+
+
+def test_a_board_tag_draws_no_cue_and_is_not_reported_as_dropped(long_valid_text, settings):
+    from pipeline.parser_long import parse_long_script
+    from pipeline.timeline import unrenderable_long_tags
+
+    script, _ = parse_long_script("[BOARD: what is it worth?]\n" + long_valid_text,
+                                  "EXMPL", settings)
+    assert not [e for e, _ in unrenderable_long_tags(script) if e.type.value == "BOARD"]
+
+
+def test_a_board_naming_the_vendor_is_refused(long_valid_text, settings):
+    from pipeline.parser_long import VENDOR_WORDS, LongScriptError, parse_long_script
+
+    word = sorted(VENDOR_WORDS)[0]
+    with pytest.raises(LongScriptError, match="BOARD"):
+        parse_long_script(f"[BOARD: per {word}]\n" + long_valid_text, "EXMPL", settings)
