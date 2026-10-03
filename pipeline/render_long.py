@@ -7,7 +7,7 @@ Structure:
     evidence he cuts away to
   * each beat encodes on its own (segmented, cached, in parallel) and the
     beats are concatenated; the overlays that span beats (opening title,
-    chapter bumpers, corner bug, top strip, disclaimer, marks, captions) go
+    chapter bumpers, corner bug, top strip, disclaimer, marks) go
     over that base in one pass, with VO + room tone + SFX in a single amix
   * draft mode reuses the same cached audio and graph at low res /
     ultrafast (never re-calls TTS)
@@ -86,7 +86,6 @@ from pipeline.sound import (DEFAULT_LEAD_S, EFFECT_KEYS, Cut, Move, Voicing,
                             move_cues, placeholders_played, room_track,
                             sound_summary, theme_tracks, wipe_cues)
 from pipeline.rasters import (
-    build_phrase_ass,
     cover_fill_frame,
     frames_to_alpha_clip,
     mark_frames,
@@ -1865,7 +1864,7 @@ def _render_long(
     # for correctness comparison.
     #
     # Either way the result is one base video that the global overlays — the
-    # corner bug, disclaimer, captions, chapter bumpers, marks — composite
+    # corner bug, disclaimer, chapter bumpers, marks — composite
     # over. Those span segment boundaries, so they cannot be baked in per
     # segment.
     profile = encode_profile(settings, "long", draft=draft, preview=preview,
@@ -2204,8 +2203,8 @@ def _render_long(
     ))
 
     # THE LOWER THIRD: design's strip, the ticker and the channel's line in
-    # its slots, TOP-left where the plain-type strip used to run, clear of
-    # the captions. It is a solid card, so it rides the beats of HIM and no
+    # its slots, TOP-left where the plain-type strip used to run. It is a
+    # solid card, so it rides the beats of HIM and no
     # others: over a plate or a two-shot it would sit on the evidence's own
     # top-left corner, and over a chapter card on its title. It slides in
     # the first time, as design's slide-in has it, and cuts with the shot
@@ -2256,22 +2255,13 @@ def _render_long(
     ))
 
     # ---------------------------------------------------------- captions
-    # A fitted opaque box per line (box=True) sized to its own text, sitting
-    # in a dedicated bottom band CLEAR of the disclaimer and the top strip —
-    # so a LONG caption line ("...three a.m., again...") can never clip
-    # off-frame or overlap the furniture. Kept narrow so a 9:16 centre crop
-    # (repurpose) retains it.
-    #
-    # Phrase captions, the same ones the short uses. The karaoke fill left a
-    # narrow chip with ONE word lit and the rest of the line washed out to
-    # near-invisible — unreadable at a glance, and it coloured the lit word
-    # the same red the kit reserves for a down-move. A 16:9 line also has far
-    # more room than a 9:16 one, so it takes a longer page.
-    ass_path = rdir / "captions.ass"
-    ass_path.write_text(build_phrase_ass(
-        tts.words, settings=settings, play_res=(W, H), font_size=px(52), margin_v=px(120),
-        margin_h=px(180), max_words=8, max_chars=46, duration=duration,
-    ), encoding="utf-8")
+    # NONE ARE BURNED IN. A long viewer has the sound on, and the bot already
+    # writes the `.srt` from these same word timings and uploads it with the
+    # video (`publish.write_srt`, `youtube.set_captions`): a viewer who wants
+    # captions turns on CC and gets the exact tickers and figures, and one
+    # who does not is not reading a line of type over every plate. The short
+    # keeps its own burned phrases, and so does a clip cut from this video
+    # for the vertical feed (`repurpose`).
 
     # ------------------------------------------------------------- audio
     #
@@ -2359,7 +2349,7 @@ def _render_long(
         base_graph_lines=lines,
         layers=layers,
         audio=audio,
-        ass_path=ass_path,
+        ass_path=None,
         fonts_dir=settings.fonts_dir,
         duration=duration,
         fps=fps,
