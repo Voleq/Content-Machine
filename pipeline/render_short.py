@@ -10,10 +10,11 @@ that plate declares. There is no second kit and no register to pick: the
 renderer places the plate and says what goes in it, and the kit decides the
 face, the size, the weight and the colour role.
 
-Frames are composed in memory and piped straight into the encoder — 2,000
-uncompressed 1080x1920 frames is not something to put on a disk on the way
-past — and the captions are burned after, from the same phrase builder the
-LONG uses.
+Frames are composed in memory and piped straight into a lossless encode —
+2,000 uncompressed frames is not something to put on a disk on the way past —
+and the captions are burned after, from the same phrase builder the LONG uses,
+in the one lossy encode the short gets. The layout is the format's 1080x1920;
+the file is drawn at `short_delivery_height` (1440x2560).
 """
 
 from __future__ import annotations
@@ -35,8 +36,7 @@ from pipeline.compose import (MEME_SRC, BuildResult, Layer, build_layers,
                               punch_in_slot)
 from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
-from pipeline.render_common import (RenderError, encode_profile,
-                                    mix_under_picture, run_ffmpeg)
+from pipeline.render_common import RenderError, mix_under_picture, run_ffmpeg
 from pipeline.sound import (Cut, Move, manifest_rows, measure_lufs,
                             normalises, placeholders_played, short_mix,
                             shot_tags, sound_summary)
@@ -76,6 +76,19 @@ _FIGURE = re.compile(r"^(-?)([$€£]?)([\d.,]+)([KMBT]?)(%?)$")
 def _latest(row) -> str:
     """A row's most recent figure, skipping periods it leaves blank."""
     return next((str(v) for v in reversed(row.values) if str(v).strip()), "")
+
+
+def _latest_index(row) -> int | None:
+    """Which period a row's most recent figure is in, or None."""
+    return next((k for k in range(len(row.values) - 1, -1, -1)
+                 if str(row.values[k]).strip()), None)
+
+
+# The `numbers.<field>.<row>` sources that draw ONE row as a card of its own
+# (item 26), as `ShortResolver._metric_card` answers them.
+_CARD_FIELDS = frozenset({"kicker", "title", "cell", "axis", "first",
+                          "first_label", "last", "last_label", "change",
+                          "since"})
 
 
 def _unit_of(rows) -> str:
@@ -152,6 +165,14 @@ class ShortResolver:
     # Which format this resolver answers for. The meme picker reads a macro
     # print differently from a company's day; the renderer sets it.
     format_name: str = ""
+    # THE OPERATOR'S WORKBOOK for this video (`CompanyData`), when the
+    # workspace has one. `data.<card>.<slot>` reads a card it fills on its own
+    # (`pipeline.short_data`); without it those cards are not fillable and the
+    # rotation draws the script's.
+    data: object | None = None
+    # The content manager the LONG fetches its pictures through: a short's
+    # pictures (item 34) come from the same chain and the same cache.
+    content: object | None = None
 
     def __post_init__(self) -> None:
         self._images: dict[str, Path | list[Path] | None] = {}
@@ -197,6 +218,16 @@ class ShortResolver:
             return self._chart_source(parts[1:])
         if parts[0] == "wrap":
             return self._wrapped(parts[1:])
+        if parts[0] == "data":
+            return self._data(parts[1:])
+        if parts[0] == "sent":
+            return self._sentence(parts[1:])
+        if parts[0] == "news":
+            return self._news(parts[1:])
+        if parts[0] == "pic":
+            return self._picture_line(parts[1:])
+        if parts[0] == "fred":
+            return self._fred(parts[1:])
         if parts[0] != "script":
             return None
         obj: object = self.script
@@ -211,6 +242,174 @@ class ShortResolver:
             if obj is None:
                 return None
         return str(obj) if obj is not None else None
+
+    def _data(self, rest: list[str]) -> str | None:
+        """`data.<card>.<slot>`: a card the workbook fills on its own."""
+        from pipeline.short_data import CARDS
+
+        if not rest or self.data is None or rest[0] not in CARDS:
+            return None
+        cache = self.__dict__.setdefault("_cards", {})
+        if rest[0] not in cache:
+            try:
+                cache[rest[0]] = CARDS[rest[0]](self.data, script=self.script)
+            except Exception as e:                       # noqa: BLE001
+                log.warning("the %s card could not be filled: %s", rest[0], e)
+                cache[rest[0]] = None
+        card = cache[rest[0]]
+        if not card or len(rest) < 2:
+            return None
+        got = card.get(".".join(rest[1:]))
+        return got if got not in (None, "") else None
+
+    def _fred(self, rest: list[str]) -> str | None:
+        """`fred.<slot>`: the official series behind a macro print (item 6),
+        off FRED, for `charts/macro-series`."""
+        from pipeline import macro_series
+
+        if not rest:
+            return None
+        if "_fred_card" not in self.__dict__:
+            try:
+                self.__dict__["_fred_card"] = macro_series.card(
+                    self.script, self.settings)
+            except Exception as e:                       # noqa: BLE001
+                log.warning("the macro series could not be read: %s", e)
+                self.__dict__["_fred_card"] = None
+        card = self.__dict__["_fred_card"] or {}
+        return card.get(".".join(rest)) or None
+
+    def _session(self, rest: list[str]) -> str | None:
+        """`chart.session.<slot>`: today's session against the prior close
+        (item 4), for `charts/intraday`. None without a real session, or when
+        the session disagrees with the move the writer narrates."""
+        from pipeline.prices import get_intraday
+        from pipeline.short_data import session_card
+
+        if "_session_card" not in self.__dict__:
+            try:
+                self.__dict__["_session_card"] = session_card(
+                    get_intraday(self.script.ticker, self.settings),
+                    self.script)
+            except Exception as e:                       # noqa: BLE001
+                log.warning("the session chart could not be filled: %s", e)
+                self.__dict__["_session_card"] = None
+        card = self.__dict__["_session_card"] or {}
+        return card.get(".".join(rest)) or None
+
+    def _news(self, rest: list[str]) -> str | None:
+        """The news beat's own material (item 5).
+
+        `news.release.<slot>`: the release the video is about, opened from
+        the News sheet's link (`pipeline.news_page.release_card`).
+        `news.wire.<n>.<chars>.<i>.<slot>`: row `i` of the `n` latest
+        headlines cut to `chars`; `news.wire.kicker` the strip's heading.
+        """
+        from pipeline import news_page
+
+        if not rest or self.data is None:
+            return None
+        cache = self.__dict__.setdefault("_news_cache", {})
+        if rest[0] == "release":
+            if "release" not in cache:
+                try:
+                    cache["release"] = news_page.release_card(
+                        self.data, self.script, self.settings)
+                except Exception as e:                   # noqa: BLE001
+                    log.warning("the release could not be read: %s", e)
+                    cache["release"] = None
+            card = cache["release"] or {}
+            return (card.get(rest[1]) or None) if len(rest) > 1 else None
+        if rest[0] != "wire" or len(rest) < 2:
+            return None
+        if rest[1] == "kicker":
+            t = str(self.data.get("ticker") or self.script.ticker or "").upper()
+            return f"{t} · the latest wires" if t else "the latest wires"
+        try:
+            n, chars, i = int(rest[1]), int(rest[2]), int(rest[3])
+            slot = rest[4]
+        except (IndexError, ValueError):
+            return None
+        key = f"wire.{n}.{chars}"
+        if key not in cache:
+            cache[key] = news_page.wire_rows(self.data, n, chars)
+        rows = cache[key]
+        if not rows or i >= len(rows):
+            return None
+        return rows[i].get(slot) or None
+
+    def _picture(self, what: str):
+        """The picture for `what` (item 34), as the content chain resolved it,
+        or None. A filler card is none: a frame around "imagery unavailable"
+        is a broken drawing, and the beat keeps its card instead."""
+        pics = self.__dict__.setdefault("_pictures", {})
+        if what in pics:
+            return pics[what]
+        got = None
+        if what == "company" and self.content is not None:
+            name = str((self.data.get("company_name") if self.data is not None
+                        else "") or "").strip()
+            site = str(self.data.get("website") or "") if self.data is not None else ""
+            for query in ([f"{name} store", f"{name} headquarters", name]
+                          if name else []):
+                try:
+                    v = self.content.resolve_image(query, kind="img",
+                                                   website=site)
+                except Exception as e:                   # noqa: BLE001
+                    log.warning("picture %r failed: %s", query, e)
+                    continue
+                if v is not None and v.source != "filler" and v.path:
+                    got = v
+                    break
+        pics[what] = got
+        return got
+
+    # Who a picture came from, as its frame's source line says it.
+    _PICTURE_SOURCES = {"wikimedia": "Photo: Wikimedia Commons",
+                        "company_site": "Photo: the company's website",
+                        "pexels": "Photo: Pexels",
+                        "mock": "Photo: stand-in (mock mode)"}
+
+    def _picture_line(self, rest: list[str]) -> str | None:
+        """`pic.company.caption` / `pic.company.source`: the words under a
+        picture, only when there is a picture."""
+        if len(rest) < 2 or self._picture(rest[0]) is None:
+            return None
+        v = self._picture(rest[0])
+        if rest[1] == "source":
+            return self._PICTURE_SOURCES.get(v.source, "Photo: " + v.source)
+        if rest[1] == "caption" and self.data is not None:
+            name = str(self.data.get("company_name") or "").strip()
+            what = str(self.data.get("industry") or "").strip().lower()
+            return f"{name} · {what}" if name and what else (name or None)
+        return None
+
+    def attributions(self) -> list[str]:
+        """The credit lines for every picture this short drew."""
+        out = []
+        for v in (self.__dict__.get("_pictures") or {}).values():
+            if v is not None and getattr(v, "attribution", ""):
+                out.append(v.attribution)
+        return out
+
+    def _sentence(self, rest: list[str]) -> str | None:
+        """`sent.3.0.script.conclusion`: sentence 0 of a text that has exactly
+        three. A card that sets a passage one line a slot is only right for a
+        passage with that many lines; anything else leaves the first slot
+        empty, which makes the card unfillable, and the rotation takes a card
+        drawn for one line (item 25)."""
+        try:
+            want, i = int(rest[0]), int(rest[1])
+        except (IndexError, ValueError):
+            return None
+        text = self.text_for(".".join(rest[2:]))
+        if not text:
+            return None
+        parts = [s.strip() for s in re.split(r"(?<=[.!?])\s+", " ".join(str(text).split()))
+                 if s.strip()]
+        if len(parts) != want or i >= len(parts):
+            return None
+        return parts[i]
 
     def _wrapped(self, rest: list[str]) -> str | None:
         """`wrap.34.4.0.script.consequences.1`: line 0 of that text broken at
@@ -269,13 +468,31 @@ class ShortResolver:
             return ",".join(years) if years else None
         if field == "unit":
             return _unit_of(rows) or None
-        if field == "headline_figure":
-            return rows[0].values[-1] if rows else None
-        if field == "headline_label":
-            return rows[0].label if rows else None
-        if field == "headline_kicker":
+        if field in ("headline_figure", "headline_label", "headline_kicker",
+                     "headline_context", "headline_title"):
+            # THE ROW THE VERDICT TURNS ON (item 2): the one the writer names
+            # in `payoff_row`, else the first, as it always was.
+            from pipeline.short_data import row_for
+            row = row_for(self.script, getattr(self.script, "payoff_row", None))
+            row = row or (rows[0] if rows else None)
+            if row is None:
+                return None
             years = list(getattr(self.script, "years", []) or [])
-            return (years[-1] if years else None)
+            at = _latest_index(row)
+            if field == "headline_figure":
+                return row.values[at] if at is not None else None
+            if field == "headline_label":
+                return row.label
+            if field == "headline_kicker":
+                return years[at] if at is not None and at < len(years) else None
+            if field == "headline_title":
+                when = years[at] if at is not None and at < len(years) else ""
+                return f"{row.label}, {when}" if when else row.label
+            return self._since(row, years)
+        if field == "head":
+            years = list(getattr(self.script, "years", []) or [])
+            i = int(rest[0]) if rest and rest[0].isdigit() else -1
+            return years[i] if 0 <= i < len(years) else None
 
         if not rest or not rest[0].isdigit():
             return None
@@ -287,6 +504,8 @@ class ShortResolver:
             return r.label
         if field == "latest":
             return r.values[-1]
+        if field in _CARD_FIELDS:
+            return self._metric_card(field, r, rest[1:])
         if field == "figures":
             # A ROW, for the cell expansion — the same comma list a director
             # writes into a `[PLATE]` tag. The sheet's shared unit is said once
@@ -304,6 +523,72 @@ class ShortResolver:
         unit = _unit_of(rows)
         return f"{r.label}\t" + "\t".join(_bare(v, unit) for v in r.values)
 
+    def _since(self, row, years: list[str]) -> str | None:
+        """`from $400M in FY21`: where a row started, for a card that shows
+        where it is now."""
+        first = next((k for k, v in enumerate(row.values) if str(v).strip()), None)
+        last = _latest_index(row)
+        if first is None or last is None or first == last:
+            return None
+        when = years[first] if first < len(years) else ""
+        return f"from {row.values[first]} in {when}" if when else f"from {row.values[first]}"
+
+    def _metric_card(self, field: str, row, rest: list[str]) -> str | None:
+        """One row as a card of its own (item 26): its bars, its axis, where it
+        started and where it is.
+
+        `cell.k` is period k's figure as printed; `axis.k` the k-th gridline
+        from the bottom, on the scale of the printed figures; `change` how far
+        it moved from its first figure to its last (points for a rate, and
+        nothing across zero, where a percentage means nothing).
+        """
+        from pipeline import short_data as sd
+
+        years = list(getattr(self.script, "years", []) or [])
+        k = int(rest[0]) if rest and rest[0].isdigit() else None
+        first = next((j for j, v in enumerate(row.values) if str(v).strip()), None)
+        last = _latest_index(row)
+        figs = [sd.parse_figure(v) for v in row.values]
+        wb_field = sd.field_for(row.label, getattr(row, "field", None))
+        if field == "kicker":
+            return row.label.upper()
+        if field == "title":
+            span = (f"{years[first]} to {years[last]}"
+                    if first is not None and last is not None
+                    and last < len(years) and first != last else "")
+            return f"{row.label}, {span}" if span else row.label
+        if field == "cell":
+            if k is None or k >= len(row.values):
+                return None
+            return str(row.values[k]).strip() or None
+        if field == "axis":
+            present = [f for f in figs if f is not None]
+            if k is None or len(present) < 2:
+                return None
+            ticks = sd.axis_ticks(present)
+            if k >= len(ticks):
+                return None
+            like = next((v for v in row.values if str(v).strip()), "")
+            return sd.tick_label(wb_field, ticks[k], like)
+        if field in ("first", "first_label", "last", "last_label"):
+            at = first if field.startswith("first") else last
+            if at is None or (first == last):
+                return None
+            if field.endswith("_label"):
+                return years[at] if at < len(years) else None
+            return str(row.values[at]).strip() or None
+        if field == "change":
+            if first is None or last is None or first == last:
+                return None
+            if wb_field:
+                return sd.change(wb_field, figs[first], figs[last])
+            rate = str(row.values[last]).strip().endswith("%")
+            return sd.change("gross_margin" if rate else "revenue",
+                             figs[first], figs[last])
+        if field == "since":
+            return self._since(row, years)
+        return None
+
     def _chart_source(self, rest: list[str]) -> str | None:
         """The price chart, as the slots `charts/line-dense` declares.
 
@@ -314,6 +599,8 @@ class ShortResolver:
         if not rest:
             return None
         field = rest[0]
+        if field == "session":
+            return self._session(rest[1:])
         # THE MOVE, which is the writer's figure and needs no price data: a
         # short with no prices loaded still has one, in its move summary.
         if field in ("move_up", "move_down", "move_detail"):
@@ -387,8 +674,10 @@ class ShortResolver:
             return "Guidance"
         pick = None
         for r in rows:
+            # BY WORD. "pe" as a substring picked "Operating income" as the
+            # video's multiple.
             lab = r.label.lower()
-            if any(k in lab for k in ("p/e", "pe", "multiple", "ev/", "price")):
+            if re.search(r"(?<![a-z])(p/e|pe|p/s|p/b|p/fcf|multiple|ev/\w*|price)(?![a-z])", lab):
                 pick = r
                 break
         pick = pick or (rows[0] if rows else None)
@@ -430,6 +719,9 @@ class ShortResolver:
             out = self.meme().path
         elif src.startswith("plate."):
             out = None       # nested plates resolve through the kit, not here
+        elif src.startswith("photo."):
+            v = self._picture(src.split(".", 1)[1])
+            out = Path(v.path) if v is not None else None
         self._images[src] = out
         return out
 
@@ -551,6 +843,16 @@ def build_anchors(script: ShortScript) -> dict[str, str]:
         out["turn"] = script.turn_line
     if script.numbers:
         out["numbers"] = script.numbers[0].label
+        # Each later row's card listens for its own name (item 26), so it
+        # comes up as that row is read rather than on an even share. In a
+        # MARKED script only where the name is said inside the numbers beat:
+        # a row first named after the next marker is talked about in another
+        # beat, and a card that waited for it would push that beat's own
+        # shot off its marker.
+        inside = _beat_text(script, "numbers")
+        for i, row in enumerate(script.numbers[1:], start=1):
+            if inside is None or row.label.lower() in inside:
+                out[f"numbers.{i}"] = row.label
     if script.numbers_comment:
         out["numbers_comment"] = script.numbers_comment
     if script.cheap_or_trap:
@@ -586,6 +888,18 @@ def build_anchors(script: ShortScript) -> dict[str, str]:
         if len(heard.split()) >= 2:
             out[mark.key] = heard
     return out
+
+
+def _beat_text(script, key: str) -> str | None:
+    """What a marked beat says, lower-cased, from its marker to the next; None
+    when the script does not mark that beat."""
+    marks = sorted(getattr(script, "beat_marks", None) or (),
+                   key=lambda m: m.char_offset)
+    for i, m in enumerate(marks):
+        if m.key == key:
+            end = marks[i + 1].char_offset if i + 1 < len(marks) else None
+            return script.audio_script[m.char_offset:end].lower()
+    return None
 
 
 def marked_beats(script, fmt: Format) -> list[str]:
@@ -874,8 +1188,108 @@ def _type_floor(canvas: Image.Image) -> int:
     return max(12, int(MIN_TYPE_FH * canvas.height))
 
 
+# ONE LOSSY ENCODE, NOT TWO. The frames went to x264 at veryfast/CRF 20 and
+# the captions were burned in a second pass at CRF 20: every picture was
+# compressed twice, at 0.16 Mbit/s, and the dark ground came out blocky.
+# (2 Oct 2026: "the video seems laggy and not quality".) The frames now go to
+# a lossless file — still x264, so a held card costs nothing — in RGB, so
+# the colour is converted once, in the final pass.
+def lossless_args() -> tuple[str, ...]:
+    """The encoder arguments for the frames' lossless file."""
+    if _has_encoder("libx264rgb"):
+        return ("-c:v", "libx264rgb", "-preset", "ultrafast", "-qp", "0",
+                "-pix_fmt", "rgb24")
+    return ("-c:v", "libx264", "-preset", "ultrafast", "-qp", "0",
+            "-pix_fmt", "yuv444p")
+
+
+_ENCODERS: dict[str, bool] = {}
+
+
+def _has_encoder(name: str) -> bool:
+    if name not in _ENCODERS:
+        try:
+            out = subprocess.run(["ffmpeg", "-hide_banner", "-encoders"],
+                                 capture_output=True, text=True, timeout=30).stdout
+        except (OSError, subprocess.SubprocessError):
+            out = ""
+        _ENCODERS[name] = any(line.split()[1:2] == [name]
+                              for line in out.splitlines() if line.strip())
+    return _ENCODERS[name]
+
+
+def delivery_scale(settings, frame: tuple[int, int], *, proof: bool = False) -> float:
+    """Output pixels per layout pixel: `short_delivery_height` over the frame's.
+
+    YouTube gives a 1440p upload a better encode than a 1080p one, and
+    design's art is delivered at twice the canvas, so drawing the same layout
+    at 1440x2560 costs no sharpness. A proof stays at the layout's size: it
+    asks whether the type reads, and buys its speed back where it can.
+    """
+    want = int(getattr(settings, "short_delivery_height", 0) or 0)
+    if proof or want <= frame[1]:
+        return 1.0
+    return want / frame[1]
+
+
+def _even(v: float) -> int:
+    return max(int(round(v / 2.0)) * 2, 2)
+
+
+def delivered_size(frame: tuple[int, int], scale: float) -> tuple[int, int]:
+    """The file's size for a layout `frame` drawn at `scale`."""
+    if scale == 1.0:
+        return frame
+    return _even(frame[0] * scale), _even(frame[1] * scale)
+
+
+def _scaled(layer: Layer, scale: float) -> Layer:
+    """`layer` with its box in output pixels. Edges are rounded, not sizes,
+    so two layers that met in the layout still meet."""
+    if scale == 1.0:
+        return layer
+    from dataclasses import replace
+    x0, y0 = int(round(layer.x * scale)), int(round(layer.y * scale))
+    x1 = int(round((layer.x + layer.w) * scale))
+    y1 = int(round((layer.y + layer.h) * scale))
+    return replace(layer, x=x0, y=y0, w=x1 - x0, h=y1 - y0)
+
+
+def final_encode(src: Path, out: Path, settings, *, captions: Path | None = None) -> Path:
+    """The short's one lossy encode: the captions burned, the colour
+    converted to BT.709 and tagged so, at `short_crf` with x264's
+    `short_final_preset`.
+
+    `-tune animation` and `aq-mode=3` are for what the short is: flat colour
+    on a dark ground, where x264's defaults starve the dark and band it.
+    """
+    vf = []
+    if captions is not None:
+        # The filter takes a PATH, and a Windows drive letter or a colon in a
+        # workspace name is a filtergraph separator. Escaped the way libavfilter
+        # asks rather than by hoping the path is plain.
+        spec = str(captions).replace("\\", "/").replace(":", "\\:")
+        # THE KIT'S FONTS, BY DIRECTORY. The style names Archivo Narrow, which
+        # no install puts on the system, and without `fontsdir` libass fell
+        # back to DejaVu Sans: every short's captions were set in a face that
+        # runs a line nearly twice as wide as the one they were placed for.
+        # The LONG has always passed it (`render_common`).
+        fonts = str(settings.fonts_dir).replace("\\", "/").replace(":", "\\:")
+        vf.append(f"ass='{spec}':fontsdir='{fonts}'")
+    vf.append("scale=out_color_matrix=bt709:out_range=tv,format=yuv420p")
+    run_ffmpeg(["-i", str(src), "-vf", ",".join(vf), "-an",
+                "-c:v", "libx264",
+                "-preset", str(getattr(settings, "short_final_preset", "slow")),
+                "-crf", str(getattr(settings, "short_crf", 17)),
+                "-tune", "animation", "-x264-params", "aq-mode=3",
+                "-colorspace", "bt709", "-color_primaries", "bt709",
+                "-color_trc", "bt709", "-color_range", "tv", str(out)])
+    return out
+
+
 def render_frames(result: BuildResult, resolver, duration: float,
-                  out_video: Path, settings, *, reg, words=(), plan=None) -> Path:
+                  out_video: Path, settings, *, reg, words=(), plan=None,
+                  scale: float = 1.0) -> Path:
     """Compose every frame and pipe it into the encoder.
 
     Frames are composed in memory and go straight into ffmpeg — 2,000
@@ -886,17 +1300,24 @@ def render_frames(result: BuildResult, resolver, duration: float,
     moves on it is drawn by the move compositor, and its source tags and
     wipes go over everything else on the frame. Without one, every plate is
     the still it always was.
+
+    `scale` is how many output pixels each layout pixel gets
+    (:func:`delivery_scale`). The layout is the format's frame and nothing
+    in it moves; each layer is drawn at its box times `scale`, from design's
+    art, which is delivered at twice the canvas.
+
+    `out_video` is LOSSLESS (:func:`lossless_args`): the one lossy encode is
+    :func:`final_encode`, after the captions.
     """
     from pipeline.host import face_plan, host_shot
     from pipeline.moves import MoveCompositor
 
-    w, h = result.frame
+    w, h = delivered_size(result.frame, scale)
     n = max(int(round(duration * FPS)), 1)
     cache = _Cache(settings, reg)
     mover = (MoveCompositor(plan, reg, settings, cache)
              if plan is not None and (plan.moves or plan.wipes or plan.tags)
              else None)
-    profile = encode_profile(settings, "short")
     paper = reg.colour("ground")
 
     # WHAT HIS FACE DOES, per host layer, planned once: which frame of which
@@ -917,16 +1338,14 @@ def render_frames(result: BuildResult, resolver, duration: float,
 
     cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
            "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{w}x{h}",
-           "-r", str(FPS), "-i", "-",
-           "-an", "-c:v", "libx264", "-preset", getattr(profile, "preset", "medium"),
-           "-crf", str(getattr(profile, "crf", 20)),
-           "-pix_fmt", "yuv420p", str(out_video)]
+           "-r", str(FPS), "-i", "-", "-an", *lossless_args(), str(out_video)]
     out_video.parent.mkdir(parents=True, exist_ok=True)
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
                             stderr=subprocess.PIPE)
     assert proc.stdin is not None
 
-    ordered = sorted(result.layers, key=lambda l: (l.z, l.t_start))
+    ordered = [_scaled(l, scale)
+               for l in sorted(result.layers, key=lambda l: (l.z, l.t_start))]
     lost: dict[str, int] = {}
     try:
         for i in range(n):
@@ -945,7 +1364,7 @@ def render_frames(result: BuildResult, resolver, duration: float,
                 _draw_layer(canvas, layer, t, cache, reg=reg, settings=settings,
                             face=face, lost=lost)
             if mover is not None:
-                mover.draw_overlays(canvas, t)
+                mover.draw_overlays(canvas, t, scale=scale)
             proc.stdin.write(canvas.tobytes())
     finally:
         proc.stdin.close()
@@ -1015,6 +1434,37 @@ def _provenance(script, settings, workspace: Path, duration: float,
         settings=settings)
 
 
+def _safe_report(fmt: Format, result: BuildResult, reg) -> dict | None:
+    """The format's clear area and every filled word placed outside it.
+
+    Empty `outside` is the goal. What is in it names the shot, the slot and
+    the rows, so a card that still reaches under the title can be found.
+    """
+    if not fmt.safe:
+        return None
+    from pipeline.compose import _slot_in_frame
+
+    top, bottom = fmt.safe
+    outside = []
+    for l in result.of_kind("plate"):
+        plate = reg.get(l.entry_key)
+        if plate is None or plate.family == "room":
+            continue
+        for name, value in l.values.items():
+            slot = plate.slot(name)
+            if (slot is None or slot.region or slot.control
+                    or not str(value).strip()):
+                continue
+            _, y, _, h = _slot_in_frame(plate, name, (l.x, l.y, l.w, l.h))
+            if y < top - 1 or y + h > bottom + 1:
+                outside.append({"shot": l.shot_id, "slot": name,
+                                "rows": [y, y + h]})
+    scaled = sorted({l.shot_id for l in result.of_kind("plate")
+                     if l.w < result.frame[0] - 1})
+    return {"top": top, "bottom": bottom, "outside": outside,
+            "shrunk_to_fit": scaled}
+
+
 def held_over_ceiling(video: Path, spans,
                       ceiling: float) -> list[dict] | None:
     """The compositions in `video` that hold past `ceiling`, by shot.
@@ -1047,24 +1497,66 @@ def render_short(script, tts, workspace: Path, settings, *,
                  content=None, prices=None, proof: bool = False,
                  out_name: str | None = None,
                  format_name: str = "short",
-                 resolver=None, anchors=None) -> tuple[Path, Path]:
+                 resolver=None, anchors=None,
+                 company_data=None) -> tuple[Path, Path]:
     """Render the SHORT. Returns `(mp4, manifest)`.
 
     At ONE HOUR for the whole cut, fixed here and recorded on the manifest;
     see `plates.at_episode_hour`. The work is `_render_short`.
+
+    `company_data` is the operator's workbook for this video, when there is
+    one: the sheet rows are then the workbook's figures (item 23), and the
+    cards only the workbook can fill are in the rotation.
     """
     with at_episode_hour(settings, workspace, script.ticker):
         return _render_short(script, tts, workspace, settings,
                              content=content, prices=prices, proof=proof,
                              out_name=out_name, format_name=format_name,
-                             resolver=resolver, anchors=anchors)
+                             resolver=resolver, anchors=anchors,
+                             company_data=company_data)
+
+
+def drop_unfillable(fmt: Format, reg, resolver) -> tuple[Format, list[str]]:
+    """Drop every shot none of whose drawings this video can fill (item 25).
+
+    A shot used to draw its authored plate whatever the script carried, so a
+    card the workbook fills (the implied growth, the quarter bars) would have
+    gone up as its empty furniture on a video with no workbook. A shot is
+    kept when any of its drawings can be filled, and always when it is a room,
+    carries the host, places a list or names no plate.
+    """
+    from dataclasses import replace
+
+    from pipeline.compose import _fillable, resolve_plate
+
+    keep, dropped = [], []
+    for shot in fmt.shots:
+        if (not shot.plate or shot.host or shot.repeat is not None
+                or shot.plate.startswith("room/")):
+            keep.append(shot)
+            continue
+        ok = False
+        for v in shot.variants:
+            try:
+                plate = resolve_plate(reg, v.plate, fmt.aspect)
+            except Exception:                            # noqa: BLE001
+                plate = None
+            if plate is not None and _fillable(v, shot, plate, resolver, reg,
+                                               safe=fmt.safe):
+                ok = True
+                break
+        (keep if ok else dropped).append(shot if ok else shot.id)
+    if not keep:
+        raise RenderError("every shot was dropped; the script fills nothing")
+    return replace(fmt, shots=tuple(keep)), dropped
 
 
 def _render_short(script, tts, workspace: Path, settings, *,
                   content=None, prices=None, proof: bool = False,
                   out_name: str | None = None,
                   format_name: str = "short",
-                  resolver=None, anchors=None) -> tuple[Path, Path]:
+                  resolver=None, anchors=None,
+                  company_data=None) -> tuple[Path, Path]:
     """`render_short`, at the hour it has already fixed for the episode.
 
     Interpolated word timings must never be the master clock of a published
@@ -1087,6 +1579,14 @@ def _render_short(script, tts, workspace: Path, settings, *,
 
     workdir = Path(workspace) / "render_short"
     workdir.mkdir(parents=True, exist_ok=True)
+
+    # THE SHEET IS THE WORKBOOK'S (item 23). The writer names the rows; with
+    # the workbook here, the figures on screen are its History sheet's, so
+    # the sheet cannot disagree with it. What was replaced is recorded.
+    workbook_notes: list[str] = []
+    if company_data is not None:
+        from pipeline.short_data import fill_numbers
+        script, workbook_notes = fill_numbers(script, company_data)
 
     reg = load_plates(settings.assets_dir)
     # Which template, by name. This is the whole of what the engine needed to
@@ -1119,12 +1619,18 @@ def _render_short(script, tts, workspace: Path, settings, *,
     if resolver is None:
         resolver = ShortResolver(script=script, workdir=workdir,
                                  settings=settings, prices=prices,
-                                 handle=handle0)
+                                 handle=handle0, data=company_data,
+                                 content=content)
     else:
         resolver.workdir, resolver.prices = workdir, prices
         resolver.handle = resolver.handle or handle0
     if isinstance(resolver, ShortResolver):
         resolver.format_name = resolver.format_name or format_name
+        resolver.script = script
+        if resolver.data is None:
+            resolver.data = company_data
+        if resolver.content is None:
+            resolver.content = content
 
     # A shot the script carries no words for is DROPPED, not rendered blank.
     # THE TURN is one sentence on bare ground; with no sentence it is a held
@@ -1158,6 +1664,8 @@ def _render_short(script, tts, workspace: Path, settings, *,
 
     fmt = expand_sequences(fmt, probe.list_for)
     fmt, dropped = prune_empty_shots(fmt, probe)
+    fmt, unfillable = drop_unfillable(fmt, reg, resolver)
+    dropped += unfillable
 
     # WHAT THE LAST FEW VIDEOS ALREADY LOOKED LIKE (02). Read once and handed
     # to both the timing and the composition: a long beat's punch-in is asked
@@ -1168,20 +1676,25 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # where a beat has another (item 7). The punch-ins and the composition
     # both read it, so a long beat's punch-in is asked of the plate drawn.
     variants = plan_variants(reg, fmt.shots, fmt.aspect, resolver,
-                             seed=seed, avoid=recent)
+                             seed=seed, avoid=recent, safe=fmt.safe)
 
     def punch_in(shot):
         return punch_in_slot(reg, shot, fmt.frame, resolver,
                              aspect=fmt.aspect, seed=seed, avoid=recent,
-                             variants=variants)
+                             variants=variants, safe=fmt.safe)
 
     # A marked script's anchors are searched IN ORDER, each after the last:
     # the words after a marker can also be said earlier, and the first place
     # they are said is not where that beat starts.
+    # HE IS ON CAMERA FOR HIS LINE (item 28), and the cards after him take
+    # the rest of the stretch as the figures are read.
+    host_lines = ({"turn": script.turn_line}
+                  if getattr(script, "turn_line", None) else {})
     spans = resolve_spans(fmt, words, duration,
                           anchors if anchors is not None
                           else build_anchors(script),
-                          ordered=bool(marks), punch_in=punch_in)
+                          ordered=bool(marks), punch_in=punch_in,
+                          host_lines=host_lines)
 
     # The recent plates (02). The seed alone makes two videos differ by
     # chance; nothing stopped three in a row opening on the same pose in the
@@ -1230,9 +1743,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
                       sources=shot_sources(script, fmt),
                       recent_circled=recent_circled(settings, exclude=workspace))
 
-    silent = workdir / "video_silent.mp4"
+    silent = workdir / "video_frames.mkv"
+    scale = delivery_scale(settings, result.frame, proof=proof)
+    delivered = delivered_size(result.frame, scale)
     render_frames(result, resolver, duration, silent, settings, reg=reg,
-                  words=words, plan=plan)
+                  words=words, plan=plan, scale=scale)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}
     faces = getattr(render_frames, "last_faces", {}) or {}
     # THE CEILING, MEASURED ON THE FRAMES the shots drew, before captions
@@ -1282,22 +1797,10 @@ def _render_short(script, tts, workspace: Path, settings, *,
         margin_h=int(W * CAPTION_SIDE_FW), max_words=4, min_words=2,
         max_chars=24, key_words=True,
         duration=duration, windows=bands), encoding="utf-8")
-    if spoken:
-        burned = workdir / "video_captioned.mp4"
-        # The filter takes a PATH, and a Windows drive letter or a colon in a
-        # workspace name is a filtergraph separator. Escaped the way libavfilter
-        # asks rather than by hoping the path is plain.
-        spec = str(ass).replace("\\", "/").replace(":", "\\:")
-        # THE KIT'S FONTS, BY DIRECTORY. The style names Archivo Narrow, which
-        # no install puts on the system, and without `fontsdir` libass fell
-        # back to DejaVu Sans: every short's captions were set in a face that
-        # runs a line nearly twice as wide as the one they were placed for.
-        # The LONG has always passed it (`render_common`).
-        fonts = str(settings.fonts_dir).replace("\\", "/").replace(":", "\\:")
-        run_ffmpeg(["-i", str(silent), "-vf", f"ass='{spec}':fontsdir='{fonts}'",
-                    "-c:v", "libx264", "-preset", "medium",
-                    "-crf", "20", "-pix_fmt", "yuv420p", str(burned)])
-        silent = burned
+    # Always run, captions or not: the frames' file is lossless, and this is
+    # the encode that makes the picture the viewer gets.
+    silent = final_encode(silent, workdir / "video.mp4", settings,
+                          captions=ass if spoken else None)
 
     # Write beside the target and `os.replace` into position (D2). Muxing
     # straight over the existing file meant any failure past this point left
@@ -1374,6 +1877,9 @@ def _render_short(script, tts, workspace: Path, settings, *,
         "provenance": provenance.to_json(),
         "duration_s": round(duration, 3),
         "frame": {"w": result.frame[0], "h": result.frame[1]},
+        # The file's own size: the layout above, drawn at `delivery_scale`.
+        # Every box in this manifest is in the layout's pixels.
+        "delivered": {"w": delivered[0], "h": delivered[1]},
         # A beat split for running long shows as both its parts: `part` 1 is
         # the wide picture under the beat's own id, `part` 2 the move in,
         # under `<id>-in` with `part_of` naming the beat. Unsplit shots carry
@@ -1422,6 +1928,19 @@ def _render_short(script, tts, workspace: Path, settings, *,
             f"{sum(1 for l in result.layers if l.moves)} animated layers"),
         "skipped": result.skipped,
         "dropped_shots": dropped,
+        # WHERE THE FIGURES CAME FROM (item 23): the workbook, when it was
+        # in the workspace, and which typed figures it replaced.
+        "workbook": ({"file": Path(getattr(company_data, "source_file", "")
+                                   or "").name,
+                      "notes": workbook_notes}
+                     if company_data is not None else None),
+        # THE CLEAR AREA the words were kept inside (item 27), and every word
+        # that still sits outside it.
+        "safe_area": _safe_report(fmt, result, reg),
+        # THE CREDITS for every picture the short drew (item 34), which the
+        # bot sends with the video the way it does the long's stock footage.
+        "attributions": (resolver.attributions()
+                         if isinstance(resolver, ShortResolver) else []),
         # Characters that did not fit even at the readability floor. Non-empty
         # means a script said more than its shot can hold, and the words were
         # cut. Under the writing form this is what a character budget prevents.

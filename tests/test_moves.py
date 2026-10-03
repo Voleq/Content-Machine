@@ -178,7 +178,9 @@ def test_the_circle_plays_at_most_once_and_only_on_a_verdict_shot(vertical, reg,
     for plan in plans:
         rings = [m for m in plan.moves if m.move == "pen-circle"]
         assert len(rings) <= 1
-        assert all(m.shot_id in MV.CIRCLE_SHOTS for m in rings)
+        # A numbers card (`numbers-3`) is a step of the numbers beat.
+        assert all(re.sub(r"-\d+$", "", m.shot_id) in MV.CIRCLE_SHOTS
+                   or m.shot_id in MV.CIRCLE_SHOTS for m in rings)
     rate = sum(any(m.move == "pen-circle" for m in p.moves) for p in plans) / len(plans)
     assert rate <= 0.5, f"the circle played in {rate:.0%} of sixty shorts"
 
@@ -213,15 +215,21 @@ def test_every_ring_ever_drawn_is_a_small_part_of_its_plate(vertical, reg, setti
             assert (max(xs) - min(xs)) <= cw * 0.75 and (max(ys) - min(ys)) <= ch * 0.3
 
 
-def test_on_the_sheet_the_circle_rings_the_figure_the_payoff_says(short, reg, settings):
+def test_on_the_numbers_the_circle_rings_the_figure_the_payoff_says(short, reg, settings):
+    """One card a row (item 26): the ring goes on the card of the row the
+    verdict names, round the figure the payoff is about to say."""
     fmt, result, words, _ = short
-    payoff = MV.shot_plates(result)["payoff"]
-    sheet = MV.shot_plates(result)["numbers"]
+    plates = MV.shot_plates(result)
+    payoff = plates["payoff"]
+    rang = 0
     for plan in _plans(fmt, result, words, reg, settings, n=60):
         for m in plan.moves:
-            if m.move == "pen-circle" and m.shot_id == "numbers":
-                assert MV.figure_number(sheet.values[m.slot]) == \
-                    MV.figure_number(payoff.values["value"])
+            if m.move == "pen-circle" and m.shot_id.startswith("numbers"):
+                rang += 1
+                assert MV.figure_number(plates[m.shot_id].values[m.slot]) == \
+                    MV.figure_number(payoff.values.get("value")
+                                     or payoff.values.get("num"))
+    assert rang, "the pen never found the verdict's figure on its card"
 
 
 def test_a_circle_that_sits_out_says_why(short, reg, settings):
@@ -338,6 +346,26 @@ def _layer(result, shot_id):
     return MV.shot_plates(result)[shot_id]
 
 
+def _sheet_layer(script, t_start: float = 10.0):
+    """A full numbers sheet, as the long and the old short set one.
+
+    No vertical template draws a sheet any more (item 26), but the band
+    sweep and the ring are the compositor's, and a sheet is the plate that
+    has both a band per row and small figures to ring.
+    """
+    from pipeline.compose import Layer
+
+    values = {f"head-{i + 1}": y for i, y in enumerate(script.years[:6])}
+    for r, row in enumerate(script.numbers[:4], start=1):
+        values[f"label-{r}"] = row.label
+        for c, v in enumerate(row.values[:6], start=1):
+            values[f"cell-{r}-{c}"] = v
+    key = "tables/numbers-sheet-4r-9x16"
+    return Layer(name=f"numbers:plate:{key}", kind="plate", shot_id="numbers",
+                 t_start=t_start, t_end=t_start + 8.0, x=0, y=0, w=1080, h=1920,
+                 entry_key=key, values=values)
+
+
 def _diff(a, b) -> float:
     import numpy as np
 
@@ -376,8 +404,8 @@ def test_a_row_band_sweeps_in_from_the_left(short, reg, settings):
 
     from pipeline.render_short import _Cache
 
-    fmt, result, words, _ = short
-    layer = _layer(result, "numbers")
+    fmt, result, words, script = short
+    layer = _sheet_layer(script)
     move = MV.Move("highlight", "numbers", layer.name, "band-1", layer.t_start, 6, "out")
     cache = _Cache(settings, reg)
     comp = MV.MoveCompositor(MV.MovePlan(moves=[move]), reg, settings, cache)
@@ -410,8 +438,8 @@ def test_the_ring_is_drawn_round_the_figure_not_the_slot(short, reg, settings):
 
     from pipeline.render_short import _Cache
 
-    fmt, result, words, _ = short
-    layer = _layer(result, "numbers")
+    fmt, result, words, script = short
+    layer = _sheet_layer(script)
     slot = "cell-1-6"
     move = MV.Move("pen-circle", "numbers", layer.name, slot, layer.t_start, 8, "inOut")
     cache = _Cache(settings, reg)
@@ -448,6 +476,23 @@ def test_the_underline_sits_under_the_line_the_copy_ends_on(reg, settings, text)
     ink = MV._ink_box(plate, anchor["slot"], text, settings, reg)
     assert dict(line._asdict()) in anchor["lines"]
     assert line.y < ink.y + ink.h <= line.y + line.h + 8
+
+
+@pytest.mark.parametrize("key, text", [
+    ("shorts/hook-card-t5", "EXMPL is up 29% today. The business is not."),
+    ("shorts/hook-card-t3", "EXMPL beat and raised. The five-year chart didn't notice."),
+    ("paper/press-release-9x16",
+     "Example Corp Announces AI Partnership with a Cloud Provider")])
+def test_the_underline_never_runs_through_or_above_the_words(reg, settings, key, text):
+    """A slot set in the middle of its box puts its last line away from the
+    anchor's lines. The rule went through the hook's second line on one
+    card and above its first on another (2 Oct 2026): it goes under the ink."""
+    plate = reg.get(key)
+    slot = plate.motion["highlight"]["slot"]
+    line = MV.underline_line(plate, slot, text, settings, reg)
+    ink = MV._ink_box(plate, slot, text, settings, reg)
+    foot = ink.y + ink.h
+    assert foot <= line.y + line.h <= foot + 8
 
 
 @pytest.mark.parametrize("name, frames", [("wipe-sweep", 8), ("wipe-page", 8),

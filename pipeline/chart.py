@@ -410,6 +410,43 @@ def _draw_range_marks(reg: Registry, plate: Plate, values: dict[str, str],
     return drew
 
 
+def _draw_share_of_whole(reg: Registry, plate: Plate, values: dict[str, str],
+                         img) -> bool:
+    """A `bar` region beside a `whole` one, filled to its share of the whole.
+
+    `figures/short-interest` draws the float as an outlined bar and reserves
+    `short` for the part sold short: "Fill to (sharesShort / float) of the
+    width". The port has no renderer for it, so the plate drew an empty
+    outline with "11% sold short" printed under it. The value is the share as
+    printed ("11%"), so the bar and the type beside it cannot disagree.
+    """
+    if not any(s.region and s.role == "whole" for s in plate.slots.values()):
+        return False
+    drew = False
+    ink = _ink(reg, plate)
+    for name, slot in plate.slots.items():
+        if not (slot.region and slot.role == "bar"):
+            continue
+        raw = str(values.get(name) or "").strip()
+        share = S.figure(raw)
+        if share is None:
+            continue
+        frac = share / 100.0 if raw.endswith("%") else share
+        frac = min(max(frac, 0.0), 1.0)
+        if frac <= 0:
+            continue
+        x, y, w, h = slot.scaled()
+        k = img.width / max(plate.pixel_size[0], 1)
+        inset = 6 * plate.export_scale * k
+        colour = S._rgba(ink.get("attention") or "#F07A5A")
+        ImageDraw.Draw(img).rectangle(
+            [x * k + inset, y * k + inset,
+             x * k + max(frac * w * k - inset, inset * 2), (y + h) * k - inset],
+            fill=(*colour[:3], 255))
+        drew = True
+    return drew
+
+
 def _ink(reg: Registry, plate: Plate) -> dict[str, str]:
     """The kit's inks at the hour this plate is drawn at."""
     palette = reg.palettes.get(plate.hour or reg.base_hour) or reg.palette
@@ -434,6 +471,7 @@ def draw_declared(reg: Registry, plate: Plate, values: dict[str, str], img,
     # declares a rail per row and each takes its own {t, median} pair — the bot's
     # own renderer, with the peer median as a tick, drawn first.
     drew = _draw_range_marks(reg, plate, values, img, seed=seed)
+    drew |= _draw_share_of_whole(reg, plate, values, img)
     got = S.plate_data(plate, values)
     for why in got.problems:
         log.warning("%s: %s — that part is not drawn", plate.key, why)

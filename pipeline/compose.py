@@ -103,6 +103,16 @@ HOST_WHERE_NOBODY_STANDS = "to-camera"
 # so every caption in every short was partly covered.
 CAPTION_BAND = (260 / 1920, 1560 / 1920)
 
+# HOW FAR A PLATE MAY SHRINK TO KEEP ITS WORDS IN THE CLEAR AREA (item 27). A
+# format that declares a `safe` band (the SHORT: 170 to 1,480 px of 1,920, the
+# part of a phone YouTube draws nothing over) gets every plate placed so its
+# filled text sits inside it: moved up first, then shrunk, never below this. A
+# plate whose REQUIRED words need more is not fillable there, and the rotation
+# takes another; its optional words outside the band are dropped. Optional
+# words are kept by shrinking only as far as the second figure.
+SAFE_MIN_SCALE = 0.85
+SAFE_OPTIONAL_MIN_SCALE = 0.94
+
 # The caption's type as a fraction of frame height, and the margins it is
 # centred between as a fraction of frame width. The renderer burns the type at
 # this size and `build_layers` places the box it sits in, so both read these:
@@ -284,7 +294,7 @@ def resolve_room(reg: Registry, role: str, aspect: str, *, seed: str,
 
 
 def _fillable(variant, shot: Shot, plate: Plate, resolver: Resolver,
-              reg: Registry) -> bool:
+              reg: Registry, safe: tuple[int, int] | None = None) -> bool:
     """Would this plate actually compose, for THIS script?
 
     Asked by running the real fill rather than by re-deriving the rules, which
@@ -315,6 +325,13 @@ def _fillable(variant, shot: Shot, plate: Plate, resolver: Resolver,
         return False
     if unfilled:
         return False
+    # A PICTURE IT NEEDS AND DOES NOT HAVE (item 34). `_bound_values` leaves
+    # media to the compositor, so a media frame whose photo never came would
+    # pass here and go up as an empty frame; required media is asked for now.
+    for raw in bind.values():
+        if raw.startswith(MEDIA_PREFIX) and resolver.image_for(
+                raw[len(MEDIA_PREFIX):]) is None:
+            return False
     # AND THE COPY HAS TO FIT THE BOXES THIS DRAWING RESERVES FOR IT.
     #
     # `check_budgets` refuses a required fill that runs over, so a rotation
@@ -346,12 +363,24 @@ def _fillable(variant, shot: Shot, plate: Plate, resolver: Resolver,
     for name in (lit, focus):
         if name and name not in ("all", "read") and plate.slot(name) is None:
             return False
+    # AND ITS WORDS HAVE TO FIT WHERE A PHONE SHOWS THEM (item 27).
+    if safe:
+        required = {n for n, src in bind.items() if not str(src).startswith("?")}
+        if safe_placement(plate, values, required, _plate_frame(plate),
+                          safe) is None:
+            return False
     return True
+
+
+def _plate_frame(plate: Plate) -> tuple[int, int]:
+    """The frame a full-frame plate is placed in: its own canvas."""
+    return (int(plate.canvas[0]), int(plate.canvas[1]))
 
 
 def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
                    *, seed: str = "", avoid: "Collection[str]" = (),
-                   used: "Collection[str]" = ()):
+                   used: "Collection[str]" = (),
+                   safe: tuple[int, int] | None = None):
     """Which of a beat's interchangeable plates this video draws.
 
     THE WRITER CHOOSES NOTHING HERE AND THAT IS DELIBERATE. A SHORT is
@@ -393,7 +422,8 @@ def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
         # is swapped wholesale and the next drop retires plates by name; a
         # rotation that hard-failed on a retired alternate would turn every
         # swap into a render outage over a picture nothing needed.
-        if plate is None or not _fillable(v, shot, plate, resolver, reg):
+        if plate is None or not _fillable(v, shot, plate, resolver, reg,
+                                          safe=safe):
             continue
         # BY THE DRAWING, NOT THE HOUR. A dusk video resolves every name to a
         # dusk key, and a night video last week used the night key of the same
@@ -406,6 +436,13 @@ def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
         return primary
 
     keys = [k for k, _ in usable]
+    # A drawing this video's own figures fill wins while this video has not
+    # drawn it yet; the rotation then picks among those alone.
+    last_used = {reg.base_key(k) for k in used}
+    preferred = [k for k, v in usable
+                 if getattr(v, "prefer", False) and k not in last_used]
+    if preferred:
+        keys = preferred
     if used:
         # Unused in this video first; when every option has been drawn, the
         # one drawn longest ago, so a layout never comes straight back.
@@ -423,7 +460,8 @@ def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
 
 def plan_variants(reg: Registry, shots: Sequence[Shot], aspect: str,
                   resolver: Resolver, *, seed: str = "",
-                  avoid: "Collection[str]" = ()) -> dict[str, Any]:
+                  avoid: "Collection[str]" = (),
+                  safe: tuple[int, int] | None = None) -> dict[str, Any]:
     """Which drawing each shot with alternates gets, walking the cut in order.
 
     NO LAYOUT TWICE IN ONE SHORT WHERE THE BEAT HAS ANOTHER (item 7). The
@@ -449,7 +487,7 @@ def plan_variants(reg: Registry, shots: Sequence[Shot], aspect: str,
             if begin is not None:
                 begin(shot)
             picked = choose_variant(reg, shot, aspect, resolver, seed=seed,
-                                    avoid=avoid, used=used)
+                                    avoid=avoid, used=used, safe=safe)
             picks[shot.id] = picked
             if picked is not None:
                 name = picked.plate
@@ -533,6 +571,91 @@ def _slot_in_frame(plate: Plate, slot_name: str,
             max(int(sw * kx), 1), max(int(sh * ky), 1))
 
 
+def _text_rows(plate: Plate, values: dict, names,
+              placed: tuple[int, int, int, int]) -> tuple[int, int] | None:
+    """The rows the filled text slots in `names` span, as placed: (top, foot)."""
+    rows = []
+    for name in names:
+        slot = plate.slot(name)
+        if (slot is None or slot.region or slot.control
+                or not str(values.get(name, "")).strip()):
+            continue
+        _, y, _, h = _slot_in_frame(plate, name, placed)
+        rows.append((y, y + h))
+    if not rows:
+        return None
+    return min(r[0] for r in rows), max(r[1] for r in rows)
+
+
+def _fit_rows(span: tuple[int, int], safe: tuple[int, int],
+              placed: tuple[int, int, int, int], min_scale: float
+              ) -> tuple[int, int, int, int] | None:
+    """`placed` moved, and shrunk if it must be, so `span` lands inside `safe`.
+
+    Shrunk about the plate's own horizontal centre, so a left column stays a
+    left column. None when it would take more shrinking than `min_scale`.
+    """
+    top, foot = span
+    s_top, s_foot = safe
+    px, py, pw, ph = placed
+    k = min(1.0, (s_foot - s_top) / max(foot - top, 1))
+    if k < min_scale:
+        return None
+    nw, nh = int(round(pw * k)), int(round(ph * k))
+    nx = px + (pw - nw) // 2
+    # Where the span's rows land at this size, before any move.
+    t0 = py + (top - py) * k
+    f0 = py + (foot - py) * k
+    dy = 0.0
+    if f0 > s_foot:
+        dy = s_foot - f0
+    if t0 + dy < s_top:
+        dy = s_top - t0
+    return (nx, int(round(py + dy)), nw, nh)
+
+
+def safe_placement(plate: Plate, values: dict, required, frame: tuple[int, int],
+                   safe: tuple[int, int] | None,
+                   placed: tuple[int, int, int, int] | None = None,
+                   ) -> tuple[tuple[int, int, int, int], list[str]] | None:
+    """Where a plate goes so its words sit in the format's clear area.
+
+    `(placed, dropped)`: the placement, and the optional slots whose words
+    still fall outside it and are left empty. None when the REQUIRED words
+    cannot be brought inside without shrinking past `SAFE_MIN_SCALE`.
+    Without a `safe` band the plate keeps `placed`, and nothing is dropped.
+    """
+    base = placed or (0, 0, *frame)
+    if not safe:
+        return base, []
+    filled = [n for n in values if str(values.get(n, "")).strip()]
+    need = [n for n in filled if n in required]
+    everything = _text_rows(plate, values, filled, base)
+    if everything is None:
+        return base, []
+    got = _fit_rows(everything, safe, base, SAFE_OPTIONAL_MIN_SCALE)
+    if got is None:
+        must = _text_rows(plate, values, need, base)
+        got = (_fit_rows(must, safe, base, SAFE_MIN_SCALE) if must is not None
+               else base)
+        if got is None:
+            return None
+    dropped = []
+    for name in filled:
+        if name in required:
+            continue
+        span = _text_rows(plate, values, [name], got)
+        if span is not None and (span[0] < safe[0] - 1 or span[1] > safe[1] + 1):
+            dropped.append(name)
+    return got, dropped
+
+
+# How close to the frame's side a moved-in word may come. A punch-in that
+# put a card's body against the left edge read as cropped even with every
+# letter on screen.
+PUNCH_EDGE = 0.04
+
+
 def _focus_placement(plate: Plate, slot_name: str,
                      stage: tuple[int, int, int, int],
                      placed: tuple[int, int, int, int],
@@ -547,12 +670,16 @@ def _focus_placement(plate: Plate, slot_name: str,
     figures on is not a row anybody moved in on. Where the slot is already full
     width the move is a PAN — the composition still changes, and every figure
     stays on screen.
+
+    And it stops `PUNCH_EDGE` short of the sides: a quote card's body moved
+    in until it touched both edges was a cut, not a closer look, so the move
+    goes as far as the slot stays clear of them.
     """
     gx, gy, gw2, gh2 = stage
     w, h = placed[2], placed[3]
     sx, sy, sw, sh_px = _slot_in_frame(plate, slot_name, placed)
     by_height = (gh2 * FOCUS_FILL) / max(sh_px, 1)
-    by_width = gw2 / max(sw, 1)
+    by_width = gw2 * (1 - 2 * PUNCH_EDGE) / max(sw, 1)
     k = max(min(by_height, by_width, FOCUS_MAX_SCALE), 1.0)
     nw, nh = int(w * k), int(h * k)
     base = (gx + (gw2 - nw) // 2, gy + (gh2 - nh) // 2, nw, nh)
@@ -580,7 +707,8 @@ PUNCH_MOVES = ("highlight", "count-up")
 def punch_in_slot(reg: Registry, shot: Shot, frame: tuple[int, int],
                   resolver: Resolver, *, aspect: str = "", seed: str = "",
                   avoid: "Collection[str]" = (),
-                  variants: "dict[str, Any] | None" = None) -> str | None:
+                  variants: "dict[str, Any] | None" = None,
+                  safe: tuple[int, int] | None = None) -> str | None:
     """Which slot the second picture of a long beat moves in on, or None.
 
     `resolve_spans` asks this for a beat that runs past its ceiling. The
@@ -613,7 +741,7 @@ def punch_in_slot(reg: Registry, shot: Shot, frame: tuple[int, int],
         picked = (variants.get(shot.id) if variants is not None
                   and shot.id in variants
                   else choose_variant(reg, shot, aspect, resolver, seed=seed,
-                                      avoid=avoid))
+                                      avoid=avoid, safe=safe))
         if picked is not None and picked.plate != shot.plate:
             bind, lit, focus = picked.resolved(shot)
             shot = replace(shot, plate=picked.plate, alts=(), bind=bind,
@@ -642,27 +770,39 @@ def punch_in_slot(reg: Registry, shot: Shot, frame: tuple[int, int],
         close = _focus_placement(plate, name, (0, 0, fw, fh), wide)
         if close[2] < wide[2] * PUNCH_MIN_SCALE:
             continue
-        if _cuts_a_filled_slot(plate, values, close, frame):
+        if _cuts_a_filled_slot(plate, values, close, frame, safe=safe):
             continue
         return name
     return None
 
 
+
 def _cuts_a_filled_slot(plate: Plate, values: dict,
                         placed: tuple[int, int, int, int],
-                        frame: tuple[int, int]) -> bool:
+                        frame: tuple[int, int],
+                        safe: tuple[int, int] | None = None) -> bool:
     """Does this placement leave a filled slot part on and part off the frame?
+
+    "On" means clear of the frame's sides by `PUNCH_EDGE` and, where the
+    format declares a clear area (item 27), inside it: a move that lands a
+    word under YouTube's title is a cut, not a punch-in.
 
     A band is left out: it is the lit row's highlight, drawn edge to edge, and
     the figures in it are slots of their own that this checks one by one.
     """
     fw, fh = frame
+    m = int(fw * PUNCH_EDGE)
+    top, bottom = safe if safe else (0, fh)
     for name, value in values.items():
         slot = plate.slot(name)
         if slot is None or slot.is_band or not str(value).strip():
             continue
         x, y, w, h = _slot_in_frame(plate, name, placed)
-        inside = x >= 0 and y >= 0 and x + w <= fw and y + h <= fh
+        if slot.region or slot.control:
+            inside = x >= 0 and y >= 0 and x + w <= fw and y + h <= fh
+        else:
+            inside = (x >= m and x + w <= fw - m
+                      and y >= top and y + h <= bottom)
         outside = x + w <= 0 or y + h <= 0 or x >= fw or y >= fh
         if not inside and not outside:
             return True
@@ -720,9 +860,10 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
     frame = fmt.frame
     fw, fh = frame
     aspect = aspect or getattr(fmt, "aspect", "") or ""
+    safe = getattr(fmt, "safe", None)
     if variants is None:
         variants = plan_variants(reg, [sp.shot for sp in spans], aspect,
-                                 resolver, seed=seed, avoid=avoid)
+                                 resolver, seed=seed, avoid=avoid, safe=safe)
     layers: list[Layer] = []
     unfilled: list[str] = []
     skipped: list[str] = []
@@ -783,16 +924,18 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             # A sheet that lit its rows as they were read ends part 1 with
             # every row up, so the close-up opens on all of them lit.
             shot = replace(shot, plate=first.plate, alts=(),
-                           bind=dict(first.bind),
+                           bind=dict(first.bind), captions=first.captions,
                            lit="all" if first.lit == "read" else first.lit)
         elif shot.plate and shot.alts:
             picked = (variants.get(shot.id) if shot.id in variants
                       else choose_variant(reg, shot, aspect, resolver,
-                                          seed=seed, avoid=avoid))
+                                          seed=seed, avoid=avoid, safe=safe))
             if picked is not None and picked.plate != shot.plate:
                 bind, lit, focus = picked.resolved(shot)
                 shot = replace(shot, plate=picked.plate, alts=(),
-                               bind=bind, lit=lit, focus=focus)
+                               bind=bind, lit=lit, focus=focus,
+                               captions=(shot.captions if picked.captions is None
+                                         else picked.captions))
         # Part 1 is the WIDE picture: the move in is what part 2 is for, and
         # a part 1 already moved in would make the cut between them a cut to
         # the same frame.
@@ -856,6 +999,30 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             placed = (stage[0] + (stage[2] - w) // 2,
                       stage[1] + (stage[3] - h) // 2, w, h)
 
+            # -- what goes in its slots. The renderer draws the plate WITH
+            #    these; nothing here sets type.
+            values, missing, gone = _bound_values(shot, plate, resolver, reg)
+            unfilled += missing
+            skipped += gone
+
+            # KEEP ITS WORDS WHERE A PHONE SHOWS THEM (item 27). A format with
+            # a `safe` band places each plate so its filled text sits inside
+            # it, and leaves empty the optional words that still would not.
+            # Never on a room: the set is not text, and he stands where he
+            # stands.
+            if safe and plate.family != "room" and not host_column:
+                required = {n for n, src in shot.bind.items()
+                            if not str(src).startswith("?")}
+                got = safe_placement(plate, values, required, frame, safe,
+                                     placed)
+                if got is not None:
+                    placed, out_of_view = got
+                    w, h = placed[2], placed[3]
+                    for name in out_of_view:
+                        values.pop(name, None)
+                        skipped.append(f"{shot.id}.{name} <- outside the "
+                                       f"clear area")
+
             # MOVING IN ON A SLOT. Without this a walk down a list is one wide
             # shot with a rectangle migrating down it, which a viewer reads as
             # a single held composition. The geometry is `_focus_placement`.
@@ -863,11 +1030,6 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 placed = _focus_placement(plate, shot.focus, stage, placed)
                 w, h = placed[2], placed[3]
 
-            # -- what goes in its slots. The renderer draws the plate WITH
-            #    these; nothing here sets type.
-            values, missing, gone = _bound_values(shot, plate, resolver, reg)
-            unfilled += missing
-            skipped += gone
             plate_large = sets_large_type(plate, values, placed[3], fh)
 
             layers.append(Layer(
@@ -996,7 +1158,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
 
             box_h = caption_box_height(int(fh * CAPTION_TYPE_FH))
             side = int(fw * CAPTION_SIDE_FW)
-            band = caption_band(plate, frame, box_h)
+            band = caption_band(plate, frame, box_h, safe=safe)
             cy, covers = place_caption(
                 band, caption_obstacles(
                     reg, [l for l in layers if l.shot_id == shot.id]),
@@ -1208,6 +1370,13 @@ def _slot_budget(plate: Plate, slot_name: str) -> int:
     return 0
 
 
+# The slot roles whose value is a name rather than a sentence, and so may be
+# shortened to fit: "FCF" for "Free cash flow", "Op. income".
+_ABBREVIABLE = frozenset({"label", "kicker", "head", "period", "unit",
+                          "barLabel", "deltaLabel", "attribution", "tag",
+                          "row-label", "rowLabel"})
+
+
 def _bound_values(shot: Shot, plate: Plate, resolver: Resolver,
                   reg: Registry) -> tuple[dict[str, str], list[str], list[str]]:
     """The slot values for one shot: `(values, unfilled, skipped)`.
@@ -1247,6 +1416,17 @@ def _bound_values(shot: Shot, plate: Plate, resolver: Resolver,
         # still refuse in `check_budgets`: a slot the beat is FOR, carrying
         # something too long, is a beat that does not work.
         budget = _slot_budget(plate, slot_name)
+        if budget and len(str(got).strip()) > budget:
+            # A LABEL TOO LONG FOR ITS SLOT IS SHORTENED, NOT DROPPED (item
+            # 25): "Free cash flow" in a 13-character label slot left a row
+            # with no name. Only label-like slots: a sentence is never
+            # abbreviated into shorthand.
+            slot = plate.slot(slot_name)
+            if slot is not None and slot.role in _ABBREVIABLE:
+                from pipeline.short_data import abbreviate
+                short = abbreviate(str(got), budget)
+                if short:
+                    got = short
         if optional and budget and len(str(got).strip()) > budget:
             skipped.append(f"{shot.id}.{slot_name} <- {src} "
                            f"({len(str(got).strip())} > {budget} chars)")
@@ -1498,7 +1678,8 @@ def _front_layer(reg: Registry, shot: Shot, plate: Plate | None,
 # ---------------------------------------------------------------------------
 
 def caption_band(plate: Plate | None, frame: tuple[int, int],
-                 box_h: int) -> tuple[int, int]:
+                 box_h: int, safe: tuple[int, int] | None = None
+                 ) -> tuple[int, int]:
     """The rows a shot's caption box may occupy: `(top, bottom)`, frame pixels.
 
     A plate's own `safe` band when it publishes one. That band is the
@@ -1511,8 +1692,21 @@ def caption_band(plate: Plate | None, frame: tuple[int, int],
     from pipeline.rasters import CAPTION_BOX_PAD
 
     fw, fh = frame
-    safe = plate.safe if plate is not None else {}
-    top, bottom = safe.get("top"), safe.get("bottom")
+    band = _caption_band(plate, frame, box_h)
+    if safe and fh > fw:
+        # The format's clear area is the outer bound: a plate's own band
+        # can narrow it, never reach past it.
+        return max(band[0], int(safe[0])), min(band[1], int(safe[1]))
+    return band
+
+
+def _caption_band(plate: Plate | None, frame: tuple[int, int],
+                  box_h: int) -> tuple[int, int]:
+    from pipeline.rasters import CAPTION_BOX_PAD
+
+    fw, fh = frame
+    published = plate.safe if plate is not None else {}
+    top, bottom = published.get("top"), published.get("bottom")
     if (isinstance(top, (int, float)) and isinstance(bottom, (int, float))
             and plate is not None and plate.canvas[1] and bottom > top):
         k = fh / plate.canvas[1]

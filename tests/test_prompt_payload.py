@@ -349,10 +349,11 @@ def test_the_short_catalogue_is_the_template_s_plates(settings):
     from bot.prompts import plate_catalogue, template_plates
 
     only = template_plates(settings, "short")
-    assert "tables/numbers-sheet-4r-9x16" in only
+    assert "charts/bars-6y-9x16" in only
+    assert "tables/numbers-sheet-4r-9x16" not in only   # one metric a card now
     text = plate_catalogue(settings, fmt="short", only=only)
     everything = plate_catalogue(settings, fmt="short")
-    assert "numbers-sheet-4r-9x16" in text
+    assert "bars-6y-9x16" in text
     listed = {ln.split()[0] for ln in text.splitlines()
               if ln.startswith("  ") and not ln.startswith("   ")}
     assert listed and all(any(k.endswith("/" + s) for k in only) for s in listed)

@@ -36,7 +36,7 @@ _MARKS = (
 
 # The shot each marked beat starts, in the short template.
 _SHOT_OF = {"hook": "hook", "headline": "the-news", "move": "the-move",
-            "turn": "the-turn", "numbers": "numbers",
+            "turn": "the-turn", "numbers": "numbers-1",
             "numbers_comment": "the-comment", "cheap_or_trap": "cheap-or-trap",
             "conclusion": "payoff"}
 

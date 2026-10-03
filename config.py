@@ -489,8 +489,33 @@ class Settings(BaseSettings):
     # encoders are auto-detected at startup and used when present.
     final_preset: str = "veryfast"
     draft_preset: str = "ultrafast"
-    short_crf: int = 20
-    long_crf: int = 22
+    # THE SHORT'S ONE LOSSY ENCODE (`render_short.final_encode`). It was
+    # veryfast/CRF 20 twice over, 0.16 Mbit/s, and looked it on a phone
+    # (2 Oct 2026). A short is under a minute and mostly held cards, so the
+    # slow preset costs little time.
+    short_final_preset: str = "slow"
+    # The short's layout is its format's 1080x1920; this is the height the
+    # file is DRAWN at. YouTube encodes a 1440p upload better than a 1080p
+    # one, and design's art is delivered at twice the canvas, so 2560 is
+    # sharp. 1920 (or 0) renders at the layout's size.
+    short_delivery_height: int = 2560
+    # Small type on a 9:16 card starts at this times the kit's size and
+    # shrinks to fit its box (`plate_frames.phone_size`, item 35). 1.0 sets
+    # every line at the kit's size, as before 2 Oct 2026.
+    short_type_grow: float = 1.8
+    short_crf: int = 17
+    # The long's last encode (`render_common.final_long_profile`): x264 at
+    # this preset and `long_crf`, whatever encoder drew the beats. Was the
+    # beats' own veryfast/CRF 22, applied twice (2 Oct 2026).
+    long_crf: int = 18
+    long_final_preset: str = "slow"
+    # Each beat is an intermediate the last encode reads, so it is kept close
+    # to lossless; a cached beat re-encodes when this changes.
+    long_segment_crf: int = 12
+    # Drawn at 1920x1080, delivered at this height: YouTube gives a 1440p
+    # upload its better encode at every size it serves. 1080 (or 0) delivers
+    # at the drawn size.
+    long_delivery_height: int = 1440
     draft_crf: int = 32
     draft_scale: float = 0.5               # draft renders at half resolution
     # PREVIEW is a third, cheaper tier below draft: 480p at 15fps, for

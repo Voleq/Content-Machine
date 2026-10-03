@@ -245,6 +245,10 @@ def history_band(box, low, high, ink, *, tone=None, axis="horizontal") -> dict:
     return {"nodes": nodes, "returns": {"low": a, "high": b}}
 
 
+# The most points a line marks one by one (`line_path`).
+DOTS_UP_TO = 24
+
+
 def line_path(box, values, ink, *, columns=(), min=None, max=None, zero=None,  # noqa: A002
               tone=None, zero_rule=False, accent_last=False, weight=6) -> dict:
     """The line series a chart frame reserves: x READ from each column's
@@ -268,8 +272,14 @@ def line_path(box, values, ink, *, columns=(), min=None, max=None, zero=None,  #
         nodes.append(rect(box["x"], y(0) - 1, box["w"], 2, _ink(ink, "axis", "#4A566A")))
     nodes.append(path("M" + _pts(pts), {"stroke": col, "stroke-width": weight,
                                         "stroke-linejoin": "round", "stroke-linecap": "round"}))
+    # A DOT IS A PERIOD SOMEBODY READS. Six years or eight quarters each get
+    # one; twenty-seven years of months as dots is a bead curtain that hides
+    # the line, so a dense series marks only where it ends.
+    dotted = len(pts) <= DOTS_UP_TO
     for i, p in enumerate(pts):
         last = i == len(pts) - 1
+        if not (dotted or last):
+            continue
         nodes.append(circle(p[0], p[1], 13 if last and accent_last else 9,
                             _ink(ink, "attention", "#F07A5A") if last and accent_last else col))
     return {"nodes": nodes, "returns": {"lo": e.lo, "hi": e.hi,
@@ -289,6 +299,11 @@ def column_bars(columns, values, ink, *, min=None, max=None, accent=None, tone=N
         if not c or num(v) is None:
             continue
         base = c["baselineY"] if c.get("baselineY") is not None else c["y"] + c["h"]
+        # A LOSS HANGS FROM ZERO. On a scale that runs below zero the bar
+        # starts at the zero line, not at the foot of the plot: a net loss of
+        # $8M drawn up from -$100M was the tallest bar on the card.
+        if e.lo < 0 <= e.hi:
+            base = c["y"] + c["h"] - ((0 - e.lo) / e.span) * c["h"]
         top = c["y"] + c["h"] - ((v - e.lo) / e.span) * c["h"]
         y0, hgt = builtin_min(base, top), builtin_max(3, abs(base - top))
         fill = (_ink(ink, "attention", "#F07A5A") if i == accent
@@ -589,6 +604,18 @@ def boxes(plate) -> dict[str, dict]:
         if s.under:
             box["under"] = True
         out[name] = box
+    # A BAND THE HEIGHT OF THE PLOT GOES BEHIND THE LINE. `charts/macro-series`
+    # publishes its recession bands over the whole plot area and says in the
+    # slot's note to fill them "at LOW value behind the series", without the
+    # `under` flag the draw order reads; drawn after the line, every
+    # recession cut a gap out of it.
+    pa = out.get("plot-area")
+    for name, slot in plate.slots.items():
+        box = out.get(name)
+        if (pa and box and slot.role == "band" and slot.region
+                and (box["x"], box["y"], box["w"], box["h"])
+                == (pa["x"], pa["y"], pa["w"], pa["h"])):
+            box["under"] = True
     return out
 
 
@@ -930,6 +957,10 @@ class PlateData:
 # dataLayer vocabulary. Each is only offered on a plate that can draw it.
 DATA_KEYS = ("series", "series2", "open", "steps", "close", "points", "split", "accent")
 
+# Plates whose artwork draws the zero line itself, by kit author, and how far
+# down the plot it sits: the share of the plot ABOVE the rule.
+PINNED_ZERO = {"intraday": 0.62}
+
 
 def data_keys(plate) -> list[str]:
     """The data keys this plate takes, from what it declares."""
@@ -1266,6 +1297,19 @@ def plate_data(plate, values: dict[str, str]) -> PlateData:
             d["min"], d["max"] = _tight(builtin_min(plotted), builtin_max(plotted))
     if any(x < 0 for x in both):
         d["zeroRule"] = True
+    # A ZERO THE DRAWING PINS. `charts/intraday` draws the prior close into
+    # the plate as a rule 62% of the way down its plot, not as a gridline the
+    # data places, so the session goes in as its move from that close and the
+    # scale is set to put zero on the rule: the most the path rises fills the
+    # 62% above it, the most it falls the 38% below, whichever needs more.
+    pin = PINNED_ZERO.get(plate.author)
+    if pin is not None and both:
+        span = builtin_max(builtin_max(builtin_max(both), 0.0) / pin,
+                           -builtin_min(builtin_min(both), 0.0) / (1.0 - pin),
+                           1e-6) * 1.08
+        d["min"], d["max"] = -(1.0 - pin) * span, pin * span
+        d["zero"] = False
+        d.pop("zeroRule", None)               # the plate's own rule is it
 
     # ── a bridge ─────────────────────────────────────────────────────────
     if "bridge" in s:

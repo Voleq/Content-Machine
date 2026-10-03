@@ -17,7 +17,11 @@
     "",
     "ALTERNATE ORDERS CAME BACK WITH THE BEAT MARKERS (items 2 and 26). `sign-off-first` put the closing card ahead of the hook and stays retired: the first second is the ticker and the move. The orders below may move anchored beats, because a marked script says where each beat starts and the cut follows its markers; an unmarked script is only offered the orders that keep the beat sequence it was written to.",
     "",
-    "WIPES MARK A CHANGE OF SUBJECT (item 13): a shot with `enter: wipe` is wiped in, sweep and page alternating, at most three a short; every other cut stays hard. A wipe on every cut would be a signpost on every cut, which is none."
+    "WIPES MARK A CHANGE OF SUBJECT (item 13): a shot with `enter: wipe` is wiped in, sweep and page alternating, at most three a short; every other cut stays hard. A wipe on every cut would be a signpost on every cut, which is none.",
+    "",
+    "THE CLEAR AREA (item 27): as the stock short's, every card's words are kept inside the band a phone shows clear of YouTube's own furniture.",
+    "",
+    "THE QUARTER IS ON SCREEN (item 3). The Quarters sheet reached the prompt and the fact-check and never the frame; an earnings short now draws the eight quarters, the three lines against a year before and one row at both horizons from it, and the print against the analysts' average from its consensus rows."
   ],
   "shots": [
     {
@@ -48,6 +52,25 @@
         {
           "plate": "shorts/hook-card-t5",
           "notes": "The fifth treatment: the hook on a full field with the ticker at the foot, so the eye lands on the sentence before the chip. The same slots. `hook-card-t4` is not here on purpose — it leads with the figure at 240pt, and the next beat is that figure."
+        }
+      ]
+    },
+    {
+      "id": "the-picture",
+      "plate": "frames/media-frame-t1-9x16",
+      "max_hold_s": 6,
+      "bind": {
+        "media": "media.photo.company",
+        "caption": "?pic.company.caption",
+        "source": "pic.company.source"
+      },
+      "notes": "A REAL PICTURE (item 34). Every frame of a short was drawn type on the dark ground; this is the company itself, a photograph of its stores or its building off the same chain the long searches (cache, Wikimedia Commons, the company's site), in design's media frame. With no picture found the shot is dropped: a frame round \"imagery unavailable\" is not a picture. The credit goes out with the video's other credits.",
+      "alts": [
+        {
+          "plate": "frames/media-frame-t2-9x16"
+        },
+        {
+          "plate": "frames/media-frame-t3-9x16"
         }
       ]
     },
@@ -106,32 +129,138 @@
             "caption": "?script.cheap_or_trap"
           },
           "notes": "What was expected over what came out, as two stacked panels. `body-1` is bound REQUIRED on purpose: the plate's caution is that without a real prior expectation it reads as a comparison against a number it invented, so the rotation only reaches for it when the script carries the consensus. The gap on the divider stays empty — it is a figure nobody wrote, and the pipeline does not compute one."
+        },
+        {
+          "plate": "figures/print-vs-consensus-9x16",
+          "bind": {
+            "kicker": "?data.print_vs_consensus.kicker",
+            "label": "?data.print_vs_consensus.label",
+            "reported": "data.print_vs_consensus.reported",
+            "expected-label": "?data.print_vs_consensus.expected-label",
+            "expected": "data.print_vs_consensus.expected",
+            "delta-label": "data.print_vs_consensus.delta-label",
+            "delta": "data.print_vs_consensus.delta"
+          },
+          "prefer": true,
+          "notes": "THE PRINT AGAINST THE STREET, AS ONE GAP (item 3): the Quarters sheet's street-basis actual against its consensus mean, and the beat or miss between them, so the viewer is not left to subtract two big numbers. EPS unless the script's print is an amount, then revenue. Taken whenever the workbook has the consensus rows."
+        }
+      ]
+    },
+    {
+      "id": "the-quarter",
+      "plate": "charts/quarter-bars-8q-9x16",
+      "max_hold_s": 7,
+      "bind": {
+        "kicker": "?data.qbars.kicker",
+        "unit": "?data.qbars.unit",
+        "head-1": "data.qbars.head-1",
+        "head-2": "data.qbars.head-2",
+        "head-3": "data.qbars.head-3",
+        "head-4": "data.qbars.head-4",
+        "head-5": "data.qbars.head-5",
+        "head-6": "data.qbars.head-6",
+        "head-7": "data.qbars.head-7",
+        "head-8": "data.qbars.head-8",
+        "value-1": "data.qbars.value-1",
+        "value-2": "data.qbars.value-2",
+        "value-3": "data.qbars.value-3",
+        "value-4": "data.qbars.value-4",
+        "value-5": "data.qbars.value-5",
+        "value-6": "data.qbars.value-6",
+        "value-7": "data.qbars.value-7",
+        "value-8": "data.qbars.value-8"
+      },
+      "notes": "EIGHT QUARTERS OF REVENUE (item 3), off the Quarters sheet, the latest picked out: what the quarter looks like next to the seven before it, which is the question an earnings short is asking.",
+      "alts": [
+        {
+          "plate": "tables/three-lines-9x16",
+          "bind": {
+            "kicker": "?data.three_lines.kicker",
+            "head-1": "data.three_lines.head-1",
+            "head-2": "data.three_lines.head-2",
+            "label-1": "data.three_lines.label-1",
+            "label-2": "data.three_lines.label-2",
+            "label-3": "data.three_lines.label-3",
+            "cell-1-1": "data.three_lines.cell-1-1",
+            "cell-1-2": "data.three_lines.cell-1-2",
+            "cell-2-1": "data.three_lines.cell-2-1",
+            "cell-2-2": "data.three_lines.cell-2-2",
+            "cell-3-1": "data.three_lines.cell-3-1",
+            "cell-3-2": "data.three_lines.cell-3-2",
+            "delta-1": "?data.three_lines.delta-1",
+            "delta-2": "?data.three_lines.delta-2",
+            "delta-3": "?data.three_lines.delta-3"
+          },
+          "notes": "Revenue, gross margin and EPS against the same quarter a year before: three rows at 52 px, the one table a phone can read."
+        },
+        {
+          "plate": "figures/qoq-yoy-9x16",
+          "bind": {
+            "kicker": "?data.qoq_yoy.kicker",
+            "figure": "data.qoq_yoy.figure",
+            "qoq-label": "data.qoq_yoy.qoq-label",
+            "qoq": "data.qoq_yoy.qoq",
+            "yoy-label": "data.qoq_yoy.yoy-label",
+            "yoy": "data.qoq_yoy.yoy"
+          },
+          "notes": "The quarter's revenue against the quarter before and the same quarter a year earlier. A seasonal December reads as growth on the first and flat on the second, which is the point of showing both."
         }
       ]
     },
     {
       "id": "the-sheet",
-      "plate": "tables/numbers-sheet-4r-9x16",
+      "plate": "charts/bars-6y-9x16",
       "enter": "wipe",
-      "max_hold_s": 14,
       "anchor": "numbers",
-      "lit": "read",
-      "bind": {
-        "unit": "?numbers.unit",
-        "head": "numbers.years",
-        "label-1": "numbers.label.0",
-        "row-1": "numbers.figures.0",
-        "label-2": "?numbers.label.1",
-        "row-2": "?numbers.figures.1",
-        "label-3": "?numbers.label.2",
-        "row-3": "?numbers.figures.2",
-        "label-4": "?numbers.label.3",
-        "row-4": "?numbers.figures.3"
+      "max_hold_s": 7,
+      "repeat": {
+        "src": "script.numbers",
+        "max": 4,
+        "arrange": "sequence",
+        "anchor": "numbers.$n-1"
       },
-      "notes": "Every row up at once — an earnings cut has no time for a walk down them. ROWS LIGHT AS THEY ARE READ (item 10): each row's band comes up when its label is said and stays up, so the sheet is never a still while the voice walks it, and it ends with every row lit. That is why it may hold past the 7 s other beats take. The five-row sheet is not an alternate: every short draws four rows, so it showed an empty fifth, and design's caution says five rows at 9:16 fall under readable size.",
+      "bind": {
+        "unit": "numbers.title.$n-1",
+        "value-1": "?numbers.cell.$n-1.0",
+        "value-2": "?numbers.cell.$n-1.1",
+        "value-3": "?numbers.cell.$n-1.2",
+        "value-4": "?numbers.cell.$n-1.3",
+        "value-5": "?numbers.cell.$n-1.4",
+        "value-6": "?numbers.cell.$n-1.5",
+        "head-1": "?numbers.head.0",
+        "head-2": "?numbers.head.1",
+        "head-3": "?numbers.head.2",
+        "head-4": "?numbers.head.3",
+        "head-5": "?numbers.head.4",
+        "head-6": "?numbers.head.5",
+        "y-1": "numbers.axis.$n-1.0",
+        "y-2": "numbers.axis.$n-1.1",
+        "y-3": "numbers.axis.$n-1.2",
+        "y-4": "numbers.axis.$n-1.3",
+        "y-5": "numbers.axis.$n-1.4"
+      },
+      "notes": "ONE METRIC A CARD (item 26), as the stock short's numbers: each row a card of its own, its figures the workbook's History sheet (item 23).",
       "alts": [
         {
-          "plate": "tables/numbers-sheet-4r-spark-9x16"
+          "plate": "figures/compare-stacked-9x16",
+          "bind": {
+            "kicker": "?numbers.kicker.$n-1",
+            "label-1": "numbers.first_label.$n-1",
+            "value-1": "numbers.first.$n-1",
+            "label-2": "numbers.last_label.$n-1",
+            "value-2": "numbers.last.$n-1",
+            "delta": "?numbers.change.$n-1"
+          },
+          "notes": "Where the row started against where it is, and how far it went: points for a margin, nothing across zero."
+        },
+        {
+          "plate": "figures/big-number-l1-9x16",
+          "bind": {
+            "kicker": "?numbers.kicker.$n-1",
+            "value": "numbers.last.$n-1",
+            "label": "?numbers.since.$n-1"
+          },
+          "notes": "The latest figure at display size, with where it came from under it."
         }
       ]
     },
@@ -200,13 +329,13 @@
     },
     {
       "id": "close",
-      "plate": "structure/closing-9x16",
+      "plate": "structure/closing-t2-9x16",
       "max_hold_s": 7,
       "bind": {
-        "kicker": "?script.ticker",
-        "line-1": "script.conclusion",
-        "date-label": "?channel.handle"
+        "kicker": "?channel.handle",
+        "statement": "script.conclusion"
       },
+      "notes": "ONE THING AT STATEMENT SIZE, FIRST (item 25). The three-line close drew a conclusion in `line-1` and two empty rules under it, which is the empty furniture the samples were full of. It is an alternate now, and only for a conclusion of exactly three sentences, one a line. The handle sits in the kicker: this plate's date label is in the caption band.",
       "alts": [
         {
           "plate": "cards/quote-pull-9x16",
@@ -215,15 +344,18 @@
             "attribution": "?channel.handle",
             "source": "?script.ticker"
           },
-          "notes": "THE OTHER WAY TO END. All three vertical formats closed on `structure/closing` every time, so every short in the channel signed off on the same drawing. The conclusion is a line worth pulling out by definition, and `quote-pull`'s body is the only other 9:16 plate wide enough to hold one without narrowing what the writer may write — `structure/end-card` holds 58 characters against closing's 136, so rotating onto it would have shrunk every conclusion in the channel to suit the alternate."
+          "notes": "The conclusion as a pulled line."
         },
         {
-          "plate": "structure/closing-t2-9x16",
+          "plate": "structure/closing-9x16",
           "bind": {
-            "kicker": "?channel.handle",
-            "statement": "script.conclusion"
+            "kicker": "?script.ticker",
+            "line-1": "sent.3.0.script.conclusion",
+            "line-2": "sent.3.1.script.conclusion",
+            "line-3": "sent.3.2.script.conclusion",
+            "date-label": "?channel.handle"
           },
-          "notes": "ONE THING AT STATEMENT SIZE. The original close has three lines and a script has one conclusion, so two of them were always empty. The handle moves up to the kicker: this plate's date label sits inside the caption band, where the last spoken words would run over it. Its detail line stays empty — the plate's own caution is not to pad it."
+          "notes": "THREE LINES FOR THREE SENTENCES. `sent.3.i` is sentence i of a conclusion that has exactly three, and nothing otherwise, so this drawing is only in the rotation when every line has one."
         }
       ]
     }
@@ -233,9 +365,11 @@
       "name": "guidance-first",
       "shots": [
         "open",
+        "the-picture",
         "guidance",
         "the-print",
         "vs-expected",
+        "the-quarter",
         "the-sheet",
         "the-turn",
         "so-what",
@@ -247,8 +381,10 @@
       "name": "turn-early",
       "shots": [
         "open",
+        "the-picture",
         "the-print",
         "vs-expected",
+        "the-quarter",
         "the-turn",
         "the-sheet",
         "guidance",
@@ -257,5 +393,9 @@
       ],
       "notes": "The pivot before the years: Dennis says what the beat does not tell you, then the sheet proves it. Cut only for a script marked in this order."
     }
-  ]
+  ],
+  "safe": {
+    "top": 170,
+    "bottom": 1480
+  }
 }

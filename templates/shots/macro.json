@@ -17,7 +17,11 @@
     "",
     "ALTERNATE ORDERS CAME BACK WITH THE BEAT MARKERS (items 2 and 26). `sign-off-first` put the closing card ahead of the hook and stays retired: the first second is the ticker and the move. The orders below may move anchored beats, because a marked script says where each beat starts and the cut follows its markers; an unmarked script is only offered the orders that keep the beat sequence it was written to.",
     "",
-    "WIPES MARK A CHANGE OF SUBJECT (item 13): a shot with `enter: wipe` is wiped in, sweep and page alternating, at most three a short; every other cut stays hard. A wipe on every cut would be a signpost on every cut, which is none."
+    "WIPES MARK A CHANGE OF SUBJECT (item 13): a shot with `enter: wipe` is wiped in, sweep and page alternating, at most three a short; every other cut stays hard. A wipe on every cut would be a signpost on every cut, which is none.",
+    "",
+    "THE CLEAR AREA (item 27): as the stock short's, every card's words are kept inside the band a phone shows clear of YouTube's own furniture.",
+    "",
+    "DENNIS ONCE (item 7). The stock and earnings shorts give him the turn in close-up; the macro short never showed him, and a CPI short with no host looked like a slideshow beside the others. `the-turn` is that same shot, on the line the cut turns on."
   ],
   "shots": [
     {
@@ -130,28 +134,71 @@
         },
         {
           "plate": "paper/headline-band-t3-9x16"
+        },
+        {
+          "plate": "charts/macro-series-9x16",
+          "bind": {
+            "kicker": "fred.kicker",
+            "unit": "?fred.unit",
+            "series": "fred.series",
+            "y-1": "fred.y-1",
+            "y-2": "fred.y-2",
+            "y-3": "fred.y-3",
+            "y-4": "fred.y-4",
+            "y-5": "fred.y-5",
+            "head-1": "fred.head-1",
+            "head-2": "fred.head-2",
+            "head-3": "fred.head-3",
+            "head-4": "fred.head-4",
+            "head-5": "fred.head-5",
+            "head-6": "fred.head-6",
+            "head-7": "fred.head-7",
+            "head-8": "fred.head-8",
+            "head-9": "fred.head-9",
+            "head-10": "fred.head-10",
+            "band-1": "?fred.band-1",
+            "band-2": "?fred.band-2",
+            "band-3": "?fred.band-3",
+            "band-4": "?fred.band-4",
+            "source": "fred.source",
+            "caption": "?fred.caption"
+          },
+          "prefer": true,
+          "captions": false,
+          "notes": "THE SERIES BEHIND THE PRINT (item 6): 27 years of it off FRED's public CSV, recessions shaded, picked from what the headline names (CPI, core CPI, PCE, unemployment, fed funds, the 10-year, GDP, oil). Preferred wherever FRED has it: one print means something only against the line it belongs to. The source line is required, so a chart nobody can check is never drawn. The KICKER IS REQUIRED TOO: the drawing runs from its title to its source line, taller than the clear band, and shrunk to fit it with the title optional the title was the line dropped, leaving a chart with no name. And NO CAPTION while it is up: the chart fills the band, so any caption sat over its years or its line."
         }
       ],
       "notes": "The statement itself, in the band drawn for it. NO `headline-stack` ALTERNATE HERE, unlike the SHORT: the stack needs a second headline, and a required bind is a field on the writer's form — which takes MACRO to thirteen, past the dozen at which a form is a document again and gets filled in like one."
     },
     {
+      "id": "the-turn",
+      "plate": "room/talk",
+      "host": {
+        "pose": "host/close-up",
+        "slot": "host-anchor"
+      },
+      "anchor": "turn",
+      "max_hold_s": 7,
+      "notes": "The turn, told to camera in close-up (item 7), held only while he says it (item 28). A script with no turn line drops it."
+    },
+    {
       "id": "the-mechanism",
       "plate": "cards/definition-9x16",
       "max_hold_s": 7,
-      "anchor": "turn",
+      "anchor": "mechanism",
       "bind": {
         "term": "?numbers.headline_label",
         "body": "script.mechanism.0",
         "example": "?script.mechanism.1"
       },
-      "notes": "How it actually works, in the card drawn for a term and its meaning.",
+      "notes": "How it actually works, in the card drawn for a term and its meaning. It listens for its own first line now: the turn is Dennis's (item 7).",
       "alts": [
         {
           "plate": "cards/quote-pull-9x16",
           "bind": {
             "body": "script.mechanism.0",
             "attribution": "?numbers.headline_label",
-            "source": "?source.turn|script.mechanism.1"
+            "source": "?source.mechanism|source.turn|script.mechanism.1"
           }
         }
       ]
@@ -225,13 +272,13 @@
     },
     {
       "id": "close",
-      "plate": "structure/closing-9x16",
+      "plate": "structure/closing-t2-9x16",
       "max_hold_s": 7,
       "bind": {
-        "kicker": "?script.ticker",
-        "line-1": "script.conclusion",
-        "date-label": "?channel.handle"
+        "kicker": "?channel.handle",
+        "statement": "script.conclusion"
       },
+      "notes": "ONE THING AT STATEMENT SIZE, FIRST (item 25). The three-line close drew a conclusion in `line-1` and two empty rules under it, which is the empty furniture the samples were full of. It is an alternate now, and only for a conclusion of exactly three sentences, one a line. The handle sits in the kicker: this plate's date label is in the caption band.",
       "alts": [
         {
           "plate": "cards/quote-pull-9x16",
@@ -240,15 +287,18 @@
             "attribution": "?channel.handle",
             "source": "?script.ticker"
           },
-          "notes": "THE OTHER WAY TO END. All three vertical formats closed on `structure/closing` every time, so every short in the channel signed off on the same drawing. The conclusion is a line worth pulling out by definition, and `quote-pull`'s body is the only other 9:16 plate wide enough to hold one without narrowing what the writer may write — `structure/end-card` holds 58 characters against closing's 136, so rotating onto it would have shrunk every conclusion in the channel to suit the alternate."
+          "notes": "The conclusion as a pulled line."
         },
         {
-          "plate": "structure/closing-t2-9x16",
+          "plate": "structure/closing-9x16",
           "bind": {
-            "kicker": "?channel.handle",
-            "statement": "script.conclusion"
+            "kicker": "?script.ticker",
+            "line-1": "sent.3.0.script.conclusion",
+            "line-2": "sent.3.1.script.conclusion",
+            "line-3": "sent.3.2.script.conclusion",
+            "date-label": "?channel.handle"
           },
-          "notes": "ONE THING AT STATEMENT SIZE. The original close has three lines and a script has one conclusion, so two of them were always empty. The handle moves up to the kicker: this plate's date label sits inside the caption band, where the last spoken words would run over it. Its detail line stays empty — the plate's own caution is not to pad it."
+          "notes": "THREE LINES FOR THREE SENTENCES. `sent.3.i` is sentence i of a conclusion that has exactly three, and nothing otherwise, so this drawing is only in the rotation when every line has one."
         }
       ]
     }
@@ -261,6 +311,7 @@
         "the-statement",
         "the-print",
         "vs-expected",
+        "the-turn",
         "the-mechanism",
         "who-it-hits",
         "so-what",
@@ -275,6 +326,7 @@
         "the-print",
         "vs-expected",
         "the-statement",
+        "the-turn",
         "who-it-hits",
         "the-mechanism",
         "so-what",
@@ -282,5 +334,9 @@
       ],
       "notes": "Who it hurts before why: the consequences land first and the mechanism explains them. Cut only for a script marked in this order."
     }
-  ]
+  ],
+  "safe": {
+    "top": 170,
+    "bottom": 1480
+  }
 }

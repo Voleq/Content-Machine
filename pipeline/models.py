@@ -332,6 +332,12 @@ class NumberRow(BaseModel):
     # A period measure or a point-in-time one. Inferred from the label when
     # the script does not say, so nothing already written breaks.
     kind: MetricKind | None = None
+    # WHICH HISTORY ROW THIS IS, by the workbook's own field_key (`revenue`,
+    # `fcf`, `diluted_shares`). With the workbook in the workspace the figures
+    # on screen are the workbook's, not the ones typed here, so the sheet
+    # cannot disagree with it (item 23). Optional: a row with none is matched
+    # on its label, and a row that matches nothing keeps the typed figures.
+    field: str | None = Field(default=None, max_length=40)
 
     @property
     def measured(self) -> MetricKind:
@@ -429,7 +435,10 @@ class ShortScript(BaseModel):
     headlines: list[Headline] = Field(min_length=1, max_length=3)
     numbers: list[NumberRow] = Field(min_length=1, max_length=6)
     years: list[str] = Field(default_factory=list, max_length=6)  # sheet columns
-    numbers_comment: str = Field(min_length=1, max_length=300)    # holistic read
+    # The holistic read, printed on its own card as the line being said
+    # (item 8). 156 is that card's body: a longer read left the beat with no
+    # card it fits, so it is refused here, before the voice is paid for.
+    numbers_comment: str = Field(min_length=1, max_length=156)
     # the CHEAP-OR-TRAP beat: is the multiple a bargain or a value trap? Held
     # on screen ~4-5s so it can actually be read. Optional so scripts written
     # against the four-beat format still parse.
@@ -452,6 +461,10 @@ class ShortScript(BaseModel):
     mechanism: list[str] = Field(default_factory=list, max_length=3)
     consequences: list[str] = Field(default_factory=list, max_length=5)
     conclusion: str = Field(min_length=1, max_length=220)  # noise vs signal, free text
+    # THE ROW THE VERDICT TURNS ON, by its label or its History field_key. The
+    # payoff card shows that row's latest figure; with none named it shows the
+    # first row's, as it always did (item 2).
+    payoff_row: str | None = Field(default=None, max_length=40)
 
     @model_validator(mode="after")
     def _six_periods(self):
@@ -837,6 +850,24 @@ HISTORY_FIELDS: list[str] = [
 # from the header, exactly as History's are.
 QUARTER_FIELDS: list[str] = list(HISTORY_FIELDS)
 
+# WHAT THE STREET EXPECTED, beside the Quarters sheet's own rows (Q2, 29 Sep).
+# Kept apart from QUARTER_FIELDS because they are not the company's figures:
+# the quarterly table prints the company's rows with both comparisons, and a
+# consensus row with a QoQ under it is a number nobody reported.
+#
+# `eps_street` is the ACTUAL on the basis the estimate was made on. Consensus
+# EPS is an adjusted figure and the sheet's own `eps` is GAAP net income over
+# diluted shares; set against each other they call half the beats misses.
+CONSENSUS_FIELDS: list[str] = ["eps_consensus", "eps_street",
+                               "revenue_consensus"]
+
+# Rows a period sheet may carry to NAME its columns: the fiscal year and, on
+# the Quarters sheet, the fiscal quarter. The template's headers are relative
+# (`FY-4`, `Q-7`) because the add-in fills them relative to today; these turn
+# them into `FY21` and `Q2 FY25` for the screen. Read, then taken off the
+# table: they are labels, not figures.
+PERIOD_LABEL_FIELDS: list[str] = ["fiscal_year", "fiscal_quarter"]
+
 # Fields the workbook carries as a RATE — a margin, a return, a share-count
 # change — rather than a quantity. The distinction is load-bearing twice: the
 # fact-check reads a stated percentage against the rate series itself instead
@@ -1080,7 +1111,38 @@ class CompanyData(BaseModel):
             moves = self.quarter_moves(f)
             if moves:
                 lines.append("    " + _moves_line(moves))
+        got = self.consensus()
+        if got:
+            # The print against what was expected, for the latest quarter
+            # only: that is the one an earnings short is about.
+            lines.append(f"  vs consensus, {got['label']}:")
+            for what in ("eps", "revenue"):
+                pair = got.get(what)
+                if pair:
+                    lines.append(f"    {what}: reported {_mag(pair[0])} | "
+                                 f"expected {_mag(pair[1])}")
         return "\n".join(lines)
+
+    def consensus(self) -> dict | None:
+        """The latest quarter's print against the street, or None.
+
+        `{"label": "Q2 FY25", "eps": (reported, expected), "revenue": (…)}`,
+        a pair present only when both halves are. EPS is the street-basis
+        actual against the EPS estimate, never the sheet's GAAP `eps`.
+        """
+        def last(field: str):
+            vals = self.quarters.get(field) or []
+            return vals[-1] if vals else None
+
+        out: dict = {"label": (self.quarter_labels[-1]
+                               if self.quarter_labels else "latest")}
+        eps = (last("eps_street"), last("eps_consensus"))
+        rev = (last("revenue"), last("revenue_consensus"))
+        if None not in eps:
+            out["eps"] = eps
+        if None not in rev:
+            out["revenue"] = rev
+        return out if len(out) > 1 else None
 
     def available_chart_metrics(self) -> list[str]:
         """History metrics that have a multi-year series the renderer can draw

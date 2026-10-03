@@ -12,10 +12,11 @@ over the last frame of the chapter before and open on the bumper, with the
 cut under the fourth frame where the cover is full. The cold open and the end
 card get a sweep or a page instead.
 
-Every clip here is drawn at design's 12 frames a second and nothing in it
-fades: the number turns over, the slats close. The LONG composites clips by
-timestamp, so a 12 fps clip over the 30 fps cut steps exactly as design's
-review page does.
+Nothing in a clip here fades: the number turns over, the slats close. The
+wipes are design's drawn frames and play at its 12 a second. The bumper is
+played at the video's rate (`moves.OUT_FPS`): its tick-over is a function of
+where it is, so the frames between design's twelve are design's own, and it
+starts and lands on the same instants (2 Oct 2026; at 12 it stepped).
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from pipeline import motion as M
+from pipeline.moves import OUT_FPS
 
 log = logging.getLogger(__name__)
 
@@ -104,18 +106,19 @@ def bumper_values(n: int, total: int, title: str, episode: str) -> dict[str, str
             "title": str(title or "").strip(), "episode": str(episode or "").strip()}
 
 
-def _boil(plate, i: int) -> int:
-    """Which of the plate's boil frames shows on clip frame `i`."""
+def _boil(plate, i: int, rate: int = FPS) -> int:
+    """Which of the plate's boil frames shows on clip frame `i` of a clip
+    played at `rate`."""
     n = max(int(plate.frame_count or 1), 1)
     fps = float(getattr(plate, "fps", 0) or 0)
     if n <= 1 or fps <= 0:
         return 0
-    return int(i / FPS * fps) % n
+    return int(i / rate * fps + 1e-9) % n
 
 
 def bumper_frames(reg, settings, *, aspect: str, n: int, total: int, title: str,
                   episode: str, size: tuple[int, int]) -> list:
-    """The bumper's frames at 12 fps, sized to the cut, number turning over.
+    """The bumper's frames at `OUT_FPS`, sized to the cut, number turning over.
 
     Chapter `n` turns over from `n - 1`, so the first bumper of an episode
     (before chapter two) reads 01 turning to 02.
@@ -131,7 +134,7 @@ def bumper_frames(reg, settings, *, aspect: str, n: int, total: int, title: str,
     values = bumper_values(n, total, title, episode)
     rest = {k: v for k, v in values.items() if k != "num" and plate.slot(k) is not None}
     hold = float(plate.hold_s or 2.0)
-    count = max(int(round(hold * FPS)), 1)
+    count = max(int(round(hold * OUT_FPS)), 1)
     first, tick_frames = tick_timing(reg, plate)
 
     s = max(int(plate.export_scale or 1), 1)
@@ -145,18 +148,24 @@ def bumper_frames(reg, settings, *, aspect: str, n: int, total: int, title: str,
 
     old, new = number(f"{max(int(n) - 1, 0):02d}"), number(values["num"])
     bases: dict[int, object] = {}
+    # A frame with the number at rest depends only on the boil, so it is
+    # composed once and shown again: most of the hold is held.
+    still: dict[tuple[int, bool], object] = {}
     frames = []
     for i in range(count):
-        b = _boil(plate, i)
+        b = _boil(plate, i, OUT_FPS)
+        # Where the tick-over is, in design's frames, fractional between them.
+        k = i * FPS / OUT_FPS - first
+        rest_on = None if -1e-9 <= k < tick_frames - 1 - 1e-9 else k >= 0
+        if rest_on is not None and (b, rest_on) in still:
+            frames.append(still[(b, rest_on)])
+            continue
         if b not in bases:
             bases[b] = render_frame(plate, b, rest, settings, reg)
         img = bases[b].copy()
-        k = i - first
         window = Image.new("RGBA", (sw, sh), (0, 0, 0, 0))
-        if k < 0:
-            window.alpha_composite(old)
-        elif k >= tick_frames:
-            window.alpha_composite(new)
+        if rest_on is not None:
+            window.alpha_composite(new if rest_on else old)
         else:
             old_y, new_y = M.tick(sh, M.t_of_frame(k, tick_frames))
             # Both clipped to the slot: the old number leaves through its
@@ -169,6 +178,8 @@ def bumper_frames(reg, settings, *, aspect: str, n: int, total: int, title: str,
         img.alpha_composite(window, (slot.x * s, slot.y * s))
         if img.size != tuple(size):
             img = img.resize(tuple(size), Image.LANCZOS)
+        if rest_on is not None:
+            still[(b, rest_on)] = img
         frames.append(img)
     return frames
 
@@ -204,9 +215,9 @@ def bumper_clip(reg, settings, out: Path, *, aspect: str, at: float, n: int,
         log.warning("the kit has no chapter bumper at %s; chapter %d opens "
                     "without one", aspect, n)
         return None
-    frames_to_alpha_clip(frames, FPS, out)
+    frames_to_alpha_clip(frames, OUT_FPS, out)
     plate = reg.get(reg.aspect_key("structure/chapter-bumper", aspect))
-    return Clip(out, at, at + len(frames) / FPS, f"bumper_{n}", "tick-over",
+    return Clip(out, at, at + len(frames) / OUT_FPS, f"bumper_{n}", "tick-over",
                 cut=at, tick_frame=tick_timing(reg, plate)[0])
 
 

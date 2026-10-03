@@ -134,16 +134,24 @@ def test_the_sample_is_not_mostly_a_still_frame(sample):
 
 @pytest.mark.parametrize("sample", _samples(), ids=lambda p: p.stem)
 def test_the_sample_is_the_shape_its_format_is(sample):
-    """Whatever aspect its own template declares. The LONG is 16:9."""
+    """Whatever aspect its own template declares. The LONG is 16:9.
+
+    A SHORT is laid out at its format's frame and drawn larger
+    (`short_delivery_height`); its manifest says what size the file is, and
+    that is the frame's shape."""
     import json
     out = subprocess.run(
         ["ffprobe", "-v", "error", "-select_streams", "v:0",
          "-show_entries", "stream=width,height", "-of", "csv=p=0:nk=1",
          str(sample)], capture_output=True, text=True).stdout.strip()
-    man = sample.with_suffix(".manifest.json")
-    frame = json.loads(man.read_text(encoding="utf-8"))["frame"]
-    assert out.startswith(f"{frame['w']},{frame['h']}"), (
-        f"{sample.name} is {out}, not {frame['w']}x{frame['h']}")
+    man = json.loads(sample.with_suffix(".manifest.json").read_text(encoding="utf-8"))
+    frame = man["frame"]
+    size = man.get("delivered") or frame
+    assert out.startswith(f"{size['w']},{size['h']}"), (
+        f"{sample.name} is {out}, not {size['w']}x{size['h']}")
+    assert abs(size["w"] / size["h"] - frame["w"] / frame["h"]) < 0.002, (
+        f"{sample.name} is drawn at {size['w']}x{size['h']}, which is not "
+        f"the shape of its {frame['w']}x{frame['h']} layout")
 
 
 @pytest.mark.parametrize("sample", _samples(), ids=lambda p: p.stem)

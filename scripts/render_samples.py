@@ -85,6 +85,11 @@ VERTICAL_SAMPLES = {
 }
 
 
+# The vertical formats about ONE company, which a real render gives the
+# operator's workbook.
+WORKBOOK_SAMPLES = frozenset({"short", "earnings"})
+
+
 def render_vertical_sample(format_name: str = "short") -> Path:
     from pipeline.render_short import render_short
 
@@ -98,10 +103,27 @@ def render_vertical_sample(format_name: str = "short") -> Path:
     print(f"  mock audio: {tts.duration_s:.1f}s, {len(tts.words)} words")
     ws = WORK / script.ticker / f"sample_{format_name}"
     ws.mkdir(parents=True, exist_ok=True)
+    # THE WORKBOOK, where the format is about a company (item 23): the stock
+    # and earnings shorts draw the fixture workbook's figures and the cards
+    # only it can fill, as a real render with an uploaded workbook does. The
+    # macro short is about a print, not a company, and gets none.
+    data = None
+    if format_name in WORKBOOK_SAMPLES:
+        from pipeline.company_data import load_company_data
+
+        shutil.copy(ROOT / "fixtures" / "company_data" / "dennis_data.xlsx",
+                    ws / "dennis_data.xlsx")
+        data = load_company_data(ws)
+    # The same content chain the bot hands a render, in MOCK_MODE: pictures
+    # (item 34) are labelled stand-in cards, never a network fetch.
+    from pipeline.broll import ContentManager
+
     t0 = time.time()
     out, manifest = render_short(script, tts, ws, settings,
                                  format_name=format_name,
-                                 out_name=f"{format_name}_final.mp4")
+                                 out_name=f"{format_name}_final.mp4",
+                                 content=ContentManager(settings),
+                                 company_data=data)
     print(f"  rendered in {time.time() - t0:.0f}s")
     _banner()
     SAMPLES.mkdir(exist_ok=True)

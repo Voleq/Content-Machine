@@ -164,6 +164,17 @@ EXMPL_QUARTERS = [
      [338*M, 341*M, 344*M, 346*M, 350*M, 355*M, 360*M, 364.6*M]),
     ("eps", "EPS (diluted)",
      [-0.047, -0.050, -0.052, -0.055, -0.060, -0.062, -0.061, -0.066]),
+    # THE STREET'S NUMBERS (item 3). The estimate is compared with the
+    # street-basis actual, never with GAAP `eps` above: analysts forecast the
+    # adjusted figure, and a GAAP loss against an adjusted estimate reads as
+    # a miss every quarter. The latest print is two cents ahead, which is
+    # what the earnings fixture's narration says.
+    ("eps_street", "EPS actual (street basis)",
+     [0.021, 0.024, 0.027, 0.045, 0.030, 0.033, 0.036, 0.060]),
+    ("eps_consensus", "EPS estimate (mean)",
+     [0.020, 0.022, 0.027, 0.040, 0.031, 0.030, 0.034, 0.040]),
+    ("revenue_consensus", "Revenue estimate (mean)",
+     [110*M, 117*M, 122*M, 137*M, 115*M, 118*M, 121*M, 138*M]),
 ]
 
 # --- Dashboard: label -> value (+ flags) --------------------------------------
@@ -319,6 +330,10 @@ EXMPL_NEWS = [
     (_dt.date(2026, 7, 9), NA, "CNBC", "https://example.com/news/na-headline"),  # NA headline — skipped
     (_dt.date(2026, 7, 8), "CEO outlines margin recovery and cost cuts in interview",
      "CNBC", "https://example.com/news/ceo-interview"),
+    # The short fixture's own news. Its link opens the release the news beat
+    # draws (item 5): `fixtures/news_pages/ai-partnership.html` in MOCK_MODE.
+    (_dt.date(2026, 7, 6), "Example Corp announces AI partnership with a cloud provider",
+     "Business Wire", "https://example.com/news/ai-partnership"),
 ]
 
 

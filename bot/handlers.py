@@ -1237,10 +1237,27 @@ class BotCore:
         # blocks, because it would be spoken and captioned — or run on stale
         # data, and nothing objected. SHORTs are the higher-volume output.
         data = self._company_data(ws)
-        gates = run_gates(script, self.settings, data=data,
+        # THE SHEET ON SCREEN IS THE WORKBOOK'S (item 23), so the gates check
+        # the rows the render will draw, and a row whose typed figures the
+        # workbook replaces says so here, before approval.
+        checked = script
+        if data is not None:
+            from pipeline.short_data import fill_numbers
+            checked, notes = fill_numbers(script, data)
+            warnings = warnings + notes
+        fmt_name = self.short_format_name(ws)
+        if fmt_name == "macro":
+            # The print against FRED's own latest reading (item 6), before
+            # approval: the macro chart draws FRED's series, so a typed print
+            # that disagrees with it would disagree on screen too.
+            from pipeline.macro_series import print_check
+            note = print_check(script, self.settings)
+            if note:
+                warnings = warnings + [note]
+        gates = run_gates(checked, self.settings, data=data,
                           as_of=str((data.get("as_of_date") if data else "") or ""),
                           workspace=ws.path,
-                          format_name=self.short_format_name(ws))
+                          format_name=fmt_name)
         report = build_short_report(script, warnings, self.settings,
                                     self.ledger, self.tts, gate_report=gates)
         (ws.path / "report_short.txt").write_text(report.render_text(), encoding="utf-8")
@@ -1577,7 +1594,8 @@ class BotCore:
             checkpoint("render")
             out, manifest = render_short(
                 script, tts, ws.path, self.settings, content=self.content,
-                format_name=self.short_format_name(ws))
+                format_name=self.short_format_name(ws),
+                company_data=self._company_data(ws))
             checkpoint("delivery")
             extra = self._publish_byproducts(job, ws, script, tts, manifest,
                                              "short")
@@ -1821,7 +1839,8 @@ class BotCore:
             # pass, which `/upload` would then send to YouTube.
             out, manifest = render_short(
                 script, tts, ws.path, self.settings, content=self.content,
-                proof=True, format_name=self.short_format_name(ws))
+                proof=True, format_name=self.short_format_name(ws),
+                company_data=self._company_data(ws))
             held = _frame_holds(manifest)
         else:
             data = self._company_data(ws)

@@ -110,10 +110,15 @@ def test_a_source_slides_in_where_design_gives_it_room(short_valid_json,
                                     {"numbers": "10-K filings, FY21-FY25"})
     layers = MV.shot_plates(result)
     order = [sp.shot.id for sp in result.spans]
-    assert not MV.tag_clear(reg.get(layers["numbers"].entry_key))
+    # The numbers beat is one card a row (item 26); its source belongs to
+    # the first card, and rests there or on the next shot with room.
     (tag,) = plan.tags
     assert tag.text == "10-K filings, FY21-FY25"
-    assert order.index(tag.shot_id) > order.index("numbers")
+    assert order.index(tag.shot_id) >= order.index("numbers-1")
+    for sid in order[order.index("numbers-1"):order.index(tag.shot_id)]:
+        if sid in layers:
+            plate = reg.get(layers[sid].entry_key)
+            assert not MV.tag_clear(plate) or plate.slot("source") is not None
     span = next(sp for sp in result.spans if sp.shot.id == tag.shot_id)
     layer = layers.get(tag.shot_id)
     if layer is not None:
@@ -148,6 +153,9 @@ def test_a_carried_source_stops_at_the_next_beat_with_its_own(short_valid_json,
             [("the-comment", "FY25 10-K")]
 
 
+SUPPLIED_PROVENANCE = ("news", "fred", "pic", "data")
+
+
 @pytest.mark.parametrize("fmt_name", ["short", "earnings", "macro"])
 def test_a_card_with_its_own_source_line_prints_the_writer_s(fmt_name):
     """The quote card has a source line, so no tag slides in over it (moves
@@ -162,6 +170,12 @@ def test_a_card_with_its_own_source_line_prints_the_writer_s(fmt_name):
         for v in (shot, *shot.alts):
             bind = v.resolved(shot)[0] if v is not shot else shot.bind
             if "source" in bind:
+                # A card that prints where its OWN material came from (the
+                # release's publisher, FRED's series id, the photo's credit)
+                # is citing data the bot supplied, not the writer's figure.
+                if all(alt.lstrip("?").split(".", 1)[0] in SUPPLIED_PROVENANCE
+                       for alt in bind["source"].split("|")):
+                    continue
                 assert f"source.{shot.anchor}" in bind["source"], \
                     f"{fmt_name}/{shot.id} {getattr(v, 'plate', '')}"
 

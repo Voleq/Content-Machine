@@ -19,7 +19,7 @@ import pytest
 from openpyxl import load_workbook
 
 from pipeline.company_data import load_company_data
-from pipeline.models import QUARTER_FIELDS
+from pipeline.models import CONSENSUS_FIELDS, QUARTER_FIELDS
 
 
 # --------------------------------------------------------------------------
@@ -86,8 +86,12 @@ def test_the_operator_template_carries_a_readable_quarters_sheet():
 
     assert len(labels) == 8, f"expected eight quarters, got {labels}"
     assert rows, "the sheet has no field_key rows"
-    assert all(k in QUARTER_FIELDS for k in rows), \
-        f"unrecognised keys: {[k for k in rows if k not in QUARTER_FIELDS]}"
+    known = QUARTER_FIELDS + CONSENSUS_FIELDS
+    assert all(k in known for k in rows), \
+        f"unrecognised keys: {[k for k in rows if k not in known]}"
+    # The street's numbers (item 3): the print-vs-consensus card reads them.
+    for key in CONSENSUS_FIELDS:
+        assert key in rows, f"the consensus row {key} is missing"
     for key in ("revenue", "net_income", "eps"):
         assert key in rows, f"an earnings video needs {key}"
 

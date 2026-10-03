@@ -7,6 +7,7 @@ import pytest
 
 from pipeline import bumper as B
 from pipeline import motion as M
+from pipeline.moves import OUT_FPS
 
 
 @pytest.fixture(scope="module")
@@ -30,7 +31,7 @@ def frames(reg, settings):
 
 def test_the_bumper_is_held_as_long_as_the_plate_says(frames, reg):
     plate = reg.get(reg.aspect_key("structure/chapter-bumper", "16x9"))
-    assert len(frames) == round((plate.hold_s or 2.0) * M.FPS) == 24
+    assert len(frames) == round((plate.hold_s or 2.0) * OUT_FPS) == 60
 
 
 def test_the_bumper_prints_design_s_count():
@@ -47,20 +48,43 @@ def _num_box(reg):
     return tuple(int(v * s * k) for v in (sl.x, sl.y, sl.x + sl.w, sl.y + sl.h))
 
 
+def _turn(reg):
+    """(last video frame before the turn, first one landed) of the bumper's
+    tick-over, from design's frames at its 12 a second."""
+    first, n = B.tick_timing(reg, reg.get(reg.aspect_key("structure/chapter-bumper", "16x9")))
+    assert (first, n) == (3, 6), "design's tick-over: the fourth frame of the hold, six frames"
+    return (int(first * OUT_FPS / M.FPS),
+            int(np.ceil((first + n - 1) * OUT_FPS / M.FPS)))
+
+
 def test_the_number_turns_over_and_nothing_else_changes(frames, reg):
     box = _num_box(reg)
-    first, _ = B.tick_timing(reg, reg.get(reg.aspect_key("structure/chapter-bumper", "16x9")))
-    assert first == 3, "design's tick-over starts on the fourth frame of the hold"
+    before, landed = _turn(reg)
     a = [np.asarray(f.convert("RGB"), dtype=np.int16) for f in frames]
-    # Before the tick the old number holds; after six frames the new one does.
-    assert np.abs(a[0] - a[first]).max() < 60      # boil only
+    # Before the tick the old number holds; once it lands the new one does.
+    assert np.abs(a[0] - a[before]).max() < 60      # boil only
     inside = lambda i, j: np.abs(a[i] - a[j])[box[1]:box[3], box[0]:box[2]].mean()
-    assert inside(first, first + 6) > 5
-    assert inside(first + 6, len(a) - 1) < 3
+    assert inside(before, landed) > 5
+    assert inside(landed, len(a) - 1) < 3
     # Outside the number, the frames differ only by the plate's own boil.
-    outside = np.abs(a[first] - a[first + 3]).copy()
+    outside = np.abs(a[before] - a[(before + landed) // 2]).copy()
     outside[box[1]:box[3], box[0]:box[2]] = 0
     assert outside.mean() < 3
+
+
+def test_the_number_moves_on_every_video_frame_of_the_turn(frames, reg):
+    """2 Oct 2026: at design's 12 a second the turn stepped two and a half
+    video frames at a time. Played at the video's rate, every frame of it is
+    a new position."""
+    box = _num_box(reg)
+    before, landed = _turn(reg)
+    # From the first frame after the start: on that one design's ease has
+    # barely left rest, which is the ease, not a step.
+    a = [np.asarray(f.convert("L"), dtype=np.int16)[box[1]:box[3], box[0]:box[2]]
+         for f in frames[before + 1:landed + 1]]
+    assert len(a) >= 12
+    still = [i for i in range(1, len(a)) if np.abs(a[i] - a[i - 1]).mean() < 0.5]
+    assert not still, f"the number sits still on frames {still} of its turn"
 
 
 def test_nothing_on_the_bumper_fades(frames):
