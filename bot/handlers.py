@@ -1878,7 +1878,8 @@ class BotCore:
                 build_storyboard, host_share_lines, storyboard_caption,
             )
             from pipeline.timeline import (
-                build_long_timeline, chapter_start_times, plan_long_segments,
+                build_long_timeline, chapter_start_times, paragraph_starts,
+                plan_long_segments,
             )
 
             cues = build_long_timeline(script, tts.words, tts.duration_s)
@@ -1887,6 +1888,8 @@ class BotCore:
                 chapter_starts=chapter_start_times(script.chapters, tts.duration_s),
                 min_readable_s=self.settings.long_min_readable_s,
                 chapter_host_s=self.settings.long_chapter_host_s,
+                paragraphs=paragraph_starts(script.narration, tts.words),
+                max_readable_s=self.settings.long_max_readable_s,
             )
             sheet, problems = build_storyboard(
                 segments, tts.words, ws.path / "storyboard.png", self.settings,
@@ -1895,9 +1898,11 @@ class BotCore:
                 chapters=script.chapter_list,
             )
             # How much of each chapter is Dennis alone in frame, flagged over
-            # 70%. Reported, never acted on: that is the writer's call.
+            # the operator's share (35%). Reported, never acted on: that is
+            # the writer's call.
             shares = host_share_lines(segments, script.chapter_list,
-                                      tts.duration_s)
+                                      tts.duration_s,
+                                      flag=self.settings.long_dennis_alone_max)
         except JobCancelled:
             # A cancel is not a storyboard failure. Swallowing it here would
             # answer the operator's cancel with "rendering anyway" and then

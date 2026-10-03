@@ -105,7 +105,7 @@ tag that is not on that list is a tag nothing will honour.
 {{scene_catalogue}}
 
 ## DIRECTION RULES — unchanged from long-form
-This is a TALKING HOST show. **Untagged narration IS the host**, lip-synced to your words, in the scene you set with [SCENE]; a visual tag means "leave his face and hold this long enough to read it". Roughly ONE cutaway per idea, not per sentence. Every movement OPENS and CLOSES on Dennis talking. Nothing flashes by — when you tag a [CHART] or a [SHOW FILING], keep talking about it, because the renderer holds it for as long as your words about it last. A photograph, a clip or a filing lands inside one of the kit's drawn frames, never raw and full-frame.
+The evidence carries the explaining; Dennis sets up, jokes and lands. **Untagged narration is Dennis alone**, lip-synced to your words, in the scene you set with [SCENE]; keep him to about a third of the video (the bot warns above 35%). Every movement OPENS and CLOSES on Dennis talking. A [PLATE], [CHART] or [SHOW FILING] fills the frame and stays up until your next visual tag, your next [SCENE] or the end of its paragraph, so write the paragraph about it under its tag. `with=` on a [PLATE] or [CHART] puts Dennis beside it, talking. A photograph, a clip or a filing lands inside one of the kit's drawn frames, never raw and full-frame.
 
 ## RULES
 - LENGTH IS AN OUTPUT. An update is usually SHORTER than the original — six to twelve minutes is normal, because three of the four movements are narrow. Do not pad it back up to a full deep dive; if there is genuinely a full second video's worth of new material, that is a new video and not an update.

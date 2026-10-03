@@ -638,6 +638,18 @@ def unresolved_visual_warnings(visual_plan) -> list[str]:
     return out
 
 
+def _dennis_alone(script, settings) -> float:
+    """Item 32's share for the approval screen; -1 when it cannot be read."""
+    from pipeline.timeline import estimate_dennis_alone
+
+    try:
+        share = estimate_dennis_alone(script, settings)
+    except Exception:  # noqa: BLE001 — a report line never blocks approval
+        log.exception("could not estimate the Dennis-alone share")
+        return -1.0
+    return -1.0 if share is None else float(share)
+
+
 def build_long_report(
     script, parse_warnings, validation_warnings, validation_blocking,
     settings, ledger, tts_engine, visual_plan, filing_count,
@@ -679,6 +691,8 @@ def build_long_report(
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,
         kit_reach=script_reach(script, settings).line(),
+        dennis_alone=_dennis_alone(script, settings),
+        dennis_alone_max=float(getattr(settings, "long_dennis_alone_max", 0.35)),
         warnings=warnings,
         blocking=blocking,
         script_sha=script.content_sha(),

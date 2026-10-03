@@ -30,26 +30,29 @@ instead. Marks ride ON TOP, including over the host.
 Segment kinds:
   host        Dennis talking in a room — the default frame
   plate       the kit plate the writer named, with the words they wrote in its
-              slots; a two-shot beside the host unless a mark needs the frame
+              slots, filling the frame; beside the host only on `with=`
   chapter     a chapter's plate, the same way
   clip        stock footage, played inside a kit frames/ plate
   screengrab  an operator-dropped capture, framed the same way
   filing      the filing screenshot, framed, with design's source tag
   img         real operations/product imagery, full-frame and held still
-  chart       an auto-generated chart — a two-shot beside the host
+  chart       an auto-generated chart, filling the frame; beside him on `with=`
   meme        a freeze-frame from the owned library, full-frame
 
-A two-shot is composed as ONE still: the room, the evidence, and the host
-standing beside it. Chapter boundaries reserve a host beat on each side, so a
-chapter opens and closes on his face, and from the second chapter on a kit
-bumper names it.
+THE EVIDENCE FILLS THE FRAME (items 30 to 33). A plate or a chart is drawn
+edge to edge and held while he talks about it. A two-shot happens only where
+the writer put `with=` on the tag, and it is built like his solo beats: the
+room's loops play, he talks and blinks beside the evidence, and the desk goes
+back on in front of him. Chapter boundaries reserve a host beat on each side,
+so a chapter opens and closes on his face, and from the second chapter on a
+kit bumper names it.
 
 Kit artwork is addressed through the registry as an ASSET, not a path, so a
 tag's `= value` reaches the drawing's declared boxes and a one-shot shows its
-end state rather than freezing on frame 1. Captions are phrase by phrase in
-the kit's faces. Every visual lands on its anchor word (or the first moment
-after it that is free); there is no verdict stamp — the video ends on
-whatever deadpan line the script wrote.
+end state rather than freezing on frame 1. No captions are burned in: the
+long's are the .srt that goes up with it. Every visual lands on its anchor
+word (or the first moment after it that is free); there is no verdict stamp —
+the video ends on whatever deadpan line the script wrote.
 """
 
 from __future__ import annotations
@@ -118,6 +121,7 @@ from pipeline.segments import (
 from pipeline.timeline import (
     MIN_SEGMENT_S,
     build_long_timeline,
+    paragraph_starts,
     plan_long_segments,
     plan_writer_moves,
     plan_writer_sources,
@@ -515,7 +519,10 @@ def _provenance(script, settings, workspace: Path, duration: float,
 
         ticker = (getattr(script, "ticker", "") or "").strip()
         if ticker:
-            prices = get_price_history(ticker, settings)
+            from pipeline.prices import long_history_days
+
+            prices = get_price_history(ticker, settings,
+                                       days=long_history_days(settings))
 
     # `load_manifest` returns the WHOLE manifest — ticker, form, accession,
     # url and the shot list. Reading it as the shot list itself counted its
@@ -597,10 +604,11 @@ def _price_provenance(script, settings) -> dict:
     ticker = (getattr(script, "ticker", "") or "").strip()
     if not ticker:
         return {}
-    from pipeline.prices import get_price_history
+    from pipeline.prices import get_price_history, long_history_days
 
-    series = get_price_history(ticker, settings)
-    return {"source": series.source, "degraded": bool(series.degraded)}
+    series = get_price_history(ticker, settings, days=long_history_days(settings))
+    return {"source": series.source, "degraded": bool(series.degraded),
+            "days": len(series.closes)}
 
 
 def render_long(
@@ -686,6 +694,8 @@ def _render_long(
         min_readable_s=settings.long_min_readable_s,
         chapter_host_s=settings.long_chapter_host_s,
         fps=fps,
+        paragraphs=paragraph_starts(script.narration, tts.words),
+        max_readable_s=settings.long_max_readable_s,
     )
     for w in seg_warnings:
         log.warning("segment plan: %s", w)
@@ -1399,17 +1409,89 @@ def _render_long(
         return clips
 
     # ----------------------------------------------- the two-shot, on the room
-    # A two-shot is the ROOM, the evidence, and Dennis standing beside it. It
-    # used to be three finished designs stacked in one frame: a filler backdrop
-    # with its own giant ticker and grid, the evidence card on top of that, and
-    # a whole 16:9 host SLIDE over both, carrying its own headline and often its
-    # own illustration. Every edge showed and two unrelated headlines argued
-    # with each other and with the caption.
+    # A two-shot is the ROOM, the evidence, and Dennis standing beside it —
+    # and since items 30 to 33 it happens only where the writer put `with=`
+    # on the tag. By default the evidence fills the frame: shrunk into a
+    # column beside him it read as a mini player, and pasted together as one
+    # still it froze his face while he talked about it.
+    #
+    # The writer's two-shot is built like his solo beats (item 33): the room's
+    # loops play behind him, he talks and blinks, the desk goes back on in
+    # front of him, and the evidence plays over the set — moves, boil and all.
     #
     # One set. One piece of evidence. One cut-out standing in it.
 
-    # One answer per beat. `_evidence_box`, `_fit_evidence` and `_panel_plate`
-    # all ask, and `pick_shot` reads a `used` tally that a host beat in between
+    # One room per two-shot. The writer's [SCENE] in force when a figure can
+    # stand in it: he is "back where you left him", now with the evidence
+    # beside him. Otherwise the bot's room drawn for a panel.
+    two_shot_rooms: dict[int, object] = {}
+
+    def _two_shot_room(seg_i: int):
+        if seg_i not in two_shot_rooms:
+            from pipeline.scenes import stands_in
+
+            room = _scene_room(_scene_in_force(segments[seg_i].start))
+            if room is None or not stands_in(room):
+                room = _room_plate("panel", seed=f"{script.ticker}|{seg_i % 3}")
+            two_shot_rooms[seg_i] = _room_for_hand(room, seg_i)
+        return two_shot_rooms[seg_i]
+
+    def _presents_to(seg_i: int) -> tuple[object, str, tuple[str, ...]]:
+        """(shot, side, fits) when the writer's pose holds a hand out to one
+        side, else (None, "", ())."""
+        asked = str(segments[seg_i].payload.get("beside") or "")
+        spec = (getattr(reg, "host_poses", None) or {}).get(asked) or {}
+        side = str(spec.get("plateOn") or "").replace("camera-", "")
+        shot = host_shot(reg, asked) if side else None
+        if shot is None or shot.is_framing:
+            return None, "", ()
+        return shot, side, tuple(spec.get("fits") or ())
+
+    def _free_side(room, shot) -> tuple[tuple[int, int, int, int], str]:
+        """Where he stands in `room` (frame px) and the side left for the
+        evidence: whichever side of him has more room."""
+        placed = place_on_room(room, shot)
+        k = W / room.delivered[0]
+        box = (int(placed.x * k), int(placed.y * k),
+               max(int(placed.width * k), 1), max(int(placed.height * k), 1))
+        left_w = box[0] - px(120)
+        right_w = W - (box[0] + box[2]) - px(120)
+        return box, ("right" if right_w >= left_w else "left")
+
+    def _room_for_hand(room, seg_i: int):
+        """THE HAND POINTS AT THE EVIDENCE. `gesturing-at-plate` is drawn
+        reaching camera-right only, and the evidence goes on whichever side
+        of him the room leaves free, so in a room that stands him on the
+        right he presented the empty wall while the plate sat behind his
+        back. When the scene's room puts the evidence on the wrong side, the
+        two-shot moves to a room that puts it on his hand's side, one design
+        drew the pose for first."""
+        shot, side, fits = _presents_to(seg_i)
+        if shot is None or not stands_on(room, shot) or _free_side(room, shot)[1] == side:
+            return room
+        from pipeline.host import room_stem
+
+        hour = reg.hour_for(script.ticker, avoid=_avoid_recent)
+        seen: set[str] = set()
+        options = []
+        for role_name in ("panel", "talk"):
+            for key in reg.angles_for(role_name, aspect, hour):
+                if key in seen:
+                    continue
+                seen.add(key)
+                cand = reg.plate_at(key, hour)
+                if cand is not None and stands_on(cand, shot) \
+                        and _free_side(cand, shot)[1] == side:
+                    options.append(cand)
+        if not options:
+            log.warning("two-shot: no room puts the evidence on %s's %s; "
+                        "the bot picks his pose", shot.key, side)
+            return room
+        options.sort(key=lambda r: room_stem(r) not in fits)
+        return options[0]
+
+    # One answer per beat. `_evidence_box`, `_evidence_rect` and the chain all
+    # ask, and `pick_shot` reads a `used` tally that a host beat in between
     # can move — which would size the evidence column against one pose and
     # composite another.
     panel_host_memo: dict[int, object] = {}
@@ -1427,31 +1509,41 @@ def _render_long(
         return picked
 
     def _solve_panel_host(room, seg_i: int):
-        # THE TWO-SHOT IS A STILL, SO IT NEVER HOLDS A FRAMING. The evidence
-        # beside him is pasted into one picture, and him with it: a close-up
-        # held still for a beat is the closed mouth — a filled bar, which at
-        # close-up scale reads as a dash — on screen for the whole of it.
-        # design's crop review says never to cut close on a still (ANSWERS.md
-        # §4, finding 2). A full figure is a still that reads: his mouth is a
-        # few pixels at that size.
-        shot = pick_shot(reg, "panel", seg_i, used=host_used, figures_only=True)
-        if shot is None:
+        # A FULL FIGURE, NEVER THE CLOSE-UP. The close-up fills the frame and
+        # leaves nowhere for the evidence to go; a room that refuses a
+        # cut-out takes nobody, and then the evidence has the frame.
+        if room is None:
             return None
-        # A ROOM THAT REFUSES A CUT-OUT TAKES NOBODY IN A TWO-SHOT. The angle
-        # says nobody stands here; the only thing that could stand in for him
-        # is the close-up, and a still two-shot may not hold one. So the
-        # evidence has the frame.
-        if room is None or not stands_on(room, shot):
+        asked = str(segments[seg_i].payload.get("beside") or "")
+        named = host_shot(reg, asked) if asked and asked != "dennis" else None
+        if named is not None and (named.is_framing or not stands_on(room, named)):
+            log.warning("two-shot: %s cannot stand in %s — the bot picks his "
+                        "pose", asked, room.key)
+            named = None
+        shot = named or pick_shot(reg, "panel", seg_i, used=host_used,
+                                  figures_only=True)
+        if shot is None or not stands_on(room, shot):
             return None
         placed = place_on_room(room, shot)
-        k = W / room.delivered[0]
-        box = (int(placed.x * k), int(placed.y * k),
-               max(int(placed.width * k), 1), max(int(placed.height * k), 1))
         # Whichever side of him has more room. He is placed by the ROOM, so
         # which side that is depends on the angle rather than on a flag.
-        left_w = box[0] - px(120)
-        right_w = W - (box[0] + box[2]) - px(120)
-        side = "right" if right_w >= left_w else "left"
+        box, side = _free_side(room, shot)
+        if named is not None:
+            hand = _presents_to(seg_i)[1]
+            if not hand or hand == side:
+                return (shot, box, side)
+            # No room put the evidence where his hand points: a pose
+            # presenting the empty side of the frame is worse than the
+            # bot's own pick.
+            log.warning("two-shot: %s points %s and the evidence is on his "
+                        "%s in %s — the bot picks his pose", asked, hand,
+                        side, room.key)
+            shot = pick_shot(reg, "panel", seg_i, used=host_used,
+                             figures_only=True)
+            if shot is None or not stands_on(room, shot):
+                return None
+            placed = place_on_room(room, shot)
+            box, side = _free_side(room, shot)
         # THE WORDS MAY CAST HIM HERE TOO — above all the hand held out to
         # the plate, which is only drawn reaching camera-right and so is cast
         # only when the evidence landed on that side of him. The evidence
@@ -1467,20 +1559,14 @@ def _render_long(
             if (again.x, again.y, again.width, again.height) == (
                     placed.x, placed.y, placed.width, placed.height):
                 shot = cast_shot
-                # A cast pose keeps its `limit` across stills and talking
-                # beats alike: the shrug is once a video, wherever it lands.
-                host_used[shot.key] = host_used.get(shot.key, 0) + 1
         return (shot, box, side)
 
     def _evidence_box(room, seg_i: int, two_shot: bool) -> tuple[int, int, int, int]:
-        """(x, y, max width, max height) for the evidence, beside the host."""
-        if not two_shot:
-            ew, eh = int(W * 0.86), int(H * 0.86)
-            return int((W - ew) / 2), int((H - eh) / 2), ew, eh
-        picked = _panel_host(room, seg_i)
+        """(x, y, max width, max height) for the evidence: the whole frame,
+        or the side of the room he is not standing in."""
+        picked = _panel_host(room, seg_i) if two_shot else None
         if picked is None:
-            ew, eh = int(W * 0.86), int(H * 0.86)
-            return int((W - ew) / 2), int((H - eh) / 2), ew, eh
+            return 0, 0, W, H
         _shot, (hx, _hy, hw, _hh), side = picked
         if side == "right":
             right_w = W - (hx + hw) - px(120)
@@ -1489,57 +1575,23 @@ def _render_long(
         return (px(60), int(H * 0.10),
                 max(hx - px(120), px(400)), int(H * 0.80))
 
-    def _fit_evidence(w: int, h: int, seg_i: int, *,
-                      two_shot: bool) -> tuple[int, int]:
-        """The size an evidence image of (w, h) takes in its column."""
-        room = _room_plate("panel" if two_shot else "talk",
-                           seed=f"{script.ticker}|{seg_i % 3}")
-        _, _, max_w, max_h = _evidence_box(room, seg_i, two_shot)
-        ratio = min(max_w / max(w, 1), max_h / max(h, 1))
-        return max(int(w * ratio), 1), max(int(h * ratio), 1)
-
-    def _panel_plate(size: tuple[int, int], seg_i: int, dest: Path, *,
-                     two_shot: bool) -> tuple[Path, int, int]:
-        """The room (and the figure) with a HOLE the evidence goes in.
-
-        Returns (background, x, y) — the origin an evidence image or clip of
-        `size` should be composited at, so an animated beat overlays its alpha
-        strip on exactly the composition a still gets pasted into.
-        """
-        room = _room_plate("panel" if two_shot else "talk",
-                           seed=f"{script.ticker}|{seg_i % 3}")
-        base = (Image.open(room.path).convert("RGB").resize((W, H), Image.LANCZOS)
-                if room is not None
-                else Image.new("RGB", (W, H), role(settings, "ground")))
-        if room is not None:
-            plates_used.add(room.key)
+    def _evidence_rect(w: int, h: int, seg_i: int, *,
+                       two_shot: bool) -> tuple[int, int, int, int]:
+        """(x, y, w, h) an evidence image of (w, h) takes: fitted into its
+        box, centred in it."""
+        room = _two_shot_room(seg_i) if two_shot else None
         bx, by, max_w, max_h = _evidence_box(room, seg_i, two_shot)
-        ew, eh = size
-        ex = bx + max(int((max_w - ew) / 2), 0)
-        ey = by + max(int((max_h - eh) / 2), 0)
-        picked = _panel_host(room, seg_i) if two_shot else None
-        if picked is not None:
-            shot, (hx, hy, hw, hh), _side = picked
-            fig = Image.open(shot.pose.path).convert("RGBA").resize(
-                (max(hw, 1), max(hh, 1)), Image.LANCZOS)
-            base.paste(fig, (hx, hy), fig)
-            # The desk he stands behind goes back on in front of him.
-            front = _front_file(room) if room is not None else None
-            if front is not None:
-                layer = Image.open(front).convert("RGBA")
-                base.paste(layer, (0, 0), layer)
-            plates_used.add(shot.key)
-            panel_hosts[seg_i] = shot.key
-        base.save(dest)
-        return dest, ex, ey
+        ratio = min(max_w / max(w, 1), max_h / max(h, 1))
+        ew, eh = max(int(w * ratio), 1), max(int(h * ratio), 1)
+        return (bx + max(int((max_w - ew) / 2), 0),
+                by + max(int((max_h - eh) / 2), 0), ew, eh)
 
     # Where each beat's evidence actually landed in the frame. A plate in a
     # two-shot is not drawn at the full frame — it is shrunk into the room's
     # evidence column beside the host — so anything that has to line up with a
     # slot on it (an annotation solved onto a figure) needs this rect and not
-    # the frame's. Recorded rather than recomputed, because `_fit_evidence`
-    # and `_panel_plate` both depend on which room angle and which host shot
-    # the seed picked.
+    # the frame's. Recorded rather than recomputed, because the rect depends
+    # on which room angle and which host shot the beat was given.
     panel_rects: dict[int, tuple[int, int, int, int]] = {}
 
     # Which pose stood in each two-shot. Recorded because a panel role that
@@ -1548,16 +1600,22 @@ def _render_long(
     # shows is here.
     panel_hosts: dict[int, str] = {}
 
-    def _panel_frame(still: Path, seg_i: int, dest: Path, *,
-                     two_shot: bool = True) -> Path:
-        """The two-shot, as ONE composition: the room, the evidence, Dennis."""
+    def _ground_file() -> Path:
+        """The kit's ground at the frame's size: under evidence edge to edge."""
+        dest = rdir / f"ground_{W}x{H}.png"
+        if not dest.exists():
+            Image.new("RGB", (W, H), role(settings, "ground")).save(dest)
+        return dest
+
+    def _full_frame(still: Path, seg_i: int, dest: Path) -> Path:
+        """Evidence edge to edge, on the kit's ground where its shape is not
+        the frame's."""
         panel = Image.open(still).convert("RGBA")
-        ew, eh = _fit_evidence(panel.width, panel.height, seg_i,
-                               two_shot=two_shot)
-        panel = panel.resize((ew, eh), Image.LANCZOS)
-        bg, ex, ey = _panel_plate((ew, eh), seg_i, dest, two_shot=two_shot)
+        ex, ey, ew, eh = _evidence_rect(panel.width, panel.height, seg_i,
+                                        two_shot=False)
         panel_rects[seg_i] = (ex, ey, ew, eh)
-        base = Image.open(bg).convert("RGB")
+        base = Image.new("RGB", (W, H), role(settings, "ground"))
+        panel = panel.resize((ew, eh), Image.LANCZOS)
         base.paste(panel, (ex, ey), panel)
         base.save(dest)
         return dest
@@ -1642,6 +1700,68 @@ def _render_long(
             if loop is None:
                 return _still_input(still)
             return _add_input(["-stream_loop", "-1", "-i", str(loop)])
+
+        def _two_shot_chain(ev_kind: str, ev, size: tuple[int, int]) -> str | None:
+            """The writer's two-shot, built like one of his solo beats (33).
+
+            The room's loop, Dennis talking and blinking in it, the desk back
+            on in front of him, and the evidence over the set: its moves until
+            they land and then its boil, its boil, or the still. None when
+            nobody can stand in the room; the evidence then has the frame.
+            """
+            room = _two_shot_room(i)
+            picked = _panel_host(room, i)
+            if picked is None:
+                return None
+            shot, (hx, hy, hw, hh), _side = picked
+            motion: dict = {}
+            built = build_host_clip(
+                tts.words, seg.start, seg.end, rdir / f"host_{i}.mov",
+                reg=reg, settings=settings, fps=fps, display_h=hh,
+                role="panel", shot_index=i, used=host_used, report=motion,
+                pose=shot.key)
+            if built is None:
+                return None
+            ex, ey, ew, eh = _evidence_rect(size[0], size[1], i, two_shot=True)
+            panel_rects[i] = (ex, ey, ew, eh)
+            pose_built = str(motion.get("pose") or shot.key)
+            panel_hosts[i] = pose_built
+            plates_used.update((room.key, pose_built))
+            host_used[pose_built] = host_used.get(pose_built, 0) + 1
+            if motion:
+                host_motion.append({"segment": i, "two_shot": True, **motion})
+            bg_i = _room_input(room)
+            host_i = _add_input(["-i", str(built[0])])
+            front = _front_file(room)
+            front_i = _front_input(room, front) if front is not None else None
+            chain = _scaled_overlay_chain(bg_i, host_i, hx, hy, hw, hh, seg_len,
+                                          "[tsbase];", front_i=front_i)
+            at = f"{ex}:{ey}"
+            if ev_kind == "moves":
+                mv_i = _add_input(["-i", str(ev.moving)])
+                chain += f"[{mv_i}:v]setpts=PTS-STARTPTS,scale={ew}:{eh}[tsmv];"
+                if ev.landed is None:
+                    return chain + f"[tsbase][tsmv]overlay={at}:eof_action=repeat{tail}"
+                ld_i = _add_input(["-i", str(ev.landed)])
+                return (chain
+                        + f"[{ld_i}:v]loop=loop=-1:size=32767:start=0,"
+                          f"setpts=N/FRAME_RATE/TB,trim=0:{seg_len:.4f},"
+                          f"setpts=PTS-STARTPTS,scale={ew}:{eh}[tsld];"
+                        + f"[tsbase][tsld]overlay={at}:eof_action=repeat:"
+                          f"enable='gte(t,{ev.landed_at:.4f})'[tsmid];"
+                        + f"[tsmid][tsmv]overlay={at}:eof_action=pass{tail}")
+            if ev_kind == "boil":
+                fg_i = _add_input(["-i", str(ev)])
+                return (chain
+                        + f"[{fg_i}:v]loop=loop=-1:size=32767:start=0,"
+                          f"setpts=N/FRAME_RATE/TB,trim=0:{seg_len:.4f},"
+                          f"setpts=PTS-STARTPTS,scale={ew}:{eh}[tsev];"
+                        + f"[tsbase][tsev]overlay={at}:eof_action=repeat{tail}")
+            st_i = _still_input(ev)
+            return (chain
+                    + f"[{st_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+                      f"format=rgba,scale={ew}:{eh}[tsev];"
+                    + f"[tsbase][tsev]overlay={at}:eof_action=repeat{tail}")
 
         if seg.kind == "host":
             # Dennis is the default base frame: the room, then the talking rig
@@ -1732,41 +1852,48 @@ def _render_long(
             two_shot = (seg.payload.get("layout") == "two-shot"
                         and not _annotated(seg))
             moving = _plate_moves(seg, i, key, seg_len) if size is not None else None
-            if moving is not None:
-                # The same composition as the plate without its moves: the
-                # moves are drawn at the frame's size and scaled into the
-                # evidence box exactly as the plate itself is.
-                ew, eh = _fit_evidence(W, H, i, two_shot=two_shot)
-                bg, ex, ey = _panel_plate((ew, eh), i, rdir / f"bg_{i}.png",
-                                          two_shot=two_shot)
+            chain = None
+            if two_shot and size is not None:
+                # Dennis beside it, talking, in the room (`with=`): the moves
+                # are drawn at the frame's size and scaled into the evidence
+                # box exactly as the plate itself is.
+                chain = (_two_shot_chain("moves", moving, (W, H)) if moving
+                         else _two_shot_chain("boil", art, size) if is_video
+                         else _two_shot_chain("still", art, size))
+            if chain is not None:
+                pass
+            elif moving is not None:
+                # Edge to edge: the moves over the kit's ground, which the
+                # plate covers whole.
+                ex, ey, ew, eh = _evidence_rect(W, H, i, two_shot=False)
                 panel_rects[i] = (ex, ey, ew, eh)
-                bg_i = _still_input(bg)
+                bg_i = _still_input(_ground_file())
                 mv_i = _add_input(["-i", str(moving.moving)])
                 ld_i = (_add_input(["-i", str(moving.landed)])
                         if moving.landed is not None else None)
                 chain = _moving_plate_chain(bg_i, mv_i, ld_i, ex, ey, ew, eh,
                                             seg_len, tail, moving.landed_at)
+            elif is_video:
+                # A boiling plate is an alpha clip, played edge to edge.
+                ex, ey, ew, eh = _evidence_rect(size[0], size[1], i,
+                                                two_shot=False)
+                panel_rects[i] = (ex, ey, ew, eh)
+                bg_i = _still_input(_ground_file())
+                fg_i = _add_input(["-i", str(art)])
+                chain = _scaled_overlay_chain(bg_i, fg_i, ex, ey, ew, eh,
+                                              seg_len, tail, loop=True)
+            else:
+                still = (_full_frame(art, i, rdir / f"panel_{i}.png")
+                         if size is not None else art)
+                still_i = _still_input(still)
+                chain = _still_chain(still_i, seg, seg_len, i, tail)
+            if moving is not None:
                 seg_animation = {"asset": key, "moves": True,
                                  "landed_at": round(moving.landed_at, 3),
                                  "boils": moving.landed is not None}
             elif is_video:
-                # A boiling plate is an alpha clip, so the background it plays
-                # on is the same composition a still gets pasted into.
-                ew, eh = _fit_evidence(size[0], size[1], i, two_shot=two_shot)
-                bg, ex, ey = _panel_plate((ew, eh), i, rdir / f"bg_{i}.png",
-                                          two_shot=two_shot)
-                panel_rects[i] = (ex, ey, ew, eh)
-                bg_i = _still_input(bg)
-                fg_i = _add_input(["-i", str(art)])
-                chain = _scaled_overlay_chain(bg_i, fg_i, ex, ey, ew, eh,
-                                              seg_len, tail, loop=True)
                 seg_animation = {"asset": key, "frames": len(plan),
                                  "distinct": len(set(plan))}
-            else:
-                still = _panel_frame(art, i, rdir / f"panel_{i}.png",
-                                     two_shot=two_shot)
-                still_i = _still_input(still)
-                chain = _still_chain(still_i, seg, seg_len, i, tail)
         elif seg.kind in ("img", "chart", "meme"):
             if seg.kind == "img":
                 visual = content.resolve_image(
@@ -1790,18 +1917,21 @@ def _render_long(
                                      line=role(settings, "structure")).save(dest)
                     meme_frame_cache[visual.key] = dest
                 still = meme_frame_cache[visual.key]
-            # A chart is a PLATE with a path drawn in it, so it plays as a
-            # two-shot: Dennis stays in frame beside it and the cut never
-            # leaves the host. Photographs and memes are foreign media and go
+            # A chart is a PLATE with a path drawn in it: it fills the frame,
+            # or stands beside Dennis talking where the writer asked
+            # (`with=`). Photographs and memes are foreign media and go
             # inside a frames/ plate instead.
+            chain = None
             if seg.kind in ("img", "meme"):
                 still = _framed_media(
                     seg, i, still,
                     CueKind.IMG if seg.kind == "img" else CueKind.MEME)
-            elif seg.payload.get("layout") == "two-shot":
-                still = _panel_frame(still, i, rdir / f"panel_{i}.png")
-            still_i = _still_input(still)
-            chain = _still_chain(still_i, seg, seg_len, i, tail)
+            elif seg.payload.get("layout") == "two-shot" and not _annotated(seg):
+                with Image.open(still) as probe:
+                    chain = _two_shot_chain("still", still, probe.size)
+            if chain is None:
+                still_i = _still_input(still)
+                chain = _still_chain(still_i, seg, seg_len, i, tail)
         else:  # an unrecognised kind still gets the room
             visual = None
             variant = seg.payload.get("variant", 0)
@@ -1832,6 +1962,13 @@ def _render_long(
             if seg.payload["layout"] == "two-shot" and _annotated(seg):
                 meta["layout"] = "full-frame (annotated)"
                 meta["layout_asked"] = "two-shot"
+            elif seg.payload["layout"] == "two-shot" and i not in panel_hosts:
+                # Asked for, and nobody could stand in the room: the evidence
+                # had the frame.
+                meta["layout"] = "cutaway-full"
+                meta["layout_asked"] = "two-shot"
+            if i in panel_hosts:
+                meta["beside"] = panel_hosts[i]
         if seg_animation:
             meta["animation"] = seg_animation
         meta["filter"] = chain

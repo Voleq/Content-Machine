@@ -111,8 +111,10 @@ def test_a_source_goes_under_its_beat_and_one_a_beat(settings):
 
 def test_a_source_spoken_after_its_plate_has_gone_is_dropped(reg):
     big = "figures/big-number-l2-16x9"
+    # The writer moved on at 10 s (the clip), so the plate was gone by 25.
     cues = [_cue(2.0, CueKind.PLATE, 0, value=big, values={"value": "$1bn"}),
-            _cue(25.0, CueKind.SOURCE, 1, value="FY24 10-K", plate=big,
+            _cue(10.0, CueKind.CLIP, 1, value="x"),
+            _cue(25.0, CueKind.SOURCE, 2, value="FY24 10-K", plate=big,
                  plate_order=0)]
     segments, _ = plan_long_segments(cues, 30.0)
     sources, warnings = plan_writer_sources(cues, segments)

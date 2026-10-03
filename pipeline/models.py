@@ -273,6 +273,10 @@ class TagEvent(BaseModel):
     # slot names, `""` for a single unnamed value, `#N` for a positional one;
     # bound to the asset's real slots at render time.
     values: dict[str, str] = Field(default_factory=dict)
+    # DENNIS BESIDE IT: `[PLATE: … | with=gesturing-at-plate]`. A plate or a chart
+    # fills the frame unless the writer asks for him beside it; this is the
+    # pose they named, or `dennis` for the bot's pick. "" = full frame.
+    beside: str = ""
 
 
 # --------------------------------------------------------------------------
@@ -573,10 +577,13 @@ class ShortScript(BaseModel):
         # approval is recorded against and what every render seed is drawn
         # from, so a new empty field changing it would un-approve every script
         # on disk and re-roll the plates of every video re-rendered from one.
-        exclude = {name for name in ("beat_marks", "sources")
-                   if not getattr(self, name)} or None
+        exclude: dict = {name: True for name in ("beat_marks", "sources")
+                         if not getattr(self, name)}
+        # The tag's `beside` (a long-lane field) is empty on every short.
+        if not any(e.beside for e in self.inline_events):
+            exclude["inline_events"] = {"__all__": {"beside"}}
         return hashlib.sha256(
-            self.model_dump_json(exclude=exclude).encode("utf-8")
+            self.model_dump_json(exclude=exclude or None).encode("utf-8")
         ).hexdigest()[:16]
 
 
@@ -698,7 +705,14 @@ class LongScript(BaseModel):
         return seen
 
     def content_sha(self) -> str:
-        return hashlib.sha256(self.model_dump_json().encode("utf-8")).hexdigest()[:16]
+        # A SCRIPT THAT ASKS FOR NO TWO-SHOT KEEPS THE HASH IT HAD: the sha is
+        # what an approval is recorded against and what the render's seeds
+        # are drawn from, so the new empty `beside` must not change it.
+        exclude = (None if any(e.beside for e in self.events)
+                   else {"events": {"__all__": {"beside"}}})
+        return hashlib.sha256(
+            self.model_dump_json(exclude=exclude).encode("utf-8")
+        ).hexdigest()[:16]
 
 
 # --------------------------------------------------------------------------
@@ -1375,6 +1389,11 @@ class CostReport(BaseModel):
     # approval screen is the last moment a thin script can be sent back, so
     # this is the moment to say it.
     kit_reach: str = ""
+    # LONG: the share of the video Dennis is alone in frame, estimated off
+    # the planner before a word is spoken (item 32), against the operator's
+    # ceiling. -1 = not estimated.
+    dennis_alone: float = -1.0
+    dennis_alone_max: float = 0.35
     warnings: list[str] = Field(default_factory=list)
     blocking: list[str] = Field(default_factory=list)
     script_sha: str = ""
@@ -1453,6 +1472,10 @@ class CostReport(BaseModel):
                          f"Memes: {self.meme_count}/{self.meme_cap}")
         if self.kit_reach:
             lines.append(self.kit_reach)
+        if self.fmt == "long" and self.dennis_alone >= 0:
+            mark = "⚠️ " if self.dennis_alone > self.dennis_alone_max else ""
+            lines.append(f"{mark}Dennis alone: ~{self.dennis_alone:.0%} of the "
+                         f"video ({self.dennis_alone_max:.0%} at most)")
         lines.append(
             f"Est. render: ~{self.est_render_minutes:.0f} min   "
             f"MTD spend: ${self.mtd_spend_usd:.2f} / ${self.monthly_cap_usd:.2f} cap"
