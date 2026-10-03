@@ -494,3 +494,54 @@ def test_a_filled_series_comes_back_in_order():
     series = declared_series(_P(), {"value-1": "10", "value-2": "20",
                                     "value-3": "30"}, "path")
     assert series == [10.0, 20.0, 30.0]
+
+
+# ------------------------------------------------- the long's five years (9)
+
+
+def test_the_long_reads_five_years_and_the_short_its_months(settings, tmp_path):
+    """Item 9: a deep dive argues over years; the short's story is this week.
+    Each length is fetched for, and cached as, itself."""
+    from pipeline.prices import get_price_history, long_history_days
+
+    s = settings.model_copy(update={"cache_dir": tmp_path / "c"})
+    asked: list[int] = []
+
+    class Feed:
+        def history(self, ticker, days):
+            from pipeline.prices import synthetic_series
+            asked.append(days)
+            return synthetic_series(ticker, days)
+
+    assert long_history_days(s) == 1826
+    get_price_history("EXMPL", s, source=Feed())
+    get_price_history("EXMPL", s, source=Feed(), days=long_history_days(s))
+    assert asked == [s.price_history_days, 1826]
+    assert sorted(p.name for p in (tmp_path / "c" / "prices").iterdir()) == [
+        "EXMPL_120.json", "EXMPL_1826.json"]
+
+
+def test_the_mock_long_chart_has_five_years_ending_on_the_short_s_closes(settings):
+    from pipeline.prices import MockPriceSource
+
+    src = MockPriceSource(settings)
+    short, long_ = src.history("EXMPL", 120), src.history("EXMPL", 1826)
+    assert len(long_.closes) > 1200 and len(short.closes) < 120
+    assert long_.closes[-len(short.closes):] == short.closes
+    assert long_.dates[-1] == short.dates[-1]
+
+
+def test_a_chart_over_years_heads_its_periods_with_month_and_year():
+    from pipeline.chart import month_year, price_labels
+    from pipeline.prices import PriceSeries
+
+    s = PriceSeries(ticker="EXMPL",
+                    dates=["2021-09-10", "2023-01-02", "2024-05-01", "2026-09-10"],
+                    closes=[21.8, 30.0, 38.6, 15.4], source="fixture")
+    got = price_labels(s, head=month_year)
+    assert [got[f"head-{i}"] for i in range(1, 5)] == [
+        "Sep '21", "Jan '23", "May '24", "Sep '26"]
+    assert (got["mark-high"], got["mark-low"], got["mark-last"]) == (
+        "38.60", "15.40", "15.40")
+    # the short's months keep their day heads
+    assert price_labels(s)["head-4"] == "09-10"

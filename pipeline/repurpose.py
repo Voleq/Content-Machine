@@ -3,8 +3,11 @@
 Picks the highest-density ~55–60s window of a finished LONG (density =
 weighted cue count from the render manifest), snaps the cut to word
 boundaries using the cached TTS timestamps, and produces a 9:16
-center-crop with ONE encode. No TTS, no fetches, no new paid anything —
-LONG captions are authored narrow enough to survive the crop.
+center-crop with ONE encode. No TTS, no fetches, no new paid anything.
+
+The LONG burns no captions (its `.srt` goes up with it), and a vertical clip
+is watched with the sound off, so each cut burns its own: the short's phrase
+captions, from the long's word timings on the clip's own clock.
 """
 
 from __future__ import annotations
@@ -18,6 +21,7 @@ from config import Settings
 from pipeline.models import WordTimestamp
 from pipeline.render_common import (encode_profile, ffprobe_duration,
                                     run_ffmpeg)
+from pipeline.rasters import build_phrase_ass
 
 log = logging.getLogger(__name__)
 
@@ -174,13 +178,20 @@ def repurpose_clips_from_long(
     """
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     duration = float(manifest["duration"])
+    # The voice cache may have been cleared since the render; the render
+    # wrote its own word timings beside the video, and those are the same
+    # clock. Without either the clips cut on the manifest's beats and carry
+    # no captions, which the clip's record says.
+    if not words:
+        words = saved_words(long_mp4.parent)
     windows = pick_best_windows(manifest.get("cues", []), duration, n=n,
                                 words=words)
     out_dir = out_dir or long_mp4.parent
     results: list[tuple[Path, dict]] = []
     for i, (start, end) in enumerate(windows, 1):
         dest = out_dir / f"short_repurposed_{i}.mp4"
-        path, info = _cut_window(long_mp4, start, end, dest, settings)
+        path, info = _cut_window(long_mp4, start, end, dest, settings,
+                                 words=words)
         info["rank"] = i
         info["of"] = len(windows)
         path.with_suffix(".repurpose.json").write_text(json.dumps(info, indent=2), encoding="utf-8")
@@ -189,11 +200,75 @@ def repurpose_clips_from_long(
     return results
 
 
+def saved_words(ws_path: Path) -> list[WordTimestamp] | None:
+    """The long's word timings as the render saved them, or None."""
+    from pipeline.retention_lines import load_words
+
+    out: list[WordTimestamp] = []
+    for r in load_words(ws_path, "long"):
+        try:
+            start = float(r["start"])
+            out.append(WordTimestamp(
+                word=str(r.get("word", "")), start=start,
+                end=max(float(r.get("end", start)), start),
+                char_start=int(r.get("char_start", 0) or 0),
+                char_end=int(r.get("char_end", 0) or 0)))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return out or None
+
+
+def clip_words(words: Sequence[WordTimestamp] | None, start: float,
+               end: float) -> list[WordTimestamp]:
+    """The words said inside [start, end), on the clip's own clock."""
+    out: list[WordTimestamp] = []
+    for w in words or ():
+        if start - 1e-6 <= w.start < end:
+            out.append(w.model_copy(update={
+                "start": max(w.start - start, 0.0),
+                "end": max(min(w.end, end) - start, 0.0)}))
+    return out
+
+
+def _caption_file(words: list[WordTimestamp], length: float, out_path: Path,
+                  settings: Settings) -> Path | None:
+    """The short's phrase captions for one clip, or None with nothing said.
+
+    The short's own sizes, read off the short's frame: a clip cut from the
+    long goes out in the same feed as a short and reads the same way.
+    """
+    if not words:
+        return None
+    from pipeline.compose import CAPTION_SIDE_FW, CAPTION_TYPE_FH
+
+    W, H = settings.short_resolution
+    ass = out_path.with_suffix(".ass")
+    ass.write_text(build_phrase_ass(
+        words, settings=settings, play_res=(W, H),
+        font_size=int(H * CAPTION_TYPE_FH), margin_v=int(H * 0.13),
+        margin_h=int(W * CAPTION_SIDE_FW), max_words=4, min_words=2,
+        max_chars=24, key_words=True, duration=length), encoding="utf-8")
+    return ass
+
+
+def _ass_filter(ass: Path, settings: Settings) -> str:
+    """libass over the picture, with the kit's fonts — escaped the way
+    libavfilter asks (`render_short.final_encode`)."""
+    spec = str(ass).replace("\\", "/").replace(":", "\\:")
+    fonts = str(settings.fonts_dir).replace("\\", "/").replace(":", "\\:")
+    return f"ass='{spec}':fontsdir='{fonts}'"
+
+
 def _cut_window(long_mp4: Path, start: float, end: float, out_path: Path,
-                settings: Settings) -> tuple[Path, dict]:
-    """One 9:16 cut. Shared by the single- and multi-clip paths."""
+                settings: Settings, *,
+                words: Sequence[WordTimestamp] | None = None
+                ) -> tuple[Path, dict]:
+    """One 9:16 cut, its captions burned. Shared by the single- and
+    multi-clip paths."""
     length = end - start
     W, H = settings.short_resolution
+    said = clip_words(words, start, end)
+    ass = _caption_file(said, length, out_path, settings)
     # ONE ENCODE, THROUGH THE PROJECT'S PROFILE (I1).
     #
     # A correction to the diagnosis first: this cannot stream-copy. The whole
@@ -212,7 +287,8 @@ def _cut_window(long_mp4: Path, start: float, end: float, out_path: Path,
     run_ffmpeg([
         "-ss", f"{start:.3f}", "-t", f"{length:.3f}", "-i", str(long_mp4),
         "-vf",
-        f"crop=trunc(ih*{W}/{H}/2)*2:ih,scale={W}:{H},setsar=1",
+        f"crop=trunc(ih*{W}/{H}/2)*2:ih,scale={W}:{H}:flags=lanczos,setsar=1"
+        + (f",{_ass_filter(ass, settings)}" if ass is not None else ""),
         "-af", f"afade=t=in:st=0:d=0.25,afade=t=out:st={max(length - 0.4, 0):.3f}:d=0.4",
         *profile.video_args(),
         "-c:a", "aac", "-b:a", settings.audio_bitrate,
@@ -223,5 +299,6 @@ def _cut_window(long_mp4: Path, start: float, end: float, out_path: Path,
         "source": str(long_mp4),
         "window": [start, end],
         "duration": ffprobe_duration(out_path),
+        "captions": len(said) if ass is not None else 0,
         "note": "repurposed from LONG — zero new TTS/fetch spend",
     }

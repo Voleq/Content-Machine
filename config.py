@@ -459,6 +459,10 @@ class Settings(BaseSettings):
     # Price history feeds the branded chart (rendered by the pipeline, never a
     # screenshot). Same Yahoo feed the screener uses; cached, data-only.
     price_history_days: int = 120
+    # THE LONG'S PRICE CHART IS FIVE YEARS (item 9). A deep dive argues about
+    # what a business did over years, and four months of closes is the short's
+    # story about this week. The short keeps `price_history_days`.
+    long_price_history_days: int = 1826
     prices_cache_ttl_s: int = 3600
 
     # ------------------------------------------------------------------ video
@@ -484,6 +488,15 @@ class Settings(BaseSettings):
     short_max_hold_s: float = 8.0
     # host on each side of a chapter boundary, so chapters bookend on his face
     long_chapter_host_s: float = 2.5
+    # A plate, chart or filing stays up while he talks about it (item 31): to
+    # the writer's next visual, [SCENE], paragraph or chapter. This is the
+    # longest it holds when nothing ends it sooner.
+    long_max_readable_s: float = 30.0
+    # THE EVIDENCE CARRIES THE EXPLAINING (item 32). Dennis alone in frame
+    # sets up, jokes and lands each chapter; above this share of the video
+    # the approval screen and the storyboard say so. 35% is the operator's
+    # number (29 Sep 2026). Reported, never acted on: where is the writer's.
+    long_dennis_alone_max: float = 0.35
 
     # encode profiles (§7.3) — libx264 assumed on a cheap VPS; hardware
     # encoders are auto-detected at startup and used when present.

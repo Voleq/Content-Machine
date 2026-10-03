@@ -517,7 +517,12 @@ def render_series(reg: Registry, plate: Plate, values: list[float | None],
                     "range, and the gridlines behind it mean nothing", plate.key)
     data: dict = {"series": [None if v is None else float(v) for v in values]}
     if domain is not None:
+        # THE LABELS ARE THE SCALE, ZERO OR NOT. series.extent pulls the
+        # bottom to zero unless told otherwise, so an axis labelled 400M-496M
+        # drew its line on 0-496M: every dot sat far above the figure printed
+        # over it.
         data["min"], data["max"] = domain
+        data["zero"] = False
     ink = _ink(reg, plate)
     if not subject:
         # A peer's, consensus', last year's series: the other party's ink.
@@ -557,6 +562,10 @@ def render_price_plate(reg: Registry, series, out: Path, settings: Settings, *,
         raise PlateMissing("charts/line-dense is not in the registry")
     plate = reg.require(key)
     values = dict(slot_values or {})
+    # `mark-last` is the whole right-hand column, "placed by code at the path
+    # end". Left to render_still it is set in the column's middle, where it
+    # reads as a gridline label for a price the line is nowhere near.
+    last = values.pop("mark-last", "")
     img = render_still(plate, values, settings, reg)
     area = plot_area(plate)
     closes = [float(c) for c in series.closes]
@@ -569,11 +578,101 @@ def render_price_plate(reg: Registry, series, out: Path, settings: Settings, *,
         # The subject's own series is `structure`. A price line is not a
         # direction — the move is the direction, and it is stated in type.
         _polyline(ImageDraw.Draw(img), px, reg.colour("structure"), 6)
+        if last:
+            _mark_at_end(img, plate, last, px, settings, reg)
+    elif last and plate.slot("mark-last") is not None:
+        from pipeline.plate_frames import fill_slot
+
+        fill_slot(img, plate, plate.slot("mark-last"), last, settings, reg)
 
     img.convert("RGBA").save(out)
     box = ((area.x, area.y, area.x + area.w, area.y + area.h) if area
            else (0, 0, img.width, img.height))
     return out, {"size": img.size, "plot_box": box, "plate": plate.key}
+
+
+def _mark_at_end(img, plate: Plate, text: str, pts: list[tuple[float, float]],
+                 settings: Settings, reg: Registry) -> None:
+    """Set `mark-last` beside where the line ends.
+
+    At the clear spot nearest the end (`pts` is the path in delivered
+    pixels), so the figure never sits on the line's last wiggles. One line
+    tall, inside its column, and kept off the high and low marks that share
+    the column's right edge.
+    """
+    from dataclasses import replace
+
+    from pipeline.plate_frames import fill_slot
+
+    slot = plate.slot("mark-last")
+    if slot is None:
+        return
+    scale = max(float(plate.export_scale or 1), 1.0)
+    line_h = min(slot.h, 56)
+    top, bottom = slot.y, slot.y + slot.h - line_h
+    for other in ("mark-high", "mark-low"):
+        o = plate.slot(other)
+        if o is None:
+            continue
+        if o.y + o.h / 2 < slot.y + slot.h / 2:
+            top = max(top, o.y + o.h + 4)
+        else:
+            bottom = min(bottom, o.y - line_h - 4)
+    # The label is right-aligned on the column's edge; a price is at most
+    # seven characters, which the column's type sets in under 200 units. It
+    # goes at the clear spot nearest the line's end: none of the path under
+    # the label runs through it.
+    near = [y / scale for x, y in pts if x / scale >= slot.x + slot.w - 200]
+    end = pts[-1][1] / scale
+
+    def clear(y0: float) -> bool:
+        return not any(y0 - 8 <= y <= y0 + line_h + 8 for y in near)
+
+    spots = sorted(range(int(top), int(max(bottom, top)) + 1, 4),
+                   key=lambda y0: abs(y0 + line_h / 2 - end))
+    y = next((y0 for y0 in spots if clear(y0)),
+             int(round(max(min(near or [end]) - line_h - 8, top))))
+    fill_slot(img, plate, replace(slot, y=y, h=line_h), text, settings, reg)
+
+
+def month_year(date: str) -> str:
+    """`2021-10-04` -> `Oct '21`: a period head on a chart that spans years."""
+    import calendar
+
+    try:
+        y, m = int(str(date)[:4]), int(str(date)[5:7])
+        return f"{calendar.month_abbr[m]} '{y % 100:02d}"
+    except (ValueError, IndexError):
+        return str(date)[:7]
+
+
+def month_day(date: str) -> str:
+    """`2026-09-10` -> `09-10`: a period head on a chart of a few months."""
+    return str(date)[-5:]
+
+
+def price_labels(series, *, head=month_day) -> dict[str, str]:
+    """The period heads and the three marks `line-dense` declares.
+
+    Read off the series the caller supplied — the renderer never computes a
+    figure, so these are the dates and closes it was handed, formatted. Four
+    heads, evenly spaced across the series.
+    """
+    closes = list(getattr(series, "closes", []) or [])
+    dates = list(getattr(series, "dates", []) or [])
+    if not closes:
+        return {}
+    lo, hi = min(closes), max(closes)
+    out: dict[str, str] = {
+        "mark-high": f"{hi:,.2f}"[:7],
+        "mark-low": f"{lo:,.2f}"[:7],
+        "mark-last": f"{closes[-1]:,.2f}"[:7],
+    }
+    for i in range(4):
+        if dates:
+            j = min(int(i * (len(dates) - 1) / 3), len(dates) - 1)
+            out[f"head-{i + 1}"] = head(dates[j])
+    return out
 
 
 class PlateMissing(RuntimeError):

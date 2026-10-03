@@ -307,8 +307,10 @@ def test_a_move_on_a_deferred_plate_plays_when_the_plate_arrives(reg):
 
 def test_a_move_spoken_after_its_plate_has_gone_is_dropped(reg):
     big = "charts/earnings-vs-cash-16x9"
+    # The writer moved on at 10 s (the clip), so the plate was gone by 20.
     cues = [_cue(2.0, CueKind.PLATE, 0, value=big, values={"gap": "$1bn"}),
-            _cue(20.0, CueKind.MOVE, 1, value="pen-circle", plate=big,
+            _cue(10.0, CueKind.CLIP, 1, value="x"),
+            _cue(20.0, CueKind.MOVE, 2, value="pen-circle", plate=big,
                  plate_order=0)]
     segments, _ = plan_long_segments(cues, 30.0)
     moves, warnings = plan_writer_moves(cues, segments, reg)

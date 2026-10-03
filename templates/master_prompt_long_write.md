@@ -191,6 +191,12 @@ number.
   figure belongs to.
 * A row whose length does not match the header is REJECTED, as is an unknown
   plate name, an undeclared slot, and a plate this chapter's type may not use.
+* **A plate fills the frame.** Dennis stands beside it only where you write
+  `with=` on the tag: `| with=gesturing-at-plate` names his pose (a standing
+  one, never the close-up), `| with=dennis` leaves the pose to the bot. He is
+  in the room of your last [SCENE], talking beside the plate. Use it where his
+  reaction to the figure is the point, a few times a video; the figure is
+  bigger and easier to read without him.
 
 #### `marker-N` — the one slot that takes NUMBERS, not words
 
@@ -275,7 +281,8 @@ draws and where the drawing reads it from.
                         Both take an optional hold: [CLIP: lebron three pointer | hold=2.5] · [MEME: bagholder | hold=2.0]
                         Seconds on screen, 0.8–5.0. Write one when you know whether this is a glance or a beat to sit
                         in; leave it off and the format's default applies.
-[CHART: metric]         a data path drawn into a charts/ plate; metric from the chartable list
+[CHART: metric]         a data path drawn into a charts/ plate; metric from the chartable list. `price` is
+                        the last five years. Fills the frame; `[CHART: price | with=dennis]` puts him beside it.
 [SHOW FILING: file.png] a filing screenshot, framed. REACH FOR THIS WHENEVER YOU QUOTE A FILING — if the line is "it's in the risk factors, and it names a person", show the risk factor.
 [SCREENGRAB: slug]      an operator-supplied real screen capture (broker app, P&L). Blocks until the file exists.
 [SOUND: key]            key ∈ windows_error · cash_register · record_scratch · sad_trombone · camera_shutter · vine_boom · coffee_slurp · keyboard_clack · paper_rustle · buzzer · ding
@@ -367,12 +374,13 @@ How to use them:
 - Match the pose to the line. A mug is a man settling in, a filing held up is
   evidence, counting on his fingers is a list, a shrug is the "but".
 
-## DIRECTION RULES — DENNIS IS ON SCREEN; EVIDENCE IS THE CUTAWAY
-This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidence, and comes back. **Untagged narration IS the host**, lip-synced to your words, **in the scene you set with [SCENE]**. You are not filling dead air; you are directing him, and choosing the few moments worth leaving his face for.
+## DIRECTION RULES — THE EVIDENCE CARRIES THE EXPLAINING; DENNIS SETS UP AND LANDS
+Dennis is the host and the voice, but the picture does the explaining. When a sentence is about a figure, a filing or a chart, that thing is on screen, edge to edge. **Untagged narration is Dennis alone**, lip-synced to your words, **in the scene you set with [SCENE]**: he sets each chapter up, makes the joke, and lands the line the chapter rests on. Before render the bot tells the operator how much of the video is Dennis alone and warns above 35%: keep him to about a third.
 
 - **Every chapter OPENS and CLOSES on Dennis talking.** Start each chapter with untagged narration (he sets it up), and end it untagged (he lands it) before the next chapter's opener. Never begin or end a chapter on a cutaway.
-- **DELIBERATE PACING — do NOT tag every sentence.** A visual tag means "leave the host and hold this on screen long enough to read it." Roughly ONE cutaway per idea, not per sentence: 2–5 sentences of host, then the evidence, then back. A chart, a table or a diagram needs five to eight seconds of narration over it — write that narration. If a tag has one clause behind it, you have made a flash card, not a cut.
-- **Nothing flashes by.** Data has to stay up long enough for a viewer to actually read it. When you tag a [PLATE], [CHART] or [SHOW FILING], keep talking about it — the renderer holds the visual for as long as your words about it last.
+- **The evidence stays up while you talk about it.** A [PLATE], [CHART] or [SHOW FILING] holds from its word until your next visual tag, your next [SCENE] or the end of its paragraph, whichever comes first (at least five seconds, at most about thirty). So write the paragraph about the figure under its tag, and start a new paragraph, a new [SCENE] or the next tag when you move on. A tag with one clause behind it is a flash card; a plate under a whole paragraph is the point.
+- **Walk the viewer through it with moves.** A long hold reads best when something on the plate moves as you reach it: [MOVE: highlight] on the row you are reading, [MOVE: count-up] on the figure you land, a [SOURCE] once it is up.
+- **Dennis beside the evidence is a choice, not the default.** `with=` on a [PLATE] or [CHART] puts him beside it, talking (see [PLATE] above). Reach for it where his reaction to the figure is the point.
 - Alternate the KIND of evidence across a chapter (real photo → chart → filing → structure plate → table), and never reuse the same meme.
 - [SCRIBBLE] rides OVER whatever is on screen — including over the host. It punctuates a flat aside; it is never the reason to cut.
 - Use ONLY names from the catalogues above. Every visual tag is validated before render. Irony lands on the exact word: "a [CLIP: clown] visionary CEO".

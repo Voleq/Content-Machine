@@ -188,6 +188,40 @@ def resolve_scene(reg, payload: str) -> SceneFill:
     return fill
 
 
+# Words a writer may put in `with=` for "him beside it, you pick the pose".
+BESIDE_ANY = ("dennis", "him", "host", "yes")
+
+
+def resolve_beside(reg, value: str, *, tag: str = "") -> tuple[str, list[str]]:
+    """`with=` on a [PLATE] or [CHART]: Dennis standing beside the evidence.
+
+    Returns (what `TagEvent.beside` holds, warnings): the pose's key, or
+    `dennis` when the bot picks it. A close-up cannot stand beside anything
+    and a pose the kit does not draw is not a pose, so both fall back to the
+    bot's pick and say so; the two-shot itself still happens.
+    """
+    raw = (value or "").strip()
+    if not raw:
+        return "", []
+    where = f"[{tag}] with={raw}" if tag else f"with={raw}"
+    if _slug(raw) in BESIDE_ANY:
+        return "dennis", []
+    key = pose_key(raw)
+    poses = scene_poses(reg)
+    if key not in poses:
+        standing = [k.removeprefix("host/") for k, p in poses.items()
+                    if not is_framing(p)]
+        return "dennis", [
+            f"{where} is not a pose the kit draws — he stands beside it in a "
+            f"pose the bot picks. The standing poses are: "
+            + ", ".join(standing)]
+    if is_framing(poses[key]):
+        return "dennis", [
+            f"{where} is the close-up, which fills the frame and cannot stand "
+            f"beside a plate — the bot picks a standing pose."]
+    return key, []
+
+
 # --------------------------------------------------------------------------
 # The writer's menu.
 # --------------------------------------------------------------------------

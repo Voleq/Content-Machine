@@ -110,7 +110,13 @@ class MockPriceSource:
         self.settings = settings
 
     def history(self, ticker: str, days: int) -> PriceSeries:
-        fixture = self.settings.fixtures_dir / "prices" / f"{ticker.upper()}.json"
+        base = self.settings.fixtures_dir / "prices"
+        fixture = base / f"{ticker.upper()}.json"
+        # The long's five years come from their own fixture when there is one,
+        # ending on the same closes the short's months do.
+        longer = base / f"{ticker.upper()}_5y.json"
+        if days > 365 and longer.exists():
+            fixture = longer
         if fixture.exists():
             series = PriceSeries.from_json(fixture.read_text(encoding="utf-8"))
             series.source = "fixture"
@@ -157,12 +163,22 @@ def make_price_source(settings: Settings) -> PriceSource:
 DEGRADED_TTL_S = 300
 
 
+def long_history_days(settings: Settings) -> int:
+    """How far back the LONG's price chart reaches (item 9): five years."""
+    return int(getattr(settings, "long_price_history_days", 0)
+               or settings.price_history_days)
+
+
 def get_price_history(ticker: str, settings: Settings,
-                      source: PriceSource | None = None) -> PriceSeries:
+                      source: PriceSource | None = None, *,
+                      days: int | None = None) -> PriceSeries:
     """TTL-cached price history (§2.4-style: unchanged inputs ⇒ zero calls).
-    Never raises — worst case is the labelled synthetic series."""
+    Never raises — worst case is the labelled synthetic series.
+
+    `days` is how far back; the short's `price_history_days` when not given,
+    `long_history_days` for the long. Each length is cached on its own."""
     ticker = ticker.upper()
-    days = settings.price_history_days
+    days = int(days or settings.price_history_days)
     cdir = settings.cache_dir / "prices"
     cfile = cdir / f"{ticker}_{days}.json"
     try:

@@ -66,7 +66,8 @@ from pipeline.plates import (
     one_number,
     writer_moves,
 )
-from pipeline.tagging import parse_chart_payload, parse_hold, tokenize_tags
+from pipeline.tagging import (parse_chart_payload, parse_hold, pop_field,
+                              tokenize_tags)
 
 log = logging.getLogger(__name__)
 
@@ -263,6 +264,19 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
         style = ""
         hold = 0.0
         values: dict[str, str] = {}
+        beside = ""
+        if rt.type in (TagType.PLATE, TagType.CHART):
+            # `with=` asks for Dennis beside the evidence (items 30 and 11).
+            # Taken off before the plate's own fields are read, so it is
+            # never mistaken for a slot.
+            payload, asked_with = pop_field(payload, "with")
+            if asked_with:
+                from pipeline.scenes import resolve_beside
+
+                beside, beside_warnings = resolve_beside(
+                    load_plates(settings.assets_dir), asked_with,
+                    tag=rt.type.value)
+                warnings.extend(beside_warnings)
         if rt.type in HOLDABLE_TAG_TYPES:
             # `hold=` is the writer's call on whether this is a glance or a
             # beat to sit in, and it is the only `|` field these tags take.
@@ -330,6 +344,7 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
         events.append(TagEvent(
             type=rt.type, payload=payload, values=values, hold=hold,
             char_offset=rt.char_offset, raw_offset=rt.raw_offset, style=style,
+            beside=beside,
         ))
 
     if not narration.strip():
@@ -463,6 +478,27 @@ def density_warnings(script: LongScript, settings: Settings) -> list[str]:
     return out
 
 
+def dennis_alone_warnings(script: LongScript, settings: Settings) -> list[str]:
+    """Item 32: over the operator's share of Dennis alone in frame.
+
+    Estimated with the planner on the voice's estimated timings, so it reads
+    off the rules the render cuts by. A warning: where he talks is the
+    writer's call, and the approval screen prints the share either way.
+    """
+    from pipeline.timeline import estimate_dennis_alone
+
+    share = estimate_dennis_alone(script, settings)
+    limit = float(getattr(settings, "long_dennis_alone_max", 0.35) or 0.35)
+    if share is None or share <= limit:
+        return []
+    return [
+        f"Dennis is alone on screen for about {share:.0%} of the video, over "
+        f"the {limit:.0%} you set. The evidence carries the explaining: put "
+        f"the figure he is talking through on a [PLATE], [CHART] or [SHOW "
+        f"FILING], and keep him for setting up, the joke and the line each "
+        f"chapter lands on."]
+
+
 # ---------------------------------------------------------------------------
 # [MOVE] — the writer's design moves on the plate on screen.
 # ---------------------------------------------------------------------------
@@ -477,6 +513,39 @@ def _spoken_after(script: LongScript, e: TagEvent, n: int = 5) -> str:
     """The first few words after a tag — where the writer will look for it."""
     words = script.narration[e.char_offset:e.char_offset + 120].split()[:n]
     return " ".join(words).rstrip(",.;:!?") or "the end of the narration"
+
+
+def estimated_hold(script: LongScript, holder: int, settings: Settings
+                   ) -> tuple[float, str]:
+    """(seconds the frame tag `holder` stays up, what ends it), estimated.
+
+    The planner's rule (item 31) read off the script: a plate, chart or
+    filing stays up until the next visual tag, the next [SCENE] or the end of
+    its paragraph, never under the readable floor or over the ceiling. Times
+    are words over the voice's words a second, as every estimate here is.
+    """
+    from pipeline.timeline import FRAME_TAG_TYPES
+
+    wps = max(float(getattr(settings, "mock_wps_long", 2.5) or 2.5), 0.1)
+    text = script.narration
+    at = script.events[holder].char_offset
+
+    def est(offset: int) -> float:
+        return len(text[:offset].split()) / wps
+
+    ends = [(len(text), "the end")]
+    nxt = next((e.char_offset for e in script.events[holder + 1:]
+                if e.char_offset > at and (e.type in FRAME_TAG_TYPES
+                                           or e.type is TagType.SCENE)), None)
+    if nxt is not None:
+        ends.append((nxt, "the next tag"))
+    brk = re.search(r"\n[ \t]*\n", text[at:])
+    if brk:
+        ends.append((at + brk.start(), "the paragraph's end"))
+    end, why = min(ends)
+    floor = float(getattr(settings, "long_min_readable_s", 5.0) or 5.0)
+    ceiling = float(getattr(settings, "long_max_readable_s", 30.0) or 30.0)
+    return min(max(est(end) - est(at), floor), ceiling), why
 
 
 def move_refusal(move: str, plate, values: dict[str, str]) -> str:
@@ -537,9 +606,8 @@ def move_problems(script: LongScript, reg, settings: Settings
     Times here are ESTIMATES — words before the tag over the voice's words a
     second — because nothing has been spoken yet.
     """
-    from pipeline.models import CueKind
     from pipeline.timeline import (
-        CHAPTER_HOST_S, DEFAULT_HOLDS, FRAME_TAG_TYPES, chapter_at,
+        CHAPTER_HOST_S, FRAME_TAG_TYPES, chapter_at,
         chapter_windows, move_targets)
 
     warnings: list[str] = []
@@ -569,7 +637,6 @@ def move_problems(script: LongScript, reg, settings: Settings
 
     seen: set[tuple[int, str]] = set()
     circles: list[tuple[TagEvent, float]] = []
-    hold = DEFAULT_HOLDS[CueKind.PLATE]
     for idx, holder in targets.items():
         e = events[idx]
         move = e.payload
@@ -613,12 +680,13 @@ def move_problems(script: LongScript, reg, settings: Settings
             continue
         seen.add((holder, move))
         gap = est(e) - est(events[holder])
+        hold, why = estimated_hold(script, holder, settings)
         if gap > hold:
             warnings.append(
-                f"{tag} lands about {gap:.0f}s after its plate goes up, and a "
-                f"plate holds {hold:.0f}s — by then he is back on screen and "
-                f"the move is dropped. Put it on a word in the plate's first "
-                f"sentence.")
+                f"{tag} lands about {gap:.0f}s after its plate goes up, and "
+                f"the plate holds about {hold:.0f}s, until {why} — by then he "
+                f"is back on screen and the move is dropped. Put it on a word "
+                f"while the plate is up.")
         if move == "pen-circle":
             circles.append((e, est(e)))
             if holder in scribbled:
@@ -682,9 +750,8 @@ def source_problems(script: LongScript, reg, settings: Settings
     word is to say the source instead). A source written long after its plate
     went up warns, the way a late move does. `(warnings, blocking)`.
     """
-    from pipeline.models import CueKind
     from pipeline.moves import tag_clear
-    from pipeline.timeline import DEFAULT_HOLDS, move_targets
+    from pipeline.timeline import move_targets
 
     warnings: list[str] = []
     blocking: list[str] = []
@@ -693,7 +760,6 @@ def source_problems(script: LongScript, reg, settings: Settings
     if not targets:
         return warnings, blocking
     wps = max(float(getattr(settings, "mock_wps_long", 2.5) or 2.5), 0.1)
-    hold = DEFAULT_HOLDS[CueKind.PLATE]
 
     def est(e: TagEvent) -> float:
         return len(script.narration[:e.char_offset].split()) / wps
@@ -751,11 +817,13 @@ def source_problems(script: LongScript, reg, settings: Settings
             continue
         seen.add(holder)
         gap = est(e) - est(events[holder])
+        hold, why = estimated_hold(script, holder, settings)
         if gap > hold:
             warnings.append(
-                f"{tag} lands about {gap:.0f}s after its plate goes up, and a "
-                f"plate holds {hold:.0f}s — by then he is back on screen and "
-                f"the source is dropped. Put it in the plate's first sentence.")
+                f"{tag} lands about {gap:.0f}s after its plate goes up, and "
+                f"the plate holds about {hold:.0f}s, until {why} — by then he "
+                f"is back on screen and the source is dropped. Put it in a "
+                f"sentence while the plate is up.")
     return warnings, blocking
 
 
@@ -893,6 +961,7 @@ def validate_long_script(
     blocking.extend(scene_blocking)
 
     warnings.extend(density_warnings(script, settings))
+    warnings.extend(dennis_alone_warnings(script, settings))
 
     for e, reason in unrenderable_long_tags(script):
         where = f"char {e.char_offset}"

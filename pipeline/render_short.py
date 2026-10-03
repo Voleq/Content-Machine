@@ -758,22 +758,9 @@ class ShortResolver:
         """
         if self.prices is None:
             return {}
-        closes = list(self.prices.closes)
-        dates = list(getattr(self.prices, "dates", []) or [])
-        if not closes:
-            return {}
-        lo, hi = min(closes), max(closes)
-        out: dict[str, str] = {
-            "mark-high": f"{hi:,.2f}"[:7],
-            "mark-low": f"{lo:,.2f}"[:7],
-            "mark-last": f"{closes[-1]:,.2f}"[:7],
-        }
-        # Four heads on this plate, evenly spaced across the series.
-        for i in range(4):
-            j = min(int(i * (len(dates) - 1) / 3), len(dates) - 1) if dates else 0
-            if dates:
-                out[f"head-{i + 1}"] = str(dates[j])[-5:]
-        return out
+        from pipeline.chart import price_labels
+
+        return price_labels(self.prices)
 
     def _chart(self) -> list[Path] | None:
         """The chart, drawn three times.

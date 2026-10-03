@@ -1953,11 +1953,16 @@ def check_prices(script, settings: Settings, *, final: bool = True,
     if not ticker:
         return []
 
-    from pipeline.prices import get_price_history
+    from pipeline.prices import get_price_history, long_history_days
 
     # Cached and never-raising by contract, so this costs a file read on the
-    # path that already fetched it for the render.
-    series = get_price_history(ticker, settings)
+    # path that already fetched it for the render — the long's five years or
+    # the short's months, whichever this video draws.
+    is_short = ((getattr(script, "format", "") or "").lower() == "short"
+                or type(script).__name__ == "ShortScript")
+    series = get_price_history(
+        ticker, settings,
+        days=None if is_short else long_history_days(settings))
     if not series.degraded:
         return []
 

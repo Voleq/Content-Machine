@@ -52,7 +52,11 @@ _PLATE_KINDS = {"plate", "chapter"}
 # talking head with pictures, which is the thing the format is not. The flag
 # is a report and nothing else: whether a chapter earns its talking is the
 # writer's call, and a planner that "fixed" it would be inventing visuals.
-HOST_SHARE_FLAG = 0.70
+#
+# 35% since 29 Sep 2026: the operator's number, when the evidence became the
+# default and Dennis the one who sets up, jokes and lands each chapter
+# (item 32). The bot passes `settings.long_dennis_alone_max`.
+HOST_SHARE_FLAG = 0.35
 
 # Telegram refuses a caption past this, and main.py cuts it there blind.
 CAPTION_LIMIT = 1024
@@ -67,6 +71,7 @@ class ChapterShare:
     start: float
     end: float
     host_s: float
+    flag: float = HOST_SHARE_FLAG
 
     @property
     def seconds(self) -> float:
@@ -78,10 +83,11 @@ class ChapterShare:
 
     @property
     def flagged(self) -> bool:
-        return self.share > HOST_SHARE_FLAG
+        return self.share > self.flag
 
 
-def host_share(segments, chapters, duration: float) -> list[ChapterShare]:
+def host_share(segments, chapters, duration: float, *,
+               flag: float = HOST_SHARE_FLAG) -> list[ChapterShare]:
     """Host seconds per chapter, off the segment plan.
 
     HOST MEANS THE `host` BEATS: Dennis talking with nothing else in frame. A
@@ -101,18 +107,21 @@ def host_share(segments, chapters, duration: float) -> list[ChapterShare]:
                    for s in segments if s.kind == "host")
         out.append(ChapterShare(
             title=getattr(ch, "title", "") or "the whole video",
-            type=getattr(ch, "type", "") or "", start=a, end=b, host_s=host))
+            type=getattr(ch, "type", "") or "", start=a, end=b, host_s=host,
+            flag=flag))
     return out
 
 
-def host_share_lines(segments, chapters, duration: float) -> list[str]:
+def host_share_lines(segments, chapters, duration: float, *,
+                     flag: float = HOST_SHARE_FLAG) -> list[str]:
     """The host share as report lines: the video, then one per chapter."""
-    shares = host_share(segments, chapters, duration)
+    shares = host_share(segments, chapters, duration, flag=flag)
     host_beats = [s for s in segments if s.kind == "host"]
     total = sum(s.length for s in host_beats)
     mean = total / len(host_beats) if host_beats else 0.0
-    lines = [f"host on screen {total / max(duration, 1e-6):.0%} of the cut, "
-             f"in beats of {mean:.1f}s on average"]
+    whole = total / max(duration, 1e-6)
+    lines = [f"{'⚠' if whole > flag else '·'} Dennis alone {whole:.0%} of the "
+             f"cut, in beats of {mean:.1f}s on average"]
     for c in shares:
         mark = "⚠" if c.flagged else "·"
         title = c.title if len(c.title) <= 32 else c.title[:31] + "…"
@@ -121,7 +130,7 @@ def host_share_lines(segments, chapters, duration: float) -> list[str]:
     flagged = [c for c in shares if c.flagged]
     if flagged:
         lines.append(
-            f"⚠ = over {HOST_SHARE_FLAG:.0%} host. Nothing is changed — a "
+            f"⚠ = over {flag:.0%} Dennis alone. Nothing is changed — a "
             f"plate or a clip where the argument has something to show, or "
             f"leave it: the writer's call.")
     return lines

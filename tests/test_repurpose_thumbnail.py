@@ -70,6 +70,67 @@ def test_repurpose_crops_to_9_16(settings, tmp_path):
     assert out.with_suffix(".repurpose.json").exists()
 
 
+def test_a_repurposed_clip_burns_the_short_s_captions_from_the_long_s_words(
+        settings, tmp_path):
+    """The long burns none (its .srt goes up with it); a vertical clip is
+    watched with the sound off, so it carries the short's phrase captions,
+    read from the words the render saved and moved onto the clip's clock."""
+    from pipeline.repurpose import clip_words, saved_words
+    from pipeline.retention_lines import write_words
+    from pipeline.models import WordTimestamp
+
+    small = settings.model_copy(update={"short_width": 306, "short_height": 544})
+    src = tmp_path / "long_final.mp4"
+    run_ffmpeg([
+        "-f", "lavfi", "-i", "color=c=0x20293C:size=640x360:rate=30:duration=20",
+        "-f", "lavfi", "-i", "sine=frequency=220:duration=20",
+        "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac",
+        "-pix_fmt", "yuv420p", str(src),
+    ])
+    said = "the margin is not the story the cash is the story".split()
+    words, at = [], 1.0
+    for w in said:
+        words.append(WordTimestamp(word=w, start=at, end=at + 0.3,
+                                   char_start=0, char_end=len(w)))
+        at += 0.4
+    write_words(words, tmp_path / "words.json")
+    manifest = tmp_path / "render_long_manifest.json"
+    manifest.write_text(json.dumps({"duration": 20.0, "cues": [_cue(2, "clip")]}),
+                        encoding="utf-8")
+    [(out, info)] = repurpose_clips_from_long(src, manifest, small, n=1)
+    assert info["captions"] == len(said)
+    ass = out.with_suffix(".ass").read_text(encoding="utf-8")
+    assert "PlayResX: 306" in ass and "PlayResY: 544" in ass
+    assert "margin" in ass.lower()
+    # Burned: the caption box changes the picture where the plain ground was.
+    import numpy as np
+    from PIL import Image
+    frames = tmp_path / "f.png"
+    run_ffmpeg(["-ss", "2.5", "-i", str(out), "-frames:v", "1", str(frames)])
+    px = np.asarray(Image.open(frames).convert("RGB"), dtype=np.int16)
+    assert np.abs(px - np.array([0x20, 0x29, 0x3C])).max() > 60
+
+    # The clip's clock starts at the cut, and words outside it are not said.
+    moved = clip_words(saved_words(tmp_path), 2.0, 2.9)
+    assert [w.word for w in moved] == ["not", "the"]
+    assert moved[0].start == pytest.approx(0.2)
+
+
+def test_a_repurposed_clip_with_no_words_carries_no_captions(settings, tmp_path):
+    small = settings.model_copy(update={"short_width": 306, "short_height": 544})
+    src = tmp_path / "long_final.mp4"
+    run_ffmpeg([
+        "-f", "lavfi", "-i", "testsrc2=size=640x360:rate=30:duration=12",
+        "-f", "lavfi", "-i", "sine=frequency=220:duration=12",
+        "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac",
+        "-pix_fmt", "yuv420p", str(src),
+    ])
+    manifest = tmp_path / "render_long_manifest.json"
+    manifest.write_text(json.dumps({"duration": 12.0, "cues": []}), encoding="utf-8")
+    [(out, info)] = repurpose_clips_from_long(src, manifest, small, n=1)
+    assert info["captions"] == 0 and not out.with_suffix(".ass").exists()
+
+
 # --------------------------------------------------------------- thumbnail
 
 

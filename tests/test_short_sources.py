@@ -48,8 +48,12 @@ def test_a_script_with_no_sources_keeps_its_hash(short_valid_json, settings):
     """The hash is what an approval is recorded against and every render seed
     comes from, so a new empty field must not change it."""
     script, _ = parse_short_script(short_valid_json, settings)
+    # As it serialised before the beat marks, the sources and the long lane's
+    # `beside` on the tag existed.
     old = hashlib.sha256(script.model_dump_json(
-        exclude={"beat_marks", "sources"}).encode("utf-8")).hexdigest()[:16]
+        exclude={"beat_marks": True, "sources": True,
+                 "inline_events": {"__all__": {"beside"}}}
+    ).encode("utf-8")).hexdigest()[:16]
     assert script.sources == {} and script.content_sha() == old
     sourced, _ = parse_short_script(
         _with_sources(short_valid_json, {"numbers": "FY25 10-K"}), settings)

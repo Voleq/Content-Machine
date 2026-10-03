@@ -111,8 +111,10 @@ def test_a_source_goes_under_its_beat_and_one_a_beat(settings):
 
 def test_a_source_spoken_after_its_plate_has_gone_is_dropped(reg):
     big = "figures/big-number-l2-16x9"
+    # The writer moved on at 10 s (the clip), so the plate was gone by 25.
     cues = [_cue(2.0, CueKind.PLATE, 0, value=big, values={"value": "$1bn"}),
-            _cue(25.0, CueKind.SOURCE, 1, value="FY24 10-K", plate=big,
+            _cue(10.0, CueKind.CLIP, 1, value="x"),
+            _cue(25.0, CueKind.SOURCE, 2, value="FY24 10-K", plate=big,
                  plate_order=0)]
     segments, _ = plan_long_segments(cues, 30.0)
     sources, warnings = plan_writer_sources(cues, segments)
@@ -134,8 +136,10 @@ def test_the_tag_slides_in_from_the_left_and_rests_on_the_plate_s_margin(
     panel = (100, 60, 960, 540)
     clip = MV.source_tag_clip(reg, settings, tmp_path / "s.mov", text="FY24 10-K",
                               plate=plate, aspect="16x9", panel=panel)
-    assert clip is not None and got["fps"] == 12 and len(got["frames"]) == clip.frames
-    assert all(abs(d * 12 - 1) < 1e-9 for _, d in got["frames"])
+    # design's six frames of slide, played at the video's rate
+    assert clip is not None and got["fps"] == MV.OUT_FPS
+    assert len(got["frames"]) == len(MV._played_frames(clip.frames))
+    assert all(abs(d * MV.OUT_FPS - 1) < 1e-9 for _, d in got["frames"])
     tag = reg.get(reg.aspect_key("overlays/source-tag", "16x9"))
     x, y, w, h = MV.tag_rect(tag, plate, panel[2:], reg)
     assert clip.y == panel[1] + y and clip.y + h <= panel[1] + panel[3]

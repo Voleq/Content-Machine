@@ -311,7 +311,7 @@ def test_data_visuals_are_never_cut_short():
 
 
 def test_holds_are_deliberate_not_machine_gun():
-    """Every kind holds long enough to register; data kinds longest."""
+    """Every glanced kind holds long enough to register."""
     from pipeline.models import Cue
     from pipeline.timeline import DEFAULT_HOLDS
 
@@ -321,7 +321,72 @@ def test_holds_are_deliberate_not_machine_gun():
         seg = next(s for s in segments if s.kind == kind.value)
         assert seg.length == pytest.approx(hold)
         assert seg.length >= 3.0, f"{kind.value} still machine-guns"
-    assert DEFAULT_HOLDS[CueKind.PLATE] >= DEFAULT_HOLDS[CueKind.MEME] * 2
+
+
+def test_a_readable_beat_stays_up_until_the_writer_moves_on():
+    """Item 31: a plate holds to the next tag, [SCENE], paragraph or chapter
+    bookend — not a fixed 7.0 s — never under the floor, never over the cap."""
+    from pipeline.models import Cue
+    from pipeline.timeline import MAX_READABLE_S, MIN_READABLE_S, READABLE_KINDS
+
+    def plate(t):
+        return Cue(t=t, kind=CueKind.PLATE, payload={"value": "p"})
+
+    def first(segs, kind="plate"):
+        return next(s for s in segs if s.kind == kind)
+
+    # to the next visual tag
+    segs, _ = plan_long_segments([plate(2.0), Cue(t=19.0, kind=CueKind.CLIP,
+                                                  payload={"value": "c"})], 60.0)
+    assert (first(segs).start, first(segs).end) == pytest.approx((2.0, 19.0))
+    # to the next [SCENE]
+    segs, _ = plan_long_segments(
+        [plate(2.0), Cue(t=14.0, kind=CueKind.SCENE,
+                         payload={"values": {"room": "room/desk-side"}})], 60.0)
+    assert first(segs).end == pytest.approx(14.0)
+    # to the end of its paragraph, the nearest of all
+    segs, _ = plan_long_segments([plate(2.0)], 60.0, paragraphs=[11.0, 40.0])
+    assert first(segs).end == pytest.approx(11.0)
+    # to the next chapter's bookend
+    segs, _ = plan_long_segments([plate(2.0)], 60.0, chapter_starts=[20.0])
+    assert first(segs).end == pytest.approx(20.0 - 2.5)
+    # never under the floor: the next tag waits
+    segs, _ = plan_long_segments([plate(2.0)], 60.0, paragraphs=[3.0])
+    assert first(segs).length == pytest.approx(MIN_READABLE_S)
+    # never over the cap, and the writer is told where
+    segs, warnings = plan_long_segments([plate(2.0)], 60.0)
+    assert first(segs).length == pytest.approx(MAX_READABLE_S)
+    assert any("break the paragraph" in w for w in warnings)
+    for kind in READABLE_KINDS:
+        segs, _ = plan_long_segments(
+            [Cue(t=2.0, kind=kind, payload={"value": "x"})], 60.0,
+            paragraphs=[16.0])
+        assert first(segs, kind.value).end == pytest.approx(16.0)
+
+
+def test_a_plate_fills_the_frame_unless_the_writer_puts_him_beside_it():
+    """Items 30 and 11: two-shot only on `with=`."""
+    from pipeline.models import Cue
+
+    cues = [Cue(t=2.0, kind=CueKind.PLATE, payload={"value": "a"}),
+            Cue(t=12.0, kind=CueKind.CHART, payload={"value": "price",
+                                                     "beside": "dennis"}),
+            Cue(t=22.0, kind=CueKind.PLATE,
+                payload={"value": "b", "beside": "host/gesturing-at-plate"})]
+    segs, _ = plan_long_segments(cues, 40.0)
+    layouts = [s.payload["layout"] for s in segs if s.kind != "host"]
+    assert layouts == ["cutaway-full", "two-shot", "two-shot"]
+
+
+def test_paragraph_starts_are_the_first_word_after_each_blank_line():
+    from pipeline.timeline import paragraph_starts
+    from pipeline.tts import mock_words
+
+    text = "One two three.\n\nFour five six.\n  \nSeven."
+    words = mock_words(text, 10.0)
+    got = paragraph_starts(text, words)
+    by_word = {w.word: w.start for w in words}
+    assert got == [by_word["Four"], by_word["Seven."]]
 
 
 # ------------------------------------------------------ scene-variety planner

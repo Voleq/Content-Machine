@@ -30,8 +30,8 @@ def settings(settings):
 RAW = """EXMPL is down sixty percent and nobody cares anymore. [CLIP: tumbleweed] Which is when I start reading.
 Here is what they actually do. [IMG: EXMPL logistics warehouse] Software for depots. Real customers. [SOUND: cash_register]
 The numbers, five years of them. [CHART: revenue] Revenue is a plateau wearing a growth costume. [SHOW FILING: income_statement.png] The filing says minus eighty nine million. [SOUND: windows_error] Every year wider. [MEME: harold-quick-flip-became-bagholder]
-The industry is two giants and a coupon. [CLIP: boardroom_suits] Pricing power is a memoir title.
-Bull case: sticky contracts. [PLATE: both-true-16x9 | kicker=BOTH TRUE | statement-1=Forty percent of revenue is contracted. | mark-1=up | statement-2=One point four billion of debt. | mark-2=down] Bear case: the balance sheet has a clock on it. I'll be up at three a.m. either way. See you at the next filing.
+The industry is two giants and a coupon. Pricing power is a memoir title.
+Bull case: sticky contracts. [PLATE: both-true-16x9 | kicker=BOTH TRUE | statement-1=Forty percent of revenue is contracted. | mark-1=up | statement-2=One point four billion of debt. | mark-2=down | with=dennis] Bear case: the balance sheet has a clock on it. I'll be up at three a.m. either way. See you at the next filing.
 
 === CHAPTERS ==="""  + """
 00:00 cold-open | nobody cares anymore
@@ -119,7 +119,8 @@ def test_cue_times_reached_the_filtergraph(rendered):
     # reveal was the look before the kit, and the kit has no such move.
     assert any(s["kind"] == "filing" for s in manifest["segments"])
     assert "glitch" not in filter_text
-    assert "subtitles=filename=" in filter_text
+    # No captions are burned into the long: the .srt goes up with it (item 10).
+    assert "subtitles=" not in filter_text and "ass=" not in filter_text
     # In segmented mode the beats are separate encodes concatenated with
     # -c copy, so the final graph carries only the overlays; in single-graph
     # mode the concat filter is in there.
@@ -194,23 +195,31 @@ def test_the_ken_burns_vocabulary_is_deleted():
         assert not hasattr(rl, gone), f"{gone} should no longer exist"
 
 
-def test_long_captions_are_whole_phrases_in_a_fitted_box(rendered):
-    """An opaque, text-fitted box (BorderStyle=3), carrying a whole clause.
+def test_the_long_burns_no_captions_and_writes_the_srt_clock(rendered):
+    """The long's captions are the uploaded .srt, not type over every plate.
 
-    The karaoke fill lit ONE word and washed the rest of the line out to
-    near-invisible — unreadable at a glance, and it coloured the lit word the
-    same red the kit reserves for a down-move. Same phrase chips as the short
-    now, sized for a 16:9 line.
+    A long viewer has the sound on; one who wants captions turns on CC and
+    gets the exact tickers and figures from the same word timings.
     """
     settings, script, tts, out, manifest = rendered
-    ass = (out.parent / "render_long" / "captions.ass").read_text(encoding="utf-8")
-    assert ",3,14,0,2," in ass, "captions use the fitted-box style"
-    assert "\\k" not in ass, "the per-word karaoke fill is gone"
-    lines = [ln.split(",,0,0,0,,", 1)[1] for ln in ass.splitlines()
-             if ln.startswith("Dialogue:") and ",,0,0,0,," in ln]
-    assert lines, "no caption lines at all"
-    words = [len(ln.split("}")[-1].split()) for ln in lines]
-    assert max(words) >= 5, f"longest caption is {max(words)} words — still chips"
+    assert not (out.parent / "render_long" / "captions.ass").exists()
+    assert tts.words, "the .srt is built from these timings"
+
+
+def test_evidence_fills_the_frame_and_a_with_plate_has_him_talking_beside_it(rendered):
+    """Items 30 and 33. The chart is edge to edge; the plate the writer asked
+    him beside (`with=dennis`) is the room, Dennis talking in it, and the
+    plate over the set — a host clip built for the beat, not a still."""
+    settings, script, tts, out, manifest = rendered
+    segs = manifest["segments"]
+    chart = next(s for s in segs if s["kind"] == "chart")
+    assert chart["layout"] == "cutaway-full"
+    i, plate = next((i, s) for i, s in enumerate(segs) if s["kind"] == "plate")
+    assert plate["layout"] == "two-shot" and plate.get("beside")
+    assert "[tsbase]" in plate["filter"], "the plate is laid over a live shot"
+    assert (out.parent / "render_long" / f"host_{i}.mov").exists()
+    talking = [m for m in manifest["host_motion"] if m.get("segment") == i]
+    assert talking and talking[0].get("two_shot")
 
 
 def test_host_holds_the_untagged_stretches(rendered):

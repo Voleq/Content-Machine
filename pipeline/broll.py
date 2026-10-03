@@ -948,17 +948,24 @@ class ContentManager:
         hash (style included)."""
         try:
             if metric == "price":
-                from pipeline.chart import render_price_plate
+                from pipeline.chart import (month_year, price_labels,
+                                            render_price_plate)
                 from pipeline.plates import load_plates
-                from pipeline.prices import get_price_history
+                from pipeline.prices import get_price_history, long_history_days
 
                 # There is one price chart now, not a clean one and a "marker"
                 # one. The marker variant existed because the branded card was
                 # too clean to sit beside hand-drawn work; the plate IS
                 # hand-drawn, so `style` no longer selects a second look.
-                series = get_price_history(ticker, self.settings)
+                # FIVE YEARS (item 9): this is the long's chart; the short
+                # draws its own months from `render_short`.
+                series = get_price_history(
+                    ticker, self.settings, days=long_history_days(self.settings))
+                # `last-at-end`: the drawing changed (the last close is set
+                # where the line ends), so a chart cached before it is stale.
                 h = hashlib.sha256(
-                    f"price|{ticker}|{series.dates[-1]}|{series.closes[-1]}".encode()
+                    f"price|{ticker}|{series.dates[0]}|{series.dates[-1]}|"
+                    f"{series.closes[-1]}|{len(series.closes)}|last-at-end".encode()
                 ).hexdigest()[:20]
                 out = self.settings.cache_dir / "charts" / f"{h}.png"
                 if not out.exists():
@@ -968,7 +975,9 @@ class ContentManager:
                     tmp = out.with_suffix(".plate.png")
                     render_price_plate(reg, series, tmp, self.settings,
                                        aspect="9x16" if H > W else "16x9",
-                                       seed=f"price|{ticker}")
+                                       seed=f"price|{ticker}",
+                                       slot_values=price_labels(
+                                           series, head=month_year))
                     from PIL import Image
 
                     Image.open(tmp).convert("RGB").resize((W, H)).save(out)
@@ -996,8 +1005,12 @@ class ContentManager:
                       + list(values))[-PERIOD_COUNT:]
 
             label = metric.replace("_", " ").capitalize()
+            # `labels-are-the-scale`: before it the line was drawn from zero
+            # under labels that started at the series' low, so a chart
+            # cached then has every dot in the wrong place.
             h = hashlib.sha256(
-                json.dumps([metric, years, [str(v) for v in values]]).encode()
+                json.dumps([metric, years, [str(v) for v in values],
+                            "labels-are-the-scale"]).encode()
             ).hexdigest()[:20]
             out = self.settings.cache_dir / "charts" / f"{h}.png"
             if not out.exists():

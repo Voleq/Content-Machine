@@ -21,6 +21,7 @@ script's own anchors — no scene time is ever hardcoded in a renderer.
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass, field
 
 from pipeline.models import (
@@ -240,6 +241,9 @@ def build_long_timeline(
                    "values": dict(e.values)}
         if kind is CueKind.CHART and e.style:
             payload["style"] = e.style
+        if e.beside:
+            # `with=`: Dennis stands beside this one (the two-shot).
+            payload["beside"] = e.beside
         if e.hold:
             # `[CLIP: … | hold=2.5]`. Only present when the director wrote
             # one, so an untagged hold still falls through to DEFAULT_HOLDS
@@ -279,11 +283,10 @@ class Segment:
 MIN_SEGMENT_S = 0.25
 
 
-# How long each visual kind holds before cutting back to the host WHEN THE
-# DIRECTOR DID NOT SAY. These are roughly double the old values: the show is a
-# host talking who cuts away to evidence, and evidence the viewer cannot
-# finish reading is worse than no evidence at all. A meme is still a beat; a
-# diagram is a paragraph.
+# How long each GLANCED kind holds before cutting back to the host WHEN THE
+# DIRECTOR DID NOT SAY. A meme is a beat; a photograph or a clip a little
+# longer. The kinds a viewer READS — a plate, a chart, a filing — have no row
+# here since item 31: they hold until the writer moves on (`READABLE_KINDS`).
 #
 # A `[CLIP: … | hold=2.5]` overrides its row. One number per KIND cannot be
 # right for both a glance and a beat to sit in, and the writer is the only one
@@ -291,24 +294,35 @@ MIN_SEGMENT_S = 0.25
 DEFAULT_HOLDS = {
     CueKind.CLIP: 5.0,
     CueKind.IMG: 5.0,
-    CueKind.CHART: 7.0,
-    CueKind.FILING: 6.0,
-    CueKind.SCREENGRAB: 6.0,
-    CueKind.PLATE: 7.0,
     CueKind.MEME: 3.0,
-    # the design-kit cards: a term definition and a table are READ
-
 }
 
 # Kinds carrying data a viewer has to READ rather than glance at. These never
 # cut early: a later visual is pushed back rather than truncating one of
 # these, and the voice-over simply keeps running underneath.
+#
+# AND THEY STAY UP WHILE HE TALKS ABOUT THEM (item 31). Every plate used to
+# hold exactly its `DEFAULT_HOLDS` row, 7.0 s, and cut back to Dennis — while
+# the writing prompt promised "the renderer holds the visual for as long as
+# your words about it last". A readable beat now holds until the writer's
+# next visual tag, the next [SCENE], the end of its paragraph or the next
+# chapter's bookend, whichever comes first: the writer moving on is the cut.
+# Never under `MIN_READABLE_S`, never over `MAX_READABLE_S`.
 READABLE_KINDS = (CueKind.CHART, CueKind.FILING, CueKind.SCREENGRAB,
                   CueKind.PLATE)
 MIN_READABLE_S = 5.0
 
-# Designed panels sit BESIDE Dennis (the two-shot); real photographs,
-# footage, filings and memes take the whole frame raw.
+# The longest a readable beat holds when nothing ends it sooner. A script
+# written as one paragraph with a plate at the top would otherwise hold that
+# plate for the whole stretch; past this he comes back, and the planner says
+# where so the writer can break the paragraph or add the next piece.
+MAX_READABLE_S = 30.0
+
+# The kinds Dennis MAY stand beside (the two-shot), and only when the writer
+# asks with `with=` on the tag (items 30 and 11). By default a plate or chart
+# fills the frame: shrunk into a column beside him it read as a mini player,
+# and a still two-shot froze his face. Real photographs, footage, filings and
+# memes take the whole frame, as ever.
 TWO_SHOT_KINDS = (CueKind.CHART, CueKind.PLATE)
 
 # Dennis bookends every chapter: this much host on each side of a chapter
@@ -423,6 +437,25 @@ def quantise_to_frames(segments: list[Segment], fps: int,
         prev_frame = end_frame
     return out
 
+_PARAGRAPH_BREAK = re.compile(r"\n[ \t]*\n\s*(?=\S)")
+
+
+def paragraph_starts(narration: str, words: list[WordTimestamp]) -> list[float]:
+    """When each paragraph after the first starts being said, in order.
+
+    A blank line in the narration is the writer's paragraph; the time is the
+    first word after it, off the same clock every tag is placed on.
+    """
+    out: list[float] = []
+    if not words:
+        return out
+    for m in _PARAGRAPH_BREAK.finditer(narration or ""):
+        t = char_offset_time(words, m.end())
+        if t > 0.0 and (not out or t > out[-1]):
+            out.append(t)
+    return out
+
+
 def scene_in_force(cues: list[Cue], t: float) -> Cue | None:
     """The writer's [SCENE] a beat of him starting at `t` is shot in, or None.
 
@@ -449,6 +482,8 @@ def plan_long_segments(
     min_readable_s: float = MIN_READABLE_S,
     chapter_host_s: float = CHAPTER_HOST_S,
     fps: int = 0,
+    paragraphs: list[float] | None = None,
+    max_readable_s: float = MAX_READABLE_S,
 ) -> tuple[list[Segment], list[str]]:
     """Tile [0, duration] with host beats and the evidence he cuts away to.
 
@@ -458,6 +493,12 @@ def plan_long_segments(
     next cue lands during that hold it is pushed back rather than cutting the
     current one short, so nothing on screen is ever unreadable. Chapter
     boundaries reserve a host beat on each side.
+
+    A READABLE beat's hold is the writer's moving on (item 31): it lasts until
+    the next visual tag, the next [SCENE], the next of `paragraphs` (when
+    each paragraph after the first starts, `paragraph_starts`) or the next
+    chapter's bookend — at least `min_readable_s`, at most `max_readable_s`.
+    Other kinds hold their `DEFAULT_HOLDS` row; a writer's `hold=` beats both.
 
     Returns (segments, warnings). Invariant: segments tile the full duration
     with no gaps or overlaps.
@@ -576,9 +617,30 @@ def plan_long_segments(
                                              "layout": "host-full"}))
             host_i += 1
 
+    # Where the writer moves on: a readable beat holds until the first of
+    # these after it starts. Each chapter's bookend begins `chapter_host_s`
+    # before its card, and that is where the evidence has to be gone by.
+    scene_times = sorted(c.t for c in scenes)
+    para_times = sorted(float(t) for t in (paragraphs or ()))
+    bookends = sorted(a for a, _b in blocked)
+
+    def talked_about_until(k: int, start: float) -> tuple[float, str]:
+        """(when the writer moves on from visual `k`, what ends it)."""
+        cue_t = visual[k].t
+        found = [(duration, "the end")]
+        later = [c.t for c in visual[k + 1:] if c.t > cue_t + 1e-6]
+        if later:
+            found.append((min(later), "the next visual"))
+        for times, why in ((scene_times, "the next [SCENE]"),
+                           (para_times, "the paragraph's end"),
+                           (bookends, "the chapter's end")):
+            nxt = next((t for t in times if t > start + 1e-6), None)
+            if nxt is not None:
+                found.append((nxt, why))
+        return min(found)
+
     cursor = 0.0
-    two_shot_i = 0
-    for c in visual:
+    for k, c in enumerate(visual):
         # never before the previous visual has finished, never inside a
         # chapter bookend
         start = push_past_chapter_beat(max(c.t, cursor))
@@ -601,19 +663,26 @@ def plan_long_segments(
         # frame stays; `DEFAULT_HOLDS` is what to do when nobody did. It has
         # already been clamped to a sane band at parse time.
         asked = float(c.payload.get("hold") or 0.0)
-        hold = asked or holds.get(c.kind, 5.0)
-        if c.kind in READABLE_KINDS and not asked:
-            hold = max(hold, min_readable_s)
+        if asked:
+            hold = asked
+        elif c.kind in READABLE_KINDS:
+            until, why = talked_about_until(k, start)
+            hold = min(max(until - start, min_readable_s), max_readable_s)
+            if until - start > max_readable_s + 1e-6 and \
+                    start + max_readable_s < duration - MIN_HOST_BEAT_S:
+                warnings.append(
+                    f"{c.kind.value} at {start:.0f}s would hold "
+                    f"{until - start:.0f}s until {why}; it holds "
+                    f"{max_readable_s:.0f}s and he comes back — break the "
+                    f"paragraph or tag what comes next")
+        else:
+            hold = holds.get(c.kind, 5.0)
         end = min(start + hold, duration)
         payload = dict(c.payload)
-        if c.kind in TWO_SHOT_KINDS:
-            # Dennis stays in frame beside the panel, alternating sides so
-            # two two-shots in a row do not look like the same picture.
-            payload["layout"] = "two-shot"
-            payload["host_side"] = "left" if two_shot_i % 2 == 0 else "right"
-            two_shot_i += 1
-        else:
-            payload["layout"] = "cutaway-full"
+        # The evidence fills the frame. Dennis stands beside a plate or a
+        # chart only where the writer put `with=` on its tag.
+        payload["layout"] = ("two-shot" if c.kind in TWO_SHOT_KINDS
+                             and c.payload.get("beside") else "cutaway-full")
         segments.append(Segment(start=start, end=end, kind=c.kind.value,
                                 payload=payload))
         cursor = end
@@ -644,6 +713,35 @@ def plan_long_segments(
     for a, b in zip(segments, segments[1:]):
         assert abs(a.end - b.start) < 1e-6, "segments must tile without gaps"
     return segments, warnings
+
+
+def estimate_dennis_alone(script, settings) -> float | None:
+    """The share of the video that is Dennis alone in frame, before a word
+    is spoken (item 32), or None for an empty script.
+
+    The planner itself, run on the voice's estimated timings (the words over
+    the words a second the mock voice and the real one agree on), so the
+    approval screen reads off the same rules the render will cut by. A
+    two-shot has him beside the evidence and counts as evidence, as the
+    storyboard counts it.
+    """
+    from pipeline.tts import mock_words
+
+    wps = max(float(getattr(settings, "mock_wps_long", 2.3) or 2.3), 0.1)
+    duration = script.word_count / wps
+    if duration <= 0:
+        return None
+    words = mock_words(script.narration, duration)
+    cues = build_long_timeline(script, words, duration)
+    starts = [a for a, _b in chapter_windows(script.chapter_list, duration)]
+    segments, _ = plan_long_segments(
+        cues, duration, chapter_starts=starts,
+        min_readable_s=settings.long_min_readable_s,
+        chapter_host_s=settings.long_chapter_host_s,
+        paragraphs=paragraph_starts(script.narration, words),
+        max_readable_s=settings.long_max_readable_s)
+    alone = sum(s.length for s in segments if s.kind == "host")
+    return alone / duration
 
 
 # --------------------------------------------------------------------------

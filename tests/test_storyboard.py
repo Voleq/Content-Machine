@@ -126,7 +126,10 @@ def test_host_share_is_host_seconds_over_chapter_seconds():
     assert [(c.title, c.host_s, c.seconds) for c in got] == [
         ("hook", 50.0, 60.0), ("numbers", 20.0, 40.0)]
     assert got[0].share == pytest.approx(50 / 60) and got[0].flagged
-    assert got[1].share == pytest.approx(0.5) and not got[1].flagged
+    assert got[1].share == pytest.approx(0.5) and got[1].flagged
+    assert not host_share(segs, _chapters(("cold-open", "hook", 0.0),
+                                          ("the-numbers", "numbers", 60.0)),
+                          100.0, flag=0.6)[1].flagged
 
 
 def test_a_two_shot_counts_as_evidence_not_as_host():
@@ -141,21 +144,27 @@ def test_a_two_shot_counts_as_evidence_not_as_host():
     assert only.title == "the whole video" and only.share == pytest.approx(0.5)
 
 
-def test_a_chapter_over_seventy_percent_host_is_flagged_and_nothing_changes():
+def test_a_chapter_over_the_operator_s_share_is_flagged_and_nothing_changes():
     from pipeline.storyboard import HOST_SHARE_FLAG, host_share_lines
 
-    assert HOST_SHARE_FLAG == 0.70
+    # 35%: the operator's number for Dennis alone in frame (item 32).
+    assert HOST_SHARE_FLAG == 0.35
     segs = _segs(("host", 0, 80), ("plate", 80, 90), ("host", 90, 100),
                  ("chart", 100, 130), ("host", 130, 150))
     before = [(s.kind, s.start, s.end) for s in segs]
     lines = host_share_lines(
         segs, _chapters(("cold-open", "the hook", 0.0),
                         ("the-numbers", "the numbers", 100.0)), 150.0)
-    assert lines[0].startswith("host on screen 73% of the cut")
+    assert lines[0].startswith("⚠ Dennis alone 73% of the cut")
     assert lines[1].startswith("⚠  90%") and "the hook" in lines[1]
-    assert lines[2].startswith("·  40%") and "the numbers" in lines[2]
-    assert "the writer's call" in lines[-1]
+    assert lines[2].startswith("⚠  40%") and "the numbers" in lines[2]
+    assert "over 35%" in lines[-1] and "the writer's call" in lines[-1]
     assert [(s.kind, s.start, s.end) for s in segs] == before
+    # The bot passes the setting; a looser line leaves the numbers chapter be.
+    looser = host_share_lines(
+        segs, _chapters(("cold-open", "the hook", 0.0),
+                        ("the-numbers", "the numbers", 100.0)), 150.0, flag=0.5)
+    assert looser[2].startswith("·  40%")
 
 
 def test_the_caption_fits_telegram_and_counts_what_it_cut():
@@ -164,9 +173,9 @@ def test_the_caption_fits_telegram_and_counts_what_it_cut():
     problems = [f"beat {i:02d} @ {i}.0s — clip X ← NOT FOUND " + "x" * 120
                 for i in range(12)]
     caption = storyboard_caption("EXMPL — storyboard, 40 beats", problems,
-                                 ["host on screen 80% of the cut"] * 6)
+                                 ["⚠ Dennis alone 80% of the cut"] * 6)
     assert len(caption) <= CAPTION_LIMIT
-    assert caption.startswith("EXMPL — storyboard, 40 beats\nhost on screen")
+    assert caption.startswith("EXMPL — storyboard, 40 beats\n⚠ Dennis alone")
     assert "more on the sheet" in caption.splitlines()[-1]
 
 

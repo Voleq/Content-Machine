@@ -165,6 +165,23 @@ def split_payload_fields(payload: str) -> tuple[str, dict[str, str], list[str]]:
     return head, fields, warnings
 
 
+def pop_field(payload: str, name: str) -> tuple[str, str]:
+    """`"key | a=1 | with=x"` -> `("key | a=1", "x")`; `""` when not written.
+
+    Only the one field is taken out and the rest is left exactly as written,
+    so a plate's own fields still reach its own splitter untouched.
+    """
+    parts = _FIELD_SPLIT.split(payload)
+    kept, value = [parts[0]], ""
+    for part in parts[1:]:
+        m = _FIELD_ASSIGN.match(part.strip())
+        if m and m.group(1).lower() == name:
+            value = m.group(2).strip()
+            continue
+        kept.append(part)
+    return " | ".join(kept), value
+
+
 # The band a director may hold a visual for, in seconds.
 #
 # Under 0.8 nothing is read — it is a frame flashing past, and the pacing
