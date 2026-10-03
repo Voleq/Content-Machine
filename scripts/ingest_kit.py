@@ -192,45 +192,31 @@ def _kit_proves_itself(staged: Path) -> list[str]:
     return problems
 
 
-_DIP_TAGS = ("", "_dip", "_dip2")
+# THE MONITOR HOLDS STILL in the 3D room. The kit's rooms dip the screen and
+# the lamp on four of every twelve frames (`screen-flicker`); in a modelled
+# room, behind a man who moves, that read as a fault, and Valentin had it
+# taken off (3 Oct 2026). The render still makes the dip states
+# (room3d/build.py), and the ingest plays none of them: the loop is dropped
+# from every 16:9 room and its rain, so a room whose only motion was the
+# flicker installs as a still, and the long's sound loses the buzz that went
+# with it (`pipeline.sound.SET_LAYERS`).
+ROOM3D_DROPS_LOOPS = ("screen-flicker",)
 
 
-def _flicker_levels(entry: dict | None, n: int) -> list[int]:
-    """The screen's level on each of a room's `n` frames, 0 at rest.
-
-    Read off the kit's own loop: the first picture is the room at rest, and
-    each new picture after it is the next dip (the kit draws two, `_f04` and
-    `_f08`), so the 3D room dips on exactly the frames the kit's did. A room
-    the kit does not flicker stays at rest.
-    """
-    if not entry or "screen-flicker" not in (entry.get("loops") or ()):
-        return [0] * n
-    seen: dict[str, int] = {}
-    out = []
-    for fr in (entry.get("frames") or [])[:n]:
-        png = str(fr.get("png"))
-        if png not in seen:
-            seen[png] = min(len(seen), 2)
-        out.append(seen[png])
-    return out + [0] * (n - len(out))
-
-
-def _room3d_plan(loops, levels: list[int], n: int, states: dict, precip: str = "") -> list[tuple]:
+def _room3d_plan(loops, n: int, states: dict, precip: str = "") -> list[tuple]:
     """What each frame of a loop shows: (state tag, weather, phase).
 
-    The state is the render's lights: the screen's dip, and in December which
-    bulb string is lit (the kit's `lights-twinkle` steps every four frames).
-    The weather is drawn on the glass at install, `phase` frames into its own
-    loop: rain repeats every six frames, snow falls a whole window in twelve.
-    A pairing the render did not make (a dip on a bulb state the kit's own
-    twelve frames never reach) falls back to that bulb state at rest.
+    The state is the render's lights: in December, which bulb string is lit
+    (the kit's `lights-twinkle` steps every four frames), otherwise the room
+    at rest. The weather is drawn on the glass at install, `phase` frames into
+    its own loop: rain repeats every six frames, snow falls a whole window in
+    twelve.
     """
     plan = []
     for i in range(n):
-        lead = f"_t{(i // 4) % 3}" if "lights-twinkle" in loops else ""
-        tag = lead + _DIP_TAGS[levels[i]]
+        tag = f"_t{(i // 4) % 3}" if "lights-twinkle" in loops else ""
         if tag not in states:
-            tag = lead
+            tag = ""
         if precip == "snow":
             plan.append((tag, "snow", i % 12))
         elif precip == "rain":
@@ -294,10 +280,10 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
     can write on them (`pipeline/room_dressing.py`). The roles, the [SCENE]
     menu and every caller keep naming the same rooms.
 
-    The loops are the kit's, frame for frame: the screen dips on the frames
-    its did, December's bulbs step every four frames, snow falls past the
-    window where the kit had `window-snow`, and the rooms the kit rained on
-    keep their `rain` weather. Every frame is a render state (lights are
+    The loops are the kit's, frame for frame, but for the screen's flicker
+    (`ROOM3D_DROPS_LOOPS`): December's bulbs step every four frames, snow
+    falls past the window where the kit had `window-snow`, and the rooms the
+    kit rained on keep their `rain` weather. Every frame is a render state (lights are
     light groups, so no frame is a second render) with the weather drawn on
     the glass here, and every front layer is that frame cut by the render's
     own mask of what stands in front of him.
@@ -336,12 +322,6 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
         for n in names:
             if isinstance(n, str) and n and (room_dir / n).exists():
                 (room_dir / n).unlink()
-    # THE KIT'S FLICKER, READ BEFORE ANY ROOM IS REWRITTEN: a December twin
-    # dips on its plain room's frames, and the plain room may already be the
-    # 3D room by the time the twin comes round.
-    kit_levels = {k: _flicker_levels(e, len(e.get("frames") or []) or 1) for k, e in flat.items()}
-    plain_of = {(str(e.get("angle") or ""), str(e.get("hour") or "")): k
-                for k, e in flat.items() if not e.get("season")}
     cache: dict[tuple, object] = {}
     # Files by the name they are installed under. Dusk is the night render
     # under the night's names, so its frames find the night's files here
@@ -387,11 +367,8 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
         size = tuple(e["delivered"])
         name = key.split("/", 1)[1].replace("-dusk", "") if e.get("hour") != BASE_HOUR \
             else key.split("/", 1)[1]
-        loops = tuple(e.get("loops") or ())
+        loops = tuple(lp for lp in e.get("loops") or () if lp not in ROOM3D_DROPS_LOOPS)
         n = len(e.get("frames") or []) or 1
-        twin_plain = plain_of.get((angle, str(e.get("hour") or ""))) or plain_of.get((angle, BASE_HOUR))
-        levels = (kit_levels.get(twin_plain) if season else kit_levels[key]) or [0] * n
-        levels = [levels[i % len(levels)] for i in range(n)]
         front_mask = mask(stem, "front", size)
         window = mask(stem, "window", size)
         # The snow and rain are the same fall on every hour of one angle.
@@ -433,7 +410,7 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
             return frames
 
         precip = "snow" if "window-snow" in loops else ""
-        frames = install(_room3d_plan(loops, levels, n, r["_states"], precip), "")
+        frames = install(_room3d_plan(loops, n, r["_states"], precip), "")
         if frames is None:
             continue
         moves = len({f["png"] for f in frames}) > 1 or len({f.get("front") for f in frames}) > 1
@@ -444,17 +421,18 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
         e["playback"] = "loop" if moves else "static"
         e["fps"] = e.get("fps") if moves else 0
         e["frameCount"] = len(frames)
-        if not moves:
+        if moves:
+            e["loops"] = list(loops)
+        else:
             e.pop("loops", None)
         rain = (e.get("weathers") or {}).get("rain")
         if rain and window is not None:
             wn = len(rain.get("frames") or []) or 12
-            wlevels = [levels[i % len(levels)] for i in range(wn)]
-            wframes = install(_room3d_plan(tuple(rain.get("loops") or ()), wlevels, wn,
-                                           r["_states"], "rain"), "_rain")
+            wloops = [lp for lp in rain.get("loops") or ["window-rain"] if lp not in ROOM3D_DROPS_LOOPS]
+            wframes = install(_room3d_plan(tuple(wloops), wn, r["_states"], "rain"), "_rain")
             if wframes is None:
                 continue
-            e["weathers"] = {"rain": {"loops": list(rain.get("loops") or ["window-rain"]), "playback": "loop",
+            e["weathers"] = {"rain": {"loops": wloops, "playback": "loop",
                                       "fps": rain.get("fps") or 12, "frameCount": len(wframes),
                                       "frames": wframes}}
         else:

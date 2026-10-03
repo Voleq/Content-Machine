@@ -1037,8 +1037,9 @@ env var, case-insensitive).
   names, 17 angles and their 15 December twins, are now cameras in one modelled
   room (`room3d/`), dressed from the voice bible: the filings, the adding-machine
   tape, the sticky notes, the framed margin call. The rules design's rooms kept
-  stay: his floor and anchor per angle, the layer in front of him, the screen
-  flicker and the bulbs at the kit's speeds, rain and snow on the glass, the
+  stay: his floor and anchor per angle, the layer in front of him, the bulbs
+  at the kit's speed, rain and snow on the glass (the monitor holds still: the
+  kit's screen flicker read as a fault in a modelled room), the
   chapter title on the slate (dusk uses the night picture). The board and the
   monitor are rendered blank and written per video, in the room's perspective
   and light (`pipeline/room_dressing.py`): the episode number, the ticker, the
