@@ -502,6 +502,11 @@ def _played_clip(indices: list[int], frame_of: Callable[[int], Image.Image],
     return dest
 
 
+# THE PUSH INTO HIS MONITOR (item 60): the last this-many seconds of the shot
+# before the chapter's lead plate, the camera going into the screen until the
+# picture on it fills the frame, and the cut lands on the plate itself.
+PUSH_S = 0.6
+
 # HOW LONG A CHAPTER OPENER IS ON SCREEN. A looping opener room is encoded to
 # cover all of it, because a clip overlay that runs out mid-window vanishes.
 CHAPTER_OPENER_S = 1.6
@@ -1507,7 +1512,7 @@ def _render_long(
         The writer's `[MOVE]`s on this beat, and the chart's data drawing on
         as it arrives. Recorded in programme time for the manifest.
         """
-        from pipeline.moves import plan_segment, render_segment
+        from pipeline.moves import BUILD_MOVES, plan_segment, render_segment
 
         plate = reg.get(key) if key else None
         if plate is None:
@@ -1518,7 +1523,8 @@ def _render_long(
         moves, skipped = plan_segment(
             plate, values, rows, seg_len=seg_len, shot_id=shot_id, layer=shot_id,
             earliest=_cleared(seg.start, covers) - seg.start,
-            settings=settings, reg=reg)
+            settings=settings, reg=reg, words=tts.words, at=seg.start,
+            drawn=bool(seg.payload.get("pushed_in")))
         moves_skipped.extend(skipped)
         for w in skipped:
             log.info("moves: %s", w)
@@ -1530,7 +1536,9 @@ def _render_long(
         if clips is not None:
             long_moves.extend({**m.row(), "start": round(seg.start + m.start, 3)}
                               for m in moves)
-            seg_landed[seg_i] = seg.start + max(m.end for m in moves)
+            # The source waits for the moves, not for the last row he names.
+            seg_landed[seg_i] = seg.start + max(
+                (m.end for m in moves if m.move not in BUILD_MOVES), default=0.0)
         return clips
 
     # ----------------------------------------------- the two-shot, on the room
@@ -1766,6 +1774,10 @@ def _render_long(
     screen_intro_done: set[int] = set()
     screen_front: dict[int, Path | None] = {}
     screen_meta: list[dict] = []
+    # When each beat's draw-in finishes, from the beat's start; and the pushes
+    # into the monitor (item 60).
+    screen_intro_end: dict[int, float] = {}
+    push_meta: list[dict] = []
 
     def _annotated(seg) -> bool:
         """Whether a mark lands on this beat."""
@@ -1842,6 +1854,7 @@ def _render_long(
             if not frames or loop is None:
                 return None
             screen_intro_done.add(pick.chapter)
+            screen_intro_end[i] = delay + reveal_s
             idx = ([0] * int(round(delay * fps))
                    + [min(int(j / fps * BLINK_FPS), len(frames) - 1)
                       for j in range(int(round(reveal_s * fps)))])
@@ -1866,6 +1879,63 @@ def _render_long(
                                 "room": room.key,
                                 "draws_in_at": round(seg.start + delay, 3)})
             return _listing("room", room_clip, loop), front
+
+        def _monitor_push(room, box) -> str:
+            """THE CHAPTER'S CHART STARTS ON HIS MONITOR (item 60).
+
+            On the shot just before the plate his monitor has been carrying
+            all chapter: for its last `PUSH_S` the camera goes into the screen,
+            the picture straightening as it comes, until it fills the frame,
+            and the cut lands on the plate, which is the same picture. A
+            perspective filter on the shot's own frames, so he and the desk
+            go with the room. "" where it cannot: the next beat is not that
+            plate or not full frame, he stands in front of the picture, the
+            picture runs off the frame, or the end of the shot is covered.
+            """
+            from pipeline.room_dressing import picture_quad
+
+            nxt = i + 1
+            if room is None or nxt >= len(segments) \
+                    or "screen" not in (getattr(room, "writable", None) or {}):
+                return ""
+            pick = pick_at(screen_picks, seg.start)
+            if pick is None or pick.seg_index != nxt \
+                    or pick_at(screen_picks, segments[nxt].start) is not pick \
+                    or segments[nxt].payload.get("layout") == "two-shot":
+                return ""
+            t0 = seg_len - PUSH_S
+            if t0 < max(1.0, screen_intro_end.get(i, 0.0) + 0.3) \
+                    or any(a < seg.end and b > seg.start + t0 for a, b in covers):
+                return ""
+            q = picture_quad(room, _screen_dressing(seg.start), (W, H))
+            if q is None:
+                return ""
+            xs, ys = [p[0] for p in q], [p[1] for p in q]
+            if min(xs) < 0 or min(ys) < 0 or max(xs) > W or max(ys) > H:
+                return ""
+            if box is not None:
+                bx, by, bw, bh = box
+                if bx < max(xs) and bx + bw > min(xs) and by < max(ys) and by + bh > min(ys):
+                    return ""
+            # The filter counts its input frames from one; easing in, so the
+            # push gathers speed into the cut.
+            n0, n = int(round(t0 * fps)), max(int(round(PUSH_S * fps)), 2)
+            e = f"pow(clip((in-1-{n0})/{n},0,1),2)"
+            (x0, y0), (x1, y1), (x2, y2), (x3, y3) = q
+
+            def to(start: float, end: float) -> str:
+                return f"'{start:g}+({end:.2f}-{start:g})*{e}'"
+
+            segments[nxt].payload["pushed_in"] = True
+            push_meta.append({"segment": i, "into": nxt, "chapter": pick.chapter + 1,
+                              "room": room.key, "plate": pick.plate_key,
+                              "start": round(seg.start + t0, 3)})
+            long_moves.append({"move": "zoom-to-slot", "start": round(seg.start + t0, 3),
+                               "shot_id": f"segment_{i}", "slot": "screen",
+                               "frames": int(round(PUSH_S * 12))})
+            return (f",perspective=x0={to(0, x0)}:y0={to(0, y0)}:"
+                    f"x1={to(W, x1)}:y1={to(0, y1)}:x2={to(0, x3)}:y2={to(H, y3)}:"
+                    f"x3={to(W, x2)}:y3={to(H, y2)}:sense=source:eval=frame")
 
         def _room_input(room, *, draw_in: bool = True) -> int:
             """The room as an input: its loop where it moves, else its still.
@@ -1975,14 +2045,15 @@ def _render_long(
             bg_i = _room_input(room)
             host = (None if alone
                     else _host_input(i, seg, seg_len, room=room, pose=pose))
+            push = _monitor_push(room, None if host is None else host[1:5])
             if host is None:
-                chain = _still_chain(bg_i, seg, seg_len, i, tail)
+                chain = _still_chain(bg_i, seg, seg_len, i, push + tail)
             else:
                 host_i, hx, hy, hw, hh, front = host
                 front_i = (_front_input(room, front)
                            if front is not None else None)
                 chain = _scaled_overlay_chain(bg_i, host_i, hx, hy, hw, hh,
-                                              seg_len, tail, front_i=front_i)
+                                              seg_len, push + tail, front_i=front_i)
         elif seg.kind == "clip":
             # Footage plays inside a frames/ plate rather than edge to edge.
             # Raw and full-frame it destroys the drawn surface the rest of the
@@ -2811,6 +2882,8 @@ def _render_long(
                      "shows": p.plate_key or "price", "by": p.by}
                     for p in screen_picks],
         "monitor_draw_ins": screen_meta,
+        # Where the camera pushed into the monitor and cut to its plate (60).
+        "monitor_push_ins": push_meta,
         "move_warnings": move_warnings,
         # The wide room the cold open's first shot was in, as a base key.
         # The next video reads it to take its turn on the other one, and the

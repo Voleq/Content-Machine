@@ -761,6 +761,103 @@ def _sheet_rows(plate, values: dict) -> list[tuple[str, str]]:
     return [(b, l) for _, b, l in sorted(rows)]
 
 
+# THE PLATE BUILDS AS HE TALKS (item 57): a sheet's rows and a card's figure
+# go on the frame of the word that says them, not all at once as the cut
+# lands. Played on the long's plate beats only, automatically, like the chart
+# drawing on: a move the writer would tag on some plates and not others is
+# a plate that arrives whole for no reason anyone chose. Nothing fades in;
+# each part appears on its frame, as design's rule has it.
+BUILD_MOVES = ("row-on", "figure-on")
+# A figure heard later than this into its beat is on from the start: a card
+# with its number missing for most of the beat is a card with a hole in it.
+FIGURE_WAIT_MAX_S = 4.0
+
+
+def build_rows(plate, values: dict) -> list[tuple[str, frozenset[str]]]:
+    """(row, the slots it is made of) for each filled row of a sheet, top first.
+
+    A row is a band and everything set inside it, by where the slots are, not
+    what they are called: the sheets name their cells three ways
+    (`cell-2-4`, `subject-2`, `cell-1-2-4`), and the column heads above the
+    first band belong to no row. Bands side by side at one height are one row.
+    """
+    groups: dict[tuple[int, int], set[str]] = {}
+    for name, slot in plate.slots.items():
+        if name.startswith("band-") and slot.is_band:
+            groups.setdefault((round(slot.y), round(slot.h)), set()).add(name)
+    rows = []
+    for (y, h), bands in groups.items():
+        inside = {n for n, s in plate.slots.items()
+                  if s.is_text and y <= s.y + s.h / 2 <= y + h
+                  and str(values.get(n, "")).strip()}
+        if inside:
+            rows.append((y, min(bands), frozenset(inside | bands)))
+    return [(b, slots) for _, b, slots in sorted(rows)]
+
+
+def _label_heard(words: Sequence, label: str, lo: float, hi: float) -> float | None:
+    """When a row's label is said: its first words, or a one-word label that
+    is long enough not to be any word."""
+    got = _phrase_at(words, label, lo, hi)
+    if got is not None:
+        return got
+    want = [_norm(t) for t in str(label).split() if _norm(t)]
+    if len(want) != 1 or len(want[0]) < 4:
+        return None
+    stem = want[0].rstrip("s")
+    for w in words:
+        at = float(getattr(w, "start", 0.0))
+        if lo <= at < hi and _norm(getattr(w, "word", "")).rstrip("s") == stem:
+            return at
+    return None
+
+
+def plan_builds(plate, values: dict, words: Sequence, *, at: float, seg_len: float,
+                shot_id: str, layer: str, earliest: float = 0.0,
+                called: frozenset[str] = frozenset()) -> list[Move]:
+    """The parts of one long plate beat that wait for their word (item 57).
+
+    `at` is the beat's first frame in programme time, which is the clock the
+    word timings are on; the moves come back timed from the beat's start.
+    The first row comes with the plate; a later row appears when its label or
+    one of its figures is said, and a row never said appears with the row
+    above it. A figure the writer counts up (`called`) is left to the writer.
+    """
+    lo, hi = at, at + seg_len
+    first = max(float(earliest), 0.0)
+    last = seg_len - END_MARGIN_S
+    out: list[Move] = []
+    rows = build_rows(plate, values)
+    if len(rows) >= 2:
+        heard: list[float | None] = []
+        for band, slots in rows:
+            # `label-2` on a sheet, `step-2-label` on a ladder.
+            label = next((values[n] for n in sorted(slots) if "label" in n.split("-")), "")
+            times = [_label_heard(words, label, lo, hi)] if label else []
+            times += [_heard(words, _said_forms(values[n]), lo, hi)
+                      for n in slots if not n.startswith("band-")
+                      and is_one_figure(values.get(n, ""))]
+            got = [t - at for t in times if t is not None]
+            heard.append(min(got) if got else None)
+        if any(h is not None and h > first for h in heard[1:]):
+            prev = first
+            for (band, _slots), h in zip(rows[1:], heard[1:]):
+                t = prev if h is None else max(h, prev)
+                prev = t
+                if first + 0.05 < t < last:
+                    out.append(Move("row-on", shot_id, layer, band, t, 1))
+    for slot in _figure_slots(plate, values):
+        if slot in called or _CELL.match(slot) or any(slot in s for _, s in rows):
+            continue
+        t = _heard(words, _said_forms(values.get(slot, "")), lo, hi)
+        if t is None:
+            continue
+        t -= at
+        if first + 0.3 < t < min(last, first + FIGURE_WAIT_MAX_S, 0.5 * seg_len):
+            out.append(Move("figure-on", shot_id, layer, slot, t, 1))
+    return out
+
+
 def _ink_box(plate, slot_name: str, value: str, settings, reg):
     from pipeline.plate_frames import drawn_box
 
@@ -1033,6 +1130,18 @@ class MoveCompositor:
         def is_band(name: str) -> bool:
             return plate.slot(name) is not None and plate.slots[name].is_band
 
+        # WHAT HE HAS NOT SAID YET IS NOT ON IT (item 57): a row, its band and
+        # everything set in it, and a figure, until the frame of their word.
+        withheld: set[str] = set()
+        if any(m.move in BUILD_MOVES for m, _ in live):
+            rows = dict(build_rows(plate, values))
+            for m, f in live:
+                if f is None and m.move == "row-on":
+                    withheld |= rows.get(m.slot, frozenset())
+                elif f is None and m.move == "figure-on":
+                    withheld.add(m.slot)
+        shown = {k: v for k, v in values.items() if k not in withheld}
+
         # A band that draws on is left off the art until it has landed; every
         # other lit band is on from the first frame. The type goes over the
         # bands, so while one is still drawing the type is set after it.
@@ -1043,9 +1152,9 @@ class MoveCompositor:
         # on because its highlight has landed, and it stays on.
         landed = {m.slot for m, f in live if m.move == "highlight" and is_band(m.slot)
                   and f is not None and f >= m.frames - 1}
-        bands = tuple(sorted({n for n, v in values.items()
+        bands = tuple(sorted({n for n, v in shown.items()
                               if is_band(n) and str(v).strip() and n not in held}
-                             | landed))
+                             | (landed - withheld)))
         counting = {m.slot for m, _ in live if m.move == "count-up"}
         reveal = next(((m, f) for m, f in live if m.move in ("line-draw", "bars-grow")), None)
         # A chart's marks label points on the line ("15.42" at its end), so
@@ -1053,7 +1162,7 @@ class MoveCompositor:
         # label sits in empty plot beside nothing.
         drawing = reveal is not None and (reveal[1] is None
                                           or reveal[1] < reveal[0].frames - 1)
-        text = tuple(sorted((k, v) for k, v in values.items()
+        text = tuple(sorted((k, v) for k, v in shown.items()
                             if k not in counting and k in plate.slots
                             and plate.slots[k].is_text
                             and not (drawing and k.startswith("mark-"))))
@@ -1264,7 +1373,8 @@ class MoveCompositor:
 
 def plan_segment(plate, values: dict, rows: Sequence[dict], *, seg_len: float,
                  shot_id: str, layer: str = "plate", earliest: float = 0.0,
-                 settings=None, reg=None) -> tuple[list[Move], list[str]]:
+                 settings=None, reg=None, words: Sequence = (), at: float = 0.0,
+                 drawn: bool = False) -> tuple[list[Move], list[str]]:
     """The moves one LONG plate beat plays, timed from the beat's first frame.
 
     Nothing is picked here: the writer called these (`rows`, the beat's
@@ -1280,6 +1390,11 @@ def plan_segment(plate, values: dict, rows: Sequence[dict], *, seg_len: float,
 
     `earliest` is when the beat is first seen, for one that opens under a
     chapter bumper or a wipe: nothing moves before it.
+
+    `words` (on the programme clock, the beat starting at `at`) let a sheet's
+    rows and a card's figure appear as he says them (`plan_builds`). `drawn`
+    is a beat the camera pushed into from his monitor (item 60), where the
+    plate was already on screen whole: nothing on it draws on again.
     """
     lane = _Lane(0.0, float(seg_len), max(float(earliest), 0.0))
     skipped: list[str] = []
@@ -1289,7 +1404,7 @@ def plan_segment(plate, values: dict, rows: Sequence[dict], *, seg_len: float,
         frames, ease = _frames(reg, plate, move)
         return Move(move, shot_id, layer, slot, 0.0, frames, ease, text=text)
 
-    kind = _data_kind(plate, values)
+    kind = "" if drawn else _data_kind(plate, values)
     if kind == "line" and motion.get("line-draw"):
         lane.place(new("line-draw", _plot_slot(plate, "line-draw")), 0.0)
     elif kind == "bars" and motion.get("bars-grow"):
@@ -1319,7 +1434,11 @@ def plan_segment(plate, values: dict, rows: Sequence[dict], *, seg_len: float,
                 move = "highlight"
         if lane.place(new(move, slot, text), float(r.get("at") or 0.0)) is None:
             skipped.append(f"{where}: no room to land before the beat cuts")
-    return lane.moves, skipped
+    builds = [] if drawn or not words else plan_builds(
+        plate, values, words, at=at, seg_len=float(seg_len), shot_id=shot_id,
+        layer=layer, earliest=max(float(earliest), 0.0),
+        called=frozenset(str(r.get("slot") or "") for r in rows))
+    return sorted(lane.moves + builds, key=lambda m: m.start), skipped
 
 
 @dataclass(frozen=True)

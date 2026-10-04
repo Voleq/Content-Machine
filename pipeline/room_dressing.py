@@ -296,6 +296,11 @@ def _prompt(dr, d: Dressing, fonts: Path, W: int, H: int, cursor: bool) -> None:
                      fill=_SCREEN_TEXT)
 
 
+# The box the chapter's picture is fitted into on the monitor, as fractions
+# of the screen: under the title bar, over the prompt line.
+_PICTURE_BOX = (0.035, 0.135, 0.965, 0.865)
+
+
 def _picture(img, path: str, box, reveal: float) -> None:
     """The chapter's plate in `box`, fitted whole, drawn in from the left as
     far as `reveal` with a bright edge where it is being drawn."""
@@ -335,7 +340,8 @@ def screen_chart(d: Dressing, fonts: Path, size: tuple[int, int], *,
         head, label = _fit_text(dr, label, fonts, "ArchivoNarrow[wght].ttf",
                                 0.075 * H, 0.965 * W - hx)
         dr.text((hx, 0.03 * H), label, font=head, fill=_SCREEN_TEXT)
-        _picture(img, d.screen, (0.035 * W, 0.135 * H, 0.965 * W, 0.865 * H), reveal)
+        bx0, by0, bx1, by1 = _PICTURE_BOX
+        _picture(img, d.screen, (bx0 * W, by0 * H, bx1 * W, by1 * H), reveal)
         _prompt(dr, d, fonts, W, H, cursor)
         return img
     for i in range(1, 6):
@@ -364,6 +370,38 @@ def screen_chart(d: Dressing, fonts: Path, size: tuple[int, int], *,
                 fill=_SCREEN_TEXT)
     _prompt(dr, d, fonts, W, H, cursor)
     return img
+
+
+def picture_quad(plate, d: Dressing, size: tuple[int, int]):
+    """Where the chapter's picture is on the monitor, as four points of a
+    frame `size` big (top left, top right, bottom right, bottom left); None
+    when the room has no monitor in shot or the monitor shows the price.
+
+    The same fit `_picture` draws it with, carried through the screen's
+    corners: item 60 pushes the camera into exactly this, so the plate the
+    cut lands on is the picture that was on the monitor.
+    """
+    from PIL import Image
+
+    surf = (getattr(plate, "writable", None) or {}).get("screen")
+    if surf is None or not d.screen:
+        return None
+    sw, sh = surf.get("size") or (16, 9)
+    pw, ph = Image.open(d.screen).size
+    bx0, by0, bx1, by1 = _PICTURE_BOX
+    k = min((bx1 - bx0) * sw / pw, (by1 - by0) * sh / ph)
+    u0 = bx0 + ((bx1 - bx0) - pw * k / sw) / 2
+    v0 = by0 + ((by1 - by0) - ph * k / sh) / 2
+    u1, v1 = u0 + pw * k / sw, v0 + ph * k / sh
+    s = size[0] / plate.canvas[0]
+    h = _homography([(0, 0), (1, 0), (1, 1), (0, 1)],
+                    [(x * s, y * s) for x, y in surf["quad"]])
+
+    def at(u, v):
+        x, y, w = h @ (u, v, 1.0)
+        return (float(x / w), float(y / w))
+
+    return [at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1)]
 
 
 # --------------------------------------------------------------- the warp

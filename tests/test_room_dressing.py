@@ -334,3 +334,23 @@ def test_reveal_frames_end_on_the_written_room(tmp_path):
     first = np.asarray(frames[0][0]).astype(int)
     assert np.abs(first - written).sum() > 0
     assert rd.reveal_frames(_board_only(tmp_path / "kit2"), d, FONTS, (400, 200)) is None
+
+
+def test_the_picture_s_corners_are_where_it_is_drawn(tmp_path):
+    """Item 60 pushes the camera into these corners: they must be the picture."""
+    plate = _still(tmp_path / "kit")
+    pic = tmp_path / "solid.png"
+    Image.new("RGB", (160, 90), (200, 40, 40)).save(pic)
+    d = _dressing().showing(pic, "The cash")
+    q = rd.picture_quad(plate, d, (400, 200))
+    assert q is not None and len(q) == 4
+    out = rd.written_room(plate, d, tmp_path / "w", FONTS)
+    img = np.asarray(Image.open(out.path).convert("RGB")).astype(int)
+    red = (img[..., 0] > img[..., 1] + 60) & (img[..., 0] > img[..., 2] + 60)
+    red[:, :200] = False            # the board's red line is not the picture
+    ys, xs = np.nonzero(red)
+    xs_q, ys_q = [p[0] for p in q], [p[1] for p in q]
+    assert abs(xs.min() - min(xs_q)) <= 3 and abs(xs.max() + 1 - max(xs_q)) <= 3
+    assert abs(ys.min() - min(ys_q)) <= 3 and abs(ys.max() + 1 - max(ys_q)) <= 3
+    assert rd.picture_quad(plate, _dressing(), (400, 200)) is None
+    assert rd.picture_quad(_board_only(tmp_path / "kit2"), d, (400, 200)) is None
