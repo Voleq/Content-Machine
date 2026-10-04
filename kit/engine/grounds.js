@@ -18,6 +18,9 @@
 
 const NOT_TEXT = ['band', 'marker', 'plot-area', 'bars', 'bridge', 'path', 'spark', 'point-column', 'bar',
   'media', 'highlight-band', 'wraps', 'control', 'mark-area'];
+/* The regions a plate draws its data in (R41, bot): a box grown for the type floor never slides into one it was clear of. */
+const DATA = ['plot-area', 'bars', 'bar', 'bridge', 'path', 'spark', 'media', 'mark-area'];
+const DATA_GAP = 14; // the authored gap between a 9:16 y-axis label and its axis line
 const isText = s => !(s.overlay || s.container || s.region || NOT_TEXT.indexOf(s.role) >= 0);
 
 function groundOf(key, tokens) {
@@ -210,10 +213,24 @@ function restyle(P, key, tokens) {
         const k = floor / size;
         used[rn].forEach(n => {
           const s = S[n], w2 = Math.min(Math.round(s.w * k), Math.round(zone[2] - zone[0]));
-          const x2 = s.align === 'right' ? s.x + s.w - w2 : s.align === 'center' ? s.x + (s.w - w2) / 2 : s.x;
-          const cand = { x: Math.max(zone[0], Math.min(x2, zone[2] - w2)), y: s.y, w: w2, h: s.h };
-          const hits = Object.keys(S).some(m => m !== n && isText(S[m]) && !(cand.x + cand.w <= S[m].x || cand.x >= S[m].x + S[m].w || cand.y + cand.h <= S[m].y || cand.y >= S[m].y + S[m].h));
-          if (!hits && w2 > s.w) { Object.assign(s, { x: Math.round(cand.x), w: w2 }); grew.push(n); }
+          const place = w => {
+            const x2 = s.align === 'right' ? s.x + s.w - w : s.align === 'center' ? s.x + (s.w - w) / 2 : s.x;
+            return { x: Math.max(zone[0], Math.min(x2, zone[2] - w)), y: s.y, w: w, h: s.h };
+          };
+          const meets = (a, b) => !(a.x + a.w <= b.x || a.x >= b.x + b.w || a.y + a.h <= b.y || a.y >= b.y + b.h);
+          const hitsText = c => Object.keys(S).some(m => m !== n && isText(S[m]) && meets(c, S[m]));
+          /* R41 (bot): clamped at the zone, a box slides past the edge its
+           * type is set against: a right-set y-axis label slid right, across
+           * the axis line and into the plot it labels. A slide like that
+           * never enters a region the plate draws its data in that the box
+           * was clear of, and keeps DATA_GAP clear of its edge; the box grows
+           * as far as it can short of that. */
+          const slid = c => s.align === 'right' ? c.x + c.w > s.x + s.w : s.align !== 'center' && c.x < s.x;
+          const padded = c => ({ x: c.x - DATA_GAP, y: c.y, w: c.w + 2 * DATA_GAP, h: c.h });
+          const intrudes = c => slid(c) && Object.keys(S).some(m => m !== n && DATA.indexOf(S[m].role) >= 0 && !meets(s, S[m]) && meets(padded(c), S[m]));
+          let cand = place(w2);
+          if (!hitsText(cand)) for (let w = w2; intrudes(cand) && w > s.w; ) cand = place(--w);
+          if (!hitsText(cand) && !intrudes(cand) && cand.w > s.w) { Object.assign(s, { x: Math.round(cand.x), w: cand.w }); grew.push(n); }
         });
         size = floor;
       }

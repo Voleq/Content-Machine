@@ -327,7 +327,7 @@ def test_the_installed_kit_knows_its_wipes_holds_safe_areas_and_moves(registry):
     assert wipe.plays_once and wipe.transition.get("cutAt") == 4
     assert [f.t for f in wipe.frames] == [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1]
     assert registry.get("structure/chapter-bumper-16x9").hold_s == 2
-    assert registry.get("shorts/short-number-9x16").safe.get("bottom") == 1560
+    assert registry.get("shorts/short-number-9x16").safe.get("bottom") == 1480
     assert registry.get("overlays/source-tag-16x9").canvas == (900, 72)
     assert registry.get("overlays/source-tag-16x9").composite
     talk = registry.get("host/to-camera-talk")

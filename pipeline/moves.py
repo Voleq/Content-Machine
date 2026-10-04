@@ -392,7 +392,7 @@ def _figure_slots(plate, values: dict, lit: str = "") -> list[str]:
     if row:
         cells = [(int(m.group(2)), n) for n in values
                  if (m := _CELL.match(n)) and m.group(1) == row.group(1)
-                 and str(values[n]).strip()]
+                 and n in plate.slots and str(values[n]).strip()]
         if cells:
             names.append(max(cells)[1])
     got = [n for n in names
@@ -732,15 +732,17 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
                 tagged.add(whose)
                 if not own:
                     carried = None
-            elif own:
+            elif own and plate.slot("source") is not None:
                 plan.skipped.append(
-                    f"{shot.id}: no source tag, "
-                    + ("the plate prints a source line of its own"
-                       if plate.slot("source") is not None
-                       else "the shot is too short to slide one in and read it"))
+                    f"{shot.id}: no source tag, the plate prints a source "
+                    f"line of its own")
+            elif own:
+                # Too short to slide one in and read it: the line rests on
+                # the next shot with room, as for a plate with no clear spot.
+                carried = (own, beat)
     if carried is not None:
         plan.skipped.append(
-            f"{carried[1]}: no source tag, its plate has no clear spot for one "
+            f"{carried[1]}: no source tag, its shot had no room for one "
             f"and no later shot had room")
     return plan
 

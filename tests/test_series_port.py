@@ -124,12 +124,16 @@ def _differs(got: list[dict], want: list[dict]) -> str | None:
 # ------------------------------------------------------------------ the port
 
 
-def test_the_port_draws_every_sample_as_the_kit_does(reg, ink, samples):
+def test_the_port_draws_every_sample_as_the_kit_does(reg, samples):
+    from pipeline.chart import _style
+
     wrong = []
     for row in samples:
         plate = reg.get(row["key"])
         assert plate is not None, f"{row['key']} has sample data and is not installed"
-        why = _differs(S.data_layer(S.boxes(plate), row["data"], ink), row["nodes"])
+        # In the plate's own inks and style (rebuild-41): paper or screen.
+        why = _differs(S.data_layer(S.boxes(plate), row["data"], reg.inks(plate),
+                                    **_style(reg, plate)), row["nodes"])
         if why:
             wrong.append(f"{row['key']}: {why}")
     assert not wrong, f"{len(wrong)} of {len(samples)} plates draw differently:\n" + "\n".join(wrong[:20])
@@ -406,11 +410,24 @@ def _flat(v) -> list[float]:
 
 def test_design_sample_copy_round_trips_to_the_kit_data(reg, samples):
     wrong = []
+    by_key = {row["key"]: row for row in samples}
     for row in samples:
         if not row["nodes"]:
             continue                      # the kit's sample draws nothing either
         plate = reg.get(row["key"])
         want = row["data"]
+        # FIGURES DESIGN'S OWN SAMPLE CUT TO FIT A PHONE'S CELL are not the
+        # figures the data says: since rebuild-41 sets 9:16 type at 34 and up,
+        # its sample prints "13.…" for 13.8% and "$3" for $3,810m. Where a
+        # 9:16 sample prints a figure its 16:9 twin prints otherwise, or cuts
+        # one short, the plate's printed data is not there to round-trip; the
+        # bot writes figures that fit.
+        twin = by_key.get(row["key"].replace("-9x16", "-16x9")) if row["key"].endswith("-9x16") else None
+        if any(str(v).endswith("…") or (twin is not None and S.figure(twin["text"].get(k)) is not None
+                                        and v != twin["text"].get(k))
+               for k, v in row["text"].items()
+               if S.figure(str(v).rstrip("…")) is not None or k.startswith(("value-", "head-"))):
+            continue
         fill = build_fill(reg, _tag(plate, row["text"], want))
         if fill.problems:
             wrong.append(f"{row['key']}: refused — {fill.problems[0]}")
@@ -453,9 +470,15 @@ def test_design_sample_copy_round_trips_to_the_kit_data(reg, samples):
             own = (want.get("panelScale") or {}).get(k)
             if bool(own) != bool((got.get("panelScale") or {}).get(k)):
                 bad(f"panelScale[{k}]", own, (got.get("panelScale") or {}).get(k))
+        # The second series is in the ink the PLATE publishes for it (its
+        # label's), where the sample's own data says another: rebuild-41 keys
+        # ten two-series charts' second line in `down` and samples them in
+        # subject2, and the line the bot draws matches the swatch beside it.
+        said = next((plate.slots[k].ink for k in ("legend-2", "row-2")
+                     if k in plate.slots and plate.slots[k].ink), None)
         if want.get("series2") is not None \
-                and (got.get("tone2") or "subject2") != (want.get("tone2") or "subject2"):
-            bad("tone2", want.get("tone2"), got.get("tone2"))
+                and (got.get("tone2") or "subject2") != (said or want.get("tone2") or "subject2"):
+            bad("tone2", said or want.get("tone2"), got.get("tone2"))
         if bool(got.get("spread")) != bool(want.get("spread")):
             bad("spread", want.get("spread"), got.get("spread"))
         # The kit draws the line it is given and no other: a series its sample
@@ -520,14 +543,15 @@ def _data(reg, tag: str):
 
 def test_the_second_series_is_drawn_in_the_ink_its_legend_keys(reg):
     """book-to-bill keys revenue in quiet; drawn in subject2, the bars are a
-    colour the legend beside them does not show."""
+    colour the legend beside them does not show. Keys are the kit's ink
+    names since rebuild-41."""
     b2b = reg.get("charts/book-to-bill-16x9")
-    assert b2b.keys == {"legend-1": "up", "legend-2": "neutral-data"}
+    assert b2b.keys == {"legend-1": "subject", "legend-2": "quiet"}
     got = S.plate_data(b2b, {f"bar-{i}": str(600 + i) for i in range(1, 9)}
                        | {f"pair-{i}": str(580 + i) for i in range(1, 9)})
     assert got.data["tone2"] == "quiet"
     spread = reg.get("charts/price-cost-spread-16x9")
-    assert spread.keys["legend-2"] == "down"
+    assert spread.keys["legend-2"] == "subject2"
     got = S.plate_data(spread, {"series": "6,5,4,3,2,1,1,1", "series2": "9,7,5,3,2,2,3,4"})
     assert got.data["tone2"] == "subject2"
 

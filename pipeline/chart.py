@@ -448,9 +448,16 @@ def _draw_share_of_whole(reg: Registry, plate: Plate, values: dict[str, str],
 
 
 def _ink(reg: Registry, plate: Plate) -> dict[str, str]:
-    """The kit's inks at the hour this plate is drawn at."""
-    palette = reg.palettes.get(plate.hour or reg.base_hour) or reg.palette
-    return S.ink_for(palette)
+    """The kit's inks this plate is drawn in: its ground's, at its hour."""
+    return reg.inks(plate)
+
+
+def _style(reg: Registry, plate: Plate) -> dict:
+    """How the data layer draws on this plate (rebuild-41): its ground, its
+    aspect, and the registry's published plate style."""
+    w, h = plate.canvas
+    return {"ground": getattr(plate, "ground", "") or "", "land": w >= h,
+            "style": getattr(reg, "plate_style", None) or {}}
 
 
 def draw_declared(reg: Registry, plate: Plate, values: dict[str, str], img,
@@ -475,7 +482,7 @@ def draw_declared(reg: Registry, plate: Plate, values: dict[str, str], img,
     got = S.plate_data(plate, values)
     for why in got.problems:
         log.warning("%s: %s — that part is not drawn", plate.key, why)
-    nodes = S.data_layer(S.boxes(plate), got.data, _ink(reg, plate))
+    nodes = S.data_layer(S.boxes(plate), got.data, _ink(reg, plate), **_style(reg, plate))
     if nodes:
         S.paint(img, nodes, plate.export_scale * img.width / max(plate.pixel_size[0], 1))
         drew = True
@@ -536,7 +543,7 @@ def render_series(reg: Registry, plate: Plate, values: list[float | None],
         area = plot_area(plate)
         draw_line(img, area, data["series"], S._rgba(ink["subject"])[:3], domain=domain)
         return img
-    nodes = S.data_layer(S.boxes(plate), data, ink)
+    nodes = S.data_layer(S.boxes(plate), data, ink, **_style(reg, plate))
     S.paint(img, nodes, plate.export_scale * img.width / max(plate.pixel_size[0], 1))
     return img
 

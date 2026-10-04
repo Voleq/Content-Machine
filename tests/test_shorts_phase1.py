@@ -378,3 +378,21 @@ def test_grown_labels_side_by_side_never_run_together(kit):
              for n in names]
     for a, b in zip(boxes, boxes[1:]):
         assert a[0] + a[2] < b[0], "two value labels touch"
+
+
+def test_a_row_of_figures_is_set_at_one_size(kit):
+    """Grown each to fit its own box, the short's bar values came out at two
+    sizes: "812" half as big again as "1,050" in the next column."""
+    from config import Settings
+    from pipeline.plate_frames import drawn_box
+
+    bars = kit.get("charts/bars-6y-9x16")
+    s = Settings(_env_file=None)
+    short = drawn_box(bars, bars.slots["value-1"], "812", s, kit)
+    long_ = drawn_box(bars, bars.slots["value-2"], "10500", s, kit)
+    assert short[3] == long_[3]           # digits only: same ink height, same size
+    # A single line on the same card still grows (item 35).
+    unit = bars.slots["unit"]
+    assert drawn_box(bars, unit, "Revenue", s, kit)[3] > drawn_box(
+        bars, unit, "Revenue", Settings(_env_file=None, short_type_grow=1.0), kit)[3]
+

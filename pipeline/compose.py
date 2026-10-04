@@ -655,6 +655,38 @@ def safe_placement(plate: Plate, values: dict, required, frame: tuple[int, int],
     return got, dropped
 
 
+def _on_the_ink(plate: Plate, values: dict, reg: Registry) -> Plate:
+    """`plate` with each filled text slot cut down to the type it sets.
+
+    A MOVE IN IS ON THE WORDS, NOT THE BOX THEY MAY USE. Rebuild-41 stretched
+    a phone plate's text boxes across the whole clear width, so moved in on
+    the box the payoff's "$496M" came out at 1.02x, under `PUNCH_MIN_SCALE`,
+    and no long beat on a card could split; the other boxes, full width too,
+    read as sliced by any move at all. Framed by their ink, a short figure
+    gets its close-up and a paragraph that fills its box still frames as the
+    box. Only the geometry asks this: the plate drawn is the plate itself.
+    """
+    from pipeline.plate_frames import drawn_box
+
+    settings = None
+    slots = dict(plate.slots)
+    s = max(int(plate.export_scale or 1), 1)
+    for name, value in values.items():
+        slot = plate.slot(name)
+        if slot is None or not slot.is_text or not str(value or "").strip():
+            continue
+        settings = settings or _settings()
+        try:
+            got = drawn_box(plate, slot, str(value), settings, reg)
+        except Exception:                          # noqa: BLE001
+            got = None
+        if got:
+            slots[name] = replace(slot, x=int(got[0] / s), y=int(got[1] / s),
+                                  w=max(int(round(got[2] / s)), 1),
+                                  h=max(int(round(got[3] / s)), 1))
+    return replace(plate, slots=slots)
+
+
 # How close to the frame's side a moved-in word may come. A punch-in that
 # put a card's body against the left edge read as cropped even with every
 # letter on screen.
@@ -664,6 +696,7 @@ PUNCH_EDGE = 0.04
 def _focus_placement(plate: Plate, slot_name: str,
                      stage: tuple[int, int, int, int],
                      placed: tuple[int, int, int, int],
+                     max_scale: float = FOCUS_MAX_SCALE,
                      ) -> tuple[int, int, int, int]:
     """The plate moved in on one of its slots — and never past the edges of
     what it has to show.
@@ -685,7 +718,7 @@ def _focus_placement(plate: Plate, slot_name: str,
     sx, sy, sw, sh_px = _slot_in_frame(plate, slot_name, placed)
     by_height = (gh2 * FOCUS_FILL) / max(sh_px, 1)
     by_width = gw2 * (1 - 2 * PUNCH_EDGE) / max(sw, 1)
-    k = max(min(by_height, by_width, FOCUS_MAX_SCALE), 1.0)
+    k = max(min(by_height, by_width, FOCUS_MAX_SCALE, max_scale), 1.0)
     nw, nh = int(w * k), int(h * k)
     base = (gx + (gw2 - nw) // 2, gy + (gh2 - nh) // 2, nw, nh)
     sx, sy, sw, sh_px = _slot_in_frame(plate, slot_name, base)
@@ -698,6 +731,29 @@ def _focus_placement(plate: Plate, slot_name: str,
     ny = (min(gy, max(ny, gy + gh2 - nh)) if nh >= gh2
           else gy + (gh2 - nh) // 2)
     return (nx, ny, nw, nh)
+
+
+def _move_in(plate: Plate, name: str, values: dict, reg: Registry,
+             stage: tuple[int, int, int, int], placed: tuple[int, int, int, int],
+             frame: tuple[int, int], safe: tuple[int, int] | None = None,
+             ) -> tuple[int, int, int, int] | None:
+    """The closest move in on `name`'s words that slices none of the others,
+    or None when even `PUNCH_MIN_SCALE` would.
+
+    AS FAR AS IT CAN, NOT ALL OR NOTHING. One zoom was tried, the one that
+    fills the frame with the slot, and since rebuild-41 filled a phone
+    plate's frame with its words, that one slices a neighbour on every card
+    and no long beat could split; a little less close keeps them whole.
+    """
+    inked = _on_the_ink(plate, values, reg)
+    close = _focus_placement(inked, name, stage, placed)
+    k = close[2] / max(placed[2], 1)
+    while k >= PUNCH_MIN_SCALE:
+        if not _cuts_a_filled_slot(inked, values, close, frame, safe=safe):
+            return close
+        k *= 0.92
+        close = _focus_placement(inked, name, stage, placed, max_scale=k)
+    return None
 
 
 # A punch-in smaller than this barely changes the picture, so the beat would
@@ -766,20 +822,39 @@ def punch_in_slot(reg: Registry, shot: Shot, frame: tuple[int, int],
     fw, fh = frame
     w, h = _fit(plate, frame)
     wide = ((fw - w) // 2, (fh - h) // 2, w, h)
+    from pipeline.moves import is_one_figure
+
     for move in PUNCH_MOVES:
         name = (plate.motion.get(move) or {}).get("slot")
         if not name or plate.slot(name) is None:
             continue
         if not str(values.get(name, "")).strip():
             continue
-        close = _focus_placement(plate, name, (0, 0, fw, fh), wide)
-        if close[2] < wide[2] * PUNCH_MIN_SCALE:
+        # The count-up anchor is there to name what the plate sets biggest.
+        # Since rebuild-41's 9:16 type floor set units and kickers at the
+        # figures' size, design's anchor lands on "Free cash flow, FY21 to
+        # LTM" on dozens of plates; a close-up on the plate's smallest line
+        # that is not a figure is a close-up on a caption.
+        if move == "count-up" and not is_one_figure(str(values.get(name, ""))) \
+                and _type_size(plate, name) <= _smallest_type(plate):
             continue
-        if _cuts_a_filled_slot(plate, values, close, frame, safe=safe):
+        if _move_in(plate, name, values, reg, (0, 0, fw, fh), wide, frame,
+                    safe=safe) is None:
             continue
         return name
     return None
 
+
+
+def _type_size(plate: Plate, name: str) -> float:
+    slot = plate.slot(name)
+    return float(((plate.type_roles or {}).get(slot.role) or {}).get("size") or 0) if slot else 0.0
+
+
+def _smallest_type(plate: Plate) -> float:
+    """The smallest size a text slot on `plate` is set at."""
+    sizes = [_type_size(plate, n) for n, sl in plate.slots.items() if sl.is_text]
+    return min((z for z in sizes if z), default=0.0)
 
 
 def _cuts_a_filled_slot(plate: Plate, values: dict,
@@ -1032,7 +1107,12 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             # shot with a rectangle migrating down it, which a viewer reads as
             # a single held composition. The geometry is `_focus_placement`.
             if shot.focus and plate.slot(shot.focus) is not None:
-                placed = _focus_placement(plate, shot.focus, stage, placed)
+                # A long beat's second part moves in as far as its words stay
+                # whole, the way `punch_in_slot` chose it.
+                placed = ((shot.part == 2 and _move_in(plate, shot.focus, values, reg,
+                                                       stage, placed, (fw, fh), safe=safe))
+                          or _focus_placement(_on_the_ink(plate, values, reg),
+                                              shot.focus, stage, placed))
                 w, h = placed[2], placed[3]
 
             plate_large = sets_large_type(plate, values, placed[3], fh)

@@ -108,7 +108,9 @@ def test_a_sheet_counts_the_latest_figure_of_the_row_it_lights(reg):
     being read."""
     plate = reg.get("tables/numbers-sheet-3r-9x16")
     values = {f"cell-{r}-{c}": str(r * 100 + c) for r in (1, 2, 3) for c in range(1, 7)}
-    assert MV._figure_slots(plate, values, "band-2") == ["cell-2-6"]
+    # Five periods on a phone since rebuild-41: the latest is the fifth, and
+    # a sixth figure with no cell to hold it is not the one counted.
+    assert MV._figure_slots(plate, values, "band-2") == ["cell-2-5"]
     assert MV._figure_slots(plate, values, "all") == []
     assert MV._figure_slots(plate, values, "") == []
 
@@ -189,9 +191,11 @@ def test_the_circle_never_rings_a_figure_that_fills_its_plate(reg, settings):
     """big-number sets its figure across the frame: a ring round it is a ring
     round the plate. A cell on a full sheet is what the pen is for."""
     big = reg.get("figures/big-number-l2-9x16")
-    assert MV.circle_box(big, "value", "$496M", settings, reg) is None
+    # A figure as long as its budget spans the plate (rebuild-41 sets the
+    # slot so one does); a shorter one is a smaller part of it.
+    assert MV.circle_box(big, "value", "-$496M", settings, reg) is None
     sheet = reg.get("tables/numbers-sheet-4r-9x16")
-    box = MV.circle_box(sheet, "cell-1-6", "496", settings, reg)
+    box = MV.circle_box(sheet, "cell-1-5", "496", settings, reg)
     assert box is not None
     cw, ch = sheet.canvas
     assert box.w * box.h <= cw * ch * MV.CIRCLE_MAX_AREA
@@ -355,10 +359,11 @@ def _sheet_layer(script, t_start: float = 10.0):
     """
     from pipeline.compose import Layer
 
-    values = {f"head-{i + 1}": y for i, y in enumerate(script.years[:6])}
+    # The five latest periods: a phone's sheet has five columns (rebuild-41).
+    values = {f"head-{i + 1}": y for i, y in enumerate(script.years[:6][-5:])}
     for r, row in enumerate(script.numbers[:4], start=1):
         values[f"label-{r}"] = row.label
-        for c, v in enumerate(row.values[:6], start=1):
+        for c, v in enumerate(row.values[:6][-5:], start=1):
             values[f"cell-{r}-{c}"] = v
     key = "tables/numbers-sheet-4r-9x16"
     return Layer(name=f"numbers:plate:{key}", kind="plate", shot_id="numbers",
@@ -380,8 +385,11 @@ def test_a_landed_count_up_leaves_the_plate_as_its_still(short, reg, settings):
     from pipeline.render_short import _Cache
 
     fmt, result, words, _ = short
-    layer = _layer(result, "the-move")
-    move = MV.Move("count-up", "the-move", layer.name, "value", layer.t_start, 7,
+    # The first plate holding one figure in `value`: which drawing a beat gets
+    # rotates (the move beat may draw the session's chart instead).
+    shot_id, layer = next((k, l) for k, l in MV.shot_plates(result).items()
+                          if MV.is_one_figure(l.values.get("value", "")))
+    move = MV.Move("count-up", shot_id, layer.name, "value", layer.t_start, 7,
                    "out", text=layer.values["value"])
     cache = _Cache(settings, reg)
     comp = MV.MoveCompositor(MV.MovePlan(moves=[move]), reg, settings, cache)
@@ -440,7 +448,7 @@ def test_the_ring_is_drawn_round_the_figure_not_the_slot(short, reg, settings):
 
     fmt, result, words, script = short
     layer = _sheet_layer(script)
-    slot = "cell-1-6"
+    slot = "cell-1-5"
     move = MV.Move("pen-circle", "numbers", layer.name, slot, layer.t_start, 8, "inOut")
     cache = _Cache(settings, reg)
     comp = MV.MoveCompositor(MV.MovePlan(moves=[move]), reg, settings, cache)
@@ -474,7 +482,12 @@ def test_the_underline_sits_under_the_line_the_copy_ends_on(reg, settings, text)
     anchor = plate.motion["highlight"]
     line = MV.underline_line(plate, anchor["slot"], text, settings, reg)
     ink = MV._ink_box(plate, anchor["slot"], text, settings, reg)
-    assert dict(line._asdict()) in anchor["lines"]
+    # One of design's lines where the copy ends in one; where the type sets
+    # taller than design's leading (rebuild-41's 34 on a phone, and the long
+    # copy shrunk to fit), the anchor's line moved under the ink.
+    first = anchor["lines"][0]
+    assert dict(line._asdict()) in anchor["lines"] or \
+        (line.x, line.w, line.h) == (first["x"], first["w"], first["h"])
     assert line.y < ink.y + ink.h <= line.y + line.h + 8
 
 

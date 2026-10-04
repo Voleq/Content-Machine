@@ -1755,8 +1755,8 @@
      "weight": 400,
      "colour": "quiet",
      "opacity": 1,
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), was 7"
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 5), was 7"
     },
     "value": {
      "font": "Courier Prime",
@@ -1791,45 +1791,45 @@
      "role": "axis",
      "x": 54,
      "y": 1374,
-     "w": 155,
+     "w": 108,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-2": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 1099,
-     "w": 155,
+     "w": 108,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-3": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 823,
-     "w": 155,
+     "w": 108,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-4": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 548,
-     "w": 155,
+     "w": 108,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-5": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 302,
-     "w": 155,
+     "w": 108,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "point-1": {
      "role": "point-column",
@@ -2207,8 +2207,8 @@
      "weight": 400,
      "colour": "quiet",
      "opacity": 1,
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 4), was 7"
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 4), was 7"
     },
     "value": {
      "font": "Courier Prime",
@@ -2242,36 +2242,36 @@
      "role": "axis",
      "x": 54,
      "y": 1378,
-     "w": 157,
+     "w": 118,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-2": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 1008,
-     "w": 157,
+     "w": 118,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-3": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 638,
-     "w": 157,
+     "w": 118,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-4": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 299,
-     "w": 157,
+     "w": 118,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "head-1": {
      "align": "center",
@@ -2665,8 +2665,8 @@
      "weight": 400,
      "colour": "quiet",
      "opacity": 1,
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), was 7"
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 5), was 7"
     },
     "value": {
      "font": "Courier Prime",
@@ -2701,45 +2701,45 @@
      "role": "axis",
      "x": 54,
      "y": 1378,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-2": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 1101,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-3": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 823,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-4": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 546,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-5": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 299,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "bar-1": {
      "role": "bar",
@@ -17465,8 +17465,8 @@
      "weight": 400,
      "colour": "quiet",
      "opacity": 1,
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), was 7"
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 5), was 7"
     },
     "value": {
      "font": "Courier Prime",
@@ -17501,45 +17501,45 @@
      "role": "axis",
      "x": 54,
      "y": 1378,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-2": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 1101,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-3": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 823,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-4": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 546,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-5": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 299,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "bar-1": {
      "role": "bar",
@@ -18033,8 +18033,8 @@
      "weight": 400,
      "colour": "quiet",
      "opacity": 1,
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), was 7"
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 5), was 7"
     },
     "value": {
      "font": "Courier Prime",
@@ -18069,45 +18069,45 @@
      "role": "axis",
      "x": 54,
      "y": 1378,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-2": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 1101,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-3": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 823,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-4": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 546,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-5": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 299,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "bar-1": {
      "role": "bar",
@@ -18667,8 +18667,8 @@
      "weight": 400,
      "colour": "quiet",
      "opacity": 1,
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), was 7"
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 5), was 7"
     },
     "value": {
      "font": "Courier Prime",
@@ -18703,45 +18703,45 @@
      "role": "axis",
      "x": 54,
      "y": 1374,
-     "w": 155,
+     "w": 108,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-2": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 1099,
-     "w": 155,
+     "w": 108,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-3": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 823,
-     "w": 155,
+     "w": 108,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-4": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 548,
-     "w": 155,
+     "w": 108,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-5": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 302,
-     "w": 155,
+     "w": 108,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "guided-1": {
      "role": "point-column",
@@ -27531,8 +27531,8 @@
      "weight": 400,
      "colour": "quiet",
      "opacity": 1,
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), was 7"
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 5), was 7"
     },
     "value": {
      "font": "Courier Prime",
@@ -27567,45 +27567,45 @@
      "role": "axis",
      "x": 54,
      "y": 1378,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-2": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 1101,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-3": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 823,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-4": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 546,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-5": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 299,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "bar-1": {
      "role": "bar",
@@ -28145,8 +28145,8 @@
      "weight": 400,
      "colour": "quiet",
      "opacity": 1,
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), was 7"
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 5), was 7"
     },
     "value": {
      "font": "Courier Prime",
@@ -28181,45 +28181,45 @@
      "role": "axis",
      "x": 54,
      "y": 1377,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-2": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 1100,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-3": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 823,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-4": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 547,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-5": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 300,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "point-1": {
      "role": "point-column",
@@ -29111,8 +29111,8 @@
      "weight": 400,
      "colour": "quiet",
      "opacity": 1,
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), was 7"
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 5), was 7"
     },
     "series": {
      "font": "Courier Prime",
@@ -29147,45 +29147,45 @@
      "role": "axis",
      "x": 54,
      "y": 1378,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-2": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 1125,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-3": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 870,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-4": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 617,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-5": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 394,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "head-q1": {
      "align": "center",
@@ -30041,8 +30041,8 @@
      "weight": 400,
      "colour": "quiet",
      "opacity": 1,
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), was 7"
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 5), was 7"
     },
     "series": {
      "font": "Courier Prime",
@@ -30077,45 +30077,45 @@
      "role": "axis",
      "x": 54,
      "y": 1378,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-2": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 1125,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-3": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 870,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-4": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 617,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "y-5": {
      "align": "right",
      "role": "axis",
      "x": 54,
      "y": 394,
-     "w": 157,
+     "w": 109,
      "h": 49,
-     "maxChars": 7
+     "maxChars": 5
     },
     "head-q1": {
      "align": "center",
@@ -33433,7 +33433,7 @@
      "role": "axis",
      "x": 54,
      "y": 1297,
-     "w": 134,
+     "w": 124,
      "h": 43,
      "maxChars": 6
     },
@@ -33442,7 +33442,7 @@
      "role": "axis",
      "x": 54,
      "y": 1048,
-     "w": 134,
+     "w": 124,
      "h": 43,
      "maxChars": 6
     },
@@ -33451,7 +33451,7 @@
      "role": "axis",
      "x": 54,
      "y": 779,
-     "w": 134,
+     "w": 124,
      "h": 43,
      "maxChars": 6
     },
@@ -33460,7 +33460,7 @@
      "role": "axis",
      "x": 54,
      "y": 510,
-     "w": 134,
+     "w": 124,
      "h": 43,
      "maxChars": 6
     },
@@ -33469,7 +33469,7 @@
      "role": "axis",
      "x": 54,
      "y": 266,
-     "w": 134,
+     "w": 124,
      "h": 43,
      "maxChars": 6
     },

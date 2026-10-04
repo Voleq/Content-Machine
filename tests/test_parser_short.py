@@ -315,10 +315,11 @@ def test_a_row_that_does_not_match_its_header_is_reported(
     data = json.loads(short_valid_json)
     data["audio_script"] = (
         "EXMPL is up. [PLATE: numbers-sheet-4r-9x16 | unit=$M "
-        "| head=FY21,FY22,FY23,FY24,FY25,LTM | label-1=Revenue | row-1=1,2,3] "
+        "| head=FY22,FY23,FY24,FY25,LTM | label-1=Revenue | row-1=1,2,3] "
         + data["audio_script"])
     _, warnings = parse_short_script(json.dumps(data), settings)
-    assert any("3 figures against 6 period heads" in w for w in warnings), warnings
+    # Five periods on a phone's sheet since rebuild-41.
+    assert any("3 figures against 5 period heads" in w for w in warnings), warnings
 
 
 def test_a_landscape_plate_is_refused_in_a_vertical_cut(
