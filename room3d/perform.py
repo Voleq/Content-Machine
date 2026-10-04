@@ -32,6 +32,11 @@ behind him ([x0, y0, x1, y1], 0-1 from the top left), blown up to the frame.
 
 An empty line or `{"op": "quit"}` ends it. A frame already on disk is not
 drawn again, so a render that stopped picks up where it was.
+
+    python room3d/perform.py --bench
+
+times him on this machine: a few frames of a wide shot and a close-up at the
+long's size, and what that makes a long and a short cost.
 """
 from __future__ import annotations
 
@@ -394,6 +399,35 @@ class Stage:
                 "seconds": round(time.monotonic() - t0, 1), "device": self.device}
 
 
+def bench() -> int:
+    """Seconds a frame of him takes here, and what a video costs at that."""
+    import tempfile
+
+    stage = Stage()
+    stage.build("plain")
+    words = [{"word": w, "start": 0.2 + k * 0.32, "end": 0.45 + k * 0.32}
+             for k, w in enumerate("So here is the number that matters most.".split())]
+    per = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        for name, close in (("wide", False), ("close-up", True)):
+            job = {"angle": "desk-front", "season": "plain", "aspect": "16x9",
+                   "size": [1920, 1080], "fps": 12, "samples": 8, "seed": "bench",
+                   "stance": "host/close-up" if close else "host/to-camera",
+                   "duration": 0.34, "words": words, "close": close,
+                   "out": str(Path(tmp) / name)}
+            stage.shot({**job, "duration": 1 / 12})        # warm: build, first frame
+            t = time.monotonic()
+            got = stage.shot({**job, "out": job["out"] + "-timed"})
+            per[name] = (time.monotonic() - t) / max(got["frames"], 1)
+            print(f"{name}: {per[name]:.1f} s a frame on the {stage.device}", flush=True)
+    frame = (per["wide"] * 3 + per["close-up"]) / 4    # most of his shots are wide
+    # twelve drawings a second; a short draws him at 1440x2560, 1.78 times the pixels
+    print(f"each minute of him in a long: about {frame * 60 * 12 / 60:.0f} minutes "
+          f"to draw; a short's three-second shot of him: about "
+          f"{per['close-up'] * 1.78 * 3 * 12 / 60:.0f} minutes", flush=True)
+    return 0
+
+
 def serve() -> int:
     stage = Stage()
     for line in sys.stdin:
@@ -416,5 +450,7 @@ def serve() -> int:
 if __name__ == "__main__":
     if "--serve" in sys.argv:
         sys.exit(serve())
+    if "--bench" in sys.argv:
+        sys.exit(bench())
     print(__doc__)
     sys.exit(2)
