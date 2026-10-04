@@ -346,6 +346,19 @@ def _in_last_column(plate: Plate, slot: Slot) -> bool:
     return bool(peers) and int(tail) == max(peers)
 
 
+def _in_a_row(plate: Plate, slot: Slot) -> bool:
+    """Whether this slot is one of a numbered row set side by side: a bar
+    chart's `value-1 … value-6`, its `head-N`, a sheet's `cell-2-N`. Same
+    stem, same role, the same line on the plate."""
+    stem, _, tail = slot.name.rpartition("-")
+    if not stem or not tail.isdigit():
+        return False
+    return any(n != slot.name and n.rpartition("-")[0] == stem
+               and n.rpartition("-")[2].isdigit() and sl.role == slot.role
+               and abs(sl.y - slot.y) <= 2
+               for n, sl in plate.slots.items())
+
+
 def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
               reg: Registry, *, origin: tuple[int, int] | None = None) -> list[str]:
     """Composite `value` into `slot` on `img`, in place. Returns warnings.
@@ -422,16 +435,20 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
     # it to a renderer to decide what to emphasise.
     if tr.get("lastColumnWeight") and _in_last_column(plate, slot):
         weight = int(tr["lastColumnWeight"])
-    colour_role = tr.get("colour", "structure")
-    try:
-        rgb = reg.colour(colour_role)
-    except Exception:
-        rgb = reg.colour("structure")
+    # In the plate's own inks: a paper plate sets dark type on cream, a
+    # screen plate light type on lit navy (rebuild-41), by the name it gives.
+    rgb = reg.ink(plate, str(tr.get("colour") or "structure"))
     alpha = int(round(255 * float(tr.get("opacity", 1.0) or 1.0)))
     fill = (*rgb, max(0, min(alpha, 255)))
 
     declared = tr.get("size")
-    start = phone_size(plate, int(declared), settings) if declared else 0
+    # A ROW OF FIGURES IS SET AT ONE SIZE. Grown each to fit its own box,
+    # "812" came out half as big again as "1,050" beside it; at the kit's
+    # size every figure within the row's budget is the same height, and since
+    # rebuild-41 that size is already 34 or more on a phone.
+    grow_ok = not _in_a_row(plate, slot)
+    start = (phone_size(plate, int(declared), settings) if grow_ok else int(declared)) \
+        if declared else 0
     grows = bool(declared) and start > int(declared)
     size = int(start * scale) if declared else max(int(bh * 0.8), _MIN_PT)
     fit_w = int(bw * PHONE_FIT_W) if grows else bw

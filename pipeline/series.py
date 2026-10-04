@@ -52,6 +52,11 @@ KIT_INK = {
 }
 
 
+# rebuild-41's further series inks and the fall's own, which a ground's set
+# carries beside the eight above.
+SERIES_INKS = ("subject3", "subject4", "subject5", "down")
+
+
 def ink_for(palette: dict[str, str]) -> dict[str, str]:
     """The kit's ink names → hex, from a registry palette (one hour's)."""
     return {kit: palette[ours] for kit, ours in KIT_INK.items() if ours in palette}
@@ -270,17 +275,19 @@ def line_path(box, values, ink, *, columns=(), min=None, max=None, zero=None,  #
     nodes = []
     if zero_rule and e.lo < 0 < e.hi:
         nodes.append(rect(box["x"], y(0) - 1, box["w"], 2, _ink(ink, "axis", "#4A566A")))
-    nodes.append(path("M" + _pts(pts), {"stroke": col, "stroke-width": weight,
+    nodes.append(path("M" + _pts(pts), {"stroke": col, "stroke-width": weight or 6,
                                         "stroke-linejoin": "round", "stroke-linecap": "round"}))
     # A DOT IS A PERIOD SOMEBODY READS. Six years or eight quarters each get
     # one; twenty-seven years of months as dots is a bead curtain that hides
     # the line, so a dense series marks only where it ends.
     dotted = len(pts) <= DOTS_UP_TO
+    # rebuild-41: a dot is never thinner than the line it sits on.
+    dot = builtin_max(9, _js_round((weight or 6) * 0.9))
     for i, p in enumerate(pts):
         last = i == len(pts) - 1
         if not (dotted or last):
             continue
-        nodes.append(circle(p[0], p[1], 13 if last and accent_last else 9,
+        nodes.append(circle(p[0], p[1], dot + 5 if last and accent_last else dot,
                             _ink(ink, "attention", "#F07A5A") if last and accent_last else col))
     return {"nodes": nodes, "returns": {"lo": e.lo, "hi": e.hi,
                                         "points": [(r1(p[0]), r1(p[1])) for p in pts]}}
@@ -312,10 +319,13 @@ def column_bars(columns, values, ink, *, min=None, max=None, accent=None, tone=N
     return {"nodes": nodes, "returns": {"lo": e.lo, "hi": e.hi}}
 
 
-def split_bar(box, values, ink, *, accent=None, gap=6, thickness=0.5) -> dict:
+def split_bar(box, values, ink, *, accent=None, gap=6, thickness=0.5, order=None) -> dict:
     """`series.splitBar`: ONE bar and its parts, end to end, as shares of their
     own sum; the accent part in attention, the rest alternating two quiet inks
-    so a boundary shows without a stroke."""
+    so a boundary shows without a stroke, or, given a series `order`
+    (rebuild-41), taking the series inks in turn, attention left to the
+    accent."""
+    ordered = [k for k in (order or ()) if k != "attention" and ink.get(k)]
     vals = [0.0 if num(v) is None else builtin_max(0.0, v) for v in values]
     total = sum(vals)
     if not box or not total:
@@ -326,8 +336,12 @@ def split_bar(box, values, ink, *, accent=None, gap=6, thickness=0.5) -> dict:
     nodes, parts, x = [], [], box["x"]
     for i, v in enumerate(vals):
         w = usable * v / total
-        fill = (_ink(ink, "attention", "#F07A5A") if i == accent
-                else _ink(ink, "quiet", "#8592A6") if i % 2 else _ink(ink, "subject", "#7FD4E8"))
+        if i == accent:
+            fill = _ink(ink, "attention", "#F07A5A")
+        elif ordered:
+            fill = ink[ordered[(i - (1 if accent is not None and i > accent else 0)) % len(ordered)]]
+        else:
+            fill = _ink(ink, "quiet", "#8592A6") if i % 2 else _ink(ink, "subject", "#7FD4E8")
         nodes.append(rect(x, y, w, h, fill))
         parts.append((r1(x), r1(x + w)))
         x += w + gap
@@ -450,18 +464,25 @@ def _pick(slots: dict, pattern: str) -> list[dict]:
     return [slots[k] for k in names]
 
 
-def data_layer(slots: dict[str, dict], data: dict, ink: dict[str, str]) -> list[dict]:
+def data_layer(slots: dict[str, dict], data: dict, ink: dict[str, str], *,
+               ground: str = "", land: bool = True, style: dict | None = None) -> list[dict]:
     """`export.js` `dataLayer`: which renderer a plate gets, from its data.
 
     `slots` are the plate's boxes as series.js reads them (canvas units, with
     `anchorX`, `baselineY`, `axis`, `scale`); `data` is the kit's data object;
-    `ink` is one hour's inks by the kit's names. Ported branch for branch —
-    including which branch wins when a plate could take two — so the bot and
-    design's review set agree about what a plate with this data looks like.
+    `ink` is the plate's inks by the kit's names (its ground's, at its hour).
+    `ground`, `land` (16:9) and `style` (the registry's `plate_style`) are what
+    rebuild-41 draws by: a restyled plate's series lines at the published
+    weight, split bars in series order, and on paper every data shape in the
+    one contour. Ported branch for branch — including which branch wins when
+    a plate could take two — so the bot and design's review set agree about
+    what a plate with this data looks like.
     """
     SL = slots
     if not data:
         return []
+    PS = style or {}
+    LW = (PS.get("seriesLine") or {}).get("16x9" if land else "9x16") if ground else None
     outs: list[dict] = []
     # A RANGE BEHIND A LINE paints before the series, or it hides the line it
     # frames: a band that publishes `under` (valuation history's own range,
@@ -491,16 +512,17 @@ def data_layer(slots: dict[str, dict], data: dict, ink: dict[str, str]) -> list[
     elif g("series") and SL.get("plot-area"):
         outs.append(line_path(SL["plot-area"], g("series"), ink, columns=point_cols, min=g("min"),
                               max=g("max"), accent_last=bool(g("accentLast")), zero_rule=bool(g("zeroRule")),
-                              zero=g("zero")))
+                              zero=g("zero"), weight=LW))
     if g("series2") and pair_cols:
         outs.append(column_bars(pair_cols, g("series2")[:len(pair_cols)], ink, min=g("min"), max=g("max"),
                                 tone=g("tone2")))
     elif g("series2") and SL.get("plot-area"):
         outs.append(line_path(SL["plot-area"], g("series2"), ink, columns=point_cols, min=g("min"),
                               max=g("max"), tone=g("tone2"), zero_rule=bool(g("zeroRule")),
-                              zero=g("zero")))
+                              zero=g("zero"), weight=LW))
     if g("split") and SL.get("bars"):
-        outs.append(split_bar(SL["bars"], g("split"), ink, accent=g("accent")))
+        outs.append(split_bar(SL["bars"], g("split"), ink, accent=g("accent"),
+                              order=PS.get("seriesOrder") if ground else None))
     elif g("bars") and SL.get("bars"):
         outs.append(row_bars(SL["bars"], _pick(SL, r"^band-\d+$"), g("bars"), ink,
                              accent=g("accent") if g("accent") is not None else 0, min=g("min"), max=g("max")))
@@ -536,14 +558,15 @@ def data_layer(slots: dict[str, dict], data: dict, ink: dict[str, str]) -> list[
         ps = (g("panelScale") or {}).get(k) or [g("min"), g("max")]
         if b:
             outs.append(line_path(b, vals, ink, min=ps[0], max=ps[1], zero_rule=bool(g("zeroRule")),
-                                  accent_last=bool(g("accentLast")), tone=b.get("tone")))
+                                  accent_last=bool(g("accentLast")), tone=b.get("tone"), weight=LW))
     for k, v in (g("bands") or {}).items():
         b = SL.get(k)
         if b and v and not b.get("under"):
             outs.append(history_band(b, v[0], v[1], ink, tone=v[2] if len(v) > 2 else None,
                                      axis=b.get("axis") or "horizontal"))
     if g("cycle") and SL.get("path"):
-        outs.append(cycle_arc(SL["path"], g("cycle"), ink, trough_box=SL.get("trough")))
+        outs.append(cycle_arc(SL["path"], g("cycle"), ink, trough_box=SL.get("trough"),
+                              weight=LW or 10))
     if g("spark"):
         for box in _pick(SL, r"^spark-\d+$"):
             outs.append(spark_bars(box, g("spark"), ink))
@@ -572,8 +595,31 @@ def data_layer(slots: dict[str, dict], data: dict, ink: dict[str, str]) -> list[
     for name, vals in (g("tiles") or {}).items():
         box = SL.get(name)
         if box and len(vals) >= 2:
-            nodes.extend(line_path(box, vals, ink, zero=False)["nodes"])
+            nodes.extend(line_path(box, vals, ink, zero=False, weight=LW)["nodes"])
+    if ground == "paper" and PS.get("contour"):
+        nodes = contoured(nodes, PS["contour"], ink)
     return nodes
+
+
+def contoured(nodes: list[dict], contour: dict, ink: dict[str, str]) -> list[dict]:
+    """rebuild-41, `export.js`: on PAPER every data shape carries the one
+    contour, the way the room is drawn; a bare line is laid on an ink line two
+    contours wider, so lamp amber or sticky-note yellow still read on cream.
+    Screen data has none."""
+    colour, width = contour.get("colour") or "#0B0E16", float(contour.get("width") or 4)
+    out: list[dict] = []
+    for n in nodes:
+        at = n["attrs"]
+        if n["tag"] == "path" and at.get("fill") == "none" and at.get("stroke"):
+            out.append({"tag": "path", "attrs": {**at, "stroke": colour, "data-contour": "1",
+                                                 "stroke-width": float(at.get("stroke-width") or 6) + width * 2}})
+            out.append(n)
+        elif at.get("fill") and at.get("fill") != "none" and at.get("fill") != ink.get("ground"):
+            out.append({"tag": n["tag"], "attrs": {**at, "stroke": colour, "stroke-width": width,
+                                                   "stroke-linejoin": "round", "data-contour": "1"}})
+        else:
+            out.append(n)
+    return out
 
 
 def boxes(plate) -> dict[str, dict]:
@@ -658,21 +704,40 @@ def paint(img, nodes: list[dict], scale: float = 1.0, *, supersample: int | None
     d = ImageDraw.Draw(layer)
     for n in nodes:
         a = n["attrs"]
+        # A filled shape's stroke (the paper contour) straddles its edge, as
+        # SVG draws it: half outside, half over the fill.
+        sw = float(a.get("stroke-width") or 0) * k if a.get("stroke") and n["tag"] != "path" else 0.0
         if n["tag"] == "rect":
             x, y = a["x"] * k, a["y"] * k
             w, h = a["width"] * k, a["height"] * k
             if w > 0 and h > 0:
-                d.rectangle([x, y, x + w - 1, y + h - 1], fill=_rgba(a["fill"]))
+                if sw:
+                    o = sw / 2
+                    d.rectangle([x - o, y - o, x + w - 1 + o, y + h - 1 + o], fill=_rgba(a["stroke"]))
+                    if w > sw and h > sw:
+                        d.rectangle([x + o, y + o, x + w - 1 - o, y + h - 1 - o], fill=_rgba(a["fill"]))
+                else:
+                    d.rectangle([x, y, x + w - 1, y + h - 1], fill=_rgba(a["fill"]))
         elif n["tag"] == "circle":
             cx, cy, r = a["cx"] * k, a["cy"] * k, a["r"] * k
-            d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=_rgba(a["fill"]))
+            if sw:
+                ro, ri = r + sw / 2, r - sw / 2
+                d.ellipse([cx - ro, cy - ro, cx + ro, cy + ro], fill=_rgba(a["stroke"]))
+                if ri > 0:
+                    d.ellipse([cx - ri, cy - ri, cx + ri, cy + ri], fill=_rgba(a["fill"]))
+            else:
+                d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=_rgba(a["fill"]))
         elif n["tag"] == "path":
             pts, closed = _path_points(a["d"], k)
             if len(pts) < 2:
                 continue
-            if closed or a.get("fill", "none") != "none":
+            filled = closed or a.get("fill", "none") != "none"
+            if filled:
                 d.polygon(pts, fill=_rgba(a["fill"]))
-            if a.get("stroke"):
+            if a.get("stroke") and filled:
+                w = max(int(round(float(a.get("stroke-width", 1)) * k)), 1)
+                d.line(pts + pts[:1], fill=_rgba(a["stroke"]), width=w, joint="curve")
+            elif a.get("stroke"):
                 w = max(int(round(float(a.get("stroke-width", 1)) * k)), 1)
                 d.line(pts, fill=_rgba(a["stroke"]), width=w, joint="curve")
                 # Round caps: PIL draws butt ends, series.js asks for round.
@@ -1240,9 +1305,17 @@ def plate_data(plate, values: dict[str, str]) -> PlateData:
     # default is subject2, and book-to-bill and its sector copies key it in
     # quiet instead: drawn in subject2 there, revenue is a colour the legend
     # beside it does not show.
-    key2 = next((plate.keys[k] for k in ("legend-2", "row-2") if k in getattr(plate, "keys", {})), None)
-    if "series2" in d and key2 in _KIT_NAME:
-        d["tone2"] = _KIT_NAME[key2]
+    # A label that publishes its ink says it outright (rebuild-41 labels do,
+    # on 9:16 too, where the restyle moved the swatch out of the place the
+    # registry reads keys from); otherwise the swatch the registry read.
+    key2 = next((sl.ink for k in ("legend-2", "row-2")
+                 if (sl := s.get(k)) is not None and getattr(sl, "ink", "")), None) \
+        or next((plate.keys[k] for k in ("legend-2", "row-2") if k in getattr(plate, "keys", {})), None)
+    # The registry keys a legend by the kit's ink name since rebuild-41; one
+    # installed before it, by its own palette role.
+    key2 = key2 if key2 in KIT_INK or key2 in SERIES_INKS else _KIT_NAME.get(key2)
+    if "series2" in d and key2:
+        d["tone2"] = key2
     elif "series2" in d and not pair_cols:
         d["tone2"] = "subject2"
     if "series2" in d and not pair_cols and _filled(plate):

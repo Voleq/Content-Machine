@@ -73,7 +73,7 @@ def test_a_beat_s_source_reaches_the_shot_that_plays_it(short_valid_json,
     assert got == {"numbers": "FY25 10-K", "the-comment": "FY25 10-K"}
 
 
-def _short_plan(short_valid_json, settings, tmp_path, sources):
+def _short_plan(short_valid_json, settings, tmp_path, sources, crowd=None):
     from pipeline import moves as MV
     from pipeline.compose import build_layers
     from pipeline.plates import load_plates
@@ -95,6 +95,8 @@ def _short_plan(short_valid_json, settings, tmp_path, sources):
     spans = resolve_spans(fmt, tts.words, tts.duration_s, build_anchors(script))
     result = build_layers(fmt, spans, resolver, reg, aspect=fmt.aspect,
                           seed=script.content_sha(), avoid=set())
+    if crowd is not None:
+        crowd(MV, result)
     plan = MV.plan_short(fmt, result, reg, list(tts.words),
                          seed=script.content_sha(), settings=settings,
                          sources=shot_sources(script, fmt))
@@ -135,15 +137,25 @@ def test_a_source_slides_in_where_design_gives_it_room(short_valid_json,
 
 
 def test_a_carried_source_stops_at_the_next_beat_with_its_own(short_valid_json,
-                                                              settings, tmp_path):
-    """The sheet has no clear spot, so its source waits for the next shot with
-    room. When that next beat cites its own figure first, the sheet's line
-    must not turn up a shot later under a figure it does not source."""
+                                                              settings, tmp_path,
+                                                              monkeypatch):
+    """The numbers beat's plates have no clear spot, so its source waits for
+    the next shot with room. When that next beat cites its own figure first,
+    the numbers' line must not turn up a shot later under a figure it does not
+    source."""
     from pipeline import moves as MV
+
+    def crowd(MV, result):
+        full = {layer.entry_key for shot, layer in MV.shot_plates(result).items()
+                if shot.startswith("numbers")}
+        clear = MV.tag_clear
+        monkeypatch.setattr(MV, "tag_clear",
+                            lambda p: clear(p) and getattr(p, "key", None) not in full)
 
     reg, result, plan = _short_plan(
         short_valid_json, settings, tmp_path,
-        {"numbers": "10-K filings, FY21-FY25", "numbers_comment": "FY25 10-K"})
+        {"numbers": "10-K filings, FY21-FY25", "numbers_comment": "FY25 10-K"},
+        crowd=crowd)
     assert "10-K filings, FY21-FY25" not in [t.text for t in plan.tags]
     assert any("gave way" in s for s in plan.skipped), plan.skipped
     # the comment's own line is still cited: under it, or in the plate's own
@@ -155,6 +167,27 @@ def test_a_carried_source_stops_at_the_next_beat_with_its_own(short_valid_json,
     else:
         assert [(t.shot_id, t.text) for t in plan.tags] == \
             [("the-comment", "FY25 10-K")]
+
+
+def test_a_shot_too_short_for_its_source_hands_it_on(short_valid_json, settings,
+                                                    tmp_path, monkeypatch):
+    """A shot too short to slide the tag in and read it hands the line to the
+    next shot with room, as a plate with no clear spot does, instead of
+    dropping it."""
+    from pipeline import moves as MV
+
+    tag, tried = MV._source_tag, []
+
+    def too_short_first(reg, fmt, plate, shot_id, *rest):
+        tried.append(shot_id)
+        return None if len(tried) == 1 else tag(reg, fmt, plate, shot_id, *rest)
+
+    monkeypatch.setattr(MV, "_source_tag", too_short_first)
+    _, _, plan = _short_plan(short_valid_json, settings, tmp_path,
+                             {"numbers": "10-K filings, FY21-FY25"})
+    assert tried, "no shot tried the numbers' source"
+    assert [t.text for t in plan.tags] == ["10-K filings, FY21-FY25"], plan.skipped
+    assert plan.tags[0].shot_id != tried[0]
 
 
 SUPPLIED_PROVENANCE = ("news", "fred", "pic", "data")

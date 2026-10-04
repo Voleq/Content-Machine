@@ -75,7 +75,9 @@
     /* rebuild-22: the swatch and the published `ink` come from ONE palette key,
      * so a slot cannot publish a colour its drawing does not show. INK maps the
      * drawn kit's palette names onto the data ink roles series.js takes. */
-    const INK = { up: 'subject', down: 'subject2', neutralData: 'quiet', attention: 'attention', otherParty: 'axis' };
+    /* rebuild-41: `second` is the second series (subject2); `down` is a fall. The
+     * two-series keys used to say `down` for their second line. */
+    const INK = { up: 'subject', down: 'down', second: 'subject2', neutralData: 'quiet', attention: 'attention', otherParty: 'axis' };
     function key(P, name, x, y, w, palKey, roleName, roles, seed) {
       const hh = blockH(roles[roleName], 1);
       tick(P, x, y + Math.round(hh / 2) + 2, 36, P.pal[palKey], seed);
@@ -102,8 +104,8 @@
       P.slot('plot-area', x0, pt, W, pb - pt, { role: 'plot-area', container: true, tone: 'subject', tone2: tone2 || 'subject2', note: note });
       for (let i = 1; i <= n; i++) {
         const cx = x0 + colW * (i - 0.5), ax = Math.round(cx - gi / 2 - bw), bx = Math.round(cx + gi / 2);
-        P.slot('bar-' + i, ax, pt, bw, pb - pt, { role: 'point-column', container: true, anchorX: ax + Math.round(bw / 2), baselineY: pb, growth: 'up-from-baseline' });
-        P.slot('pair-' + i, bx, pt, bw, pb - pt, { role: 'point-column', container: true, anchorX: bx + Math.round(bw / 2), baselineY: pb, growth: 'up-from-baseline' });
+        P.slot('bar-' + i, ax, pt, bw, pb - pt, { role: 'bar', container: true, anchorX: ax + Math.round(bw / 2), baselineY: pb, growth: 'up-from-baseline' });
+        P.slot('pair-' + i, bx, pt, bw, pb - pt, { role: 'bar', container: true, anchorX: bx + Math.round(bw / 2), baselineY: pb, growth: 'up-from-baseline' });
       }
       return colW;
     }
@@ -151,7 +153,7 @@
       for (let i = 1; i <= n; i++) {
         const x = F.L + colW * (i - 1), bw = Math.round(colW * 0.6), bx = Math.round(x + (colW - bw) / 2);
         const name = i === 1 ? 'step-open' : i === n ? 'step-close' : 'step-' + (i - 1);
-        P.slot(name, bx, pt, bw, pb - pt, { role: 'point-column', container: true, anchorX: Math.round(x + colW / 2), baselineY: pb });
+        P.slot(name, bx, pt, bw, pb - pt, { role: 'bar', container: true, anchorX: Math.round(x + colW / 2), baselineY: pb });
         P.slot('head-' + i, Math.round(x + 4), pb + 22, Math.round(colW - 8), F.land ? blockH(roles.head, 1) : 52, { align: 'center', role: 'head' });
         P.slot('value-' + i, Math.round(x + 4), pb + (F.land ? 62 : 84), Math.round(colW - 8), blockH(roles.value, 1), { align: 'center', role: 'value' });
       }
@@ -325,7 +327,7 @@
     P0.sbcVsBuybacks = function (o) {
       return pairedYears(o, { type: 'sbc-vs-buybacks', cols: o.years || 6, seed: 2501,
         note: 'buybacks on bar-N, stock-based compensation on pair-N, ONE scale \u2014 columnBars draws both',
-        rows: [{ label: 'row-1', name: 'spend', swatch: 'up' }, { label: 'row-2', name: 'sbc', swatch: 'down' },
+        rows: [{ label: 'row-1', name: 'spend', swatch: 'up' }, { label: 'row-2', name: 'sbc', swatch: 'second' },
           { label: 'count-label', name: 'count', rule: true }] });
     };
 
@@ -366,7 +368,7 @@
         note: 'coverage, 0 to 100% FIXED: pass min 0 and max 100, because the top of this box is the ceiling the plate draws' });
       for (let i = 1; i <= n; i++) {
         const x = F.L + colW * (i - 1), bw = Math.round(colW * 0.62);
-        P.slot('bar-' + i, Math.round(x + (colW - bw) / 2), pt, bw, pb - pt, { role: 'point-column', container: true, anchorX: Math.round(x + colW / 2), baselineY: pb, growth: 'up-from-baseline' });
+        P.slot('bar-' + i, Math.round(x + (colW - bw) / 2), pt, bw, pb - pt, { role: 'bar', container: true, anchorX: Math.round(x + colW / 2), baselineY: pb, growth: 'up-from-baseline' });
       }
       row(P, 'head', F.L, colW, n, pb + 18, 'head', blockH(roles.head, 1));
       row(P, 'value', F.L, colW, n, pb + 56, 'value', blockH(roles.value, 1));
@@ -543,7 +545,7 @@
       top(P, F, roles);
       const ly = F.land ? 166 : 350;
       key(P, 'legend-1', F.L, ly, F.land ? 380 : F.cw, 'up', 'legend', roles, 3001);
-      key(P, 'legend-2', F.land ? F.L + 400 : F.L, F.land ? ly : ly + 46, F.land ? 380 : F.cw, 'down', 'legend', roles, 3002);
+      key(P, 'legend-2', F.land ? F.L + 400 : F.L, F.land ? ly : ly + 46, F.land ? 380 : F.cw, 'second', 'legend', roles, 3002);
       const pt = F.land ? 240 : 460, pb = F.land ? 720 : 1080;
       grid(P, F.L, F.L + W, pt, pb, [0.25, 0.5, 0.75], 3010);
       floor(P, F.L, pb, F.L + W, 3014);

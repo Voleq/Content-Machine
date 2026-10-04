@@ -70,6 +70,16 @@ PALETTE_ROLES = (
     "neutral-data", "attention", "other-party",
 )
 
+# THE OTHER NAMES AN INK GOES BY. A plate's typeRoles and its keys mostly
+# name the kit's inks (quiet, structure, subject2), but some still speak the
+# drawn authors' palette keys or this registry's roles; grounds.palFor is the
+# map (`down` is its own ink since rebuild-41, a fall and nothing else).
+INK_ALIASES = {
+    "up": "subject", "second": "subject2", "neutralData": "quiet",
+    "neutral-data": "quiet", "otherParty": "axis", "other-party": "axis",
+    "ground2": "band", "second-ground": "band",
+}
+
 # The sixteen generic chapter types, fixed. A director returns one of these
 # plus a display title; the type decides which plates the chapter may use and
 # the title is the only thing that reaches the screen.
@@ -480,6 +490,10 @@ class Plate:
     # seed, same slots, another colour table — so an hour is a variant of a
     # plate, never a plate of its own. Empty on a registry that draws one hour.
     hour: str = ""
+    # THE GROUND A DATA PLATE IS DRAWN ON (rebuild-41): "paper", "screen" or
+    # "mark", by family, each with its own inks (`Registry.inks`); "" for a
+    # plate with none (room/, host/, overlays/), which keeps the hour's inks.
+    ground: str = ""
     at_base_hour: str = ""
     # A ROOM IN TWO LAYERS, split where he stands: `back` is everything behind
     # him and `front` the desk and whatever is on it. The base file is both at
@@ -854,6 +868,16 @@ class Registry:
         self.palette: dict[str, str] = self.palettes.get(
             self.base_hour, next(iter(self.palettes.values())))
         self.surface: str = (raw.get("palette") or {}).get("surface", "")
+        # EVERY GROUND'S INKS, BY THE KIT'S OWN NAMES (rebuild-41): a data
+        # plate's type, series and keys are drawn in its ground's set
+        # (`inks`), and how its data is drawn (series line weight, the paper
+        # contour, the series order) is `plate_style`. A registry from before
+        # the restyle has neither and keeps one set per hour.
+        self.ink_sets: dict[str, dict[str, dict[str, str]]] = {
+            str(h): {str(g): {str(k): str(v) for k, v in (inks or {}).items()}
+                     for g, inks in (sets or {}).items()}
+            for h, sets in (raw.get("inks") or {}).items()}
+        self.plate_style: dict = dict(raw.get("plateStyle") or {})
 
         # THE LIBRARY IS THE BASE HOUR. `assets` is every plate once, under the
         # key a template, a director or the curation names it by; its other
@@ -1069,6 +1093,7 @@ class Registry:
             glance=str(e.get("glance") or ""),
             fit=dict(e.get("fit") or {}),
             hour=str(e.get("hour") or ""),
+            ground=str(e.get("ground") or ""),
             at_base_hour=str(e.get("atBaseHour") or ""),
             layers={k: str(v) for k, v in (e.get("layers") or {}).items()
                     if k in ("back", "front") and v},
@@ -1268,6 +1293,34 @@ class Registry:
         return {self.base_key(k) for k in keys}
 
     # ---------------------------------------------------------------- colour
+
+    def inks(self, plate: "Plate | None" = None) -> dict[str, str]:
+        """The kit's inks, by its own names (subject, subject2, quiet, axis,
+        down...), that `plate` is drawn in: its ground's set at its hour, as
+        design's export.js has it. A plate with no ground, or no plate, gets
+        the hour's set; a registry from before the restyle, the hour's
+        palette under the kit's names."""
+        hour = (getattr(plate, "hour", "") or getattr(self, "_hour", "") or self.base_hour)
+        sets = self.ink_sets.get(hour) or self.ink_sets.get(self.base_hour) or {}
+        got = sets.get(getattr(plate, "ground", "") or "legacy") or sets.get("legacy")
+        if got:
+            return got
+        from pipeline.series import ink_for
+
+        return ink_for(self.palettes.get(hour, self.palette))
+
+    def ink(self, plate: "Plate | None", name: str) -> tuple[int, int, int]:
+        """The RGB `plate` draws ink `name` in. `name` is the kit's ink name
+        or one of the palette keys the drawn authors speak (`up` is subject,
+        `neutralData` quiet, `otherParty` axis, `second` subject2, as
+        grounds.palFor maps them); anything else is `structure`, as export.js
+        falls back."""
+        inks = self.inks(plate)
+        hex_ = inks.get(name) or inks.get(INK_ALIASES.get(name, "")) or inks.get("structure")
+        if not hex_:
+            return self.colour("structure")
+        h = hex_.lstrip("#")
+        return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
 
     def colour(self, role: str) -> tuple[int, int, int]:
         """The RGB for a palette ROLE. There is no hex literal in the pipeline.

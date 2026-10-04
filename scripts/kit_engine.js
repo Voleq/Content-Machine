@@ -74,6 +74,7 @@ const ENGINE_VIA_PORT = {
   "sector-copy.js": "round four's plates as rows of data, read by plates-r3.js",
   "plates-r5.js": "round five: five new shapes, the banks and insurers, macro drivers, sector performance and said-vs-happened sets, the chapter bumper and source tag, the shorts plates and the wipes",
   "copy-r5.js": "round five's copy and sample series, and the sector variant of each shape, read by plates-r5.js",
+  "grounds.js": "rebuild-41's restyle: port.js wraps every author so each data plate draws on its family's ground (paper, screen or mark) in that ground's inks, flat, and publishes the ground",
 };
 
 /* Engine files that ship and are DELIBERATELY not run by this driver, each with
@@ -314,21 +315,33 @@ function flatPaths(svg) {
   return out;
 }
 
+/* THE INKS A PLATE IS DRAWN IN (rebuild-41): its GROUND's, as export.js has
+ * it (`inkOf`): a data plate publishes `ground` (paper, screen or mark) and
+ * takes that ground's set from design-tokens `hours.*.plateInk`; a plate with
+ * none (room/, overlays/, host/) takes the hour's `ink`. Names are the kit's
+ * own (subject, subject2, quiet, axis, down...), never the registry's roles. */
+function inksOf(tokens, hour, m) {
+  const H = tokens.hours[hour] || tokens.hours[BASE_HOUR];
+  const set = m && m.ground && H.plateInk ? H.plateInk[m.ground] : H.ink;
+  return Object.fromEntries(Object.entries(set || {}).filter(([k, v]) => !k.startsWith("_") && typeof v === "string"));
+}
+
 /* THE KEY IS DRAWN, NOT PUBLISHED. A plate that names its series in a legend
  * draws a short swatch in the series' ink just left of the label (`key()` in
- * plates-r2.js, and the swatched rows of its paired charts), and its manifest
- * carries the label's box but never the ink. The inks differ by plate:
- * book-to-bill and its sector copies key the second series in neutralData,
- * the other paired charts in down. A renderer that assumed one drew revenue in
+ * plates-r2.js, and the swatched rows of its paired charts), and an older
+ * author's manifest carries the label's box but not the ink (rebuild-41's
+ * labels publish it, and the bot reads that first). The inks differ by plate:
+ * book-to-bill and its sector copies key the second series in quiet, the
+ * other paired charts in subject2. A renderer that assumed one drew revenue in
  * a colour its own legend does not show. So the ink is read off the drawing:
- * a short stroke in a palette ink, wholly inside the swatch box left of a
- * `legend-N` or `row-N` label. Returned as {slot: registry palette role}. */
-const KEY_INKS = { up: "up", down: "down", neutralData: "neutral-data", attention: "attention",
-  otherParty: "other-party", structure: "structure" };
-function keyInks(svg, slots, pal) {
+ * a short stroke in one of the plate's series inks, wholly inside the swatch
+ * box left of a `legend-N` or `row-N` label. Returned as {slot: kit ink name}. */
+const KEY_INK_NAMES = ["subject", "subject2", "subject3", "subject4", "subject5", "quiet",
+  "attention", "axis", "structure", "down"];
+function keyInks(svg, slots, ink) {
   const roleOf = {};
-  for (const [k, role] of Object.entries(KEY_INKS)) {
-    if (typeof pal[k] === "string") roleOf[pal[k].toUpperCase()] = role;
+  for (const k of KEY_INK_NAMES) {
+    if (typeof ink[k] === "string" && !roleOf[ink[k].toUpperCase()]) roleOf[ink[k].toUpperCase()] = k;
   }
   const strokes = [];
   const re = /<path d="([^"]*)"([^>]*)\/>/g;
@@ -351,13 +364,6 @@ function keyInks(svg, slots, pal) {
   }
   return keys;
 }
-
-/* THE INK A KEYED LABEL PUBLISHES, as the palette role the swatch is drawn in.
- * Since rebuild-22 a legend or row label carries `ink`, the data ink role its
- * series is drawn in, and plates-r2.js's `key()` draws the swatch and publishes
- * the ink off ONE palette key; this is that map read backwards. */
-const DATA_INK_ROLE = { subject: "up", subject2: "down", quiet: "neutral-data", attention: "attention",
-  axis: "other-party" };
 
 /* Frames to files: every distinct drawing gets one PNG, named after the first
  * frame that drew it, and the base file IS frame one — the same file, so a loop
@@ -437,7 +443,7 @@ async function drawContent(ctx, items, emitWrite) {
        * the kit's own answers say does not move. Neither is a loop of copies. */
       const still = !!STILL_FAMILIES[family] || svgs.every((s) => s === svgs[0]);
       const drawn = await writeFrames(ctx, famDir, name, still ? svgs.slice(0, 1) : svgs, m.exportScale);
-      const keys = keyInks(svgs[0], m.slots, palFor(tokens, hour));
+      const keys = keyInks(svgs[0], m.slots, inksOf(tokens, hour, m));
       /* A KEY THAT LIES. A label that publishes its ink says which ink the data
        * layer draws its series in, so the swatch beside it must be that ink. A
        * label that publishes none is the older contract: the data layer draws
@@ -446,13 +452,13 @@ async function drawContent(ctx, items, emitWrite) {
       for (const [label, drawnIn] of Object.entries(keys)) {
         const said = m.slots[label] && m.slots[label].ink;
         if (said) {
-          if (DATA_INK_ROLE[said] !== drawnIn) {
-            problems.push(it.key + " at " + hour + ": " + label + " publishes ink " + said + " ("
-              + (DATA_INK_ROLE[said] || "no palette role") + ") and its swatch is drawn in " + drawnIn);
+          if (said !== drawnIn) {
+            problems.push(it.key + " at " + hour + ": " + label + " publishes ink " + said
+              + " and its swatch is drawn in " + drawnIn);
           }
-        } else if ((label === "legend-1" || label === "row-1") && drawnIn !== "up") {
+        } else if ((label === "legend-1" || label === "row-1") && drawnIn !== "subject") {
           problems.push(it.key + " at " + hour + ": " + label + " keys the first series in " + drawnIn
-            + ", and the data layer draws it in subject (up)");
+            + ", and the data layer draws it in subject");
         }
       }
       /* THE KEY SAYS THE ASPECT, and since rebuild-40 the plate's meta agrees.
@@ -1198,6 +1204,17 @@ async function main() {
       "up": p.up, "neutral-data": p.neutralData, "attention": p.attention, "other-party": p.otherParty,
     };
   }
+  /* EVERY GROUND'S INKS, by the kit's names (rebuild-41): what a data plate's
+   * type, series and keys are drawn in is its ground's set, `legacy` for a
+   * plate that publishes none. Read with the plate's `ground`. */
+  const inks = {};
+  for (const hour of hours) {
+    inks[hour] = { legacy: inksOf(tokens, hour, null) };
+    for (const gr of ["paper", "screen", "mark"]) inks[hour][gr] = inksOf(tokens, hour, { ground: gr });
+  }
+  const PS = tokens.plateStyle || {};
+  const plateStyle = { seriesLine: PS.seriesLine || {}, seriesOrder: PS.seriesOrder || [],
+    contour: PS.contour || null };
 
   process.stdout.write(JSON.stringify({
     kit: "dennis-v2",
@@ -1213,6 +1230,8 @@ async function main() {
     hourSuffixes: Object.fromEntries(hours.map((h) => [h, h === BASE_HOUR ? "" : "-" + h])),
     palette: { surface: "night-card", roles: palettes[BASE_HOUR] },
     palettes: palettes,
+    inks: inks,
+    plateStyle: plateStyle,
     families: families,
     poseFits: poseFits,
     assets: assets,

@@ -1,5 +1,74 @@
 # Dennis v2 — delta pack 15
 
+## Rebuild-41 · the bot's answers to ANSWERS §R41
+
+emit → export --index → audit --check: 33 of 33. audit.test.js: 36 of 36 (two new faults).
+
+### R41.1 · 9:16 numbers sheets have five period columns
+
+The last index is dropped on 9:16 only, so the columns are numbered 1–5 with no gap, and the
+sample copy fills the five latest periods (FY20–FY24). 16:9 keeps six. Each cell's
+character limit goes from 4 to 5–7 at the 34 floor. Engine: `plates.js` `numbersSheet` and
+`cashFlow` (`NC = land ? 6 : 5`, `meta.columns` follows), and `content.js` `tables()`
+(offset to the latest periods). Plates:
+
+- `tables/numbers-sheet-3r-9x16`
+- `tables/numbers-sheet-4r-9x16`
+- `tables/numbers-sheet-5r-9x16`
+- `tables/numbers-sheet-6r-9x16`
+- `tables/numbers-sheet-4r-spark-9x16`
+- `tables/cash-flow-9x16`
+
+Slots removed: `head-6` and every `*-6` cell, subtotal and total on those six plates.
+
+**Follow-up, bot answer:** `structure/row-spotlight-9x16` gets the same rule: five columns,
+the five latest periods, and `head-6` / `cell-6` removed on 9:16 only (16:9 keeps six). On
+9:16 its `label` moves from a left column to a full-width line above the card, so the five
+figures get the card's whole width. That takes a cell from 3 characters to 6; the name and
+role are unchanged. Sample copy is now a period row (FY20–FY24, claims checked) instead of
+generic captions. Engine: `plates.js` `rowSpotlight`, `content.js` `R1['row-spotlight']`.
+
+### R41.2 · role `point-column` → `bar` on bar-N, pair-N, step-*
+
+1,078 slots on 120 plates now publish `role: "bar"`, and every one is a container with
+`anchorX`, never a region. The renamed slots were already containers. The legacy bar
+authors (e.g. `charts/bars-6y`) published their bars as regions without an anchor; those now
+become containers too, with `anchorX` at the bar's centre, so a bar never sits beside the
+plot region as a share. `point-N` columns on line charts keep `point-column`. Slots with
+role `step` (the waterfalls) and `band` (the peer rankings) are unchanged. Engine:
+`plates-r1.js`, `plates-r2.js` and `plates-r5.js` at the source; a sweep in
+`grounds.restyle` for the legacy authors; `bar` is added to the not-text lists in
+`emit.js`, `content.js`, `motion.js` and `grounds.js`. Rule 33 fails any bar slot that is
+not `bar` / container / anchored.
+
+### R41.3 · new ink `down`
+
+Added on every plate ground. The old nine names are unchanged.
+
+| ground | down | vs attention, ΔE (normal / worst simulated) |
+|---|---|---|
+| screen | #B98CFF | 0.226 / 0.205 |
+| paper | #9A3A7A | 0.120 / 0.090 |
+| mark | #9A6CE0 (≥ 3:1 on both grounds) | 0.264 / 0.241 |
+
+Down is violet, a hue that none of the six series or the accent use. In finance a fall is
+usually red, but here red is the accent, so a red fall would read as the highlight.
+`subject2` is now only the second series. The drawn kit's `pal.down` resolves to `down`,
+which colours the minus signs, the direction arrows and the surface card's down bar. A new
+palette key, `pal.second`, takes over the two-series legends that used to say `down` for
+their second line (plates-r2/r3/r5), so those legends still publish `ink: subject2` and rule
+29 still holds. Rule 32 now checks `down` at 3:1 on its ground and against attention at
+`plateStyle.contrast.downApart` (0.10 normal / 0.08 simulated).
+
+### R41.4 · `shorts/short-chart-9x16` → `charts/short-chart-9x16`
+
+The author, slots, anchors and seed are the same. The asset id is now
+`charts/short-chart`, and `roles.fragment.json` moved with it. `rename-map.json` records
+both the key and the id; it is the map's first entry. Its ground now comes from its family,
+so `plateStyle.grounds.screenKeys` is empty.
+
+---
+
 ## Drop fifteen — the two failing host plates
 
 `1353 passing, 2 failed` on `394c1be`. Both are role-membership on the surface and only

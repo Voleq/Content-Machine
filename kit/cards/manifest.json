@@ -14,6 +14,7 @@
    "key": "cards/definition-16x9",
    "dir": "cards",
    "aspect": "16x9",
+   "ground": "paper",
    "canvas": [
     1920,
     1080
@@ -36,7 +37,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "10ec5820"
+      "hash": "3f2bc400"
      },
      {
       "file": "definition-16x9-night_f02.png",
@@ -44,7 +45,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "972dcb08"
+      "hash": "e9b95ec8"
      },
      {
       "file": "definition-16x9-night_f03.png",
@@ -52,7 +53,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "10ec5820"
+      "hash": "3f2bc400"
      }
     ]
    },
@@ -67,7 +68,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "10ec5820"
+       "hash": "3f2bc400"
       },
       {
        "file": "definition-16x9-night_f02.png",
@@ -75,7 +76,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "972dcb08"
+       "hash": "e9b95ec8"
       },
       {
        "file": "definition-16x9-night_f03.png",
@@ -83,7 +84,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "10ec5820"
+       "hash": "3f2bc400"
       }
      ]
     },
@@ -97,7 +98,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "9944e6aa"
+       "hash": "3f2bc400"
       },
       {
        "file": "definition-16x9-dusk_f02.png",
@@ -105,7 +106,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "ca0798b2"
+       "hash": "e9b95ec8"
       },
       {
        "file": "definition-16x9-dusk_f03.png",
@@ -113,7 +114,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "9944e6aa"
+       "hash": "3f2bc400"
       }
      ]
     }
@@ -122,18 +123,18 @@
    "typeRoles": {
     "kicker": {
      "font": "Courier Prime",
-     "size": 28,
+     "size": 35,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.7,
+     "colour": "quiet",
+     "opacity": 1,
      "tracking": ".16em",
      "transform": "uppercase",
-     "maxChars": 65,
-     "budget": "derived from the slot boxes that set this role; 65 is the floor (narrowest of 1), was 34"
+     "maxChars": 64,
+     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), was 34"
     },
     "term": {
      "font": "Archivo Narrow",
-     "size": 76,
+     "size": 94,
      "weight": 700,
      "colour": "structure",
      "tracking": "-.02em",
@@ -142,60 +143,60 @@
     },
     "body": {
      "font": "Archivo Narrow",
-     "size": 40,
+     "size": 49,
      "weight": 400,
      "colour": "structure",
-     "maxLines": 2,
-     "maxCharsPerLine": 87,
-     "budget": "derived from the slot boxes that set this role; 87 is the floor (narrowest of 1), was 46"
+     "maxLines": 4,
+     "maxCharsPerLine": 88,
+     "budget": "derived from the slot boxes that set this role; 88 is the floor (narrowest of 1), was 46"
     },
     "example": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 32,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 89,
-     "budget": "derived from the slot boxes that set this role; 89 is the floor (narrowest of 1), was 60"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 90,
+     "budget": "derived from the slot boxes that set this role; 90 is the floor (narrowest of 1), was 60"
     }
    },
    "slots": {
     "kicker": {
      "align": "left",
      "role": "kicker",
-     "x": 260,
-     "y": 318,
-     "w": 1400,
-     "h": 32,
-     "maxChars": 65
+     "x": 96,
+     "y": 181,
+     "w": 1728,
+     "h": 59,
+     "maxChars": 64
     },
     "term": {
      "align": "left",
      "role": "term",
-     "x": 260,
-     "y": 364,
-     "w": 1400,
-     "h": 88,
+     "x": 96,
+     "y": 266,
+     "w": 1728,
+     "h": 163,
      "maxChars": 46
     },
     "body": {
      "align": "left",
      "role": "body",
-     "x": 260,
-     "y": 486,
-     "w": 1400,
-     "h": 139,
-     "maxCharsPerLine": 87,
-     "maxLines": 2
+     "x": 96,
+     "y": 492,
+     "w": 1728,
+     "h": 257,
+     "maxCharsPerLine": 88,
+     "maxLines": 4
     },
     "example": {
      "align": "left",
      "role": "example",
-     "x": 260,
-     "y": 656,
-     "w": 1400,
-     "h": 30,
-     "maxChars": 89
+     "x": 96,
+     "y": 806,
+     "w": 1728,
+     "h": 55,
+     "maxChars": 90
     }
    }
   },
@@ -203,6 +204,7 @@
    "key": "cards/definition-9x16",
    "dir": "cards",
    "aspect": "9x16",
+   "ground": "paper",
    "canvas": [
     1080,
     1920
@@ -225,7 +227,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "48068a38"
+      "hash": "0e344250"
      },
      {
       "file": "definition-9x16-night_f02.png",
@@ -233,7 +235,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "3fd2d778"
+      "hash": "4ae2ad26"
      },
      {
       "file": "definition-9x16-night_f03.png",
@@ -241,7 +243,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "48068a38"
+      "hash": "0e344250"
      }
     ]
    },
@@ -256,7 +258,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "48068a38"
+       "hash": "0e344250"
       },
       {
        "file": "definition-9x16-night_f02.png",
@@ -264,7 +266,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "3fd2d778"
+       "hash": "4ae2ad26"
       },
       {
        "file": "definition-9x16-night_f03.png",
@@ -272,7 +274,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "48068a38"
+       "hash": "0e344250"
       }
      ]
     },
@@ -286,7 +288,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "1d50c490"
+       "hash": "0e344250"
       },
       {
        "file": "definition-9x16-dusk_f02.png",
@@ -294,7 +296,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "8fe772b8"
+       "hash": "4ae2ad26"
       },
       {
        "file": "definition-9x16-dusk_f03.png",
@@ -302,7 +304,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "1d50c490"
+       "hash": "0e344250"
       }
      ]
     }
@@ -311,18 +313,18 @@
    "typeRoles": {
     "kicker": {
      "font": "Courier Prime",
-     "size": 28,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.7,
+     "colour": "quiet",
+     "opacity": 1,
      "tracking": ".16em",
      "transform": "uppercase",
-     "maxChars": 42,
-     "budget": "derived from the slot boxes that set this role; 42 is the floor (narrowest of 1), was 34"
+     "maxChars": 37,
+     "budget": "derived from the slot boxes that set this role; 37 is the floor (narrowest of 1), was 34"
     },
     "term": {
      "font": "Archivo Narrow",
-     "size": 80,
+     "size": 86,
      "weight": 700,
      "colour": "structure",
      "tracking": "-.02em",
@@ -331,60 +333,60 @@
     },
     "body": {
      "font": "Archivo Narrow",
-     "size": 44,
+     "size": 48,
      "weight": 400,
      "colour": "structure",
-     "maxLines": 4,
-     "maxCharsPerLine": 51,
-     "budget": "derived from the slot boxes that set this role; 51 is the floor (narrowest of 1), was 25"
+     "maxLines": 5,
+     "maxCharsPerLine": 50,
+     "budget": "derived from the slot boxes that set this role; 50 is the floor (narrowest of 1), was 25"
     },
     "example": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 57,
-     "budget": "derived from the slot boxes that set this role; 57 is the floor (narrowest of 1), was 60"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 47,
+     "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     }
    },
    "slots": {
     "kicker": {
      "align": "left",
      "role": "kicker",
-     "x": 90,
-     "y": 615,
-     "w": 900,
-     "h": 32,
-     "maxChars": 42
+     "x": 54,
+     "y": 400,
+     "w": 972,
+     "h": 54,
+     "maxChars": 37
     },
     "term": {
      "align": "left",
      "role": "term",
-     "x": 90,
-     "y": 671,
-     "w": 900,
-     "h": 93,
+     "x": 54,
+     "y": 493,
+     "w": 972,
+     "h": 156,
      "maxChars": 28
     },
     "body": {
      "align": "left",
      "role": "body",
-     "x": 90,
-     "y": 824,
-     "w": 900,
-     "h": 255,
-     "maxCharsPerLine": 51,
-     "maxLines": 4
+     "x": 54,
+     "y": 749,
+     "w": 972,
+     "h": 427,
+     "maxCharsPerLine": 50,
+     "maxLines": 5
     },
     "example": {
      "align": "left",
      "role": "example",
-     "x": 90,
-     "y": 1133,
-     "w": 900,
-     "h": 30,
-     "maxChars": 57
+     "x": 54,
+     "y": 1266,
+     "w": 972,
+     "h": 50,
+     "maxChars": 47
     }
    }
   },
@@ -392,6 +394,7 @@
    "key": "cards/quote-pull-16x9",
    "dir": "cards",
    "aspect": "16x9",
+   "ground": "paper",
    "canvas": [
     1920,
     1080
@@ -414,7 +417,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "b0990b9c"
+      "hash": "d4eeeb70"
      },
      {
       "file": "quote-pull-16x9-night_f02.png",
@@ -422,7 +425,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "932ac650"
+      "hash": "70725e48"
      },
      {
       "file": "quote-pull-16x9-night_f03.png",
@@ -430,7 +433,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "b0990b9c"
+      "hash": "d4eeeb70"
      }
     ]
    },
@@ -445,7 +448,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "b0990b9c"
+       "hash": "d4eeeb70"
       },
       {
        "file": "quote-pull-16x9-night_f02.png",
@@ -453,7 +456,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "932ac650"
+       "hash": "70725e48"
       },
       {
        "file": "quote-pull-16x9-night_f03.png",
@@ -461,7 +464,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "b0990b9c"
+       "hash": "d4eeeb70"
       }
      ]
     },
@@ -475,7 +478,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "bf594178"
+       "hash": "d4eeeb70"
       },
       {
        "file": "quote-pull-16x9-dusk_f02.png",
@@ -483,7 +486,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "8dd80f46"
+       "hash": "70725e48"
       },
       {
        "file": "quote-pull-16x9-dusk_f03.png",
@@ -491,7 +494,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "bf594178"
+       "hash": "d4eeeb70"
       }
      ]
     }
@@ -500,7 +503,7 @@
    "typeRoles": {
     "body": {
      "font": "Archivo Narrow",
-     "size": 62,
+     "size": 77,
      "weight": 500,
      "colour": "structure",
      "maxLines": 4,
@@ -509,50 +512,50 @@
     },
     "attribution": {
      "font": "Archivo Narrow",
-     "size": 34,
+     "size": 42,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 102,
-     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), was 30"
+     "maxChars": 101,
+     "budget": "derived from the slot boxes that set this role; 101 is the floor (narrowest of 1), was 30"
     },
     "source": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 32,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 89,
-     "budget": "derived from the slot boxes that set this role; 89 is the floor (narrowest of 1), was 60"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 90,
+     "budget": "derived from the slot boxes that set this role; 90 is the floor (narrowest of 1), was 60"
     }
    },
    "slots": {
     "body": {
      "align": "left",
      "role": "body",
-     "x": 300,
-     "y": 250,
-     "w": 1400,
-     "h": 400,
+     "x": 96,
+     "y": 169,
+     "w": 1728,
+     "h": 494,
      "maxCharsPerLine": 55,
      "maxLines": 4
     },
     "attribution": {
      "align": "left",
      "role": "attribution",
-     "x": 300,
-     "y": 716,
-     "w": 1400,
-     "h": 80,
-     "maxChars": 102
+     "x": 96,
+     "y": 744,
+     "w": 1728,
+     "h": 99,
+     "maxChars": 101
     },
     "source": {
      "align": "left",
      "role": "source",
-     "x": 300,
-     "y": 810,
-     "w": 1400,
-     "h": 60,
-     "maxChars": 89
+     "x": 96,
+     "y": 860,
+     "w": 1728,
+     "h": 74,
+     "maxChars": 90
     }
    }
   },
@@ -560,6 +563,7 @@
    "key": "cards/quote-pull-9x16",
    "dir": "cards",
    "aspect": "9x16",
+   "ground": "paper",
    "canvas": [
     1080,
     1920
@@ -582,7 +586,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "7b976e90"
+      "hash": "cad80efe"
      },
      {
       "file": "quote-pull-9x16-night_f02.png",
@@ -590,7 +594,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "7652e268"
+      "hash": "535cf330"
      },
      {
       "file": "quote-pull-9x16-night_f03.png",
@@ -598,7 +602,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "7b976e90"
+      "hash": "cad80efe"
      }
     ]
    },
@@ -613,7 +617,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "7b976e90"
+       "hash": "cad80efe"
       },
       {
        "file": "quote-pull-9x16-night_f02.png",
@@ -621,7 +625,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "7652e268"
+       "hash": "535cf330"
       },
       {
        "file": "quote-pull-9x16-night_f03.png",
@@ -629,7 +633,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "7b976e90"
+       "hash": "cad80efe"
       }
      ]
     },
@@ -643,7 +647,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "033588ba"
+       "hash": "cad80efe"
       },
       {
        "file": "quote-pull-9x16-dusk_f02.png",
@@ -651,7 +655,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "b1debd4c"
+       "hash": "535cf330"
       },
       {
        "file": "quote-pull-9x16-dusk_f03.png",
@@ -659,7 +663,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "033588ba"
+       "hash": "cad80efe"
       }
      ]
     }
@@ -668,7 +672,7 @@
    "typeRoles": {
     "body": {
      "font": "Archivo Narrow",
-     "size": 54,
+     "size": 61,
      "weight": 500,
      "colour": "structure",
      "maxLines": 4,
@@ -677,50 +681,50 @@
     },
     "attribution": {
      "font": "Archivo Narrow",
-     "size": 34,
+     "size": 38,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 62,
-     "budget": "derived from the slot boxes that set this role; 62 is the floor (narrowest of 1), was 30"
+     "maxChars": 63,
+     "budget": "derived from the slot boxes that set this role; 63 is the floor (narrowest of 1), was 30"
     },
     "source": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 55,
-     "budget": "derived from the slot boxes that set this role; 55 is the floor (narrowest of 1), was 60"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 47,
+     "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     }
    },
    "slots": {
     "body": {
      "align": "left",
      "role": "body",
-     "x": 140,
-     "y": 520,
-     "w": 860,
-     "h": 560,
+     "x": 54,
+     "y": 441,
+     "w": 972,
+     "h": 640,
      "maxCharsPerLine": 39,
      "maxLines": 4
     },
     "attribution": {
      "align": "left",
      "role": "attribution",
-     "x": 140,
-     "y": 1156,
-     "w": 860,
-     "h": 90,
-     "maxChars": 62
+     "x": 54,
+     "y": 1168,
+     "w": 972,
+     "h": 103,
+     "maxChars": 63
     },
     "source": {
      "align": "left",
      "role": "source",
-     "x": 140,
-     "y": 1262,
-     "w": 860,
-     "h": 60,
-     "maxChars": 55
+     "x": 54,
+     "y": 1289,
+     "w": 972,
+     "h": 69,
+     "maxChars": 47
     }
    }
   },
@@ -728,6 +732,7 @@
    "key": "cards/criteria-16x9",
    "dir": "cards",
    "aspect": "16x9",
+   "ground": "paper",
    "canvas": [
     1920,
     1080
@@ -750,7 +755,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "d02ce1ee"
+      "hash": "7986d9ae"
      },
      {
       "file": "criteria-16x9-night_f02.png",
@@ -758,7 +763,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "f48a803e"
+      "hash": "416cd8b8"
      },
      {
       "file": "criteria-16x9-night_f03.png",
@@ -766,7 +771,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "d02ce1ee"
+      "hash": "7986d9ae"
      }
     ]
    },
@@ -781,7 +786,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "d02ce1ee"
+       "hash": "7986d9ae"
       },
       {
        "file": "criteria-16x9-night_f02.png",
@@ -789,7 +794,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "f48a803e"
+       "hash": "416cd8b8"
       },
       {
        "file": "criteria-16x9-night_f03.png",
@@ -797,7 +802,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "d02ce1ee"
+       "hash": "7986d9ae"
       }
      ]
     },
@@ -811,7 +816,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "ee18a904"
+       "hash": "7986d9ae"
       },
       {
        "file": "criteria-16x9-dusk_f02.png",
@@ -819,7 +824,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "38fe8d78"
+       "hash": "416cd8b8"
       },
       {
        "file": "criteria-16x9-dusk_f03.png",
@@ -827,7 +832,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "ee18a904"
+       "hash": "7986d9ae"
       }
      ]
     }
@@ -857,8 +862,8 @@
      "font": "Courier Prime",
      "size": 26,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
+     "colour": "quiet",
+     "opacity": 1,
      "maxChars": 92,
      "budget": "derived from the slot boxes that set this role; 92 is the floor (narrowest of 1), was 60"
     }
@@ -943,6 +948,7 @@
    "key": "cards/criteria-9x16",
    "dir": "cards",
    "aspect": "9x16",
+   "ground": "paper",
    "canvas": [
     1080,
     1920
@@ -965,7 +971,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "d51ed39e"
+      "hash": "2459fc28"
      },
      {
       "file": "criteria-9x16-night_f02.png",
@@ -973,7 +979,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "f193da68"
+      "hash": "f6f2c480"
      },
      {
       "file": "criteria-9x16-night_f03.png",
@@ -981,7 +987,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "d51ed39e"
+      "hash": "2459fc28"
      }
     ]
    },
@@ -996,7 +1002,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "d51ed39e"
+       "hash": "2459fc28"
       },
       {
        "file": "criteria-9x16-night_f02.png",
@@ -1004,7 +1010,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "f193da68"
+       "hash": "f6f2c480"
       },
       {
        "file": "criteria-9x16-night_f03.png",
@@ -1012,7 +1018,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "d51ed39e"
+       "hash": "2459fc28"
       }
      ]
     },
@@ -1026,7 +1032,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "78ae9ae0"
+       "hash": "2459fc28"
       },
       {
        "file": "criteria-9x16-dusk_f02.png",
@@ -1034,7 +1040,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "2be9ce50"
+       "hash": "f6f2c480"
       },
       {
        "file": "criteria-9x16-dusk_f03.png",
@@ -1042,7 +1048,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "78ae9ae0"
+       "hash": "2459fc28"
       }
      ]
     }
@@ -1051,17 +1057,17 @@
    "typeRoles": {
     "title": {
      "font": "Archivo Narrow",
-     "size": 52,
+     "size": 64,
      "weight": 700,
      "colour": "structure",
      "tracking": "-.02em",
      "maxLines": 2,
-     "maxCharsPerLine": 43,
-     "budget": "derived from the slot boxes that set this role; 43 is the floor (narrowest of 1), was 24"
+     "maxCharsPerLine": 38,
+     "budget": "derived from the slot boxes that set this role; 38 is the floor (narrowest of 1), was 24"
     },
     "row": {
      "font": "Archivo Narrow",
-     "size": 36,
+     "size": 34,
      "weight": 400,
      "colour": "structure",
      "maxLines": 2,
@@ -1070,87 +1076,87 @@
     },
     "caption": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 57,
-     "budget": "derived from the slot boxes that set this role; 57 is the floor (narrowest of 1), was 60"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 47,
+     "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     }
    },
    "slots": {
     "title": {
      "align": "left",
      "role": "title",
-     "x": 90,
-     "y": 400,
-     "w": 900,
-     "h": 200,
-     "maxCharsPerLine": 43,
+     "x": 54,
+     "y": 170,
+     "w": 972,
+     "h": 189,
+     "maxCharsPerLine": 38,
      "maxLines": 2
     },
     "check-1": {
      "role": "check",
      "note": "true/false mark drawn by code inside the box",
-     "x": 90,
-     "y": 660,
-     "w": 70,
-     "h": 70
+     "x": 114,
+     "y": 416,
+     "w": 66,
+     "h": 66
     },
     "row-1": {
      "align": "left",
      "role": "row",
-     "x": 196,
-     "y": 656,
-     "w": 794,
-     "h": 220,
+     "x": 214,
+     "y": 412,
+     "w": 752,
+     "h": 208,
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
     "check-2": {
      "role": "check",
      "note": "true/false mark drawn by code inside the box",
-     "x": 90,
-     "y": 960,
-     "w": 70,
-     "h": 70
+     "x": 114,
+     "y": 700,
+     "w": 66,
+     "h": 66
     },
     "row-2": {
      "align": "left",
      "role": "row",
-     "x": 196,
-     "y": 956,
-     "w": 794,
-     "h": 220,
+     "x": 214,
+     "y": 696,
+     "w": 752,
+     "h": 208,
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
     "check-3": {
      "role": "check",
      "note": "true/false mark drawn by code inside the box",
-     "x": 90,
-     "y": 1260,
-     "w": 70,
-     "h": 70
+     "x": 114,
+     "y": 984,
+     "w": 66,
+     "h": 66
     },
     "row-3": {
      "align": "left",
      "role": "row",
-     "x": 196,
-     "y": 1256,
-     "w": 794,
-     "h": 220,
+     "x": 214,
+     "y": 980,
+     "w": 752,
+     "h": 208,
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
     "caption": {
      "align": "left",
      "role": "caption",
-     "x": 90,
-     "y": 1720,
-     "w": 900,
-     "h": 64,
-     "maxChars": 57
+     "x": 54,
+     "y": 1419,
+     "w": 972,
+     "h": 61,
+     "maxChars": 47
     }
    }
   }

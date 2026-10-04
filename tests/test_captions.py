@@ -508,10 +508,11 @@ def test_a_caption_never_covers_the_hosts_head(reg):
 
 def test_a_plates_own_safe_band_is_the_one_used(reg):
     """Design's shorts plates publish the band themselves, in canvas units.
-    It is the PLATFORM's band at the plate's size, so it maps by the canvas
+    Since rebuild-41 it is the short's clear area, 170 to 1,480 of 1,920 (the
+    part of a phone YouTube draws nothing over); it maps by the canvas
     height, never through a push-in."""
-    plate = reg.get("shorts/short-chart-9x16")
-    assert plate.safe.get("top") == 260 and plate.safe.get("bottom") == 1560
+    plate = reg.get("charts/short-chart-9x16")
+    assert plate.safe.get("top") == 170 and plate.safe.get("bottom") == 1480
     own = replace(plate, safe={"top": 300, "bottom": 1400})
     assert caption_band(own, SHORT_FRAME, 85) == (300, 1400)
     assert caption_band(own, (540, 960), 43) == (150, 700)

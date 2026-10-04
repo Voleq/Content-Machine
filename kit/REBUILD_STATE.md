@@ -1,5 +1,42 @@
 # Dennis v2 — REBUILD_STATE.md
 
+> ## rebuild-41b — the bot's answers to ANSWERS §R41 — DONE
+>
+> emit → export --index → audit --check: **33 of 33**. audit.test.js: **36 of 36**.
+> - Five period columns on the six 9:16 numbers sheets (the five latest periods).
+> - `point-column` → `bar` on bar, pair and step slots (1,078 slots on 120 plates, all of
+>   them containers with anchorX).
+> - New ink `down` on every ground, in violet; `pal.second` for the two-series keys.
+> - `charts/short-chart-9x16`, moved from shorts/, recorded in `rename-map.json`.
+> - Details and plate lists: CHANGES.md top section.
+> - `structure/row-spotlight-9x16`: five columns too (label above the card; 6 characters a cell).
+> - `scripts/check_roles.mjs` is retired from the kit's checks: Dennis is 3D on the bot's side and
+>   the bot runs its own role check on install. The annotation names stay (bot answer).
+> - Sent to the bot as `dennis-kit-rebuild-41.zip`.
+>
+> ## rebuild-41 — plate restyle (long and shorts) — DONE
+>
+> emit → export --index → audit --check: **33 of 33** pass. audit.test.js: **34 of 34** (36 after 41b)
+> injected faults caught (seven new). 419 assets · 1400 plate records · 576 slot tables ·
+> 5122 files indexed.
+>
+> - New: `engine/grounds.js` (ground per key, inks, `restyle`, `flatten`, contrast report).
+> - `design-tokens.json`: `hours.*.plateInk.{screen,paper,mark}` (nine names + subject3/4/5,
+>   dusk = night) and `plateStyle`. `hours.*.ink` is unchanged.
+> - `hand.js`: profile `flat-plate` for the eleven restyled families. `port.js`: every author
+>   wrapped once, `DRAWN_FAMILIES = ['overlays']`. `emit.js`: `ground`, `restyle` and the
+>   measured contour on plate records. `export.js` / `series.js`: ground inks, lines
+>   10/12, paper contour on data, split bars in series order.
+> - Audit: new rule 32 (contrast on both grounds, CVD) and rule 33 (fill 70%, the 9:16 band
+>   170–1480, the 34/64 floors, bar ≥ 2× gap, lead ≥ 60%, one accent); rules 3, 4 and 19
+>   widened; rule 9 builds once per process.
+> - 168 paper / 372 screen / 10 mark slot tables. 290 of 550 night plates moved by the
+>   fit; 250 grew a box for a floored size; 37 publish a lead figure (`fit: width`).
+> - Reasons: DESIGN.md §8.9. Things I couldn't fix without a rename: ANSWERS.md §R41.
+>   Sheet: `/Plate Restyle r41.dc.html` (renders `/review-r41/` via `/scratch/sample.js`).
+> - Known: 9:16 table cells truncate long figures at the 34 floor (ANSWERS R41.1);
+>   deutan subject5/attention ΔE 0.051 against a 0.05 floor is the tightest margin.
+
 > ## rebuild-40 — answers to the bot's rebuild-39 report
 >
 > Through the kit's own scripts: `emit.js` **419 assets · 1,400 plate records · 576 slot tables**;

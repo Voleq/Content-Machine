@@ -20,7 +20,9 @@ and, for a two-shot, `"plate": [u, v]`, where the evidence sits in the frame
 (0-1 from the top left), so he can show it; for the close-up, `"close": true`;
 for a cover, `"still": true` and no words: one frame of him mid-sentence, to
 the camera, with nothing of the room drawn (no shadow, nothing in front of
-him), so the cover can stand him where its type leaves room.
+him), so the cover can stand him where its type leaves room; with
+`"in_room": true` as well, the room stays as a shot has it: the desk in front
+of him and his shadow on the room, for a cover that is a frame of the video.
 It renders `out/d_0000.png` ... and answers with one line that starts with
 `@@` (Blender prints its own chatter on stdout too):
 
@@ -35,8 +37,9 @@ drawn again, so a render that stopped picks up where it was.
 
     python room3d/perform.py --bench
 
-times him on this machine: a few frames of a wide shot and a close-up at the
-long's size, and what that makes a long and a short cost.
+times him on this machine: a few frames of the long's wide shot and close-up
+and the short's close-up, each at its final size, and what that makes a minute
+of him in a long and his shot in a short cost.
 """
 from __future__ import annotations
 
@@ -361,7 +364,7 @@ class Stage:
                                   seed=str(job.get("seed", "")), looks=looks, stance=st)
             frames = range(perf.frames)
         self.rig.hold(st.prop, st.prop_side)
-        self._bare(still)
+        self._bare(still and not job.get("in_room"))
         try:
             return self._render(job, perf, frames, fps, window, t0)
         finally:
@@ -391,12 +394,47 @@ class Stage:
             r.border_max_y = min(max(p.y for p in pts) + 0.05, 1.0)
             r.filepath = str(f.with_suffix(".part.png"))
             bpy.ops.render.render(write_still=True)
+            _feather(f.with_suffix(".part.png"),
+                     (r.border_min_x, r.border_max_x, r.border_min_y, r.border_max_y),
+                     (min(p.x for p in pts), max(p.x for p in pts),
+                      min(p.y for p in pts), max(p.y for p in pts)))
             f.with_suffix(".part.png").replace(f)
         meta = {"fps": fps, "frames": len(frames), "duration": perf.frames / fps,
                 "device": self.device, "window": window}
         (out / "perf.json").write_text(json.dumps(meta), encoding="utf-8")
         return {"ok": True, "frames": len(frames), "out": str(out), "window": window,
                 "seconds": round(time.monotonic() - t0, 1), "device": self.device}
+
+
+def _feather(png: Path, border, body) -> None:
+    """His shadow faded out before the edge of the patch drawn round him.
+
+    Only the patch round him is rendered, and the room catches his shadow
+    (and its own) inside it, so without this a faint straight edge of shadow
+    shows on the room where the patch ends. The fade runs from the box round
+    him (`body`) out to the patch's edge (`border`), both (x0, x1, y0, y1),
+    0-1 with y from the bottom, so none of him is touched; an edge at the
+    frame's own edge is left alone."""
+    import numpy as np
+    from PIL import Image
+
+    im = Image.open(png).convert("RGBA")
+    a = np.asarray(im).copy()
+    h, w = a.shape[:2]
+    xs = (np.arange(w) + 0.5) / w
+    ys = 1.0 - (np.arange(h) + 0.5) / h
+
+    def fade(v, edge: float, inner: float, at_frame: bool):
+        if at_frame or abs(inner - edge) < 1e-6:
+            return np.ones_like(v)
+        t = np.clip((v - edge) / (inner - edge), 0.0, 1.0)
+        return t * t * (3 - 2 * t)
+
+    (x0, x1, y0, y1), (bx0, bx1, by0, by1) = border, body
+    fx = fade(xs, x0, bx0, x0 <= 0.0) * fade(xs, x1, bx1, x1 >= 1.0)
+    fy = fade(ys, y0, by0, y0 <= 0.0) * fade(ys, y1, by1, y1 >= 1.0)
+    a[..., 3] = (a[..., 3] * np.outer(fy, fx)).round().astype(np.uint8)
+    Image.fromarray(a, "RGBA").save(png)
 
 
 def bench() -> int:
@@ -409,22 +447,25 @@ def bench() -> int:
              for k, w in enumerate("So here is the number that matters most.".split())]
     per = {}
     with tempfile.TemporaryDirectory() as tmp:
-        for name, close in (("wide", False), ("close-up", True)):
-            job = {"angle": "desk-front", "season": "plain", "aspect": "16x9",
-                   "size": [1920, 1080], "fps": 12, "samples": 8, "seed": "bench",
+        # the long's two shots of him at 1920x1080, the short's close-up at its file's size
+        for name, aspect, size, close in (("long wide", "16x9", [1920, 1080], False),
+                                          ("long close-up", "16x9", [1920, 1080], True),
+                                          ("short close-up", "9x16", [1440, 2560], True)):
+            job = {"angle": "desk-front", "season": "plain", "aspect": aspect, "size": size,
+                   "fps": 12, "samples": 8, "seed": "bench",
                    "stance": "host/close-up" if close else "host/to-camera",
-                   "duration": 0.34, "words": words, "close": close,
-                   "out": str(Path(tmp) / name)}
+                   "duration": 0.25, "words": words, "close": close,
+                   "out": str(Path(tmp) / name.replace(" ", "-"))}
             stage.shot({**job, "duration": 1 / 12})        # warm: build, first frame
             t = time.monotonic()
             got = stage.shot({**job, "out": job["out"] + "-timed"})
             per[name] = (time.monotonic() - t) / max(got["frames"], 1)
             print(f"{name}: {per[name]:.1f} s a frame on the {stage.device}", flush=True)
-    frame = (per["wide"] * 3 + per["close-up"]) / 4    # most of his shots are wide
-    # twelve drawings a second; a short draws him at 1440x2560, 1.78 times the pixels
-    print(f"each minute of him in a long: about {frame * 60 * 12 / 60:.0f} minutes "
-          f"to draw; a short's three-second shot of him: about "
-          f"{per['close-up'] * 1.78 * 3 * 12 / 60:.0f} minutes", flush=True)
+    long = (per["long wide"] * 3 + per["long close-up"]) / 4    # most of his shots are wide
+    # twelve drawings a second; a proof draws him at half the size, about a quarter of this
+    print(f"each minute of him in a long: about {long * 12:.0f} minutes to draw; "
+          f"the short's three-second shot of him: about "
+          f"{per['short close-up'] * 36 / 60:.0f} minutes (a proof: about a quarter)", flush=True)
     return 0
 
 

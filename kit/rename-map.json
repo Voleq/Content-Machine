@@ -1,6 +1,6 @@
 {
   "_spec": "OLD ID -> NEW ID, for Code to re-wire roles.json, shot templates and constants mechanically instead of by hand. Required deliverable per the rebuild brief §2.1. This file is the SHAPE, populated in slice 6 once the new plate ids exist — an empty map is not an oversight, it is a scaffold so nobody invents a second format.",
-  "_status": "SCAFFOLD — EMPTY UNTIL SLICE 6. Populating it before the new inventory exists would record guesses.",
+  "_status": "rebuild-41: first entry. The map is live from here; every later move or drop is recorded here.",
   "_shape": {
     "old/plate-id": "new/plate-id",
     "old/plate-id-that-is-gone": null
@@ -12,6 +12,11 @@
     "Generated, not hand-written: slice 6 emits it from the old manifests plus the new library so it cannot miss an id."
   ],
   "_coverage": "Slice 6 must assert that every key in the delta-15 manifests appears here exactly once. 270 plates across 14 families.",
-  "map": {},
-  "notes": {}
+  "map": {
+    "shorts/short-chart-9x16": "charts/short-chart-9x16",
+    "shorts/short-chart": "charts/short-chart"
+  },
+  "notes": {
+    "shorts/short-chart-9x16": "rebuild-41, bot answer R41.4: a screen plate, so it lives with the screen family. Same author, slots, anchors and seed; only the key and dir change. The asset id moved with it (shorts/short-chart -> charts/short-chart)."
+  }
 }

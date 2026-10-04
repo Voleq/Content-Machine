@@ -1859,7 +1859,8 @@ def _render_long(
     # does a kit with any drawn room left in it: he is 3D in every shot of a
     # video or in none (`dennis3d.usable`).
     from pipeline import dennis3d
-    performer = (dennis3d.Performer(settings, cache=Path(settings.cache_dir) / "dennis3d")
+    performer = (dennis3d.Performer(settings, cache=Path(settings.cache_dir) / "dennis3d",
+                                    draft=proof)
                  if dennis3d.usable(settings, reg, aspect) else None)
     dennis3d_meta: list[dict] = []
 

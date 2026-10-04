@@ -57,6 +57,21 @@ const CASES = [
   [31, 'an anchor naming a slot the plate lacks', d => { const k = Object.keys(d.motion.anchors.plates).find(x => d.motion.anchors.plates[x]['line-draw']);
       d.motion.anchors.plates[k]['line-draw'].slot = 'no-such-slot'; }],
   [31, 'a room target past its shape list', d => { first(d.motion.rooms.byId).flicker.push(9999); }],
+  /* rebuild-41 */
+  [32, 'two series inks a deuteranope cannot tell apart', d => { d.tokens.hours.night.plateInk.screen.subject5 = '#FF7A6A'; }],
+  [32, 'paper type set in sticky-note yellow', d => { const k = Object.keys(d.slots.plates).find(x => d.slots.plates[x] && d.slots.plates[x].ground === 'paper');
+      const r = Object.keys(d.slots.plates[k].typeRoles)[0]; d.slots.plates[k].typeRoles[r].colour = 'subject4'; }],
+  [32, 'screen caption dimmed under 4.5:1', d => { d.tokens.hours.dusk.plateInk.screen.quiet = '#5D6987'; }],
+  [33, 'a 9:16 label under 34', d => { const k = Object.keys(d.slots.plates).find(x => /-9x16$/.test(x) && d.slots.plates[x] && d.slots.plates[x].ground && d.slots.plates[x].typeRoles.label);
+      d.slots.plates[k].typeRoles.label.size = 28; }],
+  [33, 'a bar thinner than twice its gap', d => { const k = Object.keys(d.slots.plates).find(x => d.slots.plates[x] && d.slots.plates[x].ground && d.slots.plates[x].slots['bar-2'] && d.slots.plates[x].slots['bar-3']);
+      const s = d.slots.plates[k].slots; s['bar-3'].x += 60; }],
+  [33, 'short type under the YouTube title', d => { const k = Object.keys(d.slots.plates).find(x => x === 'shorts/short-number-9x16' || x === 'shorts/short-number');
+      const s = d.slots.plates[k].slots, n = Object.keys(s).find(m => s[m].role && s[m].maxChars); s[n].y = 1500; }],
+  [32, 'down too close to the highlight', d => { d.tokens.hours.night.plateInk.screen.down = '#FF6A74'; }],
+  [33, 'a bar left as point-column', d => { const k = Object.keys(d.slots.plates).find(x => d.slots.plates[x] && d.slots.plates[x].ground && d.slots.plates[x].slots['bar-1']);
+      d.slots.plates[k].slots['bar-1'].role = 'point-column'; }],
+  [4, 'a contour on screen data', d => { d.plates.plates.find(p => p.ground === 'screen').strokes.push({ colour: '#0B0E16', width: 4 }); }],
 ];
 
 /* Load audit.js with its inputs swapped for the mutated copies. */

@@ -1398,7 +1398,7 @@ def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
 
 
 def perform_3d(result: BuildResult, reg, words, settings, *, aspect: str,
-               scale: float, seed: str, performer=None) -> list[dict]:
+               scale: float, seed: str, performer=None, draft: bool = False) -> list[dict]:
     """THE 3D DENNIS IN THE SHORT (item 47; 3 Oct, "the shorts should be on
     this engine as well").
 
@@ -1413,6 +1413,7 @@ def perform_3d(result: BuildResult, reg, words, settings, *, aspect: str,
     All or none: when any host shot has no 3D room under it, every one keeps
     the drawn Dennis, and the log says why. Returns what each shot was, for
     the manifest; [] when he stays drawn. `reg` is the kit's own registry.
+    A proof (`draft`) draws him at half the size and scales him up.
     """
     from dataclasses import replace
 
@@ -1434,7 +1435,7 @@ def perform_3d(result: BuildResult, reg, words, settings, *, aspect: str,
 
     own = performer is None
     if own:
-        performer = dennis3d.Performer(settings,
+        performer = dennis3d.Performer(settings, draft=draft,
                                        cache=Path(settings.cache_dir) / "dennis3d")
     fps = int(settings.dennis_3d_fps)
     done: list[dict] = []
@@ -1937,7 +1938,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
                                            prices=prices, workdir=workdir,
                                            settings=settings)
     dennis_3d = perform_3d(result, reg, words, settings, aspect=fmt.aspect,
-                           scale=scale, seed=script.content_sha())
+                           scale=scale, seed=script.content_sha(), draft=proof)
     render_frames(result, resolver, duration, silent, settings, reg=frame_reg,
                   words=words, plan=plan, scale=scale)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}

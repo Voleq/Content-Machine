@@ -152,10 +152,15 @@ def test_every_period_grid_has_a_head_per_column(reg):
     assert not problems, "period grids whose heads and columns disagree:\n  " + \
         "\n  ".join(problems)
 
+    # A structure plate's periods are the six latest at 16:9 and the five
+    # latest at 9:16: rebuild-41 gave a phone's cell the width of a sixth
+    # column (row-spotlight, as the numbers sheets).
     for key in reg.family("structure"):
-        heads = _period_heads(reg.assets[key])
+        plate = reg.assets[key]
+        heads = _period_heads(plate)
         if heads:
-            assert len(heads) == 6, f"{key} has {len(heads)} period heads"
+            want = 6 if plate.canvas[0] >= plate.canvas[1] else 5
+            assert len(heads) == want, f"{key} has {len(heads)} period heads"
 
 
 # ------------------------------------------------------------------- the axis

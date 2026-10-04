@@ -79,6 +79,27 @@ installRound('plates-r3.js', g.PLATES_R3);
 g.PLATES_R5 = require('./plates-r5');
 installRound('plates-r5.js', g.PLATES_R5);
 
+/* rebuild-41 — THE RESTYLE wraps every author once, here, so every consumer
+ * (emit, export, audit, the review pages) gets the same plate. A caller that
+ * hands the old single-ground palette gets its ground's palette instead: the
+ * plate's ground is a property of its key, never of the caller. */
+const GR = require('./grounds');
+const TOKENS = JSON.parse(fs.readFileSync(path.join(ROOT, 'design-tokens.json'), 'utf8'));
+Object.keys(g.PLATES).forEach(name => {
+  const author = g.PLATES[name];
+  if (typeof author !== 'function' || author._restyle) return;
+  const wrapped = function (o) {
+    const key = (o && o.key) || '';
+    const ground = GR.groundOf(key, TOKENS);
+    if (!ground) return author(o);
+    const hour = (o.pal && o.pal.hour) || 'night';
+    const P = author(Object.assign({}, o, { pal: GR.palFor(TOKENS, hour, key) }));
+    return GR.restyle(P, key, TOKENS);
+  };
+  wrapped._restyle = true;
+  g.PLATES[name] = wrapped;
+});
+
 /* The catalogue, read out of build.js rather than retyped (§8.1), with the
  * round-one entries appended. emit.js and export.js both read THIS, which is
  * what stops the manifest and the export disagreeing about what exists. */
@@ -93,16 +114,18 @@ function legacyCatalogue() {
 }
 
 /* FAMILIES THAT KEEP THEIR DRAWN INK. Everything absent from this list is
- * governed by the flat law — host and room are rebuilt flat and are not here. */
-const DRAWN_FAMILIES = ['annotations', 'cards', 'charts', 'cycles', 'figures',
-  'frames', 'overlays', 'paper', 'peers', 'shorts', 'structure', 'tables'];
+ * governed by the flat law — host and room are rebuilt flat and are not here.
+ * rebuild-41: the eleven restyled data families draw flat (hand.js
+ * `flat-plate`, grounds.flatten) and leave the list; overlays/ keep their look. */
+const DRAWN_FAMILIES = ['overlays'];
 
-function palFor(tokens, hour) {
+function palFor(tokens, hour, key) {
+  if (key && GR.groundOf(key, tokens)) return GR.palFor(tokens, hour, key);
   const I = tokens.hours[hour].ink;
   return {
-    surfaceKey: 'night-card', grain: null,
+    surfaceKey: 'night-card', grain: null, hour,
     ground: I.ground, ground2: I.band, structure: I.structure,
-    down: I.subject2, up: I.subject, neutralData: I.quiet,
+    down: I.subject2, second: I.subject2, up: I.subject, neutralData: I.quiet,
       attention: I.attention, otherParty: I.axis,
   };
 }
@@ -133,7 +156,7 @@ function port(tokens) {
     ['night', 'dusk'].forEach(hour => {
       let svg, P;
       try {
-        P = g.PLATES[it.author](Object.assign({}, it.args, { key: it.key, seed: it.seed, pal: palFor(tokens, hour) }));
+        P = g.PLATES[it.author](Object.assign({}, it.args, { key: it.key, seed: it.seed, pal: palFor(tokens, hour, it.key) }));
         svg = P.toSVG();
       } catch (e) { failures.push({ key: it.key, hour, error: e.message }); return; }
       const c = countsOf(svg);

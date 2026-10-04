@@ -132,7 +132,7 @@
    * plate's own published slots, never placed by eye. anchorFor(m, key)
    * returns a record per move, or null where the plate has nothing for that
    * move to act on (the renderer then skips it). */
-  const NOT_TEXT = ['band', 'marker', 'plot-area', 'bars', 'bridge', 'path', 'spark', 'point-column', 'media', 'highlight-band', 'wraps', 'control', 'mark-area'];
+  const NOT_TEXT = ['band', 'marker', 'plot-area', 'bars', 'bridge', 'path', 'spark', 'point-column', 'bar', 'media', 'highlight-band', 'wraps', 'control', 'mark-area'];
   const textSlots = m => Object.keys(m.slots || {}).filter(k => { const s = m.slots[k]; return s && !s.container && !s.region && !s.overlay && NOT_TEXT.indexOf(s.role) < 0; });
   const box = s => s && { x: s.x, y: s.y, w: s.w, h: s.h };
   const IDX = /^(.*?)-(\d+)(?:-(\d+))?$/;

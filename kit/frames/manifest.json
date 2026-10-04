@@ -14,6 +14,7 @@
    "key": "frames/media-frame-t1-16x9",
    "dir": "frames",
    "aspect": "16x9",
+   "ground": "paper",
    "canvas": [
     1920,
     1080
@@ -36,7 +37,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "563fc449"
+      "hash": "ee96df70"
      },
      {
       "file": "media-frame-t1-16x9-night_f02.png",
@@ -44,7 +45,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "1cc94ba8"
+      "hash": "fd63761a"
      },
      {
       "file": "media-frame-t1-16x9-night_f03.png",
@@ -52,7 +53,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "563fc449"
+      "hash": "ee96df70"
      }
     ]
    },
@@ -67,7 +68,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "563fc449"
+       "hash": "ee96df70"
       },
       {
        "file": "media-frame-t1-16x9-night_f02.png",
@@ -75,7 +76,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "1cc94ba8"
+       "hash": "fd63761a"
       },
       {
        "file": "media-frame-t1-16x9-night_f03.png",
@@ -83,7 +84,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "563fc449"
+       "hash": "ee96df70"
       }
      ]
     },
@@ -97,7 +98,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "8ed68550"
+       "hash": "ee96df70"
       },
       {
        "file": "media-frame-t1-16x9-dusk_f02.png",
@@ -105,7 +106,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "d17629e4"
+       "hash": "fd63761a"
       },
       {
        "file": "media-frame-t1-16x9-dusk_f03.png",
@@ -113,7 +114,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "8ed68550"
+       "hash": "ee96df70"
       }
      ]
     }
@@ -124,8 +125,8 @@
      "font": "Courier Prime",
      "size": 26,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
+     "colour": "quiet",
+     "opacity": 1,
      "maxChars": 83,
      "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), was 60"
     },
@@ -173,6 +174,7 @@
    "key": "frames/media-frame-t1-9x16",
    "dir": "frames",
    "aspect": "9x16",
+   "ground": "paper",
    "canvas": [
     1080,
     1920
@@ -195,7 +197,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "e89faf90"
+      "hash": "11ad33c9"
      },
      {
       "file": "media-frame-t1-9x16-night_f02.png",
@@ -203,7 +205,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "999f54aa"
+      "hash": "6edac60a"
      },
      {
       "file": "media-frame-t1-9x16-night_f03.png",
@@ -211,7 +213,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "e89faf90"
+      "hash": "11ad33c9"
      }
     ]
    },
@@ -226,7 +228,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "e89faf90"
+       "hash": "11ad33c9"
       },
       {
        "file": "media-frame-t1-9x16-night_f02.png",
@@ -234,7 +236,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "999f54aa"
+       "hash": "6edac60a"
       },
       {
        "file": "media-frame-t1-9x16-night_f03.png",
@@ -242,7 +244,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "e89faf90"
+       "hash": "11ad33c9"
       }
      ]
     },
@@ -256,7 +258,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "96933180"
+       "hash": "11ad33c9"
       },
       {
        "file": "media-frame-t1-9x16-dusk_f02.png",
@@ -264,7 +266,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "80763eb0"
+       "hash": "6edac60a"
       },
       {
        "file": "media-frame-t1-9x16-dusk_f03.png",
@@ -272,7 +274,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "96933180"
+       "hash": "11ad33c9"
       }
      ]
     }
@@ -281,20 +283,20 @@
    "typeRoles": {
     "caption": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 56,
-     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 60"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 47,
+     "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     },
     "label": {
      "font": "Archivo Narrow",
-     "size": 34,
+     "size": 37,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 64,
-     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), was 30"
+     "maxChars": 65,
+     "budget": "derived from the slot boxes that set this role; 65 is the floor (narrowest of 1), was 30"
     }
    },
    "slots": {
@@ -303,28 +305,28 @@
      "region": true,
      "fit": "cover",
      "note": "stock footage or a photograph plays inside here",
-     "x": 97,
-     "y": 499,
-     "w": 886,
-     "h": 845
+     "x": 54,
+     "y": 301,
+     "w": 972,
+     "h": 927
     },
     "caption": {
      "align": "left",
      "role": "label",
-     "x": 97,
-     "y": 1414,
-     "w": 886,
-     "h": 90,
-     "maxChars": 64
+     "x": 54,
+     "y": 1305,
+     "w": 972,
+     "h": 99,
+     "maxChars": 65
     },
     "source": {
      "align": "left",
      "role": "caption",
-     "x": 97,
-     "y": 1518,
-     "w": 886,
-     "h": 56,
-     "maxChars": 56
+     "x": 54,
+     "y": 1419,
+     "w": 972,
+     "h": 61,
+     "maxChars": 47
     }
    }
   },
@@ -332,6 +334,7 @@
    "key": "frames/media-frame-t2-16x9",
    "dir": "frames",
    "aspect": "16x9",
+   "ground": "paper",
    "canvas": [
     1920,
     1080
@@ -354,7 +357,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "073bd648"
+      "hash": "38b8b760"
      },
      {
       "file": "media-frame-t2-16x9-night_f02.png",
@@ -362,7 +365,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "86f69238"
+      "hash": "e53c5e51"
      },
      {
       "file": "media-frame-t2-16x9-night_f03.png",
@@ -370,7 +373,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "073bd648"
+      "hash": "38b8b760"
      }
     ]
    },
@@ -385,7 +388,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "073bd648"
+       "hash": "38b8b760"
       },
       {
        "file": "media-frame-t2-16x9-night_f02.png",
@@ -393,7 +396,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "86f69238"
+       "hash": "e53c5e51"
       },
       {
        "file": "media-frame-t2-16x9-night_f03.png",
@@ -401,7 +404,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "073bd648"
+       "hash": "38b8b760"
       }
      ]
     },
@@ -415,7 +418,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "da12c450"
+       "hash": "38b8b760"
       },
       {
        "file": "media-frame-t2-16x9-dusk_f02.png",
@@ -423,7 +426,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "61d85640"
+       "hash": "e53c5e51"
       },
       {
        "file": "media-frame-t2-16x9-dusk_f03.png",
@@ -431,7 +434,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "da12c450"
+       "hash": "38b8b760"
       }
      ]
     }
@@ -442,8 +445,8 @@
      "font": "Courier Prime",
      "size": 26,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
+     "colour": "quiet",
+     "opacity": 1,
      "maxChars": 83,
      "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), was 60"
     },
@@ -491,6 +494,7 @@
    "key": "frames/media-frame-t2-9x16",
    "dir": "frames",
    "aspect": "9x16",
+   "ground": "paper",
    "canvas": [
     1080,
     1920
@@ -513,7 +517,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "c49c9394"
+      "hash": "dc69a936"
      },
      {
       "file": "media-frame-t2-9x16-night_f02.png",
@@ -521,7 +525,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "4b27f016"
+      "hash": "8a802fd4"
      },
      {
       "file": "media-frame-t2-9x16-night_f03.png",
@@ -529,7 +533,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "c49c9394"
+      "hash": "dc69a936"
      }
     ]
    },
@@ -544,7 +548,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "c49c9394"
+       "hash": "dc69a936"
       },
       {
        "file": "media-frame-t2-9x16-night_f02.png",
@@ -552,7 +556,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "4b27f016"
+       "hash": "8a802fd4"
       },
       {
        "file": "media-frame-t2-9x16-night_f03.png",
@@ -560,7 +564,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "c49c9394"
+       "hash": "dc69a936"
       }
      ]
     },
@@ -574,7 +578,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "a73b8470"
+       "hash": "dc69a936"
       },
       {
        "file": "media-frame-t2-9x16-dusk_f02.png",
@@ -582,7 +586,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "30dd9101"
+       "hash": "8a802fd4"
       },
       {
        "file": "media-frame-t2-9x16-dusk_f03.png",
@@ -590,7 +594,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "a73b8470"
+       "hash": "dc69a936"
       }
      ]
     }
@@ -599,20 +603,20 @@
    "typeRoles": {
     "caption": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 56,
-     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 60"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 47,
+     "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     },
     "label": {
      "font": "Archivo Narrow",
-     "size": 34,
+     "size": 37,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 64,
-     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), was 30"
+     "maxChars": 65,
+     "budget": "derived from the slot boxes that set this role; 65 is the floor (narrowest of 1), was 30"
     }
    },
    "slots": {
@@ -621,28 +625,28 @@
      "region": true,
      "fit": "cover",
      "note": "stock footage or a photograph plays inside here",
-     "x": 97,
-     "y": 499,
-     "w": 886,
-     "h": 845
+     "x": 54,
+     "y": 213,
+     "w": 972,
+     "h": 927
     },
     "caption": {
      "align": "left",
      "role": "label",
-     "x": 97,
-     "y": 1494,
-     "w": 886,
-     "h": 90,
-     "maxChars": 64
+     "x": 54,
+     "y": 1305,
+     "w": 972,
+     "h": 99,
+     "maxChars": 65
     },
     "source": {
      "align": "left",
      "role": "caption",
-     "x": 97,
-     "y": 1598,
-     "w": 886,
-     "h": 56,
-     "maxChars": 56
+     "x": 54,
+     "y": 1419,
+     "w": 972,
+     "h": 61,
+     "maxChars": 47
     }
    }
   },
@@ -650,6 +654,7 @@
    "key": "frames/media-frame-t3-16x9",
    "dir": "frames",
    "aspect": "16x9",
+   "ground": "paper",
    "canvas": [
     1920,
     1080
@@ -672,7 +677,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "1be443c6"
+      "hash": "4e0d5e26"
      },
      {
       "file": "media-frame-t3-16x9-night_f02.png",
@@ -680,7 +685,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "eaf5f308"
+      "hash": "30af249a"
      },
      {
       "file": "media-frame-t3-16x9-night_f03.png",
@@ -688,7 +693,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "1be443c6"
+      "hash": "4e0d5e26"
      }
     ]
    },
@@ -703,7 +708,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "1be443c6"
+       "hash": "4e0d5e26"
       },
       {
        "file": "media-frame-t3-16x9-night_f02.png",
@@ -711,7 +716,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "eaf5f308"
+       "hash": "30af249a"
       },
       {
        "file": "media-frame-t3-16x9-night_f03.png",
@@ -719,7 +724,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "1be443c6"
+       "hash": "4e0d5e26"
       }
      ]
     },
@@ -733,7 +738,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "d7daea5e"
+       "hash": "4e0d5e26"
       },
       {
        "file": "media-frame-t3-16x9-dusk_f02.png",
@@ -741,7 +746,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "bcca7954"
+       "hash": "30af249a"
       },
       {
        "file": "media-frame-t3-16x9-dusk_f03.png",
@@ -749,7 +754,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "d7daea5e"
+       "hash": "4e0d5e26"
       }
      ]
     }
@@ -760,8 +765,8 @@
      "font": "Courier Prime",
      "size": 26,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
+     "colour": "quiet",
+     "opacity": 1,
      "maxChars": 83,
      "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), was 60"
     },
@@ -809,6 +814,7 @@
    "key": "frames/media-frame-t3-9x16",
    "dir": "frames",
    "aspect": "9x16",
+   "ground": "paper",
    "canvas": [
     1080,
     1920
@@ -831,7 +837,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "d184ee12"
+      "hash": "bd13cf7c"
      },
      {
       "file": "media-frame-t3-9x16-night_f02.png",
@@ -839,7 +845,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "31101e7a"
+      "hash": "2dbfbd90"
      },
      {
       "file": "media-frame-t3-9x16-night_f03.png",
@@ -847,7 +853,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "d184ee12"
+      "hash": "bd13cf7c"
      }
     ]
    },
@@ -862,7 +868,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "d184ee12"
+       "hash": "bd13cf7c"
       },
       {
        "file": "media-frame-t3-9x16-night_f02.png",
@@ -870,7 +876,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "31101e7a"
+       "hash": "2dbfbd90"
       },
       {
        "file": "media-frame-t3-9x16-night_f03.png",
@@ -878,7 +884,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "d184ee12"
+       "hash": "bd13cf7c"
       }
      ]
     },
@@ -892,7 +898,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "2bc2bdd4"
+       "hash": "bd13cf7c"
       },
       {
        "file": "media-frame-t3-9x16-dusk_f02.png",
@@ -900,7 +906,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "7eeb6cc3"
+       "hash": "2dbfbd90"
       },
       {
        "file": "media-frame-t3-9x16-dusk_f03.png",
@@ -908,7 +914,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "2bc2bdd4"
+       "hash": "bd13cf7c"
       }
      ]
     }
@@ -917,20 +923,20 @@
    "typeRoles": {
     "caption": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 56,
-     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 60"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 47,
+     "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     },
     "label": {
      "font": "Archivo Narrow",
-     "size": 34,
+     "size": 37,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 64,
-     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), was 30"
+     "maxChars": 65,
+     "budget": "derived from the slot boxes that set this role; 65 is the floor (narrowest of 1), was 30"
     }
    },
    "slots": {
@@ -939,28 +945,28 @@
      "region": true,
      "fit": "cover",
      "note": "stock footage or a photograph plays inside here",
-     "x": 97,
-     "y": 499,
-     "w": 886,
-     "h": 845
+     "x": 54,
+     "y": 301,
+     "w": 972,
+     "h": 927
     },
     "caption": {
      "align": "left",
      "role": "label",
-     "x": 97,
-     "y": 1414,
-     "w": 886,
-     "h": 90,
-     "maxChars": 64
+     "x": 54,
+     "y": 1305,
+     "w": 972,
+     "h": 99,
+     "maxChars": 65
     },
     "source": {
      "align": "left",
      "role": "caption",
-     "x": 97,
-     "y": 1518,
-     "w": 886,
-     "h": 56,
-     "maxChars": 56
+     "x": 54,
+     "y": 1419,
+     "w": 972,
+     "h": 61,
+     "maxChars": 47
     }
    }
   },
@@ -968,6 +974,7 @@
    "key": "frames/capture-frame-16x9",
    "dir": "frames",
    "aspect": "16x9",
+   "ground": "paper",
    "canvas": [
     1920,
     1080
@@ -990,7 +997,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "d8c8e250"
+      "hash": "37c6f700"
      },
      {
       "file": "capture-frame-16x9-night_f02.png",
@@ -998,7 +1005,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "67ad2630"
+      "hash": "d4394db4"
      },
      {
       "file": "capture-frame-16x9-night_f03.png",
@@ -1006,7 +1013,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "d8c8e250"
+      "hash": "37c6f700"
      }
     ]
    },
@@ -1021,7 +1028,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "d8c8e250"
+       "hash": "37c6f700"
       },
       {
        "file": "capture-frame-16x9-night_f02.png",
@@ -1029,7 +1036,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "67ad2630"
+       "hash": "d4394db4"
       },
       {
        "file": "capture-frame-16x9-night_f03.png",
@@ -1037,7 +1044,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "d8c8e250"
+       "hash": "37c6f700"
       }
      ]
     },
@@ -1051,7 +1058,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "0611a4e0"
+       "hash": "37c6f700"
       },
       {
        "file": "capture-frame-16x9-dusk_f02.png",
@@ -1059,7 +1066,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "44c97876"
+       "hash": "d4394db4"
       },
       {
        "file": "capture-frame-16x9-dusk_f03.png",
@@ -1067,7 +1074,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "0611a4e0"
+       "hash": "37c6f700"
       }
      ]
     }
@@ -1076,16 +1083,16 @@
    "typeRoles": {
     "source": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 30,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
+     "colour": "quiet",
+     "opacity": 1,
      "maxChars": 67,
      "budget": "derived from the slot boxes that set this role; 67 is the floor (narrowest of 1), was 60"
     },
     "headline": {
      "font": "Archivo Narrow",
-     "size": 52,
+     "size": 60,
      "weight": 700,
      "colour": "structure",
      "maxLines": 2,
@@ -1094,7 +1101,7 @@
     },
     "body": {
      "font": "Archivo Narrow",
-     "size": 30,
+     "size": 35,
      "weight": 400,
      "colour": "structure",
      "maxLines": 3,
@@ -1103,10 +1110,10 @@
     },
     "caption": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 30,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
+     "colour": "quiet",
+     "opacity": 1,
      "maxChars": 76,
      "budget": "derived from the slot boxes that set this role; 76 is the floor (narrowest of 1), was 60"
     }
@@ -1115,29 +1122,29 @@
     "source": {
      "align": "left",
      "role": "source",
-     "x": 435,
-     "y": 206,
-     "w": 1050,
-     "h": 52,
+     "x": 352,
+     "y": 54,
+     "w": 1215,
+     "h": 60,
      "maxChars": 67
     },
     "headline": {
      "align": "left",
      "role": "headline",
-     "x": 435,
-     "y": 280,
-     "w": 1050,
-     "h": 140,
+     "x": 352,
+     "y": 140,
+     "w": 1215,
+     "h": 162,
      "maxCharsPerLine": 48,
      "maxLines": 2
     },
     "body": {
      "align": "left",
      "role": "body",
-     "x": 435,
-     "y": 470,
-     "w": 1050,
-     "h": 190,
+     "x": 352,
+     "y": 359,
+     "w": 1215,
+     "h": 220,
      "maxCharsPerLine": 87,
      "maxLines": 3
     },
@@ -1145,18 +1152,18 @@
      "role": "highlight-band",
      "region": true,
      "overlay": "overlays/row-band",
-     "x": 421,
-     "y": 462,
-     "w": 1078,
-     "h": 70
+     "x": 336,
+     "y": 350,
+     "w": 1247,
+     "h": 81
     },
     "caption": {
      "align": "left",
      "role": "caption",
-     "x": 365,
-     "y": 990,
-     "w": 1190,
-     "h": 56,
+     "x": 271,
+     "y": 961,
+     "w": 1377,
+     "h": 65,
      "maxChars": 76
     }
    }
@@ -1165,6 +1172,7 @@
    "key": "frames/capture-frame-9x16",
    "dir": "frames",
    "aspect": "9x16",
+   "ground": "paper",
    "canvas": [
     1080,
     1920
@@ -1187,7 +1195,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "3667fea0"
+      "hash": "7ab44ce8"
      },
      {
       "file": "capture-frame-9x16-night_f02.png",
@@ -1195,7 +1203,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "01d2b846"
+      "hash": "010fd876"
      },
      {
       "file": "capture-frame-9x16-night_f03.png",
@@ -1203,7 +1211,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "3667fea0"
+      "hash": "7ab44ce8"
      }
     ]
    },
@@ -1218,7 +1226,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "3667fea0"
+       "hash": "7ab44ce8"
       },
       {
        "file": "capture-frame-9x16-night_f02.png",
@@ -1226,7 +1234,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "01d2b846"
+       "hash": "010fd876"
       },
       {
        "file": "capture-frame-9x16-night_f03.png",
@@ -1234,7 +1242,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "3667fea0"
+       "hash": "7ab44ce8"
       }
      ]
     },
@@ -1248,7 +1256,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "3bc5cbd0"
+       "hash": "7ab44ce8"
       },
       {
        "file": "capture-frame-9x16-dusk_f02.png",
@@ -1256,7 +1264,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "81ab0348"
+       "hash": "010fd876"
       },
       {
        "file": "capture-frame-9x16-dusk_f03.png",
@@ -1264,7 +1272,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "3bc5cbd0"
+       "hash": "7ab44ce8"
       }
      ]
     }
@@ -1273,88 +1281,88 @@
    "typeRoles": {
     "source": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 53,
-     "budget": "derived from the slot boxes that set this role; 53 is the floor (narrowest of 1), was 60"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 47,
+     "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     },
     "headline": {
      "font": "Archivo Narrow",
-     "size": 46,
+     "size": 64,
      "weight": 700,
      "colour": "structure",
      "maxLines": 2,
-     "maxCharsPerLine": 43,
-     "budget": "derived from the slot boxes that set this role; 43 is the floor (narrowest of 1), was 26"
+     "maxCharsPerLine": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 26"
     },
     "body": {
      "font": "Archivo Narrow",
-     "size": 28,
+     "size": 34,
      "weight": 400,
      "colour": "structure",
      "maxLines": 3,
-     "maxCharsPerLine": 75,
-     "budget": "derived from the slot boxes that set this role; 75 is the floor (narrowest of 1), was 38"
+     "maxCharsPerLine": 71,
+     "budget": "derived from the slot boxes that set this role; 71 is the floor (narrowest of 1), was 38"
     },
     "caption": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 59,
-     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 1), was 60"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 47,
+     "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     }
    },
    "slots": {
     "source": {
      "align": "left",
      "role": "source",
-     "x": 122,
-     "y": 448,
-     "w": 837,
-     "h": 52,
-     "maxChars": 53
+     "x": 54,
+     "y": 181,
+     "w": 972,
+     "h": 54,
+     "maxChars": 47
     },
     "headline": {
      "align": "left",
      "role": "headline",
-     "x": 122,
-     "y": 516,
-     "w": 837,
-     "h": 180,
-     "maxCharsPerLine": 43,
+     "x": 54,
+     "y": 252,
+     "w": 972,
+     "h": 188,
+     "maxCharsPerLine": 36,
      "maxLines": 2
     },
     "body": {
      "align": "left",
      "role": "body",
-     "x": 122,
-     "y": 750,
-     "w": 837,
-     "h": 260,
-     "maxCharsPerLine": 75,
+     "x": 54,
+     "y": 497,
+     "w": 972,
+     "h": 272,
+     "maxCharsPerLine": 71,
      "maxLines": 3
     },
     "mark": {
      "role": "highlight-band",
      "region": true,
      "overlay": "overlays/row-band",
-     "x": 108,
-     "y": 742,
-     "w": 865,
-     "h": 84
+     "x": 87,
+     "y": 488,
+     "w": 905,
+     "h": 88
     },
     "caption": {
      "align": "left",
      "role": "caption",
-     "x": 76,
-     "y": 1634,
-     "w": 929,
-     "h": 56,
-     "maxChars": 59
+     "x": 54,
+     "y": 1421,
+     "w": 972,
+     "h": 59,
+     "maxChars": 47
     }
    }
   }
