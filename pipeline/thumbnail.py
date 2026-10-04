@@ -276,14 +276,90 @@ def _performer(settings: Settings, aspect: str):
     return None
 
 
+def _type_ops(settings: Settings, d, *, ticker: str, metric: str, kicker: str,
+              size: tuple[int, int], orient: str, is_move: bool,
+              pad: int, number_at: int | None = None) -> list[tuple]:
+    """The cover's type as `(xy, text, font, fill)` to draw: the ticker, the
+    label, the number and the kicker. Laid out before Dennis goes in, so a
+    3D Dennis on his own spot can be checked against it, and drawn over him.
+    `number_at` moves the number down to that row, under him."""
+    W, H = size
+    wide = orient == "wide"
+    ink = role(settings, "structure")
+    muted = role(settings, "neutral-data")
+    tick_h = 0.17 if wide else 0.11
+    val_h = 0.23 if wide else 0.20
+    lab_h = 0.036 if wide else 0.026
+    ops: list[tuple] = []
+    # The wide cover reserves a column for the figure; the tall one puts him
+    # below the type, so the type gets the full width.
+    text_w = W - 2 * pad - (int(W * 0.30) if wide else 0)
+    y = pad
+
+    tick_font = _fit(f"${ticker}", settings, ARCHIVO, int(H * tick_h), text_w, d)
+    ops.append(((pad, y), f"${ticker}", tick_font, (*ink, 255)))
+    y += int(tick_font.size * 1.15)
+
+    label, value = split_metric(metric)
+    if label:
+        lab_font = load_font(settings, COURIER_BOLD, int(H * lab_h))
+        # One line. A move summary can run long and a wrapped grey line under
+        # the ticker is not what anybody is reading the cover for.
+        while (label and d.textlength(label, font=lab_font) > text_w
+               and " " in label):
+            label = label.rsplit(" ", 1)[0]
+        ops.append(((pad, y), label, lab_font, (*muted, 255)))
+        y += int(lab_font.size * 1.6)
+    if value:
+        val_font = _fit(value, settings, COURIER_BOLD, int(H * val_h), text_w, d)
+        ops.append(((pad, y if number_at is None else number_at), value, val_font,
+                    (*metric_colour(settings, value, is_move=is_move), 255)))
+
+    # The kicker sits on the baseline, muted — it names the format, it is not
+    # the headline.
+    kick_font = load_font(settings, COURIER_BOLD,
+                          int(H * (0.038 if orient == "wide" else 0.022)))
+    ops.append(((pad, H - pad - kick_font.size), kicker.upper(), kick_font, (*muted, 255)))
+    return ops
+
+
+def _frame_3d(performer, room_plate, size: tuple[int, int], seed: str, stance: str):
+    """The 3D Dennis for a cover as the video has him: a layer the cover's
+    size, on the room's spot, the desk in front of him and his shadow on the
+    room; or None."""
+    try:
+        png = performer.still(room_plate, size, seed=seed, stance=stance, in_room=True)
+    except Exception as exc:  # noqa: BLE001 — a cover is never fatal
+        log.warning("thumbnail: no 3D Dennis on the cover (%s)", exc)
+        return None
+    im = Image.open(png).convert("RGBA")
+    if im.size != size:
+        im = im.resize(size, Image.LANCZOS)
+    return im if _him(im).getbbox() is not None else None
+
+
+def _him(layer: Image.Image) -> Image.Image:
+    """His own pixels in a layer of him: solid, not the softer shadow."""
+    return layer.getchannel("A").point(lambda a: 255 if a > 200 else 0)
+
+
+def _crosses(layer: Image.Image, boxes, margin: int) -> bool:
+    """Whether any of him is under any of `boxes` (x0, y0, x1, y1), give or
+    take `margin`."""
+    him = _him(layer)
+    return any(him.crop((x0 - margin, y0 - margin, x1 + margin, y1 + margin)).getbbox()
+               is not None for x0, y0, x1, y1 in boxes)
+
+
 def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
              size: tuple[int, int], orient: str,
              is_move: bool = False, dressing=None,
              written: Path | None = None, performer=None) -> Image.Image:
     """One cover. The room, a drawn border, the ticker, the number, Dennis.
 
-    With a `performer` the video has the 3D Dennis, and so does its cover:
-    rendered on the room's spot and cut to himself, never the drawn one."""
+    With a `performer` the video has the 3D Dennis, and so does its cover,
+    never the drawn one: on his own spot as the video has him, or, where the
+    type is over that spot, rendered there and cut to himself."""
     from pipeline.host import place_on_room, stands_on
 
     W, H = size
@@ -292,7 +368,6 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
     img = room_img.convert("RGBA")
     d = ImageDraw.Draw(img)
     ink = role(settings, "structure")
-    muted = role(settings, "neutral-data")
     rng = random.Random(f"thumb|{ticker}|{metric}|{orient}")
 
     # The border is a pen stroke. The frames it is selling have no geometric
@@ -336,6 +411,9 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
     # the type and has to be short enough to clear it.
     type_bottom = int(H * (tick_h + lab_h * 1.6 + val_h)) + pad
 
+    type_ops = _type_ops(settings, d, ticker=ticker, metric=metric, kicker=kicker,
+                         size=size, orient=orient, is_move=is_move, pad=pad)
+
     fig, shot = _host(settings, f"{ticker}|{orient}")
     feet = None
     if performer is not None:
@@ -343,12 +421,35 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
         # the drawn one would have; with no 3D room under the cover, or no
         # drawing of him, the cover goes without him rather than with the
         # drawn Dennis on a 3D video's shelf.
+        #
+        # Where the type leaves his own spot clear, the cover is a frame from
+        # the video: him where he stands in it, the desk in front of him, his
+        # shadow on the room. Moved into the layout instead, he is a whole
+        # figure stood in front of the desk on nothing; that is only for a
+        # room whose spot is under the type.
         from pipeline import dennis3d
 
-        got = (_host_3d(performer, room_plate, size, f"{ticker}|{orient}",
-                        shot.key if shot is not None else "")
-               if dennis3d.angle_of(room_plate) else None)
-        fig, feet = got if got is not None else (None, None)
+        seed, stance = f"{ticker}|{orient}", (shot.key if shot is not None else "")
+        frame = (_frame_3d(performer, room_plate, size, seed, stance)
+                 if dennis3d.angle_of(room_plate) else None)
+        boxes = [d.textbbox(xy, text, font=font) for xy, text, font, _ in type_ops]
+        if frame is not None and not wide and _crosses(frame, boxes, pad // 3):
+            # The tall cover's number goes under him, over the desk's front,
+            # when it fits there above the kicker.
+            moved = _type_ops(settings, d, ticker=ticker, metric=metric, kicker=kicker,
+                              size=size, orient=orient, is_move=is_move, pad=pad,
+                              number_at=_him(frame).getbbox()[3] + pad // 2)
+            mboxes = [d.textbbox(xy, text, font=font) for xy, text, font, _ in moved]
+            if (not _crosses(frame, mboxes, pad // 3)
+                    and max(b[3] for b in mboxes[:-1]) < mboxes[-1][1] - pad // 3):
+                type_ops, boxes = moved, mboxes
+        if frame is not None and not _crosses(frame, boxes, pad // 3):
+            img.alpha_composite(frame)
+            fig = None
+        else:
+            got = (_host_3d(performer, room_plate, size, seed, stance)
+                   if dennis3d.angle_of(room_plate) else None)
+            fig, feet = got if got is not None else (None, None)
     if fig is not None:
         fh = fig.height if feet is not None else int(H * fig_h)
         if feet is None and room_plate is not None and stands_on(room_plate, shot):
@@ -375,36 +476,8 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
         x = W - fw - pad if wide else (W - fw) // 2
         img.alpha_composite(fig.resize((fw, fh), Image.LANCZOS), (x, top_of(fh)))
 
-    # The wide cover reserves a column for the figure; the tall one puts him
-    # below the type, so the type gets the full width.
-    text_w = W - 2 * pad - (int(W * 0.30) if wide else 0)
-    y = pad
-
-    tick_font = _fit(f"${ticker}", settings, ARCHIVO, int(H * tick_h), text_w, d)
-    d.text((pad, y), f"${ticker}", font=tick_font, fill=(*ink, 255))
-    y += int(tick_font.size * 1.15)
-
-    label, value = split_metric(metric)
-    if label:
-        lab_font = load_font(settings, COURIER_BOLD, int(H * lab_h))
-        # One line. A move summary can run long and a wrapped grey line under
-        # the ticker is not what anybody is reading the cover for.
-        while (label and d.textlength(label, font=lab_font) > text_w
-               and " " in label):
-            label = label.rsplit(" ", 1)[0]
-        d.text((pad, y), label, font=lab_font, fill=(*muted, 255))
-        y += int(lab_font.size * 1.6)
-    if value:
-        val_font = _fit(value, settings, COURIER_BOLD, int(H * val_h), text_w, d)
-        d.text((pad, y), value, font=val_font,
-               fill=(*metric_colour(settings, value, is_move=is_move), 255))
-
-    # The kicker sits on the baseline, muted — it names the format, it is not
-    # the headline.
-    kick_font = load_font(settings, COURIER_BOLD,
-                          int(H * (0.038 if orient == "wide" else 0.022)))
-    d.text((pad, H - pad - kick_font.size), kicker.upper(), font=kick_font,
-           fill=(*muted, 255))
+    for xy, text, font, fill in type_ops:
+        d.text(xy, text, font=font, fill=fill)
     return img.convert("RGB")
 
 

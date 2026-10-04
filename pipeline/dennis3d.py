@@ -31,7 +31,7 @@ REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
-LOOK_VERSION = "47-64-3"
+LOOK_VERSION = "47-64-4"
 
 
 def _python(settings) -> list[str]:
@@ -112,8 +112,12 @@ def usable(settings, reg, aspect: str) -> bool:
 class Performer:
     """The Blender process and the shots it has drawn."""
 
-    def __init__(self, settings, cache: Path | None = None):
+    def __init__(self, settings, cache: Path | None = None, *, draft: bool = False):
         self.settings = settings
+        # A proof's performer draws him at half the size each way, a quarter
+        # of the work: the proof's voice is not the final's, so the final
+        # draws every shot of him again anyway, to its own words.
+        self.draft = draft
         self.cache = Path(cache or Path(settings.cache_dir) / "dennis3d")
         self.cache.mkdir(parents=True, exist_ok=True)
         self._proc: subprocess.Popen | None = None
@@ -176,11 +180,15 @@ class Performer:
         programme clock; `start` is the shot's start on it. `stance` is the
         kit pose he plays; `plate` is where a two-shot's evidence sits in the
         frame (0-1 from the top left), for him to show; `close` is the
-        close-up, whose background is `window(layer)` of the room's picture."""
+        close-up, whose background is `window(layer)` of the room's picture.
+        A draft performer's layer is half `size`; whoever lays it in scales
+        it to the frame."""
         where = angle_of(room)
         if where is None:
             raise RenderError(f"{getattr(room, 'key', room)} is not a 3D room")
         angle, season, aspect = where
+        if self.draft:
+            size = (max(size[0] // 4 * 2, 2), max(size[1] // 4 * 2, 2))
         fps = int(self.settings.dennis_3d_fps)
         job = {"angle": angle, "season": season, "aspect": aspect, "size": list(size),
                "fps": fps, "samples": int(self.settings.dennis_3d_samples),
@@ -210,11 +218,13 @@ class Performer:
                            "seconds": reply.get("seconds"), "device": reply.get("device")})
         return layer
 
-    def still(self, room, size: tuple[int, int], *, seed: str, stance: str = "") -> Path:
-        """Him alone for a cover: one RGBA frame, `size` big, standing on
-        `room`'s spot as its camera sees him, caught mid-sentence, with
-        nothing of the room drawn (no shadow, nothing in front of him), so
-        the cover can stand him where its type leaves room. A stance that
+    def still(self, room, size: tuple[int, int], *, seed: str, stance: str = "",
+              in_room: bool = False) -> Path:
+        """Him for a cover: one RGBA frame, `size` big, standing on `room`'s
+        spot as its camera sees him, caught mid-sentence, with nothing of the
+        room drawn (no shadow, nothing in front of him), so the cover can
+        stand him where its type leaves room; `in_room`, as a shot has him,
+        the desk in front of him and his shadow on the room. A stance that
         turns him from the camera is played to it."""
         where = angle_of(room)
         if where is None:
@@ -223,7 +233,8 @@ class Performer:
         job = {"angle": angle, "season": season, "aspect": aspect, "size": list(size),
                "fps": int(self.settings.dennis_3d_fps),
                "samples": max(int(self.settings.dennis_3d_samples), 16),
-               "seed": seed, "stance": stance, "still": True}
+               "seed": seed, "stance": stance, "still": True,
+               **({"in_room": True} if in_room else {})}
         key = hashlib.sha256(json.dumps({**job, "v": LOOK_VERSION},
                                         sort_keys=True).encode()).hexdigest()[:20]
         folder = self.cache / key

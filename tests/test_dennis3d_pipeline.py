@@ -61,9 +61,11 @@ FAKE = textwrap.dedent('''
         out = Path(job["out"]); out.mkdir(parents=True, exist_ok=True)
         n = 1 if job.get("still") else max(int(round(job["duration"] * job["fps"])), 1)
         w, h = job["size"]
+        # in the room for a cover he is on the right, but at the board on the left
+        x0 = w * 5 // 8 if job.get("in_room") and "board" not in job["stance"] else w // 4
         for i in range(n):
             im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-            im.paste((60, 90, 140, 255), (w // 4 + i, h // 4, w // 2 + i, h - 4))
+            im.paste((60, 90, 140, 255), (x0 + i, h // 4, x0 + w // 4 + i, h - 4))
             im.save(out / f"d_{i:04d}.png")
         (Path(job["out"]).parent / "calls").open("a").write(json.dumps(job.get("words")) + "\\n")
         (Path(job["out"]).parent / "job.json").write_text(json.dumps(job))
@@ -104,6 +106,23 @@ def test_a_shot_comes_back_as_his_layer_and_is_drawn_once(performer, tmp_path):
     assert performer.shot(room, words, 10.0, 2.0, (320, 180), seed="EXMPL|4") == layer
     assert len(calls[0].read_text(encoding="utf-8").splitlines()) == 1
     assert performer.shots[-1]["cached"] is True
+
+
+def test_a_proof_draws_him_at_half_the_size_and_the_final_at_full(performer):
+    """The proof's voice is not the final's, so the final draws him again to
+    its own words: the proof's drawing is thrown away and costs a quarter."""
+    from pipeline.render_common import ffprobe_json
+
+    words = [SimpleNamespace(word="So.", start=0.2, end=0.5)]
+    room = _room("room/desk-front-16x9")
+    performer.draft = True
+    proof = performer.shot(room, words, 0.0, 0.5, (320, 180), seed="p")
+    info = ffprobe_json(proof)["streams"][0]
+    assert (info["width"], info["height"]) == (160, 90)
+    performer.draft = False
+    final = performer.shot(room, words, 0.0, 0.5, (320, 180), seed="p")
+    info = ffprobe_json(final)["streams"][0]
+    assert final != proof and (info["width"], info["height"]) == (320, 180)
 
 
 def test_a_shot_he_cannot_stand_in_fails_the_render(performer):
@@ -285,33 +304,53 @@ def test_his_frames_come_back_from_the_layer_when_the_folder_went(performer):
 # The covers
 # --------------------------------------------------------------------------
 
-def _cover(monkeypatch, settings, room, performer):
+def _cover(monkeypatch, settings, room, performer, key="host/arms-crossed"):
     import pipeline.thumbnail as th
 
     monkeypatch.setattr(th, "_room", lambda *a, **k: (Image.new("RGB", th.WIDE, (40, 40, 40)), room))
     drawn = Image.new("RGBA", (200, 500), (220, 20, 20, 255))
     monkeypatch.setattr(th, "_host", lambda *a, **k: (drawn, SimpleNamespace(
-        key="host/arms-crossed", floor_line_y=480, pose=SimpleNamespace(canvas=(200, 500)))))
+        key=key, floor_line_y=480, pose=SimpleNamespace(canvas=(200, 500)))))
     return th._compose(settings, ticker="EXMPL", metric="P/S: 40x", kicker="the deep dive",
                        size=th.WIDE, orient="wide", performer=performer)
 
 
-def test_a_3d_video_s_cover_has_the_3d_dennis_and_never_the_drawn_one(performer, settings,
-                                                                      monkeypatch):
+def test_a_3d_video_s_cover_is_a_frame_of_the_video_when_the_type_leaves_him_clear(
+        performer, settings, monkeypatch):
     import json
 
     room = SimpleNamespace(key="room/desk-front-16x9", author="room3d", floor_line_y=None,
                            canvas=(2560, 1440), delivered=(2560, 1440))
     img = _cover(monkeypatch, settings, room, performer)
     px = img.load()
-    # the stand-in draws him x 320..640, y 180..716 of 1280x720; the cover
-    # stands him in its right-hand column, feet where they were
+    # in the room the stand-in is x 800..1120, y 180..716 of 1280x720, and
+    # the cover lays him there, the desk and his shadow in his own layer
+    assert px[810, 450] == (60, 90, 140) and px[1110, 700] == (60, 90, 140)
+    assert px[790, 450] != (60, 90, 140), "on his own spot, not moved"
+    assert not any(px[x, y] == (220, 20, 20) for x in range(0, 1280, 8) for y in range(0, 720, 8))
+    jobs = [json.loads(f.read_text(encoding="utf-8")) for f in performer.cache.glob("*/job.json")]
+    assert len(jobs) == 1, "one drawing of him"
+    assert jobs[0]["still"] and jobs[0]["in_room"] and jobs[0]["size"] == [1280, 720]
+    assert jobs[0]["stance"] == "host/arms-crossed"
+
+
+def test_a_3d_video_s_cover_moves_him_clear_of_the_type_when_his_spot_is_under_it(
+        performer, settings, monkeypatch):
+    import json
+
+    room = SimpleNamespace(key="room/desk-front-16x9", author="room3d", floor_line_y=None,
+                           canvas=(2560, 1440), delivered=(2560, 1440))
+    img = _cover(monkeypatch, settings, room, performer, key="host/at-board")
+    px = img.load()
+    # at the board he would be x 320..640, under the ticker; cut to himself
+    # instead, he goes in the cover's right-hand column, feet where they were
     assert px[1280 - 47 - 160, 450] == (60, 90, 140), "the 3D Dennis is on the cover"
     assert px[1280 - 47 - 160, 720 - 3] != (60, 90, 140)
+    assert px[330, 450] != (60, 90, 140)
     assert not any(px[x, y] == (220, 20, 20) for x in range(0, 1280, 8) for y in range(0, 720, 8))
-    job = json.loads(next(performer.cache.glob("*/job.json")).read_text(encoding="utf-8"))
-    assert job["still"] and job["stance"] == "host/arms-crossed" and job["size"] == [1280, 720]
-    assert (next(performer.cache.glob("*/still.png"))).exists()
+    jobs = [json.loads(f.read_text(encoding="utf-8")) for f in performer.cache.glob("*/job.json")]
+    assert sorted(bool(j.get("in_room")) for j in jobs) == [False, True]
+    assert all(j["still"] and j["size"] == [1280, 720] for j in jobs)
 
 
 def test_a_3d_video_s_cover_over_a_drawn_room_goes_without_him(performer, settings,
