@@ -172,6 +172,50 @@ def _chapter_cuts(chapters: list[tuple[float, str, str]], seg_starts: list[float
     return out
 
 
+def _host_covers_picture(clip: Path, box: tuple[int, int, int, int],
+                         quad, t0: float, dur: float, size: tuple[int, int]) -> bool:
+    """Whether he is over the monitor's picture at any frame of `t0..t0+dur`.
+
+    His own pixels, read off the clip's alpha, not the clip's rectangle: the
+    cut-out's transparent margin overlaps the monitor in every desk room while
+    he sits clear of it, and a push into the screen blows up whatever of him
+    is inside the picture to five times its size. True when it cannot tell.
+    """
+    import subprocess
+
+    import numpy as np
+    from PIL import ImageDraw
+
+    bx, by, bw, bh = box
+    W, H = size
+
+    def read(*seek: str):
+        try:
+            raw = subprocess.run(
+                ["ffmpeg", "-loglevel", "error", *seek, "-i", str(clip),
+                 "-vf", f"alphaextract,scale={bw}:{bh}", "-f", "rawvideo",
+                 "-pix_fmt", "gray", "-"], capture_output=True, check=True).stdout
+        except (OSError, subprocess.CalledProcessError):
+            return None
+        n = len(raw) // (bw * bh)
+        return np.frombuffer(raw[:n * bw * bh], np.uint8).reshape(n, bh, bw) if n else None
+
+    # A beat longer than his clip holds the clip's last frame.
+    frames = read("-ss", f"{t0:.3f}", "-t", f"{dur:.3f}")
+    if frames is None:
+        frames = read("-sseof", "-0.2")
+    if frames is None:
+        return True
+    him = np.zeros((H, W), bool)
+    x0, y0, x1, y1 = max(bx, 0), max(by, 0), min(bx + bw, W), min(by + bh, H)
+    if x1 <= x0 or y1 <= y0:
+        return False
+    him[y0:y1, x0:x1] = (frames > 128).any(axis=0)[y0 - by:y1 - by, x0 - bx:x1 - bx]
+    picture = Image.new("L", (W, H))
+    ImageDraw.Draw(picture).polygon([tuple(p) for p in quad], fill=255)
+    return bool((him & (np.asarray(picture) > 0)).any())
+
+
 def _cleared(t: float, covers: list[tuple[float, float]]) -> float:
     """The first moment at or after `t` that no full-frame cover is on.
 
@@ -1889,7 +1933,8 @@ def _render_long(
             and the cut lands on the plate, which is the same picture. A
             perspective filter on the shot's own frames, so he and the desk
             go with the room. "" where it cannot: the next beat is not that
-            plate or not full frame, he stands in front of the picture, the
+            plate or not full frame, he is over the picture (his pixels, not
+            his clip's rectangle), the
             picture runs off the frame, or the end of the shot is covered.
 
             And not before the chapter's picture has drawn itself on the
@@ -1923,7 +1968,9 @@ def _render_long(
                 return ""
             if box is not None:
                 bx, by, bw, bh = box
-                if bx < max(xs) and bx + bw > min(xs) and by < max(ys) and by + bh > min(ys):
+                if bx < max(xs) and bx + bw > min(xs) and by < max(ys) and by + bh > min(ys) \
+                        and _host_covers_picture(rdir / f"host_{i}.mov", box, q, t0,
+                                                 PUSH_S, (W, H)):
                     return ""
             # The filter counts its input frames from one; easing in, so the
             # push gathers speed into the cut.
