@@ -29,7 +29,7 @@ from __future__ import annotations
 import math
 import random
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Sequence
 
 FPS = 30
@@ -57,11 +57,65 @@ def _arm(name: str, ab: int) -> dict[str, tuple[float, float, float]]:
         # elbows in, forearms out, palms up: who knows
         "shrug": {"shoulder": (-18, 14 * ab, -38 * ab), "elbow": (-100, 0, 0),
                   "wrist": (-10, 0, -75 * ab)},
+        # THE WRITER'S POSES (item 47, phase 2): where an arm lives through
+        # a whole shot when the [SCENE] puts him in one of the kit's poses.
+        # Each was solved from where the hand has to be (two-bone IK on the
+        # rig, the left arm; the right is its mirror), so a hand meant for a
+        # pocket, a chin or the desk top lands there.
+        # the hand down the front of the trouser pocket, the elbow out a little
+        "pocket": {"shoulder": (15, 1 * ab, 55 * ab), "elbow": (-43, 0, 0),
+                   "wrist": (12, -23 * ab, -60 * ab)},
+        # arms crossed: the forearm underneath, its hand behind the other arm
+        "crossed-low": {"shoulder": (0, 17 * ab, 67 * ab), "elbow": (-94, 0, 0),
+                        "wrist": (-49, -1 * ab, -20 * ab)},
+        # and the one over it, its hand round the other upper arm
+        "crossed-high": {"shoulder": (-11, 18 * ab, 57 * ab), "elbow": (-99, 0, 0),
+                         "wrist": (-54, -13 * ab, -29 * ab)},
+        # the knuckles under the chin, the elbow down in front of him
+        "chin": {"shoulder": (-39, 29 * ab, 42 * ab), "elbow": (-140, 0, 0),
+                 "wrist": (5, 17 * ab, -45 * ab)},
+        # the forearm across the belly, the hand cupping the other elbow
+        "under": {"shoulder": (-8, 9 * ab, 51 * ab), "elbow": (-91, 0, 0),
+                  "wrist": (13, -42 * ab, -108 * ab)},
+        # a mug at the chest, upright in the palm
+        "hold": {"shoulder": (0, 18 * ab, 26 * ab), "elbow": (-92, 0, 0),
+                 "wrist": (0, -1 * ab, -18 * ab)},
+        # a phone held up in front of him, its screen to his face, its back
+        # over his fingers where the camera sees it
+        "phone": {"shoulder": (-1, 14 * ab, 33 * ab), "elbow": (-91, 0, 0),
+                  "wrist": (-53, 27 * ab, -91 * ab)},
+        # a page at the waist, tipped up so he can read it
+        "page": {"shoulder": (4, 14 * ab, 33 * ab), "elbow": (-90, 0, 0),
+                 "wrist": (-29, 20 * ab, -99 * ab)},
+        # the filing held up to the camera, a hand on each side of it
+        "filing": {"shoulder": (-4, 19 * ab, 27 * ab), "elbow": (-98, 0, 0),
+                   "wrist": (44, 45 * ab, 28 * ab)},
+        # the hand flat on the desk top, the arm nearly straight, his weight
+        # on it (with the stance's lean)
+        "desk": {"shoulder": (15, 61 * ab, 72 * ab), "elbow": (-45, 0, 0),
+                 "wrist": (35, -7 * ab, 14 * ab)},
+        # the finger on the desk in front of him: this one
+        "down-point": {"shoulder": (-21, 23 * ab, 14 * ab), "elbow": (-96, 0, 0),
+                       "wrist": (-72, -68 * ab, 53 * ab)},
+        # a palm on each cheek, the elbows down in front of him
+        "face": {"shoulder": (-92, 30 * ab, -9 * ab), "elbow": (-141, 0, 0),
+                 "wrist": (42, -18 * ab, -24 * ab)},
+        # counting: one hand up at the chest, fingers up...
+        "count-hand": {"shoulder": (-9, 18 * ab, 40 * ab), "elbow": (-91, 0, 0),
+                       "wrist": (28, 53 * ab, 16 * ab)},
+        # ...and the other's finger on them
+        "count-point": {"shoulder": (-3, 26 * ab, 13 * ab), "elbow": (-109, 0, 0),
+                        "wrist": (-35, 45 * ab, 21 * ab)},
     }[name]
 
 
 HANDS = {"relaxed": (25, 30, 35, 40, 15), "open": (4, 2, 4, 8, 5),
-         "point": (0, 95, 100, 100, 55), "fist": (100, 100, 100, 100, 60)}
+         "point": (0, 95, 100, 100, 55), "fist": (100, 100, 100, 100, 60),
+         # counting on his fingers, one to five
+         "one": (0, 100, 100, 100, 60), "two": (0, 0, 100, 100, 60),
+         "three": (0, 0, 0, 100, 60), "four": (0, 0, 0, 0, 60), "five": (4, 2, 4, 8, 5),
+         # round a mug's handle, a phone, the edge of a page
+         "grip": (70, 75, 80, 80, 40), "pinch": (35, 45, 55, 60, 30)}
 FINGERS = ("index", "middle", "ring", "little", "thumb")
 
 STOP = frozenset("""a an the and or but so to of in on at for with by from as is are was
@@ -71,6 +125,105 @@ than then there here what which who whom how why when where very really about
 into over up down out off if""".split())
 LOOK_WORDS = {"screen": ("screen", "chart", "monitor", "graph"),
               "board": ("board", "whiteboard", "list")}
+
+
+@dataclass(frozen=True)
+class Stance:
+    """How one of the kit's poses (the writer's `[SCENE: ... | pose=...]`)
+    plays in 3D:
+
+    * `home`: where each arm lives (side -> (arm pose, hand shape)); an arm
+      not named hangs at rest.
+    * `free`: the hands that may talk; a hand holding something stays with it.
+    * `talk`: how often a sentence gets one hand, both, or none.
+    * `first`: what the first sentence does: "screen" or "board" (a point),
+      "desk" (a finger on the desk), "count" (the fingers), "shrug".
+    * `hand`: the hand that does the stance's one-handed business (the desk
+      point, the counting finger).
+    * `lean`: forward, at the hips, degrees.
+    * `prop`, `prop_side`: what he holds and in which hand.
+    * `glance`: how far down he looks to read the prop; `reads`: the share
+      of sentences he reads it through.
+    * `look`: what he keeps turning to ("screen"); `reach`: the arm on its
+      side stays out toward it; `turn`: how much of the way his body turns.
+    * `desk`: the arm pose whose hand has to come down on the desk top; on a
+      spot with no desk in reach the stance cannot play (`perform.Stage.fit`).
+    * `talks`: False where his mouth is hidden or shut (head in hands)."""
+    home: dict = field(default_factory=dict)
+    free: str = "LR"
+    talk: tuple[float, float, float] = (0.55, 0.25, 0.2)
+    first: str = ""
+    hand: str = "R"
+    lean: float = 0.0
+    prop: str = ""
+    prop_side: str = "R"
+    glance: float = 0.0
+    reads: float = 0.45
+    look: str = ""
+    reach: bool = False
+    turn: float = 0.0
+    desk: str = ""
+    talks: bool = True
+
+
+STANCES: dict[str, Stance] = {
+    "to-camera": Stance(),
+    "hands-in-pockets": Stance(home={"L": ("pocket", "fist"), "R": ("pocket", "fist")},
+                               talk=(0.35, 0.0, 0.65)),
+    "arms-crossed": Stance(home={"L": ("crossed-low", "grip"), "R": ("crossed-high", "grip")},
+                           talk=(0.3, 0.0, 0.7)),
+    # weight on one arm: the hand away from the monitor flat on the desk
+    "leaning-on-desk": Stance(home={"L": ("desk", "open")}, free="R", talk=(0.55, 0.0, 0.45),
+                              lean=10.0, desk="desk"),
+    "considering": Stance(home={"R": ("chin", "grip"), "L": ("under", "grip")},
+                          free="", talk=(0.0, 0.0, 1.0)),
+    "pointing-down-at-desk": Stance(first="desk", lean=6.0, desk="down-point"),
+    "turn-to-screen": Stance(first="screen", look="screen", turn=0.35),
+    # the near arm out toward the graphic, reading it
+    "checking-a-figure": Stance(look="screen", reach=True, turn=0.2, talk=(0.5, 0.0, 0.5)),
+    "counting-on-fingers": Stance(first="count"),
+    "shrug": Stance(first="shrug"),
+    "holding-a-mug": Stance(home={"R": ("hold", "grip")}, free="L", prop="mug",
+                            talk=(0.6, 0.0, 0.4)),
+    "holding-a-phone": Stance(home={"R": ("phone", "relaxed")}, free="L", prop="phone",
+                              talk=(0.4, 0.0, 0.6), glance=-30.0, reads=0.85),
+    "holding-a-page": Stance(home={"L": ("page", "pinch")}, free="R", prop="page",
+                             prop_side="L", talk=(0.6, 0.0, 0.4), glance=-24.0),
+    # held up to the camera in both hands: "it says so on page 96"
+    "holding-a-filing": Stance(home={"L": ("filing", "pinch"), "R": ("filing", "pinch")},
+                               free="", prop="filing", prop_side="L", talk=(0.0, 0.0, 1.0)),
+    "head-in-hands": Stance(home={"L": ("face", "relaxed"), "R": ("face", "relaxed")}, free="",
+                            talk=(0.0, 0.0, 1.0), talks=False),
+}
+# Kit poses with no 3D of their own yet play as the nearest one.
+STANCES["sitting-at-desk"] = STANCES["leaning-on-desk"]
+STANCES["walking-out-of-frame"] = replace(STANCES["hands-in-pockets"], talks=False)
+STANCES["gesturing-at-plate"] = STANCES["to-camera"]
+STANCES["close-up"] = STANCES["to-camera"]
+
+
+def mirrored(st: Stance) -> Stance:
+    """The stance played with the other hands."""
+    sw = {"L": "R", "R": "L"}
+    return replace(st, home={sw[k]: v for k, v in st.home.items()},
+                   free="".join(sorted(sw[c] for c in st.free)),
+                   hand=sw[st.hand], prop_side=sw[st.prop_side])
+
+
+def lean_channels(lean: float) -> dict[str, float]:
+    """Bent forward at the hips, the legs kept straight under him."""
+    return {"hips.x": lean, "thigh.L.x": -lean, "thigh.R.x": -lean}
+
+
+def stance_of(pose: str) -> Stance:
+    """The 3D stance for a kit pose key (`host/arms-crossed`, or bare)."""
+    name = (pose or "").rsplit("/", 1)[-1]
+    for suffix in ("-talk", "-idle", "-blink"):
+        if name.endswith(suffix):
+            name = name[: -len(suffix)]
+    return STANCES.get(name, STANCES["to-camera"])
+
+
 PHRASE_GAP_S = 0.22              # a pause this long ends a phrase
 SENTENCE_GAP_S = 0.45            # a pause this long ends a gesture
 HANDS_DOWN_GAP_S = 0.9           # a silence this long brings the hands down
@@ -94,7 +247,8 @@ class Performance:
 class Look:
     """Where something he may turn to is, from where he stands: degrees of
     yaw (+ to his left as the camera sees it, the +x of his own frame) and
-    pitch (+ up), the arm angles that point at it, and the arm that does."""
+    pitch (+ up), the arm that points at it, and that arm's angles (the
+    finger toward it, stopping short of it)."""
     yaw: float
     pitch: float
     side: str = "R"
@@ -170,6 +324,9 @@ class _Track:
         self.keys: list[tuple[float, float, dict[str, float]]] = [(-1e9, 0.0, dict(start))]
 
     def go(self, t: float, pose: dict[str, float], dur: float = 0.35) -> None:
+        # a call for a moment already passed lands just after the last one,
+        # so the keys stay in order
+        t = max(t, self.keys[-1][0] + 1e-3)
         prev = self.keys[-1][2]
         merged = dict(prev)
         merged.update(pose)
@@ -200,19 +357,24 @@ def _arm_channels(side: str, pose: str | dict) -> dict[str, float]:
     return out
 
 
+arm_channels = _arm_channels
+
+
 def _hand_channels(side: str, shape: str) -> dict[str, float]:
     return {f"curl.{side}.{f}": float(c) for f, c in zip(FINGERS, HANDS[shape])}
 
 
-def _hands(**sides: tuple) -> dict[str, float]:
+def _hands(home: dict | None = None, **sides: tuple) -> dict[str, float]:
     """Both arms for one sentence: each side named gets its (arm pose, hand
-    shape), the other hangs at rest, so an arm never stays up from a gesture
-    it is no longer making."""
+    shape), the other goes home (hanging at rest unless the stance keeps it
+    somewhere), so an arm never stays up from a gesture it is no longer
+    making."""
     out: dict[str, float] = {}
     for side in "LR":
-        arm, hand = sides.get(side, ("rest", "relaxed"))
+        arm, hand = sides.get(side, (home or {}).get(side, ("rest", "relaxed")))
         out.update(_arm_channels(side, arm))
         out.update(_hand_channels(side, hand))
+        out[f"pocket.{side}"] = 1.0 if arm == "pocket" else 0.0
     return out
 
 
@@ -226,27 +388,42 @@ def _bump(t: float, at: float, rise: float = 0.09, fall: float = 0.32) -> float:
 
 
 def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
-            looks: dict[str, Look] | None = None) -> Performance:
+            looks: dict[str, Look] | None = None, stance: str | Stance = "") -> Performance:
     """His performance of a line: `words` carry `.word`, `.start` and `.end`
-    in seconds from the start of the shot."""
+    in seconds from the start of the shot. `stance` is the kit pose the
+    writer put him in (a `STANCES` key or a `Stance`); none is talking to the
+    camera."""
     from pipeline.host import blink_intervals, mouth_track
 
     looks = looks or {}
+    st = stance if isinstance(stance, Stance) else stance_of(stance)
+    home = dict(st.home)
+    free = st.free
+    held = looks.get(st.look) if st.look else None
+    if held is not None and st.reach:
+        home[held.side] = (held.point or "ready", "point")
+        free = free.replace(held.side, "")
+    body = st.turn * held.yaw if held is not None else 0.0
+    count_side = "L" if st.hand == "R" else "R"
     rng = random.Random(f"dennis|{seed}|{len(words)}|{duration:.3f}")
     n = max(int(round(duration * fps)), 1)
     ts = [i / fps for i in range(n)]
 
+    def _hands(**sides: tuple) -> dict[str, float]:
+        return globals()["_hands"](home, **sides)
+
     # --- the gestures, phrase by phrase
-    rest = {**_arm_channels("L", "rest"), **_arm_channels("R", "rest"),
-            **_hand_channels("L", "relaxed"), **_hand_channels("R", "relaxed"),
-            "lift.L": 0.0, "lift.R": 0.0}
+    rest = {**_hands(), "lift.L": 0.0, "lift.R": 0.0}
     arms = _Track(rest)
-    gaze = _Track({"yaw": 0.0, "pitch": 0.0, "roll": 0.0})
+    # turned to something, the shot opens with him already looking at it
+    gaze = _Track({"yaw": held.yaw * 0.85 if held else 0.0,
+                   "pitch": held.pitch * 0.7 if held else 0.0, "roll": 0.0})
     beats: list[tuple[float, str, float]] = []         # (time, which arm(s), size)
     glance_at: list[float] = []
     ph = phrases(words, marks=".?!", gap=SENTENCE_GAP_S)
-    last_hand = rng.choice("LR")
+    last_hand = rng.choice(free or "LR")
     kinds: list[str] = []
+    counts: list[tuple[float, int]] = []                # (time, fingers up)
     for k, p in enumerate(ph):
         nxt = ph[k + 1] if k + 1 < len(ph) else None
         gap_after = (nxt.start - p.end) if nxt else duration - p.end
@@ -254,11 +431,27 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
         target = next((name for name, ws in LOOK_WORDS.items()
                        if name in looks and any(_letters(w.word) in ws for w in p.words)),
                       None)
-        # the first sentence always gets his hands, and he never rests his
-        # hands two sentences running
-        quiet = 0.2 if k and kinds[-1] != "none" else 0.0
-        kind = ("point" if target else "shrug" if p.question
-                else rng.choices(("one", "both", "none"), (0.55, 0.25, quiet))[0])
+        # talking to the camera, the first sentence always gets his hands and
+        # he never rests them two sentences running; in a pose of the
+        # writer's (arms crossed, a mug) the pose is the point, so it opens
+        # the shot and the hands leave it only as often as the stance says
+        quiet = st.talk[2] if k and kinds[-1] != "none" or st.home else 0.0
+        one_w = st.talk[0] if free else 0.0
+        both_w = st.talk[1] if len(free) == 2 else 0.0
+        if k == 0 and st.first in looks:
+            target = st.first
+        if not free:
+            kind = "none"
+        elif k == 0 and st.first in ("desk", "count") or \
+                k == 0 and st.first == "shrug" and len(free) == 2:
+            kind = st.first
+        elif target and looks[target].side in free:
+            kind = "point"
+        elif p.question and len(free) == 2:
+            kind = "shrug"
+        else:
+            kind = rng.choices(("one", "both", "none"),
+                               (one_w, both_w, quiet if one_w + both_w else 1.0))[0]
         kinds.append(kind)
         if kind == "point":
             look = looks[target]
@@ -271,8 +464,9 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
                 arms.go(release, _hands(**{side: ("ready", "open")}), 0.4)
             # the head goes first and comes back to the camera for the end of it
             gaze.go(p.start - 0.05, {"yaw": look.yaw * 0.85, "pitch": look.pitch * 0.7}, 0.35)
-            back = p.start + max((p.end - p.start) * 0.7, 0.6)
-            gaze.go(back + 0.35, {"yaw": 0.0, "pitch": 0.0}, 0.35)
+            if look is not held:
+                back = p.start + max((p.end - p.start) * 0.7, 0.6)
+                gaze.go(back + 0.35, {"yaw": 0.0, "pitch": 0.0}, 0.35)
             glance_at.append(p.start - 0.3)
         elif kind == "shrug":
             pose = {**_arm_channels("L", "shrug"), **_arm_channels("R", "shrug"),
@@ -293,8 +487,21 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
             arms.go(max(peak - 0.05, p.start), {**pose, "lift.L": 0.03, "lift.R": 0.03}, 0.45)
             gaze.go(peak, {"yaw": 0.0, "roll": rng.choice((-6.0, 6.0)), "pitch": 2.0}, 0.4)
             gaze.go(p.end + 0.5, {"roll": 0.0, "pitch": 0.0}, 0.5)
+        elif kind == "desk":
+            # this one, here: a finger on the desk, held through the sentence
+            side = st.hand if st.hand in free else free[0]
+            arms.go(p.start + 0.05, _hands(**{side: ("down-point", "point")}), 0.4)
+            gaze.go(p.start, {"pitch": -14.0, "yaw": 0.0}, 0.35)
+            gaze.go(min(p.start + 0.9, p.end), {"pitch": 0.0}, 0.4)
+        elif kind == "count":
+            # the hands meet at the chest; a finger goes up on each word he
+            # leans on, and the other hand's finger touches it
+            arms.go(p.start + 0.02, _hands(**{count_side: ("count-hand", "one"),
+                                              st.hand: ("count-point", "point")}), lead + 0.1)
+            for c, w in enumerate(stressed(p.words)[:5]):
+                counts.append((w.start - 0.05, c + 1))
         elif kind in ("one", "both"):
-            side = "R" if last_hand == "L" else "L"
+            side = ("R" if last_hand == "L" else "L") if len(free) == 2 else free
             last_hand = side
             if kind == "both":
                 pose = _hands(L=("wide", "open"), R=("wide", "open"))
@@ -306,14 +513,37 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
         elif kind == "none":
             arms.go(p.start + 0.02, _hands(), lead + 0.1)
         if kind in ("one", "both", "none"):
-            # a small turn of the head at every comma, held, so he is not a bust
-            for sub in phrases(p.words):
-                gaze.go(sub.start + 0.1, {"yaw": rng.uniform(-5, 5),
-                                          "roll": rng.uniform(-3.5, 3.5)}, 0.4)
+            reading = bool(st.glance) and rng.random() < st.reads
+            if held is not None:
+                # he reads what he has turned to, and now and then comes back
+                # to us for the end of the sentence
+                gaze.go(p.start + 0.1, {"yaw": held.yaw * 0.85, "pitch": held.pitch * 0.7,
+                                        "roll": 0.0}, 0.35)
+                if p.end - p.start > 1.2 and rng.random() < 0.35:
+                    gaze.go(p.start + (p.end - p.start) * 0.65 + 0.35,
+                            {"yaw": 0.0, "pitch": 0.0}, 0.35)
+            elif reading and st.reads >= 0.75:
+                # reading it, not us: down through the sentence, up at the end
+                # only now and then
+                gaze.go(p.start + 0.1, {"pitch": st.glance, "yaw": rng.uniform(-4, 4),
+                                        "roll": rng.uniform(-3, 3)}, 0.3)
+                if rng.random() < 0.35:
+                    gaze.go(p.end + 0.25, {"pitch": 0.0, "yaw": 0.0, "roll": 0.0}, 0.35)
+            else:
+                # with something in his hand, now and then he reads it
+                look_up = p.start
+                if reading:
+                    gaze.go(p.start + 0.15, {"pitch": st.glance, "yaw": 0.0}, 0.3)
+                    look_up = p.start + 0.15 + rng.uniform(0.6, 1.1)
+                    gaze.go(look_up, {"pitch": 0.0}, 0.35)
+                # a small turn of the head at every comma, held, so he is not
+                # a bust
+                for sub in phrases(p.words):
+                    if sub.start + 0.1 > look_up:
+                        gaze.go(sub.start + 0.1, {"yaw": rng.uniform(-5, 5), "pitch": 0.0,
+                                                  "roll": rng.uniform(-3.5, 3.5)}, 0.4)
         if gap_after >= HANDS_DOWN_GAP_S or nxt is None:
-            down = {**_arm_channels("L", "rest"), **_arm_channels("R", "rest"),
-                    **_hand_channels("L", "relaxed"), **_hand_channels("R", "relaxed"),
-                    "lift.L": 0.0, "lift.R": 0.0}
+            down = {**_hands(), "lift.L": 0.0, "lift.R": 0.0}
             arms.go(p.end + min(gap_after, 0.8), down, min(gap_after, 0.8) * 0.9 + 0.1)
 
     accents = stressed(words)
@@ -350,8 +580,13 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
     def put(name: str, v: float) -> None:
         ch.setdefault(name, []).append(v)
 
+    if not st.talks:
+        track = []
     for t in ts:
         a = arms.sample(t)
+        up = max((c for at, c in counts if t >= at), default=0)
+        if up:
+            a.update(_hand_channels(count_side, ("one", "two", "three", "four", "five")[up - 1]))
         g = gaze.sample(t)
         nod = sum(_bump(t, w.start + 0.03) for w in accents)
         brow = max([0.6 * _bump(t, w.start, 0.08, 0.5) for w in accents] +
@@ -371,9 +606,13 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
         w = weight.sample(t)["w"]
         breath = math.sin(2 * math.pi * t / 4.2)
         wob = [amp * math.sin(2 * math.pi * f * t + ph0) for f, ph0 in noise for amp in (1.0,)]
-        yaw, pitch, roll = g["yaw"], g["pitch"], g["roll"]
+        # his body turned some of the way to what he keeps looking at; the
+        # head does the rest
+        yaw, pitch, roll = g["yaw"] - body, g["pitch"], g["roll"]
+        for k, v in lean_channels(st.lean).items():
+            put(k, v)
         put("hips.y", 1.6 * w)
-        put("hips.z", 2.2 * w)
+        put("hips.z", 2.2 * w + body)
         put("spine.y", -1.1 * w)
         put("spine.x", 1.2 * nod * 0.4)
         put("chest.x", 0.8 * breath + 0.3 * nod)
@@ -397,4 +636,5 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
     return Performance(fps=fps, frames=n, channels=ch)
 
 
-__all__ = ["perform", "Performance", "Look", "phrases", "stressed", "MOUTHS", "FPS"]
+__all__ = ["perform", "Performance", "Look", "phrases", "stressed", "MOUTHS", "FPS",
+           "Stance", "STANCES", "stance_of", "mirrored", "lean_channels", "arm_channels"]

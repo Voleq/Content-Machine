@@ -38,11 +38,11 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
 import bpy  # noqa: E402
-from mathutils import Vector  # noqa: E402
+from mathutils import Matrix, Vector  # noqa: E402
 
 import build as room  # noqa: E402
 import motion  # noqa: E402
-from dennis import bounds, build_dennis  # noqa: E402
+from dennis import JOINTS, bounds, build_dennis  # noqa: E402
 
 BEARD = "short"          # item 64, 3 Oct
 
@@ -134,41 +134,81 @@ class Stage:
         self.rig.pose({})
         bpy.context.view_layer.update()
 
+    def rest(self) -> None:
+        """Every joint back to standing straight (the root stays where it is)."""
+        self.rig.pose({n: (0, 0, 0) for n in self.rig.joints if n != "root"})
+        bpy.context.view_layer.update()
+
+    def reach(self, side: str, wrist: Vector, pole: Vector, fingers: Vector,
+              palm: Vector) -> dict:
+        """The angles that put his `side` wrist at `wrist` (world), the elbow
+        out toward `pole`, the fingers along `fingers` and the palm facing
+        `palm`: two bones solved exactly, then the hand turned to match."""
+        rig = self.rig
+        sh = rig.joints[f"shoulder.{side}"]
+        a = abs(JOINTS[f"elbow.{side}"][1][2])
+        b = abs(JOINTS[f"wrist.{side}"][1][2])
+        P3 = sh.parent.matrix_world.to_3x3()
+        S = sh.matrix_world.translation.copy()
+        d = wrist - S
+        dist = min(max(d.length, abs(a - b) + 1e-4), a + b - 1e-4)
+        dh = d.normalized()
+        cos_a = (a * a + dist * dist - b * b) / (2 * a * dist)
+        p = (pole - pole.dot(dh) * dh).normalized()
+        u = dh * cos_a + p * math.sqrt(max(1 - cos_a * cos_a, 0.0))
+        v = (S + dh * dist - (S + u * a)).normalized()
+        y = -(v - v.dot(u) * u).normalized()
+        upper = Matrix((y.cross(-u), y, -u)).transposed()
+        cos_e = (a * a + b * b - dist * dist) / (2 * a * b)
+        bend = 180 - math.degrees(math.acos(max(min(cos_e, 1.0), -1.0)))
+        fore = upper @ Matrix.Rotation(math.radians(-bend), 3, "X")
+        f = fingers.normalized()
+        n = (palm - palm.dot(f) * f).normalized()
+        hand = Matrix(((-n).cross(-f), -n, -f)).transposed()
+
+        def calm(turn: Matrix, rest) -> tuple[float, float, float]:
+            # of the two Euler triples for one turn, the one nearer rest
+            e = [math.degrees(x) for x in turn.to_euler("XYZ")]
+            best = None
+            for c in (e, [e[0] + 180, 180 - e[1], e[2] + 180]):
+                dd = [(x - r + 180) % 360 - 180 for x, r in zip(c, rest)]
+                if best is None or max(map(abs, dd)) < max(map(abs, best)):
+                    best = dd
+            return tuple(round(x, 1) for x in best)
+
+        return {"shoulder": calm(P3.inverted() @ upper, (0, 0, 0)),
+                "elbow": (round(-bend, 1), 0.0, 0.0),
+                "wrist": calm(fore.inverted() @ hand, rig.rest[f"wrist.{side}"])}
+
     def looks(self, angle: str, aspect: str) -> dict:
         """Where the screen and the board are from his spot, and the arm
-        angles that point at each (searched once per spot)."""
+        angles that point at each (solved once per spot)."""
         spot = tuple(room.view(angle, aspect)["spot"])
         if spot in self._looks:
             return self._looks[spot]
         rig = self.rig
+        self.rest()
         root, head = rig.joints["root"], rig.joints["head"]
+        R3 = root.matrix_world.to_3x3()
+        up = Vector((0.0, 0.0, 1.0))
 
         def look(target: Vector) -> motion.Look:
-            rinv = root.matrix_world.to_3x3().inverted()
-            loc = rinv @ (target - head.matrix_world.translation)
+            loc = R3.inverted() @ (target - head.matrix_world.translation)
             yaw = math.degrees(math.atan2(loc.x, -loc.y))
             pitch = math.degrees(math.atan2(loc.z, math.hypot(loc.x, loc.y)))
             side = "R" if loc.x > 0 else "L"
-            sh, wr = rig.joints[f"shoulder.{side}"], rig.joints[f"wrist.{side}"]
-            ab = 1 if side == "L" else -1
-
-            def err(x, y):
-                rig.pose({f"shoulder.{side}": (x, y, 0), f"elbow.{side}": (-70, 0, 0),
-                          f"wrist.{side}": (0, 0, 0)})
-                bpy.context.view_layer.update()
-                s = sh.matrix_world.translation
-                return (wr.matrix_world.translation - s).normalized().angle((target - s).normalized())
-
-            best = min(((err(x, y * ab), (x, y * ab)) for x in range(-110, 31, 10)
-                        for y in range(0, 101, 10)), key=lambda b: b[0])
-            bx, by = best[1]
-            best = min([best] + [(err(x, y), (x, y)) for x in range(bx - 8, bx + 9, 2)
-                                 for y in range(by - 8, by + 9, 2)], key=lambda b: b[0])
-            rig.pose({f"shoulder.{side}": (4, 7 * ab, 0), f"elbow.{side}": (-14, 0, 0)})
-            x, y = best[1]
-            return motion.Look(yaw=yaw, pitch=pitch, side=side,
-                               point={"shoulder": (x, y, 0), "elbow": (-70, 0, 0),
-                                      "wrist": (0, 0, 0)})
+            out = R3 @ Vector((1.0 if side == "R" else -1.0, 0.0, 0.0))
+            back = R3 @ Vector((0.0, 1.0, 0.0))
+            pole = out * 0.7 - up + back * 0.3
+            S = rig.joints[f"shoulder.{side}"].matrix_world.translation
+            d = target - S
+            dh = d.normalized()
+            # the finger stops well short of what it points at, so a near
+            # screen gets a bent arm, not a hand through the glass
+            tip = min(d.length - 0.22, 0.70)
+            point = self.reach(side, S + dh * max(tip - 0.19, 0.18), pole, dh,
+                               -up if abs(dh.z) < 0.8 else back)
+            return motion.Look(yaw=yaw, pitch=pitch, side=side, point=point)
 
         scr = bpy.data.objects["screenface"]
         screen_c = scr.matrix_world @ (sum((Vector(c) for c in scr.bound_box), Vector()) / 8)
@@ -176,6 +216,33 @@ class Stage:
         board_c = Vector(((bx0 + bx1) / 2, room.BACK - 0.03, (bz0 + bz1) / 2))
         self._looks[spot] = {"screen": look(screen_c), "board": look(board_c)}
         return self._looks[spot]
+
+    def fit(self, st: motion.Stance) -> motion.Stance:
+        """The stance as it can play on this spot. A hand meant for the desk
+        top that would miss it (no desk in front of him, or the monitor in
+        the way) tries the other hand, and failing that he talks to the
+        camera."""
+        if not st.desk:
+            return st
+        for cand in (st, motion.mirrored(st)):
+            side = next((s for s, (arm, _) in cand.home.items() if arm == st.desk), cand.hand)
+            if self._on_desk(side, st.desk, st.lean):
+                return cand
+        return motion.STANCES["to-camera"]
+
+    def _on_desk(self, side: str, arm: str, lean: float) -> bool:
+        rig = self.rig
+        self.rest()
+        rig.apply({**motion.lean_channels(lean), **motion.arm_channels(side, arm)})
+        bpy.context.view_layer.update()
+        hand = rig.joints[f"wrist.{side}"].matrix_world @ Vector((0.0, 0.0, -0.12))
+        dx, dy, dw, dd, dz = room.DESK
+        if abs(hand.x - dx) > dw / 2 - 0.05 or abs(hand.y - dy) > dd / 2 - 0.05:
+            return False
+        if not dz - 0.04 < hand.z < dz + 0.15:
+            return False
+        scr = bpy.data.objects["screenface"].matrix_world.translation
+        return math.hypot(hand.x - scr.x, hand.y - scr.y) > 0.28
 
     def shot(self, job: dict) -> dict:
         t0 = time.monotonic()
@@ -188,8 +255,10 @@ class Stage:
         looks = self.looks(job["angle"], aspect)
         words = [type("W", (), w) for w in job["words"]]
         fps = int(job.get("fps", 12))
+        st = self.fit(motion.stance_of(str(job.get("stance", ""))))
         perf = motion.perform(words, float(job["duration"]), fps=fps,
-                              seed=str(job.get("seed", "")), looks=looks)
+                              seed=str(job.get("seed", "")), looks=looks, stance=st)
+        self.rig.hold(st.prop, st.prop_side)
         out = Path(job["out"])
         out.mkdir(parents=True, exist_ok=True)
         scn = bpy.context.scene

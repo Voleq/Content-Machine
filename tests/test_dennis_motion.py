@@ -103,3 +103,84 @@ def test_he_moves_while_he_talks_and_rests_at_the_end():
     end = p.at(p.frames - 1)
     assert abs(end["elbow.L.x"] - (-14)) < 3 and abs(end["elbow.R.x"] - (-14)) < 3, \
         "his hands did not come down when he finished"
+
+
+# --- the writer's poses (item 47, phase 2)
+
+def test_every_kit_pose_has_a_stance_built_from_poses_and_hands_that_exist():
+    import json
+    kit = json.loads((ROOT / "kit" / "roles.json").read_text())["hostPoses"]
+    for key in kit:
+        assert key.split("/", 1)[1] in motion.STANCES, f"{key} has no 3D stance"
+    for name, st in motion.STANCES.items():
+        for side, (arm, hand) in st.home.items():
+            assert side in "LR"
+            motion._arm(arm, 1)                    # raises on a pose that is not there
+            assert hand in motion.HANDS, f"{name}: no hand shape {hand}"
+        assert set(st.free) <= set("LR")
+        if st.prop:
+            assert st.home.get(st.prop_side), f"{name}: nothing holds the {st.prop}"
+            assert st.prop_side not in st.free, f"{name}: the hand with the {st.prop} talks"
+    assert motion.stance_of("host/arms-crossed-talk") is motion.STANCES["arms-crossed"]
+    assert motion.stance_of("host/no-such-pose") is motion.STANCES["to-camera"]
+
+
+def test_a_mirrored_stance_plays_with_the_other_hands():
+    lean = motion.STANCES["leaning-on-desk"]
+    m = motion.mirrored(lean)
+    assert m.home == {"R": ("desk", "open")} and m.free == "L" and m.hand == "L"
+    assert motion.mirrored(m) == lean
+
+
+def test_a_pose_of_the_writers_is_held_through_a_shot_with_no_words():
+    perf = motion.perform([], 3.0, fps=12, seed="t", stance="host/arms-crossed")
+    low = motion._arm("crossed-low", 1)
+    high = motion._arm("crossed-high", -1)
+    for i in range(perf.frames):
+        f = perf.at(i)
+        assert f["elbow.L.x"] == low["elbow"][0] and f["elbow.R.x"] == high["elbow"][0]
+        assert abs(f["shoulder.L.z"] - low["shoulder"][2]) < 1e-9
+
+
+def test_he_leans_at_the_hips_and_his_legs_stay_under_him():
+    perf = motion.perform([], 1.0, fps=12, seed="t", stance="leaning-on-desk")
+    f = perf.at(5)
+    assert f["hips.x"] == 10.0 and f["thigh.L.x"] == -10.0 and f["thigh.R.x"] == -10.0
+    straight = motion.perform([], 1.0, fps=12, seed="t").at(5)
+    assert straight["hips.x"] == 0.0
+
+
+def test_hands_in_pockets_are_not_drawn_until_they_come_out():
+    perf = motion.perform([], 2.0, fps=12, seed="t", stance="hands-in-pockets")
+    assert all(perf.channels["pocket.L"]) and all(perf.channels["pocket.R"])
+    talk = motion.perform(LINE, LINE[-1].end + 1.2, fps=12, seed="t")
+    assert not any(talk.channels["pocket.L"])
+
+
+def test_turned_to_the_screen_his_body_goes_some_of_the_way_and_his_eyes_stay():
+    perf = _perf(looks={"screen": SCREEN}, stance="turn-to-screen")
+    hips = perf.channels["hips.z"]
+    turn = 0.35 * SCREEN.yaw
+    assert all(abs(h - turn) < 3.0 for h in hips), "the turn holds under the weight shifts"
+    head = [n + h + c for n, h, c in zip(perf.channels["neck.z"], perf.channels["head.z"],
+                                         perf.channels["chest.z"])]
+    # with the body turned, the head's own turn left over: mostly toward it
+    on_it = sum(1 for y in head if y + turn > SCREEN.yaw * 0.6)
+    assert on_it > len(head) * 0.5
+
+
+def test_counting_puts_a_finger_up_for_each_word_he_leans_on():
+    line = _line("Three things: revenue, margin and cash.")
+    perf = motion.perform(line, line[-1].end + 1.0, fps=12, seed="t",
+                          stance="counting-on-fingers")
+    marks = motion.stressed(line)
+    after = lambda t: perf.at(min(int((t + 0.15) * 12), perf.frames - 1))
+    assert after(marks[0].start)["curl.L.middle"] == 100     # one finger up
+    assert after(marks[1].start)["curl.L.middle"] == 0       # two
+    assert after(marks[0].start)["elbow.R.x"] != 0           # the other hand is up
+
+
+def test_head_in_hands_keeps_his_mouth_still():
+    perf = _perf(stance="head-in-hands")
+    mouths = [k for k in perf.channels if k.startswith("mouth.")]
+    assert mouths and all(v == 0.0 for k in mouths for v in perf.channels[k])

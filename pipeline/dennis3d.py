@@ -31,7 +31,7 @@ REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
-LOOK_VERSION = "47-64-1"
+LOOK_VERSION = "47-64-2"
 
 
 def _python(settings) -> list[str]:
