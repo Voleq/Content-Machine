@@ -467,6 +467,15 @@ class Settings(BaseSettings):
 
     # ------------------------------------------------------------------ video
     fps: int = 30
+    # THE 3D DENNIS (item 47): `off` draws the kit's 2D Dennis everywhere,
+    # `on` renders the 3D one in Blender for every shot he is in (and fails the
+    # render if Blender cannot), `auto` does so when `bpy` imports. One switch
+    # for all of him: a video that mixes the two shows two different people.
+    # `DENNIS_3D_PYTHON` is the Python that has `bpy` (default: this one).
+    dennis_3d: str = Field(default="off", alias="DENNIS_3D")
+    dennis_3d_python: str = Field(default="", alias="DENNIS_3D_PYTHON")
+    dennis_3d_fps: int = 12             # drawn on twos, as the kit's Dennis
+    dennis_3d_samples: int = 8
     short_width: int = 1080
     short_height: int = 1920
     long_width: int = 1920

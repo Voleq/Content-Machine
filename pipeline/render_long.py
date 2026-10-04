@@ -1824,6 +1824,13 @@ def _render_long(
     screen_intro_end: dict[int, float] = {}
     push_meta: list[dict] = []
 
+    # THE 3D DENNIS (item 47): one Blender process for the render, asked for
+    # each shot he stands in a 3D room. None draws the kit's Dennis.
+    from pipeline import dennis3d
+    performer = (dennis3d.Performer(settings, cache=Path(settings.cache_dir) / "dennis3d")
+                 if dennis3d.wanted(settings) else None)
+    dennis3d_meta: list[dict] = []
+
     def _annotated(seg) -> bool:
         """Whether a mark lands on this beat."""
         return any(seg.start - 1e-6 <= c.t < seg.end for c in scribble_cues)
@@ -1925,7 +1932,7 @@ def _render_long(
                                 "draws_in_at": round(seg.start + delay, 3)})
             return _listing("room", room_clip, loop), front
 
-        def _monitor_push(room, box) -> str:
+        def _monitor_push(room, box, clip: Path | None = None) -> str:
             """THE CHAPTER'S CHART STARTS ON HIS MONITOR (item 60).
 
             On the shot just before the plate his monitor has been carrying
@@ -1970,8 +1977,8 @@ def _render_long(
             if box is not None:
                 bx, by, bw, bh = box
                 if bx < max(xs) and bx + bw > min(xs) and by < max(ys) and by + bh > min(ys) \
-                        and _host_covers_picture(rdir / f"host_{i}.mov", box, q, t0,
-                                                 PUSH_S, (W, H)):
+                        and _host_covers_picture(clip or rdir / f"host_{i}.mov", box, q,
+                                                 t0, PUSH_S, (W, H)):
                     return ""
             # The filter counts its input frames from one. The shot's last
             # frame is the picture exactly filling the frame, so the cut to
@@ -2106,9 +2113,18 @@ def _render_long(
                                          seed=f"{script.ticker}|{variant % 3}"))
             pose, alone = _scene_pose(scene, room, i)
             bg_i = _room_input(room)
-            host = (None if alone
-                    else _host_input(i, seg, seg_len, room=room, pose=pose))
-            push = _monitor_push(room, None if host is None else host[1:5])
+            layer = None
+            if performer is not None and not alone and dennis3d.angle_of(room):
+                # His own layer: frame-sized, the desk already in front of
+                # him, so no front layer goes over it.
+                layer = performer.shot(room, _words_in(seg), seg.start, seg_len, (W, H),
+                                       seed=f"{script.ticker}|{i}", stance=pose or "")
+                host = (_add_input(["-i", str(layer)]), 0, 0, W, H, None)
+                dennis3d_meta.append({"segment": i, "room": room.key, "stance": pose or ""})
+            else:
+                host = (None if alone
+                        else _host_input(i, seg, seg_len, room=room, pose=pose))
+            push = _monitor_push(room, None if host is None else host[1:5], clip=layer)
             if host is None:
                 chain = _still_chain(bg_i, seg, seg_len, i, push + tail)
             else:
@@ -2319,6 +2335,9 @@ def _render_long(
             layout=str(seg.payload.get("layout", "")),
             extra_identity=identity,
         ))
+
+    if performer is not None:
+        performer.close()
 
     # ------------------------------------------------- assemble the base
     # SEGMENTED (default): each beat encodes on its own, keyed by a content
@@ -2988,6 +3007,9 @@ def _render_long(
         # the designed fallback. `blinks: 0` with shots that HAVE the strips
         # is the bug.
         "host_motion": host_motion,
+        # The 3D Dennis's shots (item 47): empty when the kit's Dennis drew him.
+        "dennis3d": dennis3d_meta,
+        "dennis3d_shots": (performer.shots if performer is not None else []),
         # Who stood in each two-shot. A glance key here is the pipeline having
         # cut him toward the graphic rather than through it.
         "panel_hosts": panel_hosts,
