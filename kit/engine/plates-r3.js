@@ -46,7 +46,7 @@
     ['financials', 'figures', 'deposit-mix', 'endMarketExposure', { rows: 5 }],
     ['communication-services', 'figures', 'subscriber-bridge', 'walkN', { cols: 5 }],
     ['communication-services', 'charts', 'content-vs-revenue', 'pairedN',
-      { years: 6, rows: [{ label: 'row-1', name: 'rev', swatch: 'up' }, { label: 'row-2', name: 'content', swatch: 'down' }, { label: 'ratio-label', name: 'ratio', rule: true }] }],
+      { years: 6, rows: [{ label: 'row-1', name: 'rev', swatch: 'up' }, { label: 'row-2', name: 'content', swatch: 'second' }, { label: 'ratio-label', name: 'ratio', rule: true }] }],
     ['utilities', 'charts', 'allowed-vs-earned-roe', 'priceCostSpread', { quarters: 8 }],
     ['utilities', 'figures', 'generation-mix', 'endMarketExposure', { rows: 5 }],
     ['real-estate', 'charts', 'occupancy', 'rpoCoverage', { quarters: 8 }],

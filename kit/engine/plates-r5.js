@@ -172,7 +172,7 @@
       top(P, F, roles);
       const ly = F.land ? 166 : 350;
       key(P, 'legend-1', F.L, ly, F.land ? 380 : F.cw, 'up', 'legend', roles, 5301);
-      key(P, 'legend-2', F.land ? F.L + 400 : F.L, F.land ? ly : ly + 46, F.land ? 380 : F.cw, 'down', 'legend', roles, 5302);
+      key(P, 'legend-2', F.land ? F.L + 400 : F.L, F.land ? ly : ly + 46, F.land ? 380 : F.cw, 'second', 'legend', roles, 5302);
       const pt = F.land ? 240 : 460, pb = F.land ? 640 : 980;
       grid(P, F.L, F.L + W, pt, pb, [0.25, 0.5, 0.75], 5310);
       floor(P, F.L, pb, F.L + W, 5314);
@@ -258,7 +258,7 @@
         note: 'the minimum plus buffers, or the company\u2019s own target range \u2014 historyBand, vertical, [low, high] as fractions; drawn under the columns' });
       for (let i = 1; i <= n; i++) {
         const x = F.L + colW * (i - 1), bw = Math.round(colW * 0.56);
-        P.slot('bar-' + i, Math.round(x + (colW - bw) / 2), pt, bw, pb - pt, { role: 'point-column', container: true, anchorX: Math.round(x + colW / 2), baselineY: pb, growth: 'up-from-baseline' });
+        P.slot('bar-' + i, Math.round(x + (colW - bw) / 2), pt, bw, pb - pt, { role: 'bar', container: true, anchorX: Math.round(x + colW / 2), baselineY: pb, growth: 'up-from-baseline' });
       }
       row(P, 'head', F.L, colW, n, pb + 18, 'head', blockH(roles.head, 1));
       row(P, 'value', F.L, colW, n, pb + 54, 'value', blockH(roles.value, 1));
@@ -286,7 +286,7 @@
       top(P, F, roles);
       const ly = F.land ? 166 : 350;
       key(P, 'legend-1', F.L, ly, F.land ? 300 : F.cw, 'up', 'legend', roles, 5601);
-      key(P, 'legend-2', F.land ? F.L + 320 : F.L, F.land ? ly : ly + 46, F.land ? 300 : F.cw, 'down', 'legend', roles, 5602);
+      key(P, 'legend-2', F.land ? F.L + 320 : F.L, F.land ? ly : ly + 46, F.land ? 300 : F.cw, 'second', 'legend', roles, 5602);
       const pt = F.land ? 250 : 470, pb = F.land ? 700 : 1000;
       grid(P, F.L, F.L + W, pt, pb, [0.25, 0.5, 0.75], 5610);
       floor(P, F.L, pb, F.L + W, 5614);

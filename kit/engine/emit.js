@@ -55,10 +55,21 @@ function countsOf(svg) {
   };
 }
 const fillsOf = svg => Array.from(new Set((svg.match(/fill="(#[0-9a-fA-F]{6})"/g) || []).map(s => s.slice(6, 13).toUpperCase())));
+/* rebuild-41: the contour a restyled plate actually carries, measured off the
+ * file: every data-contour stroke, its width taken back through the layout
+ * transform to canvas units, so rule 4 can hold paper plates to ONE weight. */
+function contourOf(svg, rs) {
+  const k = rs ? (rs.kx + rs.ky) / 2 : 1, seen = {};
+  (svg.match(/<[a-z]+ [^>]*data-contour="1"[^>]*\/>/g) || []).forEach(t => {
+    const c = (/ stroke="(#[0-9A-Fa-f]{6})"/.exec(t) || [])[1], w = +((/stroke-width="([\d.]+)"/.exec(t) || [])[1]);
+    seen[c + '@' + Math.round(w * k * 100) / 100] = { colour: c, width: Math.round(w * k * 100) / 100 };
+  });
+  return Object.values(seen);
+}
 function boxOfPaths(ds) { const b = [Infinity, Infinity, -Infinity, -Infinity]; ds.forEach(d => F.pathBox(d, b)); return b.map(v => Math.round(v)); }
 
 /* Region and furniture roles carry no words of their own. Same list content.js skips. */
-const NOT_TEXT = ['band', 'marker', 'plot-area', 'bars', 'bridge', 'path', 'spark', 'point-column',
+const NOT_TEXT = ['band', 'marker', 'plot-area', 'bars', 'bridge', 'path', 'spark', 'point-column', 'bar',
   'media', 'highlight-band', 'wraps', 'control', 'mark-area'];
 const isText = s => !(s.overlay || s.container || s.region || NOT_TEXT.indexOf(s.role) >= 0);
 
@@ -239,13 +250,13 @@ function build(opts) {
     const O = still ? [0] : TR5 || offs;
     ['night', 'dusk'].forEach(hour => {
       const H = M.HOURS.find(x => x.name === hour);
-      const P = g.PLATES[it.author](Object.assign({}, it.args, { key: it.key, seed: it.seed, pal: PORT.palFor(tokens, hour) }));
+      const P = g.PLATES[it.author](Object.assign({}, it.args, { key: it.key, seed: it.seed, pal: PORT.palFor(tokens, hour, it.key) }));
       const m = P.manifest();
       /* Frames: the frame's rule lines take tokens.motion.dataRuleOffsets;
        * pinned ink (axes, baselines, references) and every value stay still. */
       const cache = {};
       const svgs = TR5
-        ? TR5.map(t => g.PLATES[it.author](Object.assign({}, it.args, { t, key: it.key, seed: it.seed, pal: PORT.palFor(tokens, hour) })).toSVG())
+        ? TR5.map(t => g.PLATES[it.author](Object.assign({}, it.args, { t, key: it.key, seed: it.seed, pal: PORT.palFor(tokens, hour, it.key) })).toSVG())
         : O.map(dy => cache[dy] || (cache[dy] = P.toSVG({ ruleOffset: dy })));
       const extra = opts.decorate ? opts.decorate(it, m, hour) : '';
       const files = extra ? svgs.map(s => s.replace('</svg>', extra + '</svg>')) : svgs;
@@ -267,7 +278,7 @@ function build(opts) {
       const textSlots = m.cutout === true ? 0 : Object.values(m.slots || {})
         .filter(s => isText(s) && CONTENT.budgetOf(s, roles) >= 2).length;
       if (hour === 'night') {
-        slotRec = { canvas: m.canvas, aspect, typeRoles: roles, slots: m.slots };
+        slotRec = { canvas: m.canvas, aspect, ground: m.ground || null, typeRoles: roles, slots: m.slots };
         Object.values(m.slots || {}).forEach(s => {
           if (!isText(s) || !s.maxChars) return;
           const R = roles[s.role] || {}; const size = R.size || Math.max(14, Math.round(s.h * 0.6));
@@ -291,7 +302,8 @@ function build(opts) {
         id: id + '@' + hour + '.' + aspect, role: 'plate', family: it.dir, hour, aspect,
         drawn: PORT.DRAWN_FAMILIES.indexOf(it.dir) >= 0, twinId: id + '.' + aspect,
         geometryHash: hash(svgs[0].replace(/(fill|stroke)="[^"]*"/g, '')),
-        fills: fillsOf(svgs[0]), strokes: [{ colour: H.contour, width: stroke0 }],
+        fills: fillsOf(svgs[0]), strokes: m.ground ? contourOf(svgs[0], m.restyle) : [{ colour: H.contour, width: stroke0 }],
+        ground: m.ground || undefined, restyle: m.restyle || undefined,
         shapeCount: (svgs[0].match(/<path/g) || []).length, box: [0, 0, m.canvas[0], m.canvas[1]],
         filledSlots: Object.keys(ct.text).length, textSlots,
       });
@@ -305,7 +317,7 @@ function build(opts) {
         frames: still ? [] : svgs.map((sv, i) => ({ file: stem + '_f' + pad(i + 1) + '.png', tag: '_f' + pad(i + 1), args: { ruleOffset: O[i] }, hash: hash(sv) })) };
     });
     slots[it.key] = slotRec;
-    addFam(it.dir, it.key, Object.assign({ key: it.key, dir: it.dir, aspect, canvas: slotRec.canvas,
+    addFam(it.dir, it.key, Object.assign({ key: it.key, dir: it.dir, aspect, ground: slotRec.ground || undefined, canvas: slotRec.canvas,
       delivered: [slotRec.canvas[0] * 2, slotRec.canvas[1] * 2], exportScale: 2, playback: still ? 'still' : (it.args && it.args.transition) ? 'once' : 'loop', fps: still ? 1 : (it.args && it.args.transition) ? 12 : fps,
       frameCount: O.length, files: byHour.night, filesByHour: byHour, slotCount,
       typeRoles: slotRec.typeRoles, slots: slotRec.slots }));

@@ -172,6 +172,11 @@
   // R rows × 6 period columns. Every cell is its own slot.
   function numbersSheet(o) {
     const rows = o.rows, w = o.w, h = o.h, land = w > h;
+    /* rebuild-41 (bot answer R41.1): five period columns on 9:16, six on 16:9. At the
+     * 34 floor a sixth portrait column held four characters and cut long figures.
+     * The last index is dropped, so the numbering stays 1..5 with no gap; the bot
+     * reads the count off the heads and fills the five LATEST periods. */
+    const NC = land ? 6 : 5;
     const p = o.pal;
     const s = SURFACES[p.surfaceKey];
     /* LEGACY PASS, rebuild-21: portrait side margins 48 -> 56. At 48 the unit and
@@ -180,7 +185,7 @@
     const P = H.Plate({
       key: o.key, w, h, seed: o.seed, pal: p,
       meta: {
-        aspect: land ? "16x9" : "9x16", rows, columns: 6, family: "tables",
+        aspect: land ? "16x9" : "9x16", rows, columns: NC, family: "tables",
         type: o.spark ? "numbers-sheet-spark" : "numbers-sheet",
         // set sizes belong to the plate, not to the renderer's judgement.
         // The spark variants are not the same sheet with a column bolted on: the
@@ -219,7 +224,7 @@
     P.slot("unit", innerL, m.t, innerR - innerL, unitH, { align: "left", role: "unit" });
     const labelW = Math.round((innerR - innerL) * (o.spark ? (land ? 0.26 : 0.19) : (land ? 0.3 : 0.24)));
     const colsL = innerL + labelW;
-    const colW = (innerR - colsL) / 6;
+    const colW = (innerR - colsL) / NC;
 
     // second-ground bands on alternate rows (a lower plane, not a highlight)
     for (let i = 2; i <= rows; i += 2) {
@@ -230,7 +235,7 @@
     }
 
     // header row slots + faint column structure
-    for (let c = 1; c <= 6; c++) {
+    for (let c = 1; c <= NC; c++) {
       const x = colsL + (c - 1) * colW;
       P.slot(`head-${c}`, x + 8, headY, colW - 16, headH, { align: "right", role: "period" });
       if (c > 1) P.inkAdd(H.line(x, headY - 8, x, bodyBot - 6, { stroke: p.structure, width: 2, opacity: 0.28, amp: 4, over: 5, seed: 700 + c * 29 }));
@@ -249,7 +254,7 @@
       const y = bodyTop + (rI - 1) * rowH;
       P.slot(`band-${rI}`, innerL - 30, y + 2, innerR + sparkW - innerL + 60, rowH - 4, { role: "highlight-band", overlay: "overlays/row-band" });
       P.slot(`label-${rI}`, innerL, y + rowH * 0.16, labelW - 26, rowH * 0.68, { align: "left", role: "label" });
-      for (let c = 1; c <= 6; c++) {
+      for (let c = 1; c <= NC; c++) {
         P.slot(`cell-${rI}-${c}`, colsL + (c - 1) * colW + 8, y + rowH * 0.16, colW - 16, rowH * 0.68, { align: "right", role: "figure" });
       }
       if (o.spark) {
@@ -2366,11 +2371,16 @@
   // Three grouped blocks, a ruled subtotal each, a bold total at the foot.
   function cashFlow(o) {
     const w = o.w, h = o.h, land = w > h, p = o.pal, s = SURFACES[p.surfaceKey];
+    /* rebuild-41 (bot answer R41.1): five period columns on 9:16, six on 16:9. At the
+     * 34 floor a sixth portrait column held four characters and cut long figures.
+     * The last index is dropped, so the numbering stays 1..5 with no gap; the bot
+     * reads the count off the heads and fills the five LATEST periods. */
+    const NC = land ? 6 : 5;
     const blocks = land ? [2, 2, 2] : [3, 3, 3]; // 16:9 has less vertical room — fewer line rows, not smaller type
     const P = H.Plate({
       key: o.key, w, h, seed: o.seed, pal: p,
       meta: {
-        aspect: land ? "16x9" : "9x16", family: "tables", type: "cash-flow-summary", columns: 6, blocks: blocks.length,
+        aspect: land ? "16x9" : "9x16", family: "tables", type: "cash-flow-summary", columns: NC, blocks: blocks.length,
       },
     });
     P.colourAdd(surfaceFurniture(P, s));
@@ -2383,8 +2393,8 @@
     const headH = land ? 44 : 48;
     const ruleY = headY + headH + 14;
     const labelW = Math.round((innerR - innerL) * (land ? 0.34 : 0.30));
-    const colsL = innerL + labelW, colW = (innerR - colsL) / 6;
-    for (let c = 1; c <= 6; c++) {
+    const colsL = innerL + labelW, colW = (innerR - colsL) / NC;
+    for (let c = 1; c <= NC; c++) {
       const x = colsL + (c - 1) * colW;
       P.slot(`head-${c}`, x + 6, headY, colW - 12, headH, { align: "right", role: "period" });
     }
@@ -2433,7 +2443,7 @@
       for (let r = 1; r <= n; r++) {
         P.slot(`band-${b}-${r}`, innerL - 26, y + 2, innerR - innerL + 52, rowH - 4, { role: "highlight-band", overlay: "overlays/row-band" });
         P.slot(`label-${b}-${r}`, innerL + (land ? 26 : 18), y + rowH * 0.12, labelW - (land ? 52 : 40), rowH * 0.76, { align: "left", role: "label" });
-        for (let c = 1; c <= 6; c++) {
+        for (let c = 1; c <= NC; c++) {
           P.slot(`cell-${b}-${r}-${c}`, colsL + (c - 1) * colW + 6, y + rowH * 0.12, colW - 12, rowH * 0.76, { align: "right", role: "figure" });
         }
         y += rowH;
@@ -2441,7 +2451,7 @@
       // subtotal: ruled above, over the columns only
       P.inkAdd(H.line(colsL - 6, y + 3, innerR + 4, y + 3, { stroke: p.structure, width: 2.4, opacity: 0.7, amp: 2, over: 7, seed: 500 + b * 31 }));
       P.slot(`subtotal-label-${b}`, innerL + (land ? 26 : 18), y + rowH * 0.14, labelW - (land ? 52 : 40), rowH * 0.76, { align: "left", role: "label" });
-      for (let c = 1; c <= 6; c++) {
+      for (let c = 1; c <= NC; c++) {
         P.slot(`subtotal-${b}-${c}`, colsL + (c - 1) * colW + 6, y + rowH * 0.14, colW - 12, rowH * 0.76, { align: "right", role: "subtotal" });
       }
       y += rowH + groupGap;
@@ -2451,7 +2461,7 @@
     P.inkAdd(H.line(innerL - 8, tY - 6, innerR + 8, tY - 6, { stroke: p.structure, width: 3.4, opacity: 0.9, amp: 2.6, over: 10, seed: 611 }));
     P.inkAdd(H.line(innerL - 8, tY + rowH * 1.24, innerR + 8, tY + rowH * 1.24, { stroke: p.structure, width: 2.2, opacity: 0.8, amp: 2.2, over: 9, seed: 612 }));
     P.slot("total-label", innerL, tY + rowH * 0.16, labelW - 20, rowH * 0.9, { align: "left", role: "group" });
-    for (let c = 1; c <= 6; c++) {
+    for (let c = 1; c <= NC; c++) {
       P.slot(`total-${c}`, colsL + (c - 1) * colW + 6, tY + rowH * 0.16, colW - 12, rowH * 0.9, { align: "right", role: "total" });
     }
     return P;
@@ -2858,14 +2868,20 @@
   function rowSpotlight(o) {
     const P = base(o, "row-spotlight", TR), p = o.pal, w = o.w, h = o.h, land = w > h;
     const L = land ? 140 : 60, R = w - (land ? 140 : 60);
+    /* rebuild-41 (bot answer): five period columns on 9:16, six on 16:9 — same
+     * rule as the numbers sheets; the last index is dropped, the five latest kept. */
+    const NC = land ? 6 : 5;
     const cardT = land ? 300 : 620, cardB = land ? 780 : 1300;
     P.slot("kicker", L, land ? 120 : 300, R - L, 52, { align: "left", role: "kicker" });
     P.colourAdd(H.hatch(H.polyRect(L - 24, cardT - 30, R - L + 48, cardB - cardT + 60), { color: p.ground2, opacity: 0.5, gap: 8, width: 13, angle: -3, over: 20, seed: 141 }));
     P.inkAdd(H.outline(H.polyRect(L - 24, cardT - 30, R - L + 48, cardB - cardT + 60), { stroke: p.structure, width: 4, opacity: 0.9, amp: 3.4, over: 13, seed: 142 }));
-    const labelW = (R - L) * (land ? 0.28 : 0.3);
-    const colsL = L + labelW, colW = (R - colsL) / 6;
-    P.slot("label", L + 10, cardT + 10, labelW - 30, cardB - cardT - 20, { align: "left", role: "label" });
-    for (let c = 1; c <= 6; c++) {
+    /* rebuild-41: on 9:16 the row's label sits above the card, full width, so
+     * the five figures get the card's whole width (4 -> 6 characters a cell). */
+    const labelW = land ? (R - L) * 0.28 : 0;
+    const colsL = L + labelW, colW = (R - colsL) / NC;
+    if (land) P.slot("label", L + 10, cardT + 10, labelW - 30, cardB - cardT - 20, { align: "left", role: "label" });
+    else P.slot("label", L, cardT - 130, R - L, 80, { align: "left", role: "label" });
+    for (let c = 1; c <= NC; c++) {
       const x = colsL + colW * (c - 1);
       P.slot(`head-${c}`, x + 6, cardT + 4, colW - 12, 60, { align: "right", role: "caption" });
       P.slot(`cell-${c}`, x + 6, cardT + 76, colW - 12, cardB - cardT - 96, { align: "right", role: "figure" });

@@ -276,13 +276,16 @@ const FAMILY = {
       ['Waived', STORY.waived], ['Reserve', STORY.reserve], ['Headcount', STORY.headcount],
       ['Claims expense', STORY.expense], ['Operating profit', STORY.opProfit],
     ];
+    /* rebuild-41: a 9:16 sheet has five period columns; they are the five
+     * LATEST periods, so column 1 is the second period, not the first. */
+    const off = Math.max(0, 6 - Object.keys(slots).filter(n => /^head-\d+$/.test(n)).length);
     Object.keys(slots).forEach(name => {
       let m = name.match(/^label-(\d+)$/);
       if (m) out[name] = rows[(+m[1] - 1) % rows.length][0];
       m = name.match(/^cell-(\d+)-(\d+)$/);
-      if (m) { const row = rows[(+m[1] - 1) % rows.length][1]; out[name] = thou(row[(+m[2] - 1) % row.length]); }
+      if (m) { const row = rows[(+m[1] - 1) % rows.length][1]; out[name] = thou(row[(+m[2] - 1 + off) % row.length]); }
       m = name.match(/^head-(\d+)$/);
-      if (m) out[name] = STORY.periods[(+m[1] - 1) % 6];
+      if (m) out[name] = STORY.periods[(+m[1] - 1 + off) % 6];
     });
     /* The sparkline column header names the SPAN the spark covers, not a
      * year. It fell through the numbered-head pattern to the generic period
@@ -427,6 +430,13 @@ const WIRE = [
 ];
 
 const R1 = {
+  /* rebuild-41: the spotlit row is a row of PERIODS, and on 9:16 it holds the
+   * five latest (bot answer to ANSWERS §R41.1, same rule as the numbers sheets). */
+  'row-spotlight': (s) => {
+    const n = Object.keys(s).filter(k => /^head-\d+$/.test(k)).length, off = Math.max(0, 6 - n), out = { label: 'Claims checked' };
+    for (let i = 1; i <= n; i++) { out['head-' + i] = STORY.periods[i - 1 + off]; out['cell-' + i] = thou(STORY.checked[i - 1 + off]); }
+    return out;
+  },
   'line-dense': () => ({ 'head-1': 'Jan 24', 'head-2': 'May 24', 'head-3': 'Sep 24', 'head-4': 'Dec 24',
     'mark-high': 'HIGH 13.4', 'mark-low': 'LOW 9.6', 'mark-last': '', 'value-last': '10.1' }),
   'press-release': () => ({
@@ -1196,7 +1206,7 @@ function contentFor(key, manifest) {
     const sl = slots[name];
     if (sl.overlay || sl.container || sl.role === 'highlight-band' || sl.role === 'plot-area'
       || sl.role === 'bars' || sl.role === 'bridge' || sl.role === 'path' || sl.role === 'spark'
-      || sl.role === 'marker' || sl.role === 'band' || sl.role === 'media' || sl.role === 'point-column'
+      || sl.role === 'marker' || sl.role === 'band' || sl.role === 'media' || sl.role === 'point-column' || sl.role === 'bar'
       || sl.role === 'wraps' || sl.role === 'control'
       /* band and marker are RENDERER regions even on the few plates that do
        * not flag them — engine/series.js draws them (historyBand, axisMark).

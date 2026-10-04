@@ -1,6 +1,6 @@
 {
   "_spec": "EVERYTHING NUMERIC OR CHROMATIC IN THE KIT, AS DATA. The engine reads this file; no draw function hardcodes a colour or a length. Prose describing a colour is not a colour, so there is none here. Authored by eye and by hand — nothing in this file is computed from anything else in it, which is the whole point of §5: a shade is a picked colour, not a function of its lit.",
-  "version": "rebuild-01",
+  "version": "rebuild-41",
   "supersedes": "engine/plates.js ROLES + the per-author colour literals of delta-15. The hand-drawn kit's palette was one light-paper set with everything else multiplied down from it.",
   "proportion": {
     "_unit": "HU — one head height, crown to chin. Every length here is in HU, so the figure has ONE size number and everything else is a ratio. A pose cannot disagree with another pose about how long an arm is.",
@@ -134,6 +134,58 @@
         "subject": "#7FD4E8",
         "subject2": "#F0B460",
         "attention": "#F07A5A"
+      },
+      "plateInk": {
+        "_spec": "rebuild-41. The data plates’ inks, ONE SET PER GROUND. Same nine names and meanings as `ink` (ground, band, rule, axis, quiet, structure, subject, subject2, attention) plus three new series inks (subject3 teal, subject4 yellow, subject5 green). `ink` above is unchanged and still serves room/ and overlays/. Which set a plate uses is published on the plate (`ground` in its manifest and slot table); the family table is plateStyle.grounds. The 3D room is the night room at both hours, so dusk carries the same values as night. rebuild-41 (bot answer R41.3): `down` is a fall on every ground; subject2 is the second series only. Violet, a hue the six series and attention do not use, so a fall never reads as the highlight.",
+        "screen": {
+          "_is": "the monitor: a lit navy raised from the old #171D2A toward the room wall #2C3752. Bright series, no contour on data.",
+          "ground": "#25314D",
+          "band": "#2E3B5B",
+          "rule": "#3B4969",
+          "axis": "#8693B3",
+          "quiet": "#AEB8CE",
+          "structure": "#F4F2EA",
+          "subject": "#8EDCF2",
+          "subject2": "#EE9236",
+          "attention": "#FF6670",
+          "subject3": "#3A9AB8",
+          "subject4": "#FBE57A",
+          "subject5": "#5BCB8C",
+          "down": "#B98CFF"
+        },
+        "paper": {
+          "_is": "the sheets on his desk and the board behind him: the room’s paper, ink type and rules, marker blue/red/green for the inks that must carry type or a bare line. subject2/3/4 (lamp amber, can teal, sticky-note yellow) sit under 3:1 on cream, so on paper they are FILLS ONLY and always carry the contour; plateStyle.contrast.paperFillOnly lists them and rule 32 checks it.",
+          "ground": "#F4F2EA",
+          "band": "#E8E2D2",
+          "rule": "#C7C0AC",
+          "axis": "#6E6A60",
+          "quiet": "#555A66",
+          "structure": "#0B0E16",
+          "subject": "#283C9A",
+          "subject2": "#F0A848",
+          "attention": "#B8262E",
+          "subject3": "#36A9AE",
+          "subject4": "#F6E07A",
+          "subject5": "#2E9152",
+          "contour": "#0B0E16",
+          "down": "#9A3A7A"
+        },
+        "mark": {
+          "_is": "annotations/: marks drawn over EITHER ground. attention #F0503E is ≥ 3:1 on paper and on screen; the other names follow screen.",
+          "ground": "#25314D",
+          "band": "#2E3B5B",
+          "rule": "#3B4969",
+          "axis": "#8693B3",
+          "quiet": "#AEB8CE",
+          "structure": "#F4F2EA",
+          "subject": "#8EDCF2",
+          "subject2": "#EE9236",
+          "attention": "#F0503E",
+          "subject3": "#3A9AB8",
+          "subject4": "#FBE57A",
+          "subject5": "#5BCB8C",
+          "down": "#9A6CE0"
+        }
       }
     },
     "dusk": {
@@ -215,6 +267,58 @@
         "subject": "#2F5FA8",
         "subject2": "#D88A2F",
         "attention": "#A8243C"
+      },
+      "plateInk": {
+        "_spec": "rebuild-41. The data plates’ inks, ONE SET PER GROUND. Same nine names and meanings as `ink` (ground, band, rule, axis, quiet, structure, subject, subject2, attention) plus three new series inks (subject3 teal, subject4 yellow, subject5 green). `ink` above is unchanged and still serves room/ and overlays/. Which set a plate uses is published on the plate (`ground` in its manifest and slot table); the family table is plateStyle.grounds. The 3D room is the night room at both hours, so dusk carries the same values as night. rebuild-41 (bot answer R41.3): `down` is a fall on every ground; subject2 is the second series only. Violet, a hue the six series and attention do not use, so a fall never reads as the highlight.",
+        "screen": {
+          "_is": "the monitor: a lit navy raised from the old #171D2A toward the room wall #2C3752. Bright series, no contour on data.",
+          "ground": "#25314D",
+          "band": "#2E3B5B",
+          "rule": "#3B4969",
+          "axis": "#8693B3",
+          "quiet": "#AEB8CE",
+          "structure": "#F4F2EA",
+          "subject": "#8EDCF2",
+          "subject2": "#EE9236",
+          "attention": "#FF6670",
+          "subject3": "#3A9AB8",
+          "subject4": "#FBE57A",
+          "subject5": "#5BCB8C",
+          "down": "#B98CFF"
+        },
+        "paper": {
+          "_is": "the sheets on his desk and the board behind him: the room’s paper, ink type and rules, marker blue/red/green for the inks that must carry type or a bare line. subject2/3/4 (lamp amber, can teal, sticky-note yellow) sit under 3:1 on cream, so on paper they are FILLS ONLY and always carry the contour; plateStyle.contrast.paperFillOnly lists them and rule 32 checks it.",
+          "ground": "#F4F2EA",
+          "band": "#E8E2D2",
+          "rule": "#C7C0AC",
+          "axis": "#6E6A60",
+          "quiet": "#555A66",
+          "structure": "#0B0E16",
+          "subject": "#283C9A",
+          "subject2": "#F0A848",
+          "attention": "#B8262E",
+          "subject3": "#36A9AE",
+          "subject4": "#F6E07A",
+          "subject5": "#2E9152",
+          "contour": "#0B0E16",
+          "down": "#9A3A7A"
+        },
+        "mark": {
+          "_is": "annotations/: marks drawn over EITHER ground. attention #F0503E is ≥ 3:1 on paper and on screen; the other names follow screen.",
+          "ground": "#25314D",
+          "band": "#2E3B5B",
+          "rule": "#3B4969",
+          "axis": "#8693B3",
+          "quiet": "#AEB8CE",
+          "structure": "#F4F2EA",
+          "subject": "#8EDCF2",
+          "subject2": "#EE9236",
+          "attention": "#F0503E",
+          "subject3": "#3A9AB8",
+          "subject4": "#FBE57A",
+          "subject5": "#5BCB8C",
+          "down": "#9A6CE0"
+        }
       }
     }
   },
@@ -255,5 +359,89 @@
       0
     ],
     "_dataNote": "A data plate's FRAME breathes and its figures do not. Only the frame's rule lines take the 1px offset. Axes, series, cells and anything a viewer reads a value off stay pinned across all three frames."
+  },
+  "plateStyle": {
+    "_spec": "rebuild-41 restyle. Everything numeric about how a data plate is drawn, read by engine/grounds.js (the kit) and published for the bot. Canvas units at the plate’s own canvas (1920x1080 or 1080x1920).",
+    "grounds": {
+      "paper": [
+        "paper",
+        "tables",
+        "cards",
+        "structure",
+        "frames",
+        "shorts"
+      ],
+      "screen": [
+        "charts",
+        "figures",
+        "peers",
+        "cycles"
+      ],
+      "mark": [
+        "annotations"
+      ],
+      "screenKeys": [],
+      "_unchanged": "overlays/ (source tag, lower third, row band, wipes) keep their look and their `ink`; host/ and room/ are untouched.",
+      "_screenKeys": "empty since shorts/short-chart moved to charts/short-chart-9x16 (rebuild-41, bot answer R41.4)."
+    },
+    "seriesOrder": [
+      "subject",
+      "subject2",
+      "subject3",
+      "subject4",
+      "subject5",
+      "attention"
+    ],
+    "_seriesOrder": "Six series inks in the order a multi-series plate takes them. attention is the sixth and is ALSO the plate’s one accent: a plate that spends attention on the number that matters draws at most five series.",
+    "seriesLine": {
+      "16x9": 10,
+      "9x16": 12,
+      "_note": "linePath stroke width. Was 6."
+    },
+    "contour": {
+      "colour": "#0B0E16",
+      "width": 4,
+      "on": "paper",
+      "_note": "ONE weight, every filled shape on a paper plate (furniture and data), both aspects, the room’s outline ink. Screen plates carry none on the data."
+    },
+    "barToGap": 2,
+    "_barToGap": "every bar, pair, step and segment is at least this many times as wide as the gap beside it.",
+    "contentFill": 0.7,
+    "_contentFill": "the content block (union of the plate’s text and region slots) covers at least this share of the safe area in width AND height. 16:9 safe area is the 5% margin; 9:16 is shorts.readable inside a 5% side margin.",
+    "maxAnisotropy": 2,
+    "leadFigureSpan": 0.6,
+    "_leadFigureSpan": "figures/ and shorts/ number plates: the lead figure (the slot(s) set in the plate’s largest role) spans at least this share of the frame width, set to the box width (fit: width).",
+    "shorts": {
+      "readable": [
+        170,
+        1480
+      ],
+      "typeFloor": 34,
+      "headlineFloor": 64,
+      "_note": "9:16 only. Everything a viewer reads sits between y 170 and 1480 of the 1080x1920 frame (YouTube’s buttons and title cover the rest). No type below label (34); headline roles at least statement (64)."
+    },
+    "contrast": {
+      "text": 4.5,
+      "textLarge": 3,
+      "largeFrom": 64,
+      "nonText": 3,
+      "paperFillOnly": [
+        "subject2",
+        "subject3",
+        "subject4"
+      ],
+      "cvd": {
+        "normal": 0.1,
+        "simulated": 0.05,
+        "metric": "OKLab ΔE between every pair of the six series inks, normal vision and Machado-2009 protan/deutan/tritan at severity 1"
+      },
+      "_note": "Rule 32. Type: every role colour against its plate ground. Non-text: every series ink drawn bare (lines, dots) against the ground; on paper the fill-only inks are exempt because they never appear without the contour, which is 17:1.",
+      "downApart": {
+        "normal": 0.1,
+        "simulated": 0.08,
+        "_note": "OKLab ΔE between down and attention, normal and simulated protan/deutan/tritan. Rule 32."
+      }
+    },
+    "_maxAnisotropy": "the safe-area fit may scale one way up to 2x the other, for a layout that is thin in one dimension (a definition card, a big number with one caption). Type scales by the smaller; boxes by their own axis."
   }
 }

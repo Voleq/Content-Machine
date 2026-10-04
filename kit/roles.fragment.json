@@ -8093,7 +8093,7 @@
   "round": "r5",
   "any": true
  },
- "shorts/short-chart": {
+ "charts/short-chart": {
   "chapter_types": [
    "bull-vs-bear",
    "capital-allocation",

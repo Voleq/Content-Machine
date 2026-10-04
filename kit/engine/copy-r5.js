@@ -478,7 +478,7 @@
     who: 'HARROW CHIEF EXECUTIVE', when: 'MARCH 2023 \u00b7 EIGHT MONTHS BEFORE BUYING CASTELL',
     ch: ANY, any: true, purpose: 'a short\u2019s one quote, large, with who said it and when, and the fact that makes it matter in the date line.',
     caution: 'Quote exactly from a transcript and date it. The date line carries the irony; the quote is never edited to sharpen it.' });
-  add('shorts', 'short-chart', 'shortChart', { portOnly: true }, { label: 'LARKIN SHARE PRICE', min: 20, max: 60,
+  add('charts', 'short-chart', 'shortChart', { portOnly: true }, { label: 'LARKIN SHARE PRICE', min: 20, max: 60,
     series: [52, 54, 51, 48, 49, 44, 41, 42, 37, 34, 35, 31], start: 'JAN 25', end: 'DEC 25', source: 'SOURCE \u00b7 CLOSING PRICES',
     ch: ANY, any: true, purpose: 'a three-second chart: one line, its last point, and the change as the big figure.',
     caution: 'One line and no grid. If it takes more than three seconds to read, use a long plate.' });

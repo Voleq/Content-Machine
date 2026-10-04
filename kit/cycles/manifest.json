@@ -14,6 +14,7 @@
    "key": "cycles/cycle-frame-16x9",
    "dir": "cycles",
    "aspect": "16x9",
+   "ground": "screen",
    "canvas": [
     1920,
     1080
@@ -36,7 +37,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "684355d8"
+      "hash": "bc404a88"
      },
      {
       "file": "cycle-frame-16x9-night_f02.png",
@@ -44,7 +45,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "95d61cc6"
+      "hash": "a7a6edb0"
      },
      {
       "file": "cycle-frame-16x9-night_f03.png",
@@ -52,7 +53,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "684355d8"
+      "hash": "bc404a88"
      }
     ]
    },
@@ -67,7 +68,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "684355d8"
+       "hash": "bc404a88"
       },
       {
        "file": "cycle-frame-16x9-night_f02.png",
@@ -75,7 +76,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "95d61cc6"
+       "hash": "a7a6edb0"
       },
       {
        "file": "cycle-frame-16x9-night_f03.png",
@@ -83,7 +84,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "684355d8"
+       "hash": "bc404a88"
       }
      ]
     },
@@ -97,7 +98,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "9a05fcb0"
+       "hash": "bc404a88"
       },
       {
        "file": "cycle-frame-16x9-dusk_f02.png",
@@ -105,7 +106,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "bcfa2178"
+       "hash": "a7a6edb0"
       },
       {
        "file": "cycle-frame-16x9-dusk_f03.png",
@@ -113,7 +114,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "9a05fcb0"
+       "hash": "bc404a88"
       }
      ]
     }
@@ -124,8 +125,8 @@
      "font": "Courier Prime",
      "size": 26,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
+     "colour": "quiet",
+     "opacity": 1,
      "tracking": "0.04em",
      "maxChars": 92,
      "budget": "derived from the slot boxes that set this role; 92 is the floor (narrowest of 1), was 46"
@@ -143,8 +144,8 @@
      "font": "Courier Prime",
      "size": 30,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.7,
+     "colour": "quiet",
+     "opacity": 1,
      "tracking": "0.1em",
      "maxChars": 30,
      "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 2), was 14"
@@ -153,8 +154,8 @@
      "font": "Courier Prime",
      "size": 26,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.66,
+     "colour": "quiet",
+     "opacity": 1,
      "maxChars": 5,
      "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 6), was 6"
     },
@@ -185,8 +186,8 @@
      "font": "Courier Prime",
      "size": 26,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
+     "colour": "quiet",
+     "opacity": 1,
      "maxChars": 98,
      "budget": "derived from the slot boxes that set this role; 98 is the floor (narrowest of 1), was 60"
     }
@@ -335,6 +336,7 @@
    "key": "cycles/cycle-frame-9x16",
    "dir": "cycles",
    "aspect": "9x16",
+   "ground": "screen",
    "canvas": [
     1080,
     1920
@@ -357,7 +359,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "ed124422"
+      "hash": "e3046ea8"
      },
      {
       "file": "cycle-frame-9x16-night_f02.png",
@@ -365,7 +367,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "88f1129a"
+      "hash": "6dfea4c2"
      },
      {
       "file": "cycle-frame-9x16-night_f03.png",
@@ -373,7 +375,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "ed124422"
+      "hash": "e3046ea8"
      }
     ]
    },
@@ -388,7 +390,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "ed124422"
+       "hash": "e3046ea8"
       },
       {
        "file": "cycle-frame-9x16-night_f02.png",
@@ -396,7 +398,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "88f1129a"
+       "hash": "6dfea4c2"
       },
       {
        "file": "cycle-frame-9x16-night_f03.png",
@@ -404,7 +406,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "ed124422"
+       "hash": "e3046ea8"
       }
      ]
     },
@@ -418,7 +420,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "901885c0"
+       "hash": "e3046ea8"
       },
       {
        "file": "cycle-frame-9x16-dusk_f02.png",
@@ -426,7 +428,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "715dbeb8"
+       "hash": "6dfea4c2"
       },
       {
        "file": "cycle-frame-9x16-dusk_f03.png",
@@ -434,7 +436,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "901885c0"
+       "hash": "e3046ea8"
       }
      ]
     }
@@ -443,45 +445,45 @@
    "typeRoles": {
     "unit": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
+     "colour": "quiet",
+     "opacity": 1,
      "tracking": "0.04em",
-     "maxChars": 54,
-     "budget": "derived from the slot boxes that set this role; 54 is the floor (narrowest of 1), was 38"
+     "maxChars": 44,
+     "budget": "derived from the slot boxes that set this role; 44 is the floor (narrowest of 1), was 38"
     },
     "metric": {
      "font": "Archivo Narrow",
-     "size": 62,
+     "size": 64,
      "weight": 700,
      "colour": "structure",
      "tracking": "-.02em",
-     "maxChars": 36,
-     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 24"
+     "maxChars": 37,
+     "budget": "derived from the slot boxes that set this role; 37 is the floor (narrowest of 1), was 24"
     },
     "moment": {
      "font": "Courier Prime",
-     "size": 28,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.7,
+     "colour": "quiet",
+     "opacity": 1,
      "tracking": "0.1em",
-     "maxChars": 20,
-     "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 2), was 14"
+     "maxChars": 13,
+     "budget": "derived from the slot boxes that set this role; 13 is the floor (narrowest of 2), was 14"
     },
     "period": {
      "font": "Courier Prime",
-     "size": 24,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.66,
-     "maxChars": 7,
-     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 6), was 6"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 4,
+     "budget": "derived from the slot boxes that set this role; 4 is the floor (narrowest of 6), was 6"
     },
     "then": {
      "font": "Courier Prime",
-     "size": 100,
+     "size": 83,
      "weight": 700,
      "colour": "otherParty",
      "maxChars": 6,
@@ -489,7 +491,7 @@
     },
     "now": {
      "font": "Courier Prime",
-     "size": 148,
+     "size": 122,
      "weight": 700,
      "colour": "structure",
      "maxChars": 4,
@@ -497,158 +499,158 @@
     },
     "trough": {
      "font": "Courier Prime",
-     "size": 42,
+     "size": 35,
      "weight": 700,
      "colour": "down",
      "maxChars": 6
     },
     "caption": {
      "font": "Courier Prime",
-     "size": 26,
+     "size": 34,
      "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 57,
-     "budget": "derived from the slot boxes that set this role; 57 is the floor (narrowest of 1), was 60"
+     "colour": "quiet",
+     "opacity": 1,
+     "maxChars": 47,
+     "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     }
    },
    "slots": {
     "unit": {
      "align": "left",
      "role": "unit",
-     "x": 90,
-     "y": 186,
-     "w": 900,
-     "h": 30,
-     "maxChars": 54
+     "x": 54,
+     "y": 170,
+     "w": 972,
+     "h": 25,
+     "maxChars": 44
     },
     "caption": {
      "align": "left",
      "role": "caption",
-     "x": 90,
-     "y": 1740,
-     "w": 900,
-     "h": 30,
-     "maxChars": 57
+     "x": 54,
+     "y": 1455,
+     "w": 972,
+     "h": 25,
+     "maxChars": 47
     },
     "metric": {
      "align": "left",
      "role": "metric",
-     "x": 90,
-     "y": 453,
-     "w": 900,
-     "h": 72,
-     "maxChars": 36
+     "x": 92,
+     "y": 391,
+     "w": 934,
+     "h": 60,
+     "maxChars": 37
     },
     "then-date": {
      "align": "left",
      "role": "moment",
-     "x": 90,
-     "y": 603,
-     "w": 396,
-     "h": 32,
-     "maxChars": 20
+     "x": 168,
+     "y": 515,
+     "w": 327,
+     "h": 26,
+     "maxChars": 13
     },
     "then-value": {
      "align": "left",
      "role": "then",
-     "x": 90,
-     "y": 653,
-     "w": 396,
-     "h": 172,
+     "x": 168,
+     "y": 556,
+     "w": 327,
+     "h": 142,
      "maxChars": 6
     },
     "now-date": {
      "align": "right",
      "role": "moment",
-     "x": 594,
-     "y": 603,
-     "w": 396,
-     "h": 32,
-     "maxChars": 20
+     "x": 585,
+     "y": 515,
+     "w": 327,
+     "h": 26,
+     "maxChars": 13
     },
     "now-value": {
      "align": "right",
      "role": "now",
-     "x": 594,
-     "y": 653,
-     "w": 396,
-     "h": 172,
+     "x": 585,
+     "y": 556,
+     "w": 327,
+     "h": 142,
      "maxChars": 4
     },
     "head-1": {
      "align": "left",
      "role": "period",
-     "x": 78,
-     "y": 1475,
-     "w": 102,
-     "h": 28,
-     "maxChars": 7
+     "x": 158,
+     "y": 1236,
+     "w": 84,
+     "h": 23,
+     "maxChars": 4
     },
     "head-2": {
      "align": "center",
      "role": "period",
-     "x": 180,
-     "y": 1475,
-     "w": 180,
-     "h": 28,
-     "maxChars": 12
+     "x": 242,
+     "y": 1236,
+     "w": 149,
+     "h": 23,
+     "maxChars": 7
     },
     "head-3": {
      "align": "center",
      "role": "period",
-     "x": 360,
-     "y": 1475,
-     "w": 180,
-     "h": 28,
-     "maxChars": 12
+     "x": 391,
+     "y": 1236,
+     "w": 149,
+     "h": 23,
+     "maxChars": 7
     },
     "head-4": {
      "align": "center",
      "role": "period",
      "x": 540,
-     "y": 1475,
-     "w": 180,
-     "h": 28,
-     "maxChars": 12
+     "y": 1236,
+     "w": 149,
+     "h": 23,
+     "maxChars": 7
     },
     "head-5": {
      "align": "center",
      "role": "period",
-     "x": 720,
-     "y": 1475,
-     "w": 180,
-     "h": 28,
-     "maxChars": 12
+     "x": 689,
+     "y": 1236,
+     "w": 149,
+     "h": 23,
+     "maxChars": 7
     },
     "head-6": {
      "align": "right",
      "role": "period",
-     "x": 900,
-     "y": 1475,
-     "w": 102,
-     "h": 28,
-     "maxChars": 7
+     "x": 838,
+     "y": 1236,
+     "w": 84,
+     "h": 23,
+     "maxChars": 4
     },
     "path": {
      "role": "path",
      "region": true,
      "renderer": "series.cycleArc",
      "note": "every period between the two moments. The plate draws nothing here — engine/series.js draws it from the data and returns the trough's coordinates",
-     "x": 90,
-     "y": 932,
-     "w": 900,
-     "h": 522
+     "x": 168,
+     "y": 787,
+     "w": 744,
+     "h": 432
     },
     "trough": {
      "align": "center",
      "role": "trough",
      "region": true,
      "note": "the low point's own figure, called out inside the plot. Region because only the data knows where the minimum sits — box it just above the ring, at the x that series.cycleArc returns",
-     "x": 414,
-     "y": 1203,
-     "w": 252,
-     "h": 49
+     "x": 436,
+     "y": 1011,
+     "w": 208,
+     "h": 41
     }
    }
   }

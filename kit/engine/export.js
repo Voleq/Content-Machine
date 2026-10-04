@@ -33,6 +33,8 @@ const CONTENT = require('./content');
 const ROOT = path.resolve(__dirname, '..');
 const SERIES = require('./series');
 const tokens = JSON.parse(fs.readFileSync(path.join(ROOT, 'design-tokens.json'), 'utf8'));
+/* rebuild-41: a plate's inks are its GROUND's (m.ground, published by grounds.restyle). */
+const inkOf = (m, hour) => (m && m.ground && tokens.hours[hour].plateInk ? tokens.hours[hour].plateInk[m.ground] : tokens.hours[hour].ink);
 
 /* ── the review layers (--sample only) ──────────────────────────────────── */
 
@@ -40,7 +42,7 @@ const tokens = JSON.parse(fs.readFileSync(path.join(ROOT, 'design-tokens.json'),
  * a filled box at its advance width with the string kept in data-text — the
  * seam a real glyph outliner drops into. */
 function typeLayer(m, content, hour) {
-  const ink = tokens.hours[hour].ink, roles = m.typeRoles || {};
+  const ink = inkOf(m, hour), roles = m.typeRoles || {};
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const parts = Object.keys(content.text).map(name => {
     const sl = (m.slots || {})[name]; if (!sl) return '';
@@ -49,14 +51,17 @@ function typeLayer(m, content, hour) {
     const adv = Math.min(sl.w, size * 0.54 * String(content.text[name]).length);
     const x = sl.align === 'center' ? sl.x + (sl.w - adv) / 2 : sl.align === 'right' ? sl.x + sl.w - adv : sl.x;
     return '<rect x="' + Math.round(x) + '" y="' + Math.round(sl.y) + '" width="' + Math.round(adv) + '" height="' + Math.round(size)
-      + '" fill="' + (ink[R.colour] || ink.structure) + '" data-slot="' + name + '" data-text="' + esc(content.text[name]) + '"/>';
+      + '" fill="' + (ink[R.colour] || ink.structure) + '" data-slot="' + name + '" data-text="' + esc(content.text[name]) + '" data-font="' + (R.font || '') + '" data-weight="' + (R.weight || 400) + '" data-align="' + (sl.align || 'left') + '" data-box="' + [sl.x, sl.y, sl.w, sl.h].join(',') + '"/>';
   });
   return parts.length ? '<g data-layer="type">' + parts.join('') + '</g>' : '';
 }
 
 /* The data layer, from engine/series.js, reading only the geometry the plate published. */
 function dataLayer(m, data, hour) {
-  const ink = tokens.hours[hour].ink, SL = m.slots || {};
+  const ink = inkOf(m, hour), SL = m.slots || {};
+  const PS = tokens.plateStyle || {}, land = !m.canvas || m.canvas[0] >= m.canvas[1];
+  /* rebuild-41: series lines at the published weight (10 at 16:9, 12 at 9:16). */
+  const LW = m.ground ? (PS.seriesLine || {})[land ? '16x9' : '9x16'] : undefined;
   if (!data || !Object.keys(data).length) return '';
   const pick = re => Object.keys(SL).filter(k => re.test(k))
     .sort((a, b) => +a.split('-').pop() - +b.split('-').pop()).map(k => SL[k]);
@@ -73,10 +78,10 @@ function dataLayer(m, data, hour) {
    * how a viewer reads a correlation the data does not contain. */
   if (data.spread && data.series && data.series2 && SL['plot-area'] && SERIES.spreadFill) outs.push(SERIES.spreadFill({ box: SL['plot-area'], columns: pointCols, a: data.series, b: data.series2, min: data.min, max: data.max, ink }));
   if (data.series && barCols.length && SERIES.columnBars) outs.push(SERIES.columnBars({ columns: barCols, values: data.series.slice(0, barCols.length), min: data.min, max: data.max, accent: data.accent, ink }));
-  else if (data.series && SL['plot-area']) outs.push(SERIES.linePath({ box: SL['plot-area'], columns: pointCols, values: data.series, min: data.min, max: data.max, accentLast: data.accentLast, zeroRule: data.zeroRule, zero: data.zero, ink }));
+  else if (data.series && SL['plot-area']) outs.push(SERIES.linePath({ box: SL['plot-area'], columns: pointCols, values: data.series, min: data.min, max: data.max, accentLast: data.accentLast, zeroRule: data.zeroRule, zero: data.zero, weight: LW, ink }));
   if (data.series2 && pairCols.length) outs.push(SERIES.columnBars({ columns: pairCols, values: data.series2.slice(0, pairCols.length), min: data.min, max: data.max, tone: data.tone2 || 'subject2', ink }));
-  else if (data.series2 && SL['plot-area']) outs.push(SERIES.linePath({ box: SL['plot-area'], columns: pointCols, values: data.series2, min: data.min, max: data.max, tone: data.tone2 || 'subject2', zeroRule: data.zeroRule, zero: data.zero, ink }));
-  if (data.split && SL.bars && SERIES.splitBar) outs.push(SERIES.splitBar({ box: SL.bars, values: data.split, accent: data.accent, ink }));
+  else if (data.series2 && SL['plot-area']) outs.push(SERIES.linePath({ box: SL['plot-area'], columns: pointCols, values: data.series2, min: data.min, max: data.max, tone: data.tone2 || 'subject2', zeroRule: data.zeroRule, zero: data.zero, weight: LW, ink }));
+  if (data.split && SL.bars && SERIES.splitBar) outs.push(SERIES.splitBar({ box: SL.bars, values: data.split, accent: data.accent, order: m.ground ? PS.seriesOrder : null, ink }));
   else if (data.bars && SL.bars) outs.push(SERIES.rowBars({ box: SL.bars, rows: pick(/^band-\d+$/), values: data.bars, accent: data.accent != null ? data.accent : 0, min: data.min, max: data.max, ink }));
   if (data.steps && SL.bridge) outs.push(SERIES.bridge({ box: SL.bridge, columns: pick(/^step-\d+$/), steps: data.steps, open: data.open, close: data.close,
     openColumn: SL['step-open'], closeColumn: SL['step-close'], float: data.float, ink }));
@@ -92,14 +97,27 @@ function dataLayer(m, data, hour) {
   (data.diverge || []).forEach(i => { const b = SL['diverge-' + i]; if (b) outs.push({ nodes: [{ tag: 'rect', attrs: { x: Math.round(b.x + b.w / 2 - 4), y: Math.round(b.y), width: 8, height: Math.round(b.h), fill: ink.attention } }] }); });
   /* rebuild-23: small multiples. One series per published panel-N, all on the
    * plate's ONE min-max, evenly spaced across the panel. */
-  Object.keys(data.panels || {}).forEach(k => { const b = SL[k], ps = (data.panelScale || {})[k] || [data.min, data.max]; if (b) outs.push(SERIES.linePath({ box: b, values: data.panels[k], min: ps[0], max: ps[1], zeroRule: data.zeroRule, accentLast: data.accentLast, tone: b.tone, ink })); });
+  Object.keys(data.panels || {}).forEach(k => { const b = SL[k], ps = (data.panelScale || {})[k] || [data.min, data.max]; if (b) outs.push(SERIES.linePath({ box: b, values: data.panels[k], min: ps[0], max: ps[1], zeroRule: data.zeroRule, accentLast: data.accentLast, tone: b.tone, weight: LW, ink })); });
   Object.keys(data.bands || {}).forEach(k => { const b = SL[k], v = data.bands[k]; if (b && v && !b.under) outs.push(SERIES.historyBand({ box: b, low: v[0], high: v[1], tone: v[2], axis: b.axis || 'horizontal', ink })); });
-  if (data.cycle && SL.path) outs.push(SERIES.cycleArc({ box: SL.path, values: data.cycle, troughBox: SL.trough, ink }));
+  if (data.cycle && SL.path) outs.push(SERIES.cycleArc({ box: SL.path, values: data.cycle, troughBox: SL.trough, weight: LW, ink }));
   if (data.spark) pick(/^spark-\d+$/).forEach(box => outs.push(SERIES.sparkBars({ box, values: data.spark, ink })));
   if (data.low !== undefined && SL.band) outs.push(SERIES.historyBand({ box: SL.band, low: data.low, high: data.high, axis: SL.band.axis, ink }));
   if (data.mark !== undefined && SL.marker) outs.push(SERIES.axisMark({ box: SL.marker, value: data.mark, axis: SL.marker.axis, ink }));
-  const nodes = outs.filter(Boolean).reduce((a, o) => a.concat(o.nodes || []), []);
+  let nodes = outs.filter(Boolean).reduce((a, o) => a.concat(o.nodes || []), []);
   if (!nodes.length) return '';
+  /* rebuild-41: on PAPER every data shape carries the one contour, the way the
+   * room is drawn; a bare line is laid on an ink line two contours wider, so
+   * lamp amber or sticky-note yellow still read on cream. Screen data has none. */
+  if (m.ground === 'paper' && PS.contour) {
+    const C = PS.contour;
+    nodes = nodes.reduce((a, n) => {
+      const at = n.attrs;
+      if (n.tag === 'path' && at.fill === 'none' && at.stroke) a.push({ tag: 'path', attrs: Object.assign({}, at, { stroke: C.colour, 'stroke-width': (+at['stroke-width'] || 6) + C.width * 2, 'data-contour': '1' }) }, n);
+      else if (at.fill && at.fill !== 'none' && at.fill !== ink.ground) a.push({ tag: n.tag, attrs: Object.assign({}, at, { stroke: C.colour, 'stroke-width': C.width, 'stroke-linejoin': 'round', 'data-contour': '1' }) });
+      else a.push(n);
+      return a;
+    }, []);
+  }
   return '<g data-layer="data">' + nodes.map(n => '<' + n.tag + ' ' + Object.keys(n.attrs).map(k => k + '="' + n.attrs[k] + '"').join(' ') + '/>').join('') + '</g>';
 }
 

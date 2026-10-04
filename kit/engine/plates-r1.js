@@ -324,7 +324,7 @@
       for (let i = 1; i <= n; i++) {
         const bx = L + colW * (i - 1);
         P.slot('bar-' + i, bx + colW * 0.14, pt, colW * 0.72, pb - pt,
-          { role: 'point-column', container: true, anchorX: Math.round(bx + colW / 2) });
+          { role: 'bar', container: true, anchorX: Math.round(bx + colW / 2) });
         P.slot('head-' + i, bx, pb + 24, colW, blockH(roles.head, 1), { align: 'center', role: 'head' });
         P.slot('value-' + i, bx, pb + 78, colW, blockH(roles.value, 1), { align: 'center', role: 'value' });
       }
@@ -1302,7 +1302,7 @@
       });
       for (let i = 1; i <= n; i++) {
         const x = L + colW * (i - 1);
-        P.slot('bar-' + i, x + colW * 0.16, pt, colW * 0.68, pb - pt, { role: 'point-column', container: true, anchorX: Math.round(x + colW / 2) });
+        P.slot('bar-' + i, x + colW * 0.16, pt, colW * 0.68, pb - pt, { role: 'bar', container: true, anchorX: Math.round(x + colW / 2) });
         P.slot('head-' + i, x, pb + 22, colW, blockH(roles.head, 1), { align: 'center', role: 'head' });
         P.slot('spend-' + i, x, pb + 66, colW, blockH(roles.spend, 1), { align: 'center', role: 'spend' });
       }

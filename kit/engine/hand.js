@@ -40,14 +40,20 @@
   const RAD = Math.PI / 180;
 
   // ---------- render profile -------------------------------------------------
-  const P1 = "hand-1", P2 = "hand-2";
+  const P1 = "hand-1", P2 = "hand-2", P3 = "flat-plate";
   // The opt-in list, and the whole of §4. Twelve families are absent on purpose.
-  const PROFILE_FAMILIES = { host: P2, room: P2 };
+  /* rebuild-41: the restyled data families draw with `flat-plate` — ONE pass
+   * per line at the authored width, ONE flat fill per hatched region, every
+   * opacity resolved to 0 or 1 by engine/grounds.js. overlays/ keep hand-1. */
+  const PROFILE_FAMILIES = { host: P2, room: P2,
+    paper: P3, tables: P3, cards: P3, structure: P3, frames: P3, shorts: P3,
+    charts: P3, figures: P3, peers: P3, cycles: P3, annotations: P3 };
   let PROFILE = P1;
   const familyOf = (key) => String(key || "").split("/")[0];
   function profileFor(key) { return PROFILE_FAMILIES[familyOf(key)] || P1; }
-  function setProfile(n) { PROFILE = n === P2 ? P2 : P1; }
+  function setProfile(n) { PROFILE = n === P2 || n === P3 ? n : P1; }
   const two = () => PROFILE === P2;
+  const flat = () => PROFILE === P3;
 
   // §3.1 — ONE LIGHT, WHOLE KIT. Upper-left, and it does not vary by pose, by
   // room or by plate: a character lit from a different side in consecutive shots
@@ -382,9 +388,17 @@
     return out;
   }
 
+  /* rebuild-41 — flat-plate: one committed line, a quarter of hand-1's wobble,
+   * the authored width. Opacity is carried through and resolved to a palette
+   * ink (0 or 1) by grounds.flatten(), which is the only place that knows the
+   * plate's ground. */
+  function stroke3(pts, o) {
+    const a = wobble(pts, { seed: o.seed == null ? 7 : o.seed, amp: (o.amp == null ? 1.7 : o.amp) * 0.25, step: (o.step || 26) * 1.6, over: Math.min(o.over || 0, 3) });
+    return rawStroke(toPath(a), { stroke: o.stroke || "#000", width: o.width == null ? 2.6 : o.width, opacity: o.opacity == null ? 1 : o.opacity, cap: o.cap });
+  }
   function stroke(pts, o) {
     o = o || {};
-    return two() ? stroke2(pts, o) : stroke1(pts, o);
+    return flat() ? stroke3(pts, o) : two() ? stroke2(pts, o) : stroke1(pts, o);
   }
 
   const line = (x1, y1, x2, y2, o) => stroke([{ x: x1, y: y1 }, { x: x2, y: y2 }], o);
@@ -560,9 +574,19 @@
     return out;
   }
 
+  /* rebuild-41 — flat-plate: a hatched region is ONE flat fill. The authored
+   * opacity was coverage (hatch at 0.6 laid until solid), so a material region
+   * (>= 0.4) is opaque; below that it is a faint wash that grounds.flatten()
+   * resolves to the nearest palette ink over the ground. */
+  function hatch3(poly, o) {
+    if (areaOf(poly) < 4) return "";
+    const op = o.opacity == null ? 0.6 : o.opacity;
+    const edge = wobble(poly.concat([poly[0]]), { seed: (o.seed == null ? 3 : o.seed) * 7 + 3, amp: 0.5, step: 40, over: 0 });
+    return rawFill(toPath(edge), { fill: o.color || "#000", opacity: op >= 0.4 ? 1 : op });
+  }
   function hatch(poly, o) {
     o = o || {};
-    return two() ? hatch2(poly, o) : hatch1(poly, o);
+    return flat() ? hatch3(poly, o) : two() ? hatch2(poly, o) : hatch1(poly, o);
   }
 
   const fillRect = (x, y, w, h, o) => hatch(polyRect(x, y, w, h), o);
@@ -752,7 +776,7 @@
     boilGate: () => !!BOIL_GATE, boilFrame: () => BOIL,
     // §4's one-line switch: PROFILE_FAMILIES is the whole opt-in list. Adding a
     // family here converts it; emptying it reverts the kit to one hand.
-    PROFILES: { legacy: P1, revised: P2 }, PROFILE_FAMILIES, profileFor,
+    PROFILES: { legacy: P1, revised: P2, flat: P3 }, PROFILE_FAMILIES, profileFor,
     setProfile, profile: () => PROFILE, LIGHT, darken,
   };
 })(typeof window !== "undefined" ? window : globalThis);

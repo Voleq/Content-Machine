@@ -242,9 +242,11 @@ function linePath(o) {
   if (o.zeroRule && e.lo < 0 && e.hi > 0) nodes.push(rect(box.x, y(0) - 1, box.w, 2, ink.axis || '#4A566A'));
   nodes.push(path('M' + pts.map(p => r1(p[0]) + ',' + r1(p[1])).join('L'),
     { stroke: col, 'stroke-width': o.weight || 6, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+  /* rebuild-41: a dot is never thinner than the line it sits on. */
+  const dot = Math.max(9, Math.round((o.weight || 6) * 0.9));
   pts.forEach((p, i) => {
     const last = i === pts.length - 1;
-    nodes.push(circle(p[0], p[1], last && o.accentLast ? 13 : 9,
+    nodes.push(circle(p[0], p[1], last && o.accentLast ? dot + 5 : dot,
       last && o.accentLast ? (ink.attention || '#F07A5A') : col));
   });
   return { nodes, returns: { lo: e.lo, hi: e.hi, points: pts.map(p => [r1(p[0]), r1(p[1])]) } };
@@ -316,7 +318,10 @@ function splitBar(o) {
   let x = box.x;
   values.forEach((v, i) => {
     const w = usable * v / sum;
-    const fill = i === o.accent ? (ink.attention || '#F07A5A') : (i % 2 ? (ink.quiet || '#8592A6') : (ink.subject || '#7FD4E8'));
+    /* rebuild-41: with a series order the parts take the six series inks in
+     * turn (skipping attention, which is the accent's alone). */
+    const ord = (o.order || []).filter(k => k !== 'attention' && ink[k]);
+    const fill = i === o.accent ? (ink.attention || '#F07A5A') : ord.length ? ink[ord[(i - (o.accent != null && i > o.accent ? 1 : 0)) % ord.length]] : (i % 2 ? (ink.quiet || '#8592A6') : (ink.subject || '#7FD4E8'));
     nodes.push(rect(x, y, w, h, fill));
     parts.push([r1(x), r1(x + w)]);
     x += w + gap;

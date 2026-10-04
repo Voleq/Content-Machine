@@ -1,5 +1,42 @@
 # Dennis v2 — ANSWERS.md
 
+## R41 · What I would have changed but could not without a rename (rebuild-41)
+
+> **Answered by the bot, all closed.** Items 1–4 are done, and CHANGES.md "Rebuild-41 · the
+> bot's answers" lists what changed and on which plates. `structure/row-spotlight-9x16`
+> dropped to five columns as well. Item 5: no rename. The ten annotation names are the
+> words script writers type in `[SCRIBBLE: ...]` and saved scripts already use them. Cells
+> at 5–7 characters are enough: the bot treats each cell's limit as hard and writes
+> figures short ("$1.2B").
+
+Nothing was renamed. These are the places where a name, or a box that the name pins, held
+the restyle back:
+
+1. **The 9:16 table cells.** `tables/cash-flow-9x16`, the numbers sheets and the
+   `value-N` / `row-N` columns sit side by side at fixed names. At the 34 floor some
+   cells cannot grow without overlapping the next named column, so a long figure
+   ("$1,240.5m") truncates. The fix is to drop a column on 9:16 (e.g. `col-3`), which
+   removes a slot name, so it is left for you. Rule 33 passes because the floor is met;
+   rule 20 reports the over-budget samples as before.
+2. **`point-column` for bars, pairs and steps.** The bot's "bars grow" reads these as
+   bars, but the role says *column*. A `bar` role would let the bot treat a waterfall
+   step and a line's point column differently without checking the slot name. Wanted
+   rename: role `point-column` → `bar` on `bar-N` / `pair-N` / `step-*`.
+3. **The ink names.** `subject2` is lamp amber on both grounds, but on paper the old
+   meaning of "down" moves to `attention` (marker red), because amber cannot carry a
+   bare line on cream. A plate that hardcodes `subject2` for falling values is still
+   correct on screen and only half right on paper. Wanted: a semantic `down` ink name
+   alongside the series names.
+4. **`shorts/` holds a screen plate.** `shorts/short-chart` is the only exception to
+   family → ground, so it is listed by key in `plateStyle.grounds.screenKeys`. Moving
+   it to `charts/short-chart-9x16` would let the family decide.
+5. **The marks.** ANSWERS §1 kept the annotations as drawn strokes. Rebuild-41 makes them
+   flat, so they read on both grounds, and the old stroke idiom is superseded. Under the
+   keys `annotations/scrawl-*` they now draw one pass; a name like `mark-*` would
+   say so. No rename made.
+
+---
+
 Four written answers requested before the 45-plate round. Each states what is measured,
 what is decided, and what is still unverified.
 

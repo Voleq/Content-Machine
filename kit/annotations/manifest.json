@@ -14,6 +14,7 @@
    "key": "annotations/scrawl-oval-wide",
    "dir": "annotations",
    "aspect": "16x9",
+   "ground": "mark",
    "canvas": [
     1200,
     230
@@ -84,6 +85,7 @@
    "key": "annotations/scrawl-oval-tight",
    "dir": "annotations",
    "aspect": "16x9",
+   "ground": "mark",
    "canvas": [
     340,
     150
@@ -154,6 +156,7 @@
    "key": "annotations/underline-swipe",
    "dir": "annotations",
    "aspect": "16x9",
+   "ground": "mark",
    "canvas": [
     1000,
     140
@@ -224,6 +227,7 @@
    "key": "annotations/underline-tight",
    "dir": "annotations",
    "aspect": "16x9",
+   "ground": "mark",
    "canvas": [
     300,
     90
@@ -294,6 +298,7 @@
    "key": "annotations/strike-out",
    "dir": "annotations",
    "aspect": "16x9",
+   "ground": "mark",
    "canvas": [
     320,
     90
@@ -364,6 +369,7 @@
    "key": "annotations/box-scrawl",
    "dir": "annotations",
    "aspect": "16x9",
+   "ground": "mark",
    "canvas": [
     1000,
     320
@@ -434,6 +440,7 @@
    "key": "annotations/bracket-rows",
    "dir": "annotations",
    "aspect": "16x9",
+   "ground": "mark",
    "canvas": [
     220,
     700
@@ -467,14 +474,14 @@
    "typeRoles": {
     "caption": {
      "font": "Courier Prime",
-     "size": 29,
+     "size": 34,
      "weight": 400,
      "colour": "attention",
      "tracking": ".01em",
      "maxLines": 2,
-     "maxCharsPerLine": 23,
+     "maxCharsPerLine": 20,
      "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
-     "budget": "derived from the slot boxes that set this role; 23 is the floor (narrowest of 1), was 11"
+     "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 1), was 11"
     }
    },
    "slots": {
@@ -495,7 +502,7 @@
      "y": 252,
      "w": 418,
      "h": 196,
-     "maxCharsPerLine": 23,
+     "maxCharsPerLine": 20,
      "maxLines": 2
     }
    }
@@ -504,6 +511,7 @@
    "key": "annotations/arrow-elbow",
    "dir": "annotations",
    "aspect": "16x9",
+   "ground": "mark",
    "canvas": [
     760,
     520
@@ -574,6 +582,7 @@
    "key": "annotations/caret-note",
    "dir": "annotations",
    "aspect": "16x9",
+   "ground": "mark",
    "canvas": [
     620,
     300
@@ -644,6 +653,7 @@
    "key": "annotations/tick-marks",
    "dir": "annotations",
    "aspect": "16x9",
+   "ground": "mark",
    "canvas": [
     720,
     220

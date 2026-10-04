@@ -101,6 +101,9 @@ rule(3, 'Palette closure', () => {
     const s = new Set([t.hours[h].contour]);
     Object.keys(t.hours[h].materials).forEach(k => { s.add(t.hours[h].materials[k].lit); s.add(t.hours[h].materials[k].shade); });
     Object.keys(t.hours[h].ink).forEach(k => s.add(t.hours[h].ink[k]));
+    // rebuild-41: the plate inks, one set per ground, and the paper contour.
+    Object.keys(t.hours[h].plateInk || {}).forEach(g => { if (g[0] === '_') return; Object.keys(t.hours[h].plateInk[g]).forEach(k => { if (k[0] !== '_') s.add(t.hours[h].plateInk[g][k]); }); });
+    if (t.plateStyle) s.add(t.plateStyle.contour.colour);
     declared[h] = s;
   });
   let fills = 0; const stray = [];
@@ -110,15 +113,26 @@ rule(3, 'Palette closure', () => {
 });
 
 rule(4, 'Uniform contour (flat families)', () => {
+  /* rebuild-41: grouped by what the asset is drawn on. Host and room: one
+   * contour per hour (unchanged). Paper plates: ONE weight and colour at both
+   * hours and aspects, measured off the files in canvas units. Screen plates:
+   * no contour at all on the data. */
   const t = T(), p = plates();
-  const seen = {}; let drawn = 0;
+  const seen = {}; let drawn = 0; const screenStroked = [], paperBare = [];
   p.plates.forEach(pl => {
     if (pl.drawn) { drawn++; return; }
-    (pl.strokes || []).forEach(s => { (seen[pl.hour] = seen[pl.hour] || new Set()).add(`${s.colour}@${s.width}`); });
+    const g = pl.ground ? 'paper' === pl.ground ? 'paper' : pl.ground : pl.hour;
+    if (pl.ground === 'screen' || pl.ground === 'mark') { if ((pl.strokes || []).length) screenStroked.push(pl.id); return; }
+    if (pl.ground === 'paper' && !(pl.strokes || []).length && (pl.fills || []).length > 1) paperBare.push(pl.id);
+    (pl.strokes || []).forEach(s => { (seen[g] = seen[g] || new Set()).add(`${s.colour}@${Math.round(s.width * 10) / 10}`); });
   });
-  const bad = HOURS.filter(h => seen[h] && seen[h].size > 1);
-  return { ok: !bad.length, count: HOURS.map(h => `${h} ${(seen[h] || new Set()).size}`).join(', ') + (drawn ? `, ${drawn} drawn exempt` : ''),
-    note: bad.length ? `more than one contour in: ${bad.join(', ')}` : `One colour and one width per hour in the flat families: ${t.hours.night.contour} / ${t.hours.dusk.contour}. Drawn plates carry their own weights (§8.2).` };
+  const bad = Object.keys(seen).filter(k => seen[k].size > 1);
+  return { ok: !bad.length && !screenStroked.length && !paperBare.length,
+    count: Object.keys(seen).map(k => `${k} ${seen[k].size}`).join(', ') + (drawn ? `, ${drawn} drawn exempt` : ''),
+    note: bad.length ? `more than one contour in: ${bad.map(k => k + ' ' + [...seen[k]].slice(0, 3).join(' ')).join('; ')}`
+      : screenStroked.length ? `contour on screen data: ${screenStroked.slice(0, 3).join(', ')}`
+      : paperBare.length ? `paper plate with no contour: ${paperBare.slice(0, 3).join(', ')}`
+      : `One colour and one width per hour on host and room (${t.hours.night.contour} / ${t.hours.dusk.contour}); one on every paper plate (${t.plateStyle.contour.colour} @ ${t.plateStyle.contour.width}); none on screen data. Drawn plates carry their own weights (§8.2).` };
 });
 
 rule(5, 'Type legibility ≥ 4.5:1', () => {
@@ -181,7 +195,9 @@ rule(9, 'Manifests are what the engine emits', () => {
    * crashed on this file's own shebang. It now rebuilds every manifest in
    * memory through engine/emit.js and diffs it against what is on disk. */
   const E = require('./emit');
-  const b = E.build();
+  /* one build per process: the engine cannot change mid-run, and the negative
+   * control calls this rule once per injected fault (rebuild-41). */
+  const b = E.__auditBuild || (E.__auditBuild = E.build());
   /* The two files the other rules read are compared as LOADED — the thing the
    * audit actually judged — the rest against disk. Same build, one pass. */
   const loaded = { 'emit/manifest.json': manifest(), 'emit/plates.json': plates() };
@@ -518,7 +534,7 @@ rule(20, 'Every plate slot is filled and within budget', () => {
 
 rule(19, 'The drawn exemption is declared and bounded', () => {
   const m = manifest();
-  const DRAWN = ['annotations', 'cards', 'charts', 'cycles', 'figures', 'frames', 'overlays', 'paper', 'peers', 'shorts', 'structure', 'tables'];
+  const DRAWN = require('./port').DRAWN_FAMILIES; // rebuild-41: overlays only
   const ids = Object.keys(m.assets);
   const claiming = ids.filter(k => m.assets[k].drawn);
   // An asset may only claim the exemption if its family is on the list, and no
@@ -529,7 +545,7 @@ rule(19, 'The drawn exemption is declared and bounded', () => {
     count: `${claiming.length} of ${ids.length} claim it`,
     note: illegal.length || hostDrawn.length
       ? `illegal exemption: ${illegal.concat(hostDrawn).slice(0, 3).join(', ')}`
-      : 'Only the twelve drawn families may opt out of rules 2 and 4, and no host or room asset may — the figure is what §0 was about. New at the port.' };
+      : 'Only the drawn families (' + DRAWN.join(', ') + ' since rebuild-41) may opt out of rules 2 and 4, and no host or room asset may — the figure is what §0 was about.' };
 });
 
 rule(17, 'Band direction per hour', () => {
@@ -559,6 +575,88 @@ rule(18, 'Both title treatments legible, both hours', () => {
   return { ok: Math.min(worst.title, worst.cap) >= 4.5,
     count: `${out.length} combinations, worst ${Math.min(worst.title, worst.cap).toFixed(2)}:1`,
     note: `Tightest is ${worst.id}. A slab sits on wall.shade and a card on ink.ground, so the pair inverts at dusk (§5.3). Candidates are the text roles only — contrast is a floor, not a selector.` };
+});
+
+rule(32, 'Contrast on both grounds (type, bare data, colour-blind separation)', () => {
+  /* rebuild-41. Paper and screen each get their own inks, so each is measured
+   * against its own ground: the text inks at 4.5:1, every series ink that can
+   * be drawn bare (a line, a dot) at 3:1, the six series inks pairwise apart in
+   * OKLab under normal vision and simulated protan/deutan/tritan, and EVERY
+   * type role on every restyled plate against that plate's ground (4.5, or 3
+   * at 64 and up). On paper the fill-only inks (lamp amber, can teal, sticky
+   * yellow) are exempt from the bare 3:1 because they never appear without
+   * the contour; the rule fails if a type role or a bare line uses one. */
+  const t = T(), C = t.plateStyle && t.plateStyle.contrast;
+  if (!C) needs('design-tokens.json plateStyle.contrast');
+  const GR = require('./grounds'), rep = GR.contrastReport(t), st = slotTables();
+  const fails = [];
+  rep.text.forEach(x => { if (x.r < x.min) fails.push(x.id + ' ' + x.r.toFixed(2)); });
+  rep.nonText.forEach(x => { if (x.r < x.min) fails.push(x.id + ' ' + x.r.toFixed(2)); });
+  rep.cvd.forEach(x => { if (x.d < x.min) fails.push(x.id + ' ' + x.pair + ' ΔE ' + x.d.toFixed(3)); });
+  (rep.down || []).forEach(x => { if (x.d < x.min) fails.push(x.id + ' ΔE ' + x.d.toFixed(3)); });
+  HOURS.forEach(h => ['screen', 'paper', 'mark'].forEach(g => { if (!t.hours[h].plateInk[g].down) fails.push(h + '.' + g + ' has no down ink'); }));
+  let roles = 0, worst = { r: 99 };
+  Object.keys(st.plates).forEach(k => {
+    const pl = st.plates[k]; if (!pl || !pl.ground || pl.ground === 'mark') return;
+    HOURS.forEach(h => {
+      const I = t.hours[h].plateInk[pl.ground];
+      Object.keys(pl.typeRoles || {}).forEach(rn => {
+        const R = pl.typeRoles[rn], col = I[R.colour] || I.structure; roles++;
+        if (pl.ground === 'paper' && C.paperFillOnly.indexOf(R.colour) >= 0) { fails.push(k + '.' + rn + ' sets type in fill-only ' + R.colour); return; }
+        const r = GR.wcag(col, I.ground), min = (R.size || 0) >= C.largeFrom ? C.textLarge : C.text;
+        if (r / min < worst.r) worst = { r: r / min, id: k + '.' + rn + ' ' + R.colour + ' ' + r.toFixed(2) + ':1' };
+        if (r < min) fails.push(k + '.' + rn + ' ' + R.colour + ' ' + r.toFixed(2));
+      });
+    });
+  });
+  const tight = rep.cvd.slice().sort((a, b) => a.d / a.min - b.d / b.min)[0];
+  return { ok: !fails.length, count: `${rep.text.length + rep.nonText.length} ink pairs, ${rep.cvd.length} separation checks, ${roles} plate type roles`,
+    note: fails.length ? `${fails.length} under: ${fails.slice(0, 4).join('; ')}`
+      : `Tightest separation ${tight.id} ${tight.pair} ΔE ${tight.d.toFixed(3)} (min ${tight.min}); tightest type ${worst.id}.` };
+});
+
+rule(33, 'Restyled plates are bold, full and phone-safe', () => {
+  /* rebuild-41 §C/§D, measured off the published slot tables: the content
+   * block fills 70% of the safe area each way; on 9:16 every text box sits in
+   * y 170–1480 with no role under 34 (headlines 64); bars, pairs and steps at
+   * least 2x the gap beside them; number plates' lead figure box at least 60%
+   * of the frame wide; series lines at 10/12; at most one type role in
+   * attention per plate. */
+  const t = T(), S = t.plateStyle; if (!S) needs('design-tokens.json plateStyle');
+  const GR = require('./grounds'), st = slotTables();
+  const f = { fill: [], band: [], floor: [], bars: [], barRole: [], lead: [], accent: [] }; let n = 0;
+  if (!(S.seriesLine['16x9'] >= 10 && S.seriesLine['9x16'] >= 12)) f.fill.push('seriesLine under 10/12');
+  Object.keys(st.plates).forEach(k => {
+    const pl = st.plates[k]; if (!pl || !pl.ground || pl.ground === 'mark') return; n++;
+    const [W, H] = pl.canvas, land = W >= H, id = k.replace(/-(16x9|9x16)$/, ''), fam = id.split('/')[0];
+    const sl = pl.slots, zone = GR.zoneOf(sl, W, H, S), names = Object.keys(sl).filter(m => !sl[m].overlay && sl[m].role !== 'highlight-band' && !sl[m].container && !GR.KEEP.test(sl[m].role));
+    if (!names.length) return;
+    let b = [1e9, 1e9, -1e9, -1e9];
+    names.forEach(m => { const s = sl[m]; b = [Math.min(b[0], s.x), Math.min(b[1], s.y), Math.max(b[2], s.x + s.w), Math.max(b[3], s.y + s.h)]; });
+    const fw = (b[2] - b[0]) / (zone[2] - zone[0]), fh = (b[3] - b[1]) / (zone[3] - zone[1]);
+    if (fw < S.contentFill - 0.005 || fh < S.contentFill - 0.005) f.fill.push(`${k} ${fw.toFixed(2)}x${fh.toFixed(2)}`);
+    if (!land) {
+      names.filter(m => GR.isText(sl[m])).forEach(m => { const s = sl[m]; if (s.y < zone[1] - 1 || s.y + s.h > zone[3] + 1) f.band.push(k + '.' + m); });
+      Object.keys(pl.typeRoles || {}).forEach(rn => { const R = pl.typeRoles[rn]; if (!names.some(m => sl[m].role === rn)) return; if ((R.size || 0) < S.shorts.typeFloor) f.floor.push(k + '.' + rn + ' ' + R.size); });
+    }
+    const cols = Object.keys(sl).filter(m => /^(bar|pair|step)-(\d+|open|close)$/.test(m)).map(m => sl[m]).sort((a, c) => a.x - c.x);
+    /* R41.2: one role for every bar, and still a container with an anchor — a bar
+     * region beside a whole region is drawn as a filled share. */
+    Object.keys(sl).filter(m => /^(bar|pair|step)-(\d+|open|close)$/.test(m)).forEach(m => { const s = sl[m]; if (s.role !== 'bar' && s.role !== 'point-column') return; if (s.role !== 'bar' || !s.container || s.region || typeof s.anchorX !== 'number') f.barRole.push(k + '.' + m); });
+    for (let i = 1; i < cols.length; i++) { const a = cols[i - 1], c = cols[i]; if (c.y > a.y + a.h || a.y > c.y + c.h) continue; const g = c.x - (a.x + a.w); if (g > 0.5 && Math.min(a.w, c.w) < S.barToGap * g - 1) { f.bars.push(`${k} ${(Math.min(a.w, c.w) / g).toFixed(2)}`); break; } }
+    const lead = Object.keys(sl).filter(m => sl[m].fit === 'width');
+    if ((fam === 'figures' || fam === 'shorts') && lead.length) {
+      const side = lead.length > 1 && lead.every(m => Math.abs(sl[m].y - sl[lead[0]].y) < 4);
+      const span = side ? Math.max(...lead.map(m => sl[m].x + sl[m].w)) - Math.min(...lead.map(m => sl[m].x)) : Math.min(...lead.map(m => sl[m].w));
+      if (span < S.leadFigureSpan * W - 1) f.lead.push(`${k} ${(span / W).toFixed(2)}`);
+    }
+    const acc = Object.keys(pl.typeRoles || {}).filter(rn => pl.typeRoles[rn].colour === 'attention' && names.some(m => sl[m].role === rn));
+    if (acc.length > 1) f.accent.push(k + ' ' + acc.join('+'));
+  });
+  const all = [].concat(...Object.values(f));
+  return { ok: !all.length, count: `${n} restyled plates; ` + Object.keys(f).map(x => x + ' ' + f[x].length).join(', '),
+    note: all.length ? Object.keys(f).filter(x => f[x].length).map(x => x + ': ' + f[x].slice(0, 3).join(', ')).join(' | ')
+      : 'Every restyled plate fills its safe area, keeps 9:16 type in 170–1480 at 34 and up, draws bars at 2x their gaps, sets its lead figure 60% wide, and spends attention once.' };
 });
 
 /* ── report ─────────────────────────────────────────────────────────────── */

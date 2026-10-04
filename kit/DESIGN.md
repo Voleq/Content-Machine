@@ -691,6 +691,137 @@ that failed**, because a failure is at least information.
 
 ---
 
+## 8.9 · rebuild-41 — the plate restyle (16:9 and 9:16)
+
+The layouts, keys, slot names, slot roles, motion anchors and twins are unchanged. Colour,
+weight and finish changed, and slot boxes moved and grew. Everything below is applied by
+ONE module, `engine/grounds.js`, which wraps every plate author once in `port.js`. That
+way every consumer (emit, export, audit and the review pages) gets the same plate. Every
+number comes from `design-tokens.json → plateStyle`, and every move is published on the
+plate as `restyle` in `emit/plates.json`, with `ground` on its slot table.
+
+**Why.** On the sample videos about 96% of a plate frame was #171D2A in three thin inks.
+The room the plates cut to is bright, with one ink outline on every object, so cutting to
+a near-black plate felt like leaving the room. The restyle makes a plate read as an object
+in that room: a sheet on his desk, or his monitor.
+
+**Two grounds, chosen by what the plate is.**
+- *Paper*, 168 slot tables (paper/, tables/, cards/, structure/, frames/, shorts/): the
+  room's paper #F4F2EA with band #E8E2D2. Type and rules use the room's outline ink
+  #0B0E16, captions use quiet #555A66, and the accents use marker blue, red and green.
+  Every filled shape carries the one contour, #0B0E16 at 4 canvas units. A bare series
+  line on paper is laid over an ink line two contours wider, which is how the desk props
+  are drawn.
+- *Screen*, 372 tables (charts/, figures/, peers/, cycles/; charts/short-chart-9x16 moved here from shorts/ at the bot's answer R41.4): a lit
+  navy #25314D, raised from #171D2A toward the wall #2C3752 but still clearly darker than
+  the wall, so the monitor reads as lit glass and not as a hole in the wall. Band #2E3B5B.
+  The data carries no contour; rule 4 fails if any appears.
+- *Mark*, annotations/ (10): the screen values, with attention set to #F0503E, which
+  clears 3:1 on both grounds. The marks now draw flat (one pass, opacity 0 or 1). This
+  replaces the stroke idiom in ANSWERS §1, because the brief asks that marks read on both
+  grounds, and a partial-opacity stroke resolves differently on each.
+- overlays/ are unchanged and remain the one drawn family (rule 19).
+- No family was moved to the other ground. tables/ was the close call, because a dense
+  numbers sheet is screen-like. It stays on paper because the 9:16 tables are what he
+  holds up and talks over in the shorts. They are sheets, and paper gives their many
+  rows the strongest type contrast in the kit (17:1).
+
+**Six series inks per ground** (`seriesOrder`: subject, subject2, subject3, subject4,
+subject5, attention). They were picked by eye from the room's objects, as §1.1 requires,
+and then checked: OKLab ΔE between every pair, at normal vision and under simulated
+protan, deutan and tritan vision.
+
+| name | room source | screen | paper |
+|---|---|---|---|
+| subject | screen line, marker blue | #8EDCF2 | #283C9A |
+| subject2 | lamp amber | #EE9236 | #F0A848 (fill only) |
+| subject3 | can teal | #3A9AB8 | #36A9AE (fill only) |
+| subject4 | sticky-note yellow | #FBE57A | #F6E07A (fill only) |
+| subject5 | marker green | #5BCB8C | #2E9152 |
+| attention | mug coral, marker red | #FF6670 | #B8262E |
+| down (new, not a series) | — violet, the one hue no series or the accent uses | #B98CFF | #9A3A7A |
+
+The screen teal leans blue and the screen green leans mint, on purpose. A truer can teal
+sat 0.03 from the green under deuteranopia, and a truer marker green sat on the amber.
+The tightest pair now is deutan subject5/attention at 0.051 against a 0.05 floor, and
+rule 32 prints it on every run. Cyan and yellow fail contrast on cream (the brief's own
+point), and so do amber and teal. On paper those three are *fills only*: they always
+carry the 17:1 contour, rule 32 fails any type role set in them, and the bare inks on
+paper are blue, green and red.
+
+**Down is a fall, not a series** (bot answer R41.3). It is apart from attention by at least
+ΔE 0.09 under every simulated vision, so a fall never reads as the highlight; `subject2` is
+the second series only, and the two-series keys use the palette key `second`.
+
+**One accent per plate.** attention is the sixth series ink and the accent alike. Rule 33
+fails a plate whose text spends attention on more than one role.
+
+**Bolder.** Series lines are 10 wide at 16:9 and 12 at 9:16 (`seriesLine`), and the dots
+grow with the line. Hatches became one flat fill each (the `flat-plate` profile in
+`hand.js`), and every remaining opacity resolves to a palette ink at 0 or 1
+(`grounds.flatten`). Bars, pairs and steps are at least 2× the gap beside them: each
+gap closes from both sides, the outer edges of the run stay put, and centred anchors
+follow the new centre.
+
+**Fuller.** The content block, which is the union of the text and region slots, covers
+at least 70% of the safe area each way. The safe area is the 5% margin at 16:9 and y
+170–1480 inside a 5% side margin at 9:16. Where a layout fell short, or overflowed, one
+fit transform moves it, and that transform is also applied to the drawing.
+`maxAnisotropy` 2 lets a thin layout stretch further one way than the other. Type scales
+by the smaller factor, while boxes scale on their own axes, so a bigger plate gains
+budget instead of losing it. budget.js re-derives every budget from the new boxes as
+usual. 290 of 550 night plates moved. The median type scale is 0.85: most 9:16 plates
+overflowed the 170–1480 band and had to come in, and the 34/64 floors then put the
+small type back. 250 plates grew a box to hold a floored size; where the box could not
+grow without hitting a neighbour, the type still takes the floor (see ANSWERS §R41).
+
+**Lead figures.** On figures/ and shorts/ number plates, the lead figure's box is at
+least 60% of the frame width, so a string near its budget spans 60%. The slot and role
+publish `fit: "width"`, so a renderer may set a short figure, like "902" in a
+six-character box, up to the box width. The kit does not raise the role size itself:
+doing so cut 9:16 budgets below the sample copy.
+
+**Audit.** Two new rules, and four widened:
+- Rule 32 checks contrast on both grounds and both hours: text inks 4.5:1; bare series
+  inks 3:1; the colour-blind separation; and every type role on every restyled plate
+  against its own ground, at 4.5:1, or 3:1 at 64 and up.
+- Rule 33 checks the geometry: fill 70%, the 9:16 band, the 34/64 floors, bars against
+  gaps, the lead span, the line weights and one accent.
+- Rule 3 adds the plate inks to the palette.
+- Rule 4 checks one contour on paper and none on screen.
+- Rule 19 reads its list from `port.DRAWN_FAMILIES`.
+- Rule 9 memoises its build per process.
+
+audit.test.js adds seven faults; 34 of 34 are caught.
+
+**design-tokens.json diff** (night shown; dusk identical):
+
+```diff
++ "version": "rebuild-41"
+  hours.night:
++   "plateInk": {
++     "screen": { ground #25314D, band #2E3B5B, rule #3B4969, axis #8693B3, quiet #AEB8CE,
++                 structure #F4F2EA, subject #8EDCF2, subject2 #EE9236, attention #FF6670,
++                 subject3 #3A9AB8, subject4 #FBE57A, subject5 #5BCB8C },
++     "paper":  { ground #F4F2EA, band #E8E2D2, rule #C7C0AC, axis #6E6A60, quiet #555A66,
++                 structure #0B0E16, subject #283C9A, subject2 #F0A848, attention #B8262E,
++                 subject3 #36A9AE, subject4 #F6E07A, subject5 #2E9152, contour #0B0E16 },
++     "mark":   { = screen, attention #F0503E }
++   }
++ "plateStyle": { grounds, seriesOrder, seriesLine {16x9: 10, 9x16: 12},
++   contour {#0B0E16, 4, on paper}, barToGap 2, contentFill 0.7, maxAnisotropy 2,
++   leadFigureSpan 0.6, shorts {readable [170,1480], typeFloor 34, headlineFloor 64},
++   contrast {text 4.5, textLarge 3, largeFrom 64, nonText 3,
++             paperFillOnly [subject2, subject3, subject4], cvd {normal 0.10, simulated 0.05}} }
+  hours.*.ink — unchanged (rooms, overlays)
+```
+
+The before-and-after sheet is `/Plate Restyle r41.dc.html`. Both columns are drawn by
+this engine, with the restyle switched off for "before", and the sample copy is padded
+to 90% of each budget.
+
+---
+
 ## 9 · Open, and who decides
 
 Settled items are kept with their outcome rather than deleted, so a later reader can see
