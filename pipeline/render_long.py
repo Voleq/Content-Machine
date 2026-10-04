@@ -1891,6 +1891,12 @@ def _render_long(
             go with the room. "" where it cannot: the next beat is not that
             plate or not full frame, he stands in front of the picture, the
             picture runs off the frame, or the end of the shot is covered.
+
+            And not before the chapter's picture has drawn itself on the
+            monitor (here or in an earlier shot), nor before the room has been
+            seen for a second: a shot the bumper lifts off with half a second
+            left would be a flash of room and a lunge at a chart, and a chart
+            seen full screen would then draw itself in again later.
             """
             from pipeline.room_dressing import picture_quad
 
@@ -1904,7 +1910,9 @@ def _render_long(
                     or segments[nxt].payload.get("layout") == "two-shot":
                 return ""
             t0 = seg_len - PUSH_S
-            if t0 < max(1.0, screen_intro_end.get(i, 0.0) + 0.3) \
+            seen = max(_cleared(seg.start, covers) - seg.start, 0.0)
+            if pick.chapter not in screen_intro_done \
+                    or t0 < max(1.0, seen + 1.0, screen_intro_end.get(i, 0.0) + 0.3) \
                     or any(a < seg.end and b > seg.start + t0 for a, b in covers):
                 return ""
             q = picture_quad(room, _screen_dressing(seg.start), (W, H))
