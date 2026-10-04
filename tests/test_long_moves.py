@@ -249,3 +249,92 @@ def test_the_source_slides_in_once_the_figure_has_counted_up(rendered_moves):
     assert src["end"] == pytest.approx(seg["end"], abs=1e-3)
     layer = next(l for l in manifest["layers"] if l["name"] == f"source_{src['segment']}")
     assert layer["t_start"] == pytest.approx(src["start"], abs=1e-3)
+
+
+# ------------------------------------------- the plate builds as he talks (57)
+def _words(*timed):
+    from types import SimpleNamespace
+
+    out = []
+    for at, text in timed:
+        for k, w in enumerate(text.split()):
+            out.append(SimpleNamespace(word=w, start=at + 0.25 * k, end=at + 0.25 * k + 0.2))
+    return out
+
+
+SHEET = ("tables/numbers-sheet-4r-16x9", {
+    **{f"head-{i}": y for i, y in enumerate(YEARS, start=1)},
+    "label-1": "Revenue", "label-2": "Gross margin", "label-3": "Free cash flow",
+    "label-4": "Share count",
+    **{f"cell-1-{i}": v for i, v in enumerate(["400M", "452M", "471M", "491M", "496M", "496M"], 1)},
+    **{f"cell-2-{i}": v for i, v in enumerate(["52%", "55%", "56%", "58%", "58%", "57%"], 1)},
+    **{f"cell-3-{i}": v for i, v in enumerate(["-12M", "4M", "9M", "-30M", "-71M", "-60M"], 1)},
+    **{f"cell-4-{i}": v for i, v in enumerate(["88M", "90M", "93M", "97M", "101M", "104M"], 1)},
+    "unit": "USD"})
+
+
+def test_a_sheet_s_rows_go_on_as_he_names_them(reg, settings):
+    key, values = SHEET
+    words = _words((100.0, "the business sells more every year"),
+                   (101.5, "gross margin held up"),
+                   (103.0, "but the share count keeps climbing"))
+    moves, _ = MV.plan_segment(reg.get(key), values, [], seg_len=7.0, shot_id="s",
+                               layer="s", settings=settings, reg=reg, words=words,
+                               at=100.0)
+    rows = [(m.slot, round(m.start, 2)) for m in moves if m.move == "row-on"]
+    # The first row comes with the sheet; row 2 on "gross margin"; row 3 is
+    # never said and comes with row 2; row 4 on "share count".
+    assert rows == [("band-2", 1.5), ("band-3", 1.5), ("band-4", 3.5)]
+    # Pushed into from his monitor, it was already whole: nothing builds.
+    drawn, _ = MV.plan_segment(reg.get(key), values, [], seg_len=7.0, shot_id="s",
+                               layer="s", settings=settings, reg=reg, words=words,
+                               at=100.0, drawn=True)
+    assert not [m for m in drawn if m.move in MV.BUILD_MOVES]
+
+
+def test_a_row_is_off_the_sheet_until_its_word(reg, settings):
+    key, values = SHEET
+    plate = reg.get(key)
+    rows = dict(MV.build_rows(plate, values))
+    assert list(rows) == ["band-1", "band-2", "band-3", "band-4"]
+    assert {"label-4", "cell-4-6", "band-4"} <= rows["band-4"]
+    assert not any(n.startswith("head-") for s in rows.values() for n in s)
+    mv = MV.Move("row-on", "s", "s", "band-4", 1.0, 1)
+    comp = MV.MoveCompositor(MV.MovePlan(moves=[mv]), reg, settings, None)
+    from types import SimpleNamespace
+
+    layer = SimpleNamespace(kind="plate", name="s", entry_key=key, values=values,
+                            x=0, y=0, w=1920, h=1080, seed="")
+    before = np.asarray(comp.frame(layer, 0.5, 0)).astype(int)
+    after = np.asarray(comp.frame(layer, 1.2, 0)).astype(int)
+    s = before.shape[1] / plate.canvas[0]
+    lab = plate.slots["label-4"]
+    box = (slice(int(lab.y * s), int((lab.y + lab.h) * s)),
+           slice(int(lab.x * s), int((lab.x + lab.w) * s)))
+    assert np.abs(before[box] - after[box]).sum() > 0, "row 4 was on before its word"
+    top = plate.slots["label-1"]
+    box1 = (slice(int(top.y * s), int((top.y + top.h) * s)),
+            slice(int(top.x * s), int((top.x + top.w) * s)))
+    assert (before[box1] == after[box1]).all(), "row 1 changed"
+
+
+def test_a_card_s_figure_goes_on_with_its_word(reg, settings):
+    key = "figures/big-number-l1-16x9"
+    values = {"kicker": "GROSS MARGIN", "value": "58%", "label": "on the LTM"}
+    words = _words((50.0, "and the margin is fifty-eight percent today"))
+    moves, _ = MV.plan_segment(reg.get(key), values, [], seg_len=6.0, shot_id="s",
+                               layer="s", settings=settings, reg=reg, words=words,
+                               at=50.0)
+    assert [(m.move, m.slot, round(m.start, 2)) for m in moves] == [("figure-on", "value", 1.0)]
+    # The writer's count-up on it is the writer's.
+    called, _ = MV.plan_segment(reg.get(key), values,
+                                [_row("count-up", "value", 1.0, "58%")], seg_len=6.0,
+                                shot_id="s", layer="s", settings=settings, reg=reg,
+                                words=words, at=50.0)
+    assert [m.move for m in called] == ["count-up"]
+    # Said too late into the beat, it is on from the start.
+    late = _words((50.0, "a lot of words before we get to it at last"),
+                  (54.5, "fifty-eight percent"))
+    moves, _ = MV.plan_segment(reg.get(key), values, [], seg_len=6.0, shot_id="s",
+                               layer="s", settings=settings, reg=reg, words=late, at=50.0)
+    assert moves == []
