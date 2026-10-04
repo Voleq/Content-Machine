@@ -59,6 +59,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import re
 from pathlib import Path
@@ -1972,10 +1973,17 @@ def _render_long(
                         and _host_covers_picture(rdir / f"host_{i}.mov", box, q, t0,
                                                  PUSH_S, (W, H)):
                     return ""
-            # The filter counts its input frames from one; easing in, so the
-            # push gathers speed into the cut.
-            n0, n = int(round(t0 * fps)), max(int(round(PUSH_S * fps)), 2)
-            e = f"pow(clip((in-1-{n0})/{n},0,1),2)"
+            # The filter counts its input frames from one. The shot's last
+            # frame is the picture exactly filling the frame, so the cut to
+            # the plate is the same picture, not a jump the last quarter of
+            # the way. Eased in the zoom, not the corners: the corners closing
+            # at an even pace crawl, then quadruple the picture in the last
+            # frames; as a power of the picture's size `r` the camera gathers
+            # speed evenly into the cut.
+            n0 = int(round(t0 * fps))
+            last = max(math.ceil(seg_len * fps - 1e-6) - 1, n0 + 1)
+            r = min(max(((max(xs) - min(xs)) / W + (max(ys) - min(ys)) / H) / 2, 0.05), 0.95)
+            e = f"(1-pow({r:.4f},pow(clip((in-1-{n0})/{last - n0},0,1),2)))/{1 - r:.4f}"
             (x0, y0), (x1, y1), (x2, y2), (x3, y3) = q
 
             def to(start: float, end: float) -> str:
