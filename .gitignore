@@ -51,3 +51,4 @@ node_modules/
 
 # room3d/build.py renders through here; only room3d/renders/ is committed.
 room3d/.scratch/
+room3d/renders/contact.jpg

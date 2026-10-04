@@ -530,7 +530,7 @@ def test_the_preflight_notices_an_installed_kit_from_a_different_pack(tmp_path):
         reg = load_plates(Settings(MOCK_MODE=True, _env_file=None).assets_dir)
         installed = set(reg.keys())
         flat = [k for k, p in reg.assets.items()
-                if p.family == "room" and p.aspect == ingest.ROOM3D_ASPECT
+                if p.family == "room" and p.aspect in ingest.ROOM3D_ASPECTS
                 and p.author != ingest.ROOM3D_AUTHOR]
     except PlateError:
         installed, flat = set(), []

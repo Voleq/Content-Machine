@@ -87,15 +87,15 @@ def _kit(settings, report: Report) -> None:
                    f"{sorted(missing)[0]}). Re-run "
                    f"`python scripts/ingest_kit.py kit`")
         return
-    # THE LONG'S ROOMS ARE THE 3D ROOM once `room3d/` has rendered them, and
-    # they only arrive with an ingest: a box that pulled the renders and did
-    # not re-run it shoots every long in the flat rooms they replaced.
+    # THE ROOMS ARE THE 3D ROOM once `room3d/` has rendered them, the long's
+    # and the shorts', and they only arrive with an ingest: a box that pulled
+    # the renders and did not re-run it shoots in the flat rooms they replaced.
     flat = [k for k, p in reg.assets.items()
-            if p.family == "room" and p.aspect == ingest.ROOM3D_ASPECT
+            if p.family == "room" and p.aspect in ingest.ROOM3D_ASPECTS
             and p.author != ingest.ROOM3D_AUTHOR]
     if (ingest.ROOM3D / "rooms.json").exists() and flat:
         report.add(FAIL, "design kit",
-                   f"{len(flat)} of the long's rooms are still the flat drawings "
+                   f"{len(flat)} rooms are still the flat drawings "
                    f"(e.g. {sorted(flat)[0]}) — re-run "
                    f"`python scripts/ingest_kit.py kit` to install the 3D room")
         return

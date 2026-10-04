@@ -17,6 +17,7 @@ drive it the way they drive the drawn one (`pipeline.host.word_mouths`).
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import bmesh
 import bpy
@@ -58,6 +59,24 @@ JOINTS = {
 FINGERS = ("index", "middle", "ring", "little", "thumb")
 # His hands are drawn a size up from life, as cartoon hands are.
 HAND_SCALE = 1.18
+# What he may hold (the kit's holding-a-mug, -phone, -page, -filing poses):
+# where each sits in the right hand, in the wrist's frame (metres; the palm
+# faces -y and the fingers run down -z), and its turn in degrees. The left
+# hand mirrors it. Each goes with its arm pose in `motion` (hold, phone,
+# page, filing): the mug stands upright against the palm, the phone and the
+# page lie on it (the mug hangs off his fingers by its handle, its body
+# clear of the hand where the camera can see it), and the filing stands on its edge in the palm, its width
+# running across to the other hand, its cover to the camera.
+PROPS = {
+    "mug": ((0.0, -0.10, -0.09), (90, 0, 90)),
+    "phone": ((0.0, -0.036, -0.13), (0, 0, 0)),
+    "page": ((-0.07, -0.032, -0.15), (0, 0, 0)),
+    "filing": ((0.0, -0.11, -0.10), (0, 0, 90)),
+}
+# the mug is the red one off his desk; the filing is the desk's annual report
+# and the phone's back is light, or it is lost against the navy sweater
+MUG, PHONE, PAPER, FOLDER = "#C24A38", "#B4BCC8", "#F2EEE6", "#E6E4DC"
+TEXTURES = Path(__file__).resolve().parent / "textures"
 # Beards: how far each sits off the skin, metres.
 BEARDS = {"none": 0.0, "stubble": 0.0022, "short": 0.0065}
 STUBBLE = "#9A6C50"      # the skin with a few days' growth through it
@@ -74,8 +93,11 @@ _MATS: dict[str, bpy.types.Material] = {}
 
 def _mat(name: str, colour: str, rough: float = 0.85, sheen: float = 0.0) -> bpy.types.Material:
     key = f"dennis_{name}"
-    if key in _MATS and _MATS[key].name in bpy.data.materials:
-        return _MATS[key]
+    try:
+        if key in _MATS and _MATS[key].name in bpy.data.materials:
+            return _MATS[key]
+    except ReferenceError:      # left over from before a factory reset
+        pass
     m = bpy.data.materials.new(key)
     m.use_nodes = True
     b = m.node_tree.nodes["Principled BSDF"]
@@ -248,6 +270,8 @@ class Rig:
         self.brows: list[bpy.types.Object] = []
         self.rest: dict[str, tuple] = {}
         self.skins: list[Skin] = []
+        self.props: dict[str, bpy.types.Object] = {}
+        self.hands: dict[str, list[bpy.types.Object]] = {"L": [], "R": []}
 
     # --- building
     def joint(self, name: str, parent: str | None, offset) -> bpy.types.Object:
@@ -343,6 +367,11 @@ class Rig:
             elif k.startswith("lift."):
                 j = self.joints[f"shoulder.{last}"]
                 j.location.z = JOINTS[f"shoulder.{last}"][1][2] + v
+            elif k.startswith("pocket."):
+                # a hand down a pocket is not drawn: the sleeve goes into
+                # the hip, as a drawn pocket would show it
+                for o in self.hands[last]:
+                    o.hide_render = o.hide_viewport = v > 0.9
             elif k == "blink":
                 for lid in self.lids:
                     lid.scale.z = max(1.0 - v, 0.08)
@@ -361,6 +390,23 @@ class Rig:
 
     def objects(self) -> list[bpy.types.Object]:
         return list(self.coll.all_objects)
+
+    def hold(self, prop: str = "", side: str = "R") -> None:
+        """Put `prop` (a key of `PROPS`) in his `side` hand and every other
+        prop away; "" leaves his hands empty."""
+        for name, o in self.props.items():
+            on = name == prop
+            o.hide_render = o.hide_viewport = not on
+            for ch in o.children:
+                ch.hide_render = ch.hide_viewport = not on
+            if on:
+                loc, rot = PROPS[name]
+                sgn = 1 if side == "R" else -1
+                o.parent = self.joints[f"wrist.{side}"]
+                o.location = (loc[0] * sgn, loc[1], loc[2])
+                o.rotation_euler = [math.radians(rot[0]), math.radians(rot[1] * sgn),
+                                    math.radians(rot[2] * sgn)]
+        bpy.context.view_layer.update()
 
 
 def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
@@ -484,6 +530,7 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
                                      (0.0, 0.031 * k, 0.020 * k)],
                     skin, coll, n=16)
         rig.attach(palm, f"wrist.{side}", (0, 0, -0.022))
+        rig.hands[side].append(palm)
         for i, f in enumerate(FINGERS):
             # The palm faces -y here and the thumb is on its outer edge;
             # the wrist turns the palm to his thigh at rest.
@@ -499,10 +546,11 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
                 j.rotation_euler.y = math.radians(s * (-7 + i * 5.5))
                 length = (0.060, 0.066, 0.062, 0.050)[i] * k
                 r = (0.0118, 0.0122, 0.0116, 0.0102)[i] * k
-            rig.attach(loft(f"{f}.{side}.m", [(-length, 0.0, 0.0),
-                                              (-length + r * 0.55, r * 0.86, r * 0.82),
-                                              (-length * 0.5, r, r * 0.92), (0.0, r * 1.04, r)],
-                            skin, coll, n=12), f"{f}.{side}")
+            finger = loft(f"{f}.{side}.m", [(-length, 0.0, 0.0),
+                                            (-length + r * 0.55, r * 0.86, r * 0.82),
+                                            (-length * 0.5, r, r * 0.92), (0.0, r * 1.04, r)],
+                          skin, coll, n=12)
+            rig.hands[side].append(rig.attach(finger, f"{f}.{side}"))
         rig.hand(side, "relaxed")
 
     # Legs and shoes.
@@ -519,6 +567,8 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
         rig.attach(shoe_o, f"ankle.{side}", (0, -0.03, -0.045), rot=(90, 0, 0))
         shoe_o.scale = (1.0, 0.62, 1.0)
 
+    _props(rig, coll)
+
     for side, s in (("L", -1), ("R", 1)):
         rig.joints[f"wrist.{side}"].rotation_euler.z = math.radians(-s * 90)
     for jn, j in rig.joints.items():
@@ -529,6 +579,65 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     for o in rig.parts:
         o.lightgroup = ""
     return rig
+
+
+def _props(rig: Rig, coll) -> None:
+    """The things he may hold, built once and put away (`Rig.hold`)."""
+    def box(name, size, colour, rough=0.6):
+        bm = bmesh.new()
+        bmesh.ops.create_cube(bm, size=1.0)
+        bmesh.ops.scale(bm, vec=Vector(size), verts=bm.verts)
+        bmesh.ops.bevel(bm, geom=bm.edges[:], offset=min(size) * 0.3, segments=2,
+                        affect="EDGES")
+        return _mesh_object(name, bm, _mat(name, colour, rough), coll, smooth=True, subdiv=0)
+
+    # a mug: a round body and a handle
+    bm = bmesh.new()
+    # a size up from life, like his hands
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=0.047, radius2=0.050,
+                          depth=0.112)
+    mug = _mesh_object("prop.mug", bm, _mat("prop.mug", MUG, 0.4), coll, subdiv=0)
+    handle = bpy.data.curves.new("prop.mug.handle", "CURVE")
+    handle.dimensions = "3D"
+    handle.bevel_depth = 0.0085
+    sp = handle.splines.new("POLY")
+    pts = [(0.047 + 0.028 * math.sin(a), 0.0, 0.030 * math.cos(a))
+           for a in [math.pi * k / 10 for k in range(11)]]
+    sp.points.add(len(pts) - 1)
+    for pt, xyz in zip(sp.points, pts):
+        pt.co = (*xyz, 1.0)
+    ho = bpy.data.objects.new("prop.mug.handle", handle)
+    ho.data.materials.append(_mat("prop.mug", MUG, 0.4))
+    coll.objects.link(ho)
+    ho.parent = mug
+    rig.props["mug"] = mug
+    rig.props["phone"] = box("prop.phone", (0.080, 0.010, 0.162), PHONE, 0.3)
+    rig.props["page"] = box("prop.page", (0.21, 0.0015, 0.297), PAPER, 0.9)
+    rig.props["filing"] = box("prop.filing", (0.22, 0.010, 0.30), FOLDER, 0.9)
+    # its cover on the face the camera sees: held, its +y faces out and its
+    # -z is up
+    cover_png = TEXTURES / "filing.png"
+    if cover_png.exists():
+        bpy.ops.mesh.primitive_plane_add(size=1.0)
+        cover = bpy.context.object
+        cover.name = "prop.filing.cover"
+        cover.scale = (0.21, 0.288, 1.0)
+        for c in cover.users_collection:
+            c.objects.unlink(cover)
+        coll.objects.link(cover)
+        m = _mat("prop.filing.cover", FOLDER, 0.9)
+        tex = m.node_tree.nodes.new("ShaderNodeTexImage")
+        tex.image = bpy.data.images.load(str(cover_png), check_existing=True)
+        tex.extension = "CLIP"
+        m.node_tree.links.new(tex.outputs["Color"],
+                              m.node_tree.nodes["Principled BSDF"].inputs["Base Color"])
+        cover.data.materials.append(m)
+        cover.parent = rig.props["filing"]
+        cover.location = (0.0, 0.0056, 0.0)
+        cover.rotation_euler = (math.radians(-90), 0.0, 0.0)
+    for o in rig.props.values():
+        rig.parts.append(o)
+    rig.hold("")
 
 
 def _beard(name: str, head: bpy.types.Object, lift: float, m, coll, *,
@@ -647,7 +756,7 @@ def bounds(rig: Rig) -> tuple[Vector, Vector]:
     mn = Vector((1e9,) * 3)
     mx = Vector((-1e9,) * 3)
     for o in rig.parts:
-        if o.type != "MESH":
+        if o.type != "MESH" or o.hide_render:
             continue
         for c in o.bound_box:
             w = o.matrix_world @ Vector(c)

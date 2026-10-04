@@ -444,3 +444,32 @@ def test_several_windows_can_be_picked_by_retention_too():
     # Non-overlapping still holds — two clips are two moments.
     (a_start, a_end), (b_start, b_end) = windows
     assert a_end <= b_start or b_end <= a_start
+
+
+def test_the_cover_s_monitor_shows_the_price_and_its_board_stays_clear(settings, tmp_path):
+    """The 3D room's monitor is blank until a video writes on it, so the cover
+    writes the price there as the video does; not the board, which sits under
+    the cover's type in most rooms."""
+    import numpy as np
+    from PIL import Image
+
+    from pipeline.room_dressing import Dressing
+    from pipeline.thumbnail import WIDE, _room
+
+    closes = tuple(10 + i % 9 + i / 30 for i in range(200))
+    bare, plate = _room(settings, "wide", WIDE, episode="EXMPL")
+    if plate is None or "screen" not in (getattr(plate, "writable", None) or {}):
+        pytest.skip("the installed cover room has no monitor in shot")
+    got, same = _room(settings, "wide", WIDE, episode="EXMPL",
+                      dressing=Dressing(episode=0, ticker="EXMPL", closes=closes),
+                      written=tmp_path / "cover_room")
+    assert same.key == plate.key
+
+    def inside(which):
+        m = Image.open(plate.root / plate.family / plate.writable[which]["mask"])
+        return np.asarray(m.convert("L").resize(WIDE)) > 200
+
+    a, b = np.asarray(bare).astype(int), np.asarray(got).astype(int)
+    assert np.abs(a - b)[inside("screen")].mean() > 4, "nothing on the monitor"
+    if "board" in plate.writable:
+        assert (a[inside("board")] == b[inside("board")]).all(), "the board was written"

@@ -184,6 +184,35 @@ def _video_frame(path: Path, dest: Path) -> Path | None:
     return dest if dest.exists() else None
 
 
+_DENNIS_3D: dict[tuple, Path | None] = {}
+
+
+def _dennis_3d(settings: Settings, reg) -> Image.Image | None:
+    """The 3D Dennis for the sheet's host beats, when the render will draw
+    him in 3D: one still of him talking, cut to himself, drawn once and kept
+    with his shots (a sheet is seconds, and Blender per beat is not). None
+    when the render draws the kit's Dennis."""
+    from pipeline import dennis3d
+
+    key = (str(settings.assets_dir), str(settings.cache_dir), settings.dennis_3d)
+    if key not in _DENNIS_3D:
+        _DENNIS_3D[key] = None
+        try:
+            if dennis3d.usable(settings, reg, "16x9"):
+                room = reg.room_for("talk", "16x9", seed="storyboard")
+                with dennis3d.Performer(settings, cache=Path(settings.cache_dir)
+                                        / "dennis3d") as performer:
+                    _DENNIS_3D[key] = performer.still(room, (640, 360), seed="storyboard")
+        except Exception as e:  # noqa: BLE001 — the sheet still shows the beat
+            log.info("storyboard: no 3D Dennis for the host beats (%s)", e)
+    path = _DENNIS_3D[key]
+    if path is None or not path.exists():
+        return None
+    im = Image.open(path).convert("RGBA")
+    box = im.getchannel("A").point(lambda a: 255 if a > 24 else 0).getbbox()
+    return im.crop(box) if box else None
+
+
 def _thumbnail_for(seg, settings: Settings, content, tmp: Path, idx: int,
                    *, ticker: str = "", company_data=None,
                    workspace: Path | None = None) -> tuple[Image.Image | None, str]:
@@ -196,6 +225,10 @@ def _thumbnail_for(seg, settings: Settings, content, tmp: Path, idx: int,
     try:
         if kind == "host":
             from pipeline.host import pick_shot
+
+            him = _dennis_3d(settings, reg)
+            if him is not None:
+                return him, "Dennis (3D, talking)"
 
             shot = pick_shot(reg, "beat", idx)
             # The talk strip's open mouth: a storyboard of closed mouths reads

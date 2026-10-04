@@ -77,7 +77,8 @@ def cursor_on(frame: int, fps: float = BLINK_FPS) -> bool:
 
 @dataclass(frozen=True)
 class Dressing:
-    """What one episode writes in the room."""
+    """What one episode writes in the room. `episode` 0 is a short, which has
+    no number in the channel's run: its board leads with the ticker."""
     episode: int
     ticker: str
     question: str = BOARD_DEFAULT_QUESTION
@@ -196,7 +197,7 @@ def _path(closes, box, points: int = 0) -> list[tuple[float, float]]:
 def board_ink(d: Dressing, fonts: Path, size: tuple[int, int]):
     """The board's writing, as marker on a clear layer `size` big.
 
-    Top left the episode in a box, beside it the ticker; under them the
+    Top left the episode in a box (none on a short), beside it the ticker; under them the
     question, underlined; the chapters down the left; the price's run as a
     red line on two ruled axes in the corner, marked with its span and no
     value.
@@ -216,9 +217,12 @@ def board_ink(d: Dressing, fonts: Path, size: tuple[int, int]):
     asc, desc = ep.getmetrics()
     bx0, by0 = pad, pad
     bx1, by1 = bx0 + tw + 0.05 * W, by0 + asc + desc + 0.03 * H
-    dr.line(_wobble(rnd, [(bx0, by0), (bx1, by0), (bx1, by1), (bx0, by1), (bx0, by0)],
-                    0.004 * W), fill=_INK["black"] + (255,), width=stroke, joint="curve")
-    dr.text((bx0 + 0.025 * W, by0 + 0.012 * H), label, font=ep, fill=_INK["black"] + (255,))
+    if d.episode > 0:
+        dr.line(_wobble(rnd, [(bx0, by0), (bx1, by0), (bx1, by1), (bx0, by1), (bx0, by0)],
+                        0.004 * W), fill=_INK["black"] + (255,), width=stroke, joint="curve")
+        dr.text((bx0 + 0.025 * W, by0 + 0.012 * H), label, font=ep, fill=_INK["black"] + (255,))
+    else:
+        bx1 = pad - 0.05 * W        # a short has no number: the ticker leads
 
     tick = _font(fonts, "PermanentMarker.ttf", 0.15 * H)
     tx = bx1 + 0.05 * W

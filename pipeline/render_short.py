@@ -1004,20 +1004,14 @@ class _Cache:
         self.reg = reg
         self._drawn: dict[tuple, Image.Image] = {}
         self._sized: dict[tuple, Image.Image] = {}
+        self._clip: tuple[Path, Image.Image] | None = None
 
-    def plate(self, key: str, frame_i: int, values: dict[str, str],
-              w: int, h: int) -> Image.Image | None:
-        vkey = tuple(sorted(values.items()))
+    def _draw(self, key: str, frame_i: int, values: dict[str, str]) -> Image.Image | None:
+        """The plate with its values in it, at the size the kit drew it."""
         # BY THE PICTURE, NOT THE INDEX. A room's twelve-frame loop shows two
         # or three pictures, and keyed by index it held twelve decoded 4K
         # copies of them — half a gigabyte for one room shot.
-        frame = self._frame_file(key, frame_i)
-        sized_key = (key, frame, vkey, w, h)
-        hit = self._sized.get(sized_key)
-        if hit is not None:
-            return hit
-
-        drawn_key = (key, frame, vkey)
+        drawn_key = (key, self._frame_file(key, frame_i), tuple(sorted(values.items())))
         img = self._drawn.get(drawn_key)
         if img is None:
             plate = self.reg.get(key)
@@ -1032,10 +1026,60 @@ class _Cache:
             from pipeline.chart import draw_declared
             draw_declared(self.reg, plate, dict(values), img, seed=key)
             self._drawn[drawn_key] = img
+        return img
+
+    def plate(self, key: str, frame_i: int, values: dict[str, str],
+              w: int, h: int) -> Image.Image | None:
+        sized_key = (key, self._frame_file(key, frame_i),
+                     tuple(sorted(values.items())), w, h)
+        hit = self._sized.get(sized_key)
+        if hit is not None:
+            return hit
+        img = self._draw(key, frame_i, values)
+        if img is None:
+            return None
         out = img if img.size == (w, h) else img.resize(
             (max(w, 1), max(h, 1)), Image.LANCZOS)
         self._sized[sized_key] = out
         return out
+
+    def window(self, key: str, frame_i: int, values: dict[str, str], w: int, h: int,
+               window: tuple[float, float, float, float]) -> Image.Image | None:
+        """A piece of the plate blown up to `w` x `h` and softened: what is
+        behind the 3D Dennis in a close-up, which is the same camera with a
+        longer lens. Cut from the plate as the kit drew it (twice the canvas),
+        so the blow-up is not a blow-up of a frame-sized copy."""
+        sized_key = ("window", key, self._frame_file(key, frame_i),
+                     tuple(sorted(values.items())), w, h, tuple(window))
+        hit = self._sized.get(sized_key)
+        if hit is not None:
+            return hit
+        img = self._draw(key, frame_i, values)
+        if img is None:
+            return None
+        from PIL import ImageFilter
+        x0, y0, x1, y1 = window
+        W, H = img.size
+        out = img.crop((int(round(x0 * W)), int(round(y0 * H)),
+                        int(round(x1 * W)), int(round(y1 * H)))).resize(
+            (max(w, 1), max(h, 1)), Image.BICUBIC)
+        # the long's softening (`render_long._scaled_overlay_chain`)
+        out = out.filter(ImageFilter.GaussianBlur(max(w / 420, 1.5)))
+        self._sized[sized_key] = out
+        return out
+
+    def clip_frame(self, path: Path, w: int, h: int) -> Image.Image | None:
+        """One frame of the 3D Dennis's layer. Each is on screen for two or
+        three output frames and never again, so only the last one is kept."""
+        if self._clip is not None and self._clip[0] == path:
+            return self._clip[1]
+        if not path.exists():
+            return None
+        im = Image.open(path).convert("RGBA")
+        if im.size != (w, h):
+            im = im.resize((max(w, 1), max(h, 1)), Image.LANCZOS)
+        self._clip = (path, im)
+        return im
 
     def _frame_file(self, key: str, frame_i: int):
         """The file frame `frame_i` of `key` shows; the index if there is none."""
@@ -1082,10 +1126,24 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
         return                                    # the canvas IS the ground
 
     if layer.kind in ("plate", "fill"):
-        img = cache.plate(layer.entry_key, _frame_index(layer, t),
-                          layer.values, layer.w, layer.h)
+        if layer.window is not None:
+            img = cache.window(layer.entry_key, _frame_index(layer, t),
+                               layer.values, layer.w, layer.h, layer.window)
+        else:
+            img = cache.plate(layer.entry_key, _frame_index(layer, t),
+                              layer.values, layer.w, layer.h)
         if img is not None:
             canvas.alpha_composite(img, (layer.x, layer.y))
+        return
+
+    if layer.kind == "host3d":
+        # The 3D Dennis: one frame of his layer, the room's size, the desk
+        # already in front of him. Held on its last frame past its end.
+        if layer.path is not None:
+            img = cache.clip_frame(Path(layer.path) / f"d_{_frame_index(layer, t):04d}.png",
+                                   layer.w, layer.h)
+            if img is not None:
+                canvas.alpha_composite(img, (layer.x, layer.y))
         return
 
     if layer.kind == "host":
@@ -1272,6 +1330,148 @@ def final_encode(src: Path, out: Path, settings, *, captions: Path | None = None
                 "-colorspace", "bt709", "-color_primaries", "bt709",
                 "-color_trc", "bt709", "-color_range", "tv", str(out)])
     return out
+
+
+class _WithWritten:
+    """The registry, with the rooms this video wrote on answering for their
+    own keys: every frame of them is read from the written pictures, and
+    everything else asked of the registry is asked of the registry."""
+
+    def __init__(self, reg, written: dict) -> None:
+        self._reg, self._written = reg, written
+
+    def get(self, key):
+        return self._written.get(key) or self._reg.get(key)
+
+    def __getattr__(self, name):
+        return getattr(self._reg, name)
+
+
+def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
+                settings):
+    """The board and the monitor in the rooms of this cut, written for it.
+
+    THE PHONE'S ROOMS ARE THE 3D ROOM (4 Oct 2026), rendered as the long's
+    are, with the board wiped and the monitor on a flat backlight, and each
+    says where they are (`Plate.writable`). A short writes the ticker and
+    the price's run on them (`pipeline.room_dressing`; no episode number, no
+    chapters, which a short does not have), and its monitor's cursor blinks,
+    so a room layer that held still now loops. Returns the registry the
+    frames are drawn from and the rooms written; the registry itself when
+    nothing in the cut has a board or a monitor in shot.
+    """
+    from dataclasses import replace
+
+    from pipeline.room_dressing import Dressing, written_room
+
+    written: dict[str, object] = {}
+    d = None
+    for i, layer in enumerate(result.layers):
+        if layer.kind != "plate":
+            continue
+        plate = reg.get(layer.entry_key)
+        if plate is None or plate.family != "room" or not getattr(plate, "writable", None):
+            continue
+        if d is None:
+            # A series the feed failed to give is not drawn: a made-up line
+            # on his monitor is a made-up chart. A format that charts no
+            # price (`earnings`, `macro`) fetched none, so its monitor has
+            # only its prompt.
+            ok = prices is not None and not getattr(prices, "degraded", True)
+            days = int(getattr(settings, "price_history_days", 0) or 0)
+            d = Dressing(episode=0, ticker=str(ticker).upper(),
+                         closes=tuple(prices.closes) if ok else (),
+                         span=(f"{max(round(days / 365), 1)}Y" if days >= 365
+                               else f"{max(round(days / 30), 1)}M"))
+        if layer.entry_key not in written:
+            try:
+                written[layer.entry_key] = written_room(plate, d, workdir / "written",
+                                                        settings.fonts_dir)
+            except Exception as e:  # noqa: BLE001 — a board is never worth a render
+                log.warning("room: could not write on %s (%s) — it goes up blank",
+                            layer.entry_key, e)
+                continue
+        w = written[layer.entry_key]
+        result.layers[i] = replace(layer, frame_count=max(int(w.frame_count or 1), 1),
+                                   fps=int(w.fps or 0), loops=w.playback == "loop")
+    return (_WithWritten(reg, written) if written else reg), sorted(written)
+
+
+def perform_3d(result: BuildResult, reg, words, settings, *, aspect: str,
+               scale: float, seed: str, performer=None) -> list[dict]:
+    """THE 3D DENNIS IN THE SHORT (item 47; 3 Oct, "the shorts should be on
+    this engine as well").
+
+    Each host layer standing in a 3D room becomes his rendered layer, the
+    room's size, laid over the room; for a close-up the room under him
+    becomes the piece of its picture the longer lens sees, blown up and
+    softened, exactly as the long does it. The room's front layer goes: the
+    desk is already in front of him in his layer. The pose the template or
+    the words chose is the stance he plays, so the cut's pose bookkeeping is
+    the drawn Dennis's.
+
+    All or none: when any host shot has no 3D room under it, every one keeps
+    the drawn Dennis, and the log says why. Returns what each shot was, for
+    the manifest; [] when he stays drawn. `reg` is the kit's own registry.
+    """
+    from dataclasses import replace
+
+    from pipeline import dennis3d
+    from pipeline.host import host_shot
+
+    hosts = result.of_kind("host")
+    if not hosts or not dennis3d.usable(settings, reg, aspect):
+        return []
+    rooms: dict[str, Layer] = {}
+    for h in hosts:
+        room = next((l for l in result.for_shot(h.shot_id) if l.kind == "plate"
+                     and getattr(reg.get(l.entry_key), "family", "") == "room"), None)
+        if room is None or dennis3d.angle_of(reg.get(room.entry_key)) is None:
+            log.warning("3D Dennis: %s has no 3D room under him, so the whole cut "
+                        "keeps the drawn Dennis", h.shot_id)
+            return []
+        rooms[h.name] = room
+
+    own = performer is None
+    if own:
+        performer = dennis3d.Performer(settings,
+                                       cache=Path(settings.cache_dir) / "dennis3d")
+    fps = int(settings.dennis_3d_fps)
+    done: list[dict] = []
+    try:
+        for h in hosts:
+            room = rooms[h.name]
+            box = _scaled(room, scale)
+            shot = host_shot(reg, h.entry_key)
+            close = bool(shot is not None and shot.is_framing)
+            layer = performer.shot(reg.get(room.entry_key),
+                                   [w for w in words if h.t_start <= w.start < h.t_end],
+                                   h.t_start, h.dur, (box.w, box.h),
+                                   seed=f"{seed}|{h.shot_id}", stance=h.entry_key,
+                                   close=close)
+            window = performer.window(layer) if close else None
+            frames = performer.frames(layer)
+            n = len(list(frames.glob("d_*.png")))
+            him = Layer(name=f"{h.shot_id}:host3d:{h.entry_key.rsplit('/', 1)[-1]}",
+                        kind="host3d", shot_id=h.shot_id, t_start=h.t_start,
+                        t_end=h.t_end, x=room.x, y=room.y, w=room.w, h=room.h,
+                        path=frames, entry_key=h.entry_key, concept=h.concept,
+                        frame_count=max(n, 1), fps=fps, loops=False, z=h.z)
+            layers = []
+            for l in result.layers:
+                if l is h:
+                    layers.append(him)
+                elif l is room:
+                    layers.append(replace(l, window=window) if window else l)
+                elif not (l.kind == "front" and l.shot_id == h.shot_id):
+                    layers.append(l)
+            result.layers[:] = layers
+            done.append({"shot": h.shot_id, "room": room.entry_key,
+                         "stance": h.entry_key, "close_up": close, "frames": n})
+    finally:
+        if own:
+            performer.close()
+    return done
 
 
 def render_frames(result: BuildResult, resolver, duration: float,
@@ -1733,7 +1933,12 @@ def _render_short(script, tts, workspace: Path, settings, *,
     silent = workdir / "video_frames.mkv"
     scale = delivery_scale(settings, result.frame, proof=proof)
     delivered = delivered_size(result.frame, scale)
-    render_frames(result, resolver, duration, silent, settings, reg=reg,
+    frame_reg, written_rooms = dress_rooms(result, reg, ticker=getattr(script, "ticker", ""),
+                                           prices=prices, workdir=workdir,
+                                           settings=settings)
+    dennis_3d = perform_3d(result, reg, words, settings, aspect=fmt.aspect,
+                           scale=scale, seed=script.content_sha())
+    render_frames(result, resolver, duration, silent, settings, reg=frame_reg,
                   words=words, plan=plan, scale=scale)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}
     faces = getattr(render_frames, "last_faces", {}) or {}
@@ -1936,6 +2141,11 @@ def _render_short(script, tts, workspace: Path, settings, *,
         # and idle frames played, how often he blinked, and how many frames
         # held the still — which on a close-up is meant to be none.
         "host_faces": faces,
+        # The rooms whose board and monitor this video wrote on.
+        "rooms_written": written_rooms,
+        # THE 3D DENNIS (item 47): each host shot he played in 3D, or empty
+        # when the cut kept the drawn Dennis.
+        "dennis3d": dennis_3d,
         "longest_layer_hold_s": round(
             max((b - a for a, b, _ in held_layer_spans(result)), default=0.0), 3),
         # PACING, WHICH IS A PROPERTY OF THE CUT AND NOT OF THE SUITE. The
