@@ -389,7 +389,7 @@ class Stage:
             f.with_suffix(".part.png").replace(f)
         meta = {"fps": fps, "frames": len(frames), "duration": perf.frames / fps,
                 "device": self.device, "window": window}
-        (out / "perf.json").write_text(json.dumps(meta))
+        (out / "perf.json").write_text(json.dumps(meta), encoding="utf-8")
         return {"ok": True, "frames": len(frames), "out": str(out), "window": window,
                 "seconds": round(time.monotonic() - t0, 1), "device": self.device}
 

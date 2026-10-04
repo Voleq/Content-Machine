@@ -109,7 +109,7 @@ def test_he_moves_while_he_talks_and_rests_at_the_end():
 
 def test_every_kit_pose_has_a_stance_built_from_poses_and_hands_that_exist():
     import json
-    kit = json.loads((ROOT / "kit" / "roles.json").read_text())["hostPoses"]
+    kit = json.loads((ROOT / "kit" / "roles.json").read_text(encoding="utf-8"))["hostPoses"]
     for key in kit:
         assert key.split("/", 1)[1] in motion.STANCES, f"{key} has no 3D stance"
     for name, st in motion.STANCES.items():

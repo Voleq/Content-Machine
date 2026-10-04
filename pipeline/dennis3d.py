@@ -204,7 +204,7 @@ class Performer:
         run_ffmpeg(["-framerate", str(fps), "-i", str(folder / "frames" / "d_%04d.png"),
                     "-c:v", "png", "-pix_fmt", "rgba", "-f", "mov", str(part)])
         if reply.get("window"):
-            (folder / "window.json").write_text(json.dumps(reply["window"]))
+            (folder / "window.json").write_text(json.dumps(reply["window"]), encoding="utf-8")
         part.replace(layer)
         self.shots.append({"angle": angle, "aspect": aspect, "frames": reply.get("frames"),
                            "seconds": reply.get("seconds"), "device": reply.get("device")})
@@ -257,7 +257,7 @@ class Performer:
         f = Path(layer).parent / "window.json"
         if not f.exists():
             return None
-        x0, y0, x1, y1 = json.loads(f.read_text())
+        x0, y0, x1, y1 = json.loads(f.read_text(encoding="utf-8"))
         return float(x0), float(y0), float(x1), float(y1)
 
 

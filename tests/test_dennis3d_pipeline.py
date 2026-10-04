@@ -78,7 +78,7 @@ def performer(settings, tmp_path, monkeypatch):
     if shutil.which("ffmpeg") is None:
         pytest.skip("needs ffmpeg")
     fake = tmp_path / "fake_worker.py"
-    fake.write_text(FAKE)
+    fake.write_text(FAKE, encoding="utf-8")
     monkeypatch.setattr(dennis3d, "WORKER", fake)
     monkeypatch.setattr(settings, "dennis_3d_python", sys.executable)
     p = dennis3d.Performer(settings, cache=tmp_path / "cache")
@@ -99,10 +99,10 @@ def test_a_shot_comes_back_as_his_layer_and_is_drawn_once(performer, tmp_path):
     assert int(info["nb_frames"]) == 24, "two seconds at twelve drawings a second"
     calls = list((tmp_path / "cache").glob("*/calls"))
     assert len(calls) == 1
-    assert '"start": 0.2' in calls[0].read_text(), "words go over on the shot's own clock"
+    assert '"start": 0.2' in calls[0].read_text(encoding="utf-8"), "words go over on the shot's own clock"
     # The same shot again is the file on disk, not a second drawing.
     assert performer.shot(room, words, 10.0, 2.0, (320, 180), seed="EXMPL|4") == layer
-    assert len(calls[0].read_text().splitlines()) == 1
+    assert len(calls[0].read_text(encoding="utf-8").splitlines()) == 1
     assert performer.shots[-1]["cached"] is True
 
 
@@ -116,7 +116,7 @@ def test_a_shot_he_cannot_stand_in_fails_the_render(performer):
 
 def test_a_worker_that_dies_says_so(settings, tmp_path, monkeypatch):
     dead = tmp_path / "dead.py"
-    dead.write_text("import sys\nsys.stderr.write('bpy exploded')\nsys.exit(3)\n")
+    dead.write_text("import sys\nsys.stderr.write('bpy exploded')\nsys.exit(3)\n", encoding="utf-8")
     monkeypatch.setattr(dennis3d, "WORKER", dead)
     monkeypatch.setattr(settings, "dennis_3d_python", sys.executable)
     with dennis3d.Performer(settings, cache=tmp_path / "c") as p:
@@ -141,7 +141,7 @@ def test_a_two_shot_tells_him_where_the_evidence_is(performer):
 
     layer = performer.shot(_room("room/panel-left-16x9"), [], 0.0, 1.0, (320, 180),
                            seed="x", stance="host/gesturing-at-plate", plate=(0.71, 0.5))
-    job = json.loads((layer.parent / "job.json").read_text())
+    job = json.loads((layer.parent / "job.json").read_text(encoding="utf-8"))
     assert job["plate"] == [0.71, 0.5] and job["stance"] == "host/gesturing-at-plate"
 
 
@@ -212,7 +212,7 @@ def test_the_short_s_close_up_is_his_3d_layer_over_a_blown_up_room(short_3d):
     assert (Path(him.path) / "d_0023.png").exists()
     assert room.window == (0.25, 0.1, 0.5, 0.35), "behind him, the piece the lens sees"
     assert "the-turn:caption" in [l.name for l in result.layers]
-    job = json.loads((Path(him.path).parent / "job.json").read_text())
+    job = json.loads((Path(him.path).parent / "job.json").read_text(encoding="utf-8"))
     assert job["aspect"] == "9x16" and job["close"] and job["stance"] == "host/close-up"
     assert job["size"] == [1440, 2560], "drawn at the file's size, not the layout's"
     assert [w["word"] for w in job["words"]] == ["Plus", "squeeze."], "only his own line"
@@ -309,7 +309,7 @@ def test_a_3d_video_s_cover_has_the_3d_dennis_and_never_the_drawn_one(performer,
     assert px[1280 - 47 - 160, 450] == (60, 90, 140), "the 3D Dennis is on the cover"
     assert px[1280 - 47 - 160, 720 - 3] != (60, 90, 140)
     assert not any(px[x, y] == (220, 20, 20) for x in range(0, 1280, 8) for y in range(0, 720, 8))
-    job = json.loads(next(performer.cache.glob("*/job.json")).read_text())
+    job = json.loads(next(performer.cache.glob("*/job.json")).read_text(encoding="utf-8"))
     assert job["still"] and job["stance"] == "host/arms-crossed" and job["size"] == [1280, 720]
     assert (next(performer.cache.glob("*/still.png"))).exists()
 
@@ -370,7 +370,7 @@ def long_3d(tmp_path_factory):
     if dennis3d.drawn_rooms(load_plates(settings.assets_dir), "16x9"):
         pytest.skip("the kit's long rooms are not the 3D room (run the kit ingest)")
     fake = tmp / "fake_worker.py"
-    fake.write_text(FAKE)
+    fake.write_text(FAKE, encoding="utf-8")
     script, _ = parse_long_script(RAW, "EXMPL", settings)
     ws = settings.workspace_dir / "EXMPL" / "test"
     ws.mkdir(parents=True)
@@ -396,7 +396,7 @@ def test_a_3d_long_draws_every_shot_of_him_in_3d_and_none_drawn(long_3d):
     assert any(s.get("two_shot") for s in shots), "the both-true plate stands him beside it"
     # never one drawn shot among the 3D ones
     assert all(m.get("dennis3d") for m in manifest["host_motion"]), manifest["host_motion"]
-    jobs = [json.loads(f.read_text())
+    jobs = [json.loads(f.read_text(encoding="utf-8"))
             for f in (settings.cache_dir / "dennis3d").glob("*/job.json")]
     assert len(jobs) == len(shots) and all(j["size"] == [640, 360] for j in jobs)
     assert any("plate" in j for j in jobs), "the two-shot told him where the evidence is"
