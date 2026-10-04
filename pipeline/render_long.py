@@ -1867,13 +1867,14 @@ def _render_long(
                                 "draws_in_at": round(seg.start + delay, 3)})
             return _listing("room", room_clip, loop), front
 
-        def _room_input(room) -> int:
+        def _room_input(room, *, draw_in: bool = True) -> int:
             """The room as an input: its loop where it moves, else its still.
 
             Demuxer-looped like a gif, and trimmed to the beat by the chain
-            that reads it, exactly as the still is.
+            that reads it, exactly as the still is. `draw_in` False on a
+            two-shot, whose evidence stands where the monitor is.
             """
-            intro = _screen_intro(room)
+            intro = _screen_intro(room) if draw_in else None
             if intro is not None:
                 screen_front[i] = intro[1]
                 return _add_input(["-f", "concat", "-safe", "0", "-i", str(intro[0])])
@@ -1921,7 +1922,7 @@ def _render_long(
             host_used[pose_built] = host_used.get(pose_built, 0) + 1
             if motion:
                 host_motion.append({"segment": i, "two_shot": True, **motion})
-            bg_i = _room_input(room)
+            bg_i = _room_input(room, draw_in=False)
             host_i = _add_input(["-i", str(built[0])])
             front = _front_file(room)
             front_i = _front_input(room, front) if front is not None else None
