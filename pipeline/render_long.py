@@ -775,6 +775,24 @@ def _render_long(
                 else CHAPTER_OPENER_S)
         covers.append((t - _wipe_on, t + hold))
 
+    # WHAT HIS MONITOR SHOWS, CHAPTER BY CHAPTER (items 49, 56): a plate the
+    # chapter puts on screen, the writer's [SCREEN] where there is one, else
+    # the bot's pick, else the price's run. A chapter's window opens on the
+    # cut its opener lands on, so the monitor changes under the bumper.
+    from pipeline.room_screen import pick_at, plan_screens, screen_tags
+
+    _starts = [c if c is not None else t
+               for (t, _ti, _ty), c in zip(chapters, chapter_cuts)]
+    if _starts:
+        _starts[0] = 0.0
+    for _k in range(1, len(_starts)):
+        _starts[_k] = max(_starts[_k], _starts[_k - 1])
+    screen_windows = [(a, _starts[k + 1] if k + 1 < len(_starts) else duration)
+                      for k, a in enumerate(_starts)]
+    screen_picks = plan_screens(
+        segments, screen_windows, screen_tags(script, tts.words),
+        warn=lambda m: log.warning("screen: %s", m))
+
     px = lambda v: int(round(v * W / 1920))  # noqa: E731  (1920-wide design)
 
     def progress(done: int, total: int) -> None:
@@ -899,15 +917,65 @@ def _render_long(
                 span=f"{max(round(days / 365), 1)}Y"), series))
         return room_dressing[0][0]
 
+    # THE PROGRAMME TIME THE ROOM IS BEING READ FOR: the beat being drawn, or
+    # the chapter opener's cut. A room with the monitor in shot is written
+    # once per chapter picture, so the time says which one.
+    room_now = [0.0]
+    screen_dressings: dict[int, object] = {}
+
+    def _screen_picture(pick) -> Path | None:
+        """The plate the chapter's monitor carries, drawn with the beat's own
+        figures the way the beat draws it; None for the price's run."""
+        from pipeline.plate_frames import render_frame, render_still
+
+        if pick is None or pick.seg_index is None:
+            return None
+        seg = segments[pick.seg_index]
+        plate = reg.get(pick.plate_key)
+        if plate is None:
+            return None
+        values = dict(seg.payload.get("values") or {})
+        seed = f"{plate.key}|{pick.seg_index}"
+        try:
+            if plate.animated:
+                img = render_frame(plate, 0, values, settings, reg).convert("RGBA")
+                data = declared_layer(reg, plate, values, seed=seed)
+                if data is not None:
+                    img.alpha_composite(data)
+            else:
+                img = render_still(plate, values, settings, reg).convert("RGBA")
+                draw_declared(reg, plate, values, img, seed=seed)
+        except Exception as e:  # noqa: BLE001 — a monitor is never worth a render
+            log.warning("screen: chapter %d could not draw %s (%s) — the monitor "
+                        "shows the price", pick.chapter + 1, plate.key, e)
+            return None
+        img.thumbnail((1600, 900), Image.LANCZOS)
+        dest = rdir / f"screen_{pick.chapter}_{plate.name[:32]}.png"
+        img.save(dest)
+        return dest
+
+    def _screen_dressing(at: float):
+        base = _dressing()
+        pick = pick_at(screen_picks, at)
+        if pick is None:
+            return base
+        if pick.chapter not in screen_dressings:
+            pic = _screen_picture(pick)
+            title = chapters[pick.chapter][1] if pick.chapter < len(chapters) else ""
+            screen_dressings[pick.chapter] = base.showing(pic, title)
+        return screen_dressings[pick.chapter]
+
     def _written(plate):
         """`plate` with the episode written on its board and monitor."""
         if plate is None or not getattr(plate, "writable", None):
             return plate
-        k = (plate.key, plate.weather)
+        d = (_screen_dressing(room_now[0]) if "screen" in plate.writable
+             else _dressing())
+        k = (plate.key, plate.weather, d.fingerprint)
         if k not in written_rooms:
             from pipeline.room_dressing import written_room
 
-            written_rooms[k] = written_room(plate, _dressing(), rdir / "written",
+            written_rooms[k] = written_room(plate, d, rdir / "written",
                                             settings.fonts_dir)
         return written_rooms[k]
 
@@ -915,7 +983,7 @@ def _render_long(
         """A room plate rasterised at the frame's size, once per video."""
         plates_used.add(plate.key)
         plate = _written(plate)
-        key = (plate.key, "")
+        key = (plate.key, str(plate.root))
         if key not in room_cache:
             # The cache filename carries a hash of the SOURCE PLATE (D3).
             # Keyed on the plate NAME alone, a workspace kept its pre-ingest
@@ -941,29 +1009,40 @@ def _render_long(
         import hashlib
 
         plates_used.add(plate.key)
-        key = (plate.key, f"{kind}-loop-{plate.weather}")
+        key = (plate.key, f"{kind}-loop-{plate.weather}-{plate.root}")
         if key not in room_cache:
             stamp = hashlib.sha256("|".join(
                 _plate_fingerprint(f) for f in files).encode()).hexdigest()[:8]
             weather = f"_{plate.weather}" if plate.weather else ""
             dest = rdir / f"{kind}loop_{plate.name}{weather}_{stamp}_{fps}.mov"
+            # A blinking cursor is twelve frames over two pictures: each
+            # picture is opened and brought down to the frame once.
+            opened: dict[Path, Image.Image] = {}
+
+            def _frame(i: int) -> Image.Image:
+                f = files[i]
+                if f not in opened:
+                    opened[f] = Image.open(f).convert(mode).resize(
+                        (W, H), Image.LANCZOS)
+                return opened[f]
+
             room_cache[key] = _played_clip(
-                frame_indices(plate, playback_seconds(plate), fps),
-                lambda i: Image.open(files[i]).convert(mode).resize(
-                    (W, H), Image.LANCZOS),
+                frame_indices(plate, playback_seconds(plate), fps), _frame,
                 fps, dest)
         return room_cache[key]
 
     def _room_loop(plate) -> Path | None:
         """A room that keeps moving behind him, as a clip; None if it is still.
 
-        THE ROOM LOOPS ARE BAKED INTO THE ROOM'S FRAMES (item 19): a screen
-        that dips, a lamp that flickers, bulbs, snow or rain in the window.
-        Held on its base file the room is frame one of that loop, frozen.
+        THE ROOM LOOPS ARE BAKED INTO THE ROOM'S FRAMES (item 19): bulbs,
+        snow or rain in the window, and the cursor on his monitor's prompt
+        (item 54), which makes any room with the monitor in shot loop once
+        it is written. Held on its base file the room is frame one of that
+        loop, frozen.
         """
+        plate = _written(plate)
         if not plate.animated or plate.plays_once:
             return None
-        plate = _written(plate)
         return _loop_of(plate, plate.frame_paths(), "room", "RGB")
 
     def _front_loop(room) -> Path | None:
@@ -973,9 +1052,9 @@ def _render_long(
         the lamp — so a front held still over a moving room paints the
         flicker out exactly where it shows.
         """
+        room = _written(room)
         if not room.animated or room.plays_once:
             return None
-        room = _written(room)
         fronts = [room.front_path(i) for i in range(len(room.frames))]
         if any(f is None or not f.exists() for f in fronts) \
                 or len({str(f) for f in fronts}) < 2:
@@ -989,10 +1068,11 @@ def _render_long(
         whole room plus this layer: he goes between them, and pasting him over
         the whole room put the desk behind his legs.
         """
-        src = front_of(_written(room))
+        written = _written(room)
+        src = front_of(written)
         if src is None:
             return None
-        key = (room.key, "front")
+        key = (room.key, f"front-{written.root}")
         if key not in room_cache:
             dest = rdir / f"front_{room.name}_{_plate_fingerprint(src)}.png"
             if not dest.exists():
@@ -1681,12 +1761,19 @@ def _render_long(
         n_inputs += 1
         return n_inputs - 1
 
+    # The chapters whose picture has drawn itself in, and the beat's desk to
+    # go with it (item 54); what drew in where goes on the manifest.
+    screen_intro_done: set[int] = set()
+    screen_front: dict[int, Path | None] = {}
+    screen_meta: list[dict] = []
+
     def _annotated(seg) -> bool:
         """Whether a mark lands on this beat."""
         return any(seg.start - 1e-6 <= c.t < seg.end for c in scribble_cues)
 
 
     for i, seg in enumerate(segments):
+        room_now[0] = seg.start
         seg_len = seg.length
         seg_inputs = []
         n_inputs = 0
@@ -1728,12 +1815,68 @@ def _render_long(
             args = ["-stream_loop", "-1"] if visual.loops else []
             return _add_input([*args, "-i", str(visual.path)])
 
+        def _screen_intro(room) -> tuple[Path, Path | None] | None:
+            """THE CHAPTER'S PICTURE DRAWING ITSELF ON HIS MONITOR (item 54).
+
+            On the chapter's first shot of a room with the monitor in shot,
+            once the frame is clear of the bumper: a second of the chart going
+            on, then the room's loop. As (room, front) ffconcat listings: the
+            draw-in clip, then the loop as many times as the beat needs, read
+            as one input, so nothing downstream knows it is two clips. None
+            when this is not that shot or it is too short to draw in.
+            """
+            from pipeline.room_dressing import BLINK_FPS, REVEAL_FRAMES, reveal_frames
+
+            if room is None or "screen" not in (getattr(room, "writable", None) or {}):
+                return None
+            pick = pick_at(screen_picks, seg.start)
+            if pick is None or pick.chapter in screen_intro_done:
+                return None
+            delay = max(_cleared(seg.start, covers) - seg.start, 0.0)
+            reveal_s = REVEAL_FRAMES / BLINK_FPS
+            if delay + reveal_s > seg_len - 0.2:
+                return None
+            loop, front_loop = _room_loop(room), _front_loop(room)
+            frames = reveal_frames(room, _screen_dressing(seg.start),
+                                   settings.fonts_dir, (W, H))
+            if not frames or loop is None:
+                return None
+            screen_intro_done.add(pick.chapter)
+            idx = ([0] * int(round(delay * fps))
+                   + [min(int(j / fps * BLINK_FPS), len(frames) - 1)
+                      for j in range(int(round(reveal_s * fps)))])
+            passes = int(seg_len - delay - reveal_s) + 2
+
+            def _listing(name: str, clip: Path, tail_loop: Path) -> Path:
+                lst = rdir / f"screenin_{i}_{name}.ffconcat"
+                lst.write_text("ffconcat version 1.0\n" + "".join(
+                    f"file '{p}'\n" for p in [clip] + [tail_loop] * passes),
+                    encoding="utf-8")
+                return lst
+
+            room_clip = _played_clip(idx, lambda k: frames[k][0], fps,
+                                     rdir / f"screenin_{i}_room.mov", reuse=False)
+            front = None
+            if front_loop is not None and frames[0][1] is not None:
+                front_clip = _played_clip(idx, lambda k: frames[k][1], fps,
+                                          rdir / f"screenin_{i}_front.mov",
+                                          reuse=False)
+                front = _listing("front", front_clip, front_loop)
+            screen_meta.append({"segment": i, "chapter": pick.chapter + 1,
+                                "room": room.key,
+                                "draws_in_at": round(seg.start + delay, 3)})
+            return _listing("room", room_clip, loop), front
+
         def _room_input(room) -> int:
             """The room as an input: its loop where it moves, else its still.
 
             Demuxer-looped like a gif, and trimmed to the beat by the chain
             that reads it, exactly as the still is.
             """
+            intro = _screen_intro(room)
+            if intro is not None:
+                screen_front[i] = intro[1]
+                return _add_input(["-f", "concat", "-safe", "0", "-i", str(intro[0])])
             loop = _room_loop(room)
             if loop is None:
                 return _still_input(_room_file(room))
@@ -1741,6 +1884,9 @@ def _render_long(
 
         def _front_input(room, still: Path) -> int:
             """The desk in front of him, moving with the room behind him."""
+            if screen_front.get(i) is not None:
+                return _add_input(["-f", "concat", "-safe", "0",
+                                   "-i", str(screen_front[i])])
             loop = _front_loop(room)
             if loop is None:
                 return _still_input(still)
@@ -2189,6 +2335,7 @@ def _render_long(
         else:
             # A chapter opener is the room with the title in its slot, and a
             # room that loops (snow, rain, flicker) is a clip.
+            room_now[0] = t
             cs_path = _chapter_opener(title, k, at=t)
             layers.append(OverlayLayer(
                 path=cs_path, x=0, y=0, t_start=t,
@@ -2656,6 +2803,13 @@ def _render_long(
         # key, the kit's slot and box for it, programme time `t` and the time
         # `at` into its plate `segment`. See `timeline.WriterMove`.
         "writer_moves": [m.to_json() for m in writer_moves],
+        # WHAT HIS MONITOR SHOWED, chapter by chapter, and who chose it
+        # (items 49, 56), and the shots it drew itself in on (item 54).
+        "monitor": [{"chapter": p.chapter + 1, "from": round(p.start, 3),
+                     "to": round(p.end, 3),
+                     "shows": p.plate_key or "price", "by": p.by}
+                    for p in screen_picks],
+        "monitor_draw_ins": screen_meta,
         "move_warnings": move_warnings,
         # The wide room the cold open's first shot was in, as a base key.
         # The next video reads it to take its turn on the other one, and the

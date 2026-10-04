@@ -1048,6 +1048,17 @@ env var, case-insensitive).
   `[BOARD: what are we paying for?]` (that is also the default); the short
   strips it. No Blender is needed here: the renders are committed and
   **rerun `python scripts/ingest_kit.py kit` after pulling this.**
+- **His monitor follows the chapter.** Through each chapter the monitor shows
+  a plate that chapter puts on screen, drawn with the same figures
+  (`pipeline/room_screen.py`): the writer names it with `[SCREEN: bars-6y]`
+  anywhere in the chapter, or `[SCREEN: price]` for the 5-year chart; without
+  one the bot takes the chapter's first chart, figure, peer or cycle plate,
+  then its first table, then the price. A cursor blinks on the terminal's
+  prompt line, so a room with the monitor in shot is a one-second loop, and
+  the first shot of each chapter with the monitor in it draws the picture in
+  over a second, after the bumper has lifted. The manifest's `monitor` says
+  what each chapter showed and who chose it; `monitor_draw_ins` says where it
+  drew in. The short strips `[SCREEN]`.
 - **The long's lower third is design's.** `overlays/lower-third` with the
   ticker and the channel's line in its slots, top-left and 640 px wide on a
   1920 frame (design's 820 runs into the close-up's head), on the beats of
