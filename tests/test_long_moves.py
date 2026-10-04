@@ -318,6 +318,55 @@ def test_a_row_is_off_the_sheet_until_its_word(reg, settings):
     assert (before[box1] == after[box1]).all(), "row 1 changed"
 
 
+def test_a_row_not_yet_said_leaves_no_bullet(reg, settings):
+    """The ladder draws a bullet in each step's band; a step he has not named
+    yet shows none of it, only the plate's ground."""
+    key = "structure/unit-ladder-16x9"
+    plate = reg.get(key)
+    values = {"top-label": "Revenue", "top-value": "496",
+              **{f"step-{i}-label": f"Cost {i}" for i in range(1, 6)},
+              **{f"step-{i}-value": f"-{i}0" for i in range(1, 6)}}
+    from types import SimpleNamespace
+
+    layer = SimpleNamespace(kind="plate", name="s", entry_key=key, values=values,
+                            x=0, y=0, w=1920, h=1080, seed="")
+    mv = MV.Move("row-on", "s", "s", "band-3", 1.0, 1)
+    comp = MV.MoveCompositor(MV.MovePlan(moves=[mv]), reg, settings, None)
+    before = np.asarray(comp.frame(layer, 0.5, 0).convert("RGB")).astype(int)
+    k = before.shape[1] / plate.canvas[0]
+    b = plate.slots["band-3"]
+    inside = before[int(b.y * k) + 2:int((b.y + b.h) * k) - 2,
+                    int(b.x * k) + 2:int((b.x + b.w) * k) - 2]
+    assert np.ptp(inside.reshape(-1, 3), axis=0).max() <= 2, "the unsaid row left marks"
+    after = np.asarray(comp.frame(layer, 1.2, 0).convert("RGB")).astype(int)
+    shown = after[int(b.y * k) + 2:int((b.y + b.h) * k) - 2,
+                  int(b.x * k) + 2:int((b.x + b.w) * k) - 2]
+    assert np.ptp(shown.reshape(-1, 3), axis=0).max() > 40, "the row never came on"
+
+
+def test_a_row_not_yet_said_keeps_the_sheet(reg, settings):
+    """A numbers sheet's column rules and zebra run through every row: they
+    are the sheet, so an unsaid row keeps them and only its type waits."""
+    key = "tables/numbers-sheet-4r-16x9"
+    plate = reg.get(key)
+    values = {n: "12.4" for n, sl in plate.slots.items() if sl.is_text}
+    from types import SimpleNamespace
+
+    layer = SimpleNamespace(kind="plate", name="s", entry_key=key, values=values,
+                            x=0, y=0, w=1920, h=1080, seed="")
+    mv = MV.Move("row-on", "s", "s", "band-3", 1.0, 1)
+    comp = MV.MoveCompositor(MV.MovePlan(moves=[mv]), reg, settings, None)
+    before = np.asarray(comp.frame(layer, 0.5, 0).convert("RGB")).astype(int)
+    from pipeline.plate_frames import render_frame
+
+    bare = np.asarray(render_frame(plate, 0, {}, settings, reg).convert("RGB")
+                      .resize((before.shape[1], before.shape[0]))).astype(int)
+    k = before.shape[1] / plate.canvas[0]
+    b = plate.slots["band-3"]
+    box = (slice(int(b.y * k), int((b.y + b.h) * k)), slice(int(b.x * k), int((b.x + b.w) * k)))
+    assert np.abs(before[box] - bare[box]).max() <= 8, "the unsaid row lost the sheet's lines"
+
+
 def test_a_card_s_figure_goes_on_with_its_word(reg, settings):
     key = "figures/big-number-l1-16x9"
     values = {"kicker": "GROSS MARGIN", "value": "58%", "label": "on the LTM"}

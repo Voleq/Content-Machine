@@ -1077,6 +1077,64 @@ class MoveCompositor:
             plate, frame_i, {**{b: "1" for b in bands}, **dict(text)},
             self.settings, self.reg))
 
+    def _clear_rows(self, img, plate, frame_i: int, bands: list[str]) -> None:
+        """A row he has not said yet leaves no trace (item 57): a mark the art
+        draws inside its band, a ladder's bullet or a tick, goes under the
+        band's own ground until the row comes on. What reaches the band's edge
+        stays: a column rule, the rules between rows, a zebra stripe are the
+        sheet, not the row."""
+        if not bands:
+            return
+        s = max(int(plate.export_scale or 1), 1)
+        for name in bands:
+            sl = plate.slots[name]
+            box = (int(sl.x * s), int(sl.y * s), int((sl.x + sl.w) * s), int((sl.y + sl.h) * s))
+            marks = self._part(("row-marks", plate.key, frame_i, box),
+                               lambda: self._row_marks(plate, frame_i, box) or False)
+            if marks:
+                img.paste(marks[0], box, marks[1])
+
+    def _row_marks(self, plate, frame_i: int, box: tuple[int, int, int, int]):
+        """(ground colour, mask) of the marks standing alone inside `box` on
+        the bare art, or None. A mark is a run of pixels well off the band's
+        median; one connected to the band's edge belongs to the sheet."""
+        import numpy as np
+        from PIL import Image, ImageFilter
+
+        bare = np.asarray(self._base(plate, frame_i, (), ()).convert("RGB").crop(box)).astype(np.int16)
+        if not bare.size:
+            return None
+        ground = np.median(bare.reshape(-1, 3), axis=0)
+        far = np.abs(bare - ground).max(axis=2) > 24
+        if not far.any():
+            return None
+        # Grow the edge's marks through the far pixels on a 4x coarser grid
+        # (a rule 340 px tall is then 85 steps, not 340).
+        k = 4
+        h, w = far.shape
+        coarse = np.zeros((-(-h // k) * k, -(-w // k) * k), bool)
+        coarse[:h, :w] = far
+        coarse = coarse.reshape(coarse.shape[0] // k, k, coarse.shape[1] // k, k).any(axis=(1, 3))
+        sheet = np.zeros_like(coarse)
+        sheet[[0, -1], :] = coarse[[0, -1], :]
+        sheet[:, [0, -1]] |= coarse[:, [0, -1]]
+        while True:
+            grown = sheet.copy()
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    grown[max(dy, 0):grown.shape[0] + min(dy, 0), max(dx, 0):grown.shape[1] + min(dx, 0)] |= \
+                        sheet[max(-dy, 0):sheet.shape[0] + min(-dy, 0), max(-dx, 0):sheet.shape[1] + min(-dx, 0)]
+            grown &= coarse
+            if (grown == sheet).all():
+                break
+            sheet = grown
+        alone = far & ~np.repeat(np.repeat(sheet, k, 0), k, 1)[:h, :w]
+        if not alone.any():
+            return None
+        # Two pixels wider, so a mark's soft edge goes with it.
+        mask = Image.fromarray(alone.astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(5))
+        return tuple(int(c) for c in ground) + (255,), mask
+
     def _data(self, plate, values: tuple, seed: str = ""):
         from pipeline.chart import declared_layer
 
@@ -1171,6 +1229,9 @@ class MoveCompositor:
             img = self._base(plate, frame_i, bands, text).copy()
         else:
             img = self._base(plate, frame_i, bands, ()).copy()
+        if withheld:
+            self._clear_rows(img, plate, frame_i, sorted(n for n in withheld if is_band(n)))
+        if sweeping:
             for m, f in sweeping:
                 if f is not None:
                     self._draw_band(img, plate, m, f)
