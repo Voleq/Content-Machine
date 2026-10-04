@@ -184,3 +184,23 @@ def test_head_in_hands_keeps_his_mouth_still():
     perf = _perf(stance="head-in-hands")
     mouths = [k for k in perf.channels if k.startswith("mouth.")]
     assert mouths and all(v == 0.0 for k in mouths for v in perf.channels[k])
+
+
+def test_in_close_up_he_points_at_nothing_and_looks_down_the_lens():
+    perf = _perf(looks={"screen": SCREEN}, stance="host/close-up")
+    yaw = [n + h for n, h in zip(perf.channels["neck.z"], perf.channels["head.z"])]
+    assert max(abs(y) for y in yaw) < 12, "no turn to the screen"
+    pointing = [perf.channels[f"curl.R.middle"][i] == 100 and perf.channels["curl.R.index"][i] == 0
+                for i in range(perf.frames)]
+    assert not any(pointing)
+
+
+def test_in_close_up_his_hands_talk_under_the_frame():
+    """A hand brought up to the chest comes into a close-up at its edge,
+    palm out and cut off, and reads as a wave. In close-up his hands talk at
+    the belt: the arm still moves on the words, under the frame."""
+    perf = _perf(stance="host/close-up")
+    for side in "LR":
+        assert min(perf.channels[f"shoulder.{side}.x"]) > -22, f"{side} hand came up"
+    assert min(min(perf.channels["elbow.L.x"]), min(perf.channels["elbow.R.x"])) < -45, \
+        "and they do still talk"

@@ -1492,7 +1492,8 @@ def _render_long(
     def _scaled_overlay_chain(bg_i: int, fg_i: int, x: int, y: int,
                               w: int, h: int, seg_len: float, tail: str, *,
                               loop: bool = False,
-                              front_i: int | None = None) -> str:
+                              front_i: int | None = None,
+                              window: tuple[float, float, float, float] | None = None) -> str:
         """A layer over the room, scaled into its box, as one concat-ready
         segment stream.
 
@@ -1504,7 +1505,17 @@ def _render_long(
 
         `front_i` is a full-frame still laid over the result — the room's
         front layer, so the desk he stands behind is in front of him.
+
+        `window` is the 3D close-up's: the piece of the room (0-1, from the
+        top left) its longer lens sees, blown up to the frame and softened,
+        as the room is out of focus behind a face that close.
         """
+        soften = ""
+        if window:
+            x0, y0, x1, y1 = window
+            cw, ch = max(int((x1 - x0) * W), 2), max(int((y1 - y0) * H), 2)
+            soften = (f",crop={cw}:{ch}:{max(int(x0 * W), 0)}:{max(int(y0 * H), 0)},"
+                      f"scale={W}:{H}:flags=bicubic,gblur=sigma={max(W / 420, 1.5):.1f}")
         fg = (f"[{fg_i}:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,"
               f"trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,scale={w}:{h}[hfg];"
               if loop else
@@ -1524,7 +1535,7 @@ def _render_long(
             )
         return (
             f"[{bg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-            f"scale={W}:{H}[hbg];"
+            f"scale={W}:{H}{soften}[hbg];"
             + fg +
             f"[hbg][hfg]overlay={x}:{y}:eof_action=repeat"
             f"{tail}"
@@ -1764,6 +1775,25 @@ def _render_long(
         return (bx + max(int((max_w - ew) / 2), 0),
                 by + max(int((max_h - eh) / 2), 0), ew, eh)
 
+    def _clear_of(him: tuple[int, int, int, int], side: str, size: tuple[int, int],
+                  rect: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+        """`rect` for evidence of `size`, moved off the 3D Dennis where he
+        reaches into it: refitted, centred, into the side of the frame his
+        pixels (`him`, x0 y0 x1 y1) leave free."""
+        x0, _y0, x1, _y1 = him
+        ex, _ey, ew, _eh = rect
+        if side == "right" and x1 + px(60) > ex:
+            left, right = x1 + px(60), W - px(60)
+        elif side == "left" and ex + ew > x0 - px(60):
+            left, right = px(60), x0 - px(60)
+        else:
+            return rect
+        max_w, max_h = max(right - left, px(400)), int(H * 0.80)
+        ratio = min(max_w / max(size[0], 1), max_h / max(size[1], 1))
+        nw, nh = max(int(size[0] * ratio), 1), max(int(size[1] * ratio), 1)
+        return (left + max(int((max_w - nw) / 2), 0),
+                int(H * 0.10) + max(int((max_h - nh) / 2), 0), nw, nh)
+
     # Where each beat's evidence actually landed in the frame. A plate in a
     # two-shot is not drawn at the full frame — it is shrunk into the room's
     # evidence column beside the host — so anything that has to line up with a
@@ -1825,11 +1855,37 @@ def _render_long(
     push_meta: list[dict] = []
 
     # THE 3D DENNIS (item 47): one Blender process for the render, asked for
-    # each shot he stands in a 3D room. None draws the kit's Dennis.
+    # each shot he stands in a 3D room. None draws the kit's Dennis, and so
+    # does a kit with any drawn room left in it: he is 3D in every shot of a
+    # video or in none (`dennis3d.usable`).
     from pipeline import dennis3d
     performer = (dennis3d.Performer(settings, cache=Path(settings.cache_dir) / "dennis3d")
-                 if dennis3d.wanted(settings) else None)
+                 if dennis3d.usable(settings, reg, aspect) else None)
     dennis3d_meta: list[dict] = []
+
+    def _pose_3d(seg_i: int, seg, room, pose: str | None) -> tuple[str, bool]:
+        """(the kit pose the 3D Dennis plays on a beat, whether it is the
+        close-up), chosen exactly as the drawn one's would be: the writer's,
+        else one the words cast, else the role's turn, the close-up on the
+        line a chapter rests on."""
+        role_name = "beat" if pose else "rests-on" if seg_i in lands_a_chapter else "beat"
+        cast = (cast_pose(reg, _words_in(seg), room=room, closing=seg_i == closing_beat,
+                          used=host_used, avoid=_avoid_recent,
+                          previous=_shown_before(seg_i), seed=f"{script.ticker}|{seg_i}")
+                if role_name == "beat" and not pose else None)
+        chosen = pose or (cast.pose if cast else None)
+        shot = (host_shot(reg, chosen) if chosen else None) \
+            or pick_shot(reg, role_name, seg_i, used=host_used)
+        key = shot.key if shot is not None else (chosen or "")
+        return key, bool(shot is not None and shot.is_framing)
+
+    def _count_3d(seg_i: int, key: str, **extra) -> None:
+        """The 3D pose counts as shown, as a drawn one would: its cap per
+        video, the next beat's cast, the next video's rotation."""
+        if key:
+            host_used[key] = host_used.get(key, 0) + 1
+            plates_used.add(key)
+        host_motion.append({"segment": seg_i, "pose": key, "dennis3d": True, **extra})
 
     def _annotated(seg) -> bool:
         """Whether a mark lands on this beat."""
@@ -2045,29 +2101,50 @@ def _render_long(
             picked = _panel_host(room, i)
             if picked is None:
                 return None
-            shot, (hx, hy, hw, hh), _side = picked
-            motion: dict = {}
-            built = build_host_clip(
-                tts.words, seg.start, seg.end, rdir / f"host_{i}.mov",
-                reg=reg, settings=settings, fps=fps, display_h=hh,
-                role="panel", shot_index=i, used=host_used, report=motion,
-                pose=shot.key)
-            if built is None:
-                return None
-            ex, ey, ew, eh = _evidence_rect(size[0], size[1], i, two_shot=True)
-            panel_rects[i] = (ex, ey, ew, eh)
-            pose_built = str(motion.get("pose") or shot.key)
-            panel_hosts[i] = pose_built
-            plates_used.update((room.key, pose_built))
-            host_used[pose_built] = host_used.get(pose_built, 0) + 1
-            if motion:
-                host_motion.append({"segment": i, "two_shot": True, **motion})
-            bg_i = _room_input(room, draw_in=False)
-            host_i = _add_input(["-i", str(built[0])])
-            front = _front_file(room)
-            front_i = _front_input(room, front) if front is not None else None
-            chain = _scaled_overlay_chain(bg_i, host_i, hx, hy, hw, hh, seg_len,
-                                          "[tsbase];", front_i=front_i)
+            shot, (hx, hy, hw, hh), side = picked
+            if performer is not None and dennis3d.angle_of(room):
+                # THE 3D DENNIS BESIDE THE EVIDENCE: told where it sits so he
+                # can show it or read it, and the evidence then kept clear of
+                # every pixel of him, an arm held out to it included.
+                ex, ey, ew, eh = _evidence_rect(size[0], size[1], i, two_shot=True)
+                layer = performer.shot(room, _words_in(seg), seg.start, seg_len, (W, H),
+                                       seed=f"{script.ticker}|{i}", stance=shot.key,
+                                       plate=((ex + ew / 2) / W, (ey + eh / 2) / H))
+                him = dennis3d.extent(layer, (W, H))
+                if him is not None:
+                    ex, ey, ew, eh = _clear_of(him, side, size, (ex, ey, ew, eh))
+                panel_rects[i] = (ex, ey, ew, eh)
+                panel_hosts[i] = shot.key
+                plates_used.add(room.key)
+                _count_3d(i, shot.key, two_shot=True)
+                dennis3d_meta.append({"segment": i, "room": room.key, "stance": shot.key,
+                                      "two_shot": True})
+                bg_i = _room_input(room, draw_in=False)
+                host_i = _add_input(["-i", str(layer)])
+                chain = _scaled_overlay_chain(bg_i, host_i, 0, 0, W, H, seg_len, "[tsbase];")
+            else:
+                motion: dict = {}
+                built = build_host_clip(
+                    tts.words, seg.start, seg.end, rdir / f"host_{i}.mov",
+                    reg=reg, settings=settings, fps=fps, display_h=hh,
+                    role="panel", shot_index=i, used=host_used, report=motion,
+                    pose=shot.key)
+                if built is None:
+                    return None
+                ex, ey, ew, eh = _evidence_rect(size[0], size[1], i, two_shot=True)
+                panel_rects[i] = (ex, ey, ew, eh)
+                pose_built = str(motion.get("pose") or shot.key)
+                panel_hosts[i] = pose_built
+                plates_used.update((room.key, pose_built))
+                host_used[pose_built] = host_used.get(pose_built, 0) + 1
+                if motion:
+                    host_motion.append({"segment": i, "two_shot": True, **motion})
+                bg_i = _room_input(room, draw_in=False)
+                host_i = _add_input(["-i", str(built[0])])
+                front = _front_file(room)
+                front_i = _front_input(room, front) if front is not None else None
+                chain = _scaled_overlay_chain(bg_i, host_i, hx, hy, hw, hh, seg_len,
+                                              "[tsbase];", front_i=front_i)
             at = f"{ex}:{ey}"
             if ev_kind == "moves":
                 mv_i = _add_input(["-i", str(ev.moving)])
@@ -2112,19 +2189,36 @@ def _render_long(
                         else _room_plate("talk",
                                          seed=f"{script.ticker}|{variant % 3}"))
             pose, alone = _scene_pose(scene, room, i)
-            bg_i = _room_input(room)
-            layer = None
+            stance3d, close3d = None, False
             if performer is not None and not alone and dennis3d.angle_of(room):
+                stance3d, close3d = _pose_3d(i, seg, room, pose)
+                from pipeline.scenes import stands_in
+                if close3d and not stands_in(room):
+                    # nobody stands at the board or over the desk: his
+                    # close-up is taken where he talks
+                    room = _room_plate("talk", seed=f"{script.ticker}|{variant % 3}")
+                    if not dennis3d.angle_of(room):
+                        stance3d = None
+            bg_i = _room_input(room)
+            layer, window = None, None
+            if stance3d is not None:
                 # His own layer: frame-sized, the desk already in front of
-                # him, so no front layer goes over it.
+                # him, so no front layer goes over it. A close-up is the same
+                # camera with a longer lens: behind him, a blown-up piece of
+                # the room's own picture.
                 layer = performer.shot(room, _words_in(seg), seg.start, seg_len, (W, H),
-                                       seed=f"{script.ticker}|{i}", stance=pose or "")
+                                       seed=f"{script.ticker}|{i}", stance=stance3d,
+                                       close=close3d)
+                window = performer.window(layer) if close3d else None
                 host = (_add_input(["-i", str(layer)]), 0, 0, W, H, None)
-                dennis3d_meta.append({"segment": i, "room": room.key, "stance": pose or ""})
+                _count_3d(i, stance3d, close_up=close3d)
+                dennis3d_meta.append({"segment": i, "room": room.key, "stance": stance3d,
+                                      "close_up": close3d})
             else:
                 host = (None if alone
                         else _host_input(i, seg, seg_len, room=room, pose=pose))
-            push = _monitor_push(room, None if host is None else host[1:5], clip=layer)
+            push = ("" if window else
+                    _monitor_push(room, None if host is None else host[1:5], clip=layer))
             if host is None:
                 chain = _still_chain(bg_i, seg, seg_len, i, push + tail)
             else:
@@ -2132,7 +2226,8 @@ def _render_long(
                 front_i = (_front_input(room, front)
                            if front is not None else None)
                 chain = _scaled_overlay_chain(bg_i, host_i, hx, hy, hw, hh,
-                                              seg_len, push + tail, front_i=front_i)
+                                              seg_len, push + tail, front_i=front_i,
+                                              window=window)
         elif seg.kind == "clip":
             # Footage plays inside a frames/ plate rather than edge to edge.
             # Raw and full-frame it destroys the drawn surface the rest of the

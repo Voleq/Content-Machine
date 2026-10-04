@@ -155,7 +155,7 @@ class Layer:
     """
 
     name: str
-    kind: str            # ground|plate|fill|media|host|front|text|mark|caption
+    kind: str            # ground|plate|fill|media|host|host3d|front|text|mark|caption
     shot_id: str
     t_start: float
     t_end: float
@@ -179,6 +179,10 @@ class Layer:
     lit: bool = True
     panel: bool = False
     z: int = 0
+    # A close-up's piece of the plate (x0, y0, x1, y1, 0-1 from the top left),
+    # blown up to the box and softened: what is behind the 3D Dennis when the
+    # camera's lens is longer (`pipeline.dennis3d`). None is the whole plate.
+    window: tuple[float, float, float, float] | None = None
 
     @property
     def dur(self) -> float:
@@ -191,8 +195,9 @@ class Layer:
         A room's two-frame loop and a host strip both move. A static data
         plate does not, and its `max_hold_s` is what keeps it short rather
         than a wobble that made the measurement look better than the video.
+        The 3D Dennis plays once through and is never still.
         """
-        return bool(self.loops and self.frame_count > 1)
+        return bool((self.loops or self.kind == "host3d") and self.frame_count > 1)
 
 
 class Resolver(Protocol):

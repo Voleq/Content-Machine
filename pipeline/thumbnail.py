@@ -245,11 +245,45 @@ def _host(settings: Settings, seed: str):
         return None, None
 
 
+def _host_3d(performer, room_plate, size: tuple[int, int], seed: str, stance: str):
+    """The 3D Dennis for a cover, cut to himself: (figure, the frame row his
+    feet are on), rendered on the room's spot at the cover's size, so he is
+    the room's scale; or None."""
+    try:
+        png = performer.still(room_plate, size, seed=seed, stance=stance)
+    except Exception as exc:  # noqa: BLE001 — a cover is never fatal
+        log.warning("thumbnail: no 3D Dennis on the cover (%s)", exc)
+        return None
+    im = Image.open(png).convert("RGBA")
+    box = im.getchannel("A").point(lambda a: 255 if a > 24 else 0).getbbox()
+    if box is None:
+        return None
+    return im.crop(box), box[3]
+
+
+def _performer(settings: Settings, aspect: str):
+    """The Blender process for the covers, when the video has the 3D Dennis
+    (`pipeline.dennis3d.usable`, asked of the video's own aspect); else None."""
+    from pipeline import dennis3d
+    from pipeline.plates import load_plates
+
+    try:
+        if dennis3d.usable(settings, load_plates(settings.assets_dir), aspect):
+            return dennis3d.Performer(settings,
+                                      cache=Path(settings.cache_dir) / "dennis3d")
+    except Exception as exc:  # noqa: BLE001 — a cover is never fatal
+        log.warning("thumbnail: the 3D Dennis is not drawn (%s)", exc)
+    return None
+
+
 def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
              size: tuple[int, int], orient: str,
              is_move: bool = False, dressing=None,
-             written: Path | None = None) -> Image.Image:
-    """One cover. The room, a drawn border, the ticker, the number, Dennis."""
+             written: Path | None = None, performer=None) -> Image.Image:
+    """One cover. The room, a drawn border, the ticker, the number, Dennis.
+
+    With a `performer` the video has the 3D Dennis, and so does its cover:
+    rendered on the room's spot and cut to himself, never the drawn one."""
     from pipeline.host import place_on_room, stands_on
 
     W, H = size
@@ -303,16 +337,32 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
     type_bottom = int(H * (tick_h + lab_h * 1.6 + val_h)) + pad
 
     fig, shot = _host(settings, f"{ticker}|{orient}")
+    feet = None
+    if performer is not None:
+        # THE VIDEO'S DENNIS IS 3D, SO THE COVER'S IS. He plays the pose
+        # the drawn one would have; with no 3D room under the cover, or no
+        # drawing of him, the cover goes without him rather than with the
+        # drawn Dennis on a 3D video's shelf.
+        from pipeline import dennis3d
+
+        got = (_host_3d(performer, room_plate, size, f"{ticker}|{orient}",
+                        shot.key if shot is not None else "")
+               if dennis3d.angle_of(room_plate) else None)
+        fig, feet = got if got is not None else (None, None)
     if fig is not None:
-        fh = int(H * fig_h)
-        if room_plate is not None and stands_on(room_plate, shot):
+        fh = fig.height if feet is not None else int(H * fig_h)
+        if feet is None and room_plate is not None and stands_on(room_plate, shot):
             placed = place_on_room(room_plate, shot)
             fh = max(int(placed.height * (H / room_plate.delivered[1])), 1)
         floor = H - pad
-        if room_plate is not None and room_plate.floor_line_y:
+        if feet is not None:
+            floor = feet          # where he stands on the spot, in this frame
+        elif room_plate is not None and room_plate.floor_line_y:
             floor = int(room_plate.floor_line_y * (H / room_plate.canvas[1]))
 
         def top_of(height: int) -> int:
+            if feet is not None:
+                return floor - height
             return floor - int((shot.floor_line_y / shot.pose.canvas[1]) * height)
 
         if not wide:
@@ -410,16 +460,22 @@ def make_thumbnail(script, ws, settings: Settings) -> Path | None:
         # room, host and colours alike, not a night one advertising it.
         dressing = _cover_dressing(script, settings, is_short)
         written = Path(ws.path) / "cover_room"
-        with at_episode_hour(settings, ws.path,
-                             str(getattr(script, "ticker", "") or "")):
-            _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
-                     size=WIDE, orient="wide", is_move=is_move,
-                     dressing=dressing, written=written).save(out)
-            if is_short:
+        performer = _performer(settings, "9x16" if is_short else "16x9")
+        try:
+            with at_episode_hour(settings, ws.path,
+                                 str(getattr(script, "ticker", "") or "")):
                 _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
-                         size=TALL, orient="tall", is_move=is_move,
-                         dressing=dressing, written=written
-                         ).save(ws.path / "thumbnail_tall.png")
+                         size=WIDE, orient="wide", is_move=is_move,
+                         dressing=dressing, written=written,
+                         performer=performer).save(out)
+                if is_short:
+                    _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
+                             size=TALL, orient="tall", is_move=is_move,
+                             dressing=dressing, written=written,
+                             performer=performer).save(ws.path / "thumbnail_tall.png")
+        finally:
+            if performer is not None:
+                performer.close()
         return out
     except Exception:
         log.exception("thumbnail generation failed (non-fatal)")

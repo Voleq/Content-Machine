@@ -51,6 +51,10 @@ def _arm(name: str, ab: int) -> dict[str, tuple[float, float, float]]:
         # reads as a paddle.
         "ready": {"shoulder": (-32, 9 * ab, 10 * ab), "elbow": (-90, 0, 0),
                   "wrist": (-10, 0, -45 * ab)},
+        # the close-up's talking hand: forward at the belt, under the frame,
+        # so a beat moves his shoulder and no palm comes up at the frame's edge
+        "low": {"shoulder": (-12, 8 * ab, 6 * ab), "elbow": (-60, 0, 0),
+                "wrist": (-10, 0, -30 * ab)},
         # both hands up and apart, forward: laying something out
         "wide": {"shoulder": (-30, 18 * ab, 0), "elbow": (-88, 0, 0),
                  "wrist": (-15, 0, -60 * ab)},
@@ -137,6 +141,7 @@ class Stance:
     * `free`: the hands that may talk; a hand holding something stays with it.
     * `talk`: how often a sentence gets one hand, both, or none.
     * `first`: what the first sentence does: "screen" or "board" (a point),
+      "plate" (an open hand toward the evidence beside him, in a two-shot),
       "desk" (a finger on the desk), "count" (the fingers), "shrug".
     * `hand`: the hand that does the stance's one-handed business (the desk
       point, the counting finger).
@@ -144,10 +149,13 @@ class Stance:
     * `prop`, `prop_side`: what he holds and in which hand.
     * `glance`: how far down he looks to read the prop; `reads`: the share
       of sentences he reads it through.
-    * `look`: what he keeps turning to ("screen"); `reach`: the arm on its
-      side stays out toward it; `turn`: how much of the way his body turns.
+    * `look`: what he keeps turning to ("screen", or "plate|screen" for the
+      first of them that is there); `reach`: the arm on its side stays out
+      toward it; `turn`: how much of the way his body turns.
     * `desk`: the arm pose whose hand has to come down on the desk top; on a
       spot with no desk in reach the stance cannot play (`perform.Stage.fit`).
+    * `lens`: down the lens (the close-up): he points at nothing and turns
+      to nothing, his hands mostly below the frame.
     * `talks`: False where his mouth is hidden or shut (head in hands)."""
     home: dict = field(default_factory=dict)
     free: str = "LR"
@@ -163,6 +171,7 @@ class Stance:
     reach: bool = False
     turn: float = 0.0
     desk: str = ""
+    lens: bool = False
     talks: bool = True
 
 
@@ -179,8 +188,12 @@ STANCES: dict[str, Stance] = {
                           free="", talk=(0.0, 0.0, 1.0)),
     "pointing-down-at-desk": Stance(first="desk", lean=6.0, desk="down-point"),
     "turn-to-screen": Stance(first="screen", look="screen", turn=0.35),
-    # the near arm out toward the graphic, reading it
-    "checking-a-figure": Stance(look="screen", reach=True, turn=0.2, talk=(0.5, 0.0, 0.5)),
+    # the near arm out toward the graphic, reading it: the evidence beside
+    # him in a two-shot, the screen in the room
+    "checking-a-figure": Stance(look="plate|screen", reach=True, turn=0.2,
+                                talk=(0.5, 0.0, 0.5)),
+    # the PRESENT pose: the hand on the evidence's side open toward it
+    "gesturing-at-plate": Stance(first="plate"),
     "counting-on-fingers": Stance(first="count"),
     "shrug": Stance(first="shrug"),
     "holding-a-mug": Stance(home={"R": ("hold", "grip")}, free="L", prop="mug",
@@ -198,8 +211,8 @@ STANCES: dict[str, Stance] = {
 # Kit poses with no 3D of their own yet play as the nearest one.
 STANCES["sitting-at-desk"] = STANCES["leaning-on-desk"]
 STANCES["walking-out-of-frame"] = replace(STANCES["hands-in-pockets"], talks=False)
-STANCES["gesturing-at-plate"] = STANCES["to-camera"]
-STANCES["close-up"] = STANCES["to-camera"]
+# head and shoulders: the confession, the turn, the line a chapter rests on
+STANCES["close-up"] = Stance(lens=True, talk=(0.45, 0.15, 0.4))
 
 
 def mirrored(st: Stance) -> Stance:
@@ -247,12 +260,14 @@ class Performance:
 class Look:
     """Where something he may turn to is, from where he stands: degrees of
     yaw (+ to his left as the camera sees it, the +x of his own frame) and
-    pitch (+ up), the arm that points at it, and that arm's angles (the
-    finger toward it, stopping short of it)."""
+    pitch (+ up), the arm that reaches for it, and that arm's angles: `point`
+    (the finger toward it, stopping short of it) and `present` (the hand up
+    and out toward it, open: "this here")."""
     yaw: float
     pitch: float
     side: str = "R"
     point: dict[str, tuple[float, float, float]] = field(default_factory=dict)
+    present: dict[str, tuple[float, float, float]] = field(default_factory=dict)
 
 
 def _smooth(x: float) -> float:
@@ -395,11 +410,12 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
     camera."""
     from pipeline.host import blink_intervals, mouth_track
 
-    looks = looks or {}
     st = stance if isinstance(stance, Stance) else stance_of(stance)
+    looks = {} if st.lens else (looks or {})
     home = dict(st.home)
     free = st.free
-    held = looks.get(st.look) if st.look else None
+    # what he keeps turning to: the first of the stance's that is here
+    held = next((looks[n] for n in st.look.split("|") if n in looks), None) if st.look else None
     if held is not None and st.reach:
         home[held.side] = (held.point or "ready", "point")
         free = free.replace(held.side, "")
@@ -456,7 +472,9 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
         if kind == "point":
             look = looks[target]
             side = look.side
-            pose = _hands(**{side: (look.point or "ready", "point")})
+            # the picture beside him is shown with an open hand, not a finger
+            pose = (_hands(**{side: (look.present, "open")}) if target == "plate" and look.present
+                    else _hands(**{side: (look.point or "ready", "point")}))
             arms.go(p.start + 0.05, pose, 0.4)
             # held for a beat, not the whole sentence, then back to talking
             release = min(p.start + 1.3, p.end + 0.2) + 0.35
@@ -477,7 +495,8 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
                 # a long question talks with one hand first, then gives up
                 side = "R" if last_hand == "L" else "L"
                 last_hand = side
-                arms.go(p.start + 0.02, _hands(**{side: ("ready", "open")}), lead + 0.1)
+                arms.go(p.start + 0.02, _hands(**{side: ("low", "relaxed") if st.lens
+                                                  else ("ready", "open")}), lead + 0.1)
                 for w in stressed(p.words):
                     if w.start < peak - 0.6:
                         beats.append((w.start, side, rng.uniform(0.8, 1.2)))
@@ -503,7 +522,9 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
         elif kind in ("one", "both"):
             side = ("R" if last_hand == "L" else "L") if len(free) == 2 else free
             last_hand = side
-            if kind == "both":
+            if st.lens:
+                pose = _hands(**{s_: ("low", "relaxed") for s_ in (free if kind == "both" else side)})
+            elif kind == "both":
                 pose = _hands(L=("wide", "open"), R=("wide", "open"))
             else:
                 pose = _hands(**{side: ("ready", "open")})

@@ -31,7 +31,7 @@ REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
-LOOK_VERSION = "47-64-2"
+LOOK_VERSION = "47-64-3"
 
 
 def _python(settings) -> list[str]:
@@ -76,6 +76,37 @@ def angle_of(plate) -> tuple[str, str, str] | None:
     if stem.endswith("-christmas"):
         stem, season = stem[: -len("-christmas")], "christmas"
     return stem, season, aspect
+
+
+def drawn_rooms(reg, aspect: str) -> list[str]:
+    """The rooms at `aspect` (`16x9`, `9x16`) the kit still has drawn,
+    where the 3D Dennis cannot stand. A render draws him in 3D only where
+    this is empty: he is in every shot or in none."""
+    out = []
+    for key, plate in reg.all_plates().items():
+        if getattr(plate, "family", "") != "room":
+            continue
+        if ("9x16" if key.endswith("-9x16") else "16x9") == aspect and angle_of(plate) is None:
+            out.append(key)
+    return sorted(out)
+
+
+def usable(settings, reg, aspect: str) -> bool:
+    """`wanted`, and every room at `aspect` the 3D room. `on` with a drawn
+    room in the kit is an error: the kit ingest was not rerun."""
+    if not wanted(settings):
+        return False
+    drawn = drawn_rooms(reg, aspect)
+    if not drawn:
+        return True
+    if (settings.dennis_3d or "").strip().lower() == "auto":
+        log.info("3D Dennis off for this %s render: %d drawn rooms in the kit (%s ...)",
+                 aspect, len(drawn), drawn[0])
+        return False
+    raise RenderError(
+        f"DENNIS_3D=on but {len(drawn)} of the kit's {aspect} rooms are still drawn "
+        f"({', '.join(drawn[:3])} ...), and he is never 3D in one shot and drawn in "
+        "the next. Rerun `python scripts/ingest_kit.py kit`, or set DENNIS_3D=off.")
 
 
 class Performer:
@@ -138,10 +169,14 @@ class Performer:
 
     # ------------------------------------------------------------------ shots
     def shot(self, room, words, start: float, duration: float, size: tuple[int, int],
-             *, seed: str, stance: str = "") -> Path:
+             *, seed: str, stance: str = "", plate: tuple[float, float] | None = None,
+             close: bool = False) -> Path:
         """His layer for one shot in `room`: an RGBA .mov, `size` big, at
         `dennis_3d_fps`. `words` carry `.word`, `.start`, `.end` on the
-        programme clock; `start` is the shot's start on it."""
+        programme clock; `start` is the shot's start on it. `stance` is the
+        kit pose he plays; `plate` is where a two-shot's evidence sits in the
+        frame (0-1 from the top left), for him to show; `close` is the
+        close-up, whose background is `window(layer)` of the room's picture."""
         where = angle_of(room)
         if where is None:
             raise RenderError(f"{getattr(room, 'key', room)} is not a 3D room")
@@ -150,6 +185,8 @@ class Performer:
         job = {"angle": angle, "season": season, "aspect": aspect, "size": list(size),
                "fps": fps, "samples": int(self.settings.dennis_3d_samples),
                "seed": seed, "stance": stance, "duration": round(float(duration), 4),
+               **({"plate": [round(float(c), 4) for c in plate]} if plate else {}),
+               **({"close": True} if close else {}),
                "words": [{"word": w.word, "start": round(w.start - start, 3),
                           "end": round(w.end - start, 3)} for w in words]}
         key = hashlib.sha256(json.dumps({**job, "v": LOOK_VERSION},
@@ -166,7 +203,86 @@ class Performer:
         part = folder / "layer.part.mov"
         run_ffmpeg(["-framerate", str(fps), "-i", str(folder / "frames" / "d_%04d.png"),
                     "-c:v", "png", "-pix_fmt", "rgba", "-f", "mov", str(part)])
+        if reply.get("window"):
+            (folder / "window.json").write_text(json.dumps(reply["window"]))
         part.replace(layer)
         self.shots.append({"angle": angle, "aspect": aspect, "frames": reply.get("frames"),
                            "seconds": reply.get("seconds"), "device": reply.get("device")})
         return layer
+
+    def still(self, room, size: tuple[int, int], *, seed: str, stance: str = "") -> Path:
+        """Him alone for a cover: one RGBA frame, `size` big, standing on
+        `room`'s spot as its camera sees him, caught mid-sentence, with
+        nothing of the room drawn (no shadow, nothing in front of him), so
+        the cover can stand him where its type leaves room. A stance that
+        turns him from the camera is played to it."""
+        where = angle_of(room)
+        if where is None:
+            raise RenderError(f"{getattr(room, 'key', room)} is not a 3D room")
+        angle, season, aspect = where
+        job = {"angle": angle, "season": season, "aspect": aspect, "size": list(size),
+               "fps": int(self.settings.dennis_3d_fps),
+               "samples": max(int(self.settings.dennis_3d_samples), 16),
+               "seed": seed, "stance": stance, "still": True}
+        key = hashlib.sha256(json.dumps({**job, "v": LOOK_VERSION},
+                                        sort_keys=True).encode()).hexdigest()[:20]
+        folder = self.cache / key
+        out = folder / "still.png"
+        if out.exists():
+            return out
+        reply = self._ask({**job, "out": str(folder / "frames")})
+        if not reply.get("ok"):
+            raise RenderError(f"the 3D Dennis could not draw {angle}: {reply.get('error')}\n"
+                              f"{reply.get('trace', '')}")
+        (folder / "frames" / "d_0000.png").replace(out)
+        self.shots.append({"angle": angle, "aspect": aspect, "still": True,
+                           "seconds": reply.get("seconds"), "device": reply.get("device")})
+        return out
+
+    @staticmethod
+    def frames(layer: Path) -> Path:
+        """The folder of his layer's frames, `d_0000.png` on: the worker's
+        own, or unpacked from the layer when a clean-up took them."""
+        folder = Path(layer).parent / "frames"
+        if not (folder / "d_0000.png").exists():
+            folder.mkdir(parents=True, exist_ok=True)
+            run_ffmpeg(["-i", str(layer), "-start_number", "0",
+                        str(folder / "d_%04d.png")])
+        return folder
+
+    @staticmethod
+    def window(layer: Path) -> tuple[float, float, float, float] | None:
+        """For a close-up's layer, the piece of the room's picture behind him
+        (x0, y0, x1, y1, 0-1 from the top left); None for any other shot."""
+        f = Path(layer).parent / "window.json"
+        if not f.exists():
+            return None
+        x0, y0, x1, y1 = json.loads(f.read_text())
+        return float(x0), float(y0), float(x1), float(y1)
+
+
+def extent(layer: Path, size: tuple[int, int]) -> tuple[int, int, int, int] | None:
+    """Where he is in his layer over the whole shot: the box (x0, y0, x1, y1,
+    frame pixels) round every pixel of him in any frame, read off the alpha at
+    an eighth of the size. None when there is nothing of him, or it cannot be
+    read."""
+    import numpy as np
+
+    W, H = size
+    w, h = max(W // 8, 1), max(H // 8, 1)
+    try:
+        raw = subprocess.run(
+            ["ffmpeg", "-loglevel", "error", "-i", str(layer), "-vf",
+             f"alphaextract,scale={w}:{h}", "-f", "rawvideo", "-pix_fmt", "gray", "-"],
+            capture_output=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    n = len(raw) // (w * h)
+    if not n:
+        return None
+    him = (np.frombuffer(raw[:n * w * h], np.uint8).reshape(n, h, w) > 64).any(axis=0)
+    ys, xs = np.nonzero(him)
+    if not len(xs):
+        return None
+    return (int(xs.min() * W / w), int(ys.min() * H / h),
+            int(min((xs.max() + 1) * W / w, W)), int(min((ys.max() + 1) * H / h, H)))
