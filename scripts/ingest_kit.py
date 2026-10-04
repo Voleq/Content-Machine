@@ -1140,9 +1140,11 @@ def _host_contract(reg) -> list[str]:
     # A CHAPTER OPENS IN A ROOM WITH SOMEWHERE TO PUT ITS TITLE. The opener is
     # the room with the chapter's title set in its `title` slot; a member with
     # no such slot is a chapter whose title silently never reaches the screen,
-    # which is what every chapter was until rebuild-21 published one.
+    # which is what every chapter was until rebuild-21 published one. Only
+    # the long has chapters: the phone's 3D rooms carry no title at all (see
+    # `_rooms_3d`), and nothing opens a chapter on them.
     for stem in reg.room_roles.get(_OPENER_ROLE, ()):
-        for aspect in ("16x9", "9x16"):
+        for aspect in ("16x9",):
             for room in _with_twins(reg, f"{stem}-{aspect}"):
                 if room.slot("title") is None:
                     problems.append(
