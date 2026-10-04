@@ -178,12 +178,16 @@ def _fit(text: str, settings: Settings, font_name: str, size: int,
 
 
 def _room(settings: Settings, orient: str, size: tuple[int, int],
-          episode: str = ""):
+          episode: str = "", dressing=None, written: Path | None = None):
     """The room this cover is shot in, and the plate it came from.
 
     Returns `(image, plate)` so the caller can place the host on the room's own
     host-anchor. A cover that puts him somewhere else is a composition the video
     never contains.
+
+    With a `dressing`, the room's monitor carries this video's price, written
+    under `written` (`pipeline.room_dressing`), as it does in the video: the 3D
+    room is rendered with the monitor blank.
     """
     from pipeline.plates import load_plates
 
@@ -204,7 +208,22 @@ def _room(settings: Settings, orient: str, size: tuple[int, int],
         except Exception as exc:  # noqa: BLE001
             log.debug("thumbnail: no %s room (%s)", role_name, exc)
             continue
-        img = Image.open(plate.path).convert("RGB").resize(size, Image.LANCZOS)
+        path = plate.path
+        screen = (getattr(plate, "writable", None) or {}).get("screen")
+        if dressing is not None and written is not None and screen is not None:
+            # THE MONITOR, NOT THE BOARD. The cover's type runs down its
+            # left, over the board in most rooms, and a written board behind
+            # the leading number is the number made harder to read.
+            from dataclasses import replace
+
+            from pipeline.room_dressing import written_room
+
+            try:
+                path = written_room(replace(plate, writable={"screen": screen}),
+                                    dressing, written, settings.fonts_dir).path
+            except Exception as exc:  # noqa: BLE001 — a cover is never fatal
+                log.debug("thumbnail: the room goes up unwritten (%s)", exc)
+        img = Image.open(path).convert("RGB").resize(size, Image.LANCZOS)
         return img, plate
     return Image.new("RGB", size, role(settings, "ground")), None
 
@@ -228,12 +247,14 @@ def _host(settings: Settings, seed: str):
 
 def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
              size: tuple[int, int], orient: str,
-             is_move: bool = False) -> Image.Image:
+             is_move: bool = False, dressing=None,
+             written: Path | None = None) -> Image.Image:
     """One cover. The room, a drawn border, the ticker, the number, Dennis."""
     from pipeline.host import place_on_room, stands_on
 
     W, H = size
-    room_img, room_plate = _room(settings, orient, size, episode=ticker)
+    room_img, room_plate = _room(settings, orient, size, episode=ticker,
+                                 dressing=dressing, written=written)
     img = room_img.convert("RGBA")
     d = ImageDraw.Draw(img)
     ink = role(settings, "structure")
@@ -337,6 +358,24 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
     return img.convert("RGB")
 
 
+def _cover_dressing(script, settings: Settings, is_short: bool):
+    """What the cover's monitor shows: the price's run off the feed the video
+    used, or none when it failed. None when the feed cannot be asked."""
+    from pipeline.prices import get_price_history, long_history_days
+    from pipeline.room_dressing import Dressing
+
+    try:
+        ticker = str(getattr(script, "ticker", "") or "").upper()
+        days = (int(settings.price_history_days) if is_short
+                else long_history_days(settings))
+        series = get_price_history(ticker, settings, days=days)
+        return Dressing(episode=0, ticker=ticker,
+                        closes=() if series.degraded else tuple(series.closes))
+    except Exception as exc:  # noqa: BLE001 — a cover is never fatal
+        log.debug("thumbnail: nothing for the monitor (%s)", exc)
+        return None
+
+
 def make_thumbnail(script, ws, settings: Settings) -> Path | None:
     """Cover art for a finished video. Returns the 16:9 PNG path.
 
@@ -369,14 +408,18 @@ def make_thumbnail(script, ws, settings: Settings) -> Path | None:
         # THE COVER IS A FRAME FROM THE VIDEO, so it is drawn at the hour the
         # render recorded in this workspace: a dusk episode gets a dusk cover,
         # room, host and colours alike, not a night one advertising it.
+        dressing = _cover_dressing(script, settings, is_short)
+        written = Path(ws.path) / "cover_room"
         with at_episode_hour(settings, ws.path,
                              str(getattr(script, "ticker", "") or "")):
             _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
-                     size=WIDE, orient="wide", is_move=is_move).save(out)
+                     size=WIDE, orient="wide", is_move=is_move,
+                     dressing=dressing, written=written).save(out)
             if is_short:
                 _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
-                         size=TALL, orient="tall",
-                         is_move=is_move).save(ws.path / "thumbnail_tall.png")
+                         size=TALL, orient="tall", is_move=is_move,
+                         dressing=dressing, written=written
+                         ).save(ws.path / "thumbnail_tall.png")
         return out
     except Exception:
         log.exception("thumbnail generation failed (non-fatal)")
