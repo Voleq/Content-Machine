@@ -94,6 +94,11 @@ class TagType(str, Enum):
     # (pipeline/room_dressing.py). It is the video's question, not a figure.
     # LONG only; without one the board asks what we are paying for.
     BOARD = "BOARD"
+    # WHAT HIS MONITOR SHOWS THROUGH A CHAPTER — [SCREEN: bars-6y] names a
+    # plate that chapter puts on screen, [SCREEN: price] the five-year chart.
+    # Once per chapter, anywhere in it (pipeline/room_screen.py). Without one
+    # the bot picks the chapter's first chart or figure. LONG only.
+    SCREEN = "SCREEN"
     # DELIVERY DIRECTION — stripped from captions, passed to TTS.
     #
     # What each one becomes is in pipeline/direction.py, one table, per model

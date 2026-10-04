@@ -322,6 +322,12 @@ draws and where the drawing reads it from.
                         with the chapter titles and the share price's run beside it, in every room
                         the board is in shot. The video's question in his words, 48 characters at
                         most, never a figure. Without one the board asks "what are we paying for?".
+[SCREEN: plate or price] WHAT HIS MONITOR SHOWS THROUGH THIS CHAPTER, once per chapter, anywhere in it.
+                        [SCREEN: bars-6y]   [SCREEN: price]
+                        Name a plate this chapter puts on screen with [PLATE] and the monitor behind
+                        him carries it, with the same figures, from the chapter's first shot; `price`
+                        is the five-year chart. Without one the bot picks the chapter's first chart
+                        or big figure.
 
 DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
 The full vocabulary is in DELIVERY DIRECTION near the top of this prompt, with

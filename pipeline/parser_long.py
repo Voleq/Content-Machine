@@ -320,6 +320,14 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
                 warnings.append("[BOARD] with nothing in it — skipped; the board "
                                 "asks its default question")
                 continue
+        elif rt.type is TagType.SCREEN:
+            # A plate's name or `price`, tidied; matched against the
+            # chapter's plates at render, where the chapters have times.
+            payload = " ".join(payload.split())
+            if not payload:
+                warnings.append("[SCREEN] with nothing in it — skipped; the bot "
+                                "picks what his monitor shows")
+                continue
         elif rt.type is TagType.SCENE:
             # The writer's room and pose, resolved against the kit here so a
             # room it does not draw is named at intake, not found as a cut
@@ -987,6 +995,17 @@ def validate_long_script(
             f"[BOARD: {boards[0].payload}] is {len(boards[0].payload)} characters; "
             f"the board fits about {BOARD_MAX_CHARS}, so it is written small. "
             f"Cut it to the question.")
+
+    from pipeline.room_screen import PRICE, plate_stem
+
+    shown = {plate_stem(e.payload) for e in script.events if e.type is TagType.PLATE}
+    for e in script.events:
+        if e.type is TagType.SCREEN and e.payload.strip().lower() != PRICE \
+                and plate_stem(e.payload.strip().lower()) not in shown:
+            warnings.append(
+                f"[SCREEN: {e.payload}] names no plate this script shows — his "
+                f"monitor shows a plate from its chapter's [PLATE] tags, or "
+                f"`price`. The bot picks for that chapter.")
 
     for e, reason in unrenderable_long_tags(script):
         where = f"char {e.char_offset}"

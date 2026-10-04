@@ -115,7 +115,10 @@ def test_a_written_room_is_the_same_room_rooted_elsewhere(tmp_path):
     plate = _plate(tmp_path / "kit")
     out = rd.written_room(plate, _dressing(), tmp_path / "written", FONTS)
     assert out is not plate and out.root != plate.root
-    assert out.key == plate.key and out.frames == plate.frames and not out.writable
+    assert out.key == plate.key and not out.writable
+    # The kit's frames, in order, round to a whole second of the cursor.
+    assert [f.png.replace(".off", "") for f in out.frames] == \
+        [plate.frames[i % 3].png for i in range(12)]
     for p in [out.path, *out.frame_paths(), out.front_path(0)]:
         assert p.exists() and Image.open(p).size == (400, 200)
     # Written once: a second call finds it and writes nothing.
@@ -217,3 +220,117 @@ def test_a_board_naming_the_vendor_is_refused(long_valid_text, settings):
     word = sorted(VENDOR_WORDS)[0]
     with pytest.raises(LongScriptError, match="BOARD"):
         parse_long_script(f"[BOARD: per {word}]\n" + long_valid_text, "EXMPL", settings)
+
+
+# ------------------------------------------------- the monitor (49, 54)
+def _board_only(tmp: Path, *, still: bool = True) -> Plate:
+    from dataclasses import replace
+
+    plate = _plate(tmp)
+    plate = replace(plate, writable={"board": plate.writable["board"]})
+    if still:
+        plate = replace(plate, playback="static", fps=0.0, frame_count=1,
+                        frames=plate.frames[:1])
+    return plate
+
+
+def _still(tmp: Path) -> Plate:
+    from dataclasses import replace
+
+    plate = _plate(tmp)
+    return replace(plate, playback="static", fps=0.0, frame_count=1,
+                   frames=plate.frames[:1])
+
+
+def _picture(tmp: Path) -> Path:
+    """A plate's picture: warm paper with a red bar, so it is easy to find."""
+    pic = np.zeros((90, 160, 3), np.uint8)
+    pic[:] = (236, 226, 204)
+    pic[30:80, 20:140] = (200, 40, 40)
+    path = tmp / "pic.png"
+    tmp.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(pic).save(path)
+    return path
+
+
+def test_a_still_room_with_the_monitor_in_shot_loops_its_cursor(tmp_path):
+    out = rd.written_room(_still(tmp_path / "kit"), _dressing(), tmp_path / "w", FONTS)
+    assert out.animated and out.playback == "loop" and out.fps == rd.BLINK_FPS
+    assert out.frame_count == rd.BLINK_FRAMES == len(out.frames)
+    on, off = out.frame_paths()[0], out.frame_paths()[-1]
+    assert out.frame_paths()[:6] == [on] * 6 and out.frame_paths()[6:] == [off] * 6
+    a = np.asarray(Image.open(on).convert("RGB")).astype(int)
+    b = np.asarray(Image.open(off).convert("RGB")).astype(int)
+    diff = np.abs(a - b).sum(axis=2) > 0
+    assert diff.any(), "the cursor does not blink"
+    ys, xs = np.nonzero(diff)
+    # Only on the monitor, and only along its prompt line at the bottom.
+    assert xs.min() >= 200 and ys.min() > 150, "the blink touched more than the prompt"
+    # The desk in front blinks with it.
+    assert out.front_path(0) != out.front_path(11)
+    assert out.front_path(11).exists()
+
+
+def test_a_board_only_room_still_holds_still(tmp_path):
+    plate = _board_only(tmp_path / "kit")
+    out = rd.written_room(plate, _dressing(), tmp_path / "w", FONTS)
+    assert not out.animated and out.frames == plate.frames
+
+
+def test_a_room_that_loops_keeps_its_frames_and_blinks_on_them(tmp_path):
+    from dataclasses import replace
+
+    plate = _plate(tmp_path / "kit", frames=tuple("r.png" if i != 3 else "r_f03.png"
+                                                  for i in range(12)))
+    out = rd.written_room(plate, _dressing(), tmp_path / "w", FONTS)
+    assert out.frame_count == 12
+    assert out.frames[3].png == "r_f03.png" and out.frames[9].png == "r.off.png"
+    assert all(f.front.endswith(".off.png") == (i >= 6) for i, f in enumerate(out.frames))
+    # Nothing else of the room's own loop changes.
+    assert replace(out.frames[3], png="", front="") == replace(plate.frames[3], png="", front="")
+
+
+def test_the_monitor_shows_the_chapters_picture(tmp_path):
+    pic = _picture(tmp_path)
+    d = _dressing()
+    shown = d.showing(pic, "The cash")
+    assert shown.fingerprint != d.fingerprint
+    assert d.showing(None) == d and shown.showing(None).fingerprint == d.fingerprint
+    tex = np.asarray(rd.screen_chart(shown, FONTS, (666, 464)))
+    red = (tex[..., 0] > 170) & (tex[..., 1] < 70)
+    assert red.mean() > 0.2, "the plate's picture is not on the monitor"
+    # Not the price's line.
+    assert not ((tex[..., 1] > 180) & (tex[..., 2] > 220) & (tex[..., 0] < 120)).sum() > 400
+    # A new picture is a new written room.
+    plate = _still(tmp_path / "kit")
+    a = rd.written_room(plate, d, tmp_path / "w", FONTS)
+    b = rd.written_room(plate, shown, tmp_path / "w", FONTS)
+    assert a.root != b.root
+
+
+def test_the_picture_draws_itself_in(tmp_path):
+    pic = _picture(tmp_path)
+    shown = _dressing().showing(pic, "The cash")
+    red = lambda im: ((im[..., 0] > 170) & (im[..., 1] < 70)).sum()  # noqa: E731
+    steps = [red(np.asarray(rd.screen_chart(shown, FONTS, (666, 464), reveal=r)))
+             for r in (0.0, 0.3, 0.6, 1.0)]
+    assert steps[0] == 0 and steps[0] < steps[1] < steps[2] < steps[3]
+    line = lambda im: ((im[..., 1] > 180) & (im[..., 2] > 220)).sum()  # noqa: E731
+    price = [line(np.asarray(rd.screen_chart(_dressing(), FONTS, (666, 464), reveal=r,
+                                             cursor=False)))
+             for r in (0.0, 0.5, 1.0)]
+    assert price[0] == 0 and price[0] < price[1] < price[2]
+
+
+def test_reveal_frames_end_on_the_written_room(tmp_path):
+    plate = _still(tmp_path / "kit")
+    d = _dressing().showing(_picture(tmp_path), "The cash")
+    frames = rd.reveal_frames(plate, d, FONTS, (400, 200))
+    assert len(frames) == rd.REVEAL_FRAMES and all(f is not None for _, f in frames)
+    out = rd.written_room(plate, d, tmp_path / "w", FONTS)
+    last = np.asarray(frames[-1][0]).astype(int)
+    written = np.asarray(Image.open(out.frame_paths()[0]).convert("RGB")).astype(int)
+    assert np.abs(last - written).max() <= 2, "the draw-in does not land on the loop"
+    first = np.asarray(frames[0][0]).astype(int)
+    assert np.abs(first - written).sum() > 0
+    assert rd.reveal_frames(_board_only(tmp_path / "kit2"), d, FONTS, (400, 200)) is None
