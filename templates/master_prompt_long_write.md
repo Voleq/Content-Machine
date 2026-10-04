@@ -327,7 +327,10 @@ draws and where the drawing reads it from.
                         Name a plate this chapter puts on screen with [PLATE] and the monitor behind
                         him carries it, with the same figures, from the chapter's first shot; `price`
                         is the five-year chart. Without one the bot picks the chapter's first chart
-                        or big figure.
+                        or big figure. The picture draws itself on the monitor in his first shot
+                        of the chapter. When that plate comes straight after a line of his in the
+                        room (about four seconds of him at the chapter's start, two later on), the
+                        camera pushes into the monitor and the plate fills the screen from there.
 
 DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
 The full vocabulary is in DELIVERY DIRECTION near the top of this prompt, with
