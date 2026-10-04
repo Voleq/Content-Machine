@@ -346,6 +346,31 @@ def test_green_means_up_and_only_up(settings):
     assert metric_colour(settings, "n/a") == structure
 
 
+@pytest.mark.parametrize("orient, size", [("wide", (1280, 720)), ("tall", (1080, 1920))])
+def test_every_line_of_the_cover_reads_on_the_room(settings, orient, size):
+    """The 3D room's whiteboard sits in the wide cover's type column, and the
+    up-move's light figure on a lit white board could not be read. Each line
+    now reads at large type's contrast against what is under it."""
+    from PIL import ImageDraw
+
+    from pipeline import thumbnail as T
+
+    img = T._compose(settings, ticker="EXMPL", metric="today · 5x volume: +29%",
+                     kicker="noise or signal?", size=size, orient=orient,
+                     is_move=True)
+    d = ImageDraw.Draw(img)
+    ops = T._type_ops(settings, d, ticker="EXMPL", metric="today · 5x volume: +29%",
+                      kicker="noise or signal?", size=size, orient=orient,
+                      is_move=True, pad=int(int(min(size) * 0.035) * 1.9))
+    # The type itself is on the picture now; read the ground just around each
+    # line's box, which is what the eye reads it against.
+    for xy, text, font, fill in ops:
+        x0, y0, x1, y1 = d.textbbox(xy, text, font=font)
+        band = (x0, y1 + 2, x1, y1 + max((y1 - y0) // 4, 4))
+        assert T._type_contrast(img, band, fill) >= T.COVER_MIN_CONTRAST - 0.5, \
+            (orient, text)
+
+
 # --------------------------------------------------------------------------
 # GROUP I — repurpose. Three clips, one of everything.
 # --------------------------------------------------------------------------
