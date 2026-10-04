@@ -531,6 +531,42 @@ def _zoom_cuts_a_line(plate, box, target: str, values: dict, settings,
     return False
 
 
+def _zoom_lands_under_caption(plate, box, values: dict, settings, reg, layer,
+                              caption) -> bool:
+    """Whether the push, once in, would put a line of the plate under the
+    shot's caption.
+
+    The caption is placed against the plate as it rests; the push carries
+    every line below the passage further down the frame. On a plate whose
+    copy sits low (the 9:16 restyle's paper bands), the line under the
+    headline landed under the caption and was read through it. Such a
+    passage gets the highlight instead, which moves nothing.
+    """
+    if caption is None or layer is None or not (layer.w and layer.h):
+        return False
+    vx, vy, vw, vh = M.zoom_box(plate.canvas, box, 1.0,
+                                zoom_pad(plate.canvas, box, _zoom_pad_of(plate)))
+    vw, vh = min(vw, plate.canvas[0]), min(vh, plate.canvas[1])
+    vx = min(max(vx, 0.0), plate.canvas[0] - vw)       # as the renderer clamps
+    vy = min(max(vy, 0.0), plate.canvas[1] - vh)
+    kx, ky = layer.w / vw, layer.h / vh
+    cx0, cy0 = caption.x, caption.y
+    cx1, cy1 = caption.x + caption.w, caption.y + caption.h
+    for name, text in values.items():
+        slot = plate.slot(name)
+        if slot is None or slot.region or slot.control or not str(text).strip():
+            continue
+        ink = _ink_box(plate, name, str(text), settings, reg)
+        if ink is None:
+            continue
+        x0 = layer.x + (ink.x - vx) * kx
+        y0 = layer.y + (ink.y - vy) * ky
+        x1, y1 = x0 + ink.w * kx, y0 + ink.h * ky
+        if x0 < cx1 and x1 > cx0 and y0 < cy1 and y1 > cy0:
+            return True
+    return False
+
+
 class _Lane:
     """The moves on one plate, placed one after another without overlap."""
 
@@ -577,6 +613,7 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
     sources = sources or {}
     words = list(words or ())
     plate_layers = shot_plates(result)
+    captions = {l.shot_id: l for l in result.layers if l.kind == "caption"}
     circle_ok = _circle_this_video(seed, recent_circled)
     circled = False
     verdict = next((figure_number(_verdict_figure(plate_layers[s].values))
@@ -698,7 +735,10 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
                 zbox = _ink_box(plate, hl, text, settings, reg)
             if zbox is not None and ZOOM_MIN <= _zoom_factor(plate, zbox) \
                     and not _zoom_cuts_a_line(plate, zbox, hl, values,
-                                              settings, reg):
+                                              settings, reg) \
+                    and not _zoom_lands_under_caption(plate, zbox, values,
+                                                      settings, reg, layer,
+                                                      captions.get(shot.id)):
                 done = lane.place(new("zoom-to-slot", hl),
                                   at if at is not None else earliest + 0.6) is not None
             if not done:
