@@ -354,3 +354,37 @@ def test_the_picture_s_corners_are_where_it_is_drawn(tmp_path):
     assert abs(ys.min() - min(ys_q)) <= 3 and abs(ys.max() + 1 - max(ys_q)) <= 3
     assert rd.picture_quad(plate, _dressing(), (400, 200)) is None
     assert rd.picture_quad(_board_only(tmp_path / "kit2"), d, (400, 200)) is None
+
+
+def test_the_push_in_reads_his_pixels_not_his_rectangle(tmp_path):
+    """The push-in (item 60) is refused where he is over the monitor's
+    picture. His clip's rectangle overlaps the monitor in every desk room;
+    what counts is whether HE does, at any frame of the push."""
+    import shutil
+    import subprocess
+
+    if shutil.which("ffmpeg") is None:
+        pytest.skip("needs ffmpeg")
+    from pipeline.render_long import _host_covers_picture
+
+    frames = tmp_path / "f"
+    frames.mkdir()
+    for k in range(10):
+        im = Image.new("RGBA", (100, 200), (0, 0, 0, 0))
+        # He stands in the left half; from frame 6 his arm reaches right.
+        im.paste((200, 150, 120, 255), (10, 40, 50, 200))
+        if k >= 6:
+            im.paste((200, 150, 120, 255), (50, 60, 95, 75))
+        im.save(frames / f"{k:03d}.png")
+    clip = tmp_path / "host.mov"
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-framerate", "10", "-i",
+                    str(frames / "%03d.png"), "-c:v", "png", "-pix_fmt", "rgba", str(clip)],
+                   check=True)
+    box = (300, 100, 100, 200)                    # his clip, placed at x 300..400
+    quad = [(360, 120), (480, 120), (480, 200), (360, 200)]   # the picture, x 360..480
+    assert not _host_covers_picture(clip, box, quad, 0.0, 0.5, (640, 360)), \
+        "his rectangle overlaps the picture but he does not"
+    assert _host_covers_picture(clip, box, quad, 0.4, 0.5, (640, 360)), \
+        "his arm reaches into the picture at frame 6"
+    # Past the clip's end the beat holds his last frame, arm out.
+    assert _host_covers_picture(clip, box, quad, 3.0, 0.5, (640, 360))
