@@ -338,3 +338,20 @@ def test_a_card_s_figure_goes_on_with_its_word(reg, settings):
     moves, _ = MV.plan_segment(reg.get(key), values, [], seg_len=6.0, shot_id="s",
                                layer="s", settings=settings, reg=reg, words=late, at=50.0)
     assert moves == []
+
+
+def test_a_ladder_s_steps_go_on_by_their_label(reg, settings):
+    key = "structure/unit-ladder-16x9"
+    values = {"kicker": "FY25, $M", "top-label": "Revenue", "top-value": "496",
+              **{f"step-{i}-label": l for i, l in enumerate(
+                  ["Cost of revenue", "Sales and marketing", "R&D", "G&A", "Other"], 1)},
+              **{f"step-{i}-value": v for i, v in enumerate(
+                  ["-208", "-212", "-80", "-40", "-16"], 1)},
+              "out-label": "Operating income", "out-value": "-60"}
+    words = _words((159.4, "hundred and twelve million on sales and marketing to add five"))
+    moves, _ = MV.plan_segment(reg.get(key), values, [], seg_len=8.0, shot_id="s",
+                               layer="s", settings=settings, reg=reg, words=words,
+                               at=159.4)
+    rows = [(m.slot, round(m.start, 2)) for m in moves if m.move == "row-on"]
+    # Step 2 on "sales and marketing"; steps 3 to 5, never said, with it.
+    assert rows == [("band-2", 1.25), ("band-3", 1.25), ("band-4", 1.25), ("band-5", 1.25)]

@@ -831,7 +831,8 @@ def plan_builds(plate, values: dict, words: Sequence, *, at: float, seg_len: flo
     if len(rows) >= 2:
         heard: list[float | None] = []
         for band, slots in rows:
-            label = next((values[n] for n in sorted(slots) if n.startswith("label")), "")
+            # `label-2` on a sheet, `step-2-label` on a ladder.
+            label = next((values[n] for n in sorted(slots) if "label" in n.split("-")), "")
             times = [_label_heard(words, label, lo, hi)] if label else []
             times += [_heard(words, _said_forms(values[n]), lo, hi)
                       for n in slots if not n.startswith("band-")
