@@ -351,6 +351,63 @@ def _crosses(layer: Image.Image, boxes, margin: int) -> bool:
                is not None for x0, y0, x1, y1 in boxes)
 
 
+# THE TYPE HAS TO READ AT SHELF SIZE. The cover's type is set straight on the
+# room, and the 3D room's whiteboard sits in the wide cover's type column: the
+# leading figure, light on a lit white board, could not be read. A line under
+# this contrast (WCAG's floor for large type) gets a soft shade behind it,
+# toward the opposite of its own tone; the rest of the room is left alone.
+COVER_MIN_CONTRAST = 3.0
+COVER_SHADE = 0.78                    # the shade's opacity behind the line
+
+
+def _luminance(rgb) -> float:
+    def lin(c: float) -> float:
+        c /= 255
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = rgb[:3]
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+
+
+def _contrast(a: float, b: float) -> float:
+    hi, lo = max(a, b), min(a, b)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def _type_contrast(img: Image.Image, box, fill) -> float:
+    """The contrast of type in `fill` against the mean tone of `img` in `box`."""
+    x0, y0, x1, y1 = (int(v) for v in box)
+    under = img.convert("RGB").crop((max(x0, 0), max(y0, 0), min(x1, img.width),
+                                     min(y1, img.height)))
+    if under.width < 1 or under.height < 1:
+        return 21.0
+    return _contrast(_luminance(fill),
+                     _luminance(under.resize((1, 1), Image.BOX).getpixel((0, 0))))
+
+
+def _shade_under_type(img: Image.Image, d, type_ops, pad: int) -> list[str]:
+    """A soft shade behind each line of type that does not read on the room.
+    The lines shaded."""
+    from PIL import ImageFilter
+
+    shaded = []
+    for xy, text, font, fill in type_ops:
+        box = d.textbbox(xy, text, font=font)
+        if _type_contrast(img, box, fill) >= COVER_MIN_CONTRAST:
+            continue
+        grow = max(pad // 2, 4)
+        mask = Image.new("L", img.size, 0)
+        ImageDraw.Draw(mask).rectangle(
+            (box[0] - grow, box[1] - grow, box[2] + grow, box[3] + grow),
+            fill=int(255 * COVER_SHADE))
+        mask = mask.filter(ImageFilter.GaussianBlur(grow / 1.5))
+        tone = (14, 19, 32) if _luminance(fill) > 0.18 else (244, 242, 234)
+        layer = Image.new("RGBA", img.size, (*tone, 0))
+        layer.putalpha(mask)
+        img.alpha_composite(layer)
+        shaded.append(text)
+    return shaded
+
+
 def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
              size: tuple[int, int], orient: str,
              is_move: bool = False, dressing=None,
@@ -476,6 +533,7 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
         x = W - fw - pad if wide else (W - fw) // 2
         img.alpha_composite(fig.resize((fw, fh), Image.LANCZOS), (x, top_of(fh)))
 
+    _shade_under_type(img, d, type_ops, pad)
     for xy, text, font, fill in type_ops:
         d.text(xy, text, font=font, fill=fill)
     return img.convert("RGB")
