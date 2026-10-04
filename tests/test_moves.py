@@ -160,6 +160,43 @@ def test_one_emphasis_per_shot_at_most(vertical, reg, settings):
         assert all(n == 1 for n in per_shot.values()), per_shot
 
 
+def test_a_push_in_never_lands_a_line_under_the_caption(vertical, reg, settings):
+    """The caption is placed against the plate at rest, and the push carries
+    the lines below the passage down the frame. On the 9:16 paper band the
+    line under the headline landed under the caption and was read through it;
+    such a passage gets the highlight instead."""
+    fmt, result, words, _ = vertical
+    plates = MV.shot_plates(result)
+    captions = {l.shot_id: l for l in result.layers if l.kind == "caption"}
+    for plan in _plans(fmt, result, words, reg, settings, n=12):
+        for m in plan.moves:
+            if m.move != "zoom-to-slot" or m.shot_id not in captions:
+                continue
+            layer, cap = plates[m.shot_id], captions[m.shot_id]
+            plate = reg.get(layer.entry_key)
+            box = MV._ink_box(plate, m.slot, layer.values[m.slot], settings, reg)
+            vx, vy, vw, vh = M.zoom_box(plate.canvas, box, 1.0, MV.zoom_pad(
+                plate.canvas, box, MV._zoom_pad_of(plate)))
+            vw, vh = min(vw, plate.canvas[0]), min(vh, plate.canvas[1])
+            vx = min(max(vx, 0.0), plate.canvas[0] - vw)
+            vy = min(max(vy, 0.0), plate.canvas[1] - vh)
+            for name, text in layer.values.items():
+                slot = plate.slot(name)
+                if slot is None or slot.region or slot.control or not str(text).strip():
+                    continue
+                ink = MV._ink_box(plate, name, str(text), settings, reg)
+                if ink is None:
+                    continue
+                y0 = layer.y + (ink.y - vy) * layer.h / vh
+                y1 = y0 + ink.h * layer.h / vh
+                x0 = layer.x + (ink.x - vx) * layer.w / vw
+                x1 = x0 + ink.w * layer.w / vw
+                assert not (x0 < cap.x + cap.w and x1 > cap.x
+                            and y0 < cap.y + cap.h and y1 > cap.y), \
+                    (m.shot_id, plate.key, name, (round(y0), round(y1)),
+                     (cap.y, cap.y + cap.h))
+
+
 # ---------------------------------------------------------------------------
 # The circle
 # ---------------------------------------------------------------------------
