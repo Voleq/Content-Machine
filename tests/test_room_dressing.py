@@ -354,3 +354,50 @@ def test_the_picture_s_corners_are_where_it_is_drawn(tmp_path):
     assert abs(ys.min() - min(ys_q)) <= 3 and abs(ys.max() + 1 - max(ys_q)) <= 3
     assert rd.picture_quad(plate, _dressing(), (400, 200)) is None
     assert rd.picture_quad(_board_only(tmp_path / "kit2"), d, (400, 200)) is None
+
+
+# ---------------------------------------------------------- the phone's rooms
+def test_a_short_s_board_leads_with_the_ticker():
+    """A short has no number in the channel's run: no EP box, the ticker
+    where it was."""
+    size = (900, 600)
+    top = slice(0, int(0.3 * size[1]))
+
+    def right_edge(im):
+        a = np.asarray(im)[top, :, 3]
+        return np.nonzero(a.max(axis=0))[0].max()
+
+    long_ = rd.board_ink(_dressing(), FONTS, size)
+    short = rd.board_ink(_dressing(episode=0, chapters=()), FONTS, size)
+    assert right_edge(short) < right_edge(long_) - 100, "the ticker did not move up"
+    assert (np.asarray(short)[..., 3] > 0).mean() > 0.01
+
+
+def test_the_short_writes_on_the_rooms_it_cuts_to(tmp_path):
+    from types import SimpleNamespace
+
+    from pipeline.compose import BuildResult, Layer
+    from pipeline.render_short import dress_rooms
+
+    plate = _plate(tmp_path / "kit", frames=("r.png",))
+    plate = Plate(**{**plate.__dict__, "playback": "static", "fps": 0.0})
+    reg = SimpleNamespace(get=lambda k: plate if k == plate.key else None, base_hour="night")
+    layers = [Layer("t:plate", "plate", "the-turn", 1.0, 4.0, entry_key=plate.key),
+              Layer("t:host", "host", "the-turn", 1.0, 4.0, entry_key="host/close-up")]
+    result = BuildResult(layers=layers, spans=[], frame=(1080, 1920))
+    settings = SimpleNamespace(price_history_days=120, fonts_dir=FONTS)
+    prices = SimpleNamespace(closes=list(CLOSES), degraded=False)
+    got, rooms = dress_rooms(result, reg, ticker="exmpl", prices=prices,
+                             workdir=tmp_path / "w", settings=settings)
+    assert rooms == [plate.key]
+    w = got.get(plate.key)
+    assert w is not plate and (tmp_path / "w" / "written") in w.root.parents
+    assert got.base_hour == "night", "the rest is asked of the registry"
+    # The cursor blinks: the room layer loops now.
+    room = result.layers[0]
+    assert (room.frame_count, room.fps, room.loops) == (12, 12, True)
+    assert result.layers[1].frame_count == 1
+    # Nothing in the cut with a board or a monitor: the registry as it was.
+    bare = BuildResult(layers=[layers[1]], spans=[], frame=(1080, 1920))
+    assert dress_rooms(bare, reg, ticker="X", prices=None, workdir=tmp_path / "w2",
+                       settings=settings) == (reg, [])

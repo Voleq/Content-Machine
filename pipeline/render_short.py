@@ -1274,6 +1274,71 @@ def final_encode(src: Path, out: Path, settings, *, captions: Path | None = None
     return out
 
 
+class _WithWritten:
+    """The registry, with the rooms this video wrote on answering for their
+    own keys: every frame of them is read from the written pictures, and
+    everything else asked of the registry is asked of the registry."""
+
+    def __init__(self, reg, written: dict) -> None:
+        self._reg, self._written = reg, written
+
+    def get(self, key):
+        return self._written.get(key) or self._reg.get(key)
+
+    def __getattr__(self, name):
+        return getattr(self._reg, name)
+
+
+def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
+                settings):
+    """The board and the monitor in the rooms of this cut, written for it.
+
+    THE PHONE'S ROOMS ARE THE 3D ROOM (4 Oct 2026), rendered as the long's
+    are, with the board wiped and the monitor on a flat backlight, and each
+    says where they are (`Plate.writable`). A short writes the ticker and
+    the price's run on them (`pipeline.room_dressing`; no episode number, no
+    chapters, which a short does not have), and its monitor's cursor blinks,
+    so a room layer that held still now loops. Returns the registry the
+    frames are drawn from and the rooms written; the registry itself when
+    nothing in the cut has a board or a monitor in shot.
+    """
+    from dataclasses import replace
+
+    from pipeline.room_dressing import Dressing, written_room
+
+    written: dict[str, object] = {}
+    d = None
+    for i, layer in enumerate(result.layers):
+        if layer.kind != "plate":
+            continue
+        plate = reg.get(layer.entry_key)
+        if plate is None or plate.family != "room" or not getattr(plate, "writable", None):
+            continue
+        if d is None:
+            # A series the feed failed to give is not drawn: a made-up line
+            # on his monitor is a made-up chart. A format that charts no
+            # price (`earnings`, `macro`) fetched none, so its monitor has
+            # only its prompt.
+            ok = prices is not None and not getattr(prices, "degraded", True)
+            days = int(getattr(settings, "price_history_days", 0) or 0)
+            d = Dressing(episode=0, ticker=str(ticker).upper(),
+                         closes=tuple(prices.closes) if ok else (),
+                         span=(f"{max(round(days / 365), 1)}Y" if days >= 365
+                               else f"{max(round(days / 30), 1)}M"))
+        if layer.entry_key not in written:
+            try:
+                written[layer.entry_key] = written_room(plate, d, workdir / "written",
+                                                        settings.fonts_dir)
+            except Exception as e:  # noqa: BLE001 — a board is never worth a render
+                log.warning("room: could not write on %s (%s) — it goes up blank",
+                            layer.entry_key, e)
+                continue
+        w = written[layer.entry_key]
+        result.layers[i] = replace(layer, frame_count=max(int(w.frame_count or 1), 1),
+                                   fps=int(w.fps or 0), loops=w.playback == "loop")
+    return (_WithWritten(reg, written) if written else reg), sorted(written)
+
+
 def render_frames(result: BuildResult, resolver, duration: float,
                   out_video: Path, settings, *, reg, words=(), plan=None,
                   scale: float = 1.0) -> Path:
@@ -1733,7 +1798,10 @@ def _render_short(script, tts, workspace: Path, settings, *,
     silent = workdir / "video_frames.mkv"
     scale = delivery_scale(settings, result.frame, proof=proof)
     delivered = delivered_size(result.frame, scale)
-    render_frames(result, resolver, duration, silent, settings, reg=reg,
+    frame_reg, written_rooms = dress_rooms(result, reg, ticker=getattr(script, "ticker", ""),
+                                           prices=prices, workdir=workdir,
+                                           settings=settings)
+    render_frames(result, resolver, duration, silent, settings, reg=frame_reg,
                   words=words, plan=plan, scale=scale)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}
     faces = getattr(render_frames, "last_faces", {}) or {}
@@ -1936,6 +2004,8 @@ def _render_short(script, tts, workspace: Path, settings, *,
         # and idle frames played, how often he blinked, and how many frames
         # held the still — which on a close-up is meant to be none.
         "host_faces": faces,
+        # The rooms whose board and monitor this video wrote on.
+        "rooms_written": written_rooms,
         "longest_layer_hold_s": round(
             max((b - a for a, b, _ in held_layer_spans(result)), default=0.0), 3),
         # PACING, WHICH IS A PROPERTY OF THE CUT AND NOT OF THE SUITE. The

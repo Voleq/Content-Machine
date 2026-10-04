@@ -9,17 +9,19 @@ drawn the same way.
 
 It runs HERE, never on the render box: every angle is rendered once, and the
 pictures it writes into `room3d/renders/` are committed. `scripts/ingest_kit.py`
-installs them as the long's 16:9 rooms, under the names the kit used, so the
-writer's [SCENE] menu, the room roles and every test that names a room keep
-working. The short keeps the kit's 9:16 rooms.
+installs them as every room the kit draws, the long's 16:9 ones and the
+shorts' 9:16 ones (from cameras of their own, `PORTRAIT`), under the names
+the kit used, so the writer's [SCENE] menu, the room roles and every test
+that names a room keep working.
 
     pip install bpy==5.0.1 OpenEXR      # Blender as a Python module
     python3 room3d/textures.py           # the pictures on the things
-    python3 room3d/build.py              # every angle, both seasons
+    python3 room3d/build.py              # every angle, both seasons, both frames
     python3 room3d/build.py --cam desk-front --preview   # one, fast and small
+    python3 room3d/build.py --aspect 9x16 --cam desk-front --preview   # the phone's
 
-What one angle writes (2560x1440 JPEGs; the ingest brings them to the kit's
-delivered size):
+What one angle writes (2560x1440 JPEGs, 1440x2560 for the phone's, whose
+names end `-9x16`; the ingest brings them to the kit's delivered size):
 
     <angle><state>.jpg       the room in one light state. Plain angles have
                              three: at rest, `_dip` and `_dip2` (the screen
@@ -69,10 +71,14 @@ TEX = HERE / "textures"
 RENDERS = HERE / "renders"
 REPO = HERE.parent
 
-# The kit's canvas: slots are written in these units, at exportScale 2.
-CANVAS = (1920, 1080)
-FULL = (2560, 1440)
-PREVIEW = (640, 360)
+# The kit's canvas: slots are written in these units, at exportScale 2. The
+# long is shot 16:9 and the shorts 9:16 (the phone's rooms are the same room,
+# from cameras of their own: `PORTRAIT`).
+ASPECTS = ("16x9", "9x16")
+CANVASES = {"16x9": (1920, 1080), "9x16": (1080, 1920)}
+FULLS = {"16x9": (2560, 1440), "9x16": (1440, 2560)}
+PREVIEWS = {"16x9": (640, 360), "9x16": (360, 640)}
+CANVAS, FULL, PREVIEW = CANVASES["16x9"], FULLS["16x9"], PREVIEWS["16x9"]
 
 # Dennis's standing figure box is 720 units from its top to his floor line and
 # his crown sits 11 units under the top (host/to-camera's alpha), so a 1.78 m
@@ -142,6 +148,52 @@ CAMERAS: dict[str, dict] = {
     # panel: him on the left, a quiet wall on the right for the evidence
     "panel-left": {"cam": ((-1.60, -2.00, 1.50), (0.90, 2.0, 1.35), 30),
                    "spot": (-0.35, 1.25)},
+}
+
+# THE PHONE'S ANGLES (the shorts, 9:16): the same angles in the same room, each
+# from a camera of its own, because a 9:16 crop of a 16:9 frame is a strip of
+# wall with half of him in it. He stands where the long stands him and the
+# camera comes round to put him in the middle of the phone at the size
+# design's 9:16 rooms drew him (feet and height as their anchors had them),
+# along the long camera's own line to him, so a short and the long see the
+# same corner from the same side. `roll` turns the frame on its axis: the desk
+# seen from above runs down the phone, not across it. No angle chalks a title:
+# a short has no chapters, and from a phone's width the slate is either behind
+# his head or out of shot (the ingest takes the title off the 9:16 openers).
+PORTRAIT: dict[str, dict] = {
+    "desk-wide": {"cam": ((0.68, -1.45, 1.62), (2.04, 1.44, 1.04), 30),
+                 "spot": (2.05, 1.46)},
+    "desk-front": {"cam": ((1.74, -0.64, 1.52), (1.95, 1.42, 0.96), 30),
+                  "spot": (1.95, 1.46)},
+    "desk-front-b": {"cam": ((0.92, -0.36, 1.48), (2.03, 1.52, 0.95), 30),
+                    "spot": (2.05, 1.55)},
+    "desk-front-low": {"cam": ((0.96, -0.83, 0.95), (2.02, 1.47, 0.98), 30),
+                      "spot": (2.02, 1.46)},
+    "desk-side": {"cam": ((2.70, -0.91, 1.55), (1.56, 1.47, 1.07), 30),
+                 "spot": (1.55, 1.48)},
+    "read-close": {"cam": ((1.88, -1.06, 1.45), (1.80, 1.43, 0.95), 30),
+                  "spot": (1.80, 1.46)},
+    "turn-to-screen": {"cam": ((0.01, -0.85, 1.50), (1.24, 1.35, 0.97), 30),
+                      "spot": (1.25, 1.38)},
+    "board": {"cam": ((-1.80, -0.25, 1.47), (-1.80, 2.0, 1.47), 26), "spot": None},
+    "board-side": {"cam": ((-2.99, -0.54, 1.55), (-2.26, 1.28, 1.06), 24.6),
+                  "spot": (-2.25, 1.30)},
+    "board-wide": {"cam": ((-1.69, -1.85, 1.60), (-2.25, 1.32, 1.37), 30),
+                  "spot": (-2.25, 1.30)},
+    "window-wall": {"cam": ((-0.38, -1.20, 1.50), (0.44, 1.31, 0.97), 30),
+                   "spot": (0.45, 1.34)},
+    "window-talk": {"cam": ((0.56, -1.23, 1.52), (0.94, 1.37, 0.97), 30),
+                   "spot": (0.95, 1.40)},
+    "window-wide": {"cam": ((-0.74, -1.85, 1.60), (0.46, 1.36, 1.34), 30),
+                   "spot": (0.45, 1.34)},
+    "doorway": {"cam": ((-0.24, 0.23, 1.55), (-2.66, -0.04, 0.94), 30),
+               "spot": (-2.70, -0.05)},
+    "doorway-wide": {"cam": ((-0.51, 0.01, 1.60), (-2.52, 0.54, 1.01), 30),
+                    "spot": (-2.55, 0.55)},
+    "desk-top-down": {"cam": ((2.00, 0.68, 2.35), (2.05, 0.86, 1.04), 30), "spot": None,
+                      "roll": 90},
+    "panel-left": {"cam": ((-1.19, -0.94, 1.50), (-0.36, 1.22, 0.98), 30),
+                  "spot": (-0.35, 1.25)},
 }
 
 # The kit's December twins: the angles the Christmas set dresses.
@@ -912,9 +964,29 @@ def build_room(season: str) -> None:
 
 
 # ------------------------------------------------------------- per-angle setup
-def camera(name: str) -> bpy.types.Object:
+def view(name: str, aspect: str = "16x9") -> dict:
+    """One angle's camera, where he stands and whether it opens chapters, in
+    the long's frame or the phone's."""
+    return CAMERAS[name] if aspect == "16x9" else PORTRAIT[name]
+
+
+def stem_of(name: str, season: str, aspect: str = "16x9") -> str:
+    """What an angle's pictures and its rooms.json entry are called: the long's
+    under the angle's own name, the phone's with `-9x16` after it."""
+    stem = name if season == "plain" else f"{name}-christmas"
+    return stem if aspect == "16x9" else f"{stem}-9x16"
+
+
+def canvas() -> tuple[int, int]:
+    """The kit canvas of the frame being rendered: the long's, or the phone's
+    when the frame stands up."""
+    r = bpy.context.scene.render
+    return CANVASES["16x9"] if r.resolution_x >= r.resolution_y else CANVASES["9x16"]
+
+
+def camera(name: str, aspect: str = "16x9") -> bpy.types.Object:
     scn = bpy.context.scene
-    loc, target, lens = CAMERAS[name]["cam"]
+    loc, target, lens = view(name, aspect)["cam"]
     cam = scn.camera
     if cam is None:
         cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
@@ -924,22 +996,29 @@ def camera(name: str) -> bpy.types.Object:
     cam.data.lens = lens
     cam.data.sensor_width = 36
     cam.data.clip_start = 0.05
-    cam.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat("-Z", "Y").to_euler()
+    rot = (Vector(target) - Vector(loc)).to_track_quat("-Z", "Y")
+    roll = view(name, aspect).get("roll")
+    if roll:
+        from mathutils import Quaternion
+        rot = rot @ Quaternion((0, 0, 1), math.radians(roll))
+    cam.rotation_euler = rot.to_euler()
     bpy.context.view_layer.update()
     return cam
 
 
 def to_canvas(p) -> tuple[float, float, float]:
-    """A world point as canvas units (1920x1080) and its depth."""
+    """A world point as canvas units (1920x1080, or 1080x1920 standing up)
+    and its depth."""
     scn = bpy.context.scene
     v = world_to_camera_view(scn, scn.camera, Vector(p))
-    return v.x * CANVAS[0], (1 - v.y) * CANVAS[1], v.z
+    cw, ch = canvas()
+    return v.x * cw, (1 - v.y) * ch, v.z
 
 
-def anchor(name: str) -> dict | None:
+def anchor(name: str, aspect: str = "16x9") -> dict | None:
     """His host-anchor in canvas units: the standing box's projected height,
     its bottom on the floor where he stands."""
-    spot = CAMERAS[name].get("spot")
+    spot = view(name, aspect).get("spot")
     if spot is None:
         return None
     fx, fy, _ = to_canvas((spot[0], spot[1], 0.0))
@@ -949,16 +1028,19 @@ def anchor(name: str) -> dict | None:
     return {"x": round(fx - w / 2), "y": round(ty), "w": round(w), "h": round(h)}
 
 
-def title_slot(name: str) -> dict | None:
+def title_slot(name: str, aspect: str = "16x9") -> dict | None:
     """Where the slate is in this angle: the rectangle inside its face that a
     flat line of type can be set in, and the frame around it as the ground."""
-    if not CAMERAS[name].get("title"):
+    if not view(name, aspect).get("title"):
         return None
     sx0, sx1, sz0, sz1 = SLATE
     face = [to_canvas((x, BACK - 0.03, z)) for x, z in ((sx0, sz1), (sx1, sz1), (sx1, sz0), (sx0, sz0))]
     tl, tr, br, bl = face
     x0, x1 = max(tl[0], bl[0]), min(tr[0], br[0])
     y0, y1 = max(tl[1], tr[1]), min(bl[1], br[1])
+    cw, ch = canvas()
+    if min(x0, y0) < 0 or x1 > cw or y1 > ch or x1 - x0 < 0.15 * min(cw, ch):
+        return None             # the slate is not (all) in shot: no title here
     mx, my = (x1 - x0) * 0.07, (y1 - y0) * 0.12
     outer = [to_canvas((x, BACK - 0.03, z)) for x, z in
              ((sx0 - 0.05, sz1 + 0.05), (sx1 + 0.05, sz1 + 0.05), (sx1 + 0.05, sz0 - 0.05), (sx0 - 0.05, sz0 - 0.05))]
@@ -995,10 +1077,10 @@ def surfaces() -> dict:
                        "size": [x1 - x0, y1 - y0]}}
 
 
-def his_depth(name: str) -> float | None:
+def his_depth(name: str, aspect: str = "16x9") -> float | None:
     """How far in front of the camera he stands (along its axis), or None
     where nobody does."""
-    spot = CAMERAS[name].get("spot")
+    spot = view(name, aspect).get("spot")
     if spot is None:
         return None
     cam = bpy.context.scene.camera
@@ -1036,7 +1118,7 @@ def setup_render(size: tuple[int, int], samples: int) -> None:
     # Lines at Dennis's own weight, in his ink, into their own pass.
     r.use_freestyle = True
     r.line_thickness_mode = "ABSOLUTE"
-    scale = size[0] / FULL[0]
+    scale = max(size) / max(FULL)
     fs = vl.freestyle_settings
     fs.as_render_pass = True
     fs.crease_angle = math.radians(128)
@@ -1201,14 +1283,18 @@ def render_masks(out: Path, stem: str, him: float | None) -> Path:
 
 
 # --------------------------------------------------------------- composition
-def read_exr(path: Path) -> dict[str, np.ndarray]:
+def read_exr(path: Path, *, drop: bool = False) -> dict[str, np.ndarray]:
+    """The planes of a multilayer EXR; `drop` deletes the file once read (an
+    angle's EXRs are half a gigabyte, and a full run makes sixty-four)."""
     import OpenEXR
 
     planes = {}
     with OpenEXR.File(str(path)) as f:
         for part in f.parts:
             for cname, ch in part.channels.items():
-                planes[cname.split(".")[0]] = np.asarray(ch.pixels, dtype=np.float32)
+                planes[cname.split(".")[0]] = np.array(ch.pixels, dtype=np.float32)
+    if drop:
+        path.unlink()
     return planes
 
 
@@ -1261,8 +1347,8 @@ def head_covered(front: np.ndarray | None, anc: dict | None) -> float | None:
     if not host.exists():
         return None
     him = Image.open(host).getchannel("A")
-    k = CANVAS[0] / front.shape[1]
-    fa = Image.fromarray(front[..., 3]).resize(CANVAS, Image.BILINEAR)
+    cw, ch = CANVASES["16x9"] if front.shape[1] >= front.shape[0] else CANVASES["9x16"]
+    fa = Image.fromarray(front[..., 3]).resize((cw, ch), Image.BILINEAR)
     s = anc["h"] / 720
     w, h = max(int(400 * s), 1), max(int(720 * s), 1)
     him = him.resize((w, h), Image.BILINEAR)
@@ -1274,14 +1360,13 @@ def head_covered(front: np.ndarray | None, anc: dict | None) -> float | None:
     fm = np.asarray(fa)
     for yy in range(min(rows, h)):
         Y = y0 + yy
-        if not 0 <= Y < CANVAS[1]:
+        if not 0 <= Y < ch:
             continue
         for xx in np.nonzero(hm[yy] > 0)[0]:
             X = x0 + int(xx)
-            if 0 <= X < CANVAS[0]:
+            if 0 <= X < cw:
                 head += 1
                 covered += int(fm[Y, X] > 127)
-    del k
     return round(covered / head, 3) if head else None
 
 
@@ -1295,16 +1380,19 @@ def save(img: np.ndarray, path: Path) -> None:
         im.save(path, optimize=True)
 
 
-def render_angle(name: str, season: str, size, samples: int, out: Path, scratch: Path) -> dict:
-    camera(name)
-    stem = name if season == "plain" else f"{name}-christmas"
-    anc = anchor(name)
-    entry = {"angle": name, "season": season, "anchor": anc, "title": title_slot(name),
-             "camera": {"location": list(CAMERAS[name]["cam"][0]), "target": list(CAMERAS[name]["cam"][1]),
-                        "lens": CAMERAS[name]["cam"][2]},
+def render_angle(name: str, season: str, size, samples: int, out: Path, scratch: Path,
+                 aspect: str = "16x9") -> dict:
+    camera(name, aspect)
+    stem = stem_of(name, season, aspect)
+    cam = view(name, aspect)["cam"]
+    entry = {"angle": name, "season": season, "aspect": aspect, "anchor": anchor(name, aspect),
+             "title": title_slot(name, aspect),
+             "camera": {"location": list(cam[0]), "target": list(cam[1]), "lens": cam[2]},
              "surfaces": surfaces()}
-    whole = read_exr(render_room(scratch, stem))
-    mk = masks(read_exr(render_masks(scratch, stem + "_masks", his_depth(name))), size[0] / FULL[0])
+    anc = entry["anchor"]
+    whole = read_exr(render_room(scratch, stem), drop=True)
+    mk = masks(read_exr(render_masks(scratch, stem + "_masks", his_depth(name, aspect)), drop=True),
+               max(size) / FULL[0])
     # A mask nothing in this angle shows is not written: no front things, the
     # board or the screen out of shot, the window not in view.
     entry["masks"] = {}
@@ -1336,30 +1424,33 @@ def preview_sheet(entries: list[dict], out: Path, path: Path) -> None:
     host = REPO / "assets" / "plates" / "host" / "to-camera.png"
     tiles = []
     for e in entries:
-        im = Image.open(out / e["states"][0]["png"]).convert("RGBA").resize((640, 360))
+        tile = (640, 360) if e.get("aspect", "16x9") == "16x9" else (270, 480)
+        cw = CANVASES[e.get("aspect", "16x9")][0]
+        im = Image.open(out / e["states"][0]["png"]).convert("RGBA").resize(tile)
         a = e["anchor"]
         if a and host.exists():
-            k = 640 / CANVAS[0]
+            k = tile[0] / cw
             hh = a["h"] * k
             him = Image.open(host).convert("RGBA")
             him = him.resize((max(int(hh * 400 / 720), 1), max(int(hh), 1)))
             im.alpha_composite(him, (int((a["x"] + a["w"] / 2) * k - him.width / 2), int(a["y"] * k)))
             fr = e["masks"].get("front")
             if fr:
-                back = Image.open(out / e["states"][0]["png"]).convert("RGBA").resize((640, 360))
-                back.putalpha(Image.open(out / fr).convert("L").resize((640, 360)))
+                back = Image.open(out / e["states"][0]["png"]).convert("RGBA").resize(tile)
+                back.putalpha(Image.open(out / fr).convert("L").resize(tile))
                 im.alpha_composite(back)
         d = ImageDraw.Draw(im)
         if e.get("title"):
             t = e["title"]
-            k = 640 / CANVAS[0]
+            k = tile[0] / cw
             d.rectangle([t["x"] * k, t["y"] * k, (t["x"] + t["w"]) * k, (t["y"] + t["h"]) * k], outline="yellow")
         d.text((8, 8), f"{e['angle']} {e['season']} head {e.get('headCovered')}", fill="yellow")
         tiles.append(im)
-    cols = 3
-    sheet = Image.new("RGB", (640 * cols, 360 * ((len(tiles) + cols - 1) // cols)), "black")
+    tw, th = max(t.width for t in tiles), max(t.height for t in tiles)
+    cols = 3 if tw > th else 6
+    sheet = Image.new("RGB", (tw * cols, th * ((len(tiles) + cols - 1) // cols)), "black")
     for i, t in enumerate(tiles):
-        sheet.paste(t.convert("RGB"), ((i % cols) * 640, (i // cols) * 360))
+        sheet.paste(t.convert("RGB"), ((i % cols) * tw, (i // cols) * th))
     sheet.save(path, quality=88)
 
 
@@ -1367,6 +1458,8 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cam", action="append", help="one angle (repeatable); default every angle")
     ap.add_argument("--season", choices=("plain", "christmas", "both"), default="both")
+    ap.add_argument("--aspect", choices=(*ASPECTS, "both"), default="both",
+                    help="the long's 16:9 cameras, the shorts' 9:16 ones, or both")
     ap.add_argument("--samples", type=int, default=32)
     ap.add_argument("--preview", action="store_true", help="640x360, 8 samples, into the scratch dir")
     ap.add_argument("--out", type=Path, default=RENDERS)
@@ -1377,7 +1470,8 @@ def main(argv: list[str]) -> int:
     unknown = [n for n in names if n not in CAMERAS]
     if unknown:
         ap.error(f"unknown angle(s): {', '.join(unknown)}")
-    size, samples = (PREVIEW, 8) if args.preview else (FULL, args.samples)
+    aspects = ASPECTS if args.aspect == "both" else (args.aspect,)
+    samples = 8 if args.preview else args.samples
     out = args.scratch / "preview" if args.preview else args.out
     out.mkdir(parents=True, exist_ok=True)
     args.scratch.mkdir(parents=True, exist_ok=True)
@@ -1392,19 +1486,21 @@ def main(argv: list[str]) -> int:
         THINGS.clear()
         _MATS.clear()
         build_room(season)
-        setup_render(size, samples)
-        for name in names:
-            if season == "christmas" and name not in CHRISTMAS:
-                continue
-            print(f"[room3d] {name} {season}", flush=True)
-            t0 = time.monotonic()
-            e = render_angle(name, season, size, samples, out, args.scratch)
-            print(f"[room3d] {name} {season} done in {time.monotonic() - t0:.0f}s, "
-                  f"head covered {e['headCovered']}", flush=True)
-            manifest[e["angle"] if season == "plain" else f"{e['angle']}-christmas"] = e
-            entries.append(e)
-            # After every angle, so a long run that stops keeps what it made.
-            manifest_path.write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
+        for aspect in aspects:
+            size = (PREVIEWS if args.preview else FULLS)[aspect]
+            setup_render(size, samples)
+            for name in names:
+                if season == "christmas" and name not in CHRISTMAS:
+                    continue
+                print(f"[room3d] {name} {season} {aspect}", flush=True)
+                t0 = time.monotonic()
+                e = render_angle(name, season, size, samples, out, args.scratch, aspect)
+                print(f"[room3d] {name} {season} {aspect} done in {time.monotonic() - t0:.0f}s, "
+                      f"head covered {e['headCovered']}", flush=True)
+                manifest[stem_of(name, season, aspect)] = e
+                entries.append(e)
+                # After every angle, so a long run that stops keeps what it made.
+                manifest_path.write_text(json.dumps(manifest, indent=1, sort_keys=True) + "\n")
     if args.preview or len(entries) > 1:
         preview_sheet(entries, out, out / "contact.jpg")
     print(f"[room3d] {len(entries)} angle(s) -> {out}")

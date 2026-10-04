@@ -29,10 +29,10 @@ NOTHING HERE TRUSTS ANYTHING, and it runs in this order:
    chapter types, sector) is filed under the key it names and checked against
    the vocabulary it claims; `roles.json` adds who stands where and what is
    held back.
-5. The long's 16:9 rooms are replaced by the 3D room (`room3d/`, item 36):
-   one model rendered from every angle the kit names, committed as pictures,
-   so the names, the roles and the writer's menu stay as they were and only
-   the drawing changes. The short keeps the kit's 9:16 rooms.
+5. Every room, 16:9 and 9:16, is replaced by the 3D room (`room3d/`, item
+   36): one model rendered from every angle the kit names, in the long's
+   frame and the phone's, committed as pictures, so the names, the roles and
+   the writer's menu stay as they were and only the drawing changes.
 6. The host and the rooms are checked against the roles that use them.
 
 Every problem from every stage is collected and printed together, because a
@@ -86,7 +86,10 @@ REBUILD_MARKERS = ("engine/kit-model.js", "engine/port.js", "design-tokens.json"
 # here, with the anchors and title slots it solved from each camera. Nothing
 # is rendered on the box that installs them.
 ROOM3D = REPO / "room3d" / "renders"
-ROOM3D_ASPECT = "16x9"
+# The long's rooms and, since 4 Oct 2026, the shorts' ("the shorts should be
+# on this engine as well"): every room the kit draws, in both frames.
+ROOM3D_ASPECTS = ("16x9", "9x16")
+ROOM3D_ASPECT = ROOM3D_ASPECTS[0]
 ROOM3D_AUTHOR = "room3d"
 # The kit's title slot (desk-wide, rebuild-21) is 504 units wide at size 76:
 # the title's size on the slate keeps that ratio, and two lines fit its height.
@@ -197,9 +200,9 @@ def _kit_proves_itself(staged: Path) -> list[str]:
 # room, behind a man who moves, that read as a fault, and Valentin had it
 # taken off (3 Oct 2026). The render still makes the dip states
 # (room3d/build.py), and the ingest plays none of them: the loop is dropped
-# from every 16:9 room and its rain, so a room whose only motion was the
-# flicker installs as a still, and the long's sound loses the buzz that went
-# with it (`pipeline.sound.SET_LAYERS`).
+# from every 3D room and its rain, the phone's included, so a room whose only
+# motion was the flicker installs as a still, and the sound loses the buzz
+# that went with it (`pipeline.sound.SET_LAYERS`).
 ROOM3D_DROPS_LOOPS = ("screen-flicker",)
 
 
@@ -270,7 +273,7 @@ def _precipitation(img, mask, kind: str, phase: int, seed: int):
 
 
 def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
-    """Put the 3D room in place of every 16:9 room the engine drew.
+    """Put the 3D room in place of every room the engine drew, 16:9 and 9:16.
 
     BY THE KIT'S OWN NAMES. Each angle `room3d/build.py` rendered is installed
     under the key the kit drew it as, with the anchor solved from its camera
@@ -287,6 +290,13 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
     light groups, so no frame is a second render) with the weather drawn on
     the glass here, and every front layer is that frame cut by the render's
     own mask of what stands in front of him.
+
+    THE PHONE'S ROOMS are the same angles from cameras of their own
+    (`room3d/build.py` PORTRAIT), rendered under `<angle>-9x16`, with him in
+    the middle of the phone at the size design's 9:16 rooms drew him. They
+    chalk no title: a short has no chapters, so the kit's title slot comes off
+    the 9:16 openers rather than being solved onto a slate that is behind his
+    head from any phone's width.
 
     The dusk hour is the night render: no episode is shot at dusk
     (`roles.json` hours), so it gets the same pictures rather than a second
@@ -306,7 +316,7 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
     room_dir = drawn / "room"
     assets = built.get("assets") or {}
     flat = {k: e for k, e in assets.items()
-            if e.get("family") == "room" and e.get("aspect") == ROOM3D_ASPECT}
+            if e.get("family") == "room" and e.get("aspect") in ROOM3D_ASPECTS}
     # The engine's drawings of these rooms go first, every file of them: a
     # flat frame left on disk under a name the 3D room reuses would be
     # installed in its place, and one under a name it does not is an
@@ -351,17 +361,20 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
             cache[k] = im.resize(size, Image.BILINEAR) if im is not None and im.size != size else im
         return cache[k]
 
-    replaced = 0
+    replaced = {a: 0 for a in ROOM3D_ASPECTS}
     for key, e in sorted(flat.items()):
         season = str(e.get("season") or "")
         angle = str(e.get("angle") or "")
+        aspect = e["aspect"]
         if season:
             angle = angle.removesuffix(f"-{season}")
         stem = f"{angle}-{season}" if season else angle
+        if aspect != ROOM3D_ASPECT:
+            stem += f"-{aspect}"
         r = rooms.get(stem)
         if r is None:
             problems.append(f"{key}: room3d rendered no {stem}; render it "
-                            f"(python3 room3d/build.py --cam {angle})")
+                            f"(python3 room3d/build.py --cam {angle} --aspect {aspect})")
             continue
         r["_states"] = {st["tag"]: st["png"] for st in r.get("states") or []}
         size = tuple(e["delivered"])
@@ -483,6 +496,11 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
             e.pop("writable", None)
 
         title = e["slots"].get("title")
+        if title is not None and aspect != ROOM3D_ASPECT and not r.get("title"):
+            # The phone opens no chapters: nothing writes a title here.
+            e["slots"].pop("title")
+            (e.get("typeRoles") or {}).pop("title", None)
+            title = None
         if title is not None:
             t = r.get("title")
             if not t:
@@ -500,9 +518,10 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
                     tr["size"] = int(min(tr.get("size") or 76, t["w"] / _TITLE_W_PER_SIZE,
                                          t["h"] / (2 * _TITLE_LINE)))
                     e.setdefault("typeRoles", {})["title"] = tr
-        replaced += 1
-    if replaced:
-        print(f"  room3d: {replaced} {ROOM3D_ASPECT} rooms are the 3D room")
+        replaced[aspect] += 1
+    for aspect, n in replaced.items():
+        if n:
+            print(f"  room3d: {n} {aspect} rooms are the 3D room")
     return problems
 
 

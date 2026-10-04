@@ -189,3 +189,40 @@ def test_the_plan_steps_the_bulbs_and_never_dips_the_screen():
     # A bulb state the render did not make falls back to the room at rest.
     assert ingest._room3d_plan(("lights-twinkle",), 12, {"": None})[0][0] == ""
     assert "screen-flicker" in ingest.ROOM3D_DROPS_LOOPS
+
+
+def test_the_phone_s_rooms_are_its_own_renders_with_no_title(tmp_path):
+    """The shorts' 9:16 rooms are the 3D room too (4 Oct 2026), rendered from
+    cameras of their own under `<angle>-9x16`. A short has no chapters, so an
+    opener's title comes off rather than being asked of a slate."""
+    renders = _renders(tmp_path)
+    rooms = json.loads((renders / "rooms.json").read_text(encoding="utf-8"))
+    tall = (SIZE[1], SIZE[0])
+    for tag in ("", "_dip", "_dip2"):
+        Image.new("RGB", tall, (90, 30, 30)).save(renders / f"desk-wide-9x16{tag}.png")
+    rooms["desk-wide-9x16"] = dict(rooms["desk-wide"], aspect="9x16", title=None,
+                                   anchor={"x": 20, "y": 40, "w": 9, "h": 44},
+                                   masks={}, surfaces={},
+                                   states=[{"tag": t, "png": f"desk-wide-9x16{t}.png"}
+                                           for t in ("", "_dip", "_dip2")])
+    (renders / "rooms.json").write_text(json.dumps(rooms), encoding="utf-8")
+
+    phone = dict(_kit_room("desk-wide-9x16", "night"), aspect="9x16", delivered=list(tall),
+                 canvas=[27, 48])
+    built = {"assets": {"room/desk-wide-16x9": _kit_room("desk-wide-16x9", "night"),
+                        "room/desk-wide-9x16": phone,
+                        "room/board-9x16": dict(_kit_room("board-9x16", "night", loops=()),
+                                                aspect="9x16", angle="board")}}
+    drawn = tmp_path / "drawn"
+    (drawn / "room").mkdir(parents=True)
+    problems = ingest._rooms_3d(built, drawn, renders)
+
+    assert [p for p in problems if "board-9x16" in p and "--aspect 9x16" in p], problems
+    e = built["assets"]["room/desk-wide-9x16"]
+    assert e["author"] == ingest.ROOM3D_AUTHOR and e["playback"] == "static"
+    assert _px(drawn / "room" / e["files"]["png"])[0, 0].tolist() == [90, 30, 30]
+    assert e["slots"]["host-anchor"]["h"] == 44 and e["floorLineY"] == 84
+    assert "title" not in e["slots"] and "title" not in e["typeRoles"]
+    assert "layers" in e and not e["layers"], "no front mask, no front layer"
+    # The long's room beside it keeps its slate.
+    assert built["assets"]["room/desk-wide-16x9"]["slots"]["title"]["groundBox"]["w"] == 14
