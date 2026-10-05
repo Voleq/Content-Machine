@@ -2490,6 +2490,11 @@ class BotCore:
                 if active is not None:
                     BatchQueue(self.settings).mark_submitted(
                         item.ticker, item.fmt, active.id)
+                    # Said once, on the pass that finds it: the entry is
+                    # closed when that render is, not submitted again.
+                    skipped.append(f"{item.ticker} {item.fmt.upper()}: already "
+                                   f"{active.status.value} — following that "
+                                   f"render instead of starting another")
                     continue
                 self.batch_done(item.ticker, item.fmt, str(e))
                 skipped.append(f"{item.ticker} {item.fmt.upper()}: {e}")
@@ -2720,10 +2725,10 @@ class BotCore:
                      "of views.")
         return Reply("\n".join(lines))
 
-    def scheduled_text(self) -> Reply:
+    def scheduled_text(self, now=None) -> Reply:
         from pipeline.youtube import VideoLog
 
-        rows = VideoLog(self.settings).scheduled()
+        rows = VideoLog(self.settings).scheduled(now=now)
         if not rows:
             return Reply("📺 nothing scheduled.\n"
                          "/upload TICKER 2026-08-07 18:00 schedules one.")

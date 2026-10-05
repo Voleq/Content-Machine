@@ -660,7 +660,9 @@ def test_scheduled_is_empty_until_something_is(core):
 def test_scheduled_lists_what_is_queued(core, settings, package, video):
     upload_video(video, package, settings, publish_at="2026-08-07 18:00",
                  client=FakeClient(), now=NOW)
-    text = core.scheduled_text().text
+    # On the test's own clock: against the real one, a fixed date passes and
+    # the upload correctly stops being "queued".
+    text = core.scheduled_text(now=NOW).text
     assert "EXMPL" in text and "2026-08-07" in text
 
 
