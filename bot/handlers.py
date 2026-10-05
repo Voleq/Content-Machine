@@ -3675,9 +3675,9 @@ def _authorized(core: BotCore, chat_id: int) -> bool:
     return bool(ids) and chat_id in ids
 
 
-async def send_reply(bot, chat_id: int, reply: Reply | str):
-    """Send a Reply to a chat; returns the message that carries its keyboard
-    (the one a video card is edited through)."""
+async def _ship(reply: Reply | str, text_fn, photo_fn, doc_fn):
+    """Send a Reply through three senders; returns the message that carries
+    its keyboard (the one a video card is edited through)."""
     # Half the read commands return a bare string. They were handed here
     # as-is and died on `.text`, so /said, /lines, /hooks, /rules, /runtime,
     # /shots, /stillness, /why, /experiments, /scoreboard and /correct
@@ -3691,21 +3691,38 @@ async def send_reply(bot, chat_id: int, reply: Reply | str):
     carrier = None
     while text:  # Telegram 4096-char message cap
         chunk, text = text[:4000], text[4000:]
-        msg = await bot.send_message(
-            chat_id, chunk, reply_markup=reply.keyboard if not text else None)
+        msg = await text_fn(chunk, reply_markup=reply.keyboard if not text else None)
         if not text:
             carrier = msg
     if reply.photo is not None:
         with open(reply.photo, "rb") as f:
-            await bot.send_photo(chat_id, f)
+            await photo_fn(f)
     for path in reply.files:
         with open(path, "rb") as f:
-            await bot.send_document(chat_id, f, filename=Path(path).name)
+            await doc_fn(f, filename=Path(path).name)
     return carrier
 
 
+async def send_reply(bot, chat_id: int, reply: Reply | str):
+    """A push to a chat — nothing to reply to (a finished render, the
+    morning inbox)."""
+    return await _ship(
+        reply,
+        lambda t, reply_markup=None: bot.send_message(chat_id, t,
+                                                      reply_markup=reply_markup),
+        lambda f: bot.send_photo(chat_id, f),
+        lambda f, filename=None: bot.send_document(chat_id, f,
+                                                   filename=filename))
+
+
 async def _send(update, reply: Reply | str):
-    return await send_reply(update.get_bot(), update.effective_chat.id, reply)
+    """An answer, as a reply to the message (or button) that asked — which
+    keeps it in the same forum topic."""
+    msg = update.effective_message
+    return await _ship(
+        reply, msg.reply_text,
+        lambda f: msg.reply_photo(f),
+        lambda f, filename=None: msg.reply_document(f, filename=filename))
 
 
 def build_application(settings: Settings, core: BotCore):
@@ -3778,6 +3795,11 @@ def build_application(settings: Settings, core: BotCore):
     async def on_unknown(update, ctx):
         text = update.effective_message.text or ""
         name = text.split(None, 1)[0].lstrip("/") if text else ""
+        if "@" in name:
+            # `/cmd@otherbot` in a group is somebody else's command.
+            addressed = name.split("@", 1)[1].lower()
+            if addressed != (ctx.bot.username or "").lower():
+                return
         await _send(update, Reply(cmds.unknown_command_text(name)))
 
     async def _say(update):

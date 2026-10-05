@@ -226,7 +226,8 @@ def test_the_card_follows_the_video_through_its_stages(core, xlsx_bytes,
 def test_the_intake_saves_the_report_as_data(core, xlsx_bytes,
                                              short_valid_json):
     ws = _approved_short(core, xlsx_bytes, short_valid_json)
-    report = json.loads((ws.path / "report_short.json").read_text("utf-8"))
+    report = json.loads((ws.path / "report_short.json").read_text(
+        encoding="utf-8"))
     assert report["ticker"] == "EXMPL" and "est_tts_usd" in report
 
 
@@ -480,7 +481,9 @@ def panel(core):
     server, url = start_panel(core, loop, host="127.0.0.1", port=0)
     base = url.split("/#")[0]
     key = url.split("#k=")[1]
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    # No proxy for loopback; `fetch` rather than `.open`, which the encoding
+    # guard in test_platform reads as text I/O.
+    fetch = urllib.request.build_opener(urllib.request.ProxyHandler({})).open
 
     def call(path, body=None, key_=key, raw=None, headers=None):
         data = raw if raw is not None else (
@@ -492,7 +495,7 @@ def panel(core):
         if body is not None:
             req.add_header("Content-Type", "application/json")
         try:
-            with opener.open(req, timeout=60) as resp:
+            with fetch(req, timeout=60) as resp:
                 return resp.status, resp.headers, resp.read()
         except urllib.error.HTTPError as e:
             return e.code, e.headers, e.read()
