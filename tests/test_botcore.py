@@ -519,24 +519,35 @@ def test_the_blocking_intake_paths_run_off_the_event_loop():
     import ast
     import inspect
 
-    from bot import handlers
+    from bot import commands, handlers
 
-    src = inspect.getsource(handlers)
-    tree = ast.parse(src)
+    trees = [ast.parse(inspect.getsource(m)) for m in (handlers, commands)]
 
-    blocking = {"intake_script", "handle_upload", "swap_key"}
+    blocking = {"intake_script", "handle_upload", "swap_key", "approve",
+                "angle_pick", "upload_command", "render_request"}
     offenders: list[str] = []
-    for node in ast.walk(tree):
+    def on_the_core(fn) -> bool:
+        """`core.x(...)` / `c.core.x(...)` — BotCore's own blocking method,
+        not an async wrapper of the same name (`cmds.handle_upload`)."""
+        owner = fn.value
+        return ((isinstance(owner, ast.Name) and owner.id == "core")
+                or (isinstance(owner, ast.Attribute) and owner.attr == "core"))
+
+    for node in (n for tree in trees for n in ast.walk(tree)):
         if not isinstance(node, ast.AsyncFunctionDef):
             continue
+        # A call inside a lambda handed to `to_thread` runs in the thread.
+        deferred = {id(c) for lam in ast.walk(node) if isinstance(lam, ast.Lambda)
+                    for c in ast.walk(lam)}
         for call in ast.walk(node):
-            if not isinstance(call, ast.Call):
+            if not isinstance(call, ast.Call) or id(call) in deferred:
                 continue
             fn = call.func
             # `core.intake_script(...)` awaited directly is the bug; the same
             # name inside `asyncio.to_thread(core.intake_script, ...)` is the
             # fix, and appears as an ARGUMENT rather than as the callee.
-            if isinstance(fn, ast.Attribute) and fn.attr in blocking:
+            if (isinstance(fn, ast.Attribute) and fn.attr in blocking
+                    and on_the_core(fn)):
                 offenders.append(f"{node.name} calls {fn.attr}() inline")
     assert not offenders, "on the event loop:\n  " + "\n  ".join(offenders)
 
@@ -545,10 +556,10 @@ def test_a_slow_paste_is_acknowledged_before_the_work_starts(core):
     """The operator should not be watching a silent bot for a minute."""
     import inspect
 
-    from bot import handlers
+    from bot import commands
 
-    src = inspect.getsource(handlers.build_application)
-    assert "_off_loop" in src
+    src = inspect.getsource(commands.handle_text)
+    assert "asyncio.to_thread" in src
     assert "got it" in src, "the acknowledgement has to actually be sent"
 
 

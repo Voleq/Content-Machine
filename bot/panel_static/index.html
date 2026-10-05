@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Dennis Panel</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">Dennis<span class="sub">control panel</span></div>
+  <div class="status">
+    <button id="active" class="pill" title="The video a paste or an upload lands in">no active video</button>
+    <span id="spend" class="pill" title="Month-to-date spend against the cap"></span>
+    <button id="notify" class="pill" title="Which pushes the bot sends"></button>
+  </div>
+</header>
+<div id="mock" class="mock" hidden></div>
+
+<div id="login" class="login" hidden>
+  <h1>Panel key</h1>
+  <p>Open the link that <code>/admin panel</code> sends in Telegram, or paste the
+    key from <code>state/panel_token</code> on the render box.</p>
+  <form id="login-form" class="row">
+    <input id="key" type="password" autocomplete="off" placeholder="panel key" class="grow">
+    <button class="primary">Unlock</button>
+  </form>
+</div>
+
+<div id="app" class="layout" hidden>
+  <nav class="tabs" id="tabs" role="tablist">
+    <button data-tab="home" class="on" role="tab">Home</button>
+    <button data-tab="videos" role="tab">Videos</button>
+    <button data-tab="commands" role="tab">Commands</button>
+    <button data-tab="activity" role="tab">Activity <span id="unread" class="badge" hidden></span></button>
+  </nav>
+
+  <main>
+    <section id="tab-home" class="tab on">
+      <div class="grid">
+        <div class="card">
+          <h2>Inbox</h2>
+          <div id="inbox" class="list"></div>
+        </div>
+        <div class="card">
+          <h2>Start a video</h2>
+          <form id="start-form" class="row wrap">
+            <input name="ticker" placeholder="TICKER" required autocomplete="off"
+                   pattern="[A-Za-z0-9.\-]{1,15}" class="ticker">
+            <select name="lane">
+              <option value="go">Guided SHORT</option>
+              <option value="new short">SHORT</option>
+              <option value="new long">LONG</option>
+              <option value="new update">UPDATE</option>
+            </select>
+            <button class="primary">Start</button>
+          </form>
+          <h3>Send to the active video</h3>
+          <label class="drop" id="drop">
+            <input type="file" id="file" hidden>
+            <span><b>Drop a file</b> or click — the workbook, a screengrab, a
+              script as .txt. No 20 MB limit here.</span>
+            <progress id="upload-progress" max="1" value="0" hidden></progress>
+          </label>
+          <textarea id="paste" rows="6" spellcheck="false"
+            placeholder="Paste the script, an angle tweak, or the answer to a question the bot asked"></textarea>
+          <div class="row end"><button id="send-paste" class="primary">Send</button></div>
+        </div>
+        <div class="card span2">
+          <div class="row between"><h2>Render queue</h2><span id="queue-note" class="muted"></span></div>
+          <div id="jobs" class="list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-videos" class="tab">
+      <div class="row between"><h2>Videos, last 14 days</h2>
+        <input id="video-filter" placeholder="Filter by ticker…" autocomplete="off"></div>
+      <div id="videos" class="cards"></div>
+    </section>
+
+    <section id="tab-commands" class="tab">
+      <div class="row wrap">
+        <input id="cmd-line" class="grow mono" autocomplete="off" spellcheck="false"
+               placeholder="/render proof short   ·   type any command, exactly as in Telegram">
+        <button id="cmd-run" class="primary">Run</button>
+      </div>
+      <input id="cmd-filter" placeholder="Filter commands…" autocomplete="off" class="filter">
+      <div id="commands"></div>
+    </section>
+
+    <section id="tab-activity" class="tab">
+      <div class="row between"><h2>Everything the bot pushed</h2>
+        <span class="muted">since the bot started</span></div>
+      <div id="feed" class="list"></div>
+    </section>
+  </main>
+
+  <aside class="replies">
+    <div class="row between"><h2>Replies</h2><button id="clear-replies" class="ghost">Clear</button></div>
+    <div id="replies"></div>
+  </aside>
+</div>
+
+<dialog id="player">
+  <form method="dialog" class="row between"><b id="player-title"></b><button class="ghost">Close</button></form>
+  <video id="player-video" controls playsinline></video>
+</dialog>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

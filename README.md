@@ -79,6 +79,7 @@ Excel; the refresh happens on the operator's own machine.)
 | Two consecutive videos are steered off the plates and the set hour the last three renders used, wherever the kit has an alternative — and never at the cost of failing a render | `pipeline/plates.py` `_prefer_unused`, `pipeline/reach.py` `recent_plates` |
 | Every free source degrades to "unavailable"; none can fail a run | `pipeline/sources.py` |
 | The status page binds loopback only (no auth, shows internals) | `pipeline/status_page.py` `serve` |
+| The web panel binds loopback by default, needs its key on every call, and never serves `state/` | `bot/panel.py` |
 
 ---
 
@@ -236,12 +237,20 @@ pipeline/
   thumbnail.py           the cover — a frame from the video
   frame_checks.py        golden-frame compare + held-composition measurement
   status_page.py         read-only localhost view (loopback, no auth)
+  video_state.py         where a video is, read off its folder: the card,
+                         the inbox and the panel all read this
   cleanup.py             RETENTION_DAYS disk hygiene (never the voice cache)
 bot/
   handlers.py            BotCore (all logic, Telegram-free) + PTB glue
+  commands.py            THE COMMAND REGISTRY: every command once — families,
+                         old names, help, the "/" menu, the README tables,
+                         the buttons' dispatch, the /go wizard, live cards
+  feed.py                the activity feed the web panel reads
+  panel.py               the web control panel (stdlib HTTP, key-protected)
+  panel_static/          its page: index.html, app.js, app.css (no build step)
   prompts.py             master-prompt filling + the plate catalogue, generated
                          from the registry (never a hand-kept list)
-  keyboards.py           Approve / Swap clip / Cancel, candidate buttons
+  keyboards.py           every button: approval, next steps, cards, inbox
 kit/                     THE DESIGN DELIVERY, as shipped: engine/ (the
                          generator), per-family manifest.json, emit/,
                          roles.fragment.json (design's note on every plate),
@@ -596,6 +605,14 @@ starting point, but they are **unmaintained** and nothing tests them.
 
 ## Operator flow (one video, start to finish)
 
+**The short way:** `/go TICKER` walks a SHORT through every step below,
+asking for exactly the next thing, with each step's next tap on a button —
+and `/card` shows where any video is, on one message that edits itself as
+the video moves. `/inbox` (also sent every morning) lists everything waiting
+on you. All of it works the same in the web panel (see "The web panel"
+under the command reference). The long way, step by step (the old command
+names below still work; the reference maps them to their families):
+
 1. `/screen` (or the pre-market digest) → tap a candidate, or name the lane
    yourself: **`/short TICKER`** or **`/long TICKER`**. One command prepares
    one prompt, and `/render` follows from the lane rather than being a second
@@ -688,146 +705,254 @@ starting point, but they are **unmaintained** and nothing tests them.
 
 ## Command reference
 
-Every command the bot registers, in the order you meet them. `TICKER` is
-always the symbol (`EXMPL`); anything in `[brackets]` is optional. Commands
-that touch a workspace use the **active** one when you omit the ticker — the
-last `/short`, `/long` or `/update` you ran in that chat.
+Every command the bot answers, grouped into families. `TICKER` is always the
+symbol (`EXMPL`); anything in `[brackets]` is optional. **A command that
+takes a ticker defaults to the chat's active video** — the last `/new`, `/go`
+or "work on this" — and its reply says which video it acted on. Write
+`TICKER@YYYY-MM-DD` to reach an older folder. Every old name (`/short`,
+`/draft`, `/upload`, …) still works; the table at the end maps them.
 
-`tests/test_docs.py` checks this table against the handlers the bot actually
-registers, in both directions, so a command cannot be added or renamed without
-this section failing.
+The Telegram "/" menu lists only the entry points and the families.
+`/help FAMILY` shows one family with examples, using your active ticker.
+💰 marks the one step that spends; its button asks once more, with the
+price on it.
 
-### Starting a video
+These tables are generated from the registry in `bot/commands.py` (`python
+-m bot.commands --readme`); `tests/test_docs.py` fails when they are stale,
+and checks every name the bot registers against them in both directions.
 
-| command | what it does |
-|---|---|
-| `/short TICKER` | Opens a SHORT (9:16, 45–55s), pulls a live quote for the move context, and asks for the refreshed workbook. `prompt_short.md` follows the upload. |
-| `/long TICKER` | Opens a LONG (16:9 deep dive) **and starts reading the filings immediately** — the latest 10-K, the prior year's and the quarterly pair, in parallel with you refreshing the workbook. Two steps: Step 1 returns ranked angles (with that filing brief in front of the model, cross-checked against your numbers once the workbook lands), you reply with a number, Step 2 is the writing prompt. |
-| `/update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Gets the same filing brief, additionally **graded against what the last video claimed** — which is what this format is. Refuses (and points at `/long`) when no thesis is on file. |
-| `/headline TICKER <text or URL>` | A SHORT about one specific headline. `/headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `a:`, `b:` or `c:`. The mode sets the lane and picks the shot template, so an earnings script renders through the earnings beat order rather than the plain short's. |
-| `/prompts` | Re-sends the active workspace's pre-filled prompt. |
-
-### Reviewing and editing the script
+<!-- commands:begin (generated by `python -m bot.commands --readme` — edit bot/commands.py, not this) -->
+### /go — Guided SHORT
 
 | command | what it does |
 |---|---|
-| `/script` | The stored script, numbered, so `/edit N` and it agree. |
-| `/edit N <text>` | Replaces line N. `N-M` for a range; no text deletes the line. |
-| `/replace old => new` | Fixes a figure or a phrase by its own words. `all:` prefix replaces every occurrence. |
-| `/undo` | Steps back one revision. A revert that fails validation costs nothing — the revision it took is put back. |
+| `/go TICKER` | Walks one SHORT from the workbook to YouTube, asking for exactly the next thing: the workbook, the paste, the approval, the render (asked twice — it spends), the upload. Every step is an ordinary step: leave the wizard at any point and carry on by hand. |
 
-An edit that does not parse never lands. Every edit that does re-runs the
-gates, re-prices, and drops the approval — nothing renders from a version
-nobody read.
-
-### Rendering
+### /card — Video card
 
 | command | what it does |
 |---|---|
-| `/render TICKER` | Renders the approved script for that ticker's lane. |
-| `/render_long TICKER` | Forces the LONG, for a ticker that has both. |
-| `/render_short TICKER` | Forces the SHORT, for a ticker that has both. |
-| `/proof TICKER [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". Writes `short_proof.mp4` / `long_proof.mp4` — never over a paid final. |
-| `/draft TICKER` | LONG only, half resolution, free voice. Answers "does the timing work?". |
-| `/repurpose TICKER` | Cuts the best two or three ~58s windows of a finished LONG into free vertical SHORTs. |
-| `/status` | The job queue, with the by-product links the delivery produced — thumbnail, `.srt`, upload package, credits. Jobs left QUEUED by a restart are picked back up rather than blocking their ticker. |
-| `/cancel TICKER` | Cancels queued and running jobs plus any pending approval. |
+| `/card [TICKER]` | One message per video — data, angle, script, gates, approval with its price, renders, the job in flight, the upload — and the next step on a button. **It edits itself as the video moves**: a render's progress updates the card rather than adding messages. No ticker: the video you are working on. |
 
-**Every render writes to a temp file and `os.replace`s into position**, after
-its length has been checked, so a failed re-render cannot destroy the good
-final that was already there. **Segment boundaries are quantised to whole
-frames at plan time** with the remainder carried forward, so the picture no
-longer creeps ahead of the voice across a long cut.
-
-**The lane decides the format, and it is declared rather than inferred.**
-`/short` or `/long` sets it once; `current_format()` returns it. It used to be
-read off which script files existed, with LONG winning unconditionally, so one
-stray paste made `/render`, `/proof`, `/script`, `/edit`, `/undo`, `/upload`
-and `/batch` all target the wrong script for the rest of the day. A script file
-that disagrees with the lane is reported, not followed.
-
-**A pasted script routes by the lane too**, never by whether it starts with a
-brace. A paste that looks cut off — a JSON body that never closes, or a message
-sitting exactly on Telegram's 4,096-character split point — is refused with
-"send it as a .txt file" rather than saved as half a script, and the master
-prompts now ask the model to hand the script back as a downloadable `.txt` with
-only the human-facing summary in the chat body.
-
-### Publishing
+### /inbox — Inbox
 
 | command | what it does |
 |---|---|
-| `/upload TICKER [short\|long\|clip] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`, and a naive time is read in that zone rather than UTC. The format's own thumbnail and `.srt` go up with the video (a clip gets neither: the LONG's run on the wrong clock and shape for it), and the description is the render's package — the why, the transcript, and chapters cut to the rendered length. A dropped upload resumes rather than starting a second one. |
-| `/upload TICKER pair` | Ships **two** repurposed clips off one long, tagged as a pair, so `/experiments` can compare them. Two clips off one render cost no voice generation and no new composition and differ in exactly one thing — which minute of the argument they carry. The second one used to be thrown away. |
-| `/probe TICKER [short\|long]` | One **unlisted** upload of a finished render with the synthetic-media box ticked, to see where YouTube actually puts the AI label on this channel's output — under the player, or only in the expanded description. The answer is on the watch page, not in the API. Never public, never scheduled, not recorded as a published video; delete it when you have looked. |
-| `/scheduled` | What is queued to publish, and when. |
-| `/retention [TICKER]` | Per-chapter drop-off. No ticker aggregates the evidence across everything published. |
-| `/correct [TICKER <what was wrong>]` | Pins a correction on a video that has already shipped, amends its description and records it. No arguments lists every correction ever issued. Twelve gates stop a wrong number before it goes out; this is for the one that was right on Tuesday and restated on Friday. |
+| `/inbox` | Scripts waiting for approval, blocked reports, approved scripts not rendered, finals not uploaded, publishes in the next 48 hours, retention ready to read, and anything that failed overnight — one button each. Also sent every morning at `INBOX_HOUR`. |
 
-### Reading what the videos did
-
-Every command here is a read. None spends, none renders, none can fail a job.
-They exist because these measurements were already being taken and thrown
-away.
+### /new — Starting a video
 
 | command | what it does |
 |---|---|
-| `/lines TICKER` | Where a published video lost them, **to the sentence**. Retention comes back as a ratio through the video; joined against the word timings the render already stored, it names the line. A chapter is twenty to ninety seconds and points at a paragraph. |
-| `/hooks [short\|long]` | Openers ranked by what they held over their own first five seconds, rather than by the whole video's average. An opener's job ends early and a video that loses people at the end did not fail at the top. |
-| `/shots TICKER` | Which shots of a published video lose people, and how long each of them runs. The half of the retention loop the renderer never heard. |
-| `/stillness TICKER` | Every stretch where the audio runs and the picture holds still for more than eight seconds. Read off the manifest, so it works offline and on a video that has never shipped. |
-| `/rules` | What the voice rules are worth, measured. Mean hold on sentences carrying a turn, a question, a spoken figure, first person — against those without. Every threshold in the linter was a judgement; this is where they argue back. |
-| `/runtime` | Hold against how long the videos run, per band. Forty-five to fifty-five seconds for a short is an assumption in a spec, not a finding. |
-| `/lessons [now]` | The note every writing prompt carries about where viewers left, per lane. Once a week the bot pulls fresh retention, takes the steepest-drop sentences across the lane's recent videos, counts what they share against every other sentence (length, a figure, a turn, a question, where they sit), and has the local model say what they have in common. Counts come from code; a number the model writes that is not in them is flagged. A lane needs three videos with retention before it says anything. `now` rewrites it immediately. Free: the model call never falls through to a paid hosted tier. |
-| `/said <phrase>` | Every earlier use of a line, across every script ever shipped. The voice bible's *no construction twice* rule could only ever see inside one script. |
-| `/experiments` | Clip pairs cut from one long and shipped as a pair, and which one held. Two clips off one render cost no voice generation — the only free experiment in the system, and the second one used to be thrown away. |
-| `/scoreboard [YYYY-Qn]` | What we said and what happened, for a quarter. Every number in it was already gathered for the video it came from. It leads with the calls that were wrong, deliberately. |
-| `/why TICKER [<your sentence>]` | Why this one is worth making, in your own words. Prints above Approve and rides the description. With no sentence it reads back what is recorded. |
+| `/new short TICKER` | Opens a SHORT (9:16, 45–55s), pulls a live quote for the move context, and asks for the refreshed workbook. `prompt_short.md` follows the upload. |
+| `/new long TICKER` | Opens a LONG (16:9 deep dive) **and starts reading the filings immediately** — the latest 10-K, the prior year's and the quarterly pair, in parallel with you refreshing the workbook. Two steps: Step 1 returns ranked angles (pick one with its button, or reply with a tweak), Step 2 is the writing prompt. |
+| `/new update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Gets the same filing brief, additionally **graded against what the last video claimed**. Refuses (and points at `/new long`) when no thesis is on file. |
+| `/new headline TICKER <text or URL>` | A SHORT about one specific headline. `/new headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `a:`, `b:` or `c:`. The mode sets the lane and picks the shot template. |
 
-### Finding the next one
+### /script — Reviewing and editing the script
 
 | command | what it does |
 |---|---|
-| `/screen [trending\|value\|all]` | Ranked candidates. Trending → SHORT, value → LONG, plus the update lane (covered names whose thesis has moved). |
+| `/script` | The stored script, numbered, so `/script edit N` and it agree. |
+| `/script edit N <text>` | Replaces line N. `N-M` for a range; no text deletes the line. |
+| `/script replace old => new` | Fixes a figure or a phrase by its own words. `all:` prefix replaces every occurrence. |
+| `/script undo` | Steps back one revision. A revert that fails validation costs nothing — the revision it took is put back. |
+| `/script report` | The validation and cost report on file, with its Approve / Swap / Edit buttons — without re-running the intake. |
+| `/script swap` | One button per swappable visual in the LONG; each tap rotates that beat to its next take and re-prices the report. |
+| `/script prompts` | Re-sends the active video's pre-filled prompt. |
+| `/script why [TICKER] [<your sentence>]` | Why this one is worth making, in your own words. Prints above Approve and rides the description. With no sentence it reads back what is recorded. |
+
+An edit that does not parse never lands. Every edit that does re-runs the gates, re-prices, and drops the approval — nothing renders from a version nobody read.
+
+### /render — Rendering
+
+| command | what it does |
+|---|---|
+| `/render [TICKER] [short\|long]` | Renders the approved script for the video's lane — the one step that spends. A format word picks one for a ticker that has both. **Spends.** |
+| `/render long [TICKER]` | Forces the LONG, for a ticker that has both. **Spends.** |
+| `/render short [TICKER]` | Forces the SHORT, for a ticker that has both. **Spends.** |
+| `/render proof [TICKER] [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". Writes `short_proof.mp4` / `long_proof.mp4` — never over a paid final. |
+| `/render draft [TICKER]` | LONG only, half resolution, free voice. Answers "does the timing work?". |
+| `/render clips [TICKER]` | Cuts the best two or three ~58s windows of a finished LONG into free vertical SHORTs. |
+
+**Every render writes to a temp file and `os.replace`s into position**, after its length has been checked, so a failed re-render cannot destroy the good final that was already there. **Segment boundaries are quantised to whole frames at plan time** with the remainder carried forward, so the picture no longer creeps ahead of the voice across a long cut.
+
+**The lane decides the format, and it is declared rather than inferred.** `/new short` or `/new long` sets it once; `current_format()` returns it. A script file that disagrees with the lane is reported, not followed.
+
+**A pasted script routes by the lane too**, never by whether it starts with a brace. A paste that looks cut off — a JSON body that never closes, or a message sitting exactly on Telegram's 4,096-character split point — is refused with "send it as a .txt file" rather than saved as half a script.
+
+### /publish — Publishing
+
+| command | what it does |
+|---|---|
+| `/publish [TICKER] [short\|long\|clip N] [again] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`. The format's own thumbnail and `.srt` go up with the video, and the description is the render's package — the why, the transcript, and chapters cut to the rendered length. A render already uploaded is refused unless `again` says otherwise. A dropped upload resumes rather than starting a second one. |
+| `/publish pair [TICKER] [YYYY-MM-DD HH:MM]` | Ships **two** repurposed clips off one long, tagged as a pair, so `/stats experiments` can compare them. |
+| `/publish probe [TICKER] [short\|long]` | One **unlisted** upload of a finished render with the synthetic-media box ticked, to see where YouTube puts the AI label on this channel's output. Never public, never scheduled, not recorded as a published video; delete it when you have looked. |
+| `/publish scheduled` | What is queued to publish, and when. |
+| `/publish calendar [weeks]` | The next week (or N weeks) of scheduled publishes, day by day in `PUBLISH_TIMEZONE`, with the empty days marked — something for `/jobs batch` to plan against. |
+| `/publish correct [TICKER <what was wrong>]` | Pins a correction on a video that has already shipped, amends its description and records it. No arguments lists every correction ever issued. |
+
+### /jobs — The render queue
+
+| command | what it does |
+|---|---|
+| `/jobs` | The job queue, with the by-product links the delivery produced — thumbnail, `.srt`, upload package, credits. Jobs left QUEUED by a restart are picked back up. |
+| `/jobs cancel [TICKER]` | Cancels queued and running jobs plus any pending approval. **Undo within a minute** puts the approvals back and re-queues the jobs. |
+| `/jobs undo` | Restores the approvals the last cancel withdrew and re-queues its jobs, within a minute of it. An approval pins the script's hash, so a script edited since stays unapproved. |
+| `/jobs batch [TICKER [fmt] \| run \| clear \| list]` | Queues renders to run unattended overnight. Harmless when the machine is off — nothing expires. |
+
+### /ideas — Finding the next one
+
+| command | what it does |
+|---|---|
 | `/ideas` | The ranked backlog, fed by every screen and by any thesis that moves. |
-| `/idea TICKER <why>` | Adds one by hand. |
-| `/unidea TICKER` | Drops one. |
-| `/thesis [TICKER]` | What we said about a name, re-checked against today's numbers. No ticker lists every thesis on file with its status. |
-| `/watch [TICKER \| drop TICKER]` | Intraday watch, in `SCREEN_TIMEZONE` rather than the machine clock. Published names join automatically. `/watch drop` on its own prints usage instead of watching a stock called DROP. |
-| `/earnings TICKER YYYY-MM-DD [bmo\|amc]` | Records a print date so the bot flags it both sides. |
+| `/ideas add TICKER <why>` | Adds one by hand. |
+| `/ideas drop TICKER` | Drops one. |
+| `/ideas screen [trending\|value\|all]` | Ranked candidates. Trending → SHORT, value → LONG, plus the update lane (covered names whose thesis has moved). Each candidate is a button that opens it in its lane. |
+| `/ideas watch [TICKER \| drop TICKER \| list]` | Intraday watch, in `SCREEN_TIMEZONE` rather than the machine clock. Published names join automatically. |
+| `/ideas earnings TICKER YYYY-MM-DD [bmo\|amc]` | Records a print date so the bot flags it both sides. |
+| `/ideas thesis [TICKER]` | What we said about a name, re-checked against today's numbers. No ticker lists every thesis on file with its status. |
 
-### Asking the bot about itself
-
-Both commands read what the bot has already saved: every script, filing
-brief, check report, thesis, idea, job, upload and journal line, and this
-README. Neither spends, renders, or changes anything.
+### /stats — Reading what the videos did
 
 | command | what it does |
 |---|---|
-| `/ask <question>` | The local model answers from the bot's own records, citing what it read, or says it has nothing on file. Counts and totals ("how many shorts this month", "what did voice cost in August", "what's in the queue") are worked out by code and never reach the model. Any number in an answer that appears in nothing it read is named underneath as a guess. Local only unless `ASK_PROVIDER_ORDER` says otherwise. |
-| `/find <words>` | Every saved record with those words, ranked, no AI involved. Works with Ollama off. |
+| `/stats retention [TICKER]` | Per-chapter drop-off. No ticker aggregates the evidence across everything published. |
+| `/stats lines [TICKER]` | Where a published video lost them, **to the sentence** — retention joined against the word timings the render stored. |
+| `/stats shots [TICKER]` | Which shots of a published video lose people, and how long each of them runs. |
+| `/stats stillness [TICKER]` | Every stretch where the audio runs and the picture holds still for more than eight seconds. Read off the manifest, so it works offline and on a video that has never shipped. |
+| `/stats hooks [short\|long]` | Openers ranked by what they held over their own first five seconds, rather than by the whole video's average. |
+| `/stats rules` | Mean hold on sentences carrying a turn, a question, a spoken figure, first person — against those without. |
+| `/stats runtime` | Hold against how long the videos run, per band. |
+| `/stats lessons [now]` | The note every writing prompt carries about where viewers left, per lane, rewritten weekly. `now` rewrites it immediately. Free: the model call never reaches a paid tier. |
+| `/stats experiments` | Clip pairs cut from one long and shipped as a pair, and which one held. |
+| `/stats scoreboard [YYYY-Qn]` | What we said and what happened, for a quarter. It leads with the calls that were wrong, deliberately. |
 
-### Housekeeping
+Every command here is a read. None spends, none renders, none can fail a job. They exist because these measurements were already being taken and thrown away.
+
+### /search — Asking the bot about itself
 
 | command | what it does |
 |---|---|
-| `/batch [TICKER [fmt] \| run \| clear]` | Queues renders to run unattended overnight. Harmless when the machine is off — nothing expires. |
-| `/cost` | Month-to-date spend against the cap, and **how long ago anyone checked it against the provider**. Every figure is what Dennis believes it spent — chunks counted at the configured rate, against a cap enforced from that same number — so a drift is invisible from inside and the first symptom is a bill. |
-| `/cost explain` | Where the month went: per video, per tier, and what the sha-keyed cache answered for free. A month where the cache worked and a month where nothing was re-rendered used to read identically. |
-| `/cost reconciled` | Stamp today, after you have compared month-to-date against the ElevenLabs dashboard. It records a date and verifies nothing; it is worth exactly as much as the check you did. Past a month the line in `/cost` marks itself stale. |
-| `/kit doctor` | Unresolved tag keys, artwork nothing has ever used, PNGs with no registry entry. The gap list is the input to the next batch of art. |
-| `/help`, `/start` | The command list, in chat. |
+| `/search <question>` | The local model answers from the bot's own records, citing what it read, or says it has nothing on file. Counts and totals are worked out by code and never reach the model. |
+| `/search find <words>` | Every saved record with those words, ranked, no AI involved. Works with Ollama off. |
+| `/search said <phrase>` | Every earlier use of a line, across every script ever shipped. |
+
+Both read what the bot has already saved: every script, filing brief, check report, thesis, idea, job, upload and journal line, and this README. Neither spends, renders, or changes anything.
+
+### /admin — Housekeeping
+
+| command | what it does |
+|---|---|
+| `/admin cost [explain\|reconciled]` | Month-to-date spend against the cap, and how long ago anyone checked it against the provider. `explain`: where the month went, per video and tier. `reconciled`: stamp today after comparing against the provider's dashboard. |
+| `/admin kit doctor` | Unresolved tag keys, artwork nothing has ever used, PNGs with no registry entry. |
+| `/admin quiet [on\|off]` | Keeps only finished, failed and needs-you pushes (no "started", no progress). On its own it toggles. |
+| `/admin panel` | The link to the web control panel, when it is running. |
+
+### /help — Help
+
+| command | what it does |
+|---|---|
+| `/help [FAMILY]` | The command list, in chat. `/help render` for one family. |
+
+### Old command names
+
+Every name the bot answered before the families still works, as a hidden alias of the command it became.
+
+| old | now |
+|---|---|
+| `/ask` | `/search` |
+| `/batch` | `/jobs batch` |
+| `/cancel` | `/jobs cancel` |
+| `/correct` | `/publish correct` |
+| `/cost` | `/admin cost` |
+| `/draft` | `/render draft` |
+| `/earnings` | `/ideas earnings` |
+| `/edit` | `/script edit` |
+| `/experiments` | `/stats experiments` |
+| `/find` | `/search find` |
+| `/headline` | `/new headline` |
+| `/hooks` | `/stats hooks` |
+| `/idea` | `/ideas add` |
+| `/kit` | `/admin kit` |
+| `/lessons` | `/stats lessons` |
+| `/lines` | `/stats lines` |
+| `/long` | `/new long` |
+| `/probe` | `/publish probe` |
+| `/prompts` | `/script prompts` |
+| `/proof` | `/render proof` |
+| `/render_long` | `/render long` |
+| `/render_short` | `/render short` |
+| `/replace` | `/script replace` |
+| `/repurpose` | `/render clips` |
+| `/retention` | `/stats retention` |
+| `/rules` | `/stats rules` |
+| `/runtime` | `/stats runtime` |
+| `/said` | `/search said` |
+| `/scheduled` | `/publish scheduled` |
+| `/scoreboard` | `/stats scoreboard` |
+| `/screen` | `/ideas screen` |
+| `/short` | `/new short` |
+| `/shots` | `/stats shots` |
+| `/start` | `/help` |
+| `/status` | `/jobs` |
+| `/stillness` | `/stats stillness` |
+| `/thesis` | `/ideas thesis` |
+| `/undo` | `/script undo` |
+| `/unidea` | `/ideas drop` |
+| `/update` | `/new update` |
+| `/upload` | `/publish` |
+| `/watch` | `/ideas watch` |
+| `/why` | `/script why` |
+<!-- commands:end -->
 
 ### Things that are not commands
 
 - **Paste a script** (message or `.txt`) into the chat and it is taken as the
   script for the active workspace — short or long is detected, not declared.
 - **Reply with a number** while a LONG is awaiting an angle and it is read as
-  your angle pick, not as a script.
+  your angle pick, not as a script — or tap its `Angle N` button.
 - **Upload `dennis_data.xlsx`** any time to override the numbers.
 - **Upload a PNG** to satisfy a `[SHOW FILING:]` or `[ASSET:]` tag.
-- **The buttons**: `Approve ✅` arms a render, `Swap clip 🔄` rotates a
-  `[CLIP]` pick, `Cancel ✖️` withdraws a pending approval.
+- **The buttons** — every handoff offers the obvious next tap:
+  - on the report: `Approve ✅` arms a render, `Swap clip 🔄` rotates a
+    `[CLIP]` pick, `Edit ✏️` shows the numbered script, `Cancel ❌`
+    withdraws a pending approval;
+  - after Approve: `Draft $0` (LONG), `Proof $0`, and `Render 💰 ~$x.xx`,
+    which asks once more with the price and the month so far before it
+    queues anything;
+  - when a render lands: `Upload private`, `Schedule…` (asks for the time),
+    and `Cut clips ✂️ $0` for a LONG; after a proof, `Render final 💰`;
+  - after an upload: `Retention 📊` and `Correct…`;
+  - after a cancel: `Undo ↩️`, for a minute.
+- **The video card** (`/card`) is edited in place as its video moves, so a
+  forty-minute render advances on one message instead of adding ten.
+- **A question a button asked** ("when should it go public?") is answered
+  by the next plain message.
+- **A typo** gets "did you mean…" instead of silence.
+
+### The web panel
+
+The same bot in a browser, served by the bot process itself
+(`PANEL_ENABLED=true`, the default): the inbox, every recent video as a card
+with its next step on a button, the render queue, the month's spend, a form
+for every command in the registry, a paste box, file uploads with no 20 MB
+limit, renders played in the page, and the activity feed of everything the
+bot pushed. Everything it does goes through the code the chat uses, so it
+cannot do anything the chat cannot.
+
+- **Where:** `http://127.0.0.1:8765/` on the render box (`PANEL_HOST`,
+  `PANEL_PORT`). `/admin panel` sends the link with its key. From another
+  machine, tunnel it — `ssh -L 8765:127.0.0.1:8765 renderbox` — rather
+  than opening the port.
+- **The key:** every API call needs `PANEL_TOKEN`, or the one generated on
+  first start into `state/panel_token`. Files are served only from the
+  workspace, the templates and `assets/custom/` — never `state/`.
+- **Which chat it is:** it shares the active video and the wizard of
+  `PANEL_CHAT_ID` (default: the first operator chat), so you can start in the
+  panel and finish in Telegram.
+- **Without Telegram:** `python -m bot.panel` runs the panel and the render
+  queue on their own; pushes go to its Activity tab.
 
 ### The data contract (private, no API)
 
@@ -931,6 +1056,11 @@ number, which is exactly the case the gate exists to catch.
 | `FRED_API_KEY` | — | free macro series for `/headline macro`; absent = unavailable |
 | `YOUTUBE_ENABLED` / `YOUTUBE_CREDENTIALS` | false / — | upload as private or scheduled; never public |
 | `STATUS_PAGE_ENABLED` / `STATUS_PAGE_PORT` | false / 8787 | read-only localhost view |
+| `PANEL_ENABLED` / `PANEL_HOST` / `PANEL_PORT` | true / 127.0.0.1 / 8765 | the web control panel (see "The web panel") |
+| `PANEL_TOKEN` | generated into `state/panel_token` | the panel's key; `/admin panel` sends the link |
+| `PANEL_CHAT_ID` | first operator chat | whose active video and wizard the panel shares |
+| `PANEL_MAX_UPLOAD_MB` | 500 | the largest file the panel takes |
+| `INBOX_ENABLED` / `INBOX_HOUR` | true / 8 | the morning list of what is waiting on you |
 | `DISCLAIMER_TEXT` | Opinion / entertainment… | burned into every frame |
 
 Full list with encode/voice/pacing knobs: `config.py` (every field is an

@@ -35,12 +35,11 @@ _ALIASED = {"start"}
 
 
 def _registered() -> set[str]:
-    """Every command name passed to a CommandHandler."""
-    src = HANDLERS.read_text(encoding="utf-8")
-    names: set[str] = set()
-    for arg in re.findall(r"CommandHandler\(\s*(\[[^\]]*\]|\"[a-z_]+\")", src):
-        names |= set(re.findall(r'"([a-z_]+)"', arg))
-    return names
+    """Every command name a CommandHandler is registered for — read off the
+    registry the Telegram glue registers from (`bot/commands.py`)."""
+    from bot.commands import telegram_names
+
+    return set(telegram_names())
 
 
 def _documented() -> set[str]:
@@ -70,6 +69,33 @@ def test_the_reference_invents_nothing():
         f"the README documents {sorted(extra)}, which the bot does not "
         f"register — an operator reading this would type a command that "
         f"does nothing")
+
+
+README_BEGIN = "<!-- commands:begin"
+README_END = "<!-- commands:end -->"
+
+
+def test_the_command_reference_is_the_one_the_registry_generates():
+    """The tables are generated from the registry (`python -m bot.commands
+    --readme`), so a command's help, its doc and its old names live in one
+    place. A README edited by hand drifts; this says how to regenerate."""
+    from bot.commands import readme_markdown
+
+    text = README.read_text(encoding="utf-8")
+    start = text.index(README_BEGIN)
+    start = text.index("\n", start) + 1
+    end = text.index(README_END, start)
+    assert text[start:end].strip() == readme_markdown().strip(), (
+        "the README's command reference is stale — paste the output of "
+        "`python -m bot.commands --readme` between the commands:begin and "
+        "commands:end markers")
+
+
+def test_every_registered_name_is_the_registrys():
+    """The glue registers from the registry; nothing is wired by hand."""
+    src = HANDLERS.read_text(encoding="utf-8")
+    assert not re.findall(r'CommandHandler\(\s*"', src), \
+        "a command was wired by hand instead of in bot/commands.py"
 
 
 def test_the_reference_is_not_empty():
@@ -175,18 +201,19 @@ def test_the_help_text_and_the_readme_agree_on_what_exists():
     """The two places an operator looks. They may differ in DETAIL — the help
     text is a cheat sheet and the README is the reference — but a command in
     one and absent from the other means one of them is stale."""
-    from bot.handlers import HELP_TEXT
+    from bot.commands import help_text
 
-    in_help = set(re.findall(r"^/([a-z_]+)|\bor /([a-z_]+)", HELP_TEXT,
-                             re.MULTILINE))
-    in_help = {name for pair in in_help for name in pair if name}
+    text = help_text()
+    in_help = set(re.findall(r"(?<![\w/])/([a-z_]+)", text))
     documented = _documented()
     assert not (in_help - documented), \
         f"in the help text, missing from the README: {sorted(in_help - documented)}"
     # Both ways: eleven commands were registered and documented and missing
-    # from the list an operator actually has in the chat.
-    assert not (documented - in_help), \
-        f"in the README, missing from the help text: {sorted(documented - in_help)}"
+    # from the list an operator actually has in the chat. `start` is
+    # `/help`'s alias and shares its line.
+    missing = documented - in_help - _ALIASED
+    assert not missing, \
+        f"in the README, missing from the help text: {sorted(missing)}"
 
 
 # --------------------------------------------------------------------------
