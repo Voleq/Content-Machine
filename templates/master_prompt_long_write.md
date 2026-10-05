@@ -436,8 +436,9 @@ First the `=== HOOK OPTIONS ===` block, then the narration as plain text with in
 
 After the narration, append a `=== CHAPTERS ===` trailer — one line per chapter,
 in order, in the shape `mm:ss type | Title`. The timestamp is for YouTube (first
-line `00:00`; the rest approximate, the operator adjusts). This trailer is
-metadata and is never spoken.
+line `00:00`; the rest your best estimate — the render moves each one onto the
+real audio, to the start of the paragraph the chapter opens with, so start each
+chapter on a new paragraph). This trailer is metadata and is never spoken.
 
 **The TYPE decides which plates that chapter may use.** It must be one of the
 sixteen listed above. **The TITLE goes ON SCREEN** — the renderer draws a

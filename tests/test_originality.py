@@ -29,12 +29,36 @@ SCAFFOLD = ("{t} fell {n} percent this quarter and the market decided it was "
             "sheet actually shows when you read it in order.")
 
 
-def _shipped(settings, ticker: str, workdate: str, narration: str) -> None:
+def _shipped(settings, ticker: str, workdate: str, narration: str,
+             approved: bool = True) -> None:
+    """A script that went somewhere: saved AND approved. `approved=False` is
+    a paste that was abandoned, which the gate no longer counts."""
     ws = settings.workspace_dir / ticker / workdate
     ws.mkdir(parents=True, exist_ok=True)
     (ws / "script_short.json").write_text(
         json.dumps({"ticker": ticker, "format": "short",
                     "audio_script": narration}), encoding="utf-8")
+    if approved:
+        (ws / "approval_short.json").write_text(
+            json.dumps({"script_sha": "x"}), encoding="utf-8")
+
+
+def test_an_abandoned_draft_is_not_a_video_to_be_the_same_as(settings):
+    """Every paste ever saved used to count, so a draft nobody approved
+    could block the next video that reused its scaffolding."""
+    _shipped(settings, "OLDCO", "2026-09-01", SCAFFOLD.format(t="OLDCO", n="31"),
+             approved=False)
+    assert sameness_check(_Script(SCAFFOLD.format(t="NEWCO", n="12")),
+                          settings) == []
+
+
+def test_two_macro_shorts_under_the_same_proxy_are_still_compared(settings):
+    """Every macro short is filed under SPY; skipping the same ticker meant
+    they were never compared with each other at all."""
+    _shipped(settings, "SPY", "2026-09-01", SCAFFOLD.format(t="CPI", n="31"))
+    findings = sameness_check(_Script(SCAFFOLD.format(t="PPI", n="12"),
+                                      ticker="SPY"), settings)
+    assert findings and findings[0].severity == "block"
 
 
 # ------------------------------------------------------------ sameness gate

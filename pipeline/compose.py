@@ -1109,10 +1109,17 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             if shot.focus and plate.slot(shot.focus) is not None:
                 # A long beat's second part moves in as far as its words stay
                 # whole, the way `punch_in_slot` chose it.
-                placed = ((shot.part == 2 and _move_in(plate, shot.focus, values, reg,
-                                                       stage, placed, (fw, fh), safe=safe))
-                          or _focus_placement(_on_the_ink(plate, values, reg),
-                                              shot.focus, stage, placed))
+                #
+                # When even the smallest move in would slice a neighbour here
+                # (this stage need not be the one `punch_in_slot` tried), the
+                # part holds the plate as placed. It used to fall back to the
+                # full close-up — exactly the slicing zoom just rejected.
+                if shot.part == 2:
+                    placed = _move_in(plate, shot.focus, values, reg,
+                                      stage, placed, (fw, fh), safe=safe) or placed
+                else:
+                    placed = _focus_placement(_on_the_ink(plate, values, reg),
+                                              shot.focus, stage, placed)
                 w, h = placed[2], placed[3]
 
             plate_large = sets_large_type(plate, values, placed[3], fh)
@@ -1774,7 +1781,6 @@ def caption_band(plate: Plate | None, frame: tuple[int, int],
     design's band on a vertical frame (`CAPTION_BAND`), and on a landscape one
     the single place its caption has always had.
     """
-    from pipeline.rasters import CAPTION_BOX_PAD
 
     fw, fh = frame
     band = _caption_band(plate, frame, box_h)

@@ -34,6 +34,14 @@ class BudgetExceededError(Exception):
     """A script exceeds its per-format character budget — no spend allowed."""
 
 
+class LedgerUnreadableError(SpendCapExceededError):
+    """`state/spend.json` exists and cannot be read — paid work is refused.
+
+    A subclass of the cap error on purpose: every caller that already stops
+    on a blown cap stops on this too, which is the fail-closed direction.
+    """
+
+
 def week_key(now: datetime | None = None) -> str:
     """ISO year-week, so a week that straddles a month stays one week."""
     now = now or datetime.now(timezone.utc)
@@ -77,13 +85,40 @@ class SpendLedger:
             settings.state_dir / "spend.lock")
 
     # ------------------------------------------------------------- internals
-    def _load(self) -> dict:
-        if self.path.exists():
-            try:
-                return json.loads(self.path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
-                return {}
-        return {}
+    #
+    # AN UNREADABLE LEDGER FAILS CLOSED (H5). `_load` used to answer `{}` to
+    # a corrupt file, which read as $0 spent this month: the cap authorised
+    # against an empty month and the next write replaced the corrupt file —
+    # the only record of the month's spend — with a fresh one. Reads that
+    # only REPORT still get `{}` (so `/cost` can say what is wrong), but
+    # anything that writes, or that decides whether money may move, reads
+    # strictly and refuses.
+    def _load(self, *, strict: bool = False) -> dict:
+        if not self.path.exists():
+            return {}
+        try:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("the ledger is not a JSON object")
+            return data
+        except (ValueError, OSError) as e:      # JSONDecodeError is a ValueError
+            msg = (f"the spend ledger {self.path} cannot be read ({e}). Paid "
+                   f"calls are refused until it is restored — from "
+                   f"`scripts/backup_state.py`'s archive, or by fixing the "
+                   f"JSON by hand. Nothing has overwritten it.")
+            if strict:
+                raise LedgerUnreadableError(msg) from e
+            log.error("%s", msg)
+            return {}
+
+    def readable(self) -> bool:
+        """Whether the ledger file is absent or parses — False means every
+        paid path is refusing."""
+        try:
+            self._load(strict=True)
+            return True
+        except LedgerUnreadableError:
+            return False
 
     def _save(self, data: dict) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -137,7 +172,13 @@ class SpendLedger:
         if not token:
             return
         with self._lock:
-            data = self._load()
+            try:
+                data = self._load(strict=True)
+            except LedgerUnreadableError as e:
+                # Runs in a `finally`: raising here would hide whatever the
+                # generation raised. Nothing can be written anyway.
+                log.error("could not release reservation %s: %s", token, e)
+                return
             month = self._month(data)
             live = self._live_reservations(data)
             month["reservations"] = [r for r in live if r.get("token") != token]
@@ -177,7 +218,7 @@ class SpendLedger:
 
         stamp = (today or _date.today()).isoformat()
         with self._lock:
-            data = self._load()
+            data = self._load(strict=True)
             data[self.RECONCILED_KEY] = stamp
             self._save(data)
         return stamp
@@ -215,6 +256,8 @@ class SpendLedger:
         available is how two jobs pass one cap.
         """
         with self._lock:
+            if not self.readable():
+                return True                # an unknown month is a spent one
             committed = self.mtd_spend_usd() + self.reserved_usd()
         return committed + additional_usd > self.settings.monthly_spend_cap_usd
 
@@ -238,8 +281,15 @@ class SpendLedger:
         generation is over, whether it spent or raised.
         """
         est = estimate_tts_usd(chars, self.settings)
+        return est, self.reserve_usd(est, f"TTS for {chars} chars")
+
+    def reserve_usd(self, est: float, what: str = "this") -> str:
+        """Check the cap and claim `est` dollars of it; returns the token.
+
+        The same claim `reserve_tts_spend` makes, for spend that is not
+        priced per character — the channel's music is per minute."""
         with self._lock:
-            data = self._load()
+            data = self._load(strict=True)
             month = self._month(data)
             live = self._live_reservations(data)
             claimed = sum(float(r.get("usd", 0.0) or 0.0) for r in live)
@@ -247,7 +297,7 @@ class SpendLedger:
             cap = self.settings.monthly_spend_cap_usd
             if spent + claimed + est > cap:
                 raise SpendCapExceededError(
-                    f"TTS for {chars} chars (~${est:.2f}) would exceed the "
+                    f"{what} (~${est:.2f}) would exceed the "
                     f"monthly cap: ${spent:.2f} spent"
                     + (f" and ${claimed:.2f} claimed by a job already running"
                        if claimed else "")
@@ -258,7 +308,7 @@ class SpendLedger:
                 {"token": token, "usd": est,
                  "at": datetime.now(timezone.utc).timestamp()}]
             self._save(data)
-        return est, token
+        return token
 
     def check_pexels_budget(self) -> None:
         if self.pexels_calls_this_month() >= self.settings.pexels_monthly_call_cap:
@@ -279,7 +329,7 @@ class SpendLedger:
         rather than an investigation.
         """
         with self._lock:
-            data = self._load()
+            data = self._load(strict=True)
             month = self._month(data)
             month["tts_usd"] = round(month["tts_usd"] + usd, 4)
             month.setdefault("events", []).append({
@@ -298,7 +348,13 @@ class SpendLedger:
         nothing was ever re-rendered read identically.
         """
         with self._lock:
-            data = self._load()
+            try:
+                data = self._load(strict=True)
+            except LedgerUnreadableError as e:
+                # A cache hit spent nothing; the render is not worth failing
+                # over a row of bookkeeping, and nothing can be written.
+                log.error("cache hit not recorded: %s", e)
+                return
             month = self._month(data)
             month.setdefault("events", []).append({
                 "at": datetime.now(timezone.utc).isoformat(),
@@ -377,7 +433,7 @@ class SpendLedger:
 
     def record_pexels_call(self) -> None:
         with self._lock:
-            data = self._load()
+            data = self._load(strict=True)
             self._month(data)["pexels_calls"] += 1
             self._save(data)
 
@@ -385,7 +441,7 @@ class SpendLedger:
         """Filing-flagger LLM spend. Cheap (often free-tier $0) but tracked for
         visibility. Kept separate from the TTS cap bucket."""
         with self._lock:
-            data = self._load()
+            data = self._load(strict=True)
             month = self._month(data)
             month["llm_usd"] = round(month.get("llm_usd", 0.0) + float(usd), 4)
             self._save(data)
@@ -521,7 +577,9 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine,
 
     cached = tts_engine.is_cached(script.audio_script, "short",
                                   events=script.inline_events)
-    est = 0.0 if cached else estimate_tts_usd(script.char_count, settings)
+    est = 0.0 if cached else estimate_tts_usd(
+        billable_chars(tts_engine, script.audio_script, "short",
+                       script.inline_events, script.char_count), settings)
     blocking: list[str] = []
     warnings = list(parse_warnings)
     if not cached and ledger.would_exceed(est):
@@ -567,6 +625,17 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine,
         blocking=blocking,
         script_sha=script.content_sha(),
     )
+
+
+def billable_chars(tts_engine, text: str, fmt: str, events,
+                   fallback: int) -> int:
+    """What the paid voice would be sent, delivery direction included — the
+    number the ledger meters; `fallback` (the clean count) for an engine that
+    cannot say."""
+    try:
+        return int(tts_engine.billable_chars(text, fmt, events=events))
+    except Exception:  # noqa: BLE001 - an estimate is never worth failing
+        return int(fallback)
 
 
 def _count_directives(script) -> int:
@@ -658,7 +727,9 @@ def build_long_report(
     from pipeline.reach import script_reach
 
     cached = tts_engine.is_cached(script.narration, "long", events=script.events)
-    est = 0.0 if cached else estimate_tts_usd(script.char_count, settings)
+    est = 0.0 if cached else estimate_tts_usd(
+        billable_chars(tts_engine, script.narration, "long", script.events,
+                       script.char_count), settings)
     blocking = list(validation_blocking)
     if not cached and ledger.would_exceed(est):
         blocking.append(

@@ -564,6 +564,12 @@ def make_thumbnail(script, ws, settings: Settings) -> Path | None:
     daily-volume format and it had no cover at all, because this was typed to
     the LONG. A short gets the 9:16 as well, written beside it.
 
+    EACH FORMAT WRITES ITS OWN NAMES. Both lanes can share a ticker's folder,
+    and the SHORT's 16:9 went to `thumbnail.png` — the LONG's cover — so a
+    short rendered after a long replaced it, and `/upload TICKER long` sent
+    "noise or signal?" as the deep dive's thumbnail. The short's wide cover
+    is `thumbnail_short.png`; the one it ships is `thumbnail_tall.png`.
+
     Never raises: a missing cover is a nuisance, a failed render is not.
     """
     from pipeline.plates import at_episode_hour
@@ -585,28 +591,33 @@ def make_thumbnail(script, ws, settings: Settings) -> Path | None:
             metric = move
         kicker = "noise or signal?" if is_short else "the deep dive"
 
-        out = ws.path / "thumbnail.png"
+        out = ws.path / ("thumbnail_short.png" if is_short else "thumbnail.png")
         # THE COVER IS A FRAME FROM THE VIDEO, so it is drawn at the hour the
         # render recorded in this workspace: a dusk episode gets a dusk cover,
         # room, host and colours alike, not a night one advertising it.
         dressing = _cover_dressing(script, settings, is_short)
         written = Path(ws.path) / "cover_room"
-        performer = _performer(settings, "9x16" if is_short else "16x9")
+        # One performer per room aspect, each asked of ITS rooms: the wide
+        # cover stands in a 16:9 room and the tall one in a 9:16 room, and a
+        # kit can have the 3D room at one aspect while the other is drawn.
+        wide_perf = _performer(settings, "16x9")
+        tall_perf = _performer(settings, "9x16") if is_short else None
         try:
             with at_episode_hour(settings, ws.path,
                                  str(getattr(script, "ticker", "") or "")):
                 _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
                          size=WIDE, orient="wide", is_move=is_move,
                          dressing=dressing, written=written,
-                         performer=performer).save(out)
+                         performer=wide_perf).save(out)
                 if is_short:
                     _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
                              size=TALL, orient="tall", is_move=is_move,
                              dressing=dressing, written=written,
-                             performer=performer).save(ws.path / "thumbnail_tall.png")
+                             performer=tall_perf).save(ws.path / "thumbnail_tall.png")
         finally:
-            if performer is not None:
-                performer.close()
+            for performer in (wide_perf, tall_perf):
+                if performer is not None:
+                    performer.close()
         return out
     except Exception:
         log.exception("thumbnail generation failed (non-fatal)")

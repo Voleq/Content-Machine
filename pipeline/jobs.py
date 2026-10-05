@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 import uuid
 from pathlib import Path
 from typing import Awaitable, Callable
@@ -41,17 +42,44 @@ def _journal(settings: Settings, job: JobRecord, what: str, **data) -> None:
 
 
 class JobStore:
+    """One JSON file per job, written atomically, read-modify-written under
+    one lock.
+
+    The render worker's `checkpoint` (a thread) and `/cancel` (the event
+    loop) both load a job, change it and save it. Unlocked, a checkpoint that
+    loaded RUNNING just before a cancel saved CANCELLED wrote RUNNING back
+    over it, and the cancel was lost. And a plain `write_text` let `/status`
+    or `submit()` read half a file, skip it as unreadable, and accept a
+    duplicate render.
+    """
+
     def __init__(self, settings: Settings):
         self.settings = settings
         self.dir = settings.state_dir / "jobs"
         self.dir.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.RLock()
 
     def path(self, job_id: str) -> Path:
         return self.dir / f"{job_id}.json"
 
     def save(self, job: JobRecord) -> None:
-        job.touch()
-        self.path(job.id).write_text(job.model_dump_json(indent=2), encoding="utf-8")
+        with self._lock:
+            job.touch()
+            p = self.path(job.id)
+            tmp = p.with_suffix(".json.tmp")
+            tmp.write_text(job.model_dump_json(indent=2), encoding="utf-8")
+            tmp.replace(p)
+
+    def update(self, job_id: str, change) -> JobRecord | None:
+        """Load, `change(job)`, save — as one step. `change` may raise to
+        abandon the update (nothing is written)."""
+        with self._lock:
+            job = self.load(job_id)
+            if job is None:
+                return None
+            change(job)
+            self.save(job)
+            return job
 
     def load(self, job_id: str) -> JobRecord | None:
         p = self.path(job_id)
@@ -162,12 +190,18 @@ class RenderJobQueue:
     def cancel(self, ticker: str) -> list[JobRecord]:
         cancelled = []
         for job in self.store.all():
-            if job.ticker == ticker.upper() and job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
-                job.status = JobStatus.CANCELLED
-                job.detail = "cancelled by operator"
-                self.store.save(job)
-                _journal(self.settings, job, "cancelled by the operator")
-                cancelled.append(job)
+            if job.ticker != ticker.upper() or job.status not in (
+                    JobStatus.QUEUED, JobStatus.RUNNING):
+                continue
+
+            def _cancel(j: JobRecord) -> None:
+                j.status = JobStatus.CANCELLED
+                j.detail = "cancelled by operator"
+
+            done = self.store.update(job.id, _cancel)
+            if done is not None:
+                _journal(self.settings, done, "cancelled by the operator")
+                cancelled.append(done)
         return cancelled
 
     def status_text(self) -> str:
@@ -208,9 +242,14 @@ class RenderJobQueue:
             try:
                 artifact = await asyncio.to_thread(self.executor, job)
                 job = self.store.load(job_id) or job
-                if job.status is JobStatus.CANCELLED:
+                if job.status is JobStatus.CANCELLED and not job.delivered_link:
                     await self._notify(f"🚫 {job.ticker}: cancelled")
                     continue
+                if job.status is JobStatus.CANCELLED:
+                    # The cancel landed after the delivery did: the video is
+                    # out and the thesis pinned, so "cancelled" would be the
+                    # one thing the record got wrong.
+                    job.detail = "delivered before the cancel landed"
                 job.status = JobStatus.DONE
                 job.artifact = artifact
                 self.store.save(job)

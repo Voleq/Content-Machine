@@ -81,7 +81,10 @@ class UnknownModelPriceError(RuntimeError):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # The checkout's own .env first, then one in the working directory
+        # (which wins). A bare ".env" was read only from the current directory,
+        # so a script run from anywhere else ran on the defaults silently.
+        env_file=(str(BASE_DIR / ".env"), ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -125,6 +128,11 @@ class Settings(BaseSettings):
     # Cloud Bot API upload cap (self-hosted Bot API server raises this).
     telegram_upload_limit_mb: int = 50
     telegram_api_base_url: str = ""  # set when using a self-hosted Bot API server
+    # How long the render worker waits for a pushed file (a proof, a
+    # storyboard, a DELIVERY_BACKEND=telegram video) to reach the chat before
+    # it stops waiting and tells the operator the file did not go.
+    telegram_send_timeout_s: float = Field(default=900.0,
+                                           alias="TELEGRAM_SEND_TIMEOUT_S")
 
     # ------------------------------------------------------------- elevenlabs
     # VOICE IS A PLACEHOLDER — the final Dennis voice is a to-be-decided,
@@ -305,6 +313,16 @@ class Settings(BaseSettings):
     # has no rate limit and no quota, and is still $0. Hosted tiers are the
     # fallback. Comma-separated; empty means ollama,github,openai.
     llm_provider_order: str = Field(default="", alias="LLM_PROVIDER_ORDER")
+    # THE PAID HOSTED TIER (OpenAI) IS METERED AND CAPPED. Each call is priced
+    # off the token `usage` the API reports, at these rates (FILINGS_LLM_MODEL's
+    # list price; the defaults are gpt-4o-mini's), recorded on the ledger as
+    # LLM spend, and the tier is skipped once the month reaches the cap. The
+    # free GitHub Models tier and the local Ollama are never metered.
+    llm_usd_per_1k_input: float = Field(default=0.00015,
+                                        alias="LLM_USD_PER_1K_INPUT")
+    llm_usd_per_1k_output: float = Field(default=0.0006,
+                                         alias="LLM_USD_PER_1K_OUTPUT")
+    llm_monthly_cap_usd: float = Field(default=5.0, alias="LLM_MONTHLY_CAP")
     # Where `/ask` and `/find`'s model calls go. Local only by default: a
     # question typed in passing should never become hosted spend, and the
     # records it reads are the bot's own. Add `github` to let a question fall
@@ -658,6 +676,17 @@ class Settings(BaseSettings):
     # a 12GB card has no room for two encodes. There used to be a
     # `max_concurrent_renders` here that nothing read.
     retention_days: int = Field(default=14, alias="RETENTION_DAYS")
+    # The rebuildable caches — segment clips and the 3D Dennis's shots, never
+    # the paid voice cache — are pruned after this many days without a write
+    # (0 keeps them for ever). The 3D shots are a PNG per frame of him.
+    cache_retention_days: int = Field(default=60, alias="CACHE_RETENTION_DAYS")
+    # `workspace/_delivered/` is the LOCAL backend's only copy of a finished
+    # video; 0 keeps it for ever, N prunes copies older than N days.
+    delivered_retention_days: int = Field(default=0,
+                                          alias="DELIVERED_RETENTION_DAYS")
+    # Finished job records (`state/jobs/`) older than this go; `/status` and
+    # every submit read all of them.
+    jobs_retention_days: int = Field(default=90, alias="JOBS_RETENTION_DAYS")
 
     # --------------------------------------------------------------- screener
     screen_top_n: int = Field(default=8, alias="SCREEN_TOP_N")

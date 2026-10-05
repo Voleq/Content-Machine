@@ -111,14 +111,36 @@ class Dressing:
                        screen_label=label)
 
 
-def episode_number(settings, ticker: str, workdate: str) -> int:
+EPISODES_FILE = "episodes.json"
+
+
+def episode_number(settings, ticker: str, workdate: str, *,
+                   assign: bool = False) -> int:
     """This long's number in the channel's run of longs, counted from one.
 
-    Its place among the longs already uploaded when it is one of them (a
-    re-render keeps its number), else the next one. A long is one per ticker
-    and workdate however many times it went up.
+    A number a FINAL was drawn with is kept (`state/episodes.json`), so the
+    board and the cover never disagree with the video that went out. A long
+    with no number yet takes its place among the longs already uploaded when
+    it is one of them, else the next free number; `assign` (a final render)
+    records it.
+
+    Computed from uploads alone, two longs rendered before either went up
+    both read "the next one" and carried the same number on the board, and
+    an out-of-order upload renumbered a video that had already been drawn.
     """
+    import json
+
     from pipeline.youtube import VideoLog, record_format
+
+    me_key = f"{ticker.upper()}/{workdate}"
+    path = Path(settings.state_dir) / EPISODES_FILE
+    try:
+        book = json.loads(path.read_text(encoding="utf-8"))
+        book = book if isinstance(book, dict) else {}
+    except (OSError, ValueError):
+        book = {}
+    if me_key in book:
+        return int(book[me_key])
 
     rows = [v for v in VideoLog(settings).all() if record_format(v) == "long"]
     rows.sort(key=lambda v: v.uploaded_at or v.publish_at or v.workdate or "")
@@ -128,7 +150,18 @@ def episode_number(settings, ticker: str, workdate: str) -> int:
         if k not in seen:
             seen.append(k)
     me = (ticker.upper(), workdate)
-    return seen.index(me) + 1 if me in seen else len(seen) + 1
+    if me in seen:
+        n = seen.index(me) + 1
+    else:
+        taken = [int(x) for x in book.values() if str(x).isdigit()]
+        n = max([len(seen), *taken]) + 1
+    if assign:
+        book[me_key] = n
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(book, indent=2, sort_keys=True), encoding="utf-8")
+        tmp.replace(path)
+    return n
 
 
 def board_question(script) -> str:

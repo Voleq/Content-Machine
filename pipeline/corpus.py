@@ -111,6 +111,10 @@ class ScriptEntry:
     # Average watch ratio over the whole video, when retention has been
     # pulled. `None` means unknown, which is not the same as zero.
     hold: float | None = None
+    # Whether this script went anywhere: approved, rendered as a final, or
+    # uploaded. A paste that was abandoned is in the folder too, and it is
+    # not a video anything can be "the same as".
+    shipped: bool = True
 
     @property
     def key(self) -> str:
@@ -184,6 +188,11 @@ def build_index(settings: Settings) -> list[ScriptEntry]:
                     continue
                 said = sentences(narration)
                 meta = videos.get(f"{ticker_dir.name}/{date_dir.name}", {})
+                finals = (("render_long_manifest.json", "long_final.manifest.json")
+                          if fmt == "long" else ("short_final.manifest.json",))
+                shipped = (bool(meta.get("video_id"))
+                           or (date_dir / f"approval_{fmt}.json").exists()
+                           or any((date_dir / n).exists() for n in finals))
                 entries.append(ScriptEntry(
                     ticker=ticker_dir.name,
                     workdate=date_dir.name,
@@ -196,6 +205,7 @@ def build_index(settings: Settings) -> list[ScriptEntry]:
                     uploaded_at=str(meta.get("uploaded_at", "")),
                     duration_s=float(meta.get("duration_s") or 0.0),
                     hold=meta.get("hold"),
+                    shipped=shipped,
                 ))
     entries.sort(key=lambda e: (e.workdate, e.ticker, e.fmt))
     return entries
@@ -345,6 +355,11 @@ def compare(narration: str, against: list[ScriptEntry]) -> list[Overlap]:
 # channel page actually sees.
 SAMENESS_WINDOW = 10
 
+# The index proxies a macro short is filed under (`/headline macro` →
+# SPY). One list, read by the bot's headline routing as well.
+INDEX_PROXIES = frozenset({"SPY", "QQQ", "DIA", "IWM", "VIX", "TLT", "VOO",
+                           "IVV", "RSP", "MARKET"})
+
 # Above this, the script repeats a previous one enough to say so. Chosen
 # against the masked text, where two videos built from the same scaffolding
 # score above 0.8 and two genuinely different ones sit under 0.1 — so 0.35 is
@@ -358,7 +373,7 @@ SAMENESS_WARN = 0.35
 SAMENESS_BLOCK = 0.60
 
 
-def sameness_check(script, settings: Settings) -> list:
+def sameness_check(script, settings: Settings, workspace=None) -> list:
     """This script against the ones already shipped.
 
     The thirteenth gate. Every other gate asks whether this video is true;
@@ -380,8 +395,21 @@ def sameness_check(script, settings: Settings) -> list:
         log.warning("sameness: the corpus could not be read (%s)", e)
         return []
     ticker = str(getattr(script, "ticker", "")).upper()
-    prior = [e for e in corpus.recent(SAMENESS_WINDOW, fmt=fmt)
-             if e.ticker != ticker]
+    # SHIPPED scripts only (M13): every paste ever saved used to count, so an
+    # abandoned draft could block a later video and drafts pushed the real
+    # videos out of the window. The same ticker is skipped (an update is the
+    # same argument about the same company by design) — except an index
+    # proxy: every macro short is filed under SPY or its like, and they are
+    # different videos that must still be compared.
+    shipped = [e for e in corpus.entries if e.fmt == fmt and e.shipped]
+    prior = [e for e in shipped[-SAMENESS_WINDOW:]
+             if e.ticker != ticker or ticker in INDEX_PROXIES]
+    if ticker in INDEX_PROXIES:
+        # Never against itself: the script being checked is on disk in its
+        # own workspace, and once rendered it counts as shipped.
+        own = (f"{ticker}/{Path(workspace).name}" if workspace is not None
+               else f"{ticker}/{getattr(script, 'workdate', '')}")
+        prior = [e for e in prior if f"{e.ticker}/{e.workdate}" != own]
     if not prior:
         return []
     top = compare(narration, prior)[0]

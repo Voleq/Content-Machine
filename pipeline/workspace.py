@@ -31,6 +31,24 @@ def today_str() -> str:
     return date.today().isoformat()
 
 
+def _write(path: Path, text: str) -> None:
+    """Write `text` to `path` whole or not at all (temp file, then rename):
+    a crash mid-write left a half script or a half approval that every later
+    command then failed to parse."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
+
+
+def _read_json(path: Path, default):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError, OSError):
+        return default
+    return data if isinstance(data, type(default)) else default
+
+
 class Workspace:
     """One ticker/date working directory."""
 
@@ -50,25 +68,70 @@ class Workspace:
         return self.path.is_dir()
 
     @classmethod
-    def latest_for(cls, settings: Settings, ticker: str) -> "Workspace | None":
+    def dates_for(cls, settings: Settings, ticker: str) -> list[str]:
+        """This ticker's workspace dates, newest first — date folders only,
+        so a stray folder beside them is never taken for the latest."""
         base = settings.workspace_dir / ticker.upper()
         if not base.is_dir():
+            return []
+        return sorted((d.name for d in base.iterdir()
+                       if d.is_dir() and _DATE_DIR_RE.match(d.name)),
+                      reverse=True)
+
+    @staticmethod
+    def split_arg(arg: str) -> tuple[str, str]:
+        """`TICKER` or `TICKER@YYYY-MM-DD` -> (ticker, date or "")."""
+        ticker, _, when = (arg or "").strip().partition("@")
+        return ticker.strip().upper(), when.strip()
+
+    @classmethod
+    def resolve(cls, settings: Settings, arg: str,
+                want=None) -> "Workspace | None":
+        """The workspace a command about `arg` means (M3).
+
+        `TICKER@YYYY-MM-DD` names one outright. Otherwise the newest date
+        folder for which `want(ws)` holds — the one with the script to
+        render, the video to upload — and failing that the newest of all.
+        Taking the newest unconditionally meant a `/short` started today
+        hid yesterday's approved LONG from `/render`, `/upload` and the rest,
+        with no way to name the older folder.
+        """
+        ticker, when = cls.split_arg(arg)
+        if not ticker:
             return None
-        dates = sorted((d.name for d in base.iterdir() if d.is_dir()), reverse=True)
+        if when:
+            ws = cls(settings, ticker, when)
+            return ws if _DATE_DIR_RE.match(when) and ws.exists else None
+        dates = cls.dates_for(settings, ticker)
+        if want is not None:
+            for d in dates:
+                ws = cls(settings, ticker, d)
+                try:
+                    if want(ws):
+                        return ws
+                except Exception:  # noqa: BLE001 - a bad folder is skipped
+                    continue
         return cls(settings, ticker, dates[0]) if dates else None
+
+    @classmethod
+    def latest_for(cls, settings: Settings, ticker: str) -> "Workspace | None":
+        return cls.resolve(settings, ticker)
 
     # -------------------------------------------------------------- scripts
     def save_short(self, script: ShortScript, raw: str) -> None:
-        self._push_revision("short")
-        (self.path / "script_short.raw.txt").write_text(raw, encoding="utf-8")
-        (self.path / "script_short.json").write_text(script.model_dump_json(indent=2), encoding="utf-8")
-        self._invalidate_approval("short")
+        self._save_script("short", script, raw)
 
     def save_long(self, script: LongScript, raw: str) -> None:
-        self._push_revision("long")
-        (self.path / "script_long.raw.txt").write_text(raw, encoding="utf-8")
-        (self.path / "script_long.json").write_text(script.model_dump_json(indent=2), encoding="utf-8")
-        self._invalidate_approval("long")
+        self._save_script("long", script, raw)
+
+    def _save_script(self, fmt: str, script, raw: str) -> None:
+        # The same text again (a swap re-intake, "back to report") is not a
+        # revision: stacking it made `/undo` step through identical copies.
+        if self.raw_script(fmt) != raw:
+            self._push_revision(fmt)
+        _write(self.path / f"script_{fmt}.raw.txt", raw)
+        _write(self.path / f"script_{fmt}.json", script.model_dump_json(indent=2))
+        self._invalidate_approval(fmt)
 
     def raw_script(self, fmt: str) -> str | None:
         f = self.path / f"script_{fmt}.raw.txt"
@@ -82,9 +145,8 @@ class Workspace:
         return self.path / "lane.json"
 
     def set_lane(self, lane: str, *, update: bool = False) -> None:
-        self.path.mkdir(parents=True, exist_ok=True)
-        self._lane_file().write_text(
-            json.dumps({"lane": lane, "update": bool(update)}), encoding="utf-8")
+        _write(self._lane_file(),
+               json.dumps({"lane": lane, "update": bool(update)}))
 
     def _lane_data(self) -> dict:
         try:
@@ -149,25 +211,34 @@ class Workspace:
     def _revision_dir(self, fmt: str) -> Path:
         return self.path / "revisions" / fmt
 
+    def _revisions(self, fmt: str) -> list[Path]:
+        """The stack, oldest first — in NUMBER order. Sorted as strings,
+        `1000.txt` came before `999.txt` and `/undo` took the wrong one."""
+        d = self._revision_dir(fmt)
+        if not d.is_dir():
+            return []
+        return sorted((p for p in d.glob("*.txt") if p.stem.isdigit()),
+                      key=lambda p: int(p.stem))
+
+    def _next_revision(self, fmt: str) -> Path:
+        d = self._revision_dir(fmt)
+        d.mkdir(parents=True, exist_ok=True)
+        have = self._revisions(fmt)
+        n = int(have[-1].stem) + 1 if have else 0
+        return d / f"{n:03d}.txt"
+
     def _push_revision(self, fmt: str) -> None:
         current = self.path / f"script_{fmt}.raw.txt"
         if not current.exists():
             return
-        d = self._revision_dir(fmt)
-        d.mkdir(parents=True, exist_ok=True)
-        n = len(list(d.glob("*.txt")))
-        (d / f"{n:03d}.txt").write_text(current.read_text(encoding="utf-8"), encoding="utf-8")
+        _write(self._next_revision(fmt), current.read_text(encoding="utf-8"))
 
     def revision_count(self, fmt: str) -> int:
-        d = self._revision_dir(fmt)
-        return len(list(d.glob("*.txt"))) if d.is_dir() else 0
+        return len(self._revisions(fmt))
 
     def pop_revision(self, fmt: str) -> str | None:
         """The previous raw script, removed from the stack. None if empty."""
-        d = self._revision_dir(fmt)
-        if not d.is_dir():
-            return None
-        files = sorted(d.glob("*.txt"))
+        files = self._revisions(fmt)
         if not files:
             return None
         last = files[-1]
@@ -183,10 +254,7 @@ class Workspace:
         the undo has to put back what it took or a rejected revert silently
         costs a revision.
         """
-        d = self._revision_dir(fmt)
-        d.mkdir(parents=True, exist_ok=True)
-        n = len(list(d.glob("*.txt")))
-        (d / f"{n:03d}.txt").write_text(text, encoding="utf-8")
+        _write(self._next_revision(fmt), text)
 
     def load_short(self) -> ShortScript | None:
         f = self.path / "script_short.json"
@@ -205,11 +273,11 @@ class Workspace:
         return self.path / "long_angle.json"
 
     def set_awaiting_angle(self) -> None:
-        self._angle_file().write_text(json.dumps({"awaiting": True, "chosen": ""}), encoding="utf-8")
+        _write(self._angle_file(), json.dumps({"awaiting": True, "chosen": ""}))
 
     def set_chosen_angle(self, text: str) -> None:
-        self._angle_file().write_text(json.dumps(
-            {"awaiting": False, "chosen": text.strip()}, indent=2), encoding="utf-8")
+        _write(self._angle_file(), json.dumps(
+            {"awaiting": False, "chosen": text.strip()}, indent=2))
 
     def _angle_state(self) -> dict:
         f = self._angle_file()
@@ -225,7 +293,7 @@ class Workspace:
         st = self._angle_state()
         if st.get("awaiting"):
             st["awaiting"] = False
-            self._angle_file().write_text(json.dumps(st, indent=2), encoding="utf-8")
+            _write(self._angle_file(), json.dumps(st, indent=2))
 
     def chosen_angle(self) -> str:
         return self._angle_state().get("chosen", "")
@@ -238,7 +306,7 @@ class Workspace:
         return self.path / "headline.json"
 
     def set_headline(self, payload: dict) -> None:
-        self._headline_file().write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        _write(self._headline_file(), json.dumps(payload, indent=2))
 
     def headline(self) -> dict:
         f = self._headline_file()
@@ -278,17 +346,16 @@ class Workspace:
         return self.path / f"approval_{fmt}.json"
 
     def approve(self, fmt: str, script_sha: str, report_text: str) -> None:
-        self._approval_file(fmt).write_text(json.dumps({
+        _write(self._approval_file(fmt), json.dumps({
             "script_sha": script_sha,
             "approved_at": datetime.now(timezone.utc).isoformat(),
             "report": report_text,
-        }, indent=2), encoding="utf-8")
+        }, indent=2))
 
     def approved_sha(self, fmt: str) -> str | None:
-        f = self._approval_file(fmt)
-        if not f.exists():
-            return None
-        return json.loads(f.read_text(encoding="utf-8")).get("script_sha")
+        """The approved sha, or None — an unreadable approval is none: the
+        safe reading of a spend gate, and not a crash in `/render`."""
+        return _read_json(self._approval_file(fmt), {}).get("script_sha")
 
     def is_approved(self, fmt: str) -> bool:
         """True only if the CURRENT script content matches the approval."""
@@ -303,13 +370,12 @@ class Workspace:
 
     # ------------------------------------------------------ b-roll overrides
     def broll_overrides(self) -> dict[str, int]:
-        f = self.path / "broll_overrides.json"
-        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+        return _read_json(self.path / "broll_overrides.json", {})
 
     def set_broll_override(self, key: str, choice: int) -> dict[str, int]:
         overrides = self.broll_overrides()
         overrides[key] = choice
-        (self.path / "broll_overrides.json").write_text(json.dumps(overrides, indent=2), encoding="utf-8")
+        _write(self.path / "broll_overrides.json", json.dumps(overrides, indent=2))
         self._invalidate_approval("long")  # picks changed => re-approve
         return overrides
 
@@ -335,8 +401,7 @@ class ActiveContext:
     def set(self, chat_id: int, ticker: str, workdate: str) -> None:
         data = self._load()
         data[str(chat_id)] = {"ticker": ticker.upper(), "workdate": workdate}
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        _write(self.path, json.dumps(data, indent=2))
 
     def get(self, chat_id: int) -> Workspace | None:
         entry = self._load().get(str(chat_id))

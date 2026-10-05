@@ -236,7 +236,7 @@ pipeline/
   thumbnail.py           the cover — a frame from the video
   frame_checks.py        golden-frame compare + held-composition measurement
   status_page.py         read-only localhost view (loopback, no auth)
-  cleanup.py             RETENTION_DAYS disk hygiene (keeps caches)
+  cleanup.py             RETENTION_DAYS disk hygiene (never the voice cache)
 bot/
   handlers.py            BotCore (all logic, Telegram-free) + PTB glue
   prompts.py             master-prompt filling + the plate catalogue, generated
@@ -272,6 +272,8 @@ scripts/
   render_samples.py      render the committed samples from fixtures
   gen_assets.py          procedural placeholders for everything not drawn
   gen_fixtures.py, fetch_sfx.py, contact_sheet.py
+  youtube_auth.py        mint YOUTUBE_CREDENTIALS with the scopes /upload,
+                         the caption track, the comment and /correct need
 room3d/                  the long's 16:9 rooms, one room built in 3D:
                          build.py (Blender as a Python module, run when the
                          room changes, never on the render box), renders/
@@ -920,7 +922,8 @@ number, which is exactly the case the gate exists to catch.
 | `DELIVERY_BACKEND` | gdrive | gdrive · s3 · telegram · local |
 | `GDRIVE_CREDENTIALS` / `GDRIVE_ROOT_FOLDER_ID` | — | Drive delivery |
 | `LOCAL_TTS_ENABLED` / `LOCAL_TTS_MODEL` | true / — | free draft voice (Piper .onnx); drafts fall back to mock, never to paid |
-| `RETENTION_DAYS` | 14 | cleanup horizon for workspaces (it never touches `cache/`). **`cache/tts` holds audio that was paid for and must never be deleted** — see *Never delete `cache/tts`* below |
+| `RETENTION_DAYS` | 14 | cleanup horizon for workspaces. **`cache/tts` holds audio that was paid for and is never deleted** — see *Never delete `cache/tts`* below |
+| `CACHE_RETENTION_DAYS` / `DELIVERED_RETENTION_DAYS` / `JOBS_RETENTION_DAYS` | 60 / 0 / 90 | the rebuildable caches (`cache/segments`, `cache/dennis3d` — CPU to rebuild, never money) after N days without a write; `workspace/_delivered/` (the local backend's only copy — 0 keeps it); finished job records |
 | `SCREEN_TOP_N` / `COOLDOWN_DAYS` | 8 / 30 | screener caps |
 | `SCREEN_DIGEST_CRON` | `30 7 * * 1-5` | digest, `SCREEN_TIMEZONE` (ET) |
 | `ALERTS_ENABLED` / `ALERT_POLL_MINUTES` | true / 15 | intraday watch on covered names |
@@ -1263,6 +1266,13 @@ from another, and 146 plates failed to reconcile the first time an ingest was
 run against it. The disagreement was in slot METADATA rather than geometry —
 zero differences in x, y, w or h — so nothing looked wrong until both lanes
 stopped rendering. One command before the merge would have caught it.
+
+**Carry the bot's own patches across a wholesale swap.** `kit/` is design's
+drop, replaced whole, and one fix lives in it on this side: rebuild-41's
+`engine/grounds.js` slid right-aligned y-axis labels into the plot on eleven
+9:16 charts, and the bot stops them 14 units short of a data region
+(`DATA_GAP`, marked "R41, bot"). `tests/test_kit_patches.py` fails when a
+swap drops it — re-apply it (or confirm design shipped it) before the merge.
 
 **If the ingest is killed with exit `-9`, that is the OOM killer, not a bug.**
 The driver draws one family at a time and releases each before the next, so

@@ -126,13 +126,29 @@ def test_pexels_counter_and_cap(settings):
         ledger.check_pexels_budget()
 
 
-def test_corrupt_state_file_recovers(settings):
+def test_a_corrupt_ledger_fails_closed_and_is_never_overwritten(settings):
+    """An unreadable `spend.json` used to read as $0 spent: the cap
+    authorised against an empty month and the next write replaced the only
+    record of the month's spend with a fresh file (H5). Now every path that
+    decides whether money may move refuses, and nothing writes over it."""
+    from pipeline.cost import LedgerUnreadableError
+
     ledger = SpendLedger(settings)
     ledger.path.parent.mkdir(parents=True, exist_ok=True)
     ledger.path.write_text("{corrupt", encoding="utf-8")
+    assert not ledger.readable()
+    assert ledger.would_exceed(0.01)
+    with pytest.raises(LedgerUnreadableError):
+        ledger.reserve_tts_spend(10)
+    with pytest.raises(SpendCapExceededError):   # the cap error's subclass
+        ledger.record_tts(1.0)
+    with pytest.raises(LedgerUnreadableError):
+        ledger.record_pexels_call()
+    # Reports still answer, so /cost can say what is wrong.
     assert ledger.mtd_spend_usd() == 0.0
-    ledger.record_tts(1.0)
-    assert ledger.mtd_spend_usd() == 1.0
+    # A cache hit spent nothing and is not worth failing a render over.
+    ledger.record_cache_hit(100)
+    assert ledger.path.read_text(encoding="utf-8") == "{corrupt"
 
 
 def test_the_short_report_blocks_on_placeholder_audio(settings, short_valid_json):

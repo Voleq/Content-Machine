@@ -82,50 +82,65 @@ def main() -> None:
 
     async def _post_init(application) -> None:
         async def notify(text: str) -> None:
+            # Every operator chat gets its copy: one chat that fails (blocked
+            # the bot, left the group) used to stop the rest from hearing.
             for chat_id in settings.operator_chat_ids:
-                await application.bot.send_message(chat_id, text)
+                try:
+                    await application.bot.send_message(chat_id, text)
+                except Exception:  # noqa: BLE001 - the next chat still hears
+                    log.exception("could not notify chat %s", chat_id)
 
         loop = asyncio.get_running_loop()
 
         def push_file(path, caption: str = "") -> None:
             """Called from the render worker thread — hop back to the bot's
-            loop to actually send.
+            loop to actually send, and WAIT for the answer.
 
-            BY TYPE AND SIZE, not always as a photo (E3). Every push went out
-            through `send_photo`, and two callers send things that are not
-            photos: `_run_proof` pushes the finished proof MP4, and
-            `_send_storyboard` pushes a large multi-tile contact sheet that
-            exceeds `send_photo`'s tighter limits. `push_file` catches the
-            exception and logs it, so the operator saw nothing at all.
+            BY TYPE AND SIZE, not always as a photo (E3): `telegram_send_kind`
+            picks video, photo or document, and refuses a file the cloud Bot
+            API would refuse rather than finding out from it.
+
+            It used to schedule the send and return at once, so a failure
+            happened on the loop with nobody listening: `BotCore.push_file`
+            reported every push as sent, and `DELIVERY_BACKEND=telegram`
+            said "(sent in chat)" about a video Telegram had rejected. Now the
+            exception comes back here, and `BotCore.push_file` tells the
+            operator where the file is instead.
             """
-            async def _send() -> None:
-                from pathlib import Path as _P
+            from pathlib import Path as _P
 
-                p = _P(path)
-                suffix = p.suffix.lower()
-                try:
-                    size = p.stat().st_size
-                except OSError:
-                    size = 0
-                # Telegram's photo endpoint caps at 10 MB and re-encodes;
-                # a contact sheet past that, or any non-image, goes as a
-                # document so it arrives intact.
-                video = suffix in (".mp4", ".mov", ".mkv", ".webm")
-                photo = (suffix in (".png", ".jpg", ".jpeg", ".webp")
-                         and size <= 10_000_000)
+            from bot.handlers import telegram_send_kind
+
+            p = _P(path)
+            kind = telegram_send_kind(p, settings)   # raises if unsendable
+
+            async def _send() -> None:
                 for chat_id in settings.operator_chat_ids:
                     with open(p, "rb") as fh:
-                        if video:
+                        if kind == "video":
                             await application.bot.send_video(
                                 chat_id, fh, caption=caption[:1024],
                                 supports_streaming=True)
-                        elif photo:
+                        elif kind == "photo":
                             await application.bot.send_photo(
                                 chat_id, fh, caption=caption[:1024])
                         else:
                             await application.bot.send_document(
                                 chat_id, fh, caption=caption[:1024])
-            asyncio.run_coroutine_threadsafe(_send(), loop)
+
+            fut = asyncio.run_coroutine_threadsafe(_send(), loop)
+            try:
+                on_loop = asyncio.get_running_loop() is loop
+            except RuntimeError:
+                on_loop = False
+            if on_loop:
+                # Waiting here would deadlock the loop the send runs on; the
+                # failure is still logged rather than lost.
+                fut.add_done_callback(
+                    lambda f: f.exception() and log.error(
+                        "could not send %s: %s", p.name, f.exception()))
+                return
+            fut.result(timeout=settings.telegram_send_timeout_s)
 
         core.file_pusher = push_file
         core.queue = RenderJobQueue(settings, core.execute_job, notify)

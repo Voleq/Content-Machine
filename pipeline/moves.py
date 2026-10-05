@@ -512,8 +512,10 @@ def _zoom_cuts_a_line(plate, box, target: str, values: dict, settings,
     release's date ended "6 July 202" at the side of the frame. Such a
     passage gets the highlight instead.
     """
-    vx, vy, vw, vh = M.zoom_box(plate.canvas, box, 1.0,
-                                zoom_pad(plate.canvas, box, _zoom_pad_of(plate)))
+    # The view as the renderer draws it, kept inside the plate — the same box
+    # `_zoom_lands_under_caption` reads, so the two cannot disagree at an edge.
+    vx, vy, vw, vh = _clamped_view(
+        plate, box, 1.0, zoom_pad(plate.canvas, box, _zoom_pad_of(plate)))
     for name, text in values.items():
         slot = plate.slot(name)
         if (name == target or slot is None or slot.region or slot.control
@@ -544,27 +546,44 @@ def _zoom_lands_under_caption(plate, box, values: dict, settings, reg, layer,
     """
     if caption is None or layer is None or not (layer.w and layer.h):
         return False
-    vx, vy, vw, vh = M.zoom_box(plate.canvas, box, 1.0,
-                                zoom_pad(plate.canvas, box, _zoom_pad_of(plate)))
-    vw, vh = min(vw, plate.canvas[0]), min(vh, plate.canvas[1])
-    vx = min(max(vx, 0.0), plate.canvas[0] - vw)       # as the renderer clamps
-    vy = min(max(vy, 0.0), plate.canvas[1] - vh)
-    kx, ky = layer.w / vw, layer.h / vh
     cx0, cy0 = caption.x, caption.y
     cx1, cy1 = caption.x + caption.w, caption.y + caption.h
+    inks = []
     for name, text in values.items():
         slot = plate.slot(name)
         if slot is None or slot.region or slot.control or not str(text).strip():
             continue
         ink = _ink_box(plate, name, str(text), settings, reg)
-        if ink is None:
-            continue
-        x0 = layer.x + (ink.x - vx) * kx
-        y0 = layer.y + (ink.y - vy) * ky
-        x1, y1 = x0 + ink.w * kx, y0 + ink.h * ky
-        if x0 < cx1 and x1 > cx0 and y0 < cy1 and y1 > cy0:
-            return True
+        if ink is not None:
+            inks.append(ink)
+    pad = zoom_pad(plate.canvas, box, _zoom_pad_of(plate))
+    # Along the way, not only once in: a line that rests above the caption
+    # and ends below the frame passes under the caption on its way down.
+    for t in _PUSH_SAMPLES:
+        vx, vy, vw, vh = _clamped_view(plate, box, t, pad)
+        kx, ky = layer.w / vw, layer.h / vh
+        for ink in inks:
+            x0 = layer.x + (ink.x - vx) * kx
+            y0 = layer.y + (ink.y - vy) * ky
+            x1, y1 = x0 + ink.w * kx, y0 + ink.h * ky
+            if x0 < cx1 and x1 > cx0 and y0 < cy1 and y1 > cy0:
+                return True
     return False
+
+
+# Where along the push the caption check looks: a quarter, half, three
+# quarters and all the way in. At rest (t=0) the caption was placed clear.
+_PUSH_SAMPLES = (0.25, 0.5, 0.75, 1.0)
+
+
+def _clamped_view(plate, box, t: float, pad) -> tuple[float, float, float, float]:
+    """The push's view box at `t`, kept inside the plate as the renderer
+    keeps it — the one geometry both checks read."""
+    vx, vy, vw, vh = M.zoom_box(plate.canvas, box, t, pad)
+    vw, vh = min(vw, plate.canvas[0]), min(vh, plate.canvas[1])
+    vx = min(max(vx, 0.0), plate.canvas[0] - vw)
+    vy = min(max(vy, 0.0), plate.canvas[1] - vh)
+    return vx, vy, vw, vh
 
 
 class _Lane:
