@@ -19,6 +19,7 @@ validate-then-fail.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -1150,7 +1151,14 @@ def fill_prompt(
                settings=settings, move_context=move_context,
                chosen_angle=chosen_angle, headline=headline,
                article_summary=article_summary, headline_mode=headline_mode)
-    for block in PAYLOAD:
-        if fmt in block.formats:
-            text = text.replace(block.token, block.build(ctx))
-    return text
+    # ONE PASS over the template. Filling the tokens one after another meant
+    # text a block put in — a headline, an article summary, a filing quote,
+    # none of it written here — was searched again for the tokens after it,
+    # and a `{{…}}` inside scraped text would be filled.
+    fills = {block.token: block.build(ctx)
+             for block in PAYLOAD if fmt in block.formats}
+    if not fills:
+        return text
+    pattern = re.compile("|".join(re.escape(t) for t in
+                                  sorted(fills, key=len, reverse=True)))
+    return pattern.sub(lambda m: fills[m.group(0)], text)

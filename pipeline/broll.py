@@ -132,6 +132,43 @@ def palette_keys() -> list[str]:
     return sorted(PALETTE.keys())
 
 
+# THE SWAP SLOTS, IN ONE PLACE. The swap menu writes an override under
+# `TAG:k` — the k-th swappable tag in script order (G5) — and every reader of
+# an override has to count the same way, or a swap changes the report and not
+# the video. The renderer looked overrides up by payload text for months
+# after the menu stopped writing them that way.
+SWAPPABLE_TAGS = ("CLIP", "BROLL", "IMG", "PRODUCT", "MEME")
+
+
+def swap_slots(events) -> dict[int, str]:
+    """`{event index: "TAG:k"}` for every swappable tag, in script order.
+
+    The event index is what a cue and a segment carry as `order`, so any
+    stage holding a segment can find its slot.
+    """
+    out: dict[int, str] = {}
+    k = -1
+    for idx, e in enumerate(events or []):
+        tag = getattr(getattr(e, "type", None), "value", "")
+        if tag in SWAPPABLE_TAGS:
+            k += 1
+            out[idx] = f"{tag}:{k}"
+    return out
+
+
+def override_choice(overrides: dict | None, slot: str | None,
+                    payload: str) -> int:
+    """The take an override asks for: the slot's own, else one written
+    before slot keys existed (keyed on the payload), else the first."""
+    overrides = overrides or {}
+    try:
+        if slot and slot in overrides:
+            return int(overrides[slot])
+        return int(overrides.get(payload, 0) or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 def content_cache_key(query: str, provider: str) -> str:
     """Cache by sha256(query + provider) — unchanged content, zero calls."""
     return hashlib.sha256(f"{query}|{provider}".encode()).hexdigest()[:24]
@@ -1130,10 +1167,11 @@ class ContentManager:
         # the payload text (G5). The prompt encourages reusing palette keys,
         # so a payload-keyed override swapped every beat that shared one, and
         # could not tell a `[CLIP]` from an `[IMG]` carrying the same subject.
-        # `swap_index` counts the swappable tags in script order, which is
-        # exactly what the swap menu numbers its buttons by.
-        swap_index = -1
-        for e in script.events:
+        # `swap_slots` counts the swappable tags in script order, which is
+        # exactly what the swap menu numbers its buttons by — and what the
+        # renderer and the storyboard read, so the report and the video agree.
+        slots = swap_slots(script.events)
+        for idx, e in enumerate(script.events):
             if e.type in (TagType.CLIP, TagType.BROLL):
                 kind = "clip"
             elif e.type in (TagType.IMG, TagType.PRODUCT):
@@ -1146,16 +1184,10 @@ class ContentManager:
                 kind = "screengrab"
             else:
                 continue
-            if e.type in (TagType.CLIP, TagType.BROLL, TagType.IMG,
-                          TagType.PRODUCT, TagType.MEME):
-                swap_index += 1
-            slot = f"{e.type.value}:{swap_index}"
-            choice = overrides.get(slot)
-            if choice is None:
-                # Overrides written before the slot keys existed. Honouring
-                # them keeps a workspace mid-flow working across the change;
-                # the next swap rewrites the key.
-                choice = overrides.get(e.payload, 0)
+            # Overrides written before the slot keys existed (keyed on the
+            # payload) are honoured too, so a workspace mid-flow keeps
+            # working across the change; the next swap rewrites the key.
+            choice = override_choice(overrides, slots.get(idx), e.payload)
             style = e.style or "clean"
             # De-duplication is on the RESOLVED identity, so two occurrences
             # of one payload with different takes are two entries.

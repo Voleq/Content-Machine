@@ -101,8 +101,13 @@ class Move:
 
     @property
     def change(self) -> float:
-        if self.before in (0, None):
+        if self.before is None or self.after is None:
             return 0.0
+        if self.before == 0:
+            # From nothing to something is the whole move, not none of it: a
+            # number pinned at zero (net income at breakeven) could never
+            # register however far it went. Read as 100% in its direction.
+            return 0.0 if self.after == 0 else (1.0 if self.after > 0 else -1.0)
         return (self.after - self.before) / abs(self.before)
 
     @property
@@ -548,6 +553,10 @@ class BatchItem:
     added_at: str = ""
     done_at: str = ""
     error: str = ""
+    # The render job submitted for this entry, while it runs. The entry is
+    # done when THAT job is done — not when it was queued: closing it on
+    # submit meant a render that failed overnight simply left the batch.
+    job_id: str = ""
 
 
 class BatchQueue:
@@ -583,6 +592,27 @@ class BatchQueue:
                 for r in self._all()
                 if isinstance(r, dict) and not r.get("done_at")]
 
+    def mark_submitted(self, ticker: str, fmt: str, job_id: str) -> None:
+        rows = self._all()
+        for r in rows:
+            if (r.get("ticker") == ticker.upper() and r.get("fmt") == fmt
+                    and not r.get("done_at")):
+                r["job_id"] = job_id
+                r["error"] = ""
+                break
+        _write(self.path, rows)
+
+    def reopen(self, ticker: str, fmt: str, error: str) -> None:
+        """The submitted job failed: the entry waits for the next window."""
+        rows = self._all()
+        for r in rows:
+            if (r.get("ticker") == ticker.upper() and r.get("fmt") == fmt
+                    and not r.get("done_at")):
+                r["job_id"] = ""
+                r["error"] = error
+                break
+        _write(self.path, rows)
+
     def mark_done(self, ticker: str, fmt: str, error: str = "") -> None:
         rows = self._all()
         for r in rows:
@@ -594,9 +624,12 @@ class BatchQueue:
         _write(self.path, rows)
 
     def clear(self) -> int:
+        """Drop what is still queued; the record of what ran stays. Returns
+        how many queued entries went (not the history's length)."""
         rows = self._all()
-        _write(self.path, [])
-        return len(rows)
+        kept = [r for r in rows if isinstance(r, dict) and r.get("done_at")]
+        _write(self.path, kept)
+        return len(rows) - len(kept)
 
     def render(self) -> str:
         items = self.pending()
@@ -619,6 +652,8 @@ def in_batch_window(settings: Settings, now: datetime | None = None) -> bool:
     current = (now or datetime.now()).time()
     start = time(hour=settings.batch_start_hour % 24)
     end = time(hour=settings.batch_end_hour % 24)
+    if start == end:
+        return True        # 0 to 24 (or any h to h): the window never closes
     if start <= end:
         return start <= current < end
     return current >= start or current < end

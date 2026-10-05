@@ -104,6 +104,7 @@ from pipeline.render_common import (
     OverlayLayer,
     RenderError,
     composite_video,
+    concat_line,
     delivery_size,
     encode_profile,
     ffprobe_duration,
@@ -133,8 +134,15 @@ from pipeline.timeline import (
 log = logging.getLogger(__name__)
 
 def _chapter_plan(script, duration: float,
-                  warn: Callable[[str], None]) -> list[tuple[float, str, str]]:
+                  warn: Callable[[str], None],
+                  words=None) -> list[tuple[float, str, str]]:
     """`(time, title, type)` per chapter, off the script's own trailer.
+
+    With the voice's `words`, the trailer's guessed times are moved onto the
+    audio (`timeline.measured_chapter_times`): the opener lands where the
+    chapter's paragraph actually begins, and the manifest's `chapters` — what
+    the YouTube chapter list and per-chapter retention are built from — say
+    the same time the viewer sees the opener.
 
     THERE IS NO FALLBACK LIST. The previous version carried six generic section
     titles and spaced them evenly across the runtime whenever the trailer was
@@ -149,6 +157,13 @@ def _chapter_plan(script, duration: float,
         # than dropping them, because the ORDER is still information.
         t = ch.start_s if ch.start_s or i == 0 else duration * i / max(n, 1)
         out.append((t, ch.title, ch.type))
+    if out and words:
+        from pipeline.timeline import measured_chapter_times
+
+        times = measured_chapter_times([t for t, _, _ in out],
+                                       script.narration, list(words), duration)
+        out = [(t, title, ctype)
+               for t, (_old, title, ctype) in zip(times, out)]
     if not out:
         warn("the script has no usable `=== CHAPTERS ===` trailer — no chapter "
              "openers will be drawn. The titles are the only place a section "
@@ -689,12 +704,23 @@ def render_long(
     every plate any module loads while this runs is drawn at it. See
     `plates.at_episode_hour`.
     """
-    with at_episode_hour(settings, workspace, script.ticker):
-        return _render_long(
-            script, tts, workspace, settings, content,
-            draft=draft, preview=preview, proof=proof,
-            broll_overrides=broll_overrides, as_of=as_of,
-            company_data=company_data, on_progress=on_progress)
+    # Whatever the render opens that outlives an exception — the 3D Dennis's
+    # Blender worker — is closed here, on the way out, however it leaves.
+    closers: list[Callable[[], None]] = []
+    try:
+        with at_episode_hour(settings, workspace, script.ticker):
+            return _render_long(
+                script, tts, workspace, settings, content,
+                draft=draft, preview=preview, proof=proof,
+                broll_overrides=broll_overrides, as_of=as_of,
+                company_data=company_data, on_progress=on_progress,
+                _closers=closers)
+    finally:
+        for close in closers:
+            try:
+                close()
+            except Exception:  # noqa: BLE001 - closing must not mask the error
+                log.exception("could not close a render resource")
 
 
 def _render_long(
@@ -711,6 +737,7 @@ def _render_long(
     as_of: str = "",
     company_data=None,
     on_progress: Callable[[int, int], None] | None = None,
+    _closers: list | None = None,
 ) -> tuple[Path, Path]:
     """`render_long`, at the hour it has already fixed for the episode."""
     # Draft audio (the free local voice) has word timings that are exact per
@@ -736,7 +763,8 @@ def _render_long(
     cues = build_long_timeline(script, tts.words, duration)
     scribble_cues = [c for c in cues if c.kind is CueKind.SCRIBBLE]
     chapter_warnings: list[str] = []
-    chapters = _chapter_plan(script, duration, chapter_warnings.append)
+    chapters = _chapter_plan(script, duration, chapter_warnings.append,
+                             words=tts.words)
     for w in chapter_warnings:
         log.warning("chapters: %s", w)
     # The frame rate is decided BEFORE the plan, because the plan is what
@@ -775,6 +803,16 @@ def _render_long(
 
     website = str(company_data.get("website") or "") if company_data is not None else ""
     overrides = broll_overrides or {}
+    # Overrides are keyed on the swap slot (`CLIP:3`), the way the swap menu
+    # writes them and the approval report reads them; a segment finds its
+    # slot through the event index it carries as `order`.
+    from pipeline.broll import override_choice, swap_slots
+    slots = swap_slots(script.events)
+
+    def _take(seg, value: str) -> int:
+        return override_choice(overrides, slots.get(seg.payload.get("order")),
+                               value)
+
     reg = load_plates(settings.assets_dir)
     aspect = "16x9"
     # The ground a held still is padded onto, as ffmpeg takes a colour.
@@ -961,7 +999,8 @@ def _render_long(
             # on his monitor is a made-up chart.
             closes = () if series.degraded else tuple(series.closes)
             room_dressing.append((Dressing(
-                episode=episode_number(settings, script.ticker, workspace.name),
+                episode=episode_number(settings, script.ticker, workspace.name,
+                                       assign=not (draft or preview or proof)),
                 ticker=script.ticker.upper(), question=board_question(script),
                 chapters=tuple(t for _, t, _ in chapters), closes=closes,
                 span=f"{max(round(days / 365), 1)}Y"), series))
@@ -1862,6 +1901,10 @@ def _render_long(
     performer = (dennis3d.Performer(settings, cache=Path(settings.cache_dir) / "dennis3d",
                                     draft=proof)
                  if dennis3d.usable(settings, reg, aspect) else None)
+    if performer is not None and _closers is not None:
+        # An exception anywhere in the beats below would otherwise leave the
+        # Blender worker running until the garbage collector closed its pipes.
+        _closers.append(performer.close)
     dennis3d_meta: list[dict] = []
 
     def _pose_3d(seg_i: int, seg, room, pose: str | None) -> tuple[str, bool]:
@@ -1972,7 +2015,7 @@ def _render_long(
             def _listing(name: str, clip: Path, tail_loop: Path) -> Path:
                 lst = rdir / f"screenin_{i}_{name}.ffconcat"
                 lst.write_text("ffconcat version 1.0\n" + "".join(
-                    f"file '{p}'\n" for p in [clip] + [tail_loop] * passes),
+                    concat_line(p) for p in [clip] + [tail_loop] * passes),
                     encoding="utf-8")
                 return lst
 
@@ -2234,7 +2277,7 @@ def _render_long(
             # Raw and full-frame it destroys the drawn surface the rest of the
             # video is built on: thirty minutes of ink, then a 4K stock shot,
             # then back — two videos cut together.
-            visual = content.resolve_clip(value, overrides.get(value, 0))
+            visual = content.resolve_clip(value, _take(seg, value))
             frame_plate = _frame_plate(CueKind.CLIP)
             clip_i = _clip_input(visual)
             if frame_plate is None:
@@ -2336,7 +2379,7 @@ def _render_long(
             if seg.kind == "img":
                 visual = content.resolve_image(
                     value, kind="img", website=website,
-                    choice=overrides.get(value, 0),
+                    choice=_take(seg, value),
                 )
                 still = visual.path
             elif seg.kind == "chart":

@@ -93,6 +93,9 @@ EMPTY = "empty"
 PARSE_ERROR = "parse_error"
 MOCK = "mock"
 NO_PROVIDER = "no_provider"
+# The paid hosted tier was skipped because this month's hosted LLM spend has
+# reached `LLM_MONTHLY_CAP`, or the spend ledger cannot be read.
+CAPPED = "capped"
 
 
 @dataclass(frozen=True)
@@ -108,6 +111,9 @@ class LLMResult:
     provider: str = ""
     model: str = ""
     reason: str = NO_PROVIDER
+    # What a hosted provider reported it billed, when it said (`usage`).
+    tokens_in: int = 0
+    tokens_out: int = 0
 
     def __bool__(self) -> bool:
         return bool(self.text)
@@ -186,13 +192,63 @@ def _try_openai_compatible(prompt: str, system: str, settings: Settings,
         log.debug("hosted LLM call failed (%s)", e)
         return LLMResult(provider=provider, model=model,
                          reason=TIMEOUT if _looks_like_timeout(e) else NO_DAEMON)
+    usage = (data.get("usage") or {}) if isinstance(data, dict) else {}
+    try:
+        tin = int(usage.get("prompt_tokens") or 0)
+        tout = int(usage.get("completion_tokens") or 0)
+    except (TypeError, ValueError):
+        tin = tout = 0
     try:
         text = data["choices"][0]["message"]["content"] or ""
     except (KeyError, IndexError, TypeError) as e:
         log.warning("hosted LLM returned an unreadable body (%s)", e)
-        return LLMResult(provider=provider, model=model, reason=PARSE_ERROR)
+        return LLMResult(provider=provider, model=model, reason=PARSE_ERROR,
+                         tokens_in=tin, tokens_out=tout)
     return LLMResult(text=text, provider=provider, model=model,
-                     reason=OK if text else EMPTY)
+                     reason=OK if text else EMPTY,
+                     tokens_in=tin, tokens_out=tout)
+
+
+# THE PAID HOSTED TIER IS METERED AND CAPPED (H6). `ollama,github,openai` is
+# the default order, so a local daemon that is down silently turned every
+# pass — the filing brief's dozens of section reads among them — into OpenAI
+# usage, and nothing recorded a cent of it. GitHub Models is the free tier
+# and stays unmetered; OpenAI is priced off the `usage` it reports (or an
+# estimate from the characters when it does not), recorded on the ledger,
+# and refused once the month reaches `LLM_MONTHLY_CAP`.
+PAID_PROVIDERS = (OPENAI,)
+
+
+def _hosted_usd(result: LLMResult, prompt: str, system: str,
+                settings: Settings) -> float:
+    tin, tout = result.tokens_in, result.tokens_out
+    if not (tin or tout):
+        # No usage block: price the characters at ~4 to a token, which is
+        # the direction that over- rather than under-meters English.
+        tin = (len(prompt) + len(system)) // 4 + 1
+        tout = len(result.text) // 4 + 1
+    return round(tin / 1000.0 * settings.llm_usd_per_1k_input
+                 + tout / 1000.0 * settings.llm_usd_per_1k_output, 6)
+
+
+def _hosted_headroom(settings: Settings) -> bool:
+    """Whether a paid hosted call may go out: the ledger reads, and this
+    month's hosted spend is under the cap."""
+    from pipeline.cost import SpendLedger
+
+    ledger = SpendLedger(settings)
+    if not ledger.readable():
+        return False
+    return ledger.llm_usd_this_month() < settings.llm_monthly_cap_usd
+
+
+def _record_hosted(result: LLMResult, prompt: str, system: str,
+                   settings: Settings) -> None:
+    from pipeline.cost import SpendLedger
+
+    usd = _hosted_usd(result, prompt, system, settings)
+    if usd > 0:
+        SpendLedger(settings).record_llm(usd)
 
 
 def chat_result(prompt: str, settings: Settings, *, system: str = "",
@@ -241,10 +297,19 @@ def chat_result(prompt: str, settings: Settings, *, system: str = "",
                 settings.github_models_token, settings.filings_llm_model,
                 "/chat/completions", provider=GITHUB)
         elif provider == OPENAI:
+            if settings.openai_api_key and not _hosted_headroom(settings):
+                log.warning("%s: the paid hosted LLM is capped for this month "
+                            "(LLM_MONTHLY_CAP=$%.2f) — skipped", purpose,
+                            settings.llm_monthly_cap_usd)
+                last = LLMResult(provider=OPENAI, reason=CAPPED)
+                continue
             out = _try_openai_compatible(
                 prompt, system, settings, settings.openai_base_url,
                 settings.openai_api_key, settings.filings_llm_model,
                 "/v1/chat/completions", provider=OPENAI)
+            if out.reason in (OK, EMPTY, PARSE_ERROR):
+                # It answered, so it billed — whether or not the text helps.
+                _record_hosted(out, prompt, system, settings)
         else:
             log.warning("%s: unknown LLM provider %r — skipped", purpose, provider)
             continue
@@ -364,6 +429,7 @@ _OUTCOME_WORDS = {
     PARSE_ERROR: "came back unreadable",
     MOCK: "skipped (MOCK_MODE)",
     NO_PROVIDER: "no model configured",
+    CAPPED: "skipped (hosted LLM monthly cap reached)",
 }
 
 

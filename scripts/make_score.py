@@ -218,12 +218,21 @@ def main(argv: list[str] | None = None) -> int:
         print("warning     : could not read the plan; commercial use needs "
               "Starter or above", file=sys.stderr)
     ledger = SpendLedger(settings)
-    if ledger.would_exceed(est):
-        print(f"\nAbout ${est:.2f} would pass the monthly cap "
-              f"(${settings.monthly_spend_cap_usd:.2f}). Nothing was generated.",
-              file=sys.stderr)
+    # CLAIMED, not just checked: a render starting while this runs cannot be
+    # authorised against the same headroom (the voice's reservation, reused).
+    from pipeline.cost import SpendCapExceededError
+    try:
+        reservation = ledger.reserve_usd(est, "the score")
+    except SpendCapExceededError as e:
+        print(f"\n{e} Nothing was generated.", file=sys.stderr)
         return 2
+    try:
+        return _make(todo, out, known, settings, ledger, tier)
+    finally:
+        ledger.release_reservation(reservation)
 
+
+def _make(todo, out, known, settings, ledger, tier: str) -> int:
     out.mkdir(parents=True, exist_ok=True)
     made = 0
     for p in todo:

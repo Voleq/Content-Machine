@@ -69,16 +69,18 @@ CALLBACK_DATA_MAX = 64
 
 
 def swap_keyboard(ticker: str, workdate: str,
-                  keys: list[str]) -> InlineKeyboardMarkup:
+                  keys: list) -> InlineKeyboardMarkup:
     """One button per swappable visual, addressed BY INDEX.
 
-    `keys` is the label list in plan order; the index is what travels, and
-    the handler resolves it against the stored plan.
+    `keys` is the label list in plan order, or `(index, label)` pairs when
+    some slots get no button (a meme has no other take); the index is what
+    travels, and the handler resolves it against the stored plan.
     """
+    pairs = [k if isinstance(k, tuple) else (j, k) for j, k in enumerate(keys)]
     rows = []
-    for i in range(0, len(keys), 2):
+    for i in range(0, len(pairs), 2):
         row = []
-        for j, k in enumerate(keys[i:i + 2], start=i):
+        for j, k in pairs[i:i + 2]:
             label = k if len(k) <= 28 else k[:27] + "…"
             row.append(InlineKeyboardButton(
                 f"🔄 {label}", callback_data=f"s|{ticker}|{workdate}|{j}"))

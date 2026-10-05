@@ -117,6 +117,27 @@ def _file_stamp(path: Path) -> str:
     return stamp
 
 
+def _concat_entries(listing: Path) -> list[Path]:
+    """The files an ffconcat listing names, in order (`file '...'` lines),
+    resolved against the listing's folder as ffmpeg resolves them."""
+    try:
+        text = listing.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    out: list[Path] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("file "):
+            continue
+        name = line[5:].strip()
+        if len(name) >= 2 and name[0] == name[-1] == "'":
+            # ffconcat escapes a quote inside a quoted name as '\''
+            name = name[1:-1].replace("'\\''", "'")
+        p = Path(name)
+        out.append(p if p.is_absolute() else listing.parent / p)
+    return out
+
+
 @dataclass(frozen=True)
 class SegmentSpec:
     """Everything needed to encode one segment, and nothing else.
@@ -156,6 +177,22 @@ class SegmentSpec:
                     out.append(Path(group[j + 1]))
         return out
 
+    def stamps(self) -> list[str]:
+        """Content stamps of every file this segment reads — including the
+        clips an `.ffconcat` listing names.
+
+        A listing's own bytes are a list of paths, and the monitor draw-in's
+        clips are rebuilt under the same index-named paths every render: when
+        only the draw-in's timing changed, the listing hashed the same and the
+        segment came back from cache with the old draw-in in it.
+        """
+        out: list[str] = []
+        for p in self.input_files():
+            out.append(_file_stamp(p))
+            if p.suffix.lower() == ".ffconcat":
+                out.extend(_file_stamp(q) for q in _concat_entries(p))
+        return out
+
     def content_hash(self, profile: EncodeProfile) -> str:
         payload = json.dumps({
             "kind": self.kind,
@@ -165,7 +202,7 @@ class SegmentSpec:
             "layout": self.layout,
             "filter": self.filter_chain,
             "inputs": [list(g) for g in self.inputs],
-            "stamps": [_file_stamp(p) for p in self.input_files()],
+            "stamps": self.stamps(),
             "profile": profile.video_args(),
             "extra": list(self.extra_identity),
         }, sort_keys=True)

@@ -667,6 +667,13 @@ def parse_cron(expr: str) -> tuple[int, int, tuple[int, ...]]:
     if len(fields) != 5:
         raise ValueError(f"cron must have 5 fields: {expr!r}")
     minute, hour = int(fields[0]), int(fields[1])
+    if fields[2] != "*" or fields[3] != "*":
+        # `run_daily` has days of the week and nothing finer, so a
+        # day-of-month or month field cannot be honoured — say so rather
+        # than send the digest on days the cron line excluded.
+        log.warning("SCREEN_DIGEST_CRON %r: the day-of-month and month "
+                    "fields are not supported and are ignored — the digest "
+                    "runs on the weekdays in the last field", expr)
     dow_field = fields[4]
     if dow_field == "*":
         days = tuple(range(7))

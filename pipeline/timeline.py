@@ -390,6 +390,70 @@ def chapter_start_times(chapters: str, duration: float) -> list[tuple[float, str
     return unique
 
 
+# The pace the trailer's guesses are read at: the read this pipeline assumes
+# everywhere it turns words into seconds (`gates.SPOKEN_WPS`). Repeated here
+# because `gates` imports this module's neighbours, not the other way round.
+GUESS_WPS = 2.4
+# How far a guessed chapter start may move to land on a paragraph, and, when
+# no paragraph is that close, on a sentence.
+SNAP_PARAGRAPH_S = 30.0
+SNAP_SENTENCE_S = 15.0
+
+
+def measured_chapter_times(stamps: list[float], narration: str,
+                           words: list[WordTimestamp],
+                           duration: float) -> list[float]:
+    """The writer's guessed chapter starts, moved onto the voice that exists.
+
+    The trailer's `mm:ss` is written before there is any audio (the prompt
+    says "approximate, the operator adjusts", and nothing let them), so the
+    chapter openers, their audio cue, the YouTube chapter list and the
+    per-chapter retention all sat on guesses — an opener could land in the
+    middle of the previous chapter's sentence.
+
+    Each guess is read as a POSITION in the script — its word at the pace the
+    writer would have assumed — taken to that word's real time, then moved to
+    the nearest paragraph start within `SNAP_PARAGRAPH_S` (a paragraph is the
+    writer's own unit), else the nearest sentence start within
+    `SNAP_SENTENCE_S`. The first chapter stays at 0. Order is kept: a time
+    that would not come after the previous chapter's is left unmoved.
+    """
+    if not words:
+        return list(stamps)
+    paragraphs = paragraph_starts(narration, words)
+    sentences = [w.start for i, w in enumerate(words)
+                 if i == 0 or words[i - 1].word.rstrip("\"'”’)]").endswith(
+                     (".", "!", "?", "…"))]
+
+    def nearest(t: float, pool: list[float], reach: float, after: float):
+        best = None
+        for c in pool:
+            if c <= after or abs(c - t) > reach:
+                continue
+            if best is None or abs(c - t) < abs(best - t):
+                best = c
+        return best
+
+    out: list[float] = []
+    prev = -1.0
+    for g in stamps:
+        if g <= 0.0:
+            t = 0.0
+        else:
+            idx = min(max(int(round(g * GUESS_WPS)), 0), len(words) - 1)
+            t = words[idx].start
+            snapped = (nearest(t, paragraphs, SNAP_PARAGRAPH_S, prev + 1.0)
+                       or nearest(t, sentences, SNAP_SENTENCE_S, prev + 1.0))
+            if snapped is not None:
+                t = snapped
+            elif t <= prev:
+                t = g                     # nothing better: the writer's guess
+        t = min(t, max(duration - 0.05, 0.0))
+        out.append(round(t, 3))
+        prev = t
+    return out
+
+
 def _diversify_fillers(segments: list["Segment"]) -> None:
     """Number the host beats sequentially (payload['variant']).
 

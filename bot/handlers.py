@@ -25,7 +25,8 @@ from typing import Callable
 from PIL import Image, ImageDraw
 
 from config import Settings
-from pipeline.broll import ContentManager, palette_keys
+from pipeline.broll import (ContentManager, override_choice, palette_keys,
+                           swap_slots)
 from pipeline.company_data import (
     CompanyDataError,
     check_export,
@@ -38,6 +39,7 @@ from pipeline.cost import (
     build_short_report,
 )
 from pipeline import journal
+from pipeline.corpus import INDEX_PROXIES
 from pipeline.delivery import deliver
 from pipeline.filing_brief import FilingReader
 from pipeline.gates import run_gates
@@ -150,7 +152,7 @@ def _journal_script(settings: Settings, ws: Workspace, fmt: str,
 # ---------------------------------------------------------------------------
 
 # common index / sector proxies + the "macro" keyword all route to macro mode
-_INDEX_SYMS = {"SPY", "QQQ", "DIA", "IWM", "VIX", "TLT", "VOO", "IVV", "RSP", "MARKET"}
+_INDEX_SYMS = set(INDEX_PROXIES)
 _MACRO_SYMS = {"MACRO"} | _INDEX_SYMS
 _MACRO_KW = (
     "cpi", "inflation", "deflation", "the fed", "fomc", "rate hike", "rate cut",
@@ -166,6 +168,9 @@ _EARNINGS_KW = (
 _HEADLINE_MODES = {"a": "company", "b": "earnings", "c": "macro",
                    "company": "company", "earnings": "earnings", "macro": "macro"}
 _URL_RE = re.compile(r"^https?://\S+$", re.IGNORECASE)
+# A ticker as the commands take one: letters and digits, with the `.` and `-`
+# of share classes (BRK.B, BF-B), and an optional `@YYYY-MM-DD` workspace.
+_TICKER_RE = re.compile(r"^[A-Z0-9][A-Z0-9.\-]{0,14}(@\d{4}-\d{2}-\d{2})?$")
 
 
 def _strip_mode_tag(text: str) -> tuple[str | None, str]:
@@ -195,6 +200,50 @@ def _macro_index_for(symbol: str) -> str:
     'macro' defaults to the broad market."""
     sym = symbol.strip().upper()
     return sym if sym in _INDEX_SYMS else "SPY"
+
+
+# What the cloud Bot API accepts, so a push is refused HERE with a reason
+# rather than by Telegram with nobody listening (H2).
+TELEGRAM_PHOTO_MAX_BYTES = 10_000_000
+TELEGRAM_PHOTO_MAX_SIDES = 10_000      # width + height
+TELEGRAM_PHOTO_MAX_RATIO = 20
+
+
+def telegram_send_kind(path: Path, settings: Settings) -> str:
+    """`video`, `photo` or `document` for one file the bot pushes.
+
+    Raises `ValueError` naming the limit when the file cannot go at all: the
+    cloud Bot API takes `telegram_upload_limit_mb` (50 MB) per upload, which
+    a full-resolution proof passes easily. A self-hosted Bot API server
+    (`TELEGRAM_API_BASE_URL`) lifts that, so the check is skipped there.
+
+    A picture goes as a photo only inside the photo endpoint's limits — 10 MB,
+    width + height ≤ 10,000, sides no more than 20:1. A tall multi-tile
+    contact sheet is outside them and goes as a document, intact.
+    """
+    p = Path(path)
+    size = p.stat().st_size            # a missing file raises, and says which
+    limit = int(settings.telegram_upload_limit_mb) * 1_000_000
+    if not settings.telegram_api_base_url and size > limit:
+        raise ValueError(
+            f"{p.name} is {size / 1e6:.0f} MB — over the "
+            f"{settings.telegram_upload_limit_mb} MB the cloud Bot API "
+            f"accepts. Use DELIVERY_BACKEND=gdrive, or a self-hosted Bot API "
+            f"server (TELEGRAM_API_BASE_URL).")
+    suffix = p.suffix.lower()
+    if suffix in (".mp4", ".mov", ".mkv", ".webm"):
+        return "video"
+    if suffix in (".png", ".jpg", ".jpeg", ".webp") \
+            and size <= TELEGRAM_PHOTO_MAX_BYTES:
+        try:
+            with Image.open(p) as im:
+                w, h = im.size
+        except Exception:  # noqa: BLE001 - unreadable goes as a file
+            return "document"
+        if (w + h <= TELEGRAM_PHOTO_MAX_SIDES
+                and max(w, h) <= TELEGRAM_PHOTO_MAX_RATIO * max(min(w, h), 1)):
+            return "photo"
+    return "document"
 
 
 def _frame_holds(manifest_path) -> str:
@@ -284,10 +333,23 @@ class BotCore:
         # application's post_shutdown in main.py.
         self._filing_reads: dict[tuple[str, str], object] = {}
         self.filing_reader = FilingReader()
+        # When each chat last sent a paste refused as a FRAGMENT. Telegram
+        # delivers a split message's parts within a second or two, and only
+        # the full-length parts look cut; the last part is short and used to
+        # be accepted as a whole script (saved over the good one).
+        self._fragment_at: dict[int, float] = {}
 
     # ------------------------------------------------------------- helpers
-    def _ws_or_error(self, ticker: str) -> Workspace | None:
-        return Workspace.latest_for(self.settings, ticker)
+    def _ws_or_error(self, ticker: str, want=None) -> Workspace | None:
+        """`ticker` (or `TICKER@YYYY-MM-DD`) to the workspace a command means:
+        the newest one `want` accepts, else the newest (`Workspace.resolve`)."""
+        return Workspace.resolve(self.settings, ticker, want)
+
+    @staticmethod
+    def _from_date(ws: Workspace) -> str:
+        """" (from YYYY-MM-DD)" when a command reached past today's folder,
+        so the operator knows which video it acted on."""
+        return "" if ws.workdate == today_str() else f" (from {ws.workdate})"
 
     def _active_ws(self, chat_id: int) -> Workspace | None:
         return self.context.get(chat_id)
@@ -345,9 +407,14 @@ class BotCore:
         self.context.set(chat_id, ticker, ws.workdate)
         # An update has no angle step: the angle is fixed, and it is "I said a
         # thing about this company, here is what happened."
-        if lane == "long" and not update:
+        #
+        # Re-running `/long` on a workspace that already has a LONG script
+        # (to get the template again, say) keeps the angle it chose: re-arming
+        # here wiped it and made the next plain message an angle pick — the
+        # G2 guard `prompts_reply` has, missing from the other door.
+        if lane == "long" and not update and ws.load_long() is None:
             ws.set_awaiting_angle()
-        else:
+        elif lane != "long" or update:
             ws.clear_awaiting_angle()
 
         label = ("UPDATE (16:9 — grading the last call)" if update else
@@ -639,6 +706,12 @@ class BotCore:
                 # custom library, where pre-render validation looks for it
                 custom = self.settings.assets_dir / "custom"
                 custom.mkdir(parents=True, exist_ok=True)
+                # One file per slug. A re-upload in another format used to
+                # sit beside the first, and whichever the glob found first
+                # was the one drawn — not necessarily the newer.
+                for old in custom.glob(f"{stem}.*"):
+                    if old.suffix.lower() != suffix:
+                        old.unlink(missing_ok=True)
                 (custom / f"{stem}{suffix}").write_bytes(data)
                 remaining = [s for s in self._pending_custom_slugs(ws) if s != stem]
                 kind = pending[stem]
@@ -715,7 +788,11 @@ class BotCore:
         # `/refresh`, which was the only path that did it; with the COM
         # refresh deleted (Group L) the upload is the sole data route and
         # therefore the sole place this can happen.
-        withdrawn = [fmt for fmt in ("short", "long") if ws.is_approved(fmt)]
+        # A CSV that an .xlsx beside it shadows changed nothing anything reads,
+        # so it withdraws nothing either.
+        shadowed = suffix == ".csv" and (ws.path / "dennis_data.xlsx").exists()
+        withdrawn = ([] if shadowed else
+                     [fmt for fmt in ("short", "long") if ws.is_approved(fmt)])
         for fmt in withdrawn:
             ws._invalidate_approval(fmt)
         if withdrawn:
@@ -785,8 +862,25 @@ class BotCore:
         # `_auto_filings`, the skeptic inside `run_gates` — is tallied
         # against THIS video, so the provenance record written hours later at
         # render time reports this video's calls rather than the bot's.
+        if not from_file:
+            import time
+
+            now = time.monotonic()
+            why = self._looks_truncated(text)
+            if why:
+                self._fragment_at[chat_id] = now
+            elif now - self._fragment_at.get(chat_id, -1e9) < self.SPLIT_TAIL_S:
+                self._fragment_at[chat_id] = now
+                return self._truncated_reply(
+                    "paste", "it arrived right after a message Telegram cut "
+                             "at its length limit, so it is the end of the "
+                             "same message, not a whole script")
         with llm_scope(self._llm_scope(ws)):
             return self._intake(ws, text, from_file=from_file)
+
+    # How soon after a refused fragment the next paste is taken for the rest
+    # of the same split message.
+    SPLIT_TAIL_S = 15.0
 
     def _intake(self, ws: Workspace, text: str, *,
                 from_file: bool = False) -> Reply:
@@ -910,7 +1004,7 @@ class BotCore:
         return Reply(head, files=[f])
 
     def edit_script(self, chat_id: int, args: list[str], *,
-                    mode: str = "lines") -> Reply:
+                    mode: str = "lines", raw_args: str | None = None) -> Reply:
         """Apply a targeted edit, then re-run the whole intake on the result.
 
         The revision is only stored if it parses, so an edit can never leave
@@ -918,6 +1012,11 @@ class BotCore:
         goes back through the ordinary intake, the gates re-run and a fresh
         cost report comes back — and saving invalidates the approval, so the
         approval stays pinned to the version actually read.
+
+        `raw_args` is the message text after the command, verbatim. Telegram's
+        `args` are the text split on whitespace, so a pasted paragraph lost
+        its line breaks and a `/replace` across a line break or a double
+        space could never match; the glue passes the text itself.
         """
         ws = self._active_ws(chat_id)
         if ws is None:
@@ -929,13 +1028,20 @@ class BotCore:
 
         try:
             if mode == "replace":
-                result = replace_text(raw, " ".join(args))
+                result = replace_text(
+                    raw, raw_args if raw_args is not None else " ".join(args))
             else:
+                if raw_args is not None:
+                    m = re.match(r"\s*(\S+)\s?(.*)", raw_args, re.S)
+                    args = [m.group(1)] if m else []
+                    replacement = m.group(2).rstrip() if m else ""
+                else:
+                    replacement = " ".join(args[1:])
                 if not args:
                     raise EditError(
                         "Usage: `/edit N new text` · `/edit N-M new text` · "
                         "`/edit N` to delete. `/script` shows the numbers.")
-                result = edit_lines(raw, args[0], " ".join(args[1:]))
+                result = edit_lines(raw, args[0], replacement)
         except EditError as e:
             return Reply(f"⛔ {e}")
 
@@ -955,12 +1061,14 @@ class BotCore:
         previous = ws.pop_revision(fmt)
         if previous is None:
             return Reply("Nothing to undo — this is the script as pasted.")
+        depth = ws.revision_count(fmt)
         reply, saved = self._revise(ws, fmt, current, previous,
                                     note="↩️ reverted to the previous revision",
                                     diff=diff_lines(current, previous))
-        if saved:
+        if saved and ws.revision_count(fmt) > depth:
             # `_revise` saved, which pushed `current` onto the stack; drop it
-            # so a second /undo goes further back rather than toggling.
+            # so a second /undo goes further back rather than toggling. Only
+            # when it DID push: an identical text is not stacked any more.
             ws.pop_revision(fmt)
         else:
             # It did NOT save, so nothing was pushed — and the second pop
@@ -1022,6 +1130,11 @@ class BotCore:
         key = self._filing_read_key(ws)
         if key in self._filing_reads:
             return self._filing_reads[key]
+        # Readings nobody collected (no upload followed) are let go once
+        # finished: the brief they wrote is on disk, which is where
+        # `_finish_filing_read` looks when there is no future.
+        self._filing_reads = {k: f for k, f in self._filing_reads.items()
+                              if not getattr(f, "done", lambda: False)()}
         from pipeline.filing_brief import build_brief, save_brief
 
         def _run():
@@ -1078,12 +1191,21 @@ class BotCore:
                          ws.ticker)
                 return ("\n⚠️ the filing reading was cancelled — the prompt "
                         "below has no filing brief in it.")
-            except Exception as e:  # noqa: BLE001 — includes TimeoutError
-                log.warning("filing brief: %s did not finish (%s)",
-                            ws.ticker, type(e).__name__)
+            except TimeoutError:
+                log.warning("filing brief: %s did not finish in %ss",
+                            ws.ticker, self.settings.filing_brief_wait_s)
+                # Still running: keep its future, so the re-upload waits on
+                # this reading rather than starting a second one.
+                self._filing_reads[self._filing_read_key(ws)] = fut
                 return ("\n⚠️ the filing reading has not finished — the prompt "
                         "below has no filing brief in it. Re-upload the "
                         "workbook once it lands to pick it up.")
+            except Exception as e:  # noqa: BLE001 — the reading itself failed
+                log.warning("filing brief: %s failed (%s: %s)",
+                            ws.ticker, type(e).__name__, e)
+                return (f"\n⚠️ the filing reading failed ({type(e).__name__}: "
+                        f"{str(e)[:120]}) — the prompt below has no filing "
+                        f"brief in it. Re-uploading the workbook tries again.")
             elapsed = time.monotonic() - t0
             if elapsed > 5:
                 waited = f" (waited {elapsed:.0f}s for the filing reading)"
@@ -1377,25 +1499,62 @@ class BotCore:
     def _approval_blockers(self, ws: Workspace, script, fmt: str) -> list[str]:
         """Blocking findings as of NOW, for the Approve tap to refuse on.
 
+        The same three sources the report's blockers come from (M2), not
+        only the gate battery: the LONG's own validation — where a
+        `[SCREENGRAB]` file deleted out of `assets/custom/` is caught, which
+        the G8 note above promised and the gates never checked — the gates,
+        run on the SHORT's workbook-filled rows exactly as intake ran them,
+        and the monthly cap.
+
         Never raises: a battery that cannot run is not evidence that the
         script is bad, and refusing an approval because the kit is missing
         would be a worse failure than the one this guards.
         """
+        from pipeline.cost import billable_chars, estimate_tts_usd
+
+        blocked: list[str] = []
         try:
             data = self._company_data(ws)
+            as_of = str((data.get("as_of_date") if data else "") or "")
             with llm_scope(self._llm_scope(ws)):
-                gates = run_gates(
-                    script, self.settings, data=data,
-                    as_of=str((data.get("as_of_date") if data else "") or ""),
-                    workspace=ws.path, skeptic=False,
-                    format_name=(self.short_format_name(ws)
-                                 if fmt == "short" else ""))
+                if fmt == "short":
+                    checked = script
+                    if data is not None:
+                        from pipeline.short_data import fill_numbers
+                        checked, _notes = fill_numbers(script, data)
+                    gates = run_gates(checked, self.settings, data=data,
+                                      as_of=as_of, workspace=ws.path,
+                                      skeptic=False,
+                                      format_name=self.short_format_name(ws))
+                    text, events = script.audio_script, script.inline_events
+                else:
+                    metrics = (data.available_chart_metrics()
+                               if data is not None else None)
+                    _warn, v_blocking = validate_long_script(
+                        script, palette_keys(), ws.path, self.settings,
+                        data_metrics=metrics)
+                    blocked += list(v_blocking)
+                    gates = run_gates(script, self.settings, data=data,
+                                      as_of=as_of, workspace=ws.path,
+                                      skeptic=False)
+                    text, events = script.narration, script.events
+            blocked += [f.render() for f in gates.findings
+                        if f.severity == "block"]
+            if not self.tts.is_cached(text, fmt, events=events):
+                est = estimate_tts_usd(
+                    billable_chars(self.tts, text, fmt, events,
+                                   script.char_count), self.settings)
+                if self.ledger.would_exceed(est):
+                    blocked.append(
+                        f"TTS (~${est:.2f}) would exceed the monthly cap "
+                        f"(${self.ledger.mtd_spend_usd():.2f}/"
+                        f"${self.settings.monthly_spend_cap_usd:.2f})")
         except Exception:  # noqa: BLE001
             log.exception("could not re-check the gates for %s %s — "
                           "letting the approval through on the report",
                           ws.ticker, fmt)
             return []
-        return [f.render() for f in gates.findings if f.severity == "block"]
+        return blocked
 
     def cancel_approval(self, fmt: str, ticker: str, workdate: str) -> Reply:
         ws = Workspace(self.settings, ticker, workdate)
@@ -1409,9 +1568,13 @@ class BotCore:
         if script is None:
             return Reply("No LONG script on file.")
         slots = self.swappable_slots(script)
-        if not slots:
+        # A meme has one take — the owned library's match — so a button for
+        # it would count "take 2/6" and change nothing. It keeps its place in
+        # the index space, which is what every stored override is keyed on.
+        labels = [(i, f"{i + 1}. {payload}")
+                  for i, (tag, payload) in enumerate(slots) if tag != "MEME"]
+        if not labels:
             return Reply("This LONG has no [CLIP] tags to swap.")
-        labels = [f"{i + 1}. {payload}" for i, (_tag, payload) in enumerate(slots)]
         return Reply(
             "Pick the visual to swap to its next take "
             "(approval resets after a swap):",
@@ -1428,12 +1591,11 @@ class BotCore:
         common case rather than the edge one. It also could not tell a
         `[CLIP]` from an `[IMG]` carrying the same subject.
         """
-        out: list[tuple[str, str]] = []
-        for e in getattr(script, "events", []) or []:
-            tag = getattr(getattr(e, "type", None), "value", "")
-            if tag in ("CLIP", "BROLL", "IMG", "PRODUCT", "MEME"):
-                out.append((tag, e.payload))
-        return out
+        events = getattr(script, "events", []) or []
+        # The same count `broll.swap_slots` makes, which is what the report,
+        # the storyboard and the renderer all read an override by.
+        return [(slot.split(":", 1)[0], events[idx].payload)
+                for idx, slot in swap_slots(events).items()]
 
     def swap_key(self, chat_id: int, ticker: str, workdate: str,
                  index: str) -> Reply:
@@ -1455,7 +1617,7 @@ class BotCore:
             return Reply("That swap button is stale — the script changed. "
                          "Open the menu again.")
         slot = f"{tag}:{i}"
-        current = ws.broll_overrides().get(slot, 0)
+        current = override_choice(ws.broll_overrides(), slot, payload)
         n = self.content.alternates_count(payload)
         take = (current + 1) % max(n, 1)
         ws.set_broll_override(slot, take)
@@ -1476,7 +1638,12 @@ class BotCore:
         Since /short and /long declare the format up front (1d), plain /render
         follows from it rather than making the operator pick twice.
         """
-        ws = self._ws_or_error(ticker)
+        def has_script(w: Workspace) -> bool:
+            f = fmt or w.current_format()
+            return bool(f) and (w.path / f"script_{f}.json").exists()
+
+        ws = self._ws_or_error(ticker, has_script)
+        ticker = Workspace.split_arg(ticker)[0]
         if ws is None:
             return None, (f"No workspace for {ticker} — /short {ticker} or "
                           f"/long {ticker} first."), None
@@ -1510,7 +1677,8 @@ class BotCore:
             kind = (JobKind.RENDER_PROOF_SHORT if fmt == "short"
                     else JobKind.RENDER_PROOF_LONG)
             return kind, (
-                f"🖼 queued FULL-RES PROOF for {ticker} {fmt.upper()}\n"
+                f"🖼 queued FULL-RES PROOF for {ticker} {fmt.upper()}"
+                f"{self._from_date(ws)}\n"
                 f"📺 real visuals — live prices, Pexels, Wikimedia, memes, "
                 f"filings and charts, exactly as a final\n"
                 f"🎧 {voice}\n"
@@ -1518,6 +1686,7 @@ class BotCore:
                 f"voice\n"
                 f"⏱ cue times shift slightly when the paid voice lands: the "
                 f"draft clock is exact per sentence, interpolated inside one"
+                + self._dennis_3d_note()
             ), ws
         if draft and fmt == "long":
             # Since P3.2 a draft never buys audio: it uses the free local
@@ -1532,7 +1701,8 @@ class BotCore:
                         "checks timing only",
             }.get(tier, tier)
             return JobKind.RENDER_DRAFT_LONG, (
-                f"🎬 queued LOW-RES DRAFT for {ticker}\n🎧 {note}. $0 either "
+                f"🎬 queued LOW-RES DRAFT for {ticker}{self._from_date(ws)}"
+                f"\n🎧 {note}. $0 either "
                 f"way; the final still needs the paid voice."), ws
         if not ws.is_approved(fmt):
             return None, (
@@ -1541,11 +1711,25 @@ class BotCore:
                 f"approval gate is the spend gate."
             ), None
         kind = JobKind.RENDER_SHORT if fmt == "short" else JobKind.RENDER_LONG
-        return kind, f"🎬 queued {fmt.upper()} render for {ticker}", ws
+        return kind, (f"🎬 queued {fmt.upper()} render for {ticker}"
+                      f"{self._from_date(ws)}" + self._dennis_3d_note()), ws
+
+    def _dennis_3d_note(self) -> str:
+        """A line on the queue reply when the 3D Dennis is on: every second
+        of him is drawn frame by frame in Blender, and a long can hold the one
+        render worker for hours. Said before the job starts, not discovered."""
+        mode = (self.settings.dennis_3d or "off").strip().lower()
+        if mode in ("", "off", "0", "false", "no"):
+            return ""
+        return ("\n🧊 DENNIS_3D is on: each second of him is rendered in "
+                "Blender, so this can run for hours and holds the queue. "
+                "`python room3d/perform.py --bench` times a frame on this box.")
 
     def repurpose_request(self, ticker: str) -> tuple[JobKind | None, str, Workspace | None]:
         """SHORT-from-LONG: free (no TTS, no fetches), so no approval gate."""
-        ws = self._ws_or_error(ticker)
+        ws = self._ws_or_error(
+            ticker, lambda w: (w.path / "long_final.mp4").exists())
+        ticker = Workspace.split_arg(ticker)[0]
         if ws is None:
             return None, f"No workspace for {ticker}.", None
         if not (ws.path / "long_final.mp4").exists():
@@ -1572,12 +1756,14 @@ class BotCore:
 
         def checkpoint(detail: str) -> None:
             if store:
-                fresh = store.load(job.id)
-                if fresh and fresh.status.value == "cancelled":
-                    raise JobCancelled()
-                if fresh:
+                # One locked step, so a `/cancel` saved in between cannot be
+                # written over by this progress note (JobStore.update).
+                def note(fresh) -> None:
+                    if fresh.status.value == "cancelled":
+                        raise JobCancelled()
                     fresh.detail = detail
-                    store.save(fresh)
+
+                store.update(job.id, note)
 
         if job.kind in (JobKind.RENDER_PROOF_SHORT, JobKind.RENDER_PROOF_LONG):
             return self._run_proof(job, ws, checkpoint)
@@ -1649,7 +1835,7 @@ class BotCore:
                 on_progress=seg_progress,
             )
             if draft:
-                job.delivered_link = f"file://{out}"
+                self._local_link(job, out)
                 return str(out)
             checkpoint("delivery")
             extra = self._publish_byproducts(job, ws, script, tts, manifest,
@@ -1708,15 +1894,27 @@ class BotCore:
                                        self.settings,
                                        attributions=attributions))
             self._finish(job, results[0])
-            fresh = self.queue.store.load(job.id) if self.queue else None
-            if fresh is not None:
+            if self.queue is not None:
                 extra = [f"clip {i}/{len(results)}: {r.link}"
                          for i, r in enumerate(results, 1)]
-                fresh.byproducts = extra + list(fresh.byproducts)
-                self.queue.store.save(fresh)
+
+                def clips_on(fresh) -> None:
+                    fresh.byproducts = extra + list(fresh.byproducts)
+
+                self.queue.store.update(job.id, clips_on)
             return str(clips[0][0])
 
         raise RuntimeError(f"unknown job kind {job.kind}")
+
+    def _local_link(self, job: JobRecord, out) -> None:
+        """A draft's or a proof's link, on the STORED record: the worker
+        reloads the job from disk when the executor returns, so a link set on
+        the in-memory copy alone never reached `/status` or the done push."""
+        job.delivered_link = f"file://{out}"
+        if self.queue is not None:
+            def link(fresh) -> None:
+                fresh.delivered_link = job.delivered_link
+            self.queue.store.update(job.id, link)
 
     def _refuse_synthetic_prices(self, script, format_name: str = "") -> None:
         """Stop a final whose price chart would be the synthetic floor.
@@ -1791,7 +1989,8 @@ class BotCore:
             write_words(tts.words, path("words"))
             extra.append(write_transcript(tts.words, path("transcript")))
             pkg = build_package(
-                script, self.settings, ticker=job.ticker,
+                self._retimed(script, fmt, Path(manifest)), self.settings,
+                ticker=job.ticker,
                 runtime_min=tts.duration_s / 60.0,
                 transcript=transcript_text(tts.words),
                 timestamps=timestamps_from_cues(group_cues(tts.words)),
@@ -1860,7 +2059,7 @@ class BotCore:
             )
         # Never delivered. A proof is for looking at, and `deliver()` is how
         # something reaches YouTube — the local path is the whole output.
-        job.delivered_link = f"file://{out}"
+        self._local_link(job, out)
         self.push_file(Path(out), (
             f"{job.ticker} — {'SHORT' if short else 'LONG'} PROOF, full "
             f"resolution, {tts.tier} voice, $0. Cue times move slightly under "
@@ -1878,14 +2077,21 @@ class BotCore:
                 build_storyboard, host_share_lines, storyboard_caption,
             )
             from pipeline.timeline import (
-                build_long_timeline, chapter_start_times, paragraph_starts,
-                plan_long_segments,
+                build_long_timeline, chapter_start_times,
+                measured_chapter_times, paragraph_starts, plan_long_segments,
             )
 
             cues = build_long_timeline(script, tts.words, tts.duration_s)
+            # The chapter times the render will use, measured off the voice,
+            # so the sheet plans the same beats the encode does.
+            guessed = chapter_start_times(script.chapters, tts.duration_s)
+            measured = measured_chapter_times([t for t, _ in guessed],
+                                              script.narration, tts.words,
+                                              tts.duration_s)
             segments, _ = plan_long_segments(
                 cues, tts.duration_s,
-                chapter_starts=chapter_start_times(script.chapters, tts.duration_s),
+                chapter_starts=[(t, title) for t, (_g, title)
+                                in zip(measured, guessed)],
                 min_readable_s=self.settings.long_min_readable_s,
                 chapter_host_s=self.settings.long_chapter_host_s,
                 paragraphs=paragraph_starts(script.narration, tts.words),
@@ -1896,6 +2102,8 @@ class BotCore:
                 content=self.content, ticker=job.ticker, company_data=data,
                 workspace=ws.path, title=f"{job.ticker} — LONG",
                 chapters=script.chapter_list,
+                overrides=ws.broll_overrides(),
+                slots=swap_slots(script.events),
             )
             # How much of each chapter is Dennis alone in frame, flagged over
             # the operator's share (35%). Reported, never acted on: that is
@@ -1990,18 +2198,26 @@ class BotCore:
         if record:
             extras = extras + ["", record]
         if self.queue:
-            fresh = self.queue.store.load(job.id)
-            if fresh:
+            def delivered(fresh) -> None:
                 fresh.delivered_link = job.delivered_link
                 fresh.detail = f"delivered via {result.backend}"
                 fresh.byproducts = extras
-                self.queue.store.save(fresh)
+
+            self.queue.store.update(job.id, delivered)
         journal.note(self.settings, "delivered",
                      f"{job.kind.value} delivered via {result.backend}: "
                      f"{job.delivered_link}",
                      ticker=job.ticker, workdate=job.workdate,
                      job_kind=job.kind.value, link=job.delivered_link)
-        self._record_thesis(job)
+        # A MOCK render is not a claim made in public (M13): its prices and
+        # voice are invented, and a thesis pinned off it joined the intraday
+        # watch, `/thesis`, `/update` and the scoreboard — and stayed there
+        # after the box went live on the same state directory.
+        if self.settings.mock_mode:
+            log.info("MOCK_MODE: no thesis or confession pinned for %s",
+                     job.ticker)
+        else:
+            self._record_thesis(job)
 
     def _provenance_text(self, job: JobRecord) -> str:
         """The record, read back off the manifest the render just wrote.
@@ -2152,7 +2368,9 @@ class BotCore:
         th = book.get(ticker)
         if th is None:
             return Reply(f"No thesis on file for {ticker}.")
-        ws = Workspace.latest_for(self.settings, ticker)
+        from pipeline.company_data import find_export
+
+        ws = self._ws_or_error(ticker, lambda w: find_export(w.path) is not None)
         data = self._company_data(ws) if ws else None
         if data is None:
             return Reply(f"📌 {ticker}: {th.summary}\n"
@@ -2180,10 +2398,16 @@ class BotCore:
         head = args[0].lower()
         if head == "clear":
             return Reply(f"🌙 cleared {b.clear()} batch entr(ies).")
+        if head in ("list", "show", "ls"):
+            return Reply(b.render())
         ticker = head.upper()
+        if not _TICKER_RE.match(ticker):
+            return Reply(f"⛔ {args[0]!r} is not a ticker. "
+                         f"Usage: /batch [TICKER [short|long] | run | clear]")
         fmt = (args[1].lower() if len(args) > 1 else "")
         if fmt not in ("short", "long"):
-            ws = Workspace.latest_for(self.settings, ticker)
+            ws = self._ws_or_error(ticker, lambda w: any(
+                (w.path / f"script_{f}.json").exists() for f in ("short", "long")))
             fmt = (ws.current_format() if ws else None) or "long"
         b.add(ticker, fmt)
         return Reply(f"🌙 {ticker} {fmt.upper()} queued for the overnight batch.\n"
@@ -2207,7 +2431,21 @@ class BotCore:
             return [], [], "🌙 nothing queued."
         submittable: list[tuple] = []
         skipped: list[str] = []
+        store = self.queue.store if self.queue is not None else None
         for item in pending:
+            if item.job_id and store is not None:
+                job = store.load(item.job_id)
+                status = job.status.value if job is not None else ""
+                if status in ("queued", "running"):
+                    continue                       # still going: leave it be
+                if status == "done":
+                    b.mark_done(item.ticker, item.fmt)
+                    continue
+                # failed, cancelled, interrupted or gone: run it again, and
+                # say why the last one did not finish.
+                why = (job.error or job.detail or status) if job else "lost"
+                b.reopen(item.ticker, item.fmt, f"last run {status or 'lost'}: "
+                                                f"{str(why)[:120]}")
             kind, text, ws = self.render_request(item.ticker, item.fmt)
             if kind is None or ws is None:
                 skipped.append(f"{item.ticker} {item.fmt.upper()}: {text}")
@@ -2230,14 +2468,34 @@ class BotCore:
         running — is the render the batch wanted, so the entry is closed
         rather than left to submit a second copy once the first finishes.
         """
+        from pipeline.standing import BatchQueue
+
         submittable, skipped, note = self.batch_plan()
         queued = 0
         for kind, ws, item in submittable:
             try:
-                await self.queue.submit(kind, ws.ticker, ws.workdate)
-                self.batch_done(item.ticker, item.fmt)
+                job = await self.queue.submit(kind, ws.ticker, ws.workdate)
+                # Closed when THIS job is done, by the next batch pass — a
+                # render that fails overnight is still queued tomorrow.
+                BatchQueue(self.settings).mark_submitted(item.ticker, item.fmt,
+                                                         job.id)
                 queued += 1
             except ValueError as e:
+                # The queue already has this render: follow that job instead
+                # of submitting a second copy behind it.
+                active = next((j for j in self.queue.store.all()
+                               if j.ticker == ws.ticker and j.kind == kind
+                               and j.status.value in ("queued", "running")),
+                              None)
+                if active is not None:
+                    BatchQueue(self.settings).mark_submitted(
+                        item.ticker, item.fmt, active.id)
+                    # Said once, on the pass that finds it: the entry is
+                    # closed when that render is, not submitted again.
+                    skipped.append(f"{item.ticker} {item.fmt.upper()}: already "
+                                   f"{active.status.value} — following that "
+                                   f"render instead of starting another")
+                    continue
                 self.batch_done(item.ticker, item.fmt, str(e))
                 skipped.append(f"{item.ticker} {item.fmt.upper()}: {e}")
         lines = [f"🌙 batch: {queued} queued, {len(skipped)} skipped"]
@@ -2248,10 +2506,16 @@ class BotCore:
 
     # --------------------------------- YouTube publishing (P3.5 + 5b)
     def upload_command(self, args: list[str]) -> Reply:
-        """`/upload TICKER [YYYY-MM-DD HH:MM]` — private, or scheduled.
+        """`/upload TICKER [short|long|clip [N]|pair] [again] [YYYY-MM-DD HH:MM]`
+        — private, or scheduled.
 
         Never public: the most this does unattended is schedule, and a human
         still decides whether that schedule was right.
+
+        A render that already went up is not sent again unless `again` says
+        so: a second `/upload` used to make a second private video, and
+        `published.json` — kept "so /upload does not re-upload" — was read
+        by nothing for that.
         """
         from pipeline.youtube import (
             UploadError, YouTubeUnavailable, available, resolve_publish_at,
@@ -2268,20 +2532,39 @@ class BotCore:
         wanted_fmt = ""
         if rest and rest[0].lower() in ("short", "long", "clip", "pair"):
             wanted_fmt = rest.pop(0).lower()
+        clip_n = 1
+        if wanted_fmt == "clip" and rest and rest[0].isdigit():
+            clip_n = max(int(rest.pop(0)), 1)
+        again = any(r.lower() == "again" for r in rest)
+        rest = [r for r in rest if r.lower() != "again"]
         when_raw = " ".join(rest).strip()
         try:
             when = resolve_publish_at(when_raw or None, settings=self.settings)
         except ValueError as e:
             return Reply(f"⛔ {e}")
 
-        ws = Workspace.latest_for(self.settings, ticker)
+        ws = self._ws_or_error(ticker, self._has_video(wanted_fmt))
+        ticker = Workspace.split_arg(ticker)[0]
         if ws is None:
             return Reply(f"No workspace for {ticker}.")
         if wanted_fmt == "pair":
             return self._upload_pair(ws, when)
-        fmt, video, why = self._upload_target(ws, wanted_fmt)
+        fmt, video, why = self._upload_target(ws, wanted_fmt, clip_n)
         if video is None:
             return Reply(why)
+        if not again:
+            from pipeline.youtube import VideoLog, record_format
+
+            done = [v for v in VideoLog(self.settings).for_ticker(ws.ticker)
+                    if v.workdate == ws.workdate and record_format(v) == fmt
+                    and (fmt != "clip"
+                         or abs(v.clip_start_s - self._clip_start(video)) < 0.5)]
+            if done:
+                v = max(done, key=lambda r: r.uploaded_at)
+                return Reply(
+                    f"⛔ {ws.ticker} {fmt.upper()} ({ws.workdate}) is already "
+                    f"up: {v.url()} ({v.privacy}). /upload {ws.ticker} "
+                    f"{fmt} again … sends a second copy.")
 
         package = self._upload_package(ws, fmt, video)
         if package is None:
@@ -2326,7 +2609,15 @@ class BotCore:
             tail = f"scheduled to publish {record.publish_at}"
         else:
             tail = "uploaded PRIVATE — publish it when you're ready"
-        return Reply(f"📺 {ticker}: {tail}\n{record.url()}")
+        note = ""
+        if record.comment_posted is True:
+            note = ("\n📌 comment posted — pin it in YouTube Studio; the API "
+                    "cannot pin.")
+        elif record.comment_posted is False and package.pinned_comment:
+            note = ("\n📌 the comment did not post (a private video often "
+                    "refuses one). Post and pin it once the video is public:\n"
+                    f"{package.pinned_comment}")
+        return Reply(f"📺 {ticker}: {tail}\n{record.url()}{note}")
 
     def probe_command(self, args: list[str]) -> Reply:
         """`/probe TICKER [short|long]` — where YouTube puts the AI label (05).
@@ -2351,7 +2642,7 @@ class BotCore:
         wanted = args[1].lower() if len(args) > 1 else ""
         if wanted not in ("", "short", "long"):
             return Reply("Usage: /probe TICKER [short|long]")
-        ws = Workspace.latest_for(self.settings, ticker)
+        ws = self._ws_or_error(ticker, self._has_video(wanted))
         if ws is None:
             return Reply(f"No workspace for {ticker}.")
         fmt, video, why = self._upload_target(ws, wanted)
@@ -2409,7 +2700,7 @@ class BotCore:
             return Reply(f"⛔ can't upload from here: {why}")
         tag = pair_id(ws.ticker, ws.workdate)
         lines = [f"🅰🅱 {ws.ticker}: two clips off one render, tagged as a pair"]
-        for clip in clips[:2]:
+        for n, clip in enumerate(clips[:2], 1):
             package = self._upload_package(ws, "clip", clip)
             if package is None:
                 return Reply("⛔ no upload package on file — re-render to "
@@ -2424,7 +2715,8 @@ class BotCore:
             except (UploadError, YouTubeUnavailable) as e:
                 # The first may already be up. Say so rather than implying
                 # neither went: an untagged single is still a shipped video.
-                return Reply("\n".join(lines + [f"⛔ the second failed: {e}"]))
+                which = "the second" if n == 2 else "the first (nothing went up)"
+                return Reply("\n".join(lines + [f"⛔ {which} failed: {e}"]))
             except Exception as e:  # noqa: BLE001
                 log.exception("clip pair upload blew up")
                 return Reply("\n".join(lines + [f"💥 upload error: {e}"]))
@@ -2433,10 +2725,10 @@ class BotCore:
                      "of views.")
         return Reply("\n".join(lines))
 
-    def scheduled_text(self) -> Reply:
+    def scheduled_text(self, now=None) -> Reply:
         from pipeline.youtube import VideoLog
 
-        rows = VideoLog(self.settings).scheduled()
+        rows = VideoLog(self.settings).scheduled(now=now)
         if not rows:
             return Reply("📺 nothing scheduled.\n"
                          "/upload TICKER 2026-08-07 18:00 schedules one.")
@@ -2478,7 +2770,7 @@ class BotCore:
         videos = log_.for_ticker(ticker)
         if not videos:
             return Reply(f"Nothing published for {ticker} yet.")
-        video = videos[-1]
+        video = max(videos, key=lambda v: v.uploaded_at)
         payload = pull_retention(video.video_id, self.settings)
         if payload.get("status") != "ok":
             stored = (video.retention or {}).get("chapters")
@@ -2509,6 +2801,8 @@ class BotCore:
         script = ws.load_short() if fmt == "short" else ws.load_long()
         if script is None:
             return None
+        if fmt == "long":
+            script = self._retimed(script, fmt, self._manifest_for(ws, "long"))
         duration = self._render_duration(ws, fmt, video)
         transcript, timestamps = "", ()
         if fmt in ("short", "long"):
@@ -2525,10 +2819,51 @@ class BotCore:
             timestamps=timestamps, why=ws.why, duration_s=duration,
             with_chapters=fmt != "clip")
 
+    @staticmethod
+    def _retimed(script, fmt: str, manifest: Path | None):
+        """`script` with its chapter trailer re-timed to the render's own
+        chapters (M8).
+
+        The trailer's `mm:ss` are the writer's guesses; the render moves each
+        onto the audio and records where it put it in the manifest. The
+        YouTube chapter list and the per-chapter retention map are built from
+        the trailer, so they are built from that record — the times the
+        viewer actually sees the chapter openers — when there is one.
+        """
+        if fmt != "long" or script is None or manifest is None:
+            return script
+        import json as _json
+
+        try:
+            rows = _json.loads(Path(manifest).read_text(encoding="utf-8")
+                               ).get("chapters") or []
+        except (OSError, ValueError, AttributeError):
+            return script
+        lines = []
+        for r in rows:
+            try:
+                t = max(int(round(float(r["t"]))), 0)
+                title = str(r["title"]).strip()
+            except (KeyError, TypeError, ValueError):
+                return script
+            ctype = str(r.get("type") or "").strip()
+            stamp = (f"{t // 3600}:{t % 3600 // 60:02d}:{t % 60:02d}"
+                     if t >= 3600 else f"{t // 60:02d}:{t % 60:02d}")
+            lines.append(f"{stamp} {ctype} | {title}" if ctype
+                         else f"{stamp} {title}")
+        if not lines:
+            return script
+        try:
+            return script.model_copy(update={"chapters": "\n".join(lines)})
+        except Exception:  # noqa: BLE001 - the guessed trailer still serves
+            return script
+
     def _chapter_pairs(self, ws: Workspace, fmt: str, video=None) -> list:
         from pipeline.publish import normalise_chapters
 
         script = ws.load_long() if fmt == "long" else None
+        if script is not None:
+            script = self._retimed(script, fmt, self._manifest_for(ws, "long"))
         # The rendered duration, so a chapter the cut left behind the end of
         # the video is dropped rather than shipped — YouTube renders no
         # chapter list at all when one is out of range.
@@ -2580,7 +2915,18 @@ class BotCore:
         mode = str((ws.headline() or {}).get("mode") or "")
         return mode if mode in ("earnings", "macro") else "short"
 
-    def _upload_target(self, ws: Workspace, wanted: str = "",
+    @staticmethod
+    def _has_video(wanted: str):
+        """A `Workspace.resolve` test: does this folder hold the render
+        `/upload` or `/probe` was asked for?"""
+        def test(w: Workspace) -> bool:
+            if wanted in ("clip", "pair"):
+                return any(w.path.glob("short_repurposed*.mp4"))
+            f = wanted or w.current_format() or "long"
+            return (w.path / f"{f}_final.mp4").exists()
+        return test
+
+    def _upload_target(self, ws: Workspace, wanted: str = "", clip_n: int = 1,
                        ) -> tuple[str, Path | None, str]:
         """Which file `/upload` should send, and why if none (E5).
 
@@ -2600,7 +2946,11 @@ class BotCore:
                 return "clip", None, (
                     f"No repurposed clips for {ws.ticker} — /repurpose "
                     f"{ws.ticker} cuts them from a finished LONG.")
-            return "clip", clips[0], ""
+            if clip_n > len(clips):
+                return "clip", None, (
+                    f"{ws.ticker} has {len(clips)} repurposed clip(s); there "
+                    f"is no clip {clip_n}.")
+            return "clip", clips[clip_n - 1], ""
 
         fmt = wanted or ws.current_format() or "long"
         video = ws.path / ("long_final.mp4" if fmt == "long"
@@ -2694,6 +3044,8 @@ class BotCore:
         from pipeline.alerts import EarningsCalendar, Watchlist, in_quiet_hours
 
         wl = Watchlist(self.settings)
+        if args and args[0].lower() in ("list", "show", "ls"):
+            args = []                     # `/watch list` is the listing
         if args:
             head = args[0].lower()
             if head in ("drop", "remove", "off"):
@@ -2710,6 +3062,9 @@ class BotCore:
                 return Reply(f"👁 {'unpinned' if gone else 'was not pinned'}: {ticker}"
                              f"\n(names with a thesis on file are always watched.)")
             ticker = head.upper()
+            if not _TICKER_RE.match(ticker):
+                return Reply(f"⛔ {args[0]!r} is not a ticker. "
+                             f"Usage: /watch TICKER | /watch drop TICKER")
             wl.add(ticker)
             return Reply(f"👁 watching {ticker} intraday.")
 
@@ -2752,7 +3107,12 @@ class BotCore:
 
     # ----------------------------------------------------------- utilities
     def cost_text(self) -> str:
-        return (
+        broken = ("" if self.ledger.readable() else
+                  "⛔ THE SPEND LEDGER CANNOT BE READ — every paid call is "
+                  f"refused until {self.ledger.path} is restored "
+                  "(scripts/backup_state.py keeps archives). The figures "
+                  "below are not this month's.\n")
+        return broken + (
             f"💰 Month-to-date: ${self.ledger.mtd_spend_usd():.2f} of "
             f"${self.settings.monthly_spend_cap_usd:.2f} cap\n"
             f"Pexels calls: {self.ledger.pexels_calls_this_month()} of "
@@ -2871,7 +3231,9 @@ class BotCore:
 
         if not args:
             return "usage: /stillness TICKER"
-        ws = Workspace.latest_for(self.settings, args[0].upper())
+        ws = self._ws_or_error(
+            args[0].upper(),
+            lambda w: self._manifest_for(w, trials=True) is not None)
         # The lane's final first; a proof or a draft answers when that is all
         # there is, since this is the check to run before anything ships.
         found = self._manifest_for(ws, trials=True) if ws else None
@@ -2923,7 +3285,8 @@ class BotCore:
             return ("usage: /why TICKER why this one is worth making, in "
                     "your own words")
         ticker = args[0].upper()
-        ws = Workspace.latest_for(self.settings, ticker)
+        ws = self._ws_or_error(ticker)
+        ticker = Workspace.split_arg(ticker)[0]
         if ws is None or not ws.exists:
             return f"No workspace for {ticker} — start one with /short or /long."
         text = " ".join(args[1:]).strip()
@@ -3053,8 +3416,8 @@ def schedule_batch(application, core: BotCore) -> None:
             log.warning("overnight batch pass failed (%s)", e)
             return
         said = f"{date.today().isoformat()}|{'|'.join(sorted(skipped))}"
-        if not queued and said in reported:
-            return
+        if not queued and (not skipped or said in reported):
+            return              # nothing new: entries still rendering, say nothing
         reported.add(said)
         for chat_id in settings.operator_chat_ids:
             await ctx.bot.send_message(chat_id, text)
@@ -3106,6 +3469,10 @@ def schedule_retention_notes(application, core: BotCore) -> None:
         notes_job, interval=6 * 3600, first=10 * 60, name="retention_notes")
 
 
+# The cloud Bot API's limit on what a bot may DOWNLOAD (getFile).
+TELEGRAM_DOWNLOAD_MAX_BYTES = 20_000_000
+
+
 def _authorized(core: BotCore, chat_id: int) -> bool:
     ids = core.settings.operator_chat_ids
     return bool(ids) and chat_id in ids
@@ -3121,6 +3488,8 @@ async def _send(update, reply: Reply | str) -> None:
         reply = Reply(reply)
     msg = update.effective_message
     text = reply.text
+    if not text and reply.keyboard is not None:
+        text = "…"          # a keyboard rides on a message, so it needs one
     while text:  # Telegram 4096-char message cap
         chunk, text = text[:4000], text[4000:]
         await msg.reply_text(chunk, reply_markup=reply.keyboard if not text else None)
@@ -3184,13 +3553,21 @@ def build_application(settings: Settings, core: BotCore):
         whether this is an update or a fresh take is the operator's call."""
         await _start_lane(update, "long", list(ctx.args or []), is_update=True)
 
+    # THE REST OF THE BLOCKING CALLS GO OFF THE LOOP TOO (M9). F2 moved the
+    # pastes; these stayed: `/headline` fetches and summarises a URL and pulls
+    # the 8-K and FRED, `/prompts` and the veto take a live quote and the
+    # news, `/edit` `/replace` `/undo` run the whole intake (the plan fetches
+    # clips, the gates call the model), `/thesis` merges the news and
+    # `/kit doctor` reads the library. Each froze `/status`, `/cancel` and the
+    # render-finished push for as long as it ran.
     @guard
     async def cmd_headline(update, ctx):
-        await _send(update, core.headline_command(update.effective_chat.id, ctx.args or []))
+        await _off_loop(update, core.headline_command, update.effective_chat.id,
+                        list(ctx.args or []))
 
     @guard
     async def cmd_prompts(update, ctx):
-        await _send(update, core.prompts_reply(update.effective_chat.id))
+        await _off_loop(update, core.prompts_reply, update.effective_chat.id)
 
     @guard
     async def cmd_render(update, ctx, fmt: str | None = None, draft: bool = False):
@@ -3296,20 +3673,29 @@ def build_application(settings: Settings, core: BotCore):
     async def cmd_script(update, ctx):
         await _send(update, core.script_listing(update.effective_chat.id))
 
+    def _after_command(update) -> str:
+        """The message text after `/command`, verbatim — line breaks and all
+        (M10). `ctx.args` is that text split on whitespace."""
+        text = update.effective_message.text or ""
+        parts = text.split(None, 1)
+        return parts[1] if len(parts) > 1 else ""
+
     @guard
     async def cmd_edit(update, ctx):
-        await _send(update, core.edit_script(update.effective_chat.id,
-                                            list(ctx.args or [])))
+        await _off_loop(update, core.edit_script, update.effective_chat.id,
+                        list(ctx.args or []), raw_args=_after_command(update),
+                        ack="⏳ editing and re-checking…")
 
     @guard
     async def cmd_replace(update, ctx):
-        await _send(update, core.edit_script(update.effective_chat.id,
-                                            list(ctx.args or []),
-                                            mode="replace"))
+        await _off_loop(update, core.edit_script, update.effective_chat.id,
+                        list(ctx.args or []), mode="replace",
+                        raw_args=_after_command(update),
+                        ack="⏳ editing and re-checking…")
 
     @guard
     async def cmd_undo(update, ctx):
-        await _send(update, core.undo_edit(update.effective_chat.id))
+        await _off_loop(update, core.undo_edit, update.effective_chat.id)
 
     @guard
     async def cmd_upload(update, ctx):
@@ -3355,7 +3741,7 @@ def build_application(settings: Settings, core: BotCore):
 
     @guard
     async def cmd_thesis(update, ctx):
-        await _send(update, core.thesis_text(list(ctx.args or [])))
+        await _off_loop(update, core.thesis_text, list(ctx.args or []))
 
     @guard
     async def cmd_batch(update, ctx):
@@ -3375,10 +3761,17 @@ def build_application(settings: Settings, core: BotCore):
         if not ctx.args:
             await _send(update, Reply("Usage: /cancel TICKER"))
             return
-        ticker = ctx.args[0].upper()
+        ticker = Workspace.split_arg(ctx.args[0])[0]
         cancelled = core.queue.cancel(ticker)
-        ws = Workspace.latest_for(core.settings, ticker)
-        if ws:
+        # Every workspace a cancelled job was rendering, as well as the
+        # newest: the approval worth withdrawing is the one the job was
+        # spending against, which need not be today's folder.
+        spaces = {(j.ticker, j.workdate) for j in cancelled}
+        latest = Workspace.latest_for(core.settings, ticker)
+        if latest:
+            spaces.add((latest.ticker, latest.workdate))
+        for t, d in spaces:
+            ws = Workspace(core.settings, t, d)
             ws._invalidate_approval("short")
             ws._invalidate_approval("long")
         await _send(update, Reply(
@@ -3488,7 +3881,7 @@ def build_application(settings: Settings, core: BotCore):
         if what not in ("doctor", "report"):
             await _send(update, Reply("usage: /kit doctor"))
             return
-        await _send(update, Reply(kit_doctor_text(core.settings)))
+        await _off_loop(update, lambda: Reply(kit_doctor_text(core.settings)))
 
     @guard
     async def cmd_screen(update, ctx):
@@ -3534,6 +3927,17 @@ def build_application(settings: Settings, core: BotCore):
     @guard
     async def on_document(update, ctx):
         doc = update.effective_message.document
+        # The cloud Bot API hands a bot files up to 20 MB and refuses the rest
+        # with an error that read here as "internal error".
+        size = getattr(doc, "file_size", 0) or 0
+        if (not settings.telegram_api_base_url
+                and size > TELEGRAM_DOWNLOAD_MAX_BYTES):
+            await _send(update, Reply(
+                f"⛔ {doc.file_name or 'that file'} is {size / 1e6:.0f} MB — "
+                f"the cloud Bot API only lets a bot download up to 20 MB. "
+                f"Trim the clip or export a smaller file, or drop it into "
+                f"assets/custom/ on the render box by hand."))
+            return
         f = await doc.get_file()
         data = bytes(await f.download_as_bytearray())
         await _off_loop(update, core.handle_upload,
@@ -3543,10 +3947,16 @@ def build_application(settings: Settings, core: BotCore):
 
     @guard
     async def on_photo(update, ctx):
-        photo = update.effective_message.photo[-1]
+        msg = update.effective_message
+        photo = msg.photo[-1]
         f = await photo.get_file()
         data = bytes(await f.download_as_bytearray())
-        name = f"screenshot_{photo.file_unique_id}.png"
+        # Telegram re-encodes a photo as JPEG, so it is named one. A caption
+        # names it: a photo captioned with a pending [SCREENGRAB] slug is
+        # that capture, which a nameless photo could never be.
+        caption = (msg.caption or "").strip().split()
+        stem = caption[0] if caption else f"screenshot_{photo.file_unique_id}"
+        name = f"{stem}.jpg"
         await _off_loop(update, core.handle_upload,
                         update.effective_chat.id, name, data)
 
@@ -3587,7 +3997,8 @@ def build_application(settings: Settings, core: BotCore):
             reply = await asyncio.to_thread(
                 core.swap_key, chat_id, parts[1], parts[2], parts[3])
         elif op == "fv" and len(parts) == 4:
-            reply = core.veto_filing(chat_id, parts[1], parts[2], parts[3])
+            reply = await asyncio.to_thread(
+                core.veto_filing, chat_id, parts[1], parts[2], parts[3])
         elif op == "n" and len(parts) == 3:
             # A screener candidate carries its own lane (G3), so the button
             # opens the lane the screen put it in rather than a lane-less

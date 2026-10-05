@@ -187,6 +187,13 @@ def repurpose_clips_from_long(
     windows = pick_best_windows(manifest.get("cues", []), duration, n=n,
                                 words=words)
     out_dir = out_dir or long_mp4.parent
+    # This cut replaces the last one whole. A re-render that yields fewer
+    # windows used to leave the old `short_repurposed_3.mp4` behind, and
+    # `/upload clip` and `/upload pair` picked it up as if it were this
+    # render's.
+    for old in list(out_dir.glob("short_repurposed_*.mp4")):
+        old.unlink(missing_ok=True)
+        old.with_suffix(".repurpose.json").unlink(missing_ok=True)
     results: list[tuple[Path, dict]] = []
     for i, (start, end) in enumerate(windows, 1):
         dest = out_dir / f"short_repurposed_{i}.mp4"

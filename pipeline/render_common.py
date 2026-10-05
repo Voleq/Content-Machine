@@ -57,6 +57,24 @@ def _politeness_args(threads: int | None = None) -> list[str]:
             "-filter_complex_threads", str(n)]
 
 
+def _with_politeness(args: list[str], threads: int | None = None) -> list[str]:
+    """`args` with the politeness flags where ffmpeg READS them.
+
+    `-filter_threads` and `-filter_complex_threads` are global and go first.
+    `-threads` is positional: in front of the first `-i` it is that INPUT's
+    decoder option, and the encoder picks its own count — so x264 ran at its
+    auto thread count (1.5x the cores) under a "cap" of one, and the parallel
+    segment workers oversubscribed the machine the cap exists to protect. It
+    goes immediately before the output path, where it is the encoder's.
+    """
+    n = threads if threads else _POLITENESS["threads"]
+    if not n or not args:
+        return list(args)
+    *head, out = args
+    return ["-filter_threads", str(n), "-filter_complex_threads", str(n),
+            *head, "-threads", str(n), out]
+
+
 def render_thread_budget() -> int:
     """The aggregate ffmpeg thread cap currently in force."""
     return _POLITENESS["threads"] or (os.cpu_count() or 4)
@@ -84,8 +102,12 @@ def _deprioritise(proc: subprocess.Popen) -> None:
 
 def _run_polite(cmd: list[str], timeout: int) -> subprocess.CompletedProcess:
     """subprocess.run, but nice to the machine it is running on."""
+    # Decoded leniently: ffmpeg echoes file names and container metadata in
+    # whatever bytes they arrived in, and a strict decode raised
+    # UnicodeDecodeError in place of the error that actually happened.
     proc = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        encoding="utf-8", errors="replace",
     )
     _deprioritise(proc)
     try:
@@ -97,13 +119,36 @@ def _run_polite(cmd: list[str], timeout: int) -> subprocess.CompletedProcess:
     return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
 
 
+def _escape(text: str, specials: str) -> str:
+    return "".join("\\" + c if c in specials else c for c in text)
+
+
+def filter_path(path) -> str:
+    """A file path as a filter option value, escaped for BOTH levels ffmpeg
+    parses it at — the option (`\\ ' :`) and then the graph
+    (`\\ ' [ ] , ;`) — and used unquoted.
+
+    Quoting it with `\\:` inside, as this did, survives a colon and breaks on
+    an apostrophe (`it's` ends the quoted string); a path with neither was
+    the only kind that worked. Checked against ffmpeg with both in one path.
+    """
+    s = str(path).replace("\\", "/")
+    return _escape(_escape(s, "\\':"), "\\'[],;")
+
+
+def concat_line(path) -> str:
+    """One `file '…'` line of an ffconcat listing, quote-escaped the way the
+    concat demuxer reads it (a path with an apostrophe broke the listing)."""
+    return "file '" + str(path).replace("'", "'\\''") + "'\n"
+
+
 def run_ffmpeg(args: list[str], timeout: int = 3600,
                threads: int | None = None) -> None:
     """Run ffmpeg with -y and sane logging; raise RenderError with the
     stderr tail on failure."""
     ffmpeg, _ = detect_ffmpeg()
     cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
-           *_politeness_args(threads), *args]
+           *_with_politeness(args, threads)]
     log.debug("ffmpeg %s", " ".join(args[:12]))
     proc = _run_polite(cmd, timeout)
     if proc.returncode != 0:
@@ -179,9 +224,13 @@ class EncodeProfile:
         return args
 
     def software_equivalent(self, settings: Settings) -> "EncodeProfile":
-        """The libx264 profile to retry with when the GPU lets us down."""
+        """The libx264 profile to retry with when the GPU lets us down —
+        keeping the tune, the x264 params and the BT.709 tags, so the
+        fallback is the same picture rather than an untagged one."""
         return EncodeProfile(vcodec="libx264", preset=settings.final_preset,
-                             crf=self.crf, pix_fmt=self.pix_fmt)
+                             crf=self.crf, pix_fmt=self.pix_fmt,
+                             tune=self.tune, x264_params=self.x264_params,
+                             bt709=self.bt709)
 
 
 @lru_cache(maxsize=1)
@@ -606,8 +655,10 @@ def composite_video(
     tail = (",scale=out_color_matrix=bt709:out_range=tv,format=yuv420p"
             if profile.bt709 else "")
     if spec.ass_path is not None:
-        fonts = f":fontsdir='{spec.fonts_dir}'" if spec.fonts_dir else ""
-        lines.append(f"{v_label}subtitles=filename='{spec.ass_path}'{fonts}{tail}[vout]")
+        fonts = (f":fontsdir={filter_path(spec.fonts_dir)}"
+                 if spec.fonts_dir else "")
+        lines.append(f"{v_label}subtitles=filename={filter_path(spec.ass_path)}"
+                     f"{fonts}{tail}[vout]")
     else:
         lines.append(f"{v_label}null{tail}[vout]")
 
@@ -627,7 +678,11 @@ def composite_video(
         "-c:a", "aac", "-b:a", audio_bitrate,
         "-movflags", "+faststart",
         str(out_path),
-    ], timeout=7200)
+    # Two hours, or eight times the programme, whichever is longer: the long's
+    # last encode is x264 `slow` at 1440p on half the cores at nice 10, and a
+    # forty-minute cut killed at a fixed two hours is a render lost after the
+    # voice was paid for.
+    ], timeout=max(7200, int(spec.duration * 8)))
     return out_path
 
 
@@ -638,7 +693,8 @@ def concat_audio(chunks: list[Path], out_path: Path, settings: Settings) -> Path
         run_ffmpeg(["-i", str(chunks[0]), "-c:a", "aac", "-b:a", settings.audio_bitrate, str(out_path)])
         return out_path
     list_file = out_path.with_suffix(".concat.txt")
-    list_file.write_text("".join(f"file '{c.as_posix()}'\n" for c in chunks), encoding="utf-8")
+    list_file.write_text("".join(concat_line(c.as_posix()) for c in chunks),
+                         encoding="utf-8")
     run_ffmpeg([
         "-f", "concat", "-safe", "0", "-i", str(list_file),
         "-c:a", "aac", "-b:a", settings.audio_bitrate, str(out_path),

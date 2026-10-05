@@ -21,6 +21,7 @@ import hashlib
 import json
 import logging
 import re
+import time
 from pathlib import Path
 
 import httpx
@@ -37,6 +38,17 @@ log = logging.getLogger(__name__)
 
 class TTSError(Exception):
     pass
+
+
+# The answers a paid request is retried on: the provider throttling or
+# failing, both before anything is billed.
+RETRYABLE_STATUS = (429, 500, 502, 503, 504)
+
+
+def _same_words(cached: list[WordTimestamp], chunk: str) -> bool:
+    """Whether a chunk's saved alignment is of THIS chunk's text: its words,
+    joined without whitespace, are the chunk without whitespace."""
+    return "".join(w.word for w in cached) == "".join(chunk.split())
 
 
 class CacheMissForbidden(TTSError):
@@ -404,6 +416,13 @@ class TTSEngine:
         """Would synthesize() be free? (drives the §9.3 cost report)"""
         return self._cache_dir(text, fmt, events, draft)[0].exists()
 
+    def billable_chars(self, text: str, fmt: str, *, events=None) -> int:
+        """The characters the paid voice would be sent — the clean script
+        plus the delivery direction inserted into it, which is what the
+        ledger meters chunk by chunk. The report estimated from the clean
+        length and ran low by every inserted tag."""
+        return len(self._cache_dir(text, fmt, events, False)[2])
+
     def _cache_dir(self, text: str, fmt: str, events, draft: bool):
         """(audio_path's dir marker, cdir, request text, ids) for one request.
 
@@ -486,7 +505,9 @@ class TTSEngine:
             # A generation that did not happen, recorded as one (13). The
             # sha-keyed cache is the guarantee that an unchanged script costs
             # nothing, and it has never left a trace anyone could read.
-            if tier == "paid":
+            # Not for a `cached_only` reuse (`/repurpose`): that job could
+            # never have generated, so it saved nothing.
+            if tier == "paid" and not cached_only:
                 self.ledger.record_cache_hit(len(text), lane=fmt,
                                              ticker=ticker, tier=tier)
             return TTSResult(
@@ -566,6 +587,19 @@ class TTSEngine:
             c_offset += len(chunk_text_)
 
         concat_audio(chunk_files, audio_path, self.settings)
+
+        # Alignment offsets mirror the REQUEST, which carries break tags the
+        # clean script does not. The timeline resolves every visual cue
+        # through these offsets, so put them back on the clean text.
+        if clean_text != text:
+            words = remap_to_clean(words, clean_text, spans)
+
+        # The cache entry is complete BEFORE the chunks go. They used to be
+        # deleted first, so a failure in between (the probe, the write) left
+        # audio with no words — not a cache hit — and nothing to resume from:
+        # the next run paid for every chunk again.
+        duration = ffprobe_duration(audio_path)
+        words_path.write_text(json.dumps([w.model_dump() for w in words]), encoding="utf-8")
         for f in chunk_files:
             if f != audio_path:
                 f.unlink(missing_ok=True)
@@ -574,15 +608,6 @@ class TTSEngine:
                 # it would let a later run resume against chunks whose text
                 # no longer matches.
                 f.with_suffix(".words.json").unlink(missing_ok=True)
-
-        # Alignment offsets mirror the REQUEST, which carries break tags the
-        # clean script does not. The timeline resolves every visual cue
-        # through these offsets, so put them back on the clean text.
-        if clean_text != text:
-            words = remap_to_clean(words, clean_text, spans)
-
-        duration = ffprobe_duration(audio_path)
-        words_path.write_text(json.dumps([w.model_dump() for w in words]), encoding="utf-8")
         (cdir / "meta.json").write_text(json.dumps({
             "voice_id": voice_id,
             "model_id": model_id,
@@ -713,6 +738,7 @@ class TTSEngine:
         try:
             for i, chunk in enumerate(chunks):
                 f, wf = self._chunk_paths(cdir, i)
+                cached: list[WordTimestamp] | None = None
                 if f.exists() and f.stat().st_size > 0 and wf.exists():
                     try:
                         cached = [WordTimestamp(**w) for w in
@@ -722,7 +748,16 @@ class TTSEngine:
                         # re-request rather than stitch against garbage.
                         log.warning("chunk %d sidecar unreadable (%s) — "
                                     "regenerating", i, e)
+                        cached = None
                     else:
+                        cached = cached if _same_words(cached, chunk) else None
+                        if cached is None:
+                            # Chunk i of an earlier attempt is not chunk i
+                            # now (TTS_CHUNK_CHARS changed in between):
+                            # stitching it would put the wrong audio here.
+                            log.warning("chunk %d on disk was cut from other "
+                                        "text — regenerating", i)
+                    if cached is not None:
                         log.info("TTS chunk %d/%d already generated — resuming, "
                                  "not re-paying", i + 1, len(chunks))
                         files.append(f)
@@ -733,16 +768,27 @@ class TTSEngine:
                     f"{self.settings.eleven_base_url}/v1/text-to-speech/"
                     f"{voice_id}/with-timestamps"
                 )
-                resp = client.post(
-                    url,
-                    params={"output_format": "mp3_44100_128"},
-                    headers={"xi-api-key": self.settings.elevenlabs_api_key},
-                    json={
-                        "text": chunk,
-                        "model_id": model_id,
-                        "voice_settings": vsettings,
-                    },
-                )
+                # A 429 or a 5xx is the provider declining, not billing: the
+                # request is retried a couple of times with backoff before
+                # the job fails. A dropped connection is NOT retried here —
+                # that request may have been answered and billed.
+                for attempt in range(3):
+                    resp = client.post(
+                        url,
+                        params={"output_format": "mp3_44100_128"},
+                        headers={"xi-api-key": self.settings.elevenlabs_api_key},
+                        json={
+                            "text": chunk,
+                            "model_id": model_id,
+                            "voice_settings": vsettings,
+                        },
+                    )
+                    if resp.status_code not in RETRYABLE_STATUS or attempt == 2:
+                        break
+                    wait = float(resp.headers.get("retry-after") or 0) or 2.0 * 2 ** attempt
+                    log.warning("ElevenLabs %s on chunk %d — retrying in %.0fs",
+                                resp.status_code, i, wait)
+                    time.sleep(min(wait, 30.0))
                 if resp.status_code != 200:
                     raise TTSError(
                         f"ElevenLabs error {resp.status_code}: {resp.text[:300]}"

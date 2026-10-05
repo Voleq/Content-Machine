@@ -17,12 +17,15 @@ import hashlib
 import json
 import logging
 import os
+import queue
 import shlex
 import subprocess
 import sys
-from functools import lru_cache
+import threading
+import time
 from pathlib import Path
 
+from config import detect_ffmpeg
 from pipeline.render_common import RenderError, run_ffmpeg
 
 log = logging.getLogger(__name__)
@@ -33,18 +36,38 @@ ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
 LOOK_VERSION = "47-64-4"
 
+# How long one shot may take before the worker is taken for hung: a fixed
+# allowance for Blender to come up, and a generous one per frame (a Cycles
+# frame on a CPU is seconds to a minute; ten times that is not a slow frame).
+# Without it a wedged Blender held the render worker — and the whole queue —
+# for ever, past any /cancel.
+SHOT_BASE_TIMEOUT_S = 600.0
+FRAME_TIMEOUT_S = 300.0
+
 
 def _python(settings) -> list[str]:
     return shlex.split(settings.dennis_3d_python) if settings.dennis_3d_python else [sys.executable]
 
 
-@lru_cache(maxsize=4)
+_BPY_FOUND: set[tuple[str, ...]] = set()
+
+
 def _has_bpy(python: tuple[str, ...]) -> bool:
+    """Whether `python` imports Blender's module. Only a YES is remembered:
+    a cached no meant installing bpy took a bot restart to be noticed."""
+    if python in _BPY_FOUND:
+        return True
     try:
-        return subprocess.run([*python, "-c", "import bpy"], capture_output=True,
-                              timeout=300).returncode == 0
+        ok = subprocess.run([*python, "-c", "import bpy"], capture_output=True,
+                            timeout=300).returncode == 0
     except (OSError, subprocess.TimeoutExpired):
-        return False
+        ok = False
+    if ok:
+        _BPY_FOUND.add(python)
+    return ok
+
+
+_has_bpy.cache_clear = _BPY_FOUND.clear      # type: ignore[attr-defined]
 
 
 def wanted(settings) -> bool:
@@ -122,35 +145,77 @@ class Performer:
         self.cache.mkdir(parents=True, exist_ok=True)
         self._proc: subprocess.Popen | None = None
         self._err = None
+        self._lines: "queue.Queue[str | None] | None" = None
         self.shots: list[dict] = []          # what each shot cost, for the manifest
 
     # ------------------------------------------------------------------ worker
     def _start(self) -> subprocess.Popen:
         if self._proc is not None and self._proc.poll() is None:
             return self._proc
+        if self._err is not None:            # a worker that died: its log handle
+            self._err.close()
         self._err = open(self.cache / "worker.log", "a", encoding="utf-8")
         env = dict(os.environ, PYTHONUNBUFFERED="1")
         self._proc = subprocess.Popen(
             [*_python(self.settings), str(WORKER), "--serve"], cwd=str(REPO),
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self._err,
             text=True, bufsize=1, env=env)
+        # Lines are read on a thread so a shot can be waited on with a
+        # deadline; a blocking `for line in stdout` could not be.
+        self._lines = queue.Queue()
+
+        def pump(out, q) -> None:
+            for line in out:
+                q.put(line)
+            q.put(None)                        # EOF
+
+        threading.Thread(target=pump, args=(self._proc.stdout, self._lines),
+                         daemon=True, name="dennis3d-out").start()
         return self._proc
 
     def _ask(self, job: dict) -> dict:
         proc = self._start()
+        frames = 1 if job.get("still") else (
+            float(job.get("duration") or 0) * float(job.get("fps") or 12) + 1)
+        deadline = time.monotonic() + SHOT_BASE_TIMEOUT_S + frames * FRAME_TIMEOUT_S
         try:
             proc.stdin.write(json.dumps(job) + "\n")
             proc.stdin.flush()
-            for line in proc.stdout:
+            while True:
+                left = deadline - time.monotonic()
+                if left <= 0:
+                    self._kill()
+                    raise RenderError(
+                        f"the 3D Dennis worker took longer than "
+                        f"{SHOT_BASE_TIMEOUT_S + frames * FRAME_TIMEOUT_S:.0f}s "
+                        f"on one shot ({job.get('angle')}) and was stopped")
+                try:
+                    line = self._lines.get(timeout=min(left, 5.0))
+                except queue.Empty:
+                    continue
+                if line is None:
+                    break                      # the worker closed its output
                 if line.startswith("@@"):
                     return json.loads(line[2:])
                 log.debug("blender: %s", line.rstrip())
         except BrokenPipeError:
             pass
-        proc.wait(timeout=30)
+        try:
+            proc.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            self._kill()
         self._err.flush()
         tail = (self.cache / "worker.log").read_text(encoding="utf-8", errors="replace")[-2000:]
         raise RenderError(f"the 3D Dennis worker stopped (exit {proc.poll()}):\n{tail}")
+
+    def _kill(self) -> None:
+        if self._proc is not None and self._proc.poll() is None:
+            self._proc.kill()
+            try:
+                self._proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                pass
+        self._proc = None
 
     def close(self) -> None:
         if self._proc is not None and self._proc.poll() is None:
@@ -283,7 +348,7 @@ def extent(layer: Path, size: tuple[int, int]) -> tuple[int, int, int, int] | No
     w, h = max(W // 8, 1), max(H // 8, 1)
     try:
         raw = subprocess.run(
-            ["ffmpeg", "-loglevel", "error", "-i", str(layer), "-vf",
+            [detect_ffmpeg()[0], "-loglevel", "error", "-i", str(layer), "-vf",
              f"alphaextract,scale={w}:{h}", "-f", "rawvideo", "-pix_fmt", "gray", "-"],
             capture_output=True, check=True).stdout
     except (OSError, subprocess.CalledProcessError):

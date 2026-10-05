@@ -27,7 +27,6 @@ from __future__ import annotations
 import json
 import time
 import logging
-import re
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -38,8 +37,14 @@ from config import Settings
 log = logging.getLogger(__name__)
 
 RECORDS_FILE = "published.json"
+# `youtube.force-ssl` is what `captions.insert`, `commentThreads.insert` and
+# `videos.update` (the caption track, the pinned comment and `/correct`'s
+# description edit) are authorised by; without it all three answer 403 while
+# the upload itself works. `scripts/youtube_auth.py` mints a token with
+# exactly these.
 SCOPES = (
     "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
     "https://www.googleapis.com/auth/youtube.readonly",
     "https://www.googleapis.com/auth/yt-analytics.readonly",
 )
@@ -88,6 +93,11 @@ class VideoRecord:
     # a ticker and a date, and their sentences and cuts are not each other's.
     # Empty on a row written before it was recorded; `record_format` infers.
     fmt: str = ""
+    # Whether the pinned comment went up with the upload: None when there was
+    # none to post. The API can post a comment but never PIN one, and a
+    # private video may refuse comments altogether — False is the operator's
+    # cue to post it by hand once the video is public.
+    comment_posted: bool | None = None
 
     def url(self) -> str:
         return f"https://youtu.be/{self.video_id}"
@@ -325,9 +335,11 @@ class YouTubeClient:
 
         if self._youtube is None:
             self._youtube = self._build("youtube", "v3")
+        mime = ("image/jpeg" if Path(image).suffix.lower() in (".jpg", ".jpeg")
+                else "image/png")
         self._youtube.thumbnails().set(
             videoId=video_id,
-            media_body=MediaFileUpload(str(image), mimetype="image/png"),
+            media_body=MediaFileUpload(str(image), mimetype=mime),
         ).execute()
 
     def set_captions(self, video_id: str, srt: Path, *,
@@ -432,6 +444,34 @@ class UploadSession:
             self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
+# YouTube refuses a custom thumbnail over 2 MB, and a cover rendered off the
+# room as a PNG is often past it — the upload then went out with YouTube's
+# own frame grab and a warning in a log.
+THUMBNAIL_MAX_BYTES = 2_000_000
+
+
+def thumbnail_for_upload(path: Path) -> Path:
+    """`path` if it fits YouTube's limit, else a JPEG of it beside it that
+    does (quality stepped down until it fits)."""
+    path = Path(path)
+    try:
+        if path.stat().st_size <= THUMBNAIL_MAX_BYTES:
+            return path
+        from PIL import Image
+
+        out = path.with_name(path.stem + ".upload.jpg")
+        with Image.open(path) as im:
+            rgb = im.convert("RGB")
+            for quality in (92, 85, 78, 70, 60):
+                rgb.save(out, "JPEG", quality=quality, optimize=True)
+                if out.stat().st_size <= THUMBNAIL_MAX_BYTES:
+                    break
+        return out
+    except Exception as e:  # noqa: BLE001 - the original is still worth trying
+        log.warning("could not shrink the thumbnail %s (%s)", path, e)
+        return path
+
+
 def available(settings: Settings) -> tuple[bool, str]:
     if not settings.youtube_enabled:
         return False, "YouTube upload is switched off (YOUTUBE_ENABLED=false)."
@@ -530,7 +570,7 @@ def upload_video(video: Path, package, settings: Settings, *,
     # must not read as a failed upload.
     if thumbnail is not None and Path(thumbnail).exists():
         try:
-            client.set_thumbnail(video_id, Path(thumbnail))
+            client.set_thumbnail(video_id, thumbnail_for_upload(Path(thumbnail)))
         except Exception as e:  # noqa: BLE001
             log.warning("thumbnail upload failed for %s: %s", video_id, e)
     if captions is not None and Path(captions).exists():
@@ -540,11 +580,14 @@ def upload_video(video: Path, package, settings: Settings, *,
         except Exception as e:  # noqa: BLE001
             log.warning("caption upload failed for %s: %s", video_id, e)
 
+    comment_posted: bool | None = None
     if package.pinned_comment:
         try:
             client.comment(video_id, package.pinned_comment)
+            comment_posted = True
         except Exception as e:  # noqa: BLE001 - the video is up; a comment is not
             log.warning("pinned comment failed for %s: %s", video_id, e)
+            comment_posted = False
 
     declared = getattr(client, "last_upload_status", {}).get(
         "containsSyntheticMedia")
@@ -562,7 +605,8 @@ def upload_video(video: Path, package, settings: Settings, *,
         workdate=workdate, chapters=[list(c) for c in chapters],
         duration_s=duration_s,
         synthetic_declared=(None if declared is None else bool(declared)),
-        experiment=experiment, clip_start_s=clip_start_s, fmt=fmt)
+        experiment=experiment, clip_start_s=clip_start_s, fmt=fmt,
+        comment_posted=comment_posted)
     VideoLog(settings).record(record)
     log.info("youtube: %s uploaded as %s%s", video_id, record.privacy,
              f" for {record.publish_at}" if when else "")
@@ -588,13 +632,23 @@ class VideoLog:
 
     def _save(self, rows: list[dict]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(rows, indent=2, default=str), encoding="utf-8")
+        tmp = self.path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(rows, indent=2, default=str), encoding="utf-8")
+        tmp.replace(self.path)
 
     def record(self, video: VideoRecord) -> None:
-        existing = self._all()
-        rows = [r for r in existing if r.get("video_id") != video.video_id]
-        known = len(rows) < len(existing)
-        rows.append(video.to_json())
+        # In place when the video is already on record: removing it and
+        # appending it again moved a corrected video to the end of the log,
+        # where readers that take the last row as "the latest upload" found it.
+        rows = self._all()
+        known = False
+        for i, r in enumerate(rows):
+            if r.get("video_id") == video.video_id:
+                rows[i] = video.to_json()
+                known = True
+                break
+        if not known:
+            rows.append(video.to_json())
         self._save(rows)
         if not known:
             from pipeline import journal
@@ -634,8 +688,23 @@ class VideoLog:
                 return True
         return False
 
-    def scheduled(self) -> list[VideoRecord]:
-        return sorted((v for v in self.all() if v.privacy == "scheduled"),
+    def scheduled(self, now: datetime | None = None) -> list[VideoRecord]:
+        """Uploads still waiting to go public. A scheduled row is never
+        rewritten when its time comes, so one whose `publish_at` has passed
+        is published, not queued."""
+        now = now or datetime.now(timezone.utc)
+
+        def pending(v: VideoRecord) -> bool:
+            try:
+                when = datetime.fromisoformat(v.publish_at.replace("Z", "+00:00"))
+            except (ValueError, AttributeError):
+                return True               # unreadable: show it rather than hide it
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            return when > now
+
+        return sorted((v for v in self.all()
+                       if v.privacy == "scheduled" and pending(v)),
                       key=lambda v: v.publish_at)
 
 
@@ -645,13 +714,11 @@ class VideoLog:
 
 
 def _seconds(stamp: str) -> float:
-    parts = [p for p in re.split(r"[:.]", stamp.strip()) if p.isdigit()]
-    if not parts:
-        return 0.0
-    parts = [int(p) for p in parts[:3]]
-    while len(parts) < 3:
-        parts.insert(0, 0)
-    return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    """`mm:ss` / `hh:mm:ss` as seconds — the same reading as
+    `publish._stamp_seconds`, so a fraction is not taken for a field."""
+    from pipeline.publish import _stamp_seconds
+
+    return _stamp_seconds(stamp)
 
 
 def map_retention_to_chapters(rows: Sequence[dict],
