@@ -520,8 +520,19 @@ hygiene.
 - `_finish_filing_read` reports a reading that **raised** as "has not
   finished — re-upload once it lands". `_filing_reads` entries leak when no
   upload follows.
+- `standing.Move.change` returns 0 when the pinned value is 0. A thesis
+  number that started at zero (e.g. net income) can never register a move,
+  however far it goes.
 - `scripts/make_score.py` uses check-then-act `would_exceed` rather than
   `reserve_tts_spend`.
+- `filings.fetch_and_summarize` (`:574`) sends `SEC_USER_AGENT`, which SEC
+  asks to carry a contact email, as the User-Agent to arbitrary news sites
+  pasted into `/headline`.
+- `bot/prompts.fill_prompt` substitutes tokens one after another into one
+  string. Scraped text (news, article summaries, filing quotes) lands in the
+  prompt the operator pastes into Claude unescaped, and a later token's
+  placeholder inside that text would be replaced too. This is low risk
+  because the operator reads the output, but it is an injection path.
 - Config: `env_file=".env"` is relative to the current directory. Scripts run
   from elsewhere silently fall back to defaults; this is safe (MOCK on), but
   confusing.
