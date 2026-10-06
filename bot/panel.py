@@ -133,6 +133,7 @@ class Panel:
     # ---- the screens
     def state(self) -> dict:
         from pipeline.video_state import all_states, card_text, inbox
+        from pipeline.workspace import today_str
 
         states = all_states(self.settings)
         items = inbox(self.settings, states=states)
@@ -178,6 +179,9 @@ class Panel:
             "notify": cmds.NotifyPrefs(self.settings).level(),
             "feed_seq": self.feed.last_seq,
             "chat_id": self.chat_id,
+            # The bot's own date: "today" is the render box's, not the
+            # browser's, when the two sit in different time zones.
+            "today": today_str(),
         }
 
 

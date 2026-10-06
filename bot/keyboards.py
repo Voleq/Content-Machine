@@ -114,11 +114,12 @@ def approved_keyboard(fmt: str, ticker: str, workdate: str,
 
 def confirm_render_keyboard(fmt: str, ticker: str,
                             workdate: str) -> InlineKeyboardMarkup:
-    """The money moment needs a second tap."""
+    """The money moment needs a second tap — and "Not now" comes first, so
+    the paid button is never where the eye and the thumb land."""
     code = FMT_CODES.get(fmt, "s")
     return InlineKeyboardMarkup([[
-        _b("Confirm 💰", f"r!|{code}|{ticker}|{workdate}"),
-        _b("Not now", f"c|{ticker}|{workdate}")]])
+        _b("Not now", f"c|{ticker}|{workdate}"),
+        _b("Confirm 💰", f"r!|{code}|{ticker}|{workdate}")]])
 
 
 def queued_keyboard(ticker: str, workdate: str) -> InlineKeyboardMarkup:

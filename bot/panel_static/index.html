@@ -2,109 +2,139 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
 <title>Dennis Panel</title>
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
 <header class="top">
-  <div class="brand">Dennis<span class="sub">control panel</span></div>
-  <div class="status">
-    <button id="active" class="pill" title="The video a paste or an upload lands in">no active video</button>
-    <span id="spend" class="pill" title="Month-to-date spend against the cap"></span>
-    <button id="notify" class="pill" title="Which pushes the bot sends"></button>
+  <h1 class="brand"><span class="mark" aria-hidden="true">D</span>Dennis<span class="sub">control panel</span></h1>
+  <div class="status" id="status" hidden>
+    <button id="active" class="pill" type="button"></button>
+    <span id="spend" class="pill" role="img"></span>
+    <button id="notify" class="pill" type="button"></button>
   </div>
 </header>
-<div id="mock" class="mock" hidden></div>
+<div id="mock" class="mock" hidden><span class="mock-tag">Demo data</span><span id="mock-text"></span></div>
 
 <div id="login" class="login" hidden>
-  <h1>Panel key</h1>
+  <h2>Panel key</h2>
   <p>Open the link that <code>/admin panel</code> sends in Telegram, or paste the
     key from <code>state/panel_token</code> on the render box.</p>
   <form id="login-form" class="row">
+    <label for="key" class="sr-only">Panel key</label>
     <input id="key" type="password" autocomplete="off" placeholder="panel key" class="grow">
-    <button class="primary">Unlock</button>
+    <button class="primary" type="submit">Unlock</button>
   </form>
 </div>
 
 <div id="app" class="layout" hidden>
-  <nav class="tabs" id="tabs" role="tablist">
-    <button data-tab="home" class="on" role="tab">Home</button>
-    <button data-tab="videos" role="tab">Videos</button>
-    <button data-tab="commands" role="tab">Commands</button>
-    <button data-tab="activity" role="tab">Activity <span id="unread" class="badge" hidden></span></button>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Sections">
+    <button type="button" role="tab" id="tab-btn-home" aria-controls="tab-home" aria-selected="true" tabindex="0" data-tab="home" class="on">Home<span id="home-count" class="badge soft" hidden></span></button>
+    <button type="button" role="tab" id="tab-btn-videos" aria-controls="tab-videos" aria-selected="false" tabindex="-1" data-tab="videos">Videos</button>
+    <button type="button" role="tab" id="tab-btn-commands" aria-controls="tab-commands" aria-selected="false" tabindex="-1" data-tab="commands">Commands</button>
+    <button type="button" role="tab" id="tab-btn-activity" aria-controls="tab-activity" aria-selected="false" tabindex="-1" data-tab="activity">Activity<span id="unread" class="badge" hidden></span><span id="unread-sr" class="sr-only"></span></button>
   </nav>
 
-  <main>
-    <section id="tab-home" class="tab on">
+  <main id="main">
+    <section id="tab-home" class="tab on" role="tabpanel" aria-labelledby="tab-btn-home">
+      <div id="summary" class="summary"></div>
+      <div id="queue-banner" class="banner warn" hidden>The render queue is not running in this process — anything you render will wait.</div>
       <div class="grid">
-        <div class="card">
-          <h2>Inbox</h2>
+        <section class="card" aria-labelledby="inbox-h">
+          <div class="card-head"><h2 id="inbox-h">Inbox</h2><span id="inbox-count" class="meta"></span></div>
           <div id="inbox" class="list"></div>
-        </div>
-        <div class="card">
-          <h2>Start a video</h2>
-          <form id="start-form" class="row wrap">
-            <input name="ticker" placeholder="TICKER" required autocomplete="off"
+        </section>
+        <section class="card compose" aria-labelledby="start-h">
+          <h2 id="start-h">Start a video</h2>
+          <form id="start-form" class="start">
+            <label for="start-ticker" class="sr-only">Ticker</label>
+            <input id="start-ticker" name="ticker" placeholder="TICKER" required autocomplete="off"
                    pattern="[A-Za-z0-9.\-]{1,15}" class="ticker">
-            <select name="lane">
+            <label for="start-lane" class="sr-only">Lane</label>
+            <select id="start-lane" name="lane">
               <option value="go">Guided SHORT</option>
               <option value="new short">SHORT</option>
               <option value="new long">LONG</option>
               <option value="new update">UPDATE</option>
             </select>
-            <button class="primary">Start</button>
+            <button class="primary" type="submit">Start</button>
           </form>
-          <h3>Send to the active video</h3>
+          <div class="target-row">
+            <label for="target" class="label">Send to</label>
+            <select id="target" class="grow"></select>
+          </div>
           <label class="drop" id="drop">
-            <input type="file" id="file" hidden>
-            <span><b>Drop a file</b> or click — the workbook, a screengrab, a
-              script as .txt. No 20 MB limit here.</span>
-            <progress id="upload-progress" max="1" value="0" hidden></progress>
+            <input type="file" id="file" class="sr-only" aria-describedby="drop-help">
+            <span id="drop-help"><b>Drop a file</b> or <u>browse</u>
+              <small>workbook · screengrab · script .txt — no 20 MB limit</small></span>
+            <progress id="upload-progress" max="1" value="0" aria-label="Upload progress" hidden></progress>
           </label>
-          <textarea id="paste" rows="6" spellcheck="false"
+          <label for="paste" class="sr-only">Text to send to the active video</label>
+          <textarea id="paste" rows="7" spellcheck="false"
             placeholder="Paste the script, an angle tweak, or the answer to a question the bot asked"></textarea>
-          <div class="row end"><button id="send-paste" class="primary">Send</button></div>
-        </div>
-        <div class="card span2">
-          <div class="row between"><h2>Render queue</h2><span id="queue-note" class="muted"></span></div>
+          <div class="row end"><button id="send-paste" class="primary" type="button">Send</button></div>
+        </section>
+        <section class="card span2" aria-labelledby="queue-h">
+          <div class="card-head"><h2 id="queue-h">Render queue</h2><span id="queue-note" class="meta"></span></div>
           <div id="jobs" class="list"></div>
-        </div>
+        </section>
       </div>
     </section>
 
-    <section id="tab-videos" class="tab">
-      <div class="row between"><h2>Videos, last 14 days</h2>
-        <input id="video-filter" placeholder="Filter by ticker…" autocomplete="off"></div>
+    <section id="tab-videos" class="tab" role="tabpanel" aria-labelledby="tab-btn-videos" hidden>
+      <div class="page-head">
+        <h2>Videos <span class="meta">last 14 days</span></h2>
+        <input id="video-filter" type="search" aria-label="Filter videos by ticker" placeholder="Filter by ticker" autocomplete="off">
+      </div>
       <div id="videos" class="cards"></div>
     </section>
 
-    <section id="tab-commands" class="tab">
-      <div class="row wrap">
-        <input id="cmd-line" class="grow mono" autocomplete="off" spellcheck="false"
-               placeholder="/render proof short   ·   type any command, exactly as in Telegram">
-        <button id="cmd-run" class="primary">Run</button>
+    <section id="tab-commands" class="tab" role="tabpanel" aria-labelledby="tab-btn-commands" hidden>
+      <div class="page-head">
+        <h2>Commands</h2>
+        <span class="meta">Press <kbd>/</kbd> anywhere to type one</span>
       </div>
-      <input id="cmd-filter" placeholder="Filter commands…" autocomplete="off" class="filter">
+      <div class="cmdbar">
+        <input id="cmd-line" type="search" class="mono grow" aria-label="Command, or words to filter by" autocomplete="off" spellcheck="false"
+               placeholder="/render proof short — Enter runs; plain words filter">
+        <button id="cmd-run" class="primary" type="button">Run</button>
+      </div>
+      <nav id="fam-nav" class="fam-nav" aria-label="Command families"></nav>
       <div id="commands"></div>
     </section>
 
-    <section id="tab-activity" class="tab">
-      <div class="row between"><h2>Everything the bot pushed</h2>
-        <span class="muted">since the bot started</span></div>
-      <div id="feed" class="list"></div>
+    <section id="tab-activity" class="tab" role="tabpanel" aria-labelledby="tab-btn-activity" hidden>
+      <div class="page-head">
+        <h2>Activity</h2>
+        <div class="seg" id="feed-filter" role="group" aria-label="Show">
+          <button type="button" data-f="pushes" aria-pressed="true">Pushes</button>
+          <button type="button" data-f="replies" aria-pressed="false">Replies</button>
+          <button type="button" data-f="all" aria-pressed="false">All</button>
+        </div>
+      </div>
+      <div class="card feed-card"><div id="feed" class="feed"></div></div>
     </section>
   </main>
 
-  <aside class="replies">
-    <div class="row between"><h2>Replies</h2><button id="clear-replies" class="ghost">Clear</button></div>
+  <aside class="replies" id="replies-panel" aria-labelledby="replies-h">
+    <div class="replies-head" id="replies-head">
+      <h2 id="replies-h">Replies<span id="reply-count" class="badge soft" hidden></span></h2>
+      <span id="reply-peek" class="peek"></span>
+      <button id="clear-replies" class="ghost sm" type="button">Clear</button>
+      <button id="sheet-toggle" class="ghost sm sheet-only" type="button" aria-expanded="false" aria-controls="replies" aria-label="Show replies">▲</button>
+    </div>
     <div id="replies"></div>
   </aside>
 </div>
 
-<dialog id="player">
-  <form method="dialog" class="row between"><b id="player-title"></b><button class="ghost">Close</button></form>
+<div id="sr-status" class="sr-only" role="status" aria-live="polite"></div>
+<div id="sr-alert" class="sr-only" role="alert"></div>
+
+<dialog id="player" aria-labelledby="player-title">
+  <form method="dialog" class="row between"><b id="player-title"></b><button class="ghost" type="submit">Close</button></form>
   <video id="player-video" controls playsinline></video>
 </dialog>
 
