@@ -205,13 +205,20 @@ def test_an_explicit_format_still_wins(core, settings, short_valid_json):
 # --------------------------------------------------------------------------
 
 
-def test_the_lane_less_alias_is_gone_from_the_core_and_the_frontend():
-    from bot import handlers
+def test_the_lane_less_alias_is_gone_from_the_core_and_the_frontend(core):
+    """`/new` is a family now, and every way into it names the lane:
+    `/new short`, `/new long`, `/new update`. A bare `/new TICKER` answers
+    with those choices and opens nothing."""
+    import asyncio
+
+    from bot import commands, handlers
 
     assert not hasattr(handlers.BotCore, "new_ticker")
-    src = Path(handlers.__file__).read_text(encoding="utf-8")
-    assert 'CommandHandler("new"' not in src
-    assert 'CommandHandler("refresh"' not in src
+    assert "refresh" not in commands.telegram_names()
+    assert "" not in commands.SUBS["new"], "no lane-less default"
+    reply = asyncio.run(commands.run_command(core, CHAT, "new", ["EXMPL"]))
+    assert "/new short" in reply.text and "/new long" in reply.text
+    assert Workspace.dates_for(core.settings, "EXMPL") == []
 
 
 def test_a_screener_button_opens_the_lane_the_screen_put_it_in(core, settings):
@@ -357,14 +364,13 @@ def test_both_formats_on_one_date_are_each_reachable(core, settings,
 
 
 def test_render_short_is_registered_and_documented():
-    """`tests/test_docs.py` checks the table against the handlers; this
-    checks the handler exists at all."""
-    from pathlib import Path
+    """`tests/test_docs.py` checks the table against the registry; this
+    checks the old name exists at all, and reaches the forced SHORT."""
+    from bot import commands
 
-    from bot import handlers
-
-    src = Path(handlers.__file__).read_text(encoding="utf-8")
-    assert 'CommandHandler("render_short"' in src
+    assert "render_short" in commands.telegram_names()
+    command, _f, _a, _r = commands.resolve("render_short", ["EXMPL"])
+    assert command.name == "render short"
 
 
 def test_a_missing_design_kit_surfaces_as_a_refusal_not_an_internal_error(

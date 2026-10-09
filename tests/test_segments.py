@@ -502,6 +502,33 @@ def _encode_beats(tmp_path, settings, lengths, fps):
     return [_frame_count(c) for c in run.clips()]
 
 
+def test_two_encodes_of_one_clip_never_share_a_temp_file(tmp_path, settings,
+                                                         monkeypatch):
+    """Two beats that are the same picture for the same length hash to one
+    clip, and the pool may encode both at once. They shared one
+    `.part.mp4`, so the first `os.replace` moved the second's file out from
+    under it and that beat failed — seen as a flaky drift test under load."""
+    import pipeline.segments as seg
+
+    outputs: list[Path] = []
+
+    def fake_ffmpeg(args, threads=None):
+        out = Path(args[-1])
+        outputs.append(out)
+        out.write_bytes(b"clip")
+
+    monkeypatch.setattr(seg, "run_ffmpeg", fake_ffmpeg)
+    spec = _spec(tmp_path, index=0, duration=1.0, colour="red")
+    profile = encode_profile(settings, "long", draft=True)
+    dest = tmp_path / "same.mp4"
+    seg._encode_one(spec, dest, profile, 1)
+    seg._encode_one(spec, dest, profile, 1)
+
+    assert outputs[0] != outputs[1]
+    assert dest.read_bytes() == b"clip"
+    assert not list(tmp_path.glob("*.part.mp4")), "no temp file is left behind"
+
+
 def test_a_segment_is_exactly_the_frames_the_plan_gave_it(tmp_path, settings):
     """Including the lengths whose four-decimal form rounds the WRONG WAY.
 

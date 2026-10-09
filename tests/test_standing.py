@@ -737,9 +737,10 @@ def test_the_update_workspace_hands_back_the_update_prompt(core, settings, tmp_p
 
 
 def test_the_help_text_offers_it(core):
-    from bot.handlers import HELP_TEXT
+    from bot.commands import family_help, help_text
 
-    assert "/update TICKER" in HELP_TEXT
+    assert "/new update TICKER" in family_help("new")
+    assert "/update" in help_text(), "the old name is still listed"
 
 
 # --------------------------------------------------------------------------

@@ -37,6 +37,7 @@ import hashlib
 import json
 import logging
 import os
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -237,7 +238,12 @@ class SegmentRun:
 def _encode_one(spec: SegmentSpec, dest: Path, profile: EncodeProfile,
                 threads: int) -> None:
     """Encode one segment to `dest`, atomically."""
-    part = dest.with_suffix(".part.mp4")
+    # A name of its own per encode. Two beats that are the same picture for
+    # the same length hash to the same clip, and the pool can encode both at
+    # once: with one shared `.part.mp4`, the first `os.replace` moved the
+    # second's file out from under it and that beat failed. Both encodes are
+    # the same bytes, so whichever lands last is still the right clip.
+    part = dest.with_name(f"{dest.stem}.{uuid.uuid4().hex[:8]}.part.mp4")
     args: list[str] = []
     for group in spec.inputs:
         args += list(group)

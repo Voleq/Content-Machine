@@ -1,178 +1,35 @@
-# Workflow and command suggestions
+# Workflow and command suggestions — status
 
-The bugs and improvements this file used to list are fixed (commit
-`795ebe6`, with one regression test per finding in
-`tests/test_review_fixes.py`). This page now holds proposals only. Nothing
-below is implemented.
+The bugs this file first listed were fixed in `795ebe6` (one regression test
+per finding in `tests/test_review_fixes.py`). The workflow proposals that
+replaced them are now built. This page records what was built, where, and
+where it differs from the proposal. Tests: `tests/test_workflow.py`.
 
----
+| # | Proposal | Status | Where |
+|---|---|---|---|
+| 1 | Nine command families, old names as hidden aliases | ✅ `/new` `/script` `/render` `/publish` `/jobs` `/ideas` `/stats` `/search` `/admin`, plus `/go` `/card` `/inbox` `/help`. All 47 old names still answer. The Telegram menu lists the 13 entry points only. | `bot/commands.py` |
+| 2 | Stop asking for the ticker | ✅ A command that takes a ticker falls back to the chat's active video and says which one it used (`📁 EXMPL 2026-10-05`). `TICKER@YYYY-MM-DD` names an older folder. Free-text commands only treat the first word as a ticker when that ticker has a workspace. | `_fill_ticker` in `bot/commands.py` |
+| 3 | One video card per video, edited in place | ✅ `/card [TICKER]`. Each card message is remembered and edited as its jobs move (throttled to one edit per 10 s while a render progresses). | `pipeline/video_state.py`, `CardBoard` |
+| 4 | Next-step buttons at each handoff | ✅ Angle picks, Edit on the report, Draft/Proof/Render after Approve, Upload/Schedule/Cut clips when a render lands, Render final after a proof, Retention/Correct after an upload. **Render asks once more**, with the price and the month so far. | `bot/keyboards.py`, `handle_callback` |
+| 5 | A daily inbox | ✅ `/inbox`, also sent at `INBOX_HOUR` when it is not empty. | `inbox()` in `pipeline/video_state.py` |
+| 6 | Guided flow for the daily SHORT | ✅ `/go TICKER`: workbook → paste → approve → render → upload, with the next step written under each reply. Leaving the wizard at any point is fine. | `WIZARD` in `bot/commands.py` |
+| 7 | One command registry, generated everywhere | ✅ The Telegram handlers, `/help`, `/help FAMILY`, the menu, the README command reference (`python -m bot.commands --readme`, checked by `tests/test_docs.py`) and the web panel all come from it. Command bodies run off the event loop by default. | `bot/commands.py` |
+| 8 | Smaller things | ✅ "Did you mean…", `/admin quiet`, `/publish calendar`, `/jobs undo` (a cancel can be undone for a minute), per-family help with your ticker filled in. | `bot/commands.py` |
+| — | A panel that uses every command | ✅ The web panel. It runs every registry command, button, paste and upload through the same code as the chat, and adds the inbox, video cards, queue, spend, an activity feed, uploads past 20 MB and in-page video playback. | `bot/panel.py`, `bot/panel_static/` |
 
-## The problem
+## Where it differs from the proposal
 
-The bot answers **47 commands**. A normal day uses about ten of them: start a
-video, upload the workbook, paste, approve, render, upload. The other
-thirty-seven are reading tools (retention, lines, hooks, scoreboard…) and
-admin.
+- A typed `/render` still queues straight away. Typing it is the deliberate
+  act. Only the buttons ask twice, because a tap is easy to make by accident.
+- The angle buttons always offer three angles. The bot never sees the model's
+  angle list, and the prompt asks for two or three.
+- The menu has 13 entries rather than 9, because `/go`, `/card` and `/inbox`
+  are where a session starts.
 
-They all live in one flat list. That list shows up in three places that are
-kept in sync by hand: `/help`, the README table, and the Telegram menu.
-Similar commands differ by one word (`/render`, `/render_long`,
-`/render_short`, `/draft`, `/proof`, `/repurpose`). Most of them also need
-the ticker typed again, even though the chat already knows which video you
-are working on.
+## Not done
 
----
-
-## 1. Group the commands into nine families
-
-Keep every old name working as a hidden alias for one release. Muscle memory
-keeps working, and `tests/test_docs.py` can move over in one change.
-
-| New command | Subcommands | Replaces |
-|---|---|---|
-| `/new` | `short` · `long` · `update` · `headline` + TICKER | `/short` `/long` `/update` `/headline` (keep `/short` and `/long` as shortcuts, since they are daily) |
-| `/script` | *(show)* · `edit N …` · `replace a => b` · `undo` · `why …` · `prompts` | `/script` `/edit` `/replace` `/undo` `/why` `/prompts` |
-| `/render` | *(final, the default)* · `draft` · `proof` · `clips` + `short`/`long` | `/render` `/render_long` `/render_short` `/draft` `/proof` `/repurpose` |
-| `/publish` | *(upload)* · `pair` · `probe` · `scheduled` · `correct …` | `/upload` `/probe` `/scheduled` `/correct` |
-| `/jobs` | *(status)* · `cancel` · `batch [add\|run\|clear]` | `/status` `/cancel` `/batch` |
-| `/ideas` | *(backlog)* · `add` · `drop` · `screen [lane]` · `watch` · `earnings` · `thesis` | `/ideas` `/idea` `/unidea` `/screen` `/watch` `/earnings` `/thesis` |
-| `/stats` | `retention` · `lines` · `shots` · `stillness` *(one video)*; `hooks` · `rules` · `runtime` · `lessons` · `experiments` · `scoreboard` *(the channel)* | ten commands |
-| `/search` | *(ask the AI)* · `find` · `said` | `/ask` `/find` `/said` |
-| `/admin` | `cost [explain\|reconciled]` · `kit doctor` | `/cost` `/kit` |
-
-That is nine families plus `/help [family]`. The Telegram menu
-(`setMyCommands`, scoped to the operator chats) would list only these nine.
-Typing `/` then shows a short menu instead of a wall of commands.
-
----
-
-## 2. Stop asking for the ticker
-
-Every command could default to the chat's active video (`ActiveContext`
-already tracks it). The ticker, or `TICKER@YYYY-MM-DD` (which the resolver
-now understands), becomes an override rather than a requirement:
-
-```
-/render            → the video you are working on
-/render proof      → same, as a $0 proof
-/render AAPL       → another one
-```
-
-Every reply should then say which video it acted on. The `(from
-YYYY-MM-DD)` suffix that `/render` now adds is the start of that.
-
----
-
-## 3. One "video card" per video, edited in place
-
-Instead of a new message at every stage, keep one message per video and edit
-it with `edit_message_text` as things change:
-
-```
-📁 AAPL · LONG · 2026-10-05
-data      ✅ as of 2026-10-03
-script    rev 4 · 9,812 chars · gates ✅ · 2 warnings
-approval  ✅ (sha 3f9a…)  · est. $1.94 · ~38 min
-renders   draft ✅ · proof ✅ · final ⏳ 12/31 segments
-upload    —
-[Edit] [Proof $0] [Render 💰] [Cancel]
-```
-
-This replaces "what state is this in?" polling with `/status`, `/script` and
-`/stillness`. It also puts the next action one tap away. Progress pushes
-("render 5/10 segments") update the card instead of adding messages.
-
----
-
-## 4. Next-step buttons at each handoff
-
-The flow has a fixed shape, so each reply can offer the obvious next taps:
-
-| After | Buttons |
-|---|---|
-| workbook upload | **Get prompt** · Re-upload |
-| angle prompt | the ranked angles as buttons (instead of typing a number) |
-| report | **Approve ✅** · Swap clip 🔄 · Edit ✏️ · Cancel |
-| approve | **Draft $0** · **Proof $0** · **Render 💰 ~$1.94** |
-| final delivered | **Upload private** · Schedule… · Cut clips |
-| upload | **Retention** (enabled after 48 h) · Correct… |
-
-Spend buttons should carry the estimate and need a second tap:
-"Render LONG — ~$1.94, ~38 min [Confirm]". That puts the money moment where
-the eye already is.
-
----
-
-## 5. A daily inbox
-
-One morning message (it could ride on the screener digest) listing
-everything that is waiting on you:
-
-- scripts with a report and no approval
-- approved scripts not rendered
-- finished renders not uploaded
-- scheduled publishes in the next 48 h
-- retention ready to read for videos that are 2+ days old
-- batch entries that failed overnight (the batch now reopens these)
-
-Today each of these needs its own command to find out.
-
----
-
-## 6. Guided flow for the daily SHORT
-
-A `/go TICKER` wizard that walks the short end to end with Telegram
-`ForceReply` prompts:
-
-> workbook? → prompt → paste → report → approve → render → upload when done?
-
-You stay in one thread, and the bot asks for exactly the next thing. The
-LONG keeps its two manual Claude steps, but the angle pick becomes buttons
-(section 4).
-
----
-
-## 7. One command registry, generated everywhere
-
-Define each command once:
-
-```python
-Command("render", group="render", handler=..., usage="[TICKER] [draft|proof|clips] [short|long]",
-        help="render the approved script (or a free pass)", off_loop=True,
-        aliases=("render_long", "render_short", "draft", "proof", "repurpose"))
-```
-
-The PTB handlers, `HELP_TEXT`, `/help family`, `setMyCommands` and the README
-command table would all be generated from that list. `tests/test_docs.py`
-then checks one source instead of two directions.
-
-Defaulting `off_loop=True` also prevents the "blocking call on the event
-loop" class of bug (review item M9) from coming back.
-
----
-
-## 8. Smaller things
-
-- **"Did you mean…"** on an unknown command or a malformed one, using
-  `difflib` against the registry. Today a typo gets silence or a bare usage
-  line.
-- **Notification level:** `/admin quiet` keeps only finished, failed and
-  needs-you. The default stays verbose.
-- **A publishing calendar:** `/publish scheduled` drawn as a week view, with
-  gaps highlighted, so batch planning has something to plan against.
-- **Undo for `/jobs cancel`** within a minute, since a cancel also withdraws
-  the approvals.
-- **Per-family help** that shows real examples with your active ticker filled
-  in.
-
----
-
-## Suggested order
-
-1. **Registry, families and aliases, plus the trimmed Telegram menu**
-   (sections 1, 2, 7). This is mechanical, invisible to existing habits, and
-   makes everything after it cheaper.
-2. **Video card and next-step buttons** (sections 3, 4). This is the biggest
-   day-to-day win.
-3. **Inbox and SHORT wizard** (sections 5, 6), once the card exists to link
-   to.
+- No calendar *editing*. The calendar shows the week and marks the gaps, but
+  scheduling still goes through `/publish … YYYY-MM-DD HH:MM` or the
+  Schedule… button.
+- The panel's chat identity is a single chat (`PANEL_CHAT_ID`). Two
+  operators using the panel at once share one active video.
