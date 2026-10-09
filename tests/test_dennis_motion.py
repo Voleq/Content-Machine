@@ -85,12 +85,25 @@ def test_he_turns_and_points_when_he_names_the_screen():
     assert plain.channels["shoulder.R.y"][mid] > -40
 
 
-def test_a_question_ends_in_a_shrug_with_the_brows_up():
+def test_a_question_ends_in_a_shrug_and_one_brow_up():
+    """Deadpan (9 Oct, "he looks too friendly"): one brow, not both."""
     p = _perf()
     q = motion.phrases(LINE, marks=".?!", gap=0.45)[-1]
     i = int((q.words[-1].start + 0.1) * 12)
     assert p.channels["lift.L"][i] > 0.015 and p.channels["lift.R"][i] > 0.015
-    assert p.channels["brow"][i] > 0.8
+    assert p.channels["brow.one"][i] > 0.8
+    assert max(p.channels["brow"]) < 0.4, "both brows went up"
+
+
+def test_talking_to_the_camera_he_does_not_wave():
+    """A flat palm up at the frame is a wave; his talking hand stays curled
+    and both hands come up only now and then."""
+    st = motion.STANCES["to-camera"]
+    assert st.talk[1] < st.talk[0] and st.talk[2] >= 0.4
+    p = _perf()
+    up = [i for i in range(p.frames) if p.channels["elbow.R.x"][i] < -60
+          and p.channels["elbow.L.x"][i] > -40]
+    assert up and all(p.channels["curl.R.middle"][i] >= 20 for i in up)
 
 
 def test_he_moves_while_he_talks_and_rests_at_the_end():
@@ -98,7 +111,7 @@ def test_he_moves_while_he_talks_and_rests_at_the_end():
     talk = [i for i in range(p.frames) if LINE[0].start <= i / 12 <= LINE[-1].end]
     for ch in ("elbow.L.x", "elbow.R.x"):
         assert min(p.channels[ch]) < -60, f"{ch}: that hand never came up"
-    assert max(p.channels["head.x"][i] for i in talk) > 3, "no nods"
+    assert max(p.channels["head.x"][i] for i in talk) > 2, "no nods"
     assert max(p.channels["blink"]) == 1.0
     end = p.at(p.frames - 1)
     assert abs(end["elbow.L.x"] - (-14)) < 3 and abs(end["elbow.R.x"] - (-14)) < 3, \

@@ -25,6 +25,7 @@ from mathutils import Matrix, Vector
 
 # His palette, from design's drawing of him.
 SKIN = "#E2A97C"
+UNDER_EYE = "#B27350"   # design's under-eye pair: the skin's shade, a man who slept badly
 SWEATER = "#3F5C8C"
 COLLAR = "#2C3E5E"
 TROUSERS = "#4E4A62"
@@ -32,9 +33,14 @@ SHOES = "#5A3A28"
 HAIR = "#6A4630"
 FRAMES = "#171B23"
 EYES = "#141820"
-MOUTH = "#5A2426"
+MOUTH = "#3A1C1E"     # dark enough to read as design's black bar on the beard
 
 MOUTHS = ("mouthClosed", "mouthMid", "mouthWide", "mouthO", "mouthEE", "mouthFV")
+# How far the dropped corner of his mouth sits below the other, metres.
+DROPPED_CORNER = 0.0026
+# How far back the mouth's corners wrap round the face (metres, 2 cm out):
+# the face's own curve there, so the corners neither float nor sink.
+MOUTH_WRAP = 0.0032
 
 # Where each joint sits on its parent, metres, standing straight, facing -y.
 JOINTS = {
@@ -355,6 +361,7 @@ class Rig:
         the rest pose, the shoulders lifted, the fingers curled, the face."""
         angles: dict[str, list[float]] = {}
         curls: dict[str, dict[str, float]] = {"L": {}, "R": {}}
+        brows: list[float | None] = [None, None]      # both, and the one
         for k, v in values.items():
             head, _, last = k.rpartition(".")
             if k.startswith("curl."):
@@ -376,8 +383,9 @@ class Rig:
                 for lid in self.lids:
                     lid.scale.z = max(1.0 - v, 0.08)
             elif k == "brow":
-                for b in self.brows:
-                    b.location.z = b["rest_z"] + v * 0.008
+                brows[0] = v
+            elif k == "brow.one":
+                brows[1] = v
             elif head in self.joints and last in "xyz":
                 angles.setdefault(head, [0.0, 0.0, 0.0])["xyz".index(last)] = v
         for name, a in angles.items():
@@ -386,6 +394,11 @@ class Rig:
         for side, c in curls.items():
             if c:
                 self.curl(side, [c.get(f, 0.0) for f in FINGERS])
+        if brows != [None, None]:
+            # a question raises one brow, the screen-left one, over both
+            for i, b in enumerate(self.brows):
+                b.location.z = b["rest_z"] + (brows[0] or 0.0) * 0.008 + \
+                    (0.007 * brows[1] if i == 0 and brows[1] else 0.0)
         self.bend()
 
     def objects(self) -> list[bpy.types.Object]:
@@ -425,7 +438,8 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     for jn, (parent, off) in JOINTS.items():
         rig.joint(jn, parent, off)
 
-    skin = _mat("skin", SKIN, 0.7)
+    skin = _mat("skin", SKIN, 0.9)
+    tired = _mat("under-eye", UNDER_EYE, 0.95)
     knit = _mat("sweater", SWEATER, 0.95, sheen=0.3)
     collar = _mat("collar", COLLAR, 0.95)
     cloth = _mat("trousers", TROUSERS, 0.9)
@@ -461,13 +475,15 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     for side in (-1, 1):
         ear = blob(f"ear{side}", (0.012, 0.02, 0.03), skin, coll)
         rig.attach(ear, "head", (side * 0.088, 0.012, 0.115))
-    nose = blob("nose", (0.009, 0.013, 0.021), skin, coll, subdiv=1)
-    rig.attach(nose, "head", (0, -0.093, 0.100), rot=(22, 0, 0))
+    # narrower and longer than a ball: design's nose is a wedge pointing down
+    nose = blob("nose", (0.0072, 0.0125, 0.0235), skin, coll, subdiv=1)
+    rig.attach(nose, "head", (0, -0.092, 0.099), rot=(26, 0, 0))
     if BEARDS.get(beard):
         bpy.context.view_layer.update()
         mat = hair if beard == "short" else _mat("stubble", STUBBLE, 0.9)
         rig.attach(_beard(f"beard.{beard}", head, BEARDS[beard], mat, coll,
-                          lined=beard == "short"), "head", (0, 0, -0.01))
+                          lined=beard == "short", hole=beard != "short"),
+                   "head", (0, 0, -0.01))
 
     # Hair: a cap over the crown and the back of the head, swept to the side
     # at the front.
@@ -477,21 +493,30 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
         (0.222, 0.068, 0.080, 0, 0.008), (0.245, 0.0, 0.0, 0, 0.01),
     ], hair, coll, n=24)
     rig.attach(cap, "head", (0, 0.0, 0.0))
-    fringe = blob("fringe", (0.062, 0.03, 0.026), hair, coll, subdiv=1)
-    rig.attach(fringe, "head", (0.018, -0.078, 0.192), rot=(-18, -16, 8))
+    # flat across the forehead and down to one side, as slept on: a fringe
+    # that stands up is a haircut somebody chose, and he did not
+    fringe = blob("fringe", (0.068, 0.017, 0.014), hair, coll, subdiv=1)
+    rig.attach(fringe, "head", (0.014, -0.083, 0.189), rot=(-10, -24, 4))
     back = blob("hairback", (0.082, 0.05, 0.06), hair, coll, subdiv=1)
     rig.attach(back, "head", (0, 0.05, 0.12))
 
     # Eyes behind the glasses, the lids that blink them, the brows above.
     for side, name in ((-1, "L"), (1, "R")):
-        # His eyes are design's level dashes: a man who has read the footnotes.
-        e = blob(f"eye.{name}", (0.0105, 0.003, 0.0052), eye, coll)
-        rig.attach(e, "head", (side * 0.033, -0.0935, 0.135))
+        # His eyes are design's level dashes, half-lidded: a man who has
+        # read the footnotes. An oval eye is a friendly one.
+        e = blob(f"eye.{name}", (0.0112, 0.003, 0.0029), eye, coll)
+        rig.attach(e, "head", (side * 0.033, -0.0935, 0.1325))
         rig.lids.append(e)
-        b = blob(f"brow.{name}", (0.021, 0.005, 0.0042), hair, coll)
-        rig.attach(b, "head", (side * 0.034, -0.0955, 0.168), rot=(0, side * -6, 0))
-        b["rest_z"] = 0.168
+        # The brows are flat bars sitting low on the frames, the inner end a
+        # touch lower: unimpressed. Raised clear of the glasses they read as
+        # pleasant surprise, which is not a thing he has felt in years.
+        b = blob(f"brow.{name}", (0.023, 0.005, 0.0034), hair, coll)
+        rig.attach(b, "head", (side * 0.034, -0.0975, 0.1585), rot=(0, side * -4, 0))
+        b["rest_z"] = 0.1585
         rig.brows.append(b)
+        # design's under-eye pair, at the bottom of each lens
+        bag = blob(f"undereye.{name}", (0.0165, 0.0016, 0.0032), tired, coll)
+        rig.attach(bag, "head", (side * 0.034, -0.0925, 0.1225))
         lens = ring_frame(f"lens.{name}", 0.054, 0.034, 0.0026, frame, coll)
         rig.attach(lens, "head", (side * 0.034, -0.100, 0.136))
         temple = loft(f"temple.{name}", [(0.0, 0.0022, 0.0022), (0.094, 0.0022, 0.0022)],
@@ -502,7 +527,11 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     rig.attach(bridge, "head", (-0.008, -0.101, 0.142), rot=(0, 90, 0))
 
     # The mouth: one dark shape, a key for each of the kit's six mouths.
-    rig.mouth_obj = rig.attach(_mouth("mouth", lips, coll), "head", (0, -0.084, 0.058))
+    # Over a full beard the mouth is drawn on the beard, as a cartoon's is:
+    # a ring of bare skin cut round it read as a smiling muzzle.
+    over = BEARDS.get(beard, 0.0) + 0.002 if beard == "short" else 0.0
+    rig.mouth_obj = rig.attach(_mouth("mouth", lips, coll), "head",
+                               (0, -0.084 - over, 0.058))
 
     # Arms: sleeves to the cuff, a wrist of skin, a mitten of a hand with
     # fingers that curl.
@@ -641,10 +670,11 @@ def _props(rig: Rig, coll) -> None:
 
 
 def _beard(name: str, head: bpy.types.Object, lift: float, m, coll, *,
-           lined: bool) -> bpy.types.Object:
+           lined: bool, hole: bool = True) -> bpy.types.Object:
     """A beard as a shell laid on the face `lift` off the skin: along the jaw
-    from ear to ear, under the chin, a moustache, and a hole round the mouth
-    as wide as its widest shape, so every mouth still shows.
+    from ear to ear, under the chin, a moustache, and (`hole`) a hole round
+    the mouth as wide as its widest shape, so every mouth still shows. The
+    full beard has none: his mouth is drawn over it.
 
     Built on a grid of rays cast out from inside the smoothed head, each hit
     pushed out along the skin's normal, so it sits on the skin at every
@@ -670,8 +700,9 @@ def _beard(name: str, head: bpy.types.Object, lift: float, m, coll, *,
         return 0.088 + 0.054 * (min(d - 20, 62) / 62) ** 2.4
 
     def mouth(a: float, z: float) -> bool:
-        # an oval round the mouth, as wide as its widest shape
-        return (math.degrees(a) / 23) ** 2 + ((z - 0.0645) / 0.0150) ** 2 < 1.0
+        # an oval round the mouth, as wide as its widest shape and no wider:
+        # a wide ring of bare skin round it read as a smile
+        return (math.degrees(a) / 18.5) ** 2 + ((z - 0.0638) / 0.0128) ** 2 < 1.0
 
     bm = bmesh.new()
     grid: dict[tuple[int, int], tuple] = {}
@@ -684,7 +715,7 @@ def _beard(name: str, head: bpy.types.Object, lift: float, m, coll, *,
             up = lift
             if lined and abs(math.degrees(a)) < 28 and loc.z > 0.074:
                 up *= 1.4      # the moustache stands proud of the lip
-            inside = loc.z <= cheek(a) and not mouth(a, loc.z)
+            inside = loc.z <= cheek(a) and not (hole and mouth(a, loc.z))
             grid[i, j] = (bm.verts.new(loc + nrm * up), inside)
     for i in range(len(ang) - 1):
         for j in range(len(els) - 1):
@@ -708,7 +739,7 @@ def _mouth(name: str, m, coll) -> bpy.types.Object:
     n = 16
     shapes = {
         # half width, upper lip lift, lower lip drop, how round (0 wide, 1 round)
-        "mouthClosed": (0.017, 0.0007, 0.0007, 0.0),
+        "mouthClosed": (0.017, 0.0011, 0.0011, 0.0),
         "mouthMid": (0.016, 0.0030, 0.0065, 0.2),
         "mouthWide": (0.018, 0.0045, 0.0130, 0.15),
         "mouthO": (0.0095, 0.0060, 0.0100, 1.0),
@@ -725,6 +756,9 @@ def _mouth(name: str, m, coll) -> bpy.types.Object:
             # a wide mouth is a lens, a round one an ellipse
             shape = abs(y) ** (1.0 - 0.5 * roundness)
             z = (up if y > 0 else down) * (1 if y > 0 else -1) * shape * 1.0
+            # design's mouth has one corner dropped, the screen-right one,
+            # in every shape: the whole of his opinion of the market
+            z -= DROPPED_CORNER * max(x, 0.0) ** 2
             pts.append((x * w, z))
         return pts
 
@@ -733,7 +767,7 @@ def _mouth(name: str, m, coll) -> bpy.types.Object:
     vs = []
     for x, z in base:
         # wrapped round the face: the corners sit further back
-        vs.append(bm.verts.new((x, (x / 0.02) ** 2 * 0.006, z)))
+        vs.append(bm.verts.new((x, (x / 0.02) ** 2 * MOUTH_WRAP, z)))
     centre = bm.verts.new((0, -0.0004, 0))
     for i in range(n):
         bm.faces.new((centre, vs[i], vs[(i + 1) % n]))
@@ -745,7 +779,7 @@ def _mouth(name: str, m, coll) -> bpy.types.Object:
             continue
         sk = o.shape_key_add(name=key)
         for i, (x, z) in enumerate(outline(*spec)):
-            sk.data[i].co = Vector((x, (x / 0.02) ** 2 * 0.006, z))
+            sk.data[i].co = Vector((x, (x / 0.02) ** 2 * MOUTH_WRAP, z))
         sk.value = 0.0
     return o
 
