@@ -35,7 +35,7 @@
     <button type="button" role="tab" id="tab-btn-home" aria-controls="tab-home" aria-selected="true" tabindex="0" data-tab="home" class="on">Home<span id="home-count" class="badge soft" hidden></span></button>
     <button type="button" role="tab" id="tab-btn-videos" aria-controls="tab-videos" aria-selected="false" tabindex="-1" data-tab="videos">Videos</button>
     <button type="button" role="tab" id="tab-btn-commands" aria-controls="tab-commands" aria-selected="false" tabindex="-1" data-tab="commands">Commands</button>
-    <button type="button" role="tab" id="tab-btn-activity" aria-controls="tab-activity" aria-selected="false" tabindex="-1" data-tab="activity">Activity<span id="unread" class="badge" hidden></span><span id="unread-sr" class="sr-only"></span></button>
+    <button type="button" role="tab" id="tab-btn-activity" aria-controls="tab-activity" aria-selected="false" tabindex="-1" data-tab="activity">Activity<span id="unread" class="badge" aria-hidden="true" hidden></span><span id="unread-sr" class="sr-only"></span></button>
   </nav>
 
   <main id="main">
@@ -65,6 +65,7 @@
           <div class="target-row">
             <label for="target" class="label">Send to</label>
             <select id="target" class="grow"></select>
+            <button id="target-set" class="sm" type="button" hidden>Switch</button>
           </div>
           <label class="drop" id="drop">
             <input type="file" id="file" class="sr-only" aria-describedby="drop-help">

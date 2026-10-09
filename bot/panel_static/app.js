@@ -22,6 +22,7 @@ let FEED_FILTER = "pushes";
 let UNREAD = 0;
 let BUSY = 0;
 let SHOW_ALL_JOBS = false;
+let FEED_ID = 0;
 const INFLIGHT = new Set();       // callback data with a request running
 
 // ------------------------------------------------------------------ helpers
@@ -78,6 +79,14 @@ function empty(title, sub, tone = "", icon = "·", extra = null) {
     sub ? el("div", { class: "empty-sub", text: sub }) : null, extra);
 }
 function say(text) { $("#sr-status").textContent = text; }
+// Scroll to a place and take keyboard focus there, so the next Tab
+// continues from it rather than from the button that jumped.
+function jump(node) {
+  if (!node) return;
+  node.tabIndex = -1;
+  scrollTo(node);
+  node.focus({ preventScroll: true });
+}
 function alarm(text) { $("#sr-alert").textContent = text; }
 function scrollTo(node) {
   node?.scrollIntoView({ block: "center", behavior: REDUCED.matches ? "auto" : "smooth" });
@@ -138,15 +147,18 @@ async function start() {
   renderCommands();
   renderFeedFilter();
   repliesEmpty();
+  syncInert();
   const tab = new URLSearchParams(location.search).get("tab");
   if (tab) showTab(tab, false);
   await refresh();
   const feed = await api("/api/feed?since=0");
-  feed.events.forEach((ev) => FEED.push(ev));
+  feed.events.forEach((ev) => { ev._id = ++FEED_ID; FEED.push(ev); });
   FEED_SEQ = feed.seq;
   renderFeed();
   setInterval(refresh, 5000);
   setInterval(pollFeed, 2500);
+  // "2 min ago" has to keep moving when the state itself has not.
+  setInterval(() => { if (STATE && !document.hidden) keepFocus(renderJobs); }, 60000);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) { refresh(); pollFeed(); }
   });
@@ -224,7 +236,7 @@ function buttonsBlock(rows, opts = {}) {
   const stale = opts.staleAfter && Date.now() / 1000 > opts.staleAfter;
   shown.forEach((row, ri) => {
     const sorted = row.slice().sort((a, b) => isMoney(a.text) - isMoney(b.text));
-    block.append(el("div", { class: "row" }, sorted.map((b, bi) => {
+    block.append(el("div", { class: "row" }, sorted.map((b) => {
       const money = isMoney(b.text);
       const label = opts.relabel ? opts.relabel(b) : b.text;
       let cls = money ? "money"
@@ -233,25 +245,30 @@ function buttonsBlock(rows, opts = {}) {
       if (opts.sm) cls += " sm";
       const busy = INFLIGHT.has(b.data);
       const dead = money && stale;
-      const node = el("button", {
+      const used = !!opts.used;
+      if (opts.used === b.data) cls += " chosen";
+      return el("button", {
         type: "button", class: cls.trim(), text: label, "data-cb": b.data,
-        disabled: busy || dead, "aria-busy": busy ? "true" : null,
+        disabled: dead || (used && opts.used !== b.data),
+        "aria-disabled": busy || opts.used === b.data ? "true" : null,
+        "aria-busy": busy ? "true" : null,
         title: dead ? "Expired — press Render on the card again" : null,
         "aria-label": money ? `${label.replace(/💰/g, "").replace(/\s+/g, " ").trim()} (costs money)` : null,
         onclick: (e) => {
           const btn = e.currentTarget;
-          if (btn.disabled || INFLIGHT.has(b.data)) return;
+          if (btn.disabled || btn.getAttribute("aria-disabled") === "true" || INFLIGHT.has(b.data)) return;
           if (opts.once) {
-            $$("button", block).forEach((x) => { x.disabled = true; });
+            // The rest of the block goes dead; the pressed one keeps focus.
+            $$("button", block).forEach((x) => { if (x !== btn) x.disabled = true; });
+            btn.setAttribute("aria-disabled", "true");
             btn.classList.add("chosen");
+            opts.onUse?.(b);
           }
           if (opts.local && opts.local(b, btn)) return;
           INFLIGHT.add(b.data);
           callback(b.data, b.text, btn).finally(() => INFLIGHT.delete(b.data));
         },
       });
-      void bi;
-      return node;
     })));
   });
   if (opts.staleAfter && !stale && shown.flat().some((b) => isMoney(b.text))) {
@@ -278,12 +295,23 @@ function filesBlock(files) {
 
 // ----------------------------------------------------------------- replies
 const panel = () => $("#replies-panel");
+function syncInert() {
+  // Closed, the sheet is a peek bar: nothing in it — least of all a
+  // Confirm 💰 — may be reachable by Tab off-screen.
+  $("#replies").inert = NARROW.matches && !panel().classList.contains("open");
+}
 function openSheet(open) {
   if (!NARROW.matches) return;
   panel().classList.toggle("open", open);
   $("#sheet-toggle").setAttribute("aria-expanded", open ? "true" : "false");
   $("#sheet-toggle").setAttribute("aria-label", open ? "Hide replies" : "Show replies");
+  if (!open && $("#replies").contains(document.activeElement)) $("#sheet-toggle").focus();
+  syncInert();
 }
+NARROW.addEventListener("change", syncInert);
+document.addEventListener("focusin", (e) => {
+  if (NARROW.matches && panel().classList.contains("open") && !panel().contains(e.target)) openSheet(false);
+});
 $("#replies-head").addEventListener("click", (e) => {
   if (!NARROW.matches || e.target.closest("#clear-replies")) return;
   openSheet(!panel().classList.contains("open"));
@@ -310,17 +338,26 @@ function peek(text) {
 
 function foldOlder() {
   $$("#replies .reply").forEach((r, i) => {
-    if (i >= KEEP_OPEN && !r.classList.contains("pending")) r.classList.add("collapsed");
+    if (i >= KEEP_OPEN && !r.classList.contains("pending")) {
+      r.classList.add("collapsed");
+      r.querySelector(".origin")?.setAttribute("aria-expanded", "false");
+    }
     if (i >= MAX_REPLIES) r.remove();
   });
 }
+$("#replies").addEventListener("click", (e) => {
+  const o = e.target.closest(".origin");
+  if (!o) return;
+  const folded = o.closest(".reply").classList.toggle("collapsed");
+  o.setAttribute("aria-expanded", String(!folded));
+});
+const originButton = (...kids) => el("button", { type: "button", class: "origin", "aria-expanded": "true" }, ...kids);
 
 function addReply(origin) {
   $("#replies .empty")?.remove();
   const box = el("div", { class: "reply pending", "aria-busy": "true" },
-    el("div", { class: "origin" }, el("span", { text: origin }), el("span", { class: "working", text: "working…" })),
+    originButton(el("span", { text: origin }), el("span", { class: "working", text: "working…" })),
     el("pre", { class: "text" }));
-  box.querySelector(".origin").addEventListener("click", () => box.classList.toggle("collapsed"));
   $("#replies").prepend(box);
   foldOlder();
   peek(`${origin} — working…`);
@@ -334,7 +371,7 @@ function fillReply(box, reply, origin) {
   const money = (reply.buttons || []).flat().some((b) => isMoney(b.text));
   box.classList.toggle("has-money", money);
   setKids(box,
-    el("div", { class: "origin" }, el("span", { text: origin }), el("time", { text: clock(Date.now() / 1000) })),
+    originButton(el("span", { text: origin }), el("time", { text: clock(Date.now() / 1000) })),
     el("pre", { class: "text", text: reply.text || "" }),
     filesBlock(reply.files),
     buttonsBlock(reply.buttons, { once: true, staleAfter: Date.now() / 1000 + MONEY_TTL_S }));
@@ -349,14 +386,18 @@ function failReply(box, err, origin) {
   box.classList.remove("pending");
   box.removeAttribute("aria-busy");
   box.classList.add("error");
-  setKids(box, el("div", { class: "origin" }, el("span", { text: origin })),
+  setKids(box, originButton(el("span", { text: origin })),
     el("pre", { class: "text", text: `⛔ ${err.message || err}` }));
   peek(`${origin} failed`);
   alarm(`${origin} failed: ${err.message || err}`);
 }
 
 async function act(origin, fn, btn) {
-  if (btn) { btn.disabled = true; btn.setAttribute("aria-busy", "true"); }
+  if (btn) {
+    if (btn.getAttribute("aria-disabled") === "true" && !btn.classList.contains("chosen")) return;
+    btn.setAttribute("aria-disabled", "true");
+    btn.setAttribute("aria-busy", "true");
+  }
   const box = addReply(origin);
   BUSY++;
   try {
@@ -366,9 +407,9 @@ async function act(origin, fn, btn) {
     failReply(box, e, origin);
   } finally {
     BUSY--;
-    if (btn && btn.isConnected && !btn.classList.contains("chosen")) {
-      btn.disabled = false;
+    if (btn) {
       btn.removeAttribute("aria-busy");
+      if (!btn.classList.contains("chosen")) btn.removeAttribute("aria-disabled");
     }
     refresh(true);
   }
@@ -397,15 +438,23 @@ async function refresh(force = false) {
   if (raw === LAST_RAW) return;
   LAST_RAW = raw;
   STATE = next;
+  keepFocus(() => {
+    renderHeader();
+    renderSummary();
+    renderInbox();
+    renderJobs();
+    renderVideos();
+  });
+}
+
+// Re-rendering replaces the nodes; put keyboard focus back on the same
+// control, found by what it does (data-cb) within the same area.
+function keepFocus(render) {
   const f = document.activeElement;
   const zone = f?.closest?.("#inbox, #jobs, #videos, #summary")?.id;
   const cb = f?.dataset?.cb;
   const dk = f?.tagName === "SUMMARY" ? f.parentElement?.dataset?.key : null;
-  renderHeader();
-  renderSummary();
-  renderInbox();
-  renderJobs();
-  renderVideos();
+  render();
   const back = cb && zone
     ? document.querySelector(`#${zone} [data-cb="${CSS.escape(cb)}"]`)
     : dk ? document.querySelector(`#videos details[data-key="${CSS.escape(dk)}"] > summary`) : null;
@@ -420,7 +469,7 @@ function renderHeader() {
     el("b", { text: a ? a.ticker : "none" }),
     a ? el("span", { class: "date meta", text: a.workdate }) : null);
   act_.title = a ? `${a.ticker} · ${a.workdate} — open its card` : "No active video";
-  act_.setAttribute("aria-label", a ? `Active video ${a.ticker} ${a.workdate}, open its card` : "No active video");
+  act_.setAttribute("aria-label", a ? `Active ${a.ticker} ${a.workdate} — open its card` : "Active: none");
   act_.onclick = a ? () => openCard(`${a.ticker}@${a.workdate}`) : null;
 
   const s = STATE.spend;
@@ -472,13 +521,18 @@ function renderTarget() {
     sel.value = a ? `${a.ticker}@${a.workdate}` : "";
   }
   sel.classList.toggle("none", !a);
+  $("#target-set").hidden = sel.value === (a ? `${a.ticker}@${a.workdate}` : "");
   $("#send-paste").textContent = a ? `Send to ${a.ticker}` : "Send";
 }
+// Choosing in the list does nothing until Switch: arrow keys walk the
+// options, and each step used to move the active video.
 $("#target").addEventListener("change", (e) => {
-  const key = e.target.value;
-  if (!key) return;
-  const [ticker, workdate] = key.split("@");
-  setActive({ ticker, workdate });
+  const a = STATE?.active;
+  $("#target-set").hidden = !e.target.value || e.target.value === (a ? `${a.ticker}@${a.workdate}` : "");
+});
+$("#target-set").addEventListener("click", (e) => {
+  const [ticker, workdate] = $("#target").value.split("@");
+  if (ticker && workdate) setActive({ ticker, workdate }, e.currentTarget);
 });
 
 // ----------------------------------------------------------------- summary
@@ -488,7 +542,8 @@ function renderSummary() {
   const counts = {};
   waiting.forEach((i) => { counts[i.section] = (counts[i.section] || 0) + 1; });
   const hot = (counts.blocked || 0) + (counts.failed || 0);
-  const detail = Object.entries(counts).map(([k, n]) => `${n} ${k}`).join(" · ") || "nothing to do";
+  const WORDS = { failed: "failed", blocked: "blocked", approve: "to approve", render: "to render", upload: "to upload", retention: "to read" };
+  const detail = SECTION_ORDER.filter((k) => counts[k]).map((k) => `${counts[k]} ${WORDS[k] || k}`).join(" · ") || "nothing to do";
 
   const jobs = STATE.jobs.filter((j) => j.status === "running" || j.status === "queued");
   const run = jobs.find((j) => j.status === "running");
@@ -506,14 +561,14 @@ function renderSummary() {
 
   setKids($("#summary"),
     tile("waiting", "Waiting on you", waiting.length, detail,
-      waiting.length ? (hot ? "bad" : "accent") : "", () => scrollTo($("#inbox"))),
+      waiting.length ? (hot ? "bad" : "accent") : "", () => jump($("#inbox-h"))),
     tile("rendering", "Rendering", jobs.length,
       run ? `${run.ticker} ${prog ? `${prog[1]}/${prog[2]}` : run.detail || "running"}` : (jobs.length ? "queued" : "queue idle"),
-      jobs.length ? "warn" : "", () => scrollTo($("#jobs")),
+      jobs.length ? "warn" : "", () => jump($("#queue-h")),
       prog ? el("div", { class: "meter warn" }, el("i", { style: `width:${Math.round((prog[1] / prog[2]) * 100)}%` })) : null),
     tile("upload", "Ready to upload", uploads.length,
       uploads.map((u) => u.ticker).join(", ") || "nothing rendered and waiting",
-      uploads.length ? "ok" : "", () => scrollTo($("#inbox .section-title[data-s=upload]") || $("#inbox"))),
+      uploads.length ? "ok" : "", () => jump($("#inbox .section-title[data-s=upload]") || $("#inbox-h"))),
     tile("spend", "Spend this month", s.mtd === null ? "—" : `$${s.mtd.toFixed(2)}`,
       s.mtd === null ? "ledger unreadable" : `of $${s.cap.toFixed(0)} cap`,
       s.mtd === null || pct >= 85 ? "bad" : pct >= 60 ? "money" : "",
@@ -626,11 +681,14 @@ function renderJobs() {
         type: "button", class: "danger sm", text: "Cancel", "data-cb": `j|${j.ticker}|${j.workdate}`,
         "aria-label": `Cancel ${j.ticker} ${kind}`,
         onclick: (e) => callback(`j|${j.ticker}|${j.workdate}`, `Cancel ${j.ticker}`, e.currentTarget),
-      }) : m ? el("button", { type: "button", class: "ghost sm", text: "▶ Play", onclick: () => play(m) }) : el("span"));
+      }) : m ? el("button", {
+        type: "button", class: "ghost sm", text: "▶ Play", "data-cb": `play:${j.ticker}@${j.workdate}/${file}`,
+        "aria-label": `Play ${j.ticker} ${file}`, onclick: () => play(m),
+      }) : el("span"));
   });
   if (rest.length > 5) {
     rows.push(el("div", { class: "more-row" }, el("button", {
-      type: "button", class: "ghost sm",
+      type: "button", class: "ghost sm", "data-cb": "jobs:more",
       text: SHOW_ALL_JOBS ? "Show fewer" : `Show ${rest.length - 5} older`,
       onclick: () => { SHOW_ALL_JOBS = !SHOW_ALL_JOBS; renderJobs(); },
     })));
@@ -644,10 +702,14 @@ const NOW_STEP = { prompt: "script", angle: "angle", edit: "gates", approve: "ap
 
 function stagesOf(v) {
   const steps = [];
-  const add = (key, label, cls, aria) => steps.push(el("li", { class: `stage ${cls}`, "data-k": key, "aria-label": aria || label }, label));
+  const WORD = { ok: "done", now: "current step", bad: "blocked", run: "running", "": "not yet" };
+  const add = (key, label, cls, aria) => steps.push(el("li", {
+    class: `stage ${cls}`, "data-k": key, "aria-current": cls === "now" ? "step" : null,
+    "aria-label": aria || `${label}: ${WORD[cls] ?? cls}`,
+  }, label));
   const now = NOW_STEP[v.next_action] || (!v.data_file ? "data" : "");
   const st = (key, done) => (done ? "ok" : key === now ? "now" : "");
-  add("data", "data", st("data", !!v.data_file), `data ${v.data_file ? "done" : "to do"}`);
+  add("data", "data", st("data", !!v.data_file));
   if (v.lane === "long" && !v.update) add("angle", "angle", st("angle", !!v.angle || v.script));
   add("script", "script", st("script", v.script));
   if (v.report_ok === false) add("gates", `gates ${v.blocking}`, "bad", `gates blocked: ${v.blocking} finding(s)`);
@@ -696,15 +758,15 @@ function renderVideos() {
         isActive
           ? el("span", { class: "active-badge", title: "Pastes and uploads land here", text: "Active" })
           : el("button", { type: "button", class: "ghost sm", text: "Make active", "data-cb": `active:${v.key}`,
-            "aria-label": `Make ${v.ticker} ${v.workdate} the active video`, onclick: (e) => setActive(v, e.currentTarget) })),
+            "aria-label": `Make active: ${v.ticker} ${v.workdate}`, onclick: (e) => setActive(v, e.currentTarget) })),
       stagesOf(v),
       el("p", { class: "next-line" }, "Next: ", el("b", { text: v.next_step })),
       buttonsBlock(nextRows, { nextRow: !!v.next_action }),
       el("div", { class: "video-foot" },
         buttonsBlock([tail], { sm: true }),
         v.media.map((m) => (isImage(m.name)
-          ? el("a", { href: m.url, target: "_blank", rel: "noopener", class: "thumb" }, el("img", { src: m.url, alt: `${v.ticker} ${m.name}`, loading: "lazy" }))
-          : el("button", { type: "button", class: "sm", text: `▶ ${m.name}`, onclick: () => play(m) }))),
+          ? el("a", { href: m.url, target: "_blank", rel: "noopener", class: "thumb", "data-cb": `img:${v.key}/${m.name}` }, el("img", { src: m.url, alt: `${v.ticker} ${m.name}`, loading: "lazy" }))
+          : el("button", { type: "button", class: "sm", text: `▶ ${m.name}`, "data-cb": `play:${v.key}/${m.name}`, onclick: () => play(m) }))),
         el("details", { "data-key": v.key, open: open.has(v.key) },
           el("summary", { text: "Card text" }), el("pre", { class: "text", text: v.card_text }))));
   }));
@@ -803,17 +865,18 @@ function renderCommands() {
     || q.startsWith(c.name);
   const sizes = {};
   REGISTRY.commands.forEach((c) => { sizes[c.family] = (sizes[c.family] || 0) + 1; });
-  const singles = REGISTRY.families.filter((f) => sizes[f.name] === 1);
   const groups = [{ name: "everyday", title: "Everyday", blurb: "", cmds: REGISTRY.commands.filter((c) => sizes[c.family] === 1) }]
     .concat(REGISTRY.families.filter((f) => sizes[f.name] > 1)
       .map((f) => ({ name: f.name, title: f.title, blurb: f.blurb, cmds: REGISTRY.commands.filter((c) => c.family === f.name) })));
-  void singles;
   const out = [];
   const nav = [];
   for (const g of groups) {
     const cmds = g.cmds.filter(matches);
     if (!cmds.length) continue;
-    nav.push(el("a", { href: `#fam-${g.name}`, onclick: (e) => { e.preventDefault(); scrollTo($(`#fam-${g.name}`)); } },
+    nav.push(el("a", {
+      href: `#fam-${g.name}`, "aria-label": `${g.name === "everyday" ? "everyday" : `/${g.name}`}, ${cmds.length} commands`,
+      onclick: (e) => { e.preventDefault(); jump($(`#fam-${g.name} h2`)); },
+    },
       g.name === "everyday" ? "everyday" : `/${g.name}`, el("small", { text: String(cmds.length) })));
     out.push(el("section", { class: "card family", id: `fam-${g.name}`, "aria-label": g.title },
       el("div", { class: "card-head" },
@@ -839,12 +902,13 @@ function commandRow(c) {
     "aria-label": c.spends ? `Run /${c.name} (spends money)` : `Run /${c.name}`, onclick: run,
   });
   if (input) input.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
-  const hint = c.ticker && c.ticker !== "optional" ? " The ticker defaults to the active video." : "";
+  const hint = c.ticker && c.ticker !== "optional" ? "Ticker defaults to the active video" : "";
   return el("div", { class: `cmd${c.usage ? "" : " noargs"}${c.spends ? " spends" : ""}`, "data-name": c.name },
     el("div", { class: "name" },
       el("code", { text: `/${c.name}`, title: "Put it on the command line", onclick: () => { $("#cmd-line").value = `/${c.name} `; $("#cmd-line").focus(); } }),
       c.spends ? el("span", { class: "tag-money", text: "spends" }) : null),
-    el("div", { class: "help", title: c.doc }, c.help + hint,
+    el("div", { class: "help", title: c.doc }, c.help,
+      hint ? el("span", { class: "aka", text: hint }) : null,
       c.aliases.length ? el("span", { class: "aka", text: `was ${c.aliases.map((x) => `/${x}`).join(", ")}` }) : null),
     input ? el("div", { class: "args" }, input) : null,
     btn);
@@ -907,17 +971,24 @@ function dayLabel(ts) {
 function feedItem(ev) {
   const [head, ...rest] = (ev.text || "").split("\n");
   const body = rest.join("\n").trim();
-  const pre = body ? el("pre", { class: `text${body.split("\n").length > 5 ? " clip" : ""}`, text: body }) : null;
-  const more = pre && pre.classList.contains("clip")
-    ? el("button", { type: "button", class: "ghost sm", text: "More", onclick: (e) => { pre.classList.toggle("clip"); e.currentTarget.textContent = pre.classList.contains("clip") ? "More" : "Less"; } })
+  const long = body.split("\n").length > 5;
+  const pre = body ? el("pre", { class: `text${long && !ev.open ? " clip" : ""}`, text: body }) : null;
+  const more = long
+    ? el("button", {
+      type: "button", class: "ghost sm", text: ev.open ? "Less" : "More", "data-cb": "feed:more",
+      onclick: (e) => { ev.open = !pre.classList.toggle("clip"); e.currentTarget.textContent = ev.open ? "Less" : "More"; },
+    })
     : null;
-  return el("div", { class: `feed-item tone-${toneOf(ev.text)}` },
+  return el("div", { class: `feed-item tone-${toneOf(ev.text)}`, "data-id": ev._id },
     el("time", { title: when(ev.at), text: clock(ev.at) }),
     el("div", {},
       el("div", { class: "head" }, head || "(file)", ev.kind !== "notice" ? el("span", { class: "kind", text: ev.kind }) : null),
       pre, more,
       filesBlock(ev.files.map((p) => ({ path: p, name: p.split("/").pop() }))),
-      buttonsBlock(ev.buttons, { once: true, sm: true, staleAfter: ev.at + MONEY_TTL_S })));
+      buttonsBlock(ev.buttons, {
+        once: true, sm: true, staleAfter: ev.at + MONEY_TTL_S,
+        used: ev.used, onUse: (b) => { ev.used = b.data; },
+      })));
 }
 
 function renderFeed() {
@@ -934,7 +1005,12 @@ function renderFeed() {
     if (d !== day) { day = d; out.push(el("div", { class: "day", text: d })); }
     out.push(feedItem(ev));
   }
+  const f = document.activeElement;
+  const id = f?.closest?.("#feed .feed-item")?.dataset.id;
+  const cb = f?.dataset?.cb;
   setKids($("#feed"), out);
+  const it = id && $(`#feed .feed-item[data-id="${id}"]`);
+  (cb ? it?.querySelector(`[data-cb="${CSS.escape(cb)}"]`) : null)?.focus({ preventScroll: true });
 }
 
 function renderFeedFilter() {
@@ -956,7 +1032,7 @@ async function pollFeed() {
   try {
     const data = await api(`/api/feed?since=${FEED_SEQ}`);
     if (data.events.length) {
-      data.events.forEach((ev) => FEED.push(ev));
+      data.events.forEach((ev) => { ev._id = ++FEED_ID; FEED.push(ev); });
       if (FEED.length > 600) FEED = FEED.slice(-600);
       const pushes = data.events.filter(isPush).length;
       if (pushes && !$("#tab-activity").classList.contains("on")) { UNREAD += pushes; badge(); }
