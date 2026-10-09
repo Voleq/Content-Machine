@@ -103,7 +103,7 @@ def test_talking_to_the_camera_he_does_not_wave():
     p = _perf()
     up = [i for i in range(p.frames) if p.channels["elbow.R.x"][i] < -60
           and p.channels["elbow.L.x"][i] > -40]
-    assert up and all(p.channels["curl.R.middle"][i] >= 20 for i in up)
+    assert up and all(p.channels["curl.R.middle"][i] >= 45 for i in up)
 
 
 def test_he_moves_while_he_talks_and_rests_at_the_end():

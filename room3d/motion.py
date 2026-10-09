@@ -53,6 +53,11 @@ def _arm(name: str, ab: int) -> dict[str, tuple[float, float, float]]:
         # reads as a paddle.
         "ready": {"shoulder": (-32, 9 * ab, 10 * ab), "elbow": (-90, 0, 0),
                   "wrist": (-10, 0, -45 * ab)},
+        # his talking hand to the camera: lower than "ready", the palm turned
+        # in to his body, so the camera sees the back of a loose fist and not
+        # a palm held up at it (that is a wave)
+        "beat": {"shoulder": (-24, 9 * ab, 12 * ab), "elbow": (-78, 0, 0),
+                 "wrist": (-8, 0, -8 * ab)},
         # the close-up's talking hand: forward at the belt, under the frame,
         # so a beat moves his shoulder and no palm comes up at the frame's edge
         "low": {"shoulder": (-12, 8 * ab, 6 * ab), "elbow": (-60, 0, 0),
@@ -116,6 +121,8 @@ def _arm(name: str, ab: int) -> dict[str, tuple[float, float, float]]:
 
 
 HANDS = {"relaxed": (25, 30, 35, 40, 15), "open": (4, 2, 4, 8, 5),
+         # half closed, a talking hand that is not showing its palm
+         "loose": (50, 58, 64, 70, 28),
          "point": (0, 95, 100, 100, 55), "fist": (100, 100, 100, 100, 60),
          # counting on his fingers, one to five
          "one": (0, 100, 100, 100, 60), "two": (0, 0, 100, 100, 60),
@@ -531,8 +538,8 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
             elif kind == "both":
                 pose = _hands(L=("wide", "open"), R=("wide", "open"))
             else:
-                # loosely curled: a flat palm up at the camera is a wave
-                pose = _hands(**{side: ("ready", "relaxed")})
+                # a loose fist, palm in: a flat palm up at the camera is a wave
+                pose = _hands(**{side: ("beat", "loose")})
             arms.go(p.start + 0.02, pose, lead + 0.1)
             for w in stressed(p.words):
                 beats.append((w.start, "LR" if kind == "both" else side, rng.uniform(0.8, 1.2)))
