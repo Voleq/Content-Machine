@@ -1764,6 +1764,15 @@ def check_freshness(as_of: str, settings: Settings,
 
     if parsed is not None:
         age = ((today or date.today()) - parsed).days
+        if age < -1:
+            # A date in the future is a typo, and it would otherwise pass
+            # this gate for as long as it stays in the future. A day of
+            # slack covers a workbook stamped in a timezone ahead of this box.
+            return [Finding(
+                gate="freshness", severity="warn",
+                message=(f"the data export's as-of date {as_of} is "
+                         f"{-age} days in the future — check the sheet; "
+                         f"freshness cannot be judged from it"))]
         if age > settings.data_max_age_days:
             severity = "block" if settings.data_stale_blocks else "warn"
             return [Finding(
@@ -1963,8 +1972,23 @@ def check_prices(script, settings: Settings, *, final: bool = True,
     series = get_price_history(
         ticker, settings,
         days=None if is_short else long_history_days(settings))
-    if not series.degraded:
+    # MOCKED prices are as invented as a dead feed's floor (M12). With
+    # `MOCK_MODE=false MOCK_PRICES=true` the mock source hands back a fixture
+    # or a seeded walk marked as healthy, and a FINAL — the thing that ships —
+    # drew it with nothing in the way.
+    # Under MOCK_MODE everything is invented and the banner already says so.
+    mocked = (settings.mocking_prices and not settings.mock_mode
+              and getattr(series, "source", "") in ("fixture", "synthetic"))
+    if not series.degraded and not mocked:
         return []
+    if mocked and not series.degraded:
+        return [Finding(
+            gate="prices", severity="block" if final else "warn",
+            message=(f"MOCKED PRICE DATA — MOCK_PRICES is on, so the {ticker} "
+                     f"chart in this video is a {series.source} series, not "
+                     f"market data. Turn MOCK_PRICES off for a final"
+                     + ("" if final else " (fine for a draft or a proof)")
+                     + "."))]
 
     blocks = final and not settings.mock_mode
     reason = ("this render is a FINAL and MOCK_MODE is off" if blocks else
@@ -2453,8 +2477,15 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     report.findings += report.record("valuation",
                                      valuation_moves(script, settings))
     report.findings += report.record("budgets", budget_check(script, settings))
+    # A MACRO short has no company workbook by design: it is anchored on
+    # FRED's series and an index proxy, both fetched live. Asking it for a
+    # workbook as-of date blocked every macro short under the production
+    # default (`DATA_STALE_BLOCKS=true`) — the suite turns blocking off
+    # globally, which is how that hid.
+    no_workbook_needed = format_name == "macro" and data is None
     report.findings += report.record(
-        "freshness", check_freshness(as_of, settings, workspace=workspace))
+        "freshness", [] if no_workbook_needed
+        else check_freshness(as_of, settings, workspace=workspace))
     report.findings += report.record("audio",
                                      check_audio(settings, final=final))
     report.findings += report.record(
@@ -2475,7 +2506,8 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     from pipeline.corpus import sameness_check
     from pipeline.pacing import check_title_package, loop_check, pacing_report
 
-    report.findings += report.record("sameness", sameness_check(script, settings))
+    report.findings += report.record("sameness", sameness_check(
+        script, settings, workspace=workspace))
     report.findings += report.record("pacing", pacing_report(script))
     report.findings += report.record("loops", loop_check(script))
     report.findings += report.record("title", check_title_package(script, settings))

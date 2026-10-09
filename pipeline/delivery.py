@@ -149,8 +149,11 @@ class GDriveBackend:
     def _find_or_create_folder(
         self, client: httpx.Client, name: str, parent: str | None
     ) -> str:
+        # Drive's query language quotes with ' and escapes with \ — a folder
+        # name like "Dennis's videos" broke the query outright.
+        safe = name.replace("\\", "\\\\").replace("'", "\\'")
         q = (
-            f"name = '{name}' and mimeType = 'application/vnd.google-apps.folder' "
+            f"name = '{safe}' and mimeType = 'application/vnd.google-apps.folder' "
             f"and trashed = false"
         )
         if parent:
@@ -172,19 +175,32 @@ class GDriveBackend:
         return r.json()["id"]
 
     def _upload_file(self, client: httpx.Client, path: Path, folder_id: str) -> dict:
+        import mimetypes
+
         meta = {"name": path.name, "parents": [folder_id]}
+        # The real type, so Drive previews the MP4 and the PNG instead of
+        # offering a download of an anonymous binary.
+        mime = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
         r = client.post(
             f"{DRIVE_UPLOAD}/files",
             params={"uploadType": "resumable", "supportsAllDrives": "true",
                     "fields": "id,webViewLink"},
             json=meta,
-            headers={"X-Upload-Content-Type": "application/octet-stream"},
+            headers={"X-Upload-Content-Type": mime},
         )
+        if r.status_code == 404 and folder_id:
+            raise DeliveryError(
+                f"Drive cannot see folder {folder_id}. With the `drive.file` "
+                f"scope this app only sees folders it created itself: leave "
+                f"GDRIVE_ROOT_FOLDER_ID blank (it makes and reuses its own "
+                f"'{self.settings.gdrive_folder_name}' folder), or for a "
+                f"service account point it at a Shared Drive folder the "
+                f"account belongs to.")
         r.raise_for_status()
         session_url = r.headers["Location"]
         with open(path, "rb") as f:
             up = client.put(session_url, content=f, timeout=1800,
-                            headers={"Content-Type": "application/octet-stream"})
+                            headers={"Content-Type": mime})
         up.raise_for_status()
         return up.json()
 

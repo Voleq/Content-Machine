@@ -42,7 +42,14 @@ from pipeline.render_common import RenderError, ffprobe_duration, run_ffmpeg
 log = logging.getLogger(__name__)
 
 # Sentence split that keeps the terminator, so durations sum to the whole.
-_SENTENCE_RE = re.compile(r"[^.!?]+(?:[.!?]+|$)")
+# A terminator ends a sentence only when whitespace (or the end) follows it:
+# the old `[^.!?]+` cut "4.7 percent" into "4." and "7 percent.", and the
+# voice read a figure as two sentences.
+_SENTENCE_RE = re.compile(r"\S.*?(?:[.!?]+(?=\s|$)|$)", re.S)
+# Where a long sentence may be cut: a comma with whitespace after it — never
+# the thousands separator inside "1,234", which a split turned into
+# "1, 234" ("one, two hundred thirty-four").
+_CLAUSE_RE = re.compile(r",(?=\s)")
 
 # A sentence longer than this is split further: interpolation error grows with
 # sentence length, and one 40-word run would smear every cue inside it.
@@ -54,29 +61,34 @@ class LocalTTSUnavailable(RuntimeError):
 
 
 def split_sentences(text: str) -> list[str]:
-    """Sentences, then over-long ones split at commas, then hard-chunked.
+    """Sentences, then over-long ones split at commas.
 
     Each returned piece gets its own synthesis call and its own measured
     duration, so this list is exactly the set of anchors that will be exact.
+
+    EVERY PIECE IS A SLICE OF `text`, verbatim. The pieces used to be
+    rebuilt with `", ".join`, which changed the text the voice was given
+    and stopped `text.find(piece)` from finding it — the char offsets then
+    fell back to wherever the last piece ended, and every visual cue after
+    that point drifted in a draft or a proof.
     """
     out: list[str] = []
-    for raw in _SENTENCE_RE.findall(text):
-        s = raw.strip()
+    for m in _SENTENCE_RE.finditer(text):
+        s = m.group(0).strip()
         if not s:
             continue
         if len(s.split()) <= MAX_SENTENCE_WORDS:
             out.append(s)
             continue
         # Prefer a comma boundary: it is where the voice would breathe anyway.
-        parts = [p.strip() for p in s.split(",") if p.strip()]
-        buf: list[str] = []
-        for p in parts:
-            buf.append(p)
-            if sum(len(x.split()) for x in buf) >= MAX_SENTENCE_WORDS:
-                out.append(", ".join(buf))
-                buf = []
-        if buf:
-            out.append(", ".join(buf))
+        start = 0
+        for c in _CLAUSE_RE.finditer(s):
+            if len(s[start:c.end()].split()) >= MAX_SENTENCE_WORDS:
+                out.append(s[start:c.end()].strip())
+                start = c.end()
+        tail = s[start:].strip()
+        if tail:
+            out.append(tail)
     return out or ([text.strip()] if text.strip() else [])
 
 

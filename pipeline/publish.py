@@ -74,12 +74,19 @@ def _timestamp(seconds: float) -> str:
 
 
 def _stamp_seconds(stamp: str) -> float:
-    """`mm:ss` or `hh:mm:ss` as seconds. Unreadable reads as 0."""
-    parts = [int(p) for p in re.split(r"[:.]", stamp.strip()) if p.isdigit()][:3]
+    """`mm:ss` or `hh:mm:ss` (a fraction on the seconds allowed) as seconds.
+    Unreadable reads as 0.
+
+    Split on the colon only: splitting on `.` too read `12:34.5` as
+    12h 34m 5s."""
+    try:
+        parts = [float(p) for p in stamp.strip().split(":")][:3]
+    except ValueError:
+        return 0.0
     if not parts:
         return 0.0
     while len(parts) < 3:
-        parts.insert(0, 0)
+        parts.insert(0, 0.0)
     return parts[0] * 3600 + parts[1] * 60 + parts[2]
 
 

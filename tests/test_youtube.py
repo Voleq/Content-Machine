@@ -250,8 +250,32 @@ def test_two_videos_can_be_scheduled_for_different_days(settings, package, video
                  client=FakeClient("v1"), now=NOW)
     upload_video(video, package, settings, publish_at="2026-08-09 12:00",
                  client=FakeClient("v2"), now=NOW)
-    rows = VideoLog(settings).scheduled()
+    rows = VideoLog(settings).scheduled(now=NOW)
     assert [r.video_id for r in rows] == ["v1", "v2"], "sorted by publish time"
+
+
+def test_a_scheduled_video_whose_time_has_passed_is_not_still_queued(
+        settings, package, video):
+    """The row is never rewritten when the video goes public, so `/scheduled`
+    listed every past one as still waiting."""
+    from datetime import timedelta
+
+    upload_video(video, package, settings, publish_at="2026-08-07 18:00",
+                 client=FakeClient("v1"), now=NOW)
+    later = NOW + timedelta(days=30)
+    assert VideoLog(settings).scheduled(now=later) == []
+
+
+def test_a_corrected_video_keeps_its_place_in_the_log(settings, package, video):
+    """`record` replaced the row in place: re-appending it made the corrected
+    video read as the latest upload."""
+    upload_video(video, package, settings, client=FakeClient("v1"), now=NOW)
+    upload_video(video, package, settings, client=FakeClient("v2"), now=NOW)
+    log_ = VideoLog(settings)
+    first = log_.get("v1")
+    first.corrections = [{"at": "x", "text": "fixed"}]
+    log_.record(first)
+    assert [v.video_id for v in log_.all()] == ["v1", "v2"]
 
 
 # --------------------------------------------------------------------------
@@ -636,7 +660,9 @@ def test_scheduled_is_empty_until_something_is(core):
 def test_scheduled_lists_what_is_queued(core, settings, package, video):
     upload_video(video, package, settings, publish_at="2026-08-07 18:00",
                  client=FakeClient(), now=NOW)
-    text = core.scheduled_text().text
+    # On the test's own clock: against the real one, a fixed date passes and
+    # the upload correctly stops being "queued".
+    text = core.scheduled_text(now=NOW).text
     assert "EXMPL" in text and "2026-08-07" in text
 
 

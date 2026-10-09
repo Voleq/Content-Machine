@@ -1774,7 +1774,6 @@ def caption_band(plate: Plate | None, frame: tuple[int, int],
     design's band on a vertical frame (`CAPTION_BAND`), and on a landscape one
     the single place its caption has always had.
     """
-    from pipeline.rasters import CAPTION_BOX_PAD
 
     fw, fh = frame
     band = _caption_band(plate, frame, box_h)

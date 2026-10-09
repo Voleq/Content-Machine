@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from pipeline.models import JobKind, JobRecord
+from pipeline.models import JobKind, JobRecord, JobStatus
 from pipeline.workspace import Workspace
 
 from bot.handlers import BotCore
@@ -678,6 +678,14 @@ def test_the_batch_submits_what_it_holds_and_closes_it(
 
     assert queued == 1 and skipped == []
     assert "1 queued" in text
+    # Open until ITS render is done: a render that fails overnight is still
+    # queued tomorrow rather than gone from the batch.
+    (entry,) = BatchQueue(core.settings).pending()
+    assert entry.job_id
+    core.queue.store.update(entry.job_id,
+                            lambda j: setattr(j, "status", JobStatus.DONE))
+    queued, _skipped, _text = asyncio.run(core.run_batch())
+    assert queued == 0
     assert BatchQueue(core.settings).pending() == []
 
 
@@ -692,12 +700,22 @@ def test_a_batch_entry_already_rendering_is_not_rendered_twice(
 
     ws = _approved_short(core, xlsx_bytes, short_valid_json)
     core.queue = RenderJobQueue(core.settings, lambda job: "")
-    asyncio.run(core.queue.submit(JobKind.RENDER_SHORT, "EXMPL", ws.workdate))
+    first = asyncio.run(core.queue.submit(JobKind.RENDER_SHORT, "EXMPL",
+                                          ws.workdate))
     BatchQueue(core.settings).add("EXMPL", "short")
 
     queued, skipped, _text = asyncio.run(core.run_batch())
 
     assert queued == 0 and len(skipped) == 1
+    assert "following" in skipped[0]
+    # The entry follows the render already running, and closes with it —
+    # the first one finishing does not start a second.
+    (entry,) = BatchQueue(core.settings).pending()
+    assert entry.job_id == first.id
+    core.queue.store.update(first.id,
+                            lambda j: setattr(j, "status", JobStatus.DONE))
+    queued, _skipped, _text = asyncio.run(core.run_batch())
+    assert queued == 0
     assert BatchQueue(core.settings).pending() == []
 
 

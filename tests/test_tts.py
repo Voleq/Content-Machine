@@ -307,15 +307,41 @@ def _multi_chunk_text() -> str:
     return ("The market pays sixty times sales. " * 12).strip()
 
 
-def _handler_failing_at(audio_b64, alignment, fail_index: int, calls: list):
+def _handler_failing_at(audio_b64, alignment, fail_index: int, calls: list,
+                        status: int = 401):
+    """Answers every request but one. The default failure is the quota
+    running out mid-job (a 401 from ElevenLabs), which no retry fixes; a 429
+    or a 5xx is retried, so it no longer kills a generation on its own."""
     def handler(request: httpx.Request) -> httpx.Response:
         i = len(calls)
         calls.append(request)
         if i == fail_index:
-            return httpx.Response(429, text="slow down")
+            return httpx.Response(status, text='{"detail": "quota_exceeded"}')
         return httpx.Response(200, json={"audio_base64": audio_b64,
                                          "alignment": alignment})
     return handler
+
+
+def test_a_rate_limited_chunk_is_retried_not_fatal(settings, alignment_sample,
+                                                   tmp_path, monkeypatch):
+    """A 429 is the provider declining, not billing: the chunk is asked for
+    again and the job finishes, paying once per chunk."""
+    import pipeline.tts as tts_mod
+
+    monkeypatch.setattr(tts_mod.time, "sleep", lambda s: None)
+    audio_b64 = _tiny_mp3_b64(tmp_path)
+    live = _live(settings)
+    text = _multi_chunk_text()
+    n_chunks = len(chunk_text(text, live.tts_chunk_chars))
+    calls: list = []
+    engine = TTSEngine(live, ledger=SpendLedger(live), client=httpx.Client(
+        transport=httpx.MockTransport(_handler_failing_at(
+            audio_b64, alignment_sample["alignment"], 2, calls, status=429))))
+
+    result = engine.synthesize(text, "long")
+
+    assert result.audio_path.exists()
+    assert len(calls) == n_chunks + 1, "one retry, for the one 429"
 
 
 def test_a_generation_that_dies_midway_still_meters_what_was_billed(

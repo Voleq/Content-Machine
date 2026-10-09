@@ -1254,7 +1254,9 @@ _ENCODERS: dict[str, bool] = {}
 def _has_encoder(name: str) -> bool:
     if name not in _ENCODERS:
         try:
-            out = subprocess.run(["ffmpeg", "-hide_banner", "-encoders"],
+            from config import detect_ffmpeg
+
+            out = subprocess.run([detect_ffmpeg()[0], "-hide_banner", "-encoders"],
                                  capture_output=True, text=True, timeout=30).stdout
         except (OSError, subprocess.SubprocessError):
             out = ""
@@ -1310,17 +1312,19 @@ def final_encode(src: Path, out: Path, settings, *, captions: Path | None = None
     """
     vf = []
     if captions is not None:
-        # The filter takes a PATH, and a Windows drive letter or a colon in a
-        # workspace name is a filtergraph separator. Escaped the way libavfilter
-        # asks rather than by hoping the path is plain.
-        spec = str(captions).replace("\\", "/").replace(":", "\\:")
+        # The filter takes a PATH, and a Windows drive letter, a colon or an
+        # apostrophe in a workspace name is a separator to libavfilter.
+        # Escaped for both levels it is parsed at (`render_common.filter_path`).
+        #
         # THE KIT'S FONTS, BY DIRECTORY. The style names Archivo Narrow, which
         # no install puts on the system, and without `fontsdir` libass fell
         # back to DejaVu Sans: every short's captions were set in a face that
         # runs a line nearly twice as wide as the one they were placed for.
         # The LONG has always passed it (`render_common`).
-        fonts = str(settings.fonts_dir).replace("\\", "/").replace(":", "\\:")
-        vf.append(f"ass='{spec}':fontsdir='{fonts}'")
+        from pipeline.render_common import filter_path
+
+        vf.append(f"ass={filter_path(captions)}"
+                  f":fontsdir={filter_path(settings.fonts_dir)}")
     vf.append("scale=out_color_matrix=bt709:out_range=tv,format=yuv420p")
     run_ffmpeg(["-i", str(src), "-vf", ",".join(vf), "-an",
                 "-c:v", "libx264",
@@ -1524,13 +1528,26 @@ def render_frames(result: BuildResult, resolver, duration: float,
         faces[l.name] = (int(round(l.t_start * FPS)), plan)
         face_reports[l.name] = did
 
-    cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-           "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{w}x{h}",
-           "-r", str(FPS), "-i", "-", "-an", *lossless_args(), str(out_video)]
+    # Through the configured ffmpeg, capped and niced like every other
+    # encode (`render_common`): this pipe was the one spawn that took the
+    # bare `ffmpeg` off PATH and the whole machine with it.
+    from config import detect_ffmpeg
+    from pipeline.render_common import _deprioritise, _with_politeness
+
+    cmd = [detect_ffmpeg()[0], "-hide_banner", "-loglevel", "error", "-y",
+           *_with_politeness(["-f", "rawvideo", "-pix_fmt", "rgba",
+                              "-s", f"{w}x{h}", "-r", str(FPS), "-i", "-",
+                              "-an", *lossless_args(), str(out_video)])]
     out_video.parent.mkdir(parents=True, exist_ok=True)
+    # stderr to a file, not a pipe: a pipe nobody reads until the end can
+    # fill and stall ffmpeg while this side is still writing frames.
+    err_file = out_video.with_suffix(".ffmpeg.log")
+    err_fh = open(err_file, "w+b")
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
-                            stderr=subprocess.PIPE)
-    assert proc.stdin is not None
+                            stderr=err_fh)
+    _deprioritise(proc)
+    if proc.stdin is None:
+        raise RenderError("could not open the frame pipe to ffmpeg")
 
     ordered = [_scaled(l, scale)
                for l in sorted(result.layers, key=lambda l: (l.z, l.t_start))]
@@ -1553,11 +1570,20 @@ def render_frames(result: BuildResult, resolver, duration: float,
                             face=face, lost=lost)
             if mover is not None:
                 mover.draw_overlays(canvas, t, scale=scale)
-            proc.stdin.write(canvas.tobytes())
+            try:
+                proc.stdin.write(canvas.tobytes())
+            except BrokenPipeError:
+                break               # ffmpeg died; its own words are below
     finally:
-        proc.stdin.close()
-        err = proc.stderr.read().decode("utf-8", "replace") if proc.stderr else ""
+        try:
+            proc.stdin.close()
+        except BrokenPipeError:
+            pass
         rc = proc.wait()
+        err_fh.seek(0)
+        err = err_fh.read().decode("utf-8", "replace")
+        err_fh.close()
+        err_file.unlink(missing_ok=True)
     if rc != 0:
         raise RenderError(f"encode failed ({rc}): {err[-800:]}")
     render_frames.last_text_overflow = dict(lost)     # type: ignore[attr-defined]

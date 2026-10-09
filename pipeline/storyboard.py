@@ -215,7 +215,8 @@ def _dennis_3d(settings: Settings, reg) -> Image.Image | None:
 
 def _thumbnail_for(seg, settings: Settings, content, tmp: Path, idx: int,
                    *, ticker: str = "", company_data=None,
-                   workspace: Path | None = None) -> tuple[Image.Image | None, str]:
+                   workspace: Path | None = None,
+                   take: int = 0) -> tuple[Image.Image | None, str]:
     """(thumbnail, asset label) for one segment. Never raises — a beat the
     storyboard cannot illustrate is exactly what the operator needs to see."""
     kind = seg.kind
@@ -257,9 +258,11 @@ def _thumbnail_for(seg, settings: Settings, content, tmp: Path, idx: int,
         if content is None:
             return None, f"{kind}: {value}"
 
+        # The take the swap menu chose: the sheet is the last look before
+        # the encode, and it has to show the clip the render will play.
         visual = content.resolve_visual(
             kind, value, ticker=ticker, company_data=company_data,
-            style=seg.payload.get("style", "clean"),
+            style=seg.payload.get("style", "clean"), choice=take,
         )
         label = f"{kind}: {visual.key} ({visual.source})"
         if visual.is_video:
@@ -352,6 +355,8 @@ def build_storyboard(
     title: str = "",
     cols: int = COLS,
     chapters=None,
+    overrides: dict | None = None,
+    slots: dict | None = None,
 ) -> tuple[Path, list[str]]:
     """Write the contact sheet. Returns (path, problems).
 
@@ -360,7 +365,11 @@ def build_storyboard(
 
     `chapters` (the script's `chapter_list`) adds each chapter's host share
     to the header, the ones over HOST_SHARE_FLAG in `attention`.
+
+    `overrides` and `slots` are the workspace's swap picks and the script's
+    `broll.swap_slots`, so a swapped beat shows the take that will render.
     """
+    from pipeline.broll import override_choice
     out_path.parent.mkdir(parents=True, exist_ok=True)
     rows = (len(segments) + cols - 1) // cols
     header_h = 78
@@ -399,9 +408,12 @@ def build_storyboard(
     with tempfile.TemporaryDirectory(prefix="storyboard_") as td:
         tmp = Path(td)
         for i, seg in enumerate(segments):
+            take = override_choice(
+                overrides, (slots or {}).get(seg.payload.get("order")),
+                str(seg.payload.get("value", "")))
             thumb, label = _thumbnail_for(
                 seg, settings, content, tmp, i, ticker=ticker,
-                company_data=company_data, workspace=workspace,
+                company_data=company_data, workspace=workspace, take=take,
             )
             if "←" in label:
                 problems.append(f"beat {i:02d} @ {seg.start:.1f}s — {label}")

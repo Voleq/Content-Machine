@@ -571,8 +571,11 @@ def fetch_and_summarize(url: str, settings: Settings, ledger=None) -> str:
     except ImportError:  # pragma: no cover
         return ""
     try:
+        # Not SEC_USER_AGENT: the SEC asks for a contact email in it, and this
+        # is an arbitrary news site the operator pasted.
         resp = httpx.get(url, timeout=15.0, follow_redirects=True,
-                         headers={"User-Agent": settings.sec_user_agent or "Dennis bot"})
+                         headers={"User-Agent": "Mozilla/5.0 (compatible; "
+                                                "dennis-content-machine/1.0)"})
         resp.raise_for_status()
         html = resp.text
     except Exception as e:
@@ -692,9 +695,16 @@ def _needle(located: dict) -> str:
 
 
 def _shoot_blocks(html_path: Path, located: list[dict], out_dir: Path,
-                  settings: Settings) -> list[Path]:
+                  settings: Settings) -> list[Path | None]:
     """Sync Playwright work — MUST run in a plain thread (no asyncio loop).
-    Best-effort: returns whatever shots succeed."""
+
+    Best-effort, and ALIGNED: one entry per `located` block, `None` where
+    that shot failed. It used to return only the shots that worked, and the
+    caller paired them with the quotes by position — so after one failure
+    every later screenshot carried the previous quote, section and reason
+    into the writing prompt, and the narration could quote one sentence
+    while the screen showed another.
+    """
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -702,7 +712,7 @@ def _shoot_blocks(html_path: Path, located: list[dict], out_dir: Path,
         return []
     out_dir.mkdir(parents=True, exist_ok=True)
     exe = _chromium_executable(settings)
-    results: list[Path] = []
+    results: list[Path | None] = []
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True, executable_path=exe)
@@ -711,6 +721,7 @@ def _shoot_blocks(html_path: Path, located: list[dict], out_dir: Path,
                                         viewport={"width": 1280, "height": 1600})
                 page.goto(html_path.resolve().as_uri(), wait_until="load", timeout=15000)
                 for i, loc in enumerate(located):
+                    results.append(None)
                     try:
                         el = page.get_by_text(_needle(loc), exact=False).first
                         # climb to the enclosing paragraph / row / list item
@@ -722,7 +733,7 @@ def _shoot_blocks(html_path: Path, located: list[dict], out_dir: Path,
                         _highlight(page, _needle(loc))
                         shot = out_dir / f"raw_{i:02d}.png"
                         target.screenshot(path=str(shot), timeout=5000)
-                        results.append(shot)
+                        results[i] = shot
                     except Exception as e:
                         log.warning("filings: shot %d failed (%s)", i, e)
             finally:
@@ -734,10 +745,18 @@ def _shoot_blocks(html_path: Path, located: list[dict], out_dir: Path,
 
 
 def _highlight(page, needle: str) -> None:
-    """Best-effort soft highlight of the matched sentence before the shot."""
+    """Best-effort soft highlight of the matched sentence before the shot.
+
+    The previous shot's highlight is taken off first: they used to pile up,
+    so a later crop of a nearby paragraph showed an earlier quote marked too.
+    """
     try:
         page.evaluate(
             """(needle) => {
+                document.querySelectorAll('mark[data-dennis]').forEach(m => {
+                    while (m.firstChild) m.parentNode.insertBefore(m.firstChild, m);
+                    m.remove();
+                });
                 const norm = s => s.replace(/\\s+/g,' ').trim();
                 const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
                 let n;
@@ -745,6 +764,7 @@ def _highlight(page, needle: str) -> None:
                     const t = norm(n.textContent);
                     if (t && needle && t.includes(needle.slice(0, 30))) {
                         const s = document.createElement('mark');
+                        s.dataset.dennis = '1';
                         s.style.background = '#ffe27a';
                         s.style.color = 'inherit';
                         n.parentNode.replaceChild(s, n);
@@ -760,7 +780,7 @@ def _highlight(page, needle: str) -> None:
 
 
 def screenshot_quotes(html_path: Path, located: list[dict], out_dir: Path,
-                      settings: Settings) -> list[Path]:
+                      settings: Settings) -> list[Path | None]:
     """Screenshot each located block. Playwright's sync API cannot run inside
     a running asyncio loop (the bot handler), so always do it in a worker
     thread — which never has one."""
@@ -837,9 +857,13 @@ def auto_filings(ticker: str, angle: str, workspace: Path, settings: Settings,
         # normalize each raw shot into the workspace with the generic chip
         from pipeline.company_data import prepare_screenshot
         shots: list[FilingShot] = []
-        for i, raw in enumerate(raw_shots):
+        # Paired by INDEX with the quote it was taken of; a shot that
+        # failed is a gap, and the next one still carries its own quote.
+        for i, raw in enumerate(raw_shots[:len(kept)]):
+            if raw is None:
+                continue
             fq = kept[i]
-            name = f"filing_{i + 1:02d}.png"
+            name = f"filing_{len(shots) + 1:02d}.png"
             dest = workspace / name
             try:
                 prepare_screenshot(raw, dest, settings)

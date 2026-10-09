@@ -48,3 +48,34 @@ def test_cleanup_never_touches_cache(settings):
     keep.write_bytes(b"cached")
     cleanup(settings)
     assert keep.exists(), "caches are what make re-runs free — never pruned"
+
+
+def test_the_local_backend_s_delivered_copy_is_kept_by_default(settings):
+    """`_delivered/` is only ever written by the local backend, where it is
+    the one copy of the finished video; it used to be pruned as a duplicate
+    of something archived remotely."""
+    old = (date.today() - timedelta(days=30)).isoformat()
+    copy = settings.workspace_dir / "_delivered" / "OLD" / old / "long_final.mp4"
+    copy.parent.mkdir(parents=True)
+    copy.write_bytes(b"x")
+    cleanup(settings)
+    assert copy.exists()
+
+
+def test_rebuildable_caches_are_pruned_and_the_voice_never_is(settings):
+    import os
+    import time
+
+    stale = time.time() - 120 * 86400
+    shot = settings.cache_dir / "dennis3d" / "abc123"
+    shot.mkdir(parents=True)
+    (shot / "layer.mov").write_bytes(b"x")
+    voice = settings.cache_dir / "tts" / "k" / "audio.m4a"
+    voice.parent.mkdir(parents=True)
+    voice.write_bytes(b"paid")
+    for p in (shot / "layer.mov", shot, voice, voice.parent):
+        os.utime(p, (stale, stale))
+    stats = cleanup(settings)
+    assert stats["cache_entries_removed"] == 1
+    assert not shot.exists()
+    assert voice.exists(), "the voice cache was paid for"
