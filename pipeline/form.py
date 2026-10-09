@@ -37,7 +37,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from pipeline.shots import available_formats, expand_sequences, load_format
+from pipeline.shots import REPO_ROOT, available_formats, expand_sequences, load_format
 
 # Sources the writer composes. Everything else is supplied by the pipeline,
 # and asking a writer for it is how a hallucinated figure reaches a frame.
@@ -73,7 +73,7 @@ class Field:
         return self.src.split(".", 1)[0] in WRITER_ROOTS
 
 
-def _budgets(name: str, root: Path | str = ".") -> dict[str, int]:
+def _budgets(name: str, root: Path | str = REPO_ROOT) -> dict[str, int]:
     """`fill:<slot>` -> characters, read off the plates the format names."""
     try:
         from config import Settings
@@ -151,7 +151,7 @@ def _slot_budgets(out: dict[str, int], plate, binds, slot_limit) -> None:
             out[key] = min(out.get(key, int(limit)), int(limit))
 
 
-def form_for(name: str, root: Path | str = ".") -> list[Field]:
+def form_for(name: str, root: Path | str = REPO_ROOT) -> list[Field]:
     """Every source a format reads, in the order its shots read them.
 
     Order matters: a form asked in cut order is a form somebody can fill
@@ -252,17 +252,17 @@ def form_for(name: str, root: Path | str = ".") -> list[Field]:
     return out
 
 
-def writer_fields(name: str, root: Path | str = ".") -> list[Field]:
+def writer_fields(name: str, root: Path | str = REPO_ROOT) -> list[Field]:
     """Only what a person has to write. This is the form."""
     return [f for f in form_for(name, root) if f.writer]
 
 
-def supplied_fields(name: str, root: Path | str = ".") -> list[Field]:
+def supplied_fields(name: str, root: Path | str = REPO_ROOT) -> list[Field]:
     """Everything the pipeline fills. Never ask a writer for these."""
     return [f for f in form_for(name, root) if not f.writer]
 
 
-def render_form(name: str, root: Path | str = ".") -> str:
+def render_form(name: str, root: Path | str = REPO_ROOT) -> str:
     """The form as text, for the writing prompt.
 
     Deliberately plain. Every line is a field, its budget and where it lands,
@@ -280,5 +280,5 @@ def render_form(name: str, root: Path | str = ".") -> str:
     return "\n".join(lines)
 
 
-def all_forms(root: Path | str = ".") -> dict[str, list[Field]]:
+def all_forms(root: Path | str = REPO_ROOT) -> dict[str, list[Field]]:
     return {n: writer_fields(n, root) for n in available_formats(root)}

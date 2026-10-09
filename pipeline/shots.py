@@ -23,6 +23,10 @@ from pathlib import Path
 from typing import Any, Callable, Collection, Sequence
 
 TEMPLATE_DIR = Path("templates/shots")
+# Where TEMPLATE_DIR is read from when no root is given: the checkout, not
+# the working directory. A render started from any other folder (a script,
+# a shell left somewhere else) failed with "no shot template".
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # A shot may not be shorter than this. Below it nothing on screen can be read,
 # and a span that collapses this far means the anchoring is wrong upstream.
@@ -615,7 +619,7 @@ def beat_keys(fmt: Format) -> tuple[str, ...]:
     return tuple(out)
 
 
-def marker_formats(root: Path | str = ".") -> dict[str, tuple[str, ...]]:
+def marker_formats(root: Path | str = REPO_ROOT) -> dict[str, tuple[str, ...]]:
     """Every format a SHORT renders through, with the beats it can mark."""
     return {name: beat_keys(load_format(name, root))
             for name in available_formats(root)}
@@ -800,7 +804,7 @@ def _prefer_unused_names(options: list[str],
     return [k for k in options if k not in avoid] or options
 
 
-def load_format(name: str, root: Path | str = ".") -> Format:
+def load_format(name: str, root: Path | str = REPO_ROOT) -> Format:
     path = Path(root) / TEMPLATE_DIR / f"{name}.json"
     if not path.exists():
         raise TemplateError(
@@ -925,7 +929,7 @@ def draws_prices(fmt: Format) -> bool:
     return False
 
 
-def available_formats(root: Path | str = ".") -> list[str]:
+def available_formats(root: Path | str = REPO_ROOT) -> list[str]:
     d = Path(root) / TEMPLATE_DIR
     return sorted(p.stem for p in d.glob("*.json")) if d.is_dir() else []
 

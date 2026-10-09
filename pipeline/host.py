@@ -69,10 +69,15 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Collection, Sequence
+from typing import TYPE_CHECKING, Collection, Sequence
 
 from pipeline.plates import Plate, Registry
-from pipeline.models import WordTimestamp
+
+if TYPE_CHECKING:
+    # Annotations only. The 3D Dennis's Blender worker imports this module
+    # (`room3d/motion.py`) from its own Python, which has bpy and Pillow and
+    # not pydantic: a runtime import here failed every shot it was asked for.
+    from pipeline.models import WordTimestamp
 
 log = logging.getLogger(__name__)
 
