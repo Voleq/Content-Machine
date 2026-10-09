@@ -308,6 +308,20 @@ def test_a_placed_caption_still_ends_where_its_shot_does(settings):
     assert [f[2] for f in _dialogue(ass)] == ["0:00:06.00", "0:00:13.45"]
 
 
+def test_no_line_joins_words_from_either_side_of_a_captionless_shot(settings):
+    """The numbers sheet has no captions, and the sentence it cut joined the
+    next one the captions could see: "Revenue went share count." burned under
+    a chart. Each side of the sheet is its own line, in the words said."""
+    words = (_said("Revenue went four hundred million to four ninety six.",
+                   start=15.6, step=0.4)
+             + _said("Then the share count.", start=24.4, step=0.4))
+    ass = build_phrase_ass(words, settings=settings, play_res=SHORT_FRAME,
+                           max_words=4, min_words=2, duration=30.0,
+                           windows=[(10.0, 16.2, 1560), (24.9, 30.0, 1560)])
+    lines = [re.sub(r"\{[^}]*\}", "", f[9]) for f in _dialogue(ass)]
+    assert lines == ["Revenue went", "share count."], lines
+
+
 @pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
 def test_the_burned_box_ends_where_the_window_says(settings, tmp_path):
     """The whole placement rests on one number: the box's foot. Measured off
