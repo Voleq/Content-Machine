@@ -1002,7 +1002,12 @@ info "this runs real encodes and takes a while"
 #
 # The message may only claim a failure is the operator's to debug when this
 # run has nothing of its own to blame. Where it does, it says so first.
-if ! sudo -u "$SERVICE_USER" .venv/bin/python -m pytest tests/ -q; then
+# The sound gate (`audio_provenance`) is not run here: it fails until the
+# operator fetches real effects with their own Freesound key, which needs this
+# install first, so a box that had not fetched yet died here on every run,
+# before the service was installed. It is reported below instead; the render
+# path still blocks every final on a placeholder.
+if ! sudo -u "$SERVICE_USER" .venv/bin/python -m pytest tests/ -q -m "not audio_provenance"; then
   if [ "$LFS_DEGRADED" -eq 1 ]; then
     die \
 "The offline test suite failed, and this run already knows why.
@@ -1027,6 +1032,13 @@ the failure above is real and reproducible with:
     cd $DEST && sudo -u $SERVICE_USER .venv/bin/python -m pytest -q"
 fi
 ok "suite green"
+if ! sudo -u "$SERVICE_USER" .venv/bin/python scripts/check_sfx.py >/dev/null 2>&1; then
+  warn "the sound effects are still placeholders, and every final render is"
+  warn "blocked until they are not. In the clone, with your Freesound key:"
+  warn "    cd $SRC && export FREESOUND_API_KEY=..."
+  warn "    $DEST/.venv/bin/python scripts/fetch_sfx.py"
+  warn "then commit assets/sfx/ and run this script again."
+fi
 
 # --------------------------------------------------------------------------
 # systemd units

@@ -815,3 +815,13 @@ def test_a_rerun_after_a_pull_keeps_what_only_the_install_has(tmp_path):
     subprocess.run(["bash", "-c", command], check=True,
                    env={"PATH": os.environ["PATH"], "SRC": str(src), "DEST": str(dest)})
     assert (dest / ".env").read_text(encoding="utf-8") == "from the clone"
+
+
+def test_the_install_does_not_die_on_the_sound_gate():
+    """The gate fails until the operator fetches real effects with their own
+    key, which needs the install first: the bootstrap's suite ran it and died
+    before the service step on every box that had not fetched yet."""
+    text = (ROOT / "deploy" / "bootstrap.sh").read_text(encoding="utf-8")
+    suite = next(ln for ln in text.splitlines() if "-m pytest tests/" in ln)
+    assert '-m "not audio_provenance"' in suite
+    assert "scripts/check_sfx.py" in text and "fetch_sfx.py" in text
