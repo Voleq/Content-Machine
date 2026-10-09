@@ -134,6 +134,28 @@ class Settings(BaseSettings):
     telegram_send_timeout_s: float = Field(default=900.0,
                                            alias="TELEGRAM_SEND_TIMEOUT_S")
 
+    # ------------------------------------------------------- the web panel
+    # A control panel served by the bot process itself: every command, the
+    # inbox, the video cards, the queue and the activity feed, in a browser.
+    # Bound to localhost by default — reach it from elsewhere through an SSH
+    # tunnel or a private network, never by opening the port. Every request
+    # needs PANEL_TOKEN; left empty, one is generated once and kept in
+    # state/panel_token (`/admin panel` sends the link).
+    panel_enabled: bool = Field(default=True, alias="PANEL_ENABLED")
+    panel_host: str = Field(default="127.0.0.1", alias="PANEL_HOST")
+    panel_port: int = Field(default=8765, alias="PANEL_PORT")
+    panel_token: str = Field(default="", alias="PANEL_TOKEN")
+    # Which chat the panel acts as: its active video, its wizard. 0 = the
+    # first of OPERATOR_CHAT_IDS, so the panel and that chat share a context.
+    panel_chat_id: int = Field(default=0, alias="PANEL_CHAT_ID")
+    # The panel takes files Telegram's 20 MB download limit refuses.
+    panel_max_upload_mb: int = Field(default=500, alias="PANEL_MAX_UPLOAD_MB")
+
+    # ------------------------------------------------------ the morning inbox
+    # Everything waiting on you, once a morning, when there is anything.
+    inbox_enabled: bool = Field(default=True, alias="INBOX_ENABLED")
+    inbox_hour: int = Field(default=8, alias="INBOX_HOUR")
+
     # ------------------------------------------------------------- elevenlabs
     # VOICE IS A PLACEHOLDER — the final Dennis voice is a to-be-decided,
     # one-line change (set ELEVEN_VOICE_ID_SHORT / ELEVEN_VOICE_ID_LONG).

@@ -62,70 +62,23 @@ from pipeline.render_short import render_short
 from pipeline.tts import TTSEngine
 from pipeline.workspace import ActiveContext, Workspace, today_str
 
-from bot.keyboards import approval_keyboard, filing_veto_keyboard, swap_keyboard
+from bot.keyboards import (
+    angle_keyboard,
+    approval_keyboard,
+    approved_keyboard,
+    card_keyboard,
+    confirm_render_keyboard,
+    filing_veto_keyboard,
+    swap_keyboard,
+    undo_cancel_keyboard,
+    uploaded_keyboard,
+)
 from bot.prompts import fill_prompt
 
 log = logging.getLogger(__name__)
 
-HELP_TEXT = """Dennis — operator commands
-
-/short TICKER — start a SHORT (9:16, 45–55s); upload the refreshed workbook
-/long TICKER — start a LONG (16:9 deep dive, value lane)
-/update TICKER — revisit a name we've covered: what I said, what happened, was I right
-/headline TICKER <news> — a SHORT about a specific headline (macro: /headline macro <text>)
-/prompts — re-send this lane's pre-filled master prompt
-/screen [trending|value|all] — ranked candidates (trending → SHORT, value → LONG)
-/ideas — the ranked backlog
-/idea TICKER <why> — add one by hand
-/unidea TICKER — drop one
-/thesis [TICKER] — what we said, and whether the numbers still back it
-/batch [TICKER [fmt] | run | clear] — queue renders to run unattended overnight
-/why TICKER [<your sentence>] — why this one; prints above Approve, rides the description
-/upload TICKER [short|long|clip] [YYYY-MM-DD HH:MM] — YouTube, private or scheduled (never public)
-/upload TICKER pair — two repurposed clips off one LONG, tagged as a pair
-/probe TICKER [short|long] — one UNLISTED upload, to see where YouTube puts the AI label
-/scheduled — what's queued to publish and when
-/retention [TICKER] — per-chapter drop-off; no ticker = the evidence across all
-/lines TICKER — where a published video lost them, to the sentence
-/shots TICKER — which shots of a published video lose people
-/stillness TICKER — every stretch where the picture holds still too long
-/hooks [short|long] — openers ranked by what they held
-/rules — what the voice rules are worth, measured
-/runtime — hold against how long the videos run
-/lessons [now] — what the writer is told about where viewers left (now = rewrite it)
-/said <phrase> — every earlier use of a line, across every script shipped
-/experiments — clip pairs, and which one held
-/scoreboard [YYYY-Qn] — what we said and what happened, for a quarter
-/correct [TICKER <what was wrong>] — pin a correction on a shipped video
-/watch [TICKER | drop TICKER] — intraday watch (published names join automatically)
-/earnings TICKER YYYY-MM-DD [bmo|amc] — so the bot flags the print both sides
-/render TICKER — render the approved script for this ticker's lane
-/render_long TICKER — force the LONG (only needed if a ticker has both)
-/render_short TICKER — force the SHORT (same reason, the other way)
-/script — the stored script, numbered, ready to edit
-/edit N <text> — replace line N (N-M for a range; no text deletes it)
-/replace old => new — fix a figure or a phrase in place (all: for every hit)
-/undo — step back one revision
-/draft TICKER — cheap low-res LONG timing check (no TTS spend)
-/proof TICKER [short|long] — FULL-RES look test: real visuals, free voice, $0
-/repurpose TICKER — free 9:16 SHORT from the finished LONG
-/status — job queue
-/cancel TICKER — cancel queued/running jobs + pending approval
-/cost — month-to-date spend vs cap (/cost reconciled after checking the provider)
-/ask <question> — the local AI answers from everything the bot has saved
-/find <words> — search everything the bot has saved, no AI
-/kit doctor — unresolved tag keys, never-used artwork, unregistered PNGs
-/help or /start — this text
-
-Flow: /short or /long TICKER (refresh the template outside the bot and
-upload it as dennis_data.xlsx) → run the prompt in Claude/GPT →
-(LONG: pick an angle; I auto-pull the 10-K shots) → paste the output back
-here → review the validation & cost report → tweak it in chat if you want
-(/script, /edit, /replace — every revision re-runs the gates and re-prices)
-→ Approve ✅ → /render. Nothing paid happens before Approve, and the approval
-is pinned to the exact version you approved. If a LONG uses [SCREENGRAB] tags,
-upload each capture here named after its slug (a PNG, JPG or short clip) —
-the render stays blocked until every one exists."""
+# The command list (`/help`), the Telegram menu and the README's command
+# reference are generated from the registry in `bot/commands.py`.
 
 
 @dataclass
@@ -134,6 +87,20 @@ class Reply:
     keyboard: object | None = None  # telegram.InlineKeyboardMarkup
     files: list[Path] = field(default_factory=list)
     photo: Path | None = None
+    # "TICKER@YYYY-MM-DD" when this is a video card, so the frontend can
+    # remember the message and edit it as the video moves.
+    card: str = ""
+
+
+def _save_report_json(ws: Workspace, fmt: str, report) -> None:
+    """The report as data, beside the text one: the video card, the inbox
+    and the panel read the price and the findings off it rather than out of
+    a sentence written for a person."""
+    try:
+        (ws.path / f"report_{fmt}.json").write_text(
+            report.model_dump_json(), encoding="utf-8")
+    except Exception as e:  # noqa: BLE001 - the card degrades, the report stands
+        log.warning("could not save the %s report as JSON: %s", fmt, e)
 
 
 def _journal_script(settings: Settings, ws: Workspace, fmt: str,
@@ -338,6 +305,14 @@ class BotCore:
         # the full-length parts look cut; the last part is short and used to
         # be accepted as a whole script (saved over the good one).
         self._fragment_at: dict[int, float] = {}
+        # The last `/jobs cancel`, for its one-minute undo.
+        self._last_cancel: dict | None = None
+        # Attached by the frontends: the Telegram glue's card board and
+        # sender, the activity feed the web panel reads, the panel's link.
+        self.cards = None
+        self.send_to = None
+        self.feed = None
+        self.panel_url = ""
 
     # ------------------------------------------------------------- helpers
     def _ws_or_error(self, ticker: str, want=None) -> Workspace | None:
@@ -555,7 +530,9 @@ class BotCore:
             lines.append("(this workspace has no lane — /short TICKER or "
                          "/long TICKER declares one and prepares just the "
                          "one prompt.)")
-        return Reply("\n".join(lines) + warn, files=files)
+        keyboard = (angle_keyboard(ws.ticker, ws.workdate)
+                    if "long_angle" in wanted and ws.awaiting_angle() else None)
+        return Reply("\n".join(lines) + warn, files=files, keyboard=keyboard)
 
     # ---------------------------------------------------------- /headline
     def headline_command(self, chat_id: int, args: list[str]) -> Reply:
@@ -1383,6 +1360,7 @@ class BotCore:
         report = build_short_report(script, warnings, self.settings,
                                     self.ledger, self.tts, gate_report=gates)
         (ws.path / "report_short.txt").write_text(report.render_text(), encoding="utf-8")
+        _save_report_json(ws, "short", report)
         _journal_script(self.settings, ws, "short", report)
         return Reply(
             report.render_text(),
@@ -1416,6 +1394,7 @@ class BotCore:
             self.settings, self.ledger, self.tts, plan, filing_count,
         )
         (ws.path / "report_long.txt").write_text(report.render_text(), encoding="utf-8")
+        _save_report_json(ws, "long", report)
         _journal_script(self.settings, ws, "long", report)
         sheet = self._contact_sheet(ws, plan)
         return Reply(
@@ -1489,11 +1468,17 @@ class BotCore:
         journal.note(self.settings, "approved",
                      f"approved the {fmt.upper()} script ({sha8})",
                      ticker=ticker, workdate=workdate, fmt=fmt, sha=sha8)
-        cmd = "/render" if fmt == "short" else "/render_long"
+        from pipeline.video_state import video_state
+
+        st = video_state(self.settings, ws, jobs=[], videos=[])
+        est = None if st.tts_cached else st.est_usd
         return Reply(
             f"✅ {ticker} {fmt.upper()} approved (script {sha8}).\n"
-            f"{cmd} {ticker} to render — this is the point where money is spent."
-            + ("\nTip: /draft first for a cheap timing check." if fmt == "long" else "")
+            f"/render {fmt} {ticker} to render — this is the point where "
+            f"money is spent."
+            + ("\nTip: a draft first is a cheap timing check." if fmt == "long"
+               else ""),
+            keyboard=approved_keyboard(fmt, ticker, workdate, est),
         )
 
     def _approval_blockers(self, ws: Workspace, script, fmt: str) -> list[str]:
@@ -2617,7 +2602,8 @@ class BotCore:
             note = ("\n📌 the comment did not post (a private video often "
                     "refuses one). Post and pin it once the video is public:\n"
                     f"{package.pinned_comment}")
-        return Reply(f"📺 {ticker}: {tail}\n{record.url()}{note}")
+        return Reply(f"📺 {ticker}: {tail}\n{record.url()}{note}",
+                     keyboard=uploaded_keyboard(ticker))
 
     def probe_command(self, args: list[str]) -> Reply:
         """`/probe TICKER [short|long]` — where YouTube puts the AI label (05).
@@ -3355,6 +3341,217 @@ class BotCore:
             f"not verify anything, and it is worth exactly as much as the "
             f"check you actually did.")
 
+    # ------------------------------------------------- the video card (§3)
+    def _card_ws(self, ticker: str = "", chat_id: int | None = None,
+                 workdate: str = "") -> Workspace | None:
+        if ticker and workdate:
+            ws = Workspace(self.settings, ticker, workdate)
+            return ws if ws.exists else None
+        if ticker:
+            return self._ws_or_error(ticker)
+        return self._active_ws(chat_id) if chat_id is not None else None
+
+    def video_card(self, ticker: str = "", chat_id: int | None = None,
+                   workdate: str = "") -> Reply:
+        """Where one video is — data, script, approval, renders, upload —
+        and the next tap, in one message. Viewing a card does not make it
+        the active video: a paste after `/card OTHER` must still land in
+        the video you were working on."""
+        from pipeline.video_state import card_text, video_state
+
+        ws = self._card_ws(ticker, chat_id, workdate)
+        if ws is None:
+            name = Workspace.split_arg(ticker)[0] if ticker else ""
+            return Reply(f"No video for {name} — /new short {name} or "
+                         f"/new long {name} starts one." if name else
+                         "No active video — /new short TICKER or "
+                         "/new long TICKER starts one.")
+        jobs = self.queue.store.all() if self.queue else None
+        st = video_state(self.settings, ws, jobs=jobs)
+        return Reply(card_text(st), keyboard=card_keyboard(st), card=st.key)
+
+    def inbox_reply(self) -> Reply:
+        """Everything waiting on you, with a button for the first few."""
+        from bot.keyboards import inbox_keyboard
+        from pipeline.video_state import inbox, inbox_text
+
+        items = inbox(self.settings)
+        return Reply(inbox_text(items),
+                     keyboard=inbox_keyboard(items) if items else None)
+
+    def calendar_text(self, args: list[str]) -> Reply:
+        """`/publish calendar [weeks]` — the publishing week, gaps marked."""
+        from datetime import datetime as _dt
+        from datetime import timedelta as _td
+        from datetime import timezone as _tz
+
+        from pipeline.youtube import VideoLog, record_format
+
+        weeks = 1
+        if args and args[0].isdigit():
+            weeks = min(max(int(args[0]), 1), 6)
+        try:
+            from zoneinfo import ZoneInfo
+            zone = ZoneInfo(self.settings.publish_timezone)
+        except Exception:  # noqa: BLE001 - a bad zone reads in UTC
+            zone = _tz.utc
+        today = _dt.now(zone).date()
+        days: dict = {today + _td(days=i): [] for i in range(7 * weeks)}
+        for v in VideoLog(self.settings).all():
+            when_raw = v.publish_at if v.privacy == "scheduled" else ""
+            if not when_raw:
+                continue
+            try:
+                when = _dt.fromisoformat(when_raw.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=_tz.utc)
+            local = when.astimezone(zone)
+            if local.date() in days:
+                days[local.date()].append(
+                    f"{local:%H:%M} {v.ticker} {record_format(v).upper()}")
+        lines = [f"📅 Publishing, next {7 * weeks} days "
+                 f"({self.settings.publish_timezone})"]
+        gaps = 0
+        for day, rows in days.items():
+            label = f"{day:%a %d %b}"
+            if rows:
+                lines.append(f"  {label}  " + " · ".join(sorted(rows)))
+            else:
+                gaps += 1
+                lines.append(f"  {label}  — gap")
+        lines.append(f"\n{gaps} day(s) with nothing going out. "
+                     f"/publish TICKER YYYY-MM-DD HH:MM schedules one.")
+        return Reply("\n".join(lines))
+
+    def show_report(self, chat_id: int, ticker: str = "",
+                    workdate: str = "") -> Reply:
+        """The stored report, with its buttons, without re-running the
+        intake (which re-plans visuals and calls the model)."""
+        ws = self._card_ws(ticker, chat_id, workdate)
+        if ws is None:
+            return Reply("No video to show a report for.")
+        fmt = ws.current_format()
+        report = ws.path / f"report_{fmt}.txt" if fmt else None
+        if report is None or not report.exists():
+            return Reply("No report on file yet — paste the script first.")
+        script = ws.load_short() if fmt == "short" else ws.load_long()
+        text = report.read_text(encoding="utf-8")
+        if script is None:
+            return Reply(text)
+        from pipeline.video_state import video_state
+
+        st = video_state(self.settings, ws, jobs=[], videos=[])
+        if st.approved:
+            est = None if st.tts_cached else st.est_usd
+            return Reply("✅ approved\n\n" + text,
+                         keyboard=approved_keyboard(fmt, ws.ticker,
+                                                    ws.workdate, est))
+        has_broll = fmt == "long" and bool(self.swappable_slots(script))
+        return Reply(text, keyboard=approval_keyboard(
+            fmt, ws.ticker, ws.workdate, script.content_sha(),
+            bool(st.report_ok), has_broll))
+
+    def render_confirm(self, fmt: str, ticker: str, workdate: str) -> Reply:
+        """The second tap before money moves: what it costs, how long it
+        takes, and the month so far."""
+        from pipeline.video_state import video_state
+
+        ws = Workspace(self.settings, ticker, workdate)
+        if not ws.exists:
+            return Reply(f"No workspace {ticker} {workdate}.")
+        if not ws.is_approved(fmt):
+            return Reply(f"⛔ {ticker} {fmt.upper()} is not approved (or the "
+                         f"script changed after approval) — approve the "
+                         f"report first; the approval is the spend gate.")
+        st = video_state(self.settings, ws, jobs=[], videos=[])
+        cost = ("voice already paid for (cache) — $0.00" if st.tts_cached
+                else f"~${st.est_usd:.2f} voice" if st.est_usd is not None
+                else "voice cost not on the report")
+        took = (f", ~{st.est_render_min:.0f} min to render"
+                if st.est_render_min else "")
+        mtd = self.ledger.mtd_spend_usd()
+        return Reply(
+            f"💰 Render {ticker} {fmt.upper()} ({workdate})?\n"
+            f"{cost}{took}.\n"
+            f"Month so far: ${mtd:.2f} of ${self.settings.monthly_spend_cap_usd:.2f}.",
+            keyboard=confirm_render_keyboard(fmt, ticker, workdate))
+
+    def angle_pick(self, chat_id: int, ticker: str, workdate: str,
+                   n: str) -> Reply:
+        """An angle button: the same as typing its number."""
+        ws = Workspace(self.settings, ticker, workdate)
+        if not ws.exists:
+            return Reply(f"No workspace {ticker} {workdate}.")
+        if not ws.awaiting_angle():
+            return Reply("That angle is already picked — the next step is "
+                         "pasting the script.")
+        self.context.set(chat_id, ticker, workdate)
+        with llm_scope(self._llm_scope(ws)):
+            return self._intake_angle(ws, str(n))
+
+    # -------------------------------------------- cancel, and its undo (§8)
+    UNDO_CANCEL_S = 60.0
+
+    def cancel_jobs(self, ticker_arg: str) -> Reply:
+        """Cancel a ticker's queued and running jobs and withdraw its
+        approvals — remembering both for a minute, so a mis-tap can be put
+        back."""
+        import time
+
+        ticker = Workspace.split_arg(ticker_arg)[0]
+        if not ticker:
+            return Reply("Usage: /jobs cancel TICKER")
+        cancelled = self.queue.cancel(ticker) if self.queue else []
+        # Every workspace a cancelled job was rendering, as well as the
+        # newest: the approval worth withdrawing is the one the job was
+        # spending against, which need not be today's folder.
+        spaces = {(j.ticker, j.workdate) for j in cancelled}
+        latest = Workspace.resolve(self.settings, ticker_arg)
+        if latest:
+            spaces.add((latest.ticker, latest.workdate))
+        approvals: dict[str, str] = {}
+        for t, d in spaces:
+            ws = Workspace(self.settings, t, d)
+            for fmt in ("short", "long"):
+                f = ws._approval_file(fmt)
+                if f.exists():
+                    approvals[str(f)] = f.read_text(encoding="utf-8")
+                ws._invalidate_approval(fmt)
+        self._last_cancel = {
+            "at": time.monotonic(), "ticker": ticker,
+            "jobs": [(j.kind, j.ticker, j.workdate) for j in cancelled],
+            "approvals": approvals}
+        undo = (approvals or cancelled)
+        return Reply(
+            f"🚫 {ticker}: {len(cancelled)} job(s) cancelled, approvals "
+            f"withdrawn." + (" Undo within a minute puts both back."
+                             if undo else ""),
+            keyboard=undo_cancel_keyboard() if undo else None)
+
+    def undo_cancel_plan(self) -> tuple[list, str]:
+        """Put the withdrawn approvals back and say which jobs to resubmit.
+        The resubmitting is async (the queue), so the caller does it."""
+        import time
+
+        last = getattr(self, "_last_cancel", None)
+        if not last or time.monotonic() - last["at"] > self.UNDO_CANCEL_S:
+            return [], ("Nothing to undo — a cancel can be undone for a "
+                        "minute after it.")
+        self._last_cancel = None
+        restored = 0
+        for path, text in last["approvals"].items():
+            p = Path(path)
+            if not p.exists():
+                # The approval pins the script's hash, so putting it back
+                # cannot approve a script that changed since: `is_approved`
+                # compares it against the script on disk.
+                p.write_text(text, encoding="utf-8")
+                restored += 1
+        return list(last["jobs"]), (
+            f"↩️ {last['ticker']}: {restored} approval(s) restored")
+
     def _mock_status_line(self) -> str:
         """Which subsystems are fake, spelled out — never just "mock mode".
 
@@ -3478,7 +3675,9 @@ def _authorized(core: BotCore, chat_id: int) -> bool:
     return bool(ids) and chat_id in ids
 
 
-async def _send(update, reply: Reply | str) -> None:
+async def _ship(reply: Reply | str, text_fn, photo_fn, doc_fn):
+    """Send a Reply through three senders; returns the message that carries
+    its keyboard (the one a video card is edited through)."""
     # Half the read commands return a bare string. They were handed here
     # as-is and died on `.text`, so /said, /lines, /hooks, /rules, /runtime,
     # /shots, /stillness, /why, /experiments, /scoreboard and /correct
@@ -3486,23 +3685,53 @@ async def _send(update, reply: Reply | str) -> None:
     # BotCore directly, passed.
     if isinstance(reply, str):
         reply = Reply(reply)
-    msg = update.effective_message
     text = reply.text
     if not text and reply.keyboard is not None:
         text = "…"          # a keyboard rides on a message, so it needs one
+    carrier = None
     while text:  # Telegram 4096-char message cap
         chunk, text = text[:4000], text[4000:]
-        await msg.reply_text(chunk, reply_markup=reply.keyboard if not text else None)
+        msg = await text_fn(chunk, reply_markup=reply.keyboard if not text else None)
+        if not text:
+            carrier = msg
     if reply.photo is not None:
         with open(reply.photo, "rb") as f:
-            await msg.reply_photo(f)
+            await photo_fn(f)
     for path in reply.files:
         with open(path, "rb") as f:
-            await msg.reply_document(f, filename=path.name)
+            await doc_fn(f, filename=Path(path).name)
+    return carrier
+
+
+async def send_reply(bot, chat_id: int, reply: Reply | str):
+    """A push to a chat — nothing to reply to (a finished render, the
+    morning inbox)."""
+    return await _ship(
+        reply,
+        lambda t, reply_markup=None: bot.send_message(chat_id, t,
+                                                      reply_markup=reply_markup),
+        lambda f: bot.send_photo(chat_id, f),
+        lambda f, filename=None: bot.send_document(chat_id, f,
+                                                   filename=filename))
+
+
+async def _send(update, reply: Reply | str):
+    """An answer, as a reply to the message (or button) that asked — which
+    keeps it in the same forum topic."""
+    msg = update.effective_message
+    return await _ship(
+        reply, msg.reply_text,
+        lambda f: msg.reply_photo(f),
+        lambda f, filename=None: msg.reply_document(f, filename=filename))
 
 
 def build_application(settings: Settings, core: BotCore):
-    """Wire PTB. Import here so BotCore stays importable without a token."""
+    """Wire PTB. Import here so BotCore stays importable without a token.
+
+    Every command comes from the registry in `bot/commands.py` — one
+    handler per name, the families and the old names alike — so there is no
+    second list here to drift from `/help`, the menu and the README.
+    """
     from telegram import Update
     from telegram.ext import (
         Application,
@@ -3512,6 +3741,8 @@ def build_application(settings: Settings, core: BotCore):
         MessageHandler,
         filters,
     )
+
+    from bot import commands as cmds
 
     def guard(fn):
         async def wrapped(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -3529,149 +3760,16 @@ def build_application(settings: Settings, core: BotCore):
                 await update.effective_message.reply_text(f"💥 internal error: {e}")
         return wrapped
 
-    @guard
-    async def cmd_start(update, ctx):
-        await _send(update, Reply(HELP_TEXT))
-
-    async def _start_lane(update, lane: str, args: list[str], *,
-                          is_update: bool = False) -> None:
-        ticker = args[0] if args else ""
-        await _send(update, core.start_lane(update.effective_chat.id, lane,
-                                            ticker, update=is_update))
-
-    @guard
-    async def cmd_short(update, ctx):
-        await _start_lane(update, "short", list(ctx.args or []))
-
-    @guard
-    async def cmd_long(update, ctx):
-        await _start_lane(update, "long", list(ctx.args or []))
-
-    @guard
-    async def cmd_update(update, ctx):
-        """Dennis grading his own call. Explicit, never inferred from /long —
-        whether this is an update or a fresh take is the operator's call."""
-        await _start_lane(update, "long", list(ctx.args or []), is_update=True)
-
-    # THE REST OF THE BLOCKING CALLS GO OFF THE LOOP TOO (M9). F2 moved the
-    # pastes; these stayed: `/headline` fetches and summarises a URL and pulls
-    # the 8-K and FRED, `/prompts` and the veto take a live quote and the
-    # news, `/edit` `/replace` `/undo` run the whole intake (the plan fetches
-    # clips, the gates call the model), `/thesis` merges the news and
-    # `/kit doctor` reads the library. Each froze `/status`, `/cancel` and the
-    # render-finished push for as long as it ran.
-    @guard
-    async def cmd_headline(update, ctx):
-        await _off_loop(update, core.headline_command, update.effective_chat.id,
-                        list(ctx.args or []))
-
-    @guard
-    async def cmd_prompts(update, ctx):
-        await _off_loop(update, core.prompts_reply, update.effective_chat.id)
-
-    @guard
-    async def cmd_render(update, ctx, fmt: str | None = None, draft: bool = False):
-        """Plain /render follows the workspace's lane (1d)."""
-        if not ctx.args:
-            await _send(update, Reply("Usage: /render TICKER"))
-            return
-        kind, text, ws = core.render_request(ctx.args[0].upper(), fmt, draft)
-        if kind is None or ws is None:
-            await _send(update, Reply(text))
-            return
-        try:
-            await core.queue.submit(kind, ws.ticker, ws.workdate)
-        except ValueError as e:
-            text = f"⛔ {e}"
-        await _send(update, Reply(text))
-
-    async def _render_in(update, ctx, fmt: str, command: str) -> None:
-        """`/render_short` and `/render_long`: the explicit overrides.
-
-        Both exist so a ticker that has both formats on one date can reach
-        either (C4). Only `/render_long` did, so the SHORT was unreachable
-        the moment a LONG existed — which combined with format-by-file-
-        existence to make one stray paste cost a day's SHORT.
-        """
-        if not ctx.args:
-            await _send(update, Reply(f"Usage: /{command} TICKER"))
-            return
-        kind, text, ws = core.render_request(ctx.args[0].upper(), fmt, False)
-        if kind is None or ws is None:
-            await _send(update, Reply(text))
-            return
-        try:
-            await core.queue.submit(kind, ws.ticker, ws.workdate)
-        except ValueError as e:
-            text = f"⛔ {e}"
-        await _send(update, Reply(text))
-
-    @guard
-    async def cmd_render_long_impl(update, ctx):
-        await _render_in(update, ctx, "long", "render_long")
-
-    @guard
-    async def cmd_render_short_impl(update, ctx):
-        await _render_in(update, ctx, "short", "render_short")
-
-    @guard
-    async def cmd_draft(update, ctx):
-        if not ctx.args:
-            await _send(update, Reply("Usage: /draft TICKER"))
-            return
-        kind, text, ws = core.render_request(ctx.args[0].upper(), "long", True)
-        if kind is None or ws is None:
-            await _send(update, Reply(text))
-            return
-        try:
-            await core.queue.submit(kind, ws.ticker, ws.workdate)
-        except ValueError as e:
-            text = f"⛔ {e}"
-        await _send(update, Reply(text))
-
-    @guard
-    async def cmd_proof(update, ctx):
-        """Full-res, real visuals, free voice, $0 — for BOTH formats.
-
-        `/proof TICKER` follows the workspace's lane; `/proof TICKER short`
-        or `/proof TICKER long` picks one. Unlike /render there is no
-        approval gate, because approval gates spend and this cannot spend.
-        """
-        if not ctx.args:
-            await _send(update, Reply("Usage: /proof TICKER [short|long]"))
-            return
-        fmt = None
-        if len(ctx.args) > 1 and ctx.args[1].lower() in ("short", "long"):
-            fmt = ctx.args[1].lower()
-        kind, text, ws = core.render_request(ctx.args[0].upper(), fmt,
-                                             draft=False, proof=True)
-        if kind is None or ws is None:
-            await _send(update, Reply(text))
-            return
-        try:
-            await core.queue.submit(kind, ws.ticker, ws.workdate)
-        except ValueError as e:
-            text = f"⛔ {e}"
-        await _send(update, Reply(text))
-
-    @guard
-    async def cmd_repurpose(update, ctx):
-        if not ctx.args:
-            await _send(update, Reply("Usage: /repurpose TICKER"))
-            return
-        kind, text, ws = core.repurpose_request(ctx.args[0].upper())
-        if kind is None or ws is None:
-            await _send(update, Reply(text))
-            return
-        try:
-            await core.queue.submit(kind, ws.ticker, ws.workdate)
-        except ValueError as e:
-            text = f"⛔ {e}"
-        await _send(update, Reply(text))
-
-    @guard
-    async def cmd_script(update, ctx):
-        await _send(update, core.script_listing(update.effective_chat.id))
+    async def deliver(update, reply: Reply) -> None:
+        """Send, and remember the message when it is a video card so the
+        card can edit itself as the video moves."""
+        msg = await _send(update, reply)
+        board = getattr(core, "cards", None)
+        if reply.card and msg is not None and board is not None:
+            board.remember(reply.card, update.effective_chat.id, msg.message_id)
+        feed = getattr(core, "feed", None)
+        if feed is not None:
+            feed.add("reply", reply.text, files=reply.files, keyboard=reply.keyboard)
 
     def _after_command(update) -> str:
         """The message text after `/command`, verbatim — line breaks and all
@@ -3680,249 +3778,43 @@ def build_application(settings: Settings, core: BotCore):
         parts = text.split(None, 1)
         return parts[1] if len(parts) > 1 else ""
 
-    @guard
-    async def cmd_edit(update, ctx):
-        await _off_loop(update, core.edit_script, update.effective_chat.id,
-                        list(ctx.args or []), raw_args=_after_command(update),
-                        ack="⏳ editing and re-checking…")
+    def command(name: str):
+        @guard
+        async def handler(update, ctx):
+            async def say(reply: Reply) -> None:
+                await _send(update, reply)
+
+            reply = await cmds.run_command(
+                core, update.effective_chat.id, name, list(ctx.args or []),
+                raw=_after_command(update), say=say)
+            await deliver(update, reply)
+        handler.__name__ = f"cmd_{name}"
+        return handler
 
     @guard
-    async def cmd_replace(update, ctx):
-        await _off_loop(update, core.edit_script, update.effective_chat.id,
-                        list(ctx.args or []), mode="replace",
-                        raw_args=_after_command(update),
-                        ack="⏳ editing and re-checking…")
+    async def on_unknown(update, ctx):
+        text = update.effective_message.text or ""
+        name = text.split(None, 1)[0].lstrip("/") if text else ""
+        if "@" in name:
+            # `/cmd@otherbot` in a group is somebody else's command.
+            addressed = name.split("@", 1)[1].lower()
+            if addressed != (ctx.bot.username or "").lower():
+                return
+        await _send(update, Reply(cmds.unknown_command_text(name)))
 
-    @guard
-    async def cmd_undo(update, ctx):
-        await _off_loop(update, core.undo_edit, update.effective_chat.id)
-
-    @guard
-    async def cmd_upload(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.upload_command, list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_probe(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.probe_command, list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_scheduled(update, ctx):
-        await _send(update, core.scheduled_text())
-
-    @guard
-    async def cmd_retention(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.retention_text, list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_watch(update, ctx):
-        await _send(update, core.watch_command(list(ctx.args or [])))
-
-    @guard
-    async def cmd_earnings(update, ctx):
-        await _send(update, core.earnings_command(list(ctx.args or [])))
-
-    @guard
-    async def cmd_ideas(update, ctx):
-        await _send(update, core.queue_text())
-
-    @guard
-    async def cmd_idea(update, ctx):
-        await _send(update, core.queue_add(list(ctx.args or [])))
-
-    @guard
-    async def cmd_unidea(update, ctx):
-        await _send(update, core.queue_drop(list(ctx.args or [])))
-
-    @guard
-    async def cmd_thesis(update, ctx):
-        await _off_loop(update, core.thesis_text, list(ctx.args or []))
-
-    @guard
-    async def cmd_batch(update, ctx):
-        args = list(ctx.args or [])
-        if args and args[0].lower() == "run":
-            _queued, _skipped, text = await core.run_batch()
-            await _send(update, Reply(text))
-            return
-        await _send(update, core.batch_text(args))
-
-    @guard
-    async def cmd_status(update, ctx):
-        await _send(update, Reply(core.queue.status_text()))
-
-    @guard
-    async def cmd_cancel(update, ctx):
-        if not ctx.args:
-            await _send(update, Reply("Usage: /cancel TICKER"))
-            return
-        ticker = Workspace.split_arg(ctx.args[0])[0]
-        cancelled = core.queue.cancel(ticker)
-        # Every workspace a cancelled job was rendering, as well as the
-        # newest: the approval worth withdrawing is the one the job was
-        # spending against, which need not be today's folder.
-        spaces = {(j.ticker, j.workdate) for j in cancelled}
-        latest = Workspace.latest_for(core.settings, ticker)
-        if latest:
-            spaces.add((latest.ticker, latest.workdate))
-        for t, d in spaces:
-            ws = Workspace(core.settings, t, d)
-            ws._invalidate_approval("short")
-            ws._invalidate_approval("long")
-        await _send(update, Reply(
-            f"🚫 {ticker}: {len(cancelled)} job(s) cancelled, approvals withdrawn."
-        ))
-
-    @guard
-    async def cmd_cost(update, ctx):
-        await _send(update, core.cost_reply(ctx.args))
-
-    # THE RETENTION AND SCRIPT COMMANDS. Every one of these is a read: none
-    # spends, none renders, and none can fail a job. They exist because the
-    # measurements they print were being taken and thrown away.
-
-    @guard
-    async def cmd_lines(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.lines_text, list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_hooks(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.hooks_text, list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_rules(update, ctx):
-        import asyncio
-        await _send(update, await asyncio.to_thread(core.rules_text))
-
-    @guard
-    async def cmd_runtime(update, ctx):
-        import asyncio
-        await _send(update, await asyncio.to_thread(core.runtime_text))
-
-    @guard
-    async def cmd_lessons(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.lessons_text, list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_shots(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.shots_text, list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_stillness(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.stillness_text,
-                                        list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_said(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.said_text, list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_find(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.find_text, list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_ask(update, ctx):
-        import asyncio
-        args = list(ctx.args or [])
-        if args:
-            await _send(update, Reply("🔎 reading the records…"))
-        reply = await asyncio.to_thread(core.ask_text, args)
-        await _send(update, reply)
-
-    @guard
-    async def cmd_why(update, ctx):
-        await _send(update, core.why_command(list(ctx.args or [])))
-
-    @guard
-    async def cmd_experiments(update, ctx):
-        import asyncio
-        await _send(update, await asyncio.to_thread(core.experiments_reply))
-
-    @guard
-    async def cmd_scoreboard(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.scoreboard_reply,
-                                        list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_correct(update, ctx):
-        import asyncio
-        reply = await asyncio.to_thread(core.correct_command,
-                                        list(ctx.args or []))
-        await _send(update, reply)
-
-    @guard
-    async def cmd_kit(update, ctx):
-        """`/kit doctor` — what the library cannot answer, and what nothing
-        has asked for. The gap list is the input to the next batch of art."""
-        from pipeline.gates import kit_doctor_text
-
-        what = (ctx.args[0].lower() if ctx.args else "doctor")
-        if what not in ("doctor", "report"):
-            await _send(update, Reply("usage: /kit doctor"))
-            return
-        await _off_loop(update, lambda: Reply(kit_doctor_text(core.settings)))
-
-    @guard
-    async def cmd_screen(update, ctx):
-        from pipeline.screener import screen_reply
-        lane = ctx.args[0].lower() if ctx.args else "all"
-        reply = await screen_reply(core, lane)
-        await _send(update, reply)
-
-    async def _off_loop(update, fn, *args, ack: str = "", **kwargs) -> None:
-        """Run a blocking BotCore call in a thread (F2).
-
-        `intake_script` -> `_intake_long` downloads every clip and image and
-        runs ffmpeg normalisation, `_auto_filings` hits SEC EDGAR and drives
-        headless Chromium, `run_gates` makes LLM calls, and `_contact_sheet`
-        encodes thumbnails — all of it inside the handler coroutine. Nothing
-        else on the event loop answered until it finished: not `/status`, not
-        `/cancel`, not a render-finished push. Pasting a LONG, picking an
-        angle or swapping a clip froze the whole bot.
-
-        The Excel refresh was correctly moved off the loop when it was
-        written; these paths were not. `ack` is sent first so the operator
-        knows the paste landed rather than watching a silent bot.
-        """
-        import asyncio
-
-        if ack:
-            await _send(update, Reply(ack))
-        reply = await asyncio.to_thread(fn, *args, **kwargs)
-        await _send(update, reply)
+    async def _say(update):
+        async def say(reply: Reply) -> None:
+            await _send(update, reply)
+        return say
 
     @guard
     async def on_text(update, ctx):
-        text = update.effective_message.text or ""
-        chat_id = update.effective_chat.id
         # An angle pick and a short remark come back fast; a pasted script
-        # does not. Acknowledge only the slow one, or every message gets a
-        # "working on it" nobody needs.
-        slow = core.looks_like_script(text)
-        await _off_loop(update, core.intake_script, chat_id, text,
-                        ack="⏳ got it — planning the visuals, this takes a "
-                            "minute." if slow else "")
+        # does not, and only the slow one is acknowledged ("got it").
+        reply = await cmds.handle_text(core, update.effective_chat.id,
+                                       update.effective_message.text or "",
+                                       say=await _say(update))
+        await deliver(update, reply)
 
     @guard
     async def on_document(update, ctx):
@@ -3935,15 +3827,16 @@ def build_application(settings: Settings, core: BotCore):
             await _send(update, Reply(
                 f"⛔ {doc.file_name or 'that file'} is {size / 1e6:.0f} MB — "
                 f"the cloud Bot API only lets a bot download up to 20 MB. "
-                f"Trim the clip or export a smaller file, or drop it into "
-                f"assets/custom/ on the render box by hand."))
+                f"Trim the clip or export a smaller file, use the web panel "
+                f"(/admin panel), or drop it into assets/custom/ on the "
+                f"render box by hand."))
             return
         f = await doc.get_file()
         data = bytes(await f.download_as_bytearray())
-        await _off_loop(update, core.handle_upload,
-                        update.effective_chat.id,
-                        doc.file_name or "upload.bin", data,
-                        ack="⏳ got the file — reading it now.")
+        reply = await cmds.handle_upload(core, update.effective_chat.id,
+                                         doc.file_name or "upload.bin", data,
+                                         say=await _say(update))
+        await deliver(update, reply)
 
     @guard
     async def on_photo(update, ctx):
@@ -3956,114 +3849,51 @@ def build_application(settings: Settings, core: BotCore):
         # that capture, which a nameless photo could never be.
         caption = (msg.caption or "").strip().split()
         stem = caption[0] if caption else f"screenshot_{photo.file_unique_id}"
-        name = f"{stem}.jpg"
-        await _off_loop(update, core.handle_upload,
-                        update.effective_chat.id, name, data)
+        reply = await cmds.handle_upload(core, update.effective_chat.id,
+                                         f"{stem}.jpg", data)
+        await deliver(update, reply)
 
     @guard
     async def on_callback(update, ctx):
-        import asyncio
-
         q = update.callback_query
         await q.answer()
-        parts = (q.data or "").split("|")
-        op = parts[0]
-        chat_id = update.effective_chat.id
-        if op == "a" and len(parts) == 5:
-            # Approve re-runs the gate battery now, which reads the workbook
-            # and the screengrabs off disk — seconds, not milliseconds — so
-            # it goes off the loop like the pastes above (F2).
-            await _send(update, Reply("⏳ re-checking before approval…"))
-            reply = await asyncio.to_thread(
-                core.approve, parts[1], parts[2], parts[3], parts[4])
-        elif op == "x" and len(parts) == 4:
-            reply = core.cancel_approval(parts[1], parts[2], parts[3])
-        elif op == "w" and len(parts) == 3:
-            reply = core.swap_menu(parts[1], parts[2])
-        elif op == "w!" and len(parts) == 3:
-            # Both of these re-run the full intake — the plan, the gates, the
-            # contact sheet — so they go off the loop like a paste does (F2).
-            core.context.set(chat_id, parts[1], parts[2])
-            raw_file = Workspace(core.settings, parts[1], parts[2]).path / "script_long.raw.txt"
-            if raw_file.exists():
-                await _send(update, Reply("⏳ rebuilding the report…"))
-                reply = await asyncio.to_thread(
-                    core.intake_script, chat_id,
-                    raw_file.read_text(encoding="utf-8"), from_file=True)
-            else:
-                reply = Reply("No LONG script on file.")
-        elif op == "s" and len(parts) == 4:
-            await _send(update, Reply("⏳ swapping the clip…"))
-            reply = await asyncio.to_thread(
-                core.swap_key, chat_id, parts[1], parts[2], parts[3])
-        elif op == "fv" and len(parts) == 4:
-            reply = await asyncio.to_thread(
-                core.veto_filing, chat_id, parts[1], parts[2], parts[3])
-        elif op == "n" and len(parts) == 3:
-            # A screener candidate carries its own lane (G3), so the button
-            # opens the lane the screen put it in rather than a lane-less
-            # workspace that /render then has to guess about.
-            from bot.keyboards import CODE_LANES
-            lane = CODE_LANES.get(parts[1])
-            reply = (core.start_lane(chat_id, lane, parts[2]) if lane
-                     else Reply("Unknown lane on that button."))
-        else:
-            reply = Reply("Unknown action.")
-        await _send(update, reply)
+        reply = await cmds.handle_callback(core, update.effective_chat.id,
+                                           q.data or "", say=await _say(update))
+        await deliver(update, reply)
 
     builder = Application.builder().token(settings.telegram_bot_token)
     if settings.telegram_api_base_url:
         builder = builder.base_url(f"{settings.telegram_api_base_url}/bot")
     app = builder.build()
 
-    app.add_handler(CommandHandler(["start", "help"], cmd_start))
-    app.add_handler(CommandHandler("short", cmd_short))
-    app.add_handler(CommandHandler("long", cmd_long))
-    app.add_handler(CommandHandler("update", cmd_update))
-    app.add_handler(CommandHandler("headline", cmd_headline))
-    app.add_handler(CommandHandler("prompts", cmd_prompts))
-    app.add_handler(CommandHandler("render", cmd_render))
-    app.add_handler(CommandHandler("render_long", cmd_render_long_impl))
-    app.add_handler(CommandHandler("render_short", cmd_render_short_impl))
-    app.add_handler(CommandHandler("draft", cmd_draft))
-    app.add_handler(CommandHandler("proof", cmd_proof))
-    app.add_handler(CommandHandler("repurpose", cmd_repurpose))
-    app.add_handler(CommandHandler("upload", cmd_upload))
-    app.add_handler(CommandHandler("probe", cmd_probe))
-    app.add_handler(CommandHandler("scheduled", cmd_scheduled))
-    app.add_handler(CommandHandler("retention", cmd_retention))
-    app.add_handler(CommandHandler("watch", cmd_watch))
-    app.add_handler(CommandHandler("earnings", cmd_earnings))
-    app.add_handler(CommandHandler("ideas", cmd_ideas))
-    app.add_handler(CommandHandler("idea", cmd_idea))
-    app.add_handler(CommandHandler("unidea", cmd_unidea))
-    app.add_handler(CommandHandler("thesis", cmd_thesis))
-    app.add_handler(CommandHandler("batch", cmd_batch))
-    app.add_handler(CommandHandler("script", cmd_script))
-    app.add_handler(CommandHandler("edit", cmd_edit))
-    app.add_handler(CommandHandler("replace", cmd_replace))
-    app.add_handler(CommandHandler("undo", cmd_undo))
-    app.add_handler(CommandHandler("status", cmd_status))
-    app.add_handler(CommandHandler("cancel", cmd_cancel))
-    app.add_handler(CommandHandler("cost", cmd_cost))
-    app.add_handler(CommandHandler("lines", cmd_lines))
-    app.add_handler(CommandHandler("hooks", cmd_hooks))
-    app.add_handler(CommandHandler("rules", cmd_rules))
-    app.add_handler(CommandHandler("runtime", cmd_runtime))
-    app.add_handler(CommandHandler("lessons", cmd_lessons))
-    app.add_handler(CommandHandler("shots", cmd_shots))
-    app.add_handler(CommandHandler("stillness", cmd_stillness))
-    app.add_handler(CommandHandler("said", cmd_said))
-    app.add_handler(CommandHandler("find", cmd_find))
-    app.add_handler(CommandHandler("ask", cmd_ask))
-    app.add_handler(CommandHandler("why", cmd_why))
-    app.add_handler(CommandHandler("experiments", cmd_experiments))
-    app.add_handler(CommandHandler("scoreboard", cmd_scoreboard))
-    app.add_handler(CommandHandler("correct", cmd_correct))
-    app.add_handler(CommandHandler("kit", cmd_kit))
-    app.add_handler(CommandHandler("screen", cmd_screen))
+    for name in cmds.telegram_names():
+        app.add_handler(CommandHandler(name, command(name)))
     app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(filters.Document.ALL, on_document))
     app.add_handler(MessageHandler(filters.PHOTO, on_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
+    # Last: a command none of the above answered gets "did you mean…"
+    # rather than silence.
+    app.add_handler(MessageHandler(filters.COMMAND, on_unknown))
+
+    async def send_to(chat_id: int, reply: Reply) -> int | None:
+        msg = await send_reply(app.bot, chat_id, reply)
+        if reply.card and msg is not None and core.cards is not None:
+            core.cards.remember(reply.card, chat_id, msg.message_id)
+        if core.feed is not None:
+            core.feed.add("notice", reply.text, files=reply.files,
+                          keyboard=reply.keyboard)
+        return msg.message_id if msg is not None else None
+
+    async def edit_card(chat_id: int, message_id: int, reply: Reply) -> None:
+        try:
+            await app.bot.edit_message_text(
+                reply.text[:4000] or "…", chat_id=chat_id,
+                message_id=message_id, reply_markup=reply.keyboard)
+        except Exception as e:  # noqa: BLE001
+            if "not modified" not in str(e).lower():
+                raise
+
+    core.cards = cmds.CardBoard(core, send=send_to, edit=edit_card)
+    core.send_to = send_to
     return app

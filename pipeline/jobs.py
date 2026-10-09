@@ -58,6 +58,10 @@ class JobStore:
         self.dir = settings.state_dir / "jobs"
         self.dir.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
+        # Called with a copy of every job saved, from whichever thread saved
+        # it: the video cards edit themselves off this (`CardBoard`). A
+        # listener that raises is logged and never fails the save.
+        self.listeners: list = []
 
     def path(self, job_id: str) -> Path:
         return self.dir / f"{job_id}.json"
@@ -69,6 +73,12 @@ class JobStore:
             tmp = p.with_suffix(".json.tmp")
             tmp.write_text(job.model_dump_json(indent=2), encoding="utf-8")
             tmp.replace(p)
+            snapshot = job.model_copy() if self.listeners else None
+        for listener in list(self.listeners):
+            try:
+                listener(snapshot)
+            except Exception:  # noqa: BLE001 - a card is never the job
+                log.exception("job listener failed")
 
     def update(self, job_id: str, change) -> JobRecord | None:
         """Load, `change(job)`, save — as one step. `change` may raise to

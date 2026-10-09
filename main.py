@@ -16,6 +16,8 @@ from config import detect_ffmpeg, get_settings
 from pipeline.jobs import RenderJobQueue
 from pipeline.render_common import set_render_politeness
 
+from bot.commands import NotifyPrefs, menu_commands, schedule_inbox
+from bot.feed import Feed
 from bot.handlers import (BotCore, build_application, schedule_batch,
                           schedule_retention_notes)
 
@@ -78,10 +80,18 @@ def main() -> None:
              settings.assets_dir / "broll_library")
 
     core = BotCore(settings)
+    # Every push the bot makes is also kept for the web panel's Activity.
+    core.feed = Feed()
     app = build_application(settings, core)
+    prefs = NotifyPrefs(settings)
 
     async def _post_init(application) -> None:
         async def notify(text: str) -> None:
+            core.feed.add("notice", text)
+            # `/admin quiet`: only finished, failed and needs-you reach the
+            # chat; the panel's feed keeps everything.
+            if not prefs.wants(text):
+                return
             # Every operator chat gets its copy: one chat that fails (blocked
             # the bot, left the group) used to stop the rest from hearing.
             for chat_id in settings.operator_chat_ids:
@@ -112,6 +122,7 @@ def main() -> None:
             from bot.handlers import telegram_send_kind
 
             p = _P(path)
+            core.feed.add("file", caption, files=[p])
             kind = telegram_send_kind(p, settings)   # raises if unsendable
 
             async def _send() -> None:
@@ -144,7 +155,34 @@ def main() -> None:
 
         core.file_pusher = push_file
         core.queue = RenderJobQueue(settings, core.execute_job, notify)
+        # Video cards edit themselves as their jobs move.
+        core.cards.loop = loop
+        core.queue.store.listeners.append(core.cards.job_changed)
         core.queue.start()
+
+        # The trimmed "/" menu: the three entry points and the nine
+        # families. The old names still answer; they are just not listed.
+        try:
+            from telegram import BotCommand, BotCommandScopeChat
+
+            menu = [BotCommand(n, d) for n, d in menu_commands()]
+            for chat_id in settings.operator_chat_ids:
+                await application.bot.set_my_commands(
+                    menu, scope=BotCommandScopeChat(chat_id))
+        except Exception as e:  # noqa: BLE001 - the menu is a convenience
+            log.warning("could not set the Telegram command menu: %s", e)
+
+        # Everything waiting on you, every morning.
+        schedule_inbox(application, core, send=core.send_to)
+
+        # The web panel, on this loop.
+        if settings.panel_enabled:
+            try:
+                from bot.panel import start_panel
+                start_panel(core, loop)
+            except OSError as e:
+                log.warning("web panel not started (%s:%d): %s",
+                            settings.panel_host, settings.panel_port, e)
 
         try:  # scheduled screener digest (§14) — degrades silently if absent
             from pipeline.screener import schedule_alerts, schedule_digest
