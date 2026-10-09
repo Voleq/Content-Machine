@@ -7,6 +7,7 @@ from pipeline.cost import BudgetExceededError, SpendCapExceededError, SpendLedge
 from pipeline.render_common import run_ffmpeg
 from pipeline.tts import (
     TTSEngine,
+    TTSError,
     cache_key,
     chunk_text,
     mock_words,
@@ -404,3 +405,18 @@ def test_a_fully_resumed_generation_costs_nothing_more(
     second = engine.synthesize(text, "long")
     assert second.cached and len(calls) == n
     assert ledger.mtd_spend_usd() == pytest.approx(after_first)
+
+
+def test_a_final_with_no_voice_chosen_stops_before_the_request(settings):
+    """`ELEVEN_VOICE_ID_SHORT/LONG` ship empty, and the engine filled the gap
+    with a made-up id, so the first real final asked ElevenLabs for a voice
+    called "mock-voice-short" and came back with its 404. Nothing was billed;
+    it is still the wrong place to learn the voice was never picked."""
+    def handler(request):  # pragma: no cover - must never be reached
+        raise AssertionError("request sent with no voice chosen")
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "elevenlabs_api_key": "test-key"})
+    engine = TTSEngine(live, client=httpx.Client(transport=httpx.MockTransport(handler)))
+    with pytest.raises(TTSError, match="ELEVEN_VOICE_ID_SHORT"):
+        engine.synthesize("hello there", "short")

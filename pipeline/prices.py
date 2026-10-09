@@ -135,8 +135,13 @@ class YahooPriceSource:
         try:
             import yfinance as yf
 
+            # From a start date, not `period=f"{days}d"`: Yahoo reads that as
+            # trading days, so 1,826 came back as seven and a quarter years
+            # under a chart labelled 5Y. `days` is calendar days, as the
+            # fixtures and the synthetic floor both read it.
+            start = date.today() - timedelta(days=max(days, 7))
             hist = yf.Ticker(ticker).history(
-                period=f"{max(days, 5)}d", interval="1d", auto_adjust=True,
+                start=start.isoformat(), interval="1d", auto_adjust=True,
             )
             closes = [round(float(c), 4) for c in hist["Close"].tolist()]
             dates = [d.date().isoformat() if hasattr(d, "date") else str(d)[:10]

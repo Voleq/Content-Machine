@@ -38,8 +38,12 @@ from config import Settings
 log = logging.getLogger(__name__)
 
 RECORDS_FILE = "published.json"
+# `youtube.force-ssl` is the only scope captions.insert and
+# commentThreads.insert accept (videos.update takes it too), and without it
+# every upload went up with no captions and no comment, logged and not said.
 SCOPES = (
     "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
     "https://www.googleapis.com/auth/youtube.readonly",
     "https://www.googleapis.com/auth/yt-analytics.readonly",
 )

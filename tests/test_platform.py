@@ -772,3 +772,39 @@ def test_the_materialised_kit_is_portable():
             assert stem not in reserved, f"{name} is a reserved device name"
             assert not (illegal & set(name)), f"{name} has an illegal character"
             assert name == name.strip(" ."), f"{name} has a trailing space or dot"
+
+
+def test_a_rerun_after_a_pull_keeps_what_only_the_install_has(tmp_path):
+    """The README's update step is `git pull` then the bootstrap again, and
+    its `rsync --delete` deleted every file the checkout does not carry:
+    `.env` with every key in it (then re-made from `.env.example`), the
+    state backups, the built kit and the voice. It deletes what the checkout
+    dropped, and nothing the checkout ignores."""
+    import shutil
+    import subprocess
+
+    if shutil.which("rsync") is None:
+        pytest.skip("rsync is not installed here")
+    lines = (ROOT / "deploy" / "bootstrap.sh").read_text(encoding="utf-8").splitlines()
+    start = next(i for i, ln in enumerate(lines) if ln.strip().startswith("rsync -a --delete"))
+    end = next(i for i in range(start, len(lines)) if '"$SRC/" "$DEST/"' in lines[i])
+    command = "\n".join(lines[start:end + 1])
+
+    src, dest = tmp_path / "src", tmp_path / "dest"
+    (src / "pipeline").mkdir(parents=True)
+    shutil.copy(ROOT / ".gitignore", src / ".gitignore")
+    (src / "pipeline" / "new.py").write_text("x", encoding="utf-8")
+    keep = [".env", "backups/state-1.tar.gz", "assets/plates/x.png",
+            "assets/voices/v.onnx", "assets/score/theme.mp3", "state/ledger.json",
+            "node_modules/a.js"]
+    for rel in keep + ["pipeline/dropped.py"]:
+        (dest / rel).parent.mkdir(parents=True, exist_ok=True)
+        (dest / rel).write_text("mine", encoding="utf-8")
+
+    subprocess.run(["bash", "-c", command], check=True,
+                   env={"PATH": os.environ["PATH"], "SRC": str(src), "DEST": str(dest)})
+
+    assert (dest / "pipeline" / "new.py").exists()
+    assert not (dest / "pipeline" / "dropped.py").exists(), "--delete still deletes"
+    missing = [rel for rel in keep if not (dest / rel).exists()]
+    assert not missing, missing

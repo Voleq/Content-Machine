@@ -367,3 +367,27 @@ def test_the_readme_preflight_and_the_script_name_the_same_scripts():
         "the preflight does not mention the kit-ingest gate, so a suite red "
         "for a stale registry reads as a broken test")
     assert "Deselecting either changes nothing about the blocker" in section
+
+
+def test_the_live_preflight_names_a_voice_that_was_never_picked(tmp_path):
+    """The first real final buys the voice, and the two voice ids ship empty.
+    The script that runs before it says so, not the ElevenLabs 404."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
+    got = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"))
+    assert "[FAIL] ElevenLabs" in got.stdout
+    assert "ELEVENLABS_API_KEY" in got.stdout and "ELEVEN_VOICE_ID_SHORT" in got.stdout
+
+    ok = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+              STATE_DIR=str(tmp_path / "state"), ELEVENLABS_API_KEY="k",
+              ELEVEN_VOICE_ID_SHORT="v1", ELEVEN_VOICE_ID_LONG="v2")
+    assert "[PASS] ElevenLabs" in ok.stdout and "eleven_turbo_v2_5" in ok.stdout
+
+
+def test_the_live_preflight_stops_drive_delivery_with_no_token(tmp_path):
+    """`.env.example` ships DELIVERY_BACKEND=gdrive with no credentials, and
+    the first live final would render, buy its voice, and fail on delivery."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
+    got = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"), DELIVERY_BACKEND="gdrive")
+    assert "[FAIL] DELIVERY_BACKEND" in got.stdout and "google_auth.py" in got.stdout

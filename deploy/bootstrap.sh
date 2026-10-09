@@ -636,10 +636,18 @@ step "service user + directory"
 id -u "$SERVICE_USER" >/dev/null 2>&1 \
   || useradd --system --create-home --shell /usr/sbin/nologin "$SERVICE_USER"
 mkdir -p "$DEST"
+# --delete removes what the checkout no longer has, and only that. Everything
+# the checkout ignores lives in $DEST alone - .env and its keys, backups/, the
+# built kit, the Piper voice, node_modules - so the .gitignore filter keeps it
+# out of the transfer AND out of the deletion. Without it every re-run after a
+# pull wiped .env back to .env.example and deleted the state backups. The
+# score is paid for (scripts/make_score.py) and protected until it is
+# committed.
 if [ "$SRC" != "$DEST" ]; then
   rsync -a --delete \
     --exclude '.venv' --exclude 'workspace' --exclude 'cache' \
     --exclude 'state' --exclude '.git' \
+    --exclude-from="$SRC/.gitignore" --filter='P assets/score/' \
     "$SRC/" "$DEST/"
 fi
 cd "$DEST"

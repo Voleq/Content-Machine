@@ -129,6 +129,25 @@ def _sec_agent(settings, report: Report, live: bool) -> None:
                    "unset; only matters with MOCK_MODE off (--live to check)")
 
 
+def _voice(settings, report: Report, live: bool) -> None:
+    """The paid voice: a key and both voice ids, which ship empty."""
+    missing = [name for name, value in (
+        ("ELEVENLABS_API_KEY", settings.elevenlabs_api_key),
+        ("ELEVEN_VOICE_ID_SHORT", settings.eleven_voice_id_short),
+        ("ELEVEN_VOICE_ID_LONG", settings.eleven_voice_id_long)) if not value]
+    model = settings.active_eleven_model
+    if not missing:
+        report.add(PASS, "ElevenLabs", f"{model}, short voice "
+                   f"{settings.eleven_voice_id_short}, long voice "
+                   f"{settings.eleven_voice_id_long}")
+    elif live:
+        report.add(FAIL, "ElevenLabs", f"{', '.join(missing)} not set — a "
+                   f"final cannot buy the voice")
+    else:
+        report.add(SKIP, "ElevenLabs",
+                   "only matters with MOCK_MODE off (--live to check)")
+
+
 def _broll(settings, report: Report) -> None:
     n = settings.broll_library_size()
     if n:
@@ -141,7 +160,12 @@ def _broll(settings, report: Report) -> None:
 
 def _delivery(settings, report: Report, live: bool) -> None:
     backend = settings.delivery_backend
-    if backend == "local" and live:
+    if backend == "gdrive" and not settings.gdrive_credentials and live:
+        report.add(FAIL, "DELIVERY_BACKEND",
+                   "gdrive with no GDRIVE_CREDENTIALS — every final fails at "
+                   "delivery, after the render. `scripts/google_auth.py "
+                   "drive`, or DELIVERY_BACKEND=local while you sit at the box")
+    elif backend == "local" and live:
         report.add(FAIL, "DELIVERY_BACKEND",
                    "`local` writes a file path and no link — correct for "
                    "testing, silently useless in production")
@@ -196,6 +220,7 @@ def main(argv: list[str] | None = None) -> int:
     _kit(settings, report)
     _sfx(settings, report)
     _sec_agent(settings, report, live)
+    _voice(settings, report, live)
     _broll(settings, report)
     _delivery(settings, report, live)
     _publish_window(settings, report)

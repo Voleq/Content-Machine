@@ -22,6 +22,62 @@ from bot.handlers import (BotCore, build_application, schedule_batch,
 log = logging.getLogger("dennis")
 
 
+# How long a worker waits for Telegram to take one file. A full-size proof
+# is tens of megabytes on a home uplink.
+PUSH_TIMEOUT_S = 900
+
+
+def file_pusher(application, settings, loop):
+    """`BotCore.file_pusher`: send a file to the operators from a worker
+    thread, on the bot's loop, and raise if Telegram refused it."""
+    def push_file(path, caption: str = "") -> None:
+        """Called from the render worker thread — hop back to the bot's
+        loop to actually send.
+
+        BY TYPE AND SIZE, not always as a photo (E3). Every push went out
+        through `send_photo`, and two callers send things that are not
+        photos: `_run_proof` pushes the finished proof MP4, and
+        `_send_storyboard` pushes a large multi-tile contact sheet that
+        exceeds `send_photo`'s tighter limits. `push_file` catches the
+        exception and logs it, so the operator saw nothing at all.
+        """
+        async def _send() -> None:
+            from pathlib import Path as _P
+
+            p = _P(path)
+            suffix = p.suffix.lower()
+            try:
+                size = p.stat().st_size
+            except OSError:
+                size = 0
+            # Telegram's photo endpoint caps at 10 MB and re-encodes;
+            # a contact sheet past that, or any non-image, goes as a
+            # document so it arrives intact.
+            video = suffix in (".mp4", ".mov", ".mkv", ".webm")
+            photo = (suffix in (".png", ".jpg", ".jpeg", ".webp")
+                     and size <= 10_000_000)
+            for chat_id in settings.operator_chat_ids:
+                with open(p, "rb") as fh:
+                    if video:
+                        await application.bot.send_video(
+                            chat_id, fh, caption=caption[:1024],
+                            supports_streaming=True)
+                    elif photo:
+                        await application.bot.send_photo(
+                            chat_id, fh, caption=caption[:1024])
+                    else:
+                        await application.bot.send_document(
+                            chat_id, fh, caption=caption[:1024])
+
+        # WAITED FOR. Handing the send to the loop and returning lost every
+        # failure (a proof over Telegram's 50 MB, say): `BotCore.push_file`
+        # only tells the operator where the file is when this raises.
+        asyncio.run_coroutine_threadsafe(_send(), loop).result(
+            timeout=PUSH_TIMEOUT_S)
+
+    return push_file
+
+
 def main() -> None:
     settings = get_settings()
     logging.basicConfig(
@@ -87,47 +143,8 @@ def main() -> None:
 
         loop = asyncio.get_running_loop()
 
-        def push_file(path, caption: str = "") -> None:
-            """Called from the render worker thread — hop back to the bot's
-            loop to actually send.
+        core.file_pusher = file_pusher(application, settings, loop)
 
-            BY TYPE AND SIZE, not always as a photo (E3). Every push went out
-            through `send_photo`, and two callers send things that are not
-            photos: `_run_proof` pushes the finished proof MP4, and
-            `_send_storyboard` pushes a large multi-tile contact sheet that
-            exceeds `send_photo`'s tighter limits. `push_file` catches the
-            exception and logs it, so the operator saw nothing at all.
-            """
-            async def _send() -> None:
-                from pathlib import Path as _P
-
-                p = _P(path)
-                suffix = p.suffix.lower()
-                try:
-                    size = p.stat().st_size
-                except OSError:
-                    size = 0
-                # Telegram's photo endpoint caps at 10 MB and re-encodes;
-                # a contact sheet past that, or any non-image, goes as a
-                # document so it arrives intact.
-                video = suffix in (".mp4", ".mov", ".mkv", ".webm")
-                photo = (suffix in (".png", ".jpg", ".jpeg", ".webp")
-                         and size <= 10_000_000)
-                for chat_id in settings.operator_chat_ids:
-                    with open(p, "rb") as fh:
-                        if video:
-                            await application.bot.send_video(
-                                chat_id, fh, caption=caption[:1024],
-                                supports_streaming=True)
-                        elif photo:
-                            await application.bot.send_photo(
-                                chat_id, fh, caption=caption[:1024])
-                        else:
-                            await application.bot.send_document(
-                                chat_id, fh, caption=caption[:1024])
-            asyncio.run_coroutine_threadsafe(_send(), loop)
-
-        core.file_pusher = push_file
         core.queue = RenderJobQueue(settings, core.execute_job, notify)
         core.queue.start()
 

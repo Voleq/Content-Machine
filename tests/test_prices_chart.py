@@ -550,3 +550,35 @@ def test_a_chart_over_years_heads_its_periods_with_month_and_year():
         "38.60", "15.40", "15.40")
     # the short's months keep their day heads
     assert price_labels(s)["head-4"] == "09-10"
+
+
+def test_the_live_feed_asks_for_calendar_days_not_trading_bars(settings, monkeypatch):
+    """Yahoo reads `period="1826d"` as 1,826 TRADING days: seven and a quarter
+    years under a monitor labelled 5Y, where the fixture and the synthetic
+    floor both mean calendar days. The live feed asks from a start date."""
+    import sys
+    import types
+    from datetime import date, timedelta
+
+    import pandas as pd
+
+    from pipeline.prices import YahooPriceSource
+
+    asked: list[dict] = []
+
+    class Ticker:
+        def __init__(self, symbol):
+            self.symbol = symbol
+
+        def history(self, **kw):
+            asked.append(kw)
+            idx = pd.to_datetime(["2026-01-02", "2026-01-05"])
+            return pd.DataFrame({"Close": [10.0, 11.0]}, index=idx)
+
+    monkeypatch.setitem(sys.modules, "yfinance", types.SimpleNamespace(Ticker=Ticker))
+    series = YahooPriceSource(settings).history("EXMPL", 1826)
+
+    assert series.closes == [10.0, 11.0] and not series.degraded
+    (kw,) = asked
+    assert "period" not in kw
+    assert kw["start"] == (date.today() - timedelta(days=1826)).isoformat()
