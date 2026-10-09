@@ -786,8 +786,8 @@ def test_a_rerun_after_a_pull_keeps_what_only_the_install_has(tmp_path):
     if shutil.which("rsync") is None:
         pytest.skip("rsync is not installed here")
     lines = (ROOT / "deploy" / "bootstrap.sh").read_text(encoding="utf-8").splitlines()
-    start = next(i for i, ln in enumerate(lines) if ln.strip().startswith("rsync -a --delete"))
-    end = next(i for i in range(start, len(lines)) if '"$SRC/" "$DEST/"' in lines[i])
+    start = next(i for i, ln in enumerate(lines) if ln.strip().startswith('PROTECT="$(mktemp)"'))
+    end = next(i for i in range(start, len(lines)) if lines[i].strip() == 'rm -f "$PROTECT"')
     command = "\n".join(lines[start:end + 1])
 
     src, dest = tmp_path / "src", tmp_path / "dest"
@@ -808,3 +808,10 @@ def test_a_rerun_after_a_pull_keeps_what_only_the_install_has(tmp_path):
     assert not (dest / "pipeline" / "dropped.py").exists(), "--delete still deletes"
     missing = [rel for rel in keep if not (dest / rel).exists()]
     assert not missing, missing
+    assert (dest / ".env").read_text(encoding="utf-8") == "mine"
+
+    # an .env kept in the checkout still reaches the install, as it always did
+    (src / ".env").write_text("from the clone", encoding="utf-8")
+    subprocess.run(["bash", "-c", command], check=True,
+                   env={"PATH": os.environ["PATH"], "SRC": str(src), "DEST": str(dest)})
+    assert (dest / ".env").read_text(encoding="utf-8") == "from the clone"
