@@ -409,3 +409,15 @@ def test_the_live_preflight_wants_the_3d_dennis(tmp_path):
                STATE_DIR=str(tmp_path / "state"), DENNIS_3D="on",
                DENNIS_3D_PYTHON=str(fake))
     assert "[FAIL] 3D Dennis" in got.stdout and "No module named 'bpy'" in got.stdout
+
+
+def test_the_live_preflight_refuses_the_example_sec_contact(tmp_path):
+    """`.env.example` ships `SEC_USER_AGENT=Your Name your@email`, which read
+    as set and passed."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
+    got = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"), SEC_USER_AGENT="Your Name your@email")
+    assert "[FAIL] SEC_USER_AGENT" in got.stdout
+    ok = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+              STATE_DIR=str(tmp_path / "state"), SEC_USER_AGENT="A Person a@b.example")
+    assert "[PASS] SEC_USER_AGENT" in ok.stdout
