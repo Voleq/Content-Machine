@@ -390,4 +390,4 @@ def test_the_live_preflight_stops_drive_delivery_with_no_token(tmp_path):
     assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
     got = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
                STATE_DIR=str(tmp_path / "state"), DELIVERY_BACKEND="gdrive")
-    assert "[FAIL] DELIVERY_BACKEND" in got.stdout and "google_auth.py" in got.stdout
+    assert "[FAIL] DELIVERY_BACKEND" in got.stdout and "DELIVERY_BACKEND=telegram" in got.stdout

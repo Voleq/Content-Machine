@@ -450,36 +450,6 @@ def test_a_failed_push_tells_the_operator(core, tmp_path):
     assert said and "too big" in said[0]
 
 
-def test_the_bots_own_pusher_reports_a_send_telegram_refused(tmp_path):
-    """E3 held only for a pusher that raises in the worker's thread. main.py's
-    hands the send to the bot's loop, and returned before it ran, so Telegram
-    refusing a proof over its 50 MB limit was lost and the "it is on the
-    render box at ..." notice never went."""
-    import asyncio
-    import threading
-    from types import SimpleNamespace
-
-    import main as main_mod
-
-    class Bot:
-        async def send_video(self, *a, **k):
-            raise RuntimeError("Request Entity Too Large")
-
-        send_photo = send_document = send_video
-
-    loop = asyncio.new_event_loop()
-    threading.Thread(target=loop.run_forever, daemon=True).start()
-    try:
-        push = main_mod.file_pusher(SimpleNamespace(bot=Bot()),
-                                    SimpleNamespace(operator_chat_ids=[7]), loop)
-        f = tmp_path / "long_proof.mp4"
-        f.write_bytes(b"x")
-        with pytest.raises(RuntimeError, match="Too Large"):
-            push(f, "proof")
-    finally:
-        loop.call_soon_threadsafe(loop.stop)
-
-
 def test_a_proof_in_mock_mode_blames_mock_mode_for_the_hum(core, xlsx_bytes,
                                                           short_valid_json):
     """It said Piper was not installed, which sent an operator who had

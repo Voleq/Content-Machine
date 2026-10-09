@@ -163,8 +163,8 @@ def _delivery(settings, report: Report, live: bool) -> None:
     if backend == "gdrive" and not settings.gdrive_credentials and live:
         report.add(FAIL, "DELIVERY_BACKEND",
                    "gdrive with no GDRIVE_CREDENTIALS — every final fails at "
-                   "delivery, after the render. `scripts/google_auth.py "
-                   "drive`, or DELIVERY_BACKEND=local while you sit at the box")
+                   "delivery, after the render. DELIVERY_BACKEND=telegram "
+                   "or local while you sit at the box")
     elif backend == "local" and live:
         report.add(FAIL, "DELIVERY_BACKEND",
                    "`local` writes a file path and no link — correct for "

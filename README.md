@@ -272,8 +272,6 @@ scripts/
   render_samples.py      render the committed samples from fixtures
   gen_assets.py          procedural placeholders for everything not drawn
   gen_fixtures.py, fetch_sfx.py, contact_sheet.py
-  google_auth.py         the one-time Google consent: the YouTube and Drive
-                         tokens the bot signs in with
 room3d/                  the long's 16:9 rooms, one room built in 3D:
                          build.py (Blender as a Python module, run when the
                          room changes, never on the render box), renders/
@@ -586,20 +584,11 @@ starting point, but they are **unmaintained** and nothing tests them.
 2. Set `ELEVENLABS_API_KEY` and pick the Dennis voice —
    `ELEVEN_VOICE_ID_SHORT/LONG` are deliberate placeholders; audition
    Brian (dry/deadpan), Charlie (casual everyman) or George (weary/raspy)
-   and paste one id. Set `PEXELS_API_KEY`. `GIPHY_API_KEY`/`TENOR_API_KEY`
-   are optional meme fallbacks — the owned library comes first anyway.
-   `DELIVERY_BACKEND=local` is fine while you sit at the render box; for
-   Drive, `python scripts/google_auth.py drive client_secret.json
-   state/drive_token.json` makes the token `GDRIVE_CREDENTIALS` names, with
-   `GDRIVE_ROOT_FOLDER_ID` left empty. Not a service account: on a personal
-   Google account it has no storage and Drive refuses its uploads.
+   and paste one id. Set `PEXELS_API_KEY`, `GDRIVE_CREDENTIALS`
+   (service-account JSON path) and `GDRIVE_ROOT_FOLDER_ID` (share the
+   folder with the service account). `GIPHY_API_KEY`/`TENOR_API_KEY` are
+   optional meme fallbacks — the owned library comes first anyway.
 3. Flip `MOCK_MODE=false`, restart, `/cost` to confirm the cap.
-4. YouTube: `python scripts/google_auth.py youtube client_secret.json
-   state/youtube_token.json`, then `YOUTUBE_ENABLED=true` and
-   `YOUTUBE_CREDENTIALS` pointing at the token. Until the Cloud project
-   passes YouTube's API audit, every video it uploads is locked to private,
-   so upload the first ones by hand in YouTube Studio from the upload
-   package and tick the altered-or-synthetic box.
 
 ---
 
