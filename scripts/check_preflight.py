@@ -148,6 +148,29 @@ def _voice(settings, report: Report, live: bool) -> None:
                    "only matters with MOCK_MODE off (--live to check)")
 
 
+def _dennis_3d(settings, report: Report, live: bool) -> None:
+    """The 3D Dennis: the only Dennis that ships (9 Oct: the drawn one "will
+    not be a thing"). `on` and a Blender Python that can run the worker."""
+    from pipeline import dennis3d
+    from pipeline.render_common import RenderError
+
+    mode = (settings.dennis_3d or "off").strip().lower()
+    if mode != "on":
+        state = FAIL if live else SKIP
+        report.add(state, "3D Dennis",
+                   f"DENNIS_3D={mode or 'off'} — set DENNIS_3D=on: off draws the old "
+                   f"Dennis and auto falls back to him quietly when Blender breaks")
+        return
+    try:
+        dennis3d.wanted(settings)
+    except RenderError as e:
+        report.add(FAIL, "3D Dennis", str(e))
+        return
+    python = " ".join(dennis3d._python(settings))
+    report.add(PASS, "3D Dennis", f"Blender runs the worker ({python}); time it once "
+               f"with `{python} room3d/perform.py --bench`")
+
+
 def _broll(settings, report: Report) -> None:
     n = settings.broll_library_size()
     if n:
@@ -221,6 +244,7 @@ def main(argv: list[str] | None = None) -> int:
     _sfx(settings, report)
     _sec_agent(settings, report, live)
     _voice(settings, report, live)
+    _dennis_3d(settings, report, live)
     _broll(settings, report)
     _delivery(settings, report, live)
     _publish_window(settings, report)
