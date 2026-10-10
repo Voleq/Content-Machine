@@ -130,6 +130,7 @@
      "tracking": ".16em",
      "transform": "uppercase",
      "maxChars": 64,
+     "authoredSize": 28,
      "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), was 34"
     },
     "term": {
@@ -139,6 +140,7 @@
      "colour": "structure",
      "tracking": "-.02em",
      "maxChars": 46,
+     "authoredSize": 76,
      "budget": "derived from the slot boxes that set this role; 46 is the floor (narrowest of 1), was 24"
     },
     "body": {
@@ -148,6 +150,7 @@
      "colour": "structure",
      "maxLines": 4,
      "maxCharsPerLine": 88,
+     "authoredSize": 40,
      "budget": "derived from the slot boxes that set this role; 88 is the floor (narrowest of 1), was 46"
     },
     "example": {
@@ -157,6 +160,7 @@
      "colour": "quiet",
      "opacity": 1,
      "maxChars": 90,
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 90 is the floor (narrowest of 1), was 60"
     }
    },
@@ -168,6 +172,7 @@
      "y": 181,
      "w": 1728,
      "h": 59,
+     "authoredLines": 1,
      "maxChars": 64
     },
     "term": {
@@ -177,6 +182,7 @@
      "y": 266,
      "w": 1728,
      "h": 163,
+     "authoredLines": 1,
      "maxChars": 46
     },
     "body": {
@@ -186,6 +192,7 @@
      "y": 492,
      "w": 1728,
      "h": 257,
+     "authoredLines": 3,
      "maxCharsPerLine": 88,
      "maxLines": 4
     },
@@ -196,6 +203,7 @@
      "y": 806,
      "w": 1728,
      "h": 55,
+     "authoredLines": 1,
      "maxChars": 90
     }
    }
@@ -320,6 +328,7 @@
      "tracking": ".16em",
      "transform": "uppercase",
      "maxChars": 37,
+     "authoredSize": 28,
      "budget": "derived from the slot boxes that set this role; 37 is the floor (narrowest of 1), was 34"
     },
     "term": {
@@ -329,6 +338,7 @@
      "colour": "structure",
      "tracking": "-.02em",
      "maxChars": 28,
+     "authoredSize": 80,
      "budget": "derived from the slot boxes that set this role; 28 is the floor (narrowest of 1), was 20"
     },
     "body": {
@@ -338,6 +348,7 @@
      "colour": "structure",
      "maxLines": 5,
      "maxCharsPerLine": 50,
+     "authoredSize": 44,
      "budget": "derived from the slot boxes that set this role; 50 is the floor (narrowest of 1), was 25"
     },
     "example": {
@@ -347,6 +358,7 @@
      "colour": "quiet",
      "opacity": 1,
      "maxChars": 47,
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     }
    },
@@ -358,6 +370,7 @@
      "y": 400,
      "w": 972,
      "h": 54,
+     "authoredLines": 1,
      "maxChars": 37
     },
     "term": {
@@ -367,6 +380,7 @@
      "y": 493,
      "w": 972,
      "h": 156,
+     "authoredLines": 1,
      "maxChars": 28
     },
     "body": {
@@ -376,6 +390,7 @@
      "y": 749,
      "w": 972,
      "h": 427,
+     "authoredLines": 5,
      "maxCharsPerLine": 50,
      "maxLines": 5
     },
@@ -386,6 +401,7 @@
      "y": 1266,
      "w": 972,
      "h": 50,
+     "authoredLines": 1,
      "maxChars": 47
     }
    }
@@ -508,6 +524,7 @@
      "colour": "structure",
      "maxLines": 4,
      "maxCharsPerLine": 55,
+     "authoredSize": 62,
      "budget": "derived from the slot boxes that set this role; 55 is the floor (narrowest of 1), was 40"
     },
     "attribution": {
@@ -516,6 +533,7 @@
      "weight": 500,
      "colour": "structure",
      "maxChars": 101,
+     "authoredSize": 34,
      "budget": "derived from the slot boxes that set this role; 101 is the floor (narrowest of 1), was 30"
     },
     "source": {
@@ -525,6 +543,7 @@
      "colour": "quiet",
      "opacity": 1,
      "maxChars": 90,
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 90 is the floor (narrowest of 1), was 60"
     }
    },
@@ -536,6 +555,7 @@
      "y": 169,
      "w": 1728,
      "h": 494,
+     "authoredLines": 5,
      "maxCharsPerLine": 55,
      "maxLines": 4
     },
@@ -546,6 +566,7 @@
      "y": 744,
      "w": 1728,
      "h": 99,
+     "authoredLines": 2,
      "maxChars": 101
     },
     "source": {
@@ -555,6 +576,7 @@
      "y": 860,
      "w": 1728,
      "h": 74,
+     "authoredLines": 2,
      "maxChars": 90
     }
    }
@@ -677,6 +699,7 @@
      "colour": "structure",
      "maxLines": 4,
      "maxCharsPerLine": 39,
+     "authoredSize": 54,
      "budget": "derived from the slot boxes that set this role; 39 is the floor (narrowest of 1), was 26"
     },
     "attribution": {
@@ -685,6 +708,7 @@
      "weight": 500,
      "colour": "structure",
      "maxChars": 63,
+     "authoredSize": 34,
      "budget": "derived from the slot boxes that set this role; 63 is the floor (narrowest of 1), was 30"
     },
     "source": {
@@ -694,6 +718,7 @@
      "colour": "quiet",
      "opacity": 1,
      "maxChars": 47,
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     }
    },
@@ -705,6 +730,7 @@
      "y": 441,
      "w": 972,
      "h": 640,
+     "authoredLines": 9,
      "maxCharsPerLine": 39,
      "maxLines": 4
     },
@@ -715,6 +741,7 @@
      "y": 1168,
      "w": 972,
      "h": 103,
+     "authoredLines": 2,
      "maxChars": 63
     },
     "source": {
@@ -724,6 +751,7 @@
      "y": 1289,
      "w": 972,
      "h": 69,
+     "authoredLines": 2,
      "maxChars": 47
     }
    }
@@ -847,6 +875,7 @@
      "tracking": "-.02em",
      "maxLines": 2,
      "maxCharsPerLine": 60,
+     "authoredSize": 60,
      "budget": "derived from the slot boxes that set this role; 60 is the floor (narrowest of 1), was 34"
     },
     "row": {
@@ -856,6 +885,7 @@
      "colour": "structure",
      "maxLines": 2,
      "maxCharsPerLine": 82,
+     "authoredSize": 40,
      "budget": "derived from the slot boxes that set this role; 82 is the floor (narrowest of 3), was 42"
     },
     "caption": {
@@ -865,6 +895,7 @@
      "colour": "quiet",
      "opacity": 1,
      "maxChars": 92,
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 92 is the floor (narrowest of 1), was 60"
     }
    },
@@ -876,6 +907,7 @@
      "y": 170,
      "w": 1440,
      "h": 150,
+     "authoredLines": 2,
      "maxCharsPerLine": 60,
      "maxLines": 2
     },
@@ -894,6 +926,7 @@
      "y": 366,
      "w": 1320,
      "h": 140,
+     "authoredLines": 3,
      "maxCharsPerLine": 82,
      "maxLines": 2
     },
@@ -912,6 +945,7 @@
      "y": 556,
      "w": 1320,
      "h": 140,
+     "authoredLines": 3,
      "maxCharsPerLine": 82,
      "maxLines": 2
     },
@@ -930,6 +964,7 @@
      "y": 746,
      "w": 1320,
      "h": 140,
+     "authoredLines": 3,
      "maxCharsPerLine": 82,
      "maxLines": 2
     },
@@ -940,6 +975,7 @@
      "y": 940,
      "w": 1440,
      "h": 64,
+     "authoredLines": 2,
      "maxChars": 92
     }
    }
@@ -1063,6 +1099,7 @@
      "tracking": "-.02em",
      "maxLines": 2,
      "maxCharsPerLine": 38,
+     "authoredSize": 52,
      "budget": "derived from the slot boxes that set this role; 38 is the floor (narrowest of 1), was 24"
     },
     "row": {
@@ -1072,6 +1109,7 @@
      "colour": "structure",
      "maxLines": 2,
      "maxCharsPerLine": 55,
+     "authoredSize": 36,
      "budget": "derived from the slot boxes that set this role; 55 is the floor (narrowest of 3), was 26"
     },
     "caption": {
@@ -1081,6 +1119,7 @@
      "colour": "quiet",
      "opacity": 1,
      "maxChars": 47,
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     }
    },
@@ -1092,6 +1131,7 @@
      "y": 170,
      "w": 972,
      "h": 189,
+     "authoredLines": 3,
      "maxCharsPerLine": 38,
      "maxLines": 2
     },
@@ -1110,6 +1150,7 @@
      "y": 412,
      "w": 752,
      "h": 208,
+     "authoredLines": 5,
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
@@ -1128,6 +1169,7 @@
      "y": 696,
      "w": 752,
      "h": 208,
+     "authoredLines": 5,
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
@@ -1146,6 +1188,7 @@
      "y": 980,
      "w": 752,
      "h": 208,
+     "authoredLines": 5,
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
@@ -1156,6 +1199,7 @@
      "y": 1419,
      "w": 972,
      "h": 61,
+     "authoredLines": 2,
      "maxChars": 47
     }
    }

@@ -141,7 +141,7 @@
     walk: ['walkN', e => ({ cols: e.steps.length + 2, float: !!e.float })],
     rails: ['endMarketExposure', () => ({ rows: 5 })],
     ceiling: ['rpoCoverage', () => ({ quarters: 8 })],
-    pairs: ['pairedN', () => ({ years: 6, rows: [{ label: 'row-1', name: 'sa', swatch: 'up' }, { label: 'row-2', name: 'sb', swatch: 'down' }, { label: 'ratio-label', name: 'ratio', rule: true }] })],
+    pairs: ['pairedN', () => ({ years: 6, rows: [{ label: 'row-1', name: 'sa', swatch: 'up' }, { label: 'row-2', name: 'sb', swatch: 'second' }, { label: 'ratio-label', name: 'ratio', rule: true }] })],
     b2b: ['bookToBill', () => ({ quarters: 8 })],
     tracks: ['cashConversionCycle', e => ({ ticks: e.ticks.length, bands: [['band-1'], ['band-2'], ['band-3']], bandScale: e.scale.slice(), scale: { range: e.scale, why: 'fixed, so every row is read on one scale' },
       bandNote: 'an extent on the fixed ' + e.scale[0] + '\u2013' + e.scale[1] + ' scale \u2014 historyBand draws it; pass [start, end] as fractions of the scale, then an ink role' })],

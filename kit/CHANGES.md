@@ -1,6 +1,35 @@
 # Dennis v2 — delta pack 15
 
-## Rebuild-41 · the bot's answers to ANSWERS §R41
+## Rebuild-41c · the bot's install report
+
+emit → export --index → audit --check: 33 of 33. audit.test.js: 36 of 36. 5,122 files indexed.
+
+1. **9:16 axis labels no longer slide into the plot.** The bot's fix is copied verbatim into
+   `engine/grounds.js` step 2: `DATA` and `DATA_GAP = 14` sit beside `NOT_TEXT`, and a box
+   grown for the type floor stops 14 units short of any data region it was clear of. That
+   affects the y-axis labels on bars-6y, bars-8q, line-6y, line-8q, line-dense, dilution-6y,
+   guided-vs-actual-6y, maturities, seasonality-4y, seasonality-6y and macro-series.
+2. **The second series is `second`, not `down`.** The ten two-series charts (ad-spend-vs-sales,
+   ads-vs-subscriptions, capex-vs-depreciation-utility, debt-vs-equity-funding, fees-vs-interest,
+   online-vs-stores, reinvestment-rate, rent-vs-market, rnd-vs-revenue,
+   sustaining-vs-growth-capex) all take their legend from one sector-copy line. That line now
+   says `swatch: 'second'`, so the label ink and the plot-area's `tone2` are `subject2` at
+   both sizes. No slot table publishes `down` on these charts now. Engine: `sector-copy.js`.
+3. **`theNumber()` picks the figure again.** On every family it now ranks by the
+   **authored** size, not the published one, because the 9:16 floor had flattened kickers,
+   units and headlines to the figures' size. It also keeps a box authored for two lines out of
+   the one-line pick on 9:16, where the floor now fits it on one. Two new published fields
+   carry this:
+   - `typeRoles[r].authoredSize`: the size before the fit and the floor;
+   - `slots[n].authoredLines`: the lines the box was drawn for.
+
+   Result: count-up and pen-circle land on the same slot as with the restyle switched off,
+   on all 540 data plates at both aspects (0 differ). For example, numbers sheets land on
+   `cell-1-5`, mix plates on `share-1`, share-of and by-region on the last value, and
+   bars-6y and line-6y on `value-6`. Engine: `motion.js` `theNumber` and `grounds.js`.
+4. **9:16 sample copy (FYI).** Noted. The kit's own sample figures can still cut off on 79
+   9:16 data plates. No change was made, since the bot writes figures that fit.
+
 
 emit → export --index → audit --check: 33 of 33. audit.test.js: 36 of 36 (two new faults).
 

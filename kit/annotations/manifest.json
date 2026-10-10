@@ -55,6 +55,7 @@
      "maxLines": 2,
      "maxCharsPerLine": 58,
      "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "authoredSize": 30,
      "budget": "derived from the slot boxes that set this role; 58 is the floor (narrowest of 1), was 59"
     }
    },
@@ -76,6 +77,7 @@
      "y": 241,
      "w": 1077,
      "h": 72,
+     "authoredLines": 2,
      "maxCharsPerLine": 58,
      "maxLines": 2
     }
@@ -126,6 +128,7 @@
      "maxLines": 2,
      "maxCharsPerLine": 17,
      "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "authoredSize": 29,
      "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 1), was 17"
     }
    },
@@ -147,6 +150,7 @@
      "y": 162,
      "w": 316,
      "h": 70,
+     "authoredLines": 2,
      "maxCharsPerLine": 17,
      "maxLines": 2
     }
@@ -197,6 +201,7 @@
      "maxLines": 2,
      "maxCharsPerLine": 70,
      "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "authoredSize": 23,
      "budget": "derived from the slot boxes that set this role; 70 is the floor (narrowest of 1), was 64"
     }
    },
@@ -218,6 +223,7 @@
      "y": 128,
      "w": 986,
      "h": 55,
+     "authoredLines": 2,
      "maxCharsPerLine": 70,
      "maxLines": 2
     }
@@ -268,6 +274,7 @@
      "maxLines": 2,
      "maxCharsPerLine": 14,
      "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "authoredSize": 34,
      "budget": "derived from the slot boxes that set this role; 14 is the floor (narrowest of 1), was 13"
     }
    },
@@ -289,6 +296,7 @@
      "y": 93,
      "w": 300,
      "h": 82,
+     "authoredLines": 2,
      "maxCharsPerLine": 14,
      "maxLines": 2
     }
@@ -339,6 +347,7 @@
      "maxLines": 2,
      "maxCharsPerLine": 15,
      "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "authoredSize": 34,
      "budget": "derived from the slot boxes that set this role; 15 is the floor (narrowest of 1), was 13"
     }
    },
@@ -360,6 +369,7 @@
      "y": 90,
      "w": 320,
      "h": 82,
+     "authoredLines": 2,
      "maxCharsPerLine": 15,
      "maxLines": 2
     }
@@ -410,6 +420,7 @@
      "maxLines": 2,
      "maxCharsPerLine": 70,
      "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "authoredSize": 23,
      "budget": "derived from the slot boxes that set this role; 70 is the floor (narrowest of 1), was 64"
     }
    },
@@ -431,6 +442,7 @@
      "y": 337,
      "w": 995,
      "h": 55,
+     "authoredLines": 2,
      "maxCharsPerLine": 70,
      "maxLines": 2
     }
@@ -481,6 +493,7 @@
      "maxLines": 2,
      "maxCharsPerLine": 20,
      "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "authoredSize": 29,
      "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 1), was 11"
     }
    },
@@ -502,6 +515,7 @@
      "y": 252,
      "w": 418,
      "h": 196,
+     "authoredLines": 5,
      "maxCharsPerLine": 20,
      "maxLines": 2
     }
@@ -552,6 +566,7 @@
      "maxLines": 2,
      "maxCharsPerLine": 22,
      "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "authoredSize": 28,
      "budget": "derived from the slot boxes that set this role; 22 is the floor (narrowest of 1), was 40"
     }
    },
@@ -564,6 +579,7 @@
      "y": -94,
      "w": 380,
      "h": 94,
+     "authoredLines": 2,
      "maxCharsPerLine": 22,
      "maxLines": 2
     },
@@ -623,6 +639,7 @@
      "maxLines": 2,
      "maxCharsPerLine": 34,
      "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 34 is the floor (narrowest of 1), was 35"
     }
    },
@@ -635,6 +652,7 @@
      "y": 18,
      "w": 546,
      "h": 120,
+     "authoredLines": 4,
      "maxCharsPerLine": 34,
      "maxLines": 2
     },
@@ -694,6 +712,7 @@
      "maxLines": 2,
      "maxCharsPerLine": 35,
      "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 35 is the floor (narrowest of 1), was 41"
     }
    },
@@ -715,6 +734,7 @@
      "y": 181,
      "w": 566,
      "h": 62,
+     "authoredLines": 2,
      "maxCharsPerLine": 35,
      "maxLines": 2
     }
