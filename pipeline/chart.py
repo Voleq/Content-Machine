@@ -461,7 +461,7 @@ def _style(reg: Registry, plate: Plate) -> dict:
 
 
 def draw_declared(reg: Registry, plate: Plate, values: dict[str, str], img,
-                  *, seed: str = "") -> bool:
+                  *, seed: str = "", settings: Settings | None = None) -> bool:
     """Draw a plate's data regions from its own slot values. True if it drew.
 
     This is what makes `[PLATE: bars-6y-16x9 | value=400,431,…]` a chart rather
@@ -486,11 +486,80 @@ def draw_declared(reg: Registry, plate: Plate, values: dict[str, str], img,
     if nodes:
         S.paint(img, nodes, plate.export_scale * img.width / max(plate.pixel_size[0], 1))
         drew = True
+        _label_marks(reg, plate, values, got.data, img, settings)
     return drew
 
 
+def _label_marks(reg: Registry, plate: Plate, values: dict[str, str], data: dict,
+                 img, settings: Settings | None) -> None:
+    """Each company's `ticker-N` beside its own mark on a scatter.
+
+    The kit publishes the ticker boxes at the plot's corner, "positioned by
+    the renderer beside its own mark": eight dots and not one name says which
+    company is which, and the subject is only "the red one". The subject is
+    placed first; each label takes the first side of its mark that is clear
+    of the other marks and labels, and stays inside the plot.
+    """
+    import dataclasses
+
+    from PIL import Image
+
+    from pipeline.plate_frames import fill_slot
+
+    box = S.boxes(plate).get("plot-area")
+    marks = S.scatter_marks(box, data.get("points"), data.get("accent"))
+    named = [(m, plate.slot(f"ticker-{m[0] + 1}")) for m in marks]
+    named = [(m, sl) for m, sl in named if sl is not None and sl.placed
+             and str(values.get(sl.name) or "").strip()]
+    if not named:
+        return
+    if settings is None:
+        from config import get_settings
+        settings = get_settings()
+    accent = data.get("accent")
+    named.sort(key=lambda ms: ms[0][0] != accent)
+    gap = 10
+    taken: list[tuple[float, float, float, float]] = []
+    # The plate's own strong ink (axes, rule-of-40's diagonal), in canvas
+    # units: a label set across a rule is a name with a line through it.
+    import numpy as np
+
+    art = np.asarray(Image.open(plate.frame_paths()[0]).convert("L")
+                     .resize(tuple(plate.canvas), Image.BILINEAR)).astype(np.int16)
+    ground = int(np.median(art[int(box["y"]):int(box["y"] + box["h"]),
+                               int(box["x"]):int(box["x"] + box["w"])]))
+    ruled = np.abs(art - ground) > 60
+
+    def clear(b) -> bool:
+        x, y, w, h = b
+        if x < box["x"] or y < box["y"] or x + w > box["x"] + box["w"] or y + h > box["y"] + box["h"]:
+            return False
+        if any(x < tx + tw and tx < x + w and y < ty + th and ty < y + h for tx, ty, tw, th in taken):
+            return False
+        if ruled[int(y):int(y + h), int(x):int(x + w)].any():
+            return False
+        return not any(x - r < cx < x + w + r and y - r < cy < y + h + r
+                       for _i, cx, cy, r, _o in marks)
+
+    layer = Image.new("RGBA", tuple(plate.pixel_size), (0, 0, 0, 0))
+    for (i, cx, cy, r, _off), sl in named:
+        w, h = sl.w, sl.h
+        right, left = (cx + r + gap, "left"), (cx - r - gap - w, "right")
+        options = [(x, y, a) for y in (cy - h / 2, cy - r - h, cy + r)
+                   for x, a in (right, left)]
+        x, y, align = next(((x, y, a) for x, y, a in options if clear((x, y, w, h))),
+                           options[0] if cx + r + gap + w <= box["x"] + box["w"] else options[1])
+        taken.append((x, y, w, h))
+        fill_slot(layer, plate, dataclasses.replace(sl, x=int(round(x)), y=int(round(y)), align=align),
+                  str(values[sl.name]), settings, reg)
+    if layer.size != img.size:
+        layer = layer.resize(img.size, Image.LANCZOS)
+    img.alpha_composite(layer)
+
+
 def declared_layer(reg: Registry, plate: Plate, values: dict[str, str],
-                   size: tuple[int, int] | None = None, *, seed: str = ""):
+                   size: tuple[int, int] | None = None, *, seed: str = "",
+                   settings: Settings | None = None):
     """The data drawing alone, on a transparent layer, or None if nothing drew.
 
     For a plate that boils: the frames differ, the data does not, so it is
@@ -499,7 +568,7 @@ def declared_layer(reg: Registry, plate: Plate, values: dict[str, str],
     from PIL import Image
 
     layer = Image.new("RGBA", tuple(size or plate.pixel_size), (0, 0, 0, 0))
-    return layer if draw_declared(reg, plate, values, layer, seed=seed) else None
+    return layer if draw_declared(reg, plate, values, layer, seed=seed, settings=settings) else None
 
 
 def render_series(reg: Registry, plate: Plate, values: list[float | None],

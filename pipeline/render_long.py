@@ -1028,12 +1028,12 @@ def _render_long(
         try:
             if plate.animated:
                 img = render_frame(plate, 0, values, settings, reg).convert("RGBA")
-                data = declared_layer(reg, plate, values, seed=seed)
+                data = declared_layer(reg, plate, values, seed=seed, settings=settings)
                 if data is not None:
                     img.alpha_composite(data)
             else:
                 img = render_still(plate, values, settings, reg).convert("RGBA")
-                draw_declared(reg, plate, values, img, seed=seed)
+                draw_declared(reg, plate, values, img, seed=seed, settings=settings)
         except Exception as e:  # noqa: BLE001 — a monitor is never worth a render
             log.warning("screen: chapter %d could not draw %s (%s) — the monitor "
                         "shows the price", pick.chapter + 1, plate.key, e)
@@ -1253,7 +1253,8 @@ def _render_long(
             # A plate that reserves a data region gets its path drawn through
             # the figures the DIRECTOR wrote into it. Without this a charts/ or
             # cycles/ plate is a set of labels around an empty box.
-            if draw_declared(reg, plate, values, img, seed=f"{plate.key}|{seg_i}"):
+            if draw_declared(reg, plate, values, img, seed=f"{plate.key}|{seg_i}",
+                             settings=settings):
                 log.debug("%s: drew its declared series", plate.key)
             if img.size != (W, H):
                 img = img.resize((W, H), Image.LANCZOS)
@@ -1272,7 +1273,8 @@ def _render_long(
         # rebuild boils, so every one of them took this branch — and this
         # branch drew the type and never the data, which put every chart in a
         # long video on screen as an empty form. Drawn once, laid on each.
-        data = declared_layer(reg, plate, values, seed=f"{plate.key}|{seg_i}")
+        data = declared_layer(reg, plate, values, seed=f"{plate.key}|{seg_i}",
+                              settings=settings)
         frames = []
         for idx in range(plate.frame_count):
             img = render_frame(plate, idx, values, settings, reg)

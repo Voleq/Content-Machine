@@ -1024,7 +1024,8 @@ class _Cache:
             # the figures the SCRIPT wrote into it. Without this a charts/ or
             # cycles/ plate is a set of labels around an empty box.
             from pipeline.chart import draw_declared
-            draw_declared(self.reg, plate, dict(values), img, seed=key)
+            draw_declared(self.reg, plate, dict(values), img, seed=key,
+                          settings=self.settings)
             self._drawn[drawn_key] = img
         return img
 

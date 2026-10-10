@@ -194,6 +194,12 @@ class Slot:
     # from a broken one.
     control: bool = False
     overlay: str = ""             # the plate composited into it (band-N)
+    # PLACED BY THE RENDERER, NOT AT ITS BOX. The kit's `overlay: true` (as
+    # against an overlay that names a plate): a scatter's `ticker-N` is set
+    # "beside its own mark", a press release's `mark-area` takes a scribble.
+    # The box is a size, not a place. Read as a band name it was the string
+    # "True", every ticker a highlight that lit nothing and no peer named.
+    placed: bool = False
     renderer: str = ""            # a data region series.py fills
     contact: dict = field(default_factory=dict)   # where he touches the furniture
     sets_type: bool = False       # the plate declares a typeRole for its role
@@ -316,7 +322,8 @@ class Slot:
             align=str(raw.get("align", "left")),
             region=bool(raw.get("region", False)),
             control=bool(raw.get("control", False)) or role == "control",
-            overlay=str(raw.get("overlay", "")),
+            overlay=raw["overlay"] if isinstance(raw.get("overlay"), str) else "",
+            placed=raw.get("overlay") is True,
             renderer=str(raw.get("renderer", "")),
             contact=raw.get("contact") if isinstance(raw.get("contact"), dict) else {},
             sets_type=bool((type_roles or {}).get(role)),
