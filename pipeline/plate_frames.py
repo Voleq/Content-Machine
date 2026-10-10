@@ -577,17 +577,56 @@ def render_frame(plate: Plate, frame_index: int, values: dict[str, str] | None,
     # its hatch degenerates into a slab.
     for name, slot in plate.slots.items():
         if slot.overlay and str(values.get(name) or "").strip():
-            band = reg.get(slot.overlay)
+            band = row_band(reg, plate, slot)
             if band is not None:
                 _paste_band(img, band, slot, plate.export_scale)
 
+    # A slot the renderer places (a scatter's tickers) is set beside its mark
+    # by the data layer, never at the box the kit parks it in.
     for name, slot in plate.slots.items():
         value = values.get(name)
-        if value in (None, "") or not slot.is_text:
+        if value in (None, "") or not slot.is_text or slot.placed:
             continue
         for w in fill_slot(img, plate, slot, value, settings, reg):
             log.warning("%s", w)
     return img
+
+
+def row_band(reg: Registry, plate: Plate, slot: Slot) -> Plate | None:
+    """The row band `slot` lights with, drawn for the plate's GROUND.
+
+    `overlays/row-band` is drawn per HOUR, navy at night and cream at dusk,
+    but since rebuild-41 a data plate is drawn per ground: a paper sheet is
+    cream at both hours and a screen chart navy at both. The hour's band on a
+    paper sheet at night is a navy slab under black figures, and the row being
+    pointed at is the one row nobody can read. So the band is the hour the
+    kit drew it at whose band ink is nearest the plate's own (`inks(plate)`);
+    a plate with no ground keeps the episode's hour.
+    """
+    band = reg.get(slot.overlay)
+    want = _rgb(reg.inks(plate).get("band", "")) if band and plate.ground else None
+    if want is None:
+        return band
+    best, gap = band, None
+    for hour in reg.hour_suffixes:
+        drawn = reg.plate_at(slot.overlay, hour)
+        ink = _rgb(reg.inks(drawn).get("band", "")) if drawn is not None else None
+        if ink is None:
+            continue
+        d = sum((a - b) ** 2 for a, b in zip(ink, want))
+        if gap is None or d < gap:
+            best, gap = drawn, d
+    return best
+
+
+def _rgb(hex_: str) -> tuple[int, int, int] | None:
+    h = (hex_ or "").lstrip("#")
+    if len(h) != 6:
+        return None
+    try:
+        return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    except ValueError:
+        return None
 
 
 def _paste_band(img, band: Plate, slot: Slot, export_scale: int) -> None:

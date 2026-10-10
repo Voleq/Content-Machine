@@ -353,22 +353,33 @@ def scatter(box, points, ink, *, accent=None) -> dict:
     it publishes one; the accent paints last so a cluster cannot bury it."""
     if not box or not points:
         return {"nodes": [], "returns": None}
-    sc = box.get("scale") or {"x": [0, 1], "y": [0, 1]}
     clamped, nodes = [], []
+    for i, cx, cy, r, off in scatter_marks(box, points, accent):
+        if off:
+            clamped.append(i)
+        nodes.append(circle(cx, cy, r, _ink(ink, "attention", "#F07A5A") if i == accent
+                            else _ink(ink, "subject", "#7FD4E8")))
+    if accent is not None and 0 <= accent < len(nodes):
+        nodes.append(nodes.pop(accent))
+    return {"nodes": nodes, "returns": {"clamped": clamped}}
+
+
+def scatter_marks(box, points, accent=None) -> list[tuple[int, float, float, int, bool]]:
+    """Where `scatter` puts each company's mark: (index, x, y, radius,
+    clamped), in canvas units. Its own arithmetic, so a label set beside a
+    mark is beside the mark that was drawn."""
+    if not box or not points:
+        return []
+    sc = box.get("scale") or {"x": [0, 1], "y": [0, 1]}
+    out = []
     for i, p in enumerate(points):
         if not p or num(p[0]) is None or num(p[1]) is None:
             continue
         fx = (p[0] - sc["x"][0]) / (sc["x"][1] - sc["x"][0])
         fy = (p[1] - sc["y"][0]) / (sc["y"][1] - sc["y"][0])
-        if fx != clamp01(fx) or fy != clamp01(fy):
-            clamped.append(i)
-        acc = i == accent
-        nodes.append(circle(box["x"] + clamp01(fx) * box["w"], box["y"] + box["h"] - clamp01(fy) * box["h"],
-                            22 if acc else 14,
-                            _ink(ink, "attention", "#F07A5A") if acc else _ink(ink, "subject", "#7FD4E8")))
-    if accent is not None and 0 <= accent < len(nodes):
-        nodes.append(nodes.pop(accent))
-    return {"nodes": nodes, "returns": {"clamped": clamped}}
+        out.append((i, box["x"] + clamp01(fx) * box["w"], box["y"] + box["h"] - clamp01(fy) * box["h"],
+                    22 if i == accent else 14, fx != clamp01(fx) or fy != clamp01(fy)))
+    return out
 
 
 def spread_fill(box, a, b, ink, *, columns=(), min=None, max=None) -> dict:  # noqa: A002
@@ -1202,6 +1213,22 @@ def _printed_series(plate) -> tuple[list[str], list[str]]:
     return [], []
 
 
+# The share of the plot each side of the outermost marks, so no company sits
+# on an axis rule.
+SCATTER_PAD = 0.08
+
+
+def _unit_points(pts: list[list[float]]) -> list[list[float]]:
+    """Each axis fitted to 0-1 over the companies, inside `SCATTER_PAD`."""
+    axes = []
+    for k in (0, 1):
+        vals = [p[k] for p in pts]
+        lo, hi = builtin_min(vals), builtin_max(vals)
+        axes.append((lo, (hi - lo) or None))
+    return [[SCATTER_PAD + (1 - 2 * SCATTER_PAD) * (p[k] - lo) / span if span else 0.5
+             for k, (lo, span) in enumerate(axes)] for p in pts]
+
+
 def _scatter(plate) -> bool:
     s = plate.slots.get("plot-area")
     note = _note(plate, "plot-area")
@@ -1490,6 +1517,15 @@ def plate_data(plate, values: dict[str, str]) -> PlateData:
                 break
             pts.append(xy)
         if pts:
+            # "WITHOUT [A FIXED SCALE], POINTS ARRIVE 0-1" (series.js): the
+            # plate draws no ticks, so where the marks sit against each other
+            # is the claim. Handed raw growth and multiples, every company
+            # clamped into the top right corner as one dot. Points already
+            # 0-1 are the kit's own (its sample copy) and stay where they are.
+            pa = plate.slot("plot-area")
+            if (pa is None or not isinstance(pa.scale, dict)) \
+                    and not all(0 <= c <= 1 for p in pts for c in p):
+                pts = _unit_points(pts)
             d["points"] = pts
             acc = figure(v.get("accent", "")) if v.get("accent") else None
             d["accent"] = int(acc) - 1 if acc is not None else 0

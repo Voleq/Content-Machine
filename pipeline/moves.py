@@ -1200,7 +1200,8 @@ class MoveCompositor:
         from pipeline.chart import declared_layer
 
         return self._part(("data", plate.key, values, seed), lambda: declared_layer(
-            self.reg, plate, dict(values), plate.pixel_size, seed=seed or plate.key))
+            self.reg, plate, dict(values), plate.pixel_size, seed=seed or plate.key,
+            settings=self.settings))
 
     def _ink(self, plate, name: str) -> tuple[int, int, int, int]:
         from pipeline import series as S
@@ -1409,8 +1410,10 @@ class MoveCompositor:
         """A row band drawn on from the left, under the row's type."""
         from PIL import Image
 
+        from pipeline.plate_frames import row_band
+
         slot = plate.slots[m.slot]
-        band = self.reg.get(slot.overlay)
+        band = row_band(self.reg, plate, slot)
         if band is None:
             return
         s = max(int(plate.export_scale or 1), 1)

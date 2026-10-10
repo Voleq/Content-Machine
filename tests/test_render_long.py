@@ -27,17 +27,19 @@ def settings(settings):
     return settings.model_copy(update={"long_min_chars": 0})
 
 
-RAW = """EXMPL is down sixty percent and nobody cares anymore. [CLIP: tumbleweed] Which is when I start reading.
-Here is what they actually do. [IMG: EXMPL logistics warehouse] Software for depots. Real customers. [SOUND: cash_register]
-The numbers, five years of them. [CHART: revenue] Revenue is a plateau wearing a growth costume. [SHOW FILING: income_statement.png] The filing says minus eighty nine million. [SOUND: windows_error] Every year wider. [MEME: harold-quick-flip-became-bagholder]
+# Every chapter long enough to show what is tagged in it: a visual that cannot
+# go up before its chapter closes is dropped, and this render checks them all.
+RAW = """EXMPL is down sixty percent and nobody cares anymore. [CLIP: tumbleweed] Which is when I start reading. Quiet tickers are where the work is, and this one is very quiet.
+Here is what they actually do. [IMG: EXMPL logistics warehouse] Software for depots. Real customers. [SOUND: cash_register] Nobody films a depot, which is half the appeal.
+The numbers, five years of them. [CHART: revenue] Revenue is a plateau wearing a growth costume. [SHOW FILING: income_statement.png] The filing says minus eighty nine million. [SOUND: windows_error] Every year wider, and every year described as an investment. [MEME: harold-quick-flip-became-bagholder] Five investment years in a row is called a habit.
 The industry is two giants and a coupon. Pricing power is a memoir title.
 Bull case: sticky contracts. [PLATE: both-true-16x9 | kicker=BOTH TRUE | statement-1=Forty percent of revenue is contracted. | mark-1=up | statement-2=One point four billion of debt. | mark-2=down | with=dennis] Bear case: the balance sheet has a clock on it. I'll be up at three a.m. either way. See you at the next filing.
 
 === CHAPTERS ==="""  + """
 00:00 cold-open | nobody cares anymore
-00:06 the-numbers | five years of them
-00:14 bull-vs-bear | both of these are true
-00:20 resigned-close | see you at the next filing"""
+00:12 the-numbers | five years of them
+00:24 bull-vs-bear | both of these are true
+00:40 resigned-close | see you at the next filing"""
 
 
 @pytest.fixture(scope="module")

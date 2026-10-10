@@ -320,6 +320,11 @@ READABLE_KINDS = (CueKind.CHART, CueKind.FILING, CueKind.SCREENGRAB,
                   CueKind.PLATE)
 MIN_READABLE_S = 5.0
 
+# The least a visual is up for when the next chapter cuts it short. It ends on
+# the chapter's card rather than holding it back; under this it is a flash,
+# and it is dropped (and the approval screen says so).
+MIN_BEFORE_CHAPTER_S = 3.0
+
 # The longest a readable beat holds when nothing ends it sooner. A script
 # written as one paragraph with a plate at the top would otherwise hold that
 # plate for the whole stretch; past this he comes back, and the planner says
@@ -545,6 +550,12 @@ def scene_in_force(cues: list[Cue], t: float) -> Cue | None:
     return got
 
 
+def cue_label(c: Cue) -> str:
+    """A visual cue as the writer tagged it: `[PLATE: numbers-sheet-4r-16x9]`."""
+    name = str(c.payload.get("value") or c.payload.get("name") or "")
+    return f"[{c.kind.value.upper()}: {name.split('/')[-1]}]"
+
+
 def plan_long_segments(
     cues: list[Cue],
     duration: float,
@@ -556,6 +567,7 @@ def plan_long_segments(
     fps: int = 0,
     paragraphs: list[float] | None = None,
     max_readable_s: float = MAX_READABLE_S,
+    report: list[dict] | None = None,
 ) -> tuple[list[Segment], list[str]]:
     """Tile [0, duration] with host beats and the evidence he cuts away to.
 
@@ -577,8 +589,16 @@ def plan_long_segments(
 
     `fps`, when given, snaps every boundary onto the frame grid so the cuts
     stay on the real clock through the encode — see `quantise_to_frames`.
+
+    `report`, when given, gets one entry per visual that was dropped or went
+    up late — `{"cue", "what": "dropped" | "late", "late_s", "why"}` — for
+    the approval screen to say in the writer's terms (`late_visuals`).
     """
     holds = {**DEFAULT_HOLDS, **(holds or {})}
+
+    def note(c: Cue, what: str, late_s: float = 0.0, why: str = "") -> None:
+        if report is not None:
+            report.append({"cue": c, "what": what, "late_s": late_s, "why": why})
     warnings: list[str] = []
     visual = [c for c in cues if c.kind in VISUAL_CUE_KINDS]
     visual.sort(key=lambda c: c.t)
@@ -697,12 +717,15 @@ def plan_long_segments(
     bookends = sorted(a for a, _b in blocked)
 
     def talked_about_until(k: int, start: float) -> tuple[float, str]:
-        """(when the writer moves on from visual `k`, what ends it)."""
-        cue_t = visual[k].t
+        """(when the writer moves on from visual `k`, what ends it).
+
+        The next visual ends it even when the writer tagged both on one word:
+        that is two pictures for one line, in order. Read as "the next visual
+        said LATER", the first held to the chapter's end and the second went
+        up in the next chapter, over somebody else's words."""
         found = [(duration, "the end")]
-        later = [c.t for c in visual[k + 1:] if c.t > cue_t + 1e-6]
-        if later:
-            found.append((min(later), "the next visual"))
+        if k + 1 < len(visual):
+            found.append((visual[k + 1].t, "the next visual"))
         for times, why in ((scene_times, "the next [SCENE]"),
                            (para_times, "the paragraph's end"),
                            (bookends, "the chapter's end")):
@@ -710,6 +733,9 @@ def plan_long_segments(
             if nxt is not None:
                 found.append((nxt, why))
         return min(found)
+
+    def chapter_of(t: float) -> int:
+        return sum(1 for s in starts if s <= t + 0.05)
 
     cursor = 0.0
     for k, c in enumerate(visual):
@@ -721,15 +747,25 @@ def plan_long_segments(
             start = min(MIN_HOST_BEAT_S, duration)
         if start >= duration - MIN_SEGMENT_S:
             warnings.append(
-                f"visual cue at {c.t:.2f}s no longer fits before the end — dropped"
+                f"visual cue at {c.t:.2f}s {cue_label(c)} no longer fits before "
+                f"the end — dropped"
             )
+            note(c, "dropped", why="it no longer fits before the end")
             continue
-        if start - c.t > 2.0:
-            warnings.append(
-                f"visual cue at {c.t:.2f}s deferred to {start:.2f}s — the previous "
-                f"visual was still being read"
-            )
-        add_host(cursor, start)
+        # NEVER INTO THE NEXT CHAPTER. Its card has gone up and he is on to
+        # something else: chapter three's ladder over chapter four's opening
+        # is a picture of the wrong thing, which is worse than no picture.
+        if chapter_of(start) > chapter_of(c.t):
+            why = ("the visual before it is still up when the chapter ends"
+                   if cursor > c.t else "it falls in the chapter's closing "
+                   "beat, which is Dennis's")
+            warnings.append(f"visual cue at {c.t:.2f}s {cue_label(c)} dropped — "
+                            f"{why}; move it earlier or cut one")
+            note(c, "dropped", why=why)
+            continue
+        late = (f"visual cue at {c.t:.2f}s {cue_label(c)} deferred to "
+                f"{start:.2f}s — the previous visual was still being read"
+                if start - c.t > 2.0 else "")
         # THE DIRECTOR'S HOLD WINS. A number in the tag is the one place in
         # this planner where somebody who read the line decided how long the
         # frame stays; `DEFAULT_HOLDS` is what to do when nobody did. It has
@@ -750,6 +786,26 @@ def plan_long_segments(
         else:
             hold = holds.get(c.kind, 5.0)
         end = min(start + hold, duration)
+        # AND NOT ACROSS IT. The chapter closes on him, so the visual gives way
+        # at the bookend, or as late as its minimum asks, and at the latest
+        # on the next card: past it, it holds the card back and sits under
+        # the next chapter's words. Too short to take in by then, it goes.
+        nxt = next((t for t in sorted(starts) if t > start + 0.05), None)
+        if nxt is not None and end > nxt - chapter_host_s:
+            end = max(nxt - chapter_host_s, min(start + min(hold, min_readable_s), end))
+            if end > nxt:
+                if nxt - start < MIN_BEFORE_CHAPTER_S:
+                    why = (f"it would be up {nxt - start:.1f}s before the "
+                           f"next chapter")
+                    warnings.append(f"visual cue at {c.t:.2f}s {cue_label(c)} "
+                                    f"dropped — {why}; move it earlier or cut one")
+                    note(c, "dropped", why=why)
+                    continue
+                end = nxt
+        if late:
+            warnings.append(late)
+            note(c, "late", late_s=start - c.t)
+        add_host(cursor, start)
         payload = dict(c.payload)
         # The evidence fills the frame. Dennis stands beside a plate or a
         # chart only where the writer put `with=` on its tag.
@@ -785,6 +841,31 @@ def plan_long_segments(
     for a, b in zip(segments, segments[1:]):
         assert abs(a.end - b.start) < 1e-6, "segments must tile without gaps"
     return segments, warnings
+
+
+def late_visuals(script, settings) -> list[dict]:
+    """The visuals the planner will drop or put up late, before a word is
+    spoken: its `report`, run on the voice's estimated timings and on the
+    chapter times the render measures (`measured_chapter_times`). Each entry
+    carries its cue, whose `order` is the tag's index in `script.events`."""
+    from pipeline.tts import mock_words
+
+    wps = max(float(getattr(settings, "mock_wps_long", 2.3) or 2.3), 0.1)
+    duration = script.word_count / wps
+    if duration <= 0:
+        return []
+    words = mock_words(script.narration, duration)
+    cues = build_long_timeline(script, words, duration)
+    guessed = [a for a, _b in chapter_windows(script.chapter_list, duration)]
+    starts = measured_chapter_times(guessed, script.narration, words, duration)
+    report: list[dict] = []
+    plan_long_segments(
+        cues, duration, chapter_starts=starts,
+        min_readable_s=settings.long_min_readable_s,
+        chapter_host_s=settings.long_chapter_host_s,
+        paragraphs=paragraph_starts(script.narration, words),
+        max_readable_s=settings.long_max_readable_s, report=report)
+    return report
 
 
 def estimate_dennis_alone(script, settings) -> float | None:

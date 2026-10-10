@@ -613,3 +613,78 @@ def test_the_long_parser_strips_a_retired_tag_and_says_so(settings):
     assert not [e for e in script.events if e.type.value == "SHOW ARTICLE"]
     assert any("[SHOW ARTICLE] is no longer part of the grammar" in w
                for w in warnings), warnings
+
+
+# ------------------------------------------------------- chapters and queues
+
+
+def _plate(t, name, order=0):
+    from pipeline.models import Cue
+
+    return Cue(t=t, kind=CueKind.PLATE, payload={"value": name, "order": order})
+
+
+def test_two_tags_on_one_word_share_the_chapter_in_order():
+    """Two pictures for one line: the first holds its minimum and the second
+    follows. Read as "the next visual said later", the first held to the
+    chapter's end and the second went up in the next chapter."""
+    from pipeline.timeline import MIN_READABLE_S
+
+    cues = [_plate(10.0, "a", 0), _plate(10.0, "b", 1)]
+    report: list = []
+    segments, _ = plan_long_segments(cues, 60.0, chapter_starts=[0.0, 30.0],
+                                     report=report)
+    _tiled(segments, 60.0)
+    a, b = [s for s in segments if s.kind == "plate"]
+    assert a.length == pytest.approx(MIN_READABLE_S)
+    assert b.start == pytest.approx(a.end) and b.end <= 30.0
+    assert [r["what"] for r in report] == ["late"]
+
+
+def test_a_visual_is_never_put_up_in_the_next_chapter():
+    """Queued behind a plate that holds to the chapter's end, the next one is
+    dropped, not shown under the next chapter's words."""
+    # a holds 21-26, into the closing beat; b would go up after the card
+    cues = [_plate(21.0, "a", 0), _plate(22.0, "b", 1)]
+    report: list = []
+    segments, warnings = plan_long_segments(cues, 60.0, chapter_starts=[0.0, 28.0],
+                                            report=report)
+    _tiled(segments, 60.0)
+    shown = [s.payload["value"] for s in segments if s.kind == "plate"]
+    assert shown == ["a"]
+    assert [(r["what"], r["cue"].payload["value"]) for r in report] == [("dropped", "b")]
+    assert any("[PLATE: b] dropped" in w for w in warnings)
+
+
+def test_a_visual_ends_on_the_next_chapter_s_card_at_the_latest():
+    from pipeline.timeline import MIN_BEFORE_CHAPTER_S
+
+    # 4 s before the card: up for 4 s and gone on the card, not 5 s across it
+    segments, _ = plan_long_segments([_plate(24.0, "a")], 60.0,
+                                     chapter_starts=[0.0, 28.0])
+    a = next(s for s in segments if s.kind == "plate")
+    assert a.start == pytest.approx(24.0) and a.end == pytest.approx(28.0)
+    # under the floor before the card, it is dropped
+    report: list = []
+    t = 28.0 - 2.5 - 0.1   # just ahead of the closing beat
+    segments, _ = plan_long_segments([_plate(t - MIN_BEFORE_CHAPTER_S + 0.6, "a"),
+                                      _plate(t, "b", 1)], 60.0,
+                                     chapter_starts=[0.0, 28.0], report=report)
+    _tiled(segments, 60.0)
+    assert all(s.payload.get("value") != "b" for s in segments)
+    assert report and report[-1]["what"] == "dropped"
+
+
+def test_the_approval_screen_names_visuals_that_go_up_late(settings):
+    """Three tags inside four seconds queue behind each other's five-second
+    minimum; the writer hears where, in the script's words, before a cent."""
+    from pathlib import Path
+
+    from pipeline.parser_long import late_visual_warnings
+
+    text = (Path(__file__).parent.parent / "fixtures/scripts/long_sample.txt").read_text(
+        encoding="utf-8")
+    script, _ = parse_long_script(text, "EXMPL", settings)
+    lines = late_visual_warnings(script, settings)
+    assert any(line.startswith('[CHART: price] before "Five years of the share"')
+               and "goes up about" in line for line in lines), lines
