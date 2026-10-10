@@ -519,6 +519,42 @@ def dennis_alone_warnings(script: LongScript, settings: Settings) -> list[str]:
         f"chapter lands on."]
 
 
+# A visual that goes up this much after its words is worth a line on the
+# approval screen; under it is the chapter bookend or the plate before it
+# finishing, which nobody watching notices.
+LATE_VISUAL_WARN_S = 6.0
+
+
+def late_visual_warnings(script: LongScript, settings: Settings) -> list[str]:
+    """Visuals the cut will drop or show well after their words.
+
+    A readable plate holds at least five seconds and nothing cuts it short,
+    so tags packed closer than that queue up behind it; and a chapter opens
+    and closes on Dennis, so a visual that cannot go up before the next
+    chapter is not shown. Both are decided by the timing, which the writer
+    never sees, so this says where, in the script's own words, while it is
+    still free to fix. Estimated on the voice's average pace.
+    """
+    from pipeline.timeline import late_visuals
+
+    out = []
+    for r in late_visuals(script, settings):
+        order = r["cue"].payload.get("order")
+        if not isinstance(order, int) or not 0 <= order < len(script.events):
+            continue
+        e = script.events[order]
+        tag = f'[{e.type.value}: {e.payload}] before "{_spoken_after(script, e)}"'
+        if r["what"] == "dropped":
+            out.append(f"{tag} will not be shown: {r['why']}. Move it earlier "
+                       f"in the chapter, or cut a visual before it.")
+        elif r["late_s"] >= LATE_VISUAL_WARN_S:
+            out.append(f"{tag} goes up about {r['late_s']:.0f}s after its words: "
+                       f"the visuals before it hold at least "
+                       f"{settings.long_min_readable_s:.0f}s each. Space them "
+                       f"out, or cut one.")
+    return out
+
+
 # ---------------------------------------------------------------------------
 # [MOVE] — the writer's design moves on the plate on screen.
 # ---------------------------------------------------------------------------
@@ -982,6 +1018,7 @@ def validate_long_script(
 
     warnings.extend(density_warnings(script, settings))
     warnings.extend(dennis_alone_warnings(script, settings))
+    warnings.extend(late_visual_warnings(script, settings))
 
     from pipeline.room_dressing import BOARD_MAX_CHARS
 
