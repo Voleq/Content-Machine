@@ -174,10 +174,18 @@ def _chapter_plan(script, duration: float,
 def _chapter_cuts(chapters: list[tuple[float, str, str]], seg_starts: list[float],
                   *, intro_dur: float, duration: float) -> list[float | None]:
     """The cut each chapter's opener lands on, or None where it has none:
-    the first cut at or after the chapter's own time, each cut used once."""
+    the first cut at or after the chapter's own time, each cut used once.
+
+    A first chapter that starts under the opening title has none: the title
+    card IS its opener, its headline the chapter's title. Landed on the first
+    cut after the card, it was the empty room with the same title in it
+    again, five seconds in, over him."""
     used: set[float] = set()
     out: list[float | None] = []
-    for target, _title, _type in chapters:
+    for k, (target, _title, _type) in enumerate(chapters):
+        if k == 0 and _on_the_title(target, intro_dur):
+            out.append(None)
+            continue
         t = next((s for s in seg_starts
                   if s >= max(target, intro_dur) and s not in used), None)
         if t is None or t < 0.6 or t > duration - 1.2:
@@ -186,6 +194,11 @@ def _chapter_cuts(chapters: list[tuple[float, str, str]], seg_starts: list[float
         used.add(t)
         out.append(t)
     return out
+
+
+def _on_the_title(target: float, intro_dur: float) -> bool:
+    """Whether a first chapter starting at `target` opens under the title."""
+    return target < intro_dur
 
 
 def _host_covers_picture(clip: Path, box: tuple[int, int, int, int],
@@ -570,6 +583,11 @@ PUSH_S = 0.6
 # HOW LONG A CHAPTER OPENER IS ON SCREEN. A looping opener room is encoded to
 # cover all of it, because a clip overlay that runs out mid-window vanishes.
 CHAPTER_OPENER_S = 1.6
+
+# A [SCRIBBLE] whose plate went up late goes on once the plate is in and its
+# data has drawn on, and only if it can then stay up long enough to be seen.
+MARK_AFTER_PLATE_S = 0.8
+MARK_MIN_S = 1.0
 
 
 def _provenance(script, settings, workspace: Path, duration: float,
@@ -2599,6 +2617,8 @@ def _render_long(
         _wipe_at(end_cut, _pair[1], "end")
     for k, ((target, title, ctype), t) in enumerate(zip(chapters, chapter_cuts), start=1):
         if t is None:
+            if k == 1 and _on_the_title(target, intro_dur):
+                continue      # the opening title is its opener
             log.warning("chapters: %r at %.0fs has no cut to land on — skipped",
                         title, target)
             continue
@@ -2609,9 +2629,10 @@ def _render_long(
         # publishes, with the blinds closing over the cut into it (item 23).
         # Its number is counted off the script's own chapter list, so a
         # chapter moved or cut renumbers the rest; nothing is baked.
-        # The first chapter keeps the room with its title in the slot: the
-        # kit places the bumper between chapters, and the cold open has none.
-        # Nothing fades in either, as design's rule 2 has it.
+        # A first chapter that starts after the opening title keeps the room
+        # with its title in the slot: the kit places the bumper between
+        # chapters. One that starts under the title has no opener at all (see
+        # `_chapter_cuts`). Nothing fades in either, as design's rule 2 has it.
         bumper = None
         if k > 1:
             bumper = bumper_clip(
@@ -2717,15 +2738,39 @@ def _render_long(
                 return (bx, by, bw, bh)
         return box
 
-    def _target_box(t: float, target: str,
-                    style: str = "") -> tuple[int, int, int, int] | None:
-        """The frame box holding `target` at time `t`, or None."""
+    def _carrier(t: float, target: str, style: str = ""):
+        """(when, until, box) for a mark said at `t`: the plate beat carrying
+        `target` then, or else the next one to carry it before the chapter
+        ends, which is the plate the mark was written on, put up late because
+        the one before it was still being read. None when no plate does.
+
+        A MARK WITH NOTHING UNDER IT IS NOT DRAWN. It used to be centred over
+        whatever was up: a strike meant for the ladder's "212" was a red
+        cross across the middle of the revenue chart before it, meaning
+        nothing."""
+        for beat in plate_beats:
+            if beat[2] is not None and beat[0] <= t < beat[1]:
+                got = _box_on(beat, target, style)
+                if got is not None:
+                    return t, beat[1], got
+        ends = [x for x in chapter_cuts if x is not None] + [c[0] for c in chapters]
+        ends = min((x for x in ends if x > t + 0.05), default=duration)
+        for beat in sorted(plate_beats, key=lambda b: b[0]):
+            if beat[2] is None or not (t < beat[0] < ends):
+                continue
+            got = _box_on(beat, target, style)
+            if got is not None:
+                # once the plate is up and its data has drawn on
+                at = min(_cleared(beat[0] + MARK_AFTER_PLATE_S, covers), beat[1])
+                return at, beat[1], got
+        return None
+
+    def _box_on(beat, target: str, style: str = "") -> tuple[int, int, int, int] | None:
+        """The frame box holding `target` on one plate beat, or None."""
         want = " ".join(str(target).split()).lower()
         if not want:
             return None
-        for start, end, plate, values, rect in plate_beats:
-            if plate is None or not (start <= t < end):
-                continue
+        for start, end, plate, values, rect in (beat,):
             rx, ry, rw, rh = rect
             kx = rw / max(plate.delivered[0], 1)
             ky = rh / max(plate.delivered[1], 1)
@@ -2767,7 +2812,28 @@ def _render_long(
 
         placed = None
         drawn_style = style.value
-        box = _target_box(c.t, target, style.value)
+        carrier = _carrier(c.t, target, style.value)
+        if carrier is None:
+            log.warning("scribble %r: no plate around %.1fs carries it — not drawn",
+                        target, c.t)
+            mark_solves.append({
+                "t": round(float(c.t), 2), "style": style.value,
+                "target": target, "on_screen": False, "warnings": [],
+                "skipped": "no plate in its chapter carries it"})
+            moves_skipped.append(f"[SCRIBBLE: {style.value} -> {target}] at "
+                                 f"{c.t:.1f}s: no plate in its chapter carries "
+                                 f"{target!r}, so it is not drawn")
+            continue
+        at, until, box = carrier
+        if until - at < MARK_MIN_S:
+            mark_solves.append({
+                "t": round(float(c.t), 2), "style": style.value,
+                "target": target, "on_screen": False, "warnings": [],
+                "skipped": f"its plate is up {until - at:.1f}s after it"})
+            moves_skipped.append(f"[SCRIBBLE: {style.value} -> {target}] at "
+                                 f"{c.t:.1f}s: its plate cuts {until - at:.1f}s "
+                                 f"after the mark could go up, so it is not drawn")
+            continue
         if box is not None:
             fitted: dict = {}
             solved = solve_mark(settings, style.value, box, report=fitted)
@@ -2781,6 +2847,7 @@ def _render_long(
                 mark_solves.append({
                     "t": round(float(c.t), 2), "style": drawn_style,
                     "asked": style.value, "target": target, "on_screen": True,
+                    "at": round(at, 2),
                     "fitted": fitted.get("swapped", ""),
                     "warnings": list(mark_warnings)})
                 # A mark draws outside what it wraps, so a solved canvas larger
@@ -2790,15 +2857,13 @@ def _render_long(
                 if 0 < mw <= W * 3 and 0 < mh <= H * 3:
                     placed = (mx, my, mw, mh)
         if placed is None:
-            if box is None:
-                log.info("scribble %r: nothing on screen carries it — centred",
-                         target)
-                mark_solves.append({
-                    "t": round(float(c.t), 2), "style": style.value,
-                    "target": target, "on_screen": False, "warnings": []})
-            placed = (int((W - px(700)) / 2), int((H - px(460)) / 2),
-                      px(700), px(460))
+            log.warning("scribble %r: the mark did not solve round its box — "
+                        "not drawn", target)
+            moves_skipped.append(f"[SCRIBBLE: {style.value} -> {target}] at "
+                                 f"{c.t:.1f}s: the mark would not fit round it")
+            continue
         mx, my, sw, sh = placed
+        hold = min(hold, max(until - at - 0.5, MARK_MIN_S))
 
         # The mark draws itself on, in attention, over the current frame.
         frames = mark_frames(settings, sw, sh, style=drawn_style, fps=fps,
@@ -2811,7 +2876,7 @@ def _render_long(
         clip = frames_to_alpha_clip(frames, fps, rdir / f"scribble_{k}.mov")
         layers.append(OverlayLayer(
             path=clip, x=mx, y=my,
-            t_start=c.t, t_end=min(c.t + hold + 0.5, duration),
+            t_start=at, t_end=min(at + hold + 0.5, until, duration),
             is_video=True, hold=True, name=f"scribble_{k}",
         ))
 

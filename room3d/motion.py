@@ -209,8 +209,12 @@ STANCES: dict[str, Stance] = {
     "shrug": Stance(first="shrug"),
     "holding-a-mug": Stance(home={"R": ("hold", "grip")}, free="L", prop="mug",
                             talk=(0.6, 0.0, 0.4)),
-    "holding-a-phone": Stance(home={"R": ("phone", "relaxed")}, free="L", prop="phone",
-                              talk=(0.4, 0.0, 0.6), glance=-30.0, reads=0.85),
+    # The phone wrapped in his fingers, and his face up most of the time: on
+    # the wide shot a head bowed thirty degrees over it was a brown dome with
+    # his glasses as a black band under it, and an open hand round a phone
+    # held up at the camera is a wave.
+    "holding-a-phone": Stance(home={"R": ("phone", "grip")}, free="L", prop="phone",
+                              talk=(0.4, 0.0, 0.6), glance=-14.0, reads=0.45),
     "holding-a-page": Stance(home={"L": ("page", "pinch")}, free="R", prop="page",
                              prop_side="L", talk=(0.6, 0.0, 0.4), glance=-24.0),
     # held up to the camera in both hands: "it says so on page 96"

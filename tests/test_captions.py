@@ -496,10 +496,14 @@ def test_nowhere_clear_covers_least_and_names_what(reg, caplog):
     # top it hides the top of the plot and nothing else.
     assert (y, covers) == (260, ["plot-area"])
 
+    # THE LINE, NOT ITS BOX (10 Oct 2026). Taken as its whole plot box the
+    # price chart left nowhere clear and the caption went over its dates; the
+    # line itself leaves rows free above or below it, and the caption takes
+    # them, covering nothing.
     with caplog.at_level(logging.WARNING, logger="pipeline.compose"):
         _build(reg, "short", "test")
     said = [r.getMessage() for r in caplog.records if "covers least" in r.getMessage()]
-    assert any(m.startswith("the-move:") and "plot-area" in m for m in said), said
+    assert not any(m.startswith("the-move:") for m in said), said
 
 
 def test_a_caption_never_covers_the_hosts_head(reg):

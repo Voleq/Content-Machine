@@ -537,6 +537,8 @@ def test_the_resolver_answers_the_meme_place_from_the_library(settings,
                                                              workspace):
     from pipeline.render_short import ShortResolver
 
+    # Memes are off in shorts unless SHORT_MEME is set (10 Oct 2026).
+    settings = settings.model_copy(update={"short_meme": True})
     script = _script("macro_valid", settings)
     first = ShortResolver(script=script, workdir=workspace / "render_short",
                           settings=settings, format_name="macro")
@@ -584,7 +586,8 @@ def test_a_rendered_short_records_its_meme_and_counts_it_as_owned(
     from pipeline.tts import TTSEngine
 
     small = settings.model_copy(update={"short_width": 270,
-                                        "short_height": 480})
+                                        "short_height": 480,
+                                        "short_meme": True})
     script, _ = parse_short_script(short_valid_json, settings=small)
     tts = TTSEngine(small).synthesize(script.audio_script, fmt="short",
                                       free_only=True)
@@ -602,3 +605,16 @@ def test_a_rendered_short_records_its_meme_and_counts_it_as_owned(
     visuals = next(ln for ln in Provenance.from_json(manifest["provenance"])
                    .render_text().splitlines() if ln.startswith("visuals"))
     assert "1 owned" in visuals
+
+
+def test_a_short_puts_up_no_meme_unless_asked(settings, workspace):
+    """10 Oct 2026: the meme flashed up for half a second over the verdict and
+    went, with nothing said about it. Off unless SHORT_MEME is set."""
+    from pipeline.render_short import ShortResolver
+
+    off = settings.model_copy(update={"short_meme": False})
+    script = _script("short_valid", off)
+    r = ShortResolver(script=script, workdir=workspace / "render_short",
+                      settings=off, format_name="short")
+    assert r.image_for(MEME_SRC) is None
+    assert "SHORT_MEME" in r.meme().why

@@ -688,3 +688,30 @@ def test_the_approval_screen_names_visuals_that_go_up_late(settings):
     lines = late_visual_warnings(script, settings)
     assert any(line.startswith('[CHART: price] before "Five years of the share"')
                and "goes up about" in line for line in lines), lines
+
+
+def test_a_chart_of_what_a_chart_plate_just_drew_is_dropped():
+    """One figure, one picture: [CHART: revenue] after a revenue line plate in
+    the same chapter was two revenue charts five seconds apart, one from
+    zero and one from 400. The writer's plate stays; the chart goes. In the
+    next chapter, or of another figure, it is a picture of its own."""
+    from pipeline.models import Cue
+
+    line = Cue(t=5.0, kind=CueKind.PLATE, payload={
+        "value": "charts/line-6y-16x9", "order": 0,
+        "values": {"unit": "Revenue, $M", "value-1": "400"}})
+
+    def chart(t, metric, order):
+        return Cue(t=t, kind=CueKind.CHART, payload={"value": metric, "order": order})
+
+    report: list = []
+    segments, warnings = plan_long_segments(
+        [line, chart(12.0, "revenue", 1), chart(20.0, "fcf", 2), chart(40.0, "revenue", 3)],
+        60.0, chapter_starts=[0.0, 30.0], report=report)
+    _tiled(segments, 60.0)
+    shown = [(s.kind, s.payload.get("value")) for s in segments if s.kind != "host"]
+    assert shown == [("plate", "charts/line-6y-16x9"), ("chart", "fcf"),
+                     ("chart", "revenue")], shown
+    assert [(r["what"], r["cue"].t) for r in report] == [("dropped", 12.0)]
+    assert "already charts revenue" in report[0]["why"]
+    assert any("[CHART: revenue] dropped" in w for w in warnings)

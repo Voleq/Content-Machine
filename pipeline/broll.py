@@ -1024,7 +1024,11 @@ class ContentManager:
 
             years, values = [], []
             if company_data is not None:
-                years = list(company_data.history_years)
+                from pipeline.short_data import year_labels
+
+                # Real years, not the template's relative heads: a workbook
+                # still on `FY-4 … FY-0` put "FY-4" under the first bar.
+                years = year_labels(company_data)
                 values = list(company_data.history_row(metric))
             if not values or all(v is None for v in values):
                 log.warning("chart metric %r has no history — filler", metric)
@@ -1044,10 +1048,11 @@ class ContentManager:
             label = metric.replace("_", " ").capitalize()
             # `labels-are-the-scale`: before it the line was drawn from zero
             # under labels that started at the series' low, so a chart
-            # cached then has every dot in the wrong place.
+            # cached then has every dot in the wrong place. `from-zero`: the
+            # scale now holds zero, so a chart cached before it is stale.
             h = hashlib.sha256(
                 json.dumps([metric, years, [str(v) for v in values],
-                            "labels-are-the-scale"]).encode()
+                            "labels-are-the-scale", "from-zero"]).encode()
             ).hexdigest()[:20]
             out = self.settings.cache_dir / "charts" / f"{h}.png"
             if not out.exists():
@@ -1057,15 +1062,18 @@ class ContentManager:
                           < self.settings.long_resolution[1] else "16x9")
                 plate = reg.require(reg.aspect_key("charts/line-6y", aspect))
                 # The axis labels ARE the scale, so they are written from the
-                # same numbers the path is drawn from. Five gridlines, evenly
-                # spaced across the series' own range.
+                # same numbers the path is drawn from. Five round gridlines
+                # that hold every figure AND ZERO, as the short's bars do: cut
+                # at the series' own low, 400 to 496 filled the plot and a
+                # plateau read as a rocket, its first point on the floor.
+                from pipeline.short_data import axis_ticks
+
                 present = [float(v) for v in values if v is not None]
-                lo, hi = (min(present), max(present)) if present else (0.0, 1.0)
                 slot_values = {"unit": label}
                 for i, y in enumerate(years, start=1):
                     slot_values[f"head-{i}"] = str(y)
-                for i in range(5):
-                    slot_values[f"y-{i + 1}"] = _compact(lo + (hi - lo) * i / 4)
+                for i, tick in enumerate(axis_ticks(present or [0.0, 1.0])):
+                    slot_values[f"y-{i + 1}"] = _compact(tick)
                 for i, v in enumerate(values, start=1):
                     if v is not None:
                         slot_values[f"value-{i}"] = _compact(float(v))

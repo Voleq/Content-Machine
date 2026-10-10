@@ -163,6 +163,11 @@ class PlateError(RuntimeError):
     """A plate is missing, unknown, or the registry disagrees with the disk."""
 
 
+def _set_at_path_end(name: str, raw: dict) -> bool:
+    """A slot the kit says code sets where the line ends (`mark-last`)."""
+    return name == "mark-last" and "path end" in str(raw.get("note", ""))
+
+
 @dataclass(frozen=True)
 class Slot:
     """A declared box on a plate, in CANVAS units.
@@ -199,6 +204,9 @@ class Slot:
     # "beside its own mark", a press release's `mark-area` takes a scribble.
     # The box is a size, not a place. Read as a band name it was the string
     # "True", every ticker a highlight that lit nothing and no peer named.
+    # So is a dense chart's `mark-last`, "placed by code at the path end":
+    # typeset in its box it sat in the middle of the right-hand column, a
+    # price halfway up the chart that the line was nowhere near.
     placed: bool = False
     renderer: str = ""            # a data region series.py fills
     contact: dict = field(default_factory=dict)   # where he touches the furniture
@@ -323,7 +331,7 @@ class Slot:
             region=bool(raw.get("region", False)),
             control=bool(raw.get("control", False)) or role == "control",
             overlay=raw["overlay"] if isinstance(raw.get("overlay"), str) else "",
-            placed=raw.get("overlay") is True,
+            placed=raw.get("overlay") is True or _set_at_path_end(name, raw),
             renderer=str(raw.get("renderer", "")),
             contact=raw.get("contact") if isinstance(raw.get("contact"), dict) else {},
             sets_type=bool((type_roles or {}).get(role)),
@@ -484,6 +492,11 @@ class Plate:
     # has picked a plate that cannot hold them, and the honest place to say so
     # is against the number the plate itself declares.
     rows: int = 0
+    # DESIGN'S DRAWN DECORATIONS (`decorBoxes`): tape, pins, a quote's
+    # opening marks, as (label, x, y, w, h) in canvas units. Read so a mark
+    # the kit's restyle pushed off the canvas can be papered over
+    # (`plate_frames.clipped_marks`); nothing else places by them.
+    decor: tuple = ()
     # A CAMERA DISTANCE, NOT A CUT-OUT. `close-up` and `medium` declare a
     # `framing` and no floor line: they are not figures to stand somewhere,
     # they are the shot itself, and `fit` says how to place one — on the eye
@@ -1096,6 +1109,10 @@ class Registry:
             columns=columns,
             column_boxes=column_boxes,
             rows=int(e.get("rows") or 0),
+            decor=tuple((str(b.get("label") or ""), int(b["x"]), int(b["y"]),
+                         int(b["w"]), int(b["h"]))
+                        for b in (e.get("decorBoxes") or ())
+                        if isinstance(b, dict) and all(k in b for k in "xywh")),
             framing=str(e.get("framing") or ""),
             glance=str(e.get("glance") or ""),
             fit=dict(e.get("fit") or {}),

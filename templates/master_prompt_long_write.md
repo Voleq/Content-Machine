@@ -283,6 +283,8 @@ draws and where the drawing reads it from.
                         in; leave it off and the format's default applies.
 [CHART: metric]         a data path drawn into a charts/ plate; metric from the chartable list. `price` is
                         the last five years. Fills the frame; `[CHART: price | with=dennis]` puts him beside it.
+                        One figure, one picture: after a chart [PLATE] of revenue, a [CHART: revenue] in the
+                        same chapter is the same chart twice, and it is dropped.
 [SHOW FILING: file.png] a filing screenshot, framed. REACH FOR THIS WHENEVER YOU QUOTE A FILING — if the line is "it's in the risk factors, and it names a person", show the risk factor.
 [SCREENGRAB: slug]      an operator-supplied real screen capture (broker app, P&L). Blocks until the file exists.
 [SOUND: key]            key ∈ windows_error · cash_register · record_scratch · sad_trombone · camera_shutter · vine_boom · coffee_slurp · keyboard_clack · paper_rustle · buzzer · ding

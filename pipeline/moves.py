@@ -199,6 +199,9 @@ class Wipe:
     frames: int = 8
     cut_frame: int = 3
     fps: int = FPS
+    # The hour the wipe is drawn at when it is not the episode's: a dusk
+    # (cream) sweep between paper plates in a night video (`wipe_for_ground`).
+    hour: str = ""
 
     @property
     def start(self) -> float:
@@ -270,6 +273,11 @@ def _catalogue(reg, move: str) -> tuple[int, str | None]:
     spec = (getattr(reg, "motion_moves", None) or {}).get(move) or {}
     frames, ease = _CATALOGUE.get(move, (8, "out"))
     return int(spec.get("frames") or frames), spec.get("ease", ease)
+
+
+# How far past a column's box a bar's outline runs, in canvas units: half the
+# contour stroke, with room to spare, and well inside the gap between bars.
+BAR_STROKE_BLEED = 6
 
 
 def _columns(plate) -> list[dict]:
@@ -397,8 +405,17 @@ def _figure_slots(plate, values: dict, lit: str = "") -> list[str]:
             names.append(max(cells)[1])
     got = [n for n in names
            if n in plate.slots and plate.slots[n].is_text
-           and is_one_figure(values.get(n, ""))]
+           and is_one_figure(values.get(n, "")) and not _column_figure(plate, n)]
     return sorted(dict.fromkeys(got), key=lambda n: (plate.slots[n].y, plate.slots[n].x))
+
+
+def _column_figure(plate, name: str) -> bool:
+    """Whether `name` is the figure over a chart's column (`value-3` over
+    `bar-3` or `point-3`): it comes up with its column as the data draws on
+    (`Moves._column_figures`), never on a count-up or a word of its own."""
+    got = _VALUE_N.match(name)
+    return bool(got) and any(plate.slot(f"{stem}-{got.group(1)}") is not None
+                             for stem in ("bar", "point"))
 
 
 def figure_number(text: str) -> float | None:
@@ -1012,6 +1029,44 @@ def wipe_plate(reg, name: str, aspect: str):
     return None
 
 
+def wipe_for_ground(reg, wipe, plate):
+    """The wipe drawn at the hour whose ground is nearest `plate`'s.
+
+    A wipe is drawn per HOUR, a navy sweep at night and a cream one at dusk,
+    and the plates are drawn per GROUND, every one of them on paper since 10
+    Oct 2026. The night's sweep between two paper cards flashed the frame
+    navy for half a second: the dark-light flip the paper was chosen to end.
+    A cut into the room, which has no ground, keeps the episode's hour.
+    """
+    from pipeline.plate_frames import _rgb
+
+    want = (_rgb(reg.inks(plate).get("ground", ""))
+            if plate is not None and getattr(plate, "ground", "") else None)
+    if want is None or not hasattr(reg, "plate_at"):
+        return wipe
+    best, gap = wipe, None
+    for hour in getattr(reg, "hour_suffixes", None) or ():
+        drawn = reg.plate_at(wipe.key, hour)
+        ink = _rgb(reg.inks(drawn).get("ground", "")) if drawn is not None else None
+        if ink is None:
+            continue
+        d = sum((a - b) ** 2 for a, b in zip(ink, want))
+        if gap is None or d < gap:
+            best, gap = drawn, d
+    return best
+
+
+def _shot_plate(reg, result, shot_id: str):
+    """The plate a shot draws, from the composition, or None."""
+    for l in getattr(result, "layers", ()) or ():
+        if getattr(l, "kind", "") == "plate" and getattr(l, "shot_id", "") == shot_id:
+            try:
+                return reg.get(l.entry_key)
+            except Exception:                                # noqa: BLE001
+                return None
+    return None
+
+
 def plan_wipes(fmt, result, reg, *, seed: str = "", max_wipes: int = 3) -> list[Wipe]:
     """A wipe on each cut the template marks as a change of subject.
 
@@ -1034,12 +1089,16 @@ def plan_wipes(fmt, result, reg, *, seed: str = "", max_wipes: int = 3) -> list[
         plate = wipe_plate(reg, name, aspect)
         if plate is None:
             continue
+        plate = wipe_for_ground(reg, plate, _shot_plate(reg, result, spans[i].shot.id)
+                                or _shot_plate(reg, result, spans[i - 1].shot.id))
         spec = plate.transition or {}
         frames = int(spec.get("frames") or plate.frame_count or 8)
         cut_frame = max(int(spec.get("cutAt") or 4) - 1, 0)
         cut = spans[i].start
+        hour = getattr(plate, "hour", "") or ""
         w = Wipe(key=plate.key, cut=cut, shot_out=spans[i - 1].shot.id,
-                 shot_in=spans[i].shot.id, frames=frames, cut_frame=cut_frame)
+                 shot_in=spans[i].shot.id, frames=frames, cut_frame=cut_frame,
+                 hour=hour if hour != getattr(reg, "hour", hour) else "")
         # The cover must fit inside the two shots it hides the cut between.
         if w.start < spans[i - 1].start or w.end > spans[i].end:
             continue
@@ -1282,10 +1341,17 @@ class MoveCompositor:
         # label sits in empty plot beside nothing.
         drawing = reveal is not None and (reveal[1] is None
                                           or reveal[1] < reveal[0].frames - 1)
+        # A COLUMN'S FIGURE COMES UP WITH ITS COLUMN: counting up as its bar
+        # grows, or once the line reaches its point. Left to the plate, three
+        # of six sat over empty columns while the others counted up later,
+        # one by one, in the order a list of figure slots happened to name
+        # them: FY23 to FY25 first, then FY21, FY22, LTM.
+        rising = self._column_figures(plate, reveal, values) if drawing else {}
         text = tuple(sorted((k, v) for k, v in shown.items()
                             if k not in counting and k in plate.slots
-                            and plate.slots[k].is_text
-                            and not (drawing and k.startswith("mark-"))))
+                            and plate.slots[k].is_text and not plate.slots[k].placed
+                            and not (drawing and k.startswith("mark-"))
+                            and rising.get(k, 1.0) >= 1.0))
 
         if not sweeping:
             img = self._base(plate, frame_i, bands, text).copy()
@@ -1304,6 +1370,12 @@ class MoveCompositor:
             if m.move == "count-up" and f is not None:
                 fill_slot(img, plate, plate.slots[m.slot],
                           M.count_text(m.text, M.t_of_frame(f, m.frames)),
+                          self.settings, self.reg)
+        for name, k in rising.items():
+            value = str(shown.get(name, "") or "")
+            if 0.0 < k < 1.0 and name not in counting and value.strip() \
+                    and is_one_figure(value):
+                fill_slot(img, plate, plate.slots[name], M.count_text(value, k),
                           self.settings, self.reg)
         data = self._data(plate, tuple(sorted(values.items())),
                           getattr(layer, "seed", "") or "")
@@ -1339,6 +1411,48 @@ class MoveCompositor:
             img = img.resize((max(layer.w, 1), max(layer.h, 1)), Image.LANCZOS)
         return img
 
+    def _column_figures(self, plate, reveal, values: dict) -> dict[str, float]:
+        """{`value-N`: how far its column has come, 0 to 1} while the data
+        draws on: a bar's growth, or 0 until the line reaches the point and 1
+        from then. Empty when nothing is drawing or the plate has no columns.
+        """
+        if reveal is None:
+            return {}
+        m, f = reveal
+        if m.move == "bars-grow":
+            columns = list(_columns(plate))
+            if not columns:
+                return {}
+            order = list(range(len(columns)))
+            accent = _accent_column(plate, values or {}, len(columns))
+            if accent is not None:
+                order.append(order.pop(accent))
+            base = max(m.frames - (len(columns) - 1), 1)
+            out = {}
+            for i, c in enumerate(order):
+                for name in columns[c].get("slots") or ():
+                    got = re.match(r"^bar-(\d+)$", str(name))
+                    if got and plate.slot(f"value-{got.group(1)}") is not None:
+                        out[f"value-{got.group(1)}"] = (
+                            0.0 if f is None else M.out(M.stagger(f, i, base)))
+            return out
+        if m.move == "line-draw":
+            box = ((plate.motion or {}).get("line-draw") or {}).get("box")
+            if not isinstance(box, dict):
+                sl = plate.slot(m.slot) or plate.slot("plot-area")
+                if sl is None:
+                    return {}
+                box = {"x": sl.x, "w": sl.w}
+            edge = -math.inf if f is None else \
+                box["x"] + box["w"] * M.t_of_frame(f, m.frames)
+            out = {}
+            for name, sl in plate.slots.items():
+                got = re.match(r"^point-(\d+)$", name)
+                if got and plate.slot(f"value-{got.group(1)}") is not None:
+                    out[f"value-{got.group(1)}"] = 1.0 if sl.x + sl.w / 2 <= edge else 0.0
+            return out
+        return {}
+
     def _reveal(self, data, plate, m: Move, f: int | None, values: dict | None = None):
         """The data layer with what has not drawn on yet cut away.
 
@@ -1360,8 +1474,13 @@ class MoveCompositor:
             for i, c in enumerate(columns):
                 b = c["box"]
                 k = 0.0 if f is None else M.out(M.stagger(f, i, base))
-                shown.append((M.Box(b["x"], b["y"], b["w"], b["h"]),
-                              M.reveal(M.Box(b["x"], b["y"], b["w"], b["h"]), k, "bottom")))
+                # The bar's outline straddles the column's edges. Clipped to
+                # the box alone, its two sides stood the full height of every
+                # bar before the bar grew: on paper, black posts in an empty
+                # chart. The box takes the stroke in with it.
+                box = M.Box(b["x"] - BAR_STROKE_BLEED, b["y"],
+                            b["w"] + 2 * BAR_STROKE_BLEED, b["h"])
+                shown.append((box, M.reveal(box, k, "bottom")))
             return self._clip(data, plate, shown)
         boxes = []
         box = anchor.get("box")
@@ -1487,9 +1606,20 @@ class MoveCompositor:
             f = w.frame_at(t)
             if f is None:
                 continue
-            img = self.cache.plate(w.key, f, {}, canvas.width, canvas.height)
+            img = self._wipe_frame(w, f, canvas.width, canvas.height)
             if img is not None:
                 canvas.alpha_composite(img)
+
+    def _wipe_frame(self, w: Wipe, f: int, width: int, height: int):
+        """Frame `f` of a wipe, at its own hour where it has one. The registry
+        answers a key at the episode's hour, so a dusk sweep asked for by key
+        in a night video came back navy."""
+        if w.hour and hasattr(self.reg, "plate_at") and hasattr(self.cache, "file"):
+            plate = self.reg.plate_at(w.key, w.hour)
+            paths = list(plate.frame_paths()) if plate is not None else []
+            if 0 <= f < len(paths):
+                return self.cache.file(paths[f], width, height)
+        return self.cache.plate(w.key, f, {}, width, height)
 
 
 # ---------------------------------------------------------------------------

@@ -636,6 +636,13 @@ class Settings(BaseSettings):
     short_bed: bool = Field(default=True, alias="SHORT_BED")
     short_bed_gain_db: float = Field(default=-24.0, alias="SHORT_BED_GAIN_DB")
 
+    # The meme a SHORT's verdict used to end on: picked by the bot off the
+    # script's words and laid over the payoff's last second and a half. Off
+    # since 2026-10-10: nothing the voice says points at it, so it was a
+    # picture that flashed and went, unexplained. Kept as a setting rather
+    # than torn out; the long's memes are the writer's [MEME] and unaffected.
+    short_meme: bool = Field(default=False, alias="SHORT_MEME")
+
     # --- encode politeness ------------------------------------------------
     # The render box is the operator's daily-driver desktop, and renders are
     # unattended: slower-but-polite is the right trade. ffmpeg is capped to a

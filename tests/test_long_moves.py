@@ -168,10 +168,20 @@ def test_a_beat_under_a_cover_waits_for_it_to_lift():
 
 
 def test_each_chapter_lands_on_its_own_cut():
-    chapters = [(0.0, "a", "x"), (6.0, "b", "y"), (6.5, "c", "z"), (40.0, "d", "w")]
+    chapters = [(1.0, "a", "x"), (6.0, "b", "y"), (6.5, "c", "z"), (40.0, "d", "w")]
     starts = [0.0, 2.0, 7.0, 9.0, 12.0]
+    assert RL._chapter_cuts(chapters, starts, intro_dur=0.5, duration=30.0) == \
+        [2.0, 7.0, 9.0, None]
+
+
+def test_a_first_chapter_under_the_opening_title_has_no_second_opener():
+    """The title card is chapter one's opener: its headline is the chapter's
+    title. Landed on the first cut after the card as well, it was the empty
+    room with the same title in it, five seconds in, and he vanished."""
+    chapters = [(0.0, "a", "x"), (6.0, "b", "y"), (6.5, "c", "z")]
+    starts = [0.0, 2.0, 5.0, 7.0, 9.0]
     assert RL._chapter_cuts(chapters, starts, intro_dur=2.6, duration=30.0) == \
-        [7.0, 9.0, 12.0, None]
+        [None, 7.0, 9.0]
 
 
 # ---------------------------------------------------------------------------

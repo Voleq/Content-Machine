@@ -579,7 +579,8 @@ def test_a_short_wipes_in_design_s_four_frame_cuts(vertical, reg, settings):
     wipes = MV.plan_wipes(fmt, result, reg, seed="x")
     assert wipes
     for w in wipes:
-        assert w.key.split("/")[1].rsplit("-", 1)[0].endswith("-short"), w.key
+        # At the hour that matches the cards' paper, so by its base key.
+        assert reg.base_key(w.key).split("/")[1].rsplit("-", 1)[0].endswith("-short"), w.key
         assert (w.frames, w.cut_frame) == (4, 1)
         assert w.end - w.cut == pytest.approx(3 / 12)
 
@@ -634,3 +635,118 @@ def test_the_hook_s_move_counts_up_as_the_short_opens(short, reg, settings):
     count = next(m for m in plan.moves if m.layer == layer.name and m.slot == "move")
     assert count.move == "count-up" and count.start == pytest.approx(layer.t_start)
     assert count.end - layer.t_start <= 0.6 + 1e-9
+
+
+# ---------------------------------------------------------------------------
+# A column's figure comes up with its column
+# ---------------------------------------------------------------------------
+
+def test_no_column_figure_counts_up_on_its_own(short, reg, settings):
+    """Valentin, 10 Oct 2026: on the revenue bars FY23 to FY25 showed their
+    figures at once, then FY21, FY22 and LTM counted up one by one — only the
+    slots a list of figure names happened to hold were counted. A column's
+    figure now rides its column, so none gets a count-up of its own."""
+    fmt, result, words, _ = short
+    charts = [k for k, l in MV.shot_plates(result).items()
+              if any(n.startswith(("bar-", "point-")) for n in reg.get(l.entry_key).slots)]
+    assert charts, "the fixture short has no column chart"
+    for plan in _plans(fmt, result, words, reg, settings, n=6):
+        counted = [(m.shot_id, m.slot) for m in plan.moves
+                   if m.move == "count-up" and m.shot_id in charts]
+        assert not [c for c in counted if re.match(r"^value-\d+$", c[1])], counted
+
+
+def test_bar_figures_rise_left_to_right_with_their_bars(reg, settings):
+    plate = reg.get("charts/bars-6y-9x16")
+    values = {f"value-{i}": f"${v}M" for i, v in enumerate((400, 431, 458, 472, 486, 496), 1)}
+    move = MV.Move("bars-grow", "s", "l", "plot-area", 0.0, 13, "out")
+    comp = MV.MoveCompositor(MV.MovePlan(moves=[move]), reg, settings, None)
+    assert all(k == 0.0 for k in comp._column_figures(plate, (move, None), values).values())
+    for f in range(13):
+        got = comp._column_figures(plate, (move, f), values)
+        ks = [got[f"value-{i}"] for i in range(1, 7)]
+        assert ks == sorted(ks, reverse=True), (f, ks)
+    assert all(k == 1.0 for k in comp._column_figures(plate, (move, 12), values).values())
+
+
+def test_no_bar_outline_stands_before_its_bar_grows(reg, settings):
+    """On paper the bars' black outlines stood the full height of every empty
+    column for the first second of a bars-grow: the sides of each bar sit on
+    its column's edges, half outside the box the grow clipped to."""
+    import numpy as np
+
+    plate = reg.at("night").get("charts/bars-6y-9x16")
+    values = {f"value-{i}": f"${v}M" for i, v in enumerate((400, 431, 458, 472, 486, 496), 1)}
+    values.update({f"y-{i}": f"${v}M" for i, v in enumerate((0, 125, 250, 375, 500), 1)})
+    move = MV.Move("bars-grow", "s", "l", "plot-area", 0.0, 13, "out")
+    comp = MV.MoveCompositor(MV.MovePlan(moves=[move]), reg.at("night"), settings, None)
+    data = comp._data(plate, tuple(sorted(values.items())), "")
+    assert data is not None
+    hidden = np.asarray(comp._reveal(data, plate, move, None, values))[..., 3]
+    k = plate.export_scale
+    for c in MV._columns(plate):
+        b = c["box"]
+        x0, x1 = int((b["x"] - 3) * k), int((b["x"] + b["w"] + 3) * k)
+        y0, y1 = int(b["y"] * k), int((b["y"] + b["h"] - 4) * k)
+        assert not hidden[y0:y1, x0:x1].any(), c["slots"]
+
+
+def test_line_figures_wait_for_the_line_to_reach_their_point(reg, settings):
+    plate = reg.get("charts/line-6y-16x9")
+    move = MV.Move("line-draw", "s", "l", "plot-area", 0.0, 10, "linear")
+    comp = MV.MoveCompositor(MV.MovePlan(moves=[move]), reg, settings, None)
+    seen = []
+    for f in range(10):
+        got = comp._column_figures(plate, (move, f), {})
+        seen.append(sum(got.values()))
+    assert seen == sorted(seen) and seen[0] < 6 and seen[-1] == 6
+
+
+@pytest.mark.parametrize("hour", ["night", "dusk"])
+def test_a_wipe_between_paper_cards_is_paper_at_every_hour(reg, hour):
+    """10 Oct 2026: the night's navy sweep between two paper cards flashed the
+    frame dark for half a second, the flip the all-paper plates were for."""
+    from pipeline.moves import wipe_for_ground, wipe_plate
+    from pipeline.plate_frames import _rgb
+
+    at = reg.at(hour)
+    card = at.get(at.aspect_key("cards/quote-pull", "9x16"))
+    assert card.ground == "paper"
+    for name in ("wipe-sweep", "wipe-page"):
+        wipe = wipe_for_ground(at, wipe_plate(at, name, "9x16"), card)
+        ground = _rgb(at.inks(wipe)["ground"])
+        assert sum(ground) / 3 > 180, (hour, wipe.key, ground)
+        # And the frame drawn at the cut is that hour's art, not the
+        # episode's: asked for by key, a night view answered navy.
+        from PIL import Image
+
+        drawn = at.plate_at(wipe.key, wipe.hour)
+        cover = Image.open(drawn.frame_paths()[1]).convert("RGB")
+        px = cover.getpixel((cover.width // 4, cover.height // 2))
+        assert sum(px) / 3 > 180, (hour, wipe.key, px)
+    # A cut into the room keeps the episode's hour.
+    w = wipe_plate(at, "wipe-sweep", "9x16")
+    assert wipe_for_ground(at, w, None) is w
+
+
+def test_the_short_draws_its_paper_wipe_at_night(short, reg, settings):
+    """The plan names the cream sweep and the frame on screen is the cream one."""
+    fmt, result, words, _ = short
+    night = reg.at("night")
+    wipes = MV.plan_wipes(fmt, result, night, seed="x")
+    assert wipes and all(w.hour == "dusk" for w in wipes), [(w.key, w.hour) for w in wipes]
+    comp = MV.MoveCompositor.__new__(MV.MoveCompositor)
+    comp.reg = night
+
+    class Files:
+        def file(self, path, w, h):
+            from PIL import Image
+            return Image.open(path).convert("RGBA").resize((w, h))
+
+        def plate(self, *a):
+            raise AssertionError("asked for by key, at the episode's hour")
+
+    comp.cache = Files()
+    w = wipes[0]
+    img = comp._wipe_frame(w, w.cut_frame, 108, 192).convert("RGB")
+    assert sum(img.getpixel((27, 96))) / 3 > 180

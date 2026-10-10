@@ -888,7 +888,7 @@ def test_a_gesture_with_no_second_variant_is_never_swapped(settings):
 
 
 def test_an_empty_slot_has_no_box_to_solve_a_mark_onto(settings):
-    """No ink, no box — and the caller falls back to a centred mark.
+    """No ink, no box — and the caller draws no mark.
 
     An empty cell means NO DATA in this library, so a mark aimed at one has
     nothing to sit on. Returning a box anyway would put a strike through a

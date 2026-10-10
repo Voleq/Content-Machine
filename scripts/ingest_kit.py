@@ -19,6 +19,8 @@ NOTHING HERE TRUSTS ANYTHING, and it runs in this order:
    to: its own audit on the files it shipped, then its emitter's own check
    that every shipped manifest is what the engine writes (`node engine/emit.js
    --check`), then its own export, which the plates are checked against.
+   Then every family is put on one ground (`PLATE_GROUND`, paper since
+   10 Oct 2026) and the emitter, the export and the audit run again on that.
 2. `scripts/kit_engine.js` draws every plate BLANK at every hour, and proves
    each one is design's exported file byte for byte. It also draws the host's
    close-up, which the kit specifies as a window rather than ships as a file,
@@ -107,6 +109,49 @@ def _node(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
             "install Node 18+ and run `npm ci` for the rasteriser. The render "
             "path needs neither."
         ) from None
+
+
+# EVERY PLATE ON PAPER (Valentin, 10 Oct 2026: "the paper looks better", one
+# ground, and no more changes asked of design). Design's restyle puts each
+# family on a ground in its tokens, `plateStyle.grounds`: tables, headlines,
+# quotes and cards on cream paper, charts and figures on the monitor's navy,
+# and a video flipped between the two every time the kind of plate changed.
+# The ground is that one table, so after the kit has proved itself as
+# shipped, the staged copy is given one ground for every family and drawn
+# from it; design's emitter and audit run again on it, so the kit's own rules
+# (contrast on the ground, both hours) still have to pass. Only the ground
+# and the plates' hashes change: no slot moves. `None` draws design's mix.
+PLATE_GROUND = "paper"
+
+
+def _one_ground(staged: Path, ground: str | None = PLATE_GROUND) -> list[str]:
+    """Put every family on `ground` in the staged tokens and redraw the kit's
+    manifests from them. Problems, as `_kit_proves_itself` gives them."""
+    if not ground:
+        return []
+    path = staged / "design-tokens.json"
+    tokens = json.loads(path.read_text(encoding="utf-8"))
+    grounds = (tokens.get("plateStyle") or {}).get("grounds")
+    if not isinstance(grounds, dict) or not isinstance(grounds.get(ground), list):
+        return [f"design-tokens.json has no plateStyle.grounds.{ground} to put "
+                f"every plate on"]
+    families: list[str] = []
+    for name in ("paper", "screen"):
+        families += [f for f in grounds.get(name) or [] if f not in families]
+        grounds[name] = []
+    grounds[ground] = families
+    grounds["screenKeys"] = []
+    path.write_text(json.dumps(tokens, indent=2) + "\n", encoding="utf-8")
+    print(f"  every plate on {ground}: {', '.join(families)}")
+    problems: list[str] = []
+    for step in (["node", "engine/emit.js"], ["node", "engine/export.js"]):
+        proc = _node(step, staged)
+        if proc.returncode != 0:
+            problems.append(f"`{' '.join(step)}` with every plate on {ground} fails "
+                            f"(exit {proc.returncode}): "
+                            f"{(proc.stderr or proc.stdout).strip()[-300:]}")
+            return problems
+    return problems + _audit(staged, f"with every plate on {ground}")
 
 
 def _stage(delivery: Path) -> Path:
@@ -1339,6 +1384,7 @@ def build(delivery: Path, only: str = "") -> int:
     try:
         staged = _stage(delivery)
         problems = _kit_proves_itself(staged)
+        problems += _one_ground(staged)
         print(f"  the kit's own checks: {len(problems)} problem(s)")
         drawn = STAGE / "plates"
         built = _draw(staged, drawn, only=only)

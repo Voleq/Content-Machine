@@ -37,6 +37,7 @@ are drawn by :mod:`pipeline.series`, the port of the kit's own renderers.
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -487,7 +488,42 @@ def draw_declared(reg: Registry, plate: Plate, values: dict[str, str], img,
         S.paint(img, nodes, plate.export_scale * img.width / max(plate.pixel_size[0], 1))
         drew = True
         _label_marks(reg, plate, values, got.data, img, settings)
+        _last_at_end(reg, plate, values, got.data, img, settings)
     return drew
+
+
+def _last_at_end(reg: Registry, plate: Plate, values: dict[str, str], data: dict,
+                 img, settings: Settings | None) -> None:
+    """A dense chart's `mark-last` beside the end of the line it drew.
+
+    The kit leaves it to code ("placed by code at the path end"), and the
+    short's price chart set it in its box instead: "15.42" halfway up the
+    right-hand column, between the 16 and the 17, beside nothing. Placed
+    the way the long's price chart places it (`_mark_at_end`), off the
+    line this plate's own data drew, so it rides the line-draw with it.
+    """
+    slot = plate.slot("mark-last")
+    text = str(values.get("mark-last") or "").strip()
+    series = data.get("series") or []
+    sl = S.boxes(plate)
+    box = sl.get("plot-area")
+    if slot is None or not slot.placed or not text or not box or len(series) < 2 \
+            or any(v is None for v in series) or any(k.startswith("bar-") for k in sl):
+        return
+    if settings is None:
+        from config import get_settings
+        settings = get_settings()
+    cols = [c for k, c in sorted(sl.items()) if re.match(r"^point-\d+$", k)]
+    cols = sorted(cols, key=lambda c: c.get("anchorX", 0))
+    e = S.extent(series, min=data.get("min"), max=data.get("max"), zero=data.get("zero"))
+    n = len(series)
+    k = float(plate.export_scale or 1)
+    pts = []
+    for i, v in enumerate(series):
+        x = cols[i]["anchorX"] if len(cols) == n else box["x"] + i / (n - 1) * box["w"]
+        y = box["y"] + box["h"] - ((float(v) - e.lo) / e.span) * box["h"]
+        pts.append((x * k, y * k))
+    _mark_at_end(img, plate, text, pts, settings, reg)
 
 
 def _label_marks(reg: Registry, plate: Plate, values: dict[str, str], data: dict,
@@ -672,9 +708,9 @@ def _mark_at_end(img, plate: Plate, text: str, pts: list[tuple[float, float]],
     """Set `mark-last` beside where the line ends.
 
     At the clear spot nearest the end (`pts` is the path in delivered
-    pixels), so the figure never sits on the line's last wiggles. One line
-    tall, inside its column, and kept off the high and low marks that share
-    the column's right edge.
+    pixels), so the figure never sits on the line. One line tall, in its
+    column where the column is clear, and kept off the high and low marks
+    that share the column's right edge.
     """
     from dataclasses import replace
 
@@ -694,21 +730,51 @@ def _mark_at_end(img, plate: Plate, text: str, pts: list[tuple[float, float]],
             top = max(top, o.y + o.h + 4)
         else:
             bottom = min(bottom, o.y - line_h - 4)
-    # The label is right-aligned on the column's edge; a price is at most
-    # seven characters, which the column's type sets in under 200 units. It
-    # goes at the clear spot nearest the line's end: none of the path under
-    # the label runs through it.
-    near = [y / scale for x, y in pts if x / scale >= slot.x + slot.w - 200]
-    end = pts[-1][1] / scale
+    # A price is at most seven characters, which the column's type sets in
+    # under 200 units. The label goes at the clear spot nearest the line's
+    # end: right-aligned on the column's edge where the column has room, else
+    # moved left along the plot until none of the path runs under it. THE
+    # PATH, NOT ITS CLOSES: a fall between two closes is a stroke straight
+    # down through the column, and the label tested against the closes alone
+    # was set on it ("15.42" on the last drop). The margin holds the stroke's
+    # own width.
+    import bisect
+    import math
 
-    def clear(y0: float) -> bool:
-        return not any(y0 - 8 <= y <= y0 + line_h + 8 for y in near)
+    width, margin = 200, 16
+    path = [(x / scale, y / scale) for x, y in _along(pts, 4 * scale)]
+    end_x, end_y = path[-1] if path else (slot.x + slot.w, slot.y + slot.h / 2)
+    edge = slot.x + slot.w
+    area = plate.slot("plot-area")
+    leftmost = (area.x if area is not None else slot.x) + width
+    best = None
+    for right in range(int(edge), int(min(leftmost, edge)) - 1, -20):
+        ys = sorted(y for x, y in path if right - width - margin <= x <= right + margin)
+        for y0 in range(int(top), int(max(bottom, top)) + 1, 4):
+            i = bisect.bisect_left(ys, y0 - margin)
+            if i < len(ys) and ys[i] <= y0 + line_h + margin:
+                continue
+            cost = math.hypot(right - end_x, y0 + line_h / 2 - end_y)
+            if best is None or cost < best[0]:
+                best = (cost, right, y0)
+    if best is None:
+        right, y = edge, int(round(max(min([y for _x, y in path] or [end_y])
+                                           - line_h - 8, top)))
+    else:
+        _cost, right, y = best
+    fill_slot(img, plate, replace(slot, x=int(right - slot.w), y=y, h=line_h),
+              text, settings, reg)
 
-    spots = sorted(range(int(top), int(max(bottom, top)) + 1, 4),
-                   key=lambda y0: abs(y0 + line_h / 2 - end))
-    y = next((y0 for y0 in spots if clear(y0)),
-             int(round(max(min(near or [end]) - line_h - 8, top))))
-    fill_slot(img, plate, replace(slot, y=y, h=line_h), text, settings, reg)
+
+def _along(pts: list[tuple[float, float]], step: float) -> list[tuple[float, float]]:
+    """The path through `pts`, a point every `step` along it."""
+    import math
+
+    out: list[tuple[float, float]] = []
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        n = max(int(math.hypot(x1 - x0, y1 - y0) / max(step, 1e-6)), 1)
+        out += [(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n) for i in range(n)]
+    return out + list(pts[-1:])
 
 
 def month_year(date: str) -> str:

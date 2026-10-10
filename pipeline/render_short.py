@@ -638,12 +638,17 @@ class ShortResolver:
             got = [labels.get(f"head-{i + 1}") for i in range(4)]
             return ",".join(g for g in got if g) if any(got) else None
         if field == "axis":
-            # Four y labels across the range the series actually covers. The
-            # domain comes from the figures, not from a rounded guess at them.
+            # Four round y labels holding the range the series covers. The
+            # labels are the scale the line is drawn on, so they have to be
+            # the numbers they print: four thirds of 15.13 to 18.20 rounded
+            # to whole dollars printed "18" on a line at 18.20, and the high
+            # ran up past the top gridline.
+            from pipeline.macro_series import nice_axis
+
             lo, hi = min(closes), max(closes)
             if hi <= lo:
                 return None
-            return ",".join(f"{lo + (hi - lo) * i / 3:.0f}" for i in range(4))
+            return ",".join(f"{round(v, 6):g}" for v in nice_axis(lo, hi, 4))
         return labels.get(f"mark-{field}") or labels.get(field)
 
     def _compare(self, which: str) -> str | None:
@@ -737,6 +742,10 @@ class ShortResolver:
         workspace's `render_short/`, and a final that read the manifest its
         own proof wrote would steer off the meme the proof showed.
         """
+        if self.meme_choice is None and not self.settings.short_meme:
+            from pipeline.memes import MemeChoice
+
+            self.meme_choice = MemeChoice(why="memes are off in shorts (SHORT_MEME)")
         if self.meme_choice is None:
             from pipeline.memes import choose_for_short, recent_memes
 

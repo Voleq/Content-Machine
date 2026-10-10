@@ -560,6 +560,7 @@ def render_frame(plate: Plate, frame_index: int, values: dict[str, str] | None,
 
     idx = min(max(frame_index, 0), len(plate.frames) - 1)
     img = Image.open(plate.frame_paths()[idx]).convert("RGBA")
+    paper_over_clipped_marks(img, plate)
     if not values:
         return img
 
@@ -641,6 +642,40 @@ def _paste_band(img, band: Plate, slot: Slot, export_scale: int) -> None:
     stretched = src.resize((w, src.height), Image.LANCZOS)
     top = y + (h - stretched.height) // 2
     img.alpha_composite(stretched, (x, top))
+
+
+def clipped_marks(plate: Plate) -> list[tuple[int, int, int, int]]:
+    """A quote's opening marks the kit drew partly off the canvas, as boxes.
+
+    Design's restyle moved the quote card's type out to the margin and its
+    two oversized opening marks went with it, past the left edge: one is
+    wholly off the canvas and the other leaves a red tick at the edge of the
+    frame, which reads as a stray stroke and not as a quotation mark."""
+    cw, ch = plate.canvas
+    out = []
+    for label, x, y, w, h in plate.decor:
+        if not label.startswith("quote-mark") or w <= 0 or h <= 0:
+            continue
+        # Cut by the frame's edge at all, it is a tick and not a mark.
+        seen_w = max(min(x + w, cw) - max(x, 0), 0)
+        if 0 < seen_w < w:
+            out.append((max(x, 0), max(y, 0), seen_w, min(y + h, ch) - max(y, 0)))
+    return out
+
+
+def paper_over_clipped_marks(img, plate: Plate) -> None:
+    """Paper over `clipped_marks` with the clean ground beside them, so the
+    grain carries on where a flat fill would show a patch."""
+    k = img.width / max(plate.canvas[0], 1)
+    for x, y, w, h in clipped_marks(plate):
+        pad = 6
+        x0, y0 = int((x - pad) * k), int((y - pad) * k)
+        x1, y1 = int((x + w + pad) * k), int((y + h + pad) * k)
+        x0, y0 = max(x0, 0), max(y0, 0)
+        src = int((x + w + 2 * pad + 160) * k)
+        if src + (x1 - x0) > img.width or y1 <= y0:
+            continue
+        img.paste(img.crop((src, y0, src + (x1 - x0), y1)), (x0, y0))
 
 
 def render_still(plate: Plate, values: dict[str, str] | None,

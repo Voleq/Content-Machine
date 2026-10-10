@@ -385,7 +385,8 @@ def _plate_frame(plate: Plate) -> tuple[int, int]:
 def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
                    *, seed: str = "", avoid: "Collection[str]" = (),
                    used: "Collection[str]" = (),
-                   safe: tuple[int, int] | None = None):
+                   safe: tuple[int, int] | None = None,
+                   payoff: str | None = None):
     """Which of a beat's interchangeable plates this video draws.
 
     THE WRITER CHOOSES NOTHING HERE AND THAT IS DELIBERATE. A SHORT is
@@ -409,6 +410,11 @@ def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
     viewer sees in fifty seconds, where a plate from last week's short is one
     they may never have seen. Both are preferences, so a beat with nothing
     else still draws; when every option is used, the one used longest ago.
+
+    `payoff` is the figure another beat of this cut sets on its own (the
+    payoff's `numbers.headline_figure`). A drawing that would show that one
+    figure and nothing else beside it is refused here: it is the payoff's
+    card, a few seconds early.
     """
     import random
 
@@ -429,6 +435,13 @@ def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
         # swap into a render outage over a picture nothing needed.
         if plate is None or not _fillable(v, shot, plate, resolver, reg,
                                           safe=safe):
+            continue
+        # THE PAYOFF'S FIGURE IS SHOWN ONCE. The free-cash-flow card went up
+        # as "-$15M, from $12M in FY21" and twenty seconds later the payoff
+        # put up the same -$15M with the same line under it: one card twice.
+        # The row's own beat draws its years instead; the payoff keeps the
+        # one figure.
+        if payoff and _shows_only(v, shot, resolver, payoff):
             continue
         # BY THE DRAWING, NOT THE HOUR. A dusk video resolves every name to a
         # dusk key, and a night video last week used the night key of the same
@@ -483,6 +496,7 @@ def plan_variants(reg: Registry, shots: Sequence[Shot], aspect: str,
     picks: dict[str, Any] = {}
     used: list[str] = []
     begin = getattr(resolver, "begin_shot", None)
+    payoff = _payoff_figure(shots, resolver)
     for shot in shots:
         if getattr(shot, "part", 0) == 2 or not shot.plate or shot.host \
                 or shot.plate.startswith("room/"):
@@ -491,8 +505,11 @@ def plan_variants(reg: Registry, shots: Sequence[Shot], aspect: str,
         if shot.alts:
             if begin is not None:
                 begin(shot)
+            mine = payoff is not None and shot.id == payoff[0]
             picked = choose_variant(reg, shot, aspect, resolver, seed=seed,
-                                    avoid=avoid, used=used, safe=safe)
+                                    avoid=avoid, used=used, safe=safe,
+                                    payoff=None if payoff is None or mine
+                                    else payoff[1])
             picks[shot.id] = picked
             if picked is not None:
                 name = picked.plate
@@ -503,6 +520,44 @@ def plan_variants(reg: Registry, shots: Sequence[Shot], aspect: str,
         if plate is not None:
             used.append(reg.base_key(plate.key))
     return picks
+
+
+PAYOFF_FIGURE = "numbers.headline_figure"
+
+
+def _payoff_figure(shots: Sequence[Shot], resolver: Resolver) -> tuple[str, str] | None:
+    """`(shot id, figure)` for the beat that sets the payoff's figure, or None."""
+    for shot in shots:
+        for v in shot.variants:
+            bind, _lit, _focus = v.resolved(shot)
+            if any(str(raw).lstrip("?") == PAYOFF_FIGURE for raw in bind.values()):
+                try:
+                    got = resolver.text_for(PAYOFF_FIGURE)
+                except Exception:                          # noqa: BLE001
+                    return None
+                return (shot.id, str(got).strip()) if got and str(got).strip() else None
+    return None
+
+
+def _shows_only(variant, shot: Shot, resolver: Resolver, figure: str) -> bool:
+    """Would this drawing show `figure`, off the numbers rows, as the only
+    figure on it?"""
+    from pipeline.moves import is_one_figure
+
+    bind, _lit, _focus = variant.resolved(shot)
+    figures = []
+    for raw in bind.values():
+        src = str(raw).lstrip("?")
+        if not src.startswith("numbers."):
+            continue
+        try:
+            got = resolver.text_for(src)
+        except Exception:                                  # noqa: BLE001
+            continue
+        text = str(got or "").strip()
+        if text and is_one_figure(text):
+            figures.append(text)
+    return figures == [figure]
 
 
 def resolve_plate(reg: Registry, name: str, aspect: str) -> Plate | None:
@@ -1822,15 +1877,57 @@ def caption_obstacles(reg: Registry, shot_layers: Sequence[Layer]
             if plate is None:
                 continue
             for name, slot in plate.slots.items():
-                if slot.control or not (slot.w and slot.h):
+                if slot.control or not (slot.w and slot.h) or slot.placed:
+                    # A slot code places (a dense chart's last price, a
+                    # scatter's names) is set inside the data's own ink.
                     continue
                 if str(l.values.get(name, "")).strip() or (slot.renderer and l.values):
-                    out.append((name, _slot_in_frame(plate, name, box)))
+                    ink = _data_ink(reg, plate, l.values) if slot.role == "plot-area" else None
+                    out.append((name, _canvas_in_frame(plate, ink, box) if ink
+                                else _slot_in_frame(plate, name, box)))
         elif l.kind in ("fill", "media", "text", "mark"):
             out.append((l.name.split(":", 1)[-1], box))
         elif l.kind == "host":
             out.append(("the host's head", _head_box(reg, l)))
     return out
+
+
+_DATA_INK: dict[tuple, tuple[int, int, int, int] | None] = {}
+
+
+def _data_ink(reg: Registry, plate: Plate, values: dict) -> tuple[int, int, int, int] | None:
+    """Where a plot's data actually draws, in canvas units, or None.
+
+    THE LINE, NOT THE BOX IT MAY USE. A dense price chart's plot fills the
+    whole caption band, so taken as its box nothing in the band was clear and
+    the caption went over the dates under it; the line itself leaves rows
+    free above or below it, and a caption there covers nothing."""
+    key = (plate.key, tuple(sorted((k, str(v)) for k, v in values.items())))
+    if key not in _DATA_INK:
+        got = None
+        try:
+            from pipeline.chart import declared_layer
+
+            layer = declared_layer(reg, plate, dict(values))
+            bbox = layer.getchannel("A").getbbox() if layer is not None else None
+            if bbox:
+                k = max(float(plate.export_scale or 1), 1.0) * layer.width / max(plate.pixel_size[0], 1)
+                x0, y0, x1, y1 = (int(v / k) for v in bbox)
+                got = (x0, y0, max(x1 - x0, 1), max(y1 - y0, 1))
+        except Exception:                                    # noqa: BLE001
+            log.debug("caption: no data ink for %s", plate.key, exc_info=True)
+        _DATA_INK[key] = got
+    return _DATA_INK[key]
+
+
+def _canvas_in_frame(plate: Plate, box: tuple[int, int, int, int],
+                     placed: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+    """A box in canvas units, in frame pixels, for a plate placed at `placed`."""
+    px, py, pw, ph = placed
+    kx = pw / max(plate.canvas[0], 1)
+    ky = ph / max(plate.canvas[1], 1)
+    x, y, w, h = box
+    return (int(px + x * kx), int(py + y * ky), max(int(w * kx), 1), max(int(h * ky), 1))
 
 
 def _head_box(reg: Registry, host: Layer) -> tuple[int, int, int, int]:
