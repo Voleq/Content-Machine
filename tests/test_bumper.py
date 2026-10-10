@@ -104,3 +104,19 @@ def test_a_wipe_puts_its_full_cover_on_the_cut(reg, tmp_path, monkeypatch):
     assert clip.end == pytest.approx(clip.start + 8 / 12)
     assert B.wipe_clip(reg, tmp_path / "x.mov", name="wipe-blinds", aspect="16x9",
                        cut=0.1, size=(1920, 1080)) is None
+
+
+@pytest.mark.parametrize("hour", ["night", "dusk"])
+def test_the_long_s_wipes_onto_paper_are_paper_at_every_hour(reg, hour):
+    """10 Oct 2026: the long's blinds into each chapter bumper, the page off the
+    opening title and the sweep off the close were navy at night, a dark
+    flash between paper cards. Given the bumper's ground, every one is paper."""
+    at = reg.at(hour)
+    paper = at.get(at.aspect_key("structure/chapter-bumper", "16x9"))
+    assert paper.ground == "paper"
+    for name in ("wipe-blinds", "wipe-sweep", "wipe-page"):
+        frames, cut = B.wipe_frames(at, name, "16x9", (192, 108), ground=paper)
+        cover = np.asarray(frames[cut]).astype(float)
+        drawn = cover[..., 3] > 200
+        assert drawn.mean() > 0.9, (hour, name)
+        assert cover[drawn][:, :3].mean() > 180, (hour, name)

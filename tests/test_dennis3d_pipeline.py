@@ -199,6 +199,16 @@ def test_his_extent_is_every_pixel_of_him_over_the_shot(performer):
     assert abs(y0 - 45) <= 8 and abs(y1 - 176) <= 8
 
 
+def test_a_card_over_him_is_told_from_one_beside_him(performer):
+    """The long's lower third sat on his face for the whole turn to the screen."""
+    layer = performer.shot(_room("room/desk-front-16x9"), [], 0.0, 1.0, (320, 180), seed="x")
+    # the stand-in's box: x 80..171, rows 45..176
+    assert dennis3d.under(layer, (320, 180), (0, 0, 60, 40)) is False
+    assert dennis3d.under(layer, (320, 180), (100, 50, 140, 90)) is True
+    assert dennis3d.under(layer, (320, 180), (0, 0, 70, 36)) is False
+    assert dennis3d.under(layer, (320, 180), (0, 0, 70, 36), margin=16) is True
+
+
 # --------------------------------------------------------------------------
 # The short (3 Oct: "the shorts should be on this engine as well")
 # --------------------------------------------------------------------------

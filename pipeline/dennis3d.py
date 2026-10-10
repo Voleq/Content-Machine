@@ -352,11 +352,9 @@ class Performer:
         return float(x0), float(y0), float(x1), float(y1)
 
 
-def extent(layer: Path, size: tuple[int, int]) -> tuple[int, int, int, int] | None:
-    """Where he is in his layer over the whole shot: the box (x0, y0, x1, y1,
-    frame pixels) round every pixel of him in any frame, read off the alpha at
-    an eighth of the size. None when there is nothing of him, or it cannot be
-    read."""
+def _presence(layer: Path, size: tuple[int, int]):
+    """Every pixel of him in any frame of his layer, read off the alpha at an
+    eighth of `size`: a (h, w) bool array, or None when it cannot be read."""
     import numpy as np
 
     W, H = size
@@ -371,9 +369,43 @@ def extent(layer: Path, size: tuple[int, int]) -> tuple[int, int, int, int] | No
     n = len(raw) // (w * h)
     if not n:
         return None
-    him = (np.frombuffer(raw[:n * w * h], np.uint8).reshape(n, h, w) > 64).any(axis=0)
+    return (np.frombuffer(raw[:n * w * h], np.uint8).reshape(n, h, w) > 64).any(axis=0)
+
+
+def extent(layer: Path, size: tuple[int, int]) -> tuple[int, int, int, int] | None:
+    """Where he is in his layer over the whole shot: the box (x0, y0, x1, y1,
+    frame pixels) round every pixel of him in any frame, read off the alpha at
+    an eighth of the size. None when there is nothing of him, or it cannot be
+    read."""
+    import numpy as np
+
+    him = _presence(layer, size)
+    if him is None:
+        return None
+    W, H = size
+    h, w = him.shape
     ys, xs = np.nonzero(him)
     if not len(xs):
         return None
     return (int(xs.min() * W / w), int(ys.min() * H / h),
             int(min((xs.max() + 1) * W / w, W)), int(min((ys.max() + 1) * H / h, H)))
+
+
+def under(layer: Path, size: tuple[int, int], rect: tuple[int, int, int, int],
+          margin: int = 0) -> bool | None:
+    """Whether any pixel of him, in any frame of the shot, falls inside `rect`
+    (x0, y0, x1, y1, frame pixels) grown by `margin`: what a card laid there
+    would cover of him. None when his layer cannot be read."""
+    him = _presence(layer, size)
+    if him is None:
+        return None
+    W, H = size
+    h, w = him.shape
+    x0, y0, x1, y1 = rect
+    c0 = max(int((x0 - margin) * w / W), 0)
+    r0 = max(int((y0 - margin) * h / H), 0)
+    c1 = min(-(-(x1 + margin) * w // W), w)
+    r1 = min(-(-(y1 + margin) * h // H), h)
+    if c1 <= c0 or r1 <= r0:
+        return False
+    return bool(him[r0:r1, c0:c1].any())

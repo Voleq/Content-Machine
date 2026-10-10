@@ -1278,3 +1278,18 @@ def test_the_manifest_carries_the_writer_moves_for_the_renderer(rendered):
     # RAW names no [MOVE]; the field is there, empty, rather than absent.
     assert manifest["writer_moves"] == []
     assert manifest["move_warnings"] == []
+
+
+def test_the_strip_leaves_out_a_beat_it_would_sit_on_him_in():
+    """10 Oct 2026: on the turn to the screen the lower third covered his face."""
+    from types import SimpleNamespace as NS
+
+    from pipeline.render_long import _on_him
+
+    segs = [NS(kind="host", start=0.0, end=4.0), NS(kind="host", start=4.0, end=8.0),
+            NS(kind="plate", start=8.0, end=10.0), NS(kind="host", start=10.0, end=11.0)]
+    assert _on_him(segs, []) == [(0.0, 8.0)]
+    assert _on_him(segs, [], skip={1}) == [(0.0, 4.0)]
+    assert _on_him(segs, [(0.0, 1.0)], skip={0}) == [(4.0, 8.0)]
+    # the disclaimer's rim takes every stretch of him, however short
+    assert _on_him(segs, [], min_s=0.0) == [(0.0, 8.0), (10.0, 11.0)]

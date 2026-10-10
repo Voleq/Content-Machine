@@ -272,18 +272,23 @@ LOWER_THIRD_AT = (24, 20)
 # A window of him shorter than this gets no lower third: on and off inside a
 # second reads as a flicker, not a strip.
 LOWER_THIRD_MIN_S = 1.5
+# The dark rim the disclaimer wears over the room (RGBA): the room's night
+# blue, not black, so it reads as the line's shadow rather than an outline.
+DISCLAIMER_RIM = (12, 16, 30, 190)
 
 
-def _on_him(segments, covers: list[tuple[float, float]]) -> list[tuple[float, float]]:
+def _on_him(segments, covers: list[tuple[float, float]], *,
+            skip=frozenset(), min_s: float = LOWER_THIRD_MIN_S) -> list[tuple[float, float]]:
     """The stretches the frame is a beat of him with nothing covering it.
 
     Consecutive beats of him are one stretch, so the strip does not blink on
     the cut between two of his shots; a cover (the opening title, a chapter
-    card, a wipe) is taken out of it.
+    card, a wipe) is taken out of it, and so is a beat whose index is in
+    `skip` (one the strip would sit on his face in).
     """
     runs: list[list[float]] = []
-    for sg in segments:
-        if sg.kind != "host":
+    for i, sg in enumerate(segments):
+        if sg.kind != "host" or i in skip:
             continue
         if runs and abs(runs[-1][1] - sg.start) < 1e-6:
             runs[-1][1] = sg.end
@@ -303,7 +308,7 @@ def _on_him(segments, covers: list[tuple[float, float]]) -> list[tuple[float, fl
                 if cb < pb:
                     nxt.append((cb, pb))
             pieces = nxt
-        out.extend((pa, pb) for pa, pb in pieces if pb - pa >= LOWER_THIRD_MIN_S)
+        out.extend((pa, pb) for pa, pb in pieces if pb - pa >= min_s)
     return out
 
 # THE COLD OPEN STARTS WIDE. A long opened on the same talking-head angle as
@@ -1926,6 +1931,11 @@ def _render_long(
         # Blender worker running until the garbage collector closed its pipes.
         _closers.append(performer.close)
     dennis3d_meta: list[dict] = []
+    # His 3D layer on each solo beat, so the cards that ride his beats (the
+    # lower third) can be kept off him: design's anchors kept the strip clear
+    # of the drawn poses, but a 3D camera puts him where it puts him, and the
+    # turn to the screen stands his head right where the strip goes.
+    his_layers: dict[int, Path] = {}
 
     def _pose_3d(seg_i: int, seg, room, pose: str | None) -> tuple[str, bool]:
         """(the kit pose the 3D Dennis plays on a beat, whether it is the
@@ -2274,6 +2284,7 @@ def _render_long(
                                        seed=f"{script.ticker}|{i}", stance=stance3d,
                                        close=close3d)
                 window = performer.window(layer) if close3d else None
+                his_layers[i] = layer
                 host = (_add_input(["-i", str(layer)]), 0, 0, W, H, None)
                 _count_3d(i, stance3d, close_up=close3d)
                 dennis3d_meta.append({"segment": i, "room": room.key, "stance": stance3d,
@@ -2589,10 +2600,18 @@ def _render_long(
     transition_meta: list[dict] = []
     wipe_layers: list[OverlayLayer] = []
 
+    # Every wipe here has a paper card on one side of its cut: the opening
+    # title, a chapter bumper, the close. Drawn at the episode's hour, a
+    # night video wiped navy into and out of the paper, the dark-light flip
+    # the one ground was chosen to end; drawn at the hour whose ground is the
+    # bumper's, it is paper like the cards it brings in.
+    _paper = reg.get(reg.aspect_key("structure/chapter-bumper", aspect) or "")
+
     def _wipe_at(cut: float, name: str, why: str) -> None:
         """A wipe with its full cover on `cut` (item 23), recorded."""
         clip = wipe_clip(reg, rdir / f"{name}_{len(transition_meta)}.mov",
-                         name=name, aspect=aspect, cut=cut, size=(W, H))
+                         name=name, aspect=aspect, cut=cut, size=(W, H),
+                         ground=_paper)
         if clip is None or clip.end > duration:
             return
         # On top of everything, the bumper it opens on included: a wipe
@@ -2913,7 +2932,12 @@ def _render_long(
                                    x=lt_x, y=lt_y, size=lt_size, reg=reg)
         lt_still = rdir / "lower_third.png"
         lt_img.resize(lt_size, Image.LANCZOS).save(lt_still)
-        for n, (a, b) in enumerate(_on_him(segments, covers)):
+        # Not on a beat where it would sit on him: on the turn to the screen
+        # the strip covered his face for the whole shot.
+        lt_rect = (lt_x, lt_y, lt_x + lt_size[0], lt_y + lt_size[1])
+        on_him = {i for i, layer in his_layers.items()
+                  if dennis3d.under(layer, (W, H), lt_rect, margin=px(16))}
+        for n, (a, b) in enumerate(_on_him(segments, covers, skip=on_him)):
             first = n == 0
             layers.append(OverlayLayer(
                 path=lt_clip.path if first else lt_still,
@@ -2942,6 +2966,20 @@ def _render_long(
         path=disc_path, x=px(36), y=H - px(44),
         t_start=0.0, t_end=duration, name="disclaimer",
     ))
+    # Over the room it runs across the lit window frame and the radiator, and
+    # light grey on a light strip lost its "Not": "Opinion / entertainment.
+    # financial advice." On his beats the same line goes over it with a dark
+    # rim, which the paper never sees.
+    rim = px(3)
+    disc_rim = simple_text(settings, settings.disclaimer_text, font_size=px(26),
+                           fill=(*role(settings, "neutral-data"), 235),
+                           stroke_width=rim, stroke_fill=DISCLAIMER_RIM)
+    disc_rim_path = rdir / "disclaimer_rim.png"
+    disc_rim.save(disc_rim_path)
+    for a, b in _on_him(segments, covers, min_s=0.0):
+        layers.append(OverlayLayer(
+            path=disc_rim_path, x=px(36) - rim, y=H - px(44) - rim,
+            t_start=a, t_end=b, name="disclaimer_rim"))
 
     # ---------------------------------------------------------- captions
     # NONE ARE BURNED IN. A long viewer has the sound on, and the bot already
