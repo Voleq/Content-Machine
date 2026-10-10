@@ -1397,12 +1397,13 @@ run against it. The disagreement was in slot METADATA rather than geometry —
 zero differences in x, y, w or h — so nothing looked wrong until both lanes
 stopped rendering. One command before the merge would have caught it.
 
-**Carry the bot's own patches across a wholesale swap.** `kit/` is design's
-drop, replaced whole, and one fix lives in it on this side: rebuild-41's
+**`kit/` carries no patches of the bot's.** It is design's drop, replaced
+whole except `roles.json`. A fix the bot needs in design's engine goes back to
+design and is pinned by its result rather than its code: rebuild-41's
 `engine/grounds.js` slid right-aligned y-axis labels into the plot on eleven
-9:16 charts, and the bot stops them 14 units short of a data region
-(`DATA_GAP`, marked "R41, bot"). `tests/test_kit_patches.py` fails when a
-swap drops it — re-apply it (or confirm design shipped it) before the merge.
+9:16 charts, the bot patched it, and rebuild-41c ships the fix as design's own.
+`tests/test_kit_axis_labels.py` reads the published slot tables and fails on
+any drop that puts an axis label back inside its plot.
 
 **If the ingest is killed with exit `-9`, that is the OOM killer, not a bug.**
 The driver draws one family at a time and releases each before the next, so

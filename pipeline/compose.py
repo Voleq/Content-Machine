@@ -831,10 +831,13 @@ def punch_in_slot(reg: Registry, shot: Shot, frame: tuple[int, int],
         if not str(values.get(name, "")).strip():
             continue
         # The count-up anchor is there to name what the plate sets biggest.
-        # Since rebuild-41's 9:16 type floor set units and kickers at the
-        # figures' size, design's anchor lands on "Free cash flow, FY21 to
-        # LTM" on dozens of plates; a close-up on the plate's smallest line
-        # that is not a figure is a close-up on a caption.
+        # On about thirty 9:16 plates (the two-series charts, small multiples,
+        # segment grids, whiteboards) design's anchor is the kicker, authored
+        # as big as the figures, and the 9:16 type floor sets both at 34.
+        # Rebuild-41c moved every anchor the floor had pushed onto a word
+        # back to its figure; these were the kicker before the restyle too.
+        # A close-up on the plate's smallest line that is not a figure is a
+        # close-up on a caption.
         if move == "count-up" and not is_one_figure(str(values.get(name, ""))) \
                 and _type_size(plate, name) <= _smallest_type(plate):
             continue
