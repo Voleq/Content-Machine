@@ -2538,7 +2538,7 @@ class BotCore:
         if ws is None:
             return Reply(f"No workspace for {ticker}.")
         if wanted_fmt == "pair":
-            return self._upload_pair(ws, when)
+            return self._upload_pair(ws, when, again=again)
         fmt, video, why = self._upload_target(ws, wanted_fmt, clip_n)
         if video is None:
             return Reply(why)
@@ -2665,7 +2665,7 @@ class BotCore:
         except (OSError, ValueError, TypeError, IndexError):
             return 0.0
 
-    def _upload_pair(self, ws: Workspace, when) -> Reply:
+    def _upload_pair(self, ws: Workspace, when, *, again: bool = False) -> Reply:
         """`/upload TICKER pair` — ship two clips off one long, tagged (33).
 
         The only free experiment in this pipeline. `/repurpose` has always cut
@@ -2677,7 +2677,8 @@ class BotCore:
         """
         from pipeline.experiments import pair_id
         from pipeline.youtube import (
-            UploadError, YouTubeUnavailable, available, upload_video,
+            UploadError, VideoLog, YouTubeUnavailable, available, record_format,
+            upload_video,
         )
 
         clips = sorted(ws.path.glob("short_repurposed*.mp4"))
@@ -2691,7 +2692,20 @@ class BotCore:
             return Reply(f"⛔ can't upload from here: {why}")
         tag = pair_id(ws.ticker, ws.workdate)
         lines = [f"🅰🅱 {ws.ticker}: two clips off one render, tagged as a pair"]
+        # The single upload's "already up" guard, per clip: run twice (or
+        # again after the second clip failed) this sent every clip again, and
+        # the pair's tag then covered the duplicates.
+        up = [] if again else [
+            v for v in VideoLog(self.settings).for_ticker(ws.ticker)
+            if v.workdate == ws.workdate and record_format(v) == "clip"]
+        sent = 0
         for n, clip in enumerate(clips[:2], 1):
+            done = [v for v in up if abs(v.clip_start_s - self._clip_start(clip)) < 0.5]
+            if done:
+                v = max(done, key=lambda r: r.uploaded_at)
+                lines.append(f"  at {self._clip_start(clip):.0f}s — already up: "
+                             f"{v.url()} ({v.privacy})")
+                continue
             package = self._upload_package(ws, "clip", clip)
             if package is None:
                 return Reply("⛔ no upload package on file — re-render to "
@@ -2706,12 +2720,19 @@ class BotCore:
             except (UploadError, YouTubeUnavailable) as e:
                 # The first may already be up. Say so rather than implying
                 # neither went: an untagged single is still a shipped video.
-                which = "the second" if n == 2 else "the first (nothing went up)"
-                return Reply("\n".join(lines + [f"⛔ {which} failed: {e}"]))
+                which = ("the second" if n == 2 else "the first (nothing went up)")
+                return Reply("\n".join(lines + [
+                    f"⛔ {which} failed: {e}",
+                    f"/upload {ws.ticker} pair, run again, sends only what is not up."]))
             except Exception as e:  # noqa: BLE001
                 log.exception("clip pair upload blew up")
                 return Reply("\n".join(lines + [f"💥 upload error: {e}"]))
+            sent += 1
             lines.append(f"  at {self._clip_start(clip):.0f}s — {record.url()}")
+        if not sent:
+            lines.append(f"Both are already up. /upload {ws.ticker} pair again "
+                         f"sends second copies.")
+            return Reply("\n".join(lines))
         lines.append("/experiments compares them once both have a day or two "
                      "of views.")
         return Reply("\n".join(lines))

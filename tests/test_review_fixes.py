@@ -517,3 +517,40 @@ def test_scheduled_rows_past_their_time_drop_off(settings):
     log_.record(VideoRecord(ticker="B", video_id="f", title="f",
                             privacy="scheduled", publish_at=future))
     assert [v.video_id for v in log_.scheduled()] == ["f"]
+
+
+def test_a_pair_upload_does_not_send_a_clip_that_is_already_up(core, settings,
+                                                              monkeypatch):
+    """`/upload T pair` skipped the "already up" guard: run twice, or again
+    after the second clip failed, it re-sent every clip under the pair's tag."""
+    from types import SimpleNamespace
+
+    import pipeline.youtube as yt
+    from pipeline.youtube import VideoLog, VideoRecord
+
+    ws = Workspace(settings, "EXMPL", "2026-07-01").create()
+    ws.set_lane("long")
+    (ws.path / "long_final.mp4").write_bytes(b"x")
+    for n, start in ((1, 30.0), (2, 300.0)):
+        clip = ws.path / f"short_repurposed_{n}.mp4"
+        clip.write_bytes(b"x")
+        clip.with_suffix(".repurpose.json").write_text(
+            json.dumps({"window": [start, start + 50]}), encoding="utf-8")
+    VideoLog(settings).record(VideoRecord(
+        ticker="EXMPL", video_id="v1", title="t", privacy="private",
+        workdate="2026-07-01", fmt="clip", clip_start_s=30.0,
+        uploaded_at=datetime.now(timezone.utc).isoformat()))
+    sent = []
+    monkeypatch.setattr(yt, "available", lambda s: (True, ""))
+    monkeypatch.setattr(yt, "upload_video", lambda clip, *a, **k: sent.append(
+        k["clip_start_s"]) or SimpleNamespace(url=lambda: f"https://y/{clip.name}"))
+    monkeypatch.setattr(type(core), "_upload_package", lambda self, *a: object())
+    monkeypatch.setattr(type(core), "_render_duration", lambda self, *a: 50.0)
+
+    reply = core.upload_command(["EXMPL", "pair"])
+    assert sent == [300.0], reply.text
+    assert "already up" in reply.text
+    # `again` is the operator saying a second copy is meant
+    sent.clear()
+    core.upload_command(["EXMPL", "pair", "again"])
+    assert sent == [30.0, 300.0]

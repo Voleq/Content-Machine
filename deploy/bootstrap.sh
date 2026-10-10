@@ -722,12 +722,18 @@ step "headless Chromium + system libraries (Playwright)"
 # libgbm, libatk, fonts...), which is the part that is easy to miss on a
 # minimal WSL2 image. OPTIONAL: without it the pull degrades to zero
 # auto-shots and a render is never blocked, so this warns and carries on.
-if .venv/bin/playwright install --with-deps chromium; then
-  ok "chromium ready"
+# The libraries need root; the BROWSER goes into the home of the user the bot
+# runs as. Installed by root it landed in /root/.cache, the bot (User=dennis)
+# looked in its own cache, found nothing, and every 10-K shot silently
+# degraded to none while this step said "chromium ready".
+if .venv/bin/playwright install-deps chromium \
+   && sudo -u "$SERVICE_USER" -H .venv/bin/playwright install chromium; then
+  ok "chromium ready (for $SERVICE_USER)"
 else
   warn "Chromium install failed. 10-K auto-screenshots will degrade to none;"
   warn "renders are NOT blocked by this. Retry later with:"
-  warn "    $DEST/.venv/bin/playwright install --with-deps chromium"
+  warn "    cd $DEST && sudo .venv/bin/playwright install-deps chromium"
+  warn "    cd $DEST && sudo -u $SERVICE_USER -H .venv/bin/playwright install chromium"
 fi
 
 # --------------------------------------------------------------------------
@@ -1044,8 +1050,12 @@ fi
 # systemd units
 # --------------------------------------------------------------------------
 step "systemd units"
-install -m 0644 deploy/dennis.service /etc/systemd/system/
-install -m 0644 deploy/dennis-cleanup.service /etc/systemd/system/
+# The units name /opt/dennis; an install somewhere else gets them rewritten to
+# its own folder, or the service would start in a directory that is not there.
+for unit in dennis.service dennis-cleanup.service; do
+  sed "s#/opt/dennis#$DEST#g" "deploy/$unit" > "/etc/systemd/system/$unit"
+  chmod 0644 "/etc/systemd/system/$unit"
+done
 install -m 0644 deploy/dennis-cleanup.timer /etc/systemd/system/
 
 if [ "$SYSTEMD" -eq 1 ]; then

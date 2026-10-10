@@ -724,6 +724,28 @@ def test_the_tree_is_handed_over_before_any_privilege_drop():
         f"between is root-owned, and the drop fails on a clean install.")
 
 
+def test_the_browser_goes_where_the_bot_will_look_for_it():
+    """Installed by root, Chromium landed in /root/.cache; the bot runs as the
+    service user, found no browser, and every 10-K shot silently degraded to
+    none while the step had printed "chromium ready"."""
+    text = BOOTSTRAP.read_text(encoding="utf-8")
+    block = text[text.index('step "headless Chromium'):]
+    block = block[:block.index("\nstep ", 1)]
+    installs = [ln.split("#", 1)[0] for ln in block.splitlines()
+                if "playwright install " in ln.split("#", 1)[0]
+                and not re.match(r"\s*(warn|info|echo|printf)\b", ln)]
+    assert installs, "the Chromium step installs no browser"
+    assert all('sudo -u "$SERVICE_USER" -H' in ln for ln in installs), installs
+
+
+def test_the_units_are_written_for_the_folder_installed_to():
+    """`bootstrap.sh /srv/dennis` installed there and then copied units that
+    start the bot in /opt/dennis."""
+    text = BOOTSTRAP.read_text(encoding="utf-8")
+    assert 'sed "s#/opt/dennis#$DEST#g"' in text
+    assert "install -m 0644 deploy/dennis.service" not in text
+
+
 def test_the_optional_voice_step_cannot_abort_the_install():
     """Piper is optional, so it warns; `die` there costs the whole service.
 
