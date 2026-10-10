@@ -367,3 +367,57 @@ def test_the_readme_preflight_and_the_script_name_the_same_scripts():
         "the preflight does not mention the kit-ingest gate, so a suite red "
         "for a stale registry reads as a broken test")
     assert "Deselecting either changes nothing about the blocker" in section
+
+
+def test_the_live_preflight_names_a_voice_that_was_never_picked(tmp_path):
+    """The first real final buys the voice, and the two voice ids ship empty.
+    The script that runs before it says so, not the ElevenLabs 404."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
+    got = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"))
+    assert "[FAIL] ElevenLabs" in got.stdout
+    assert "ELEVENLABS_API_KEY" in got.stdout and "ELEVEN_VOICE_ID_SHORT" in got.stdout
+
+    ok = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+              STATE_DIR=str(tmp_path / "state"), ELEVENLABS_API_KEY="k",
+              ELEVEN_VOICE_ID_SHORT="v1", ELEVEN_VOICE_ID_LONG="v2")
+    assert "[PASS] ElevenLabs" in ok.stdout and "eleven_turbo_v2_5" in ok.stdout
+
+
+def test_the_live_preflight_stops_drive_delivery_with_no_token(tmp_path):
+    """`.env.example` ships DELIVERY_BACKEND=gdrive with no credentials, and
+    the first live final would render, buy its voice, and fail on delivery."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
+    got = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"), DELIVERY_BACKEND="gdrive")
+    assert "[FAIL] DELIVERY_BACKEND" in got.stdout and "DELIVERY_BACKEND=telegram" in got.stdout
+
+
+def test_the_live_preflight_wants_the_3d_dennis(tmp_path):
+    """3D only (9 Oct): off, or auto that falls back to the drawn Dennis when
+    Blender breaks, is not a setup a first real video should go out on."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
+    got = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"), DENNIS_3D="auto")
+    assert "[FAIL] 3D Dennis" in got.stdout and "DENNIS_3D=on" in got.stdout
+
+    fake = tmp_path / "python"
+    fake.write_text("#!/bin/sh\necho \"ModuleNotFoundError: No module named 'bpy'\" >&2\n"
+                    "exit 1\n", encoding="utf-8")
+    fake.chmod(0o755)
+    got = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"), DENNIS_3D="on",
+               DENNIS_3D_PYTHON=str(fake))
+    assert "[FAIL] 3D Dennis" in got.stdout and "No module named 'bpy'" in got.stdout
+
+
+def test_the_live_preflight_refuses_the_example_sec_contact(tmp_path):
+    """`.env.example` ships `SEC_USER_AGENT=Your Name your@email`, which read
+    as set and passed."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
+    got = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"), SEC_USER_AGENT="Your Name your@email")
+    assert "[FAIL] SEC_USER_AGENT" in got.stdout
+    ok = _run("check_preflight.py", "--live", ASSETS_DIR=str(assets),
+              STATE_DIR=str(tmp_path / "state"), SEC_USER_AGENT="A Person a@b.example")
+    assert "[PASS] SEC_USER_AGENT" in ok.stdout

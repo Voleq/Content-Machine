@@ -636,11 +636,22 @@ step "service user + directory"
 id -u "$SERVICE_USER" >/dev/null 2>&1 \
   || useradd --system --create-home --shell /usr/sbin/nologin "$SERVICE_USER"
 mkdir -p "$DEST"
+# --delete removes what the checkout no longer has, and only that. Everything
+# the checkout ignores can live in $DEST alone - .env and its keys, backups/,
+# the built kit, the Piper voice, node_modules - so every .gitignore pattern
+# is a protect rule: never deleted from $DEST, still copied when the checkout
+# has one (as before). Without it every re-run after a pull wiped .env back
+# to .env.example and deleted the state backups. The score is paid for
+# (scripts/make_score.py) and protected until it is committed.
 if [ "$SRC" != "$DEST" ]; then
+  PROTECT="$(mktemp)"
+  { grep -vE '^[[:space:]]*(#|$)' "$SRC/.gitignore" | sed 's/^/P /'
+    echo 'P assets/score/'; } > "$PROTECT"
   rsync -a --delete \
     --exclude '.venv' --exclude 'workspace' --exclude 'cache' \
-    --exclude 'state' --exclude '.git' \
+    --exclude 'state' --exclude '.git' --filter="merge $PROTECT" \
     "$SRC/" "$DEST/"
+  rm -f "$PROTECT"
 fi
 cd "$DEST"
 own_dest
@@ -991,7 +1002,12 @@ info "this runs real encodes and takes a while"
 #
 # The message may only claim a failure is the operator's to debug when this
 # run has nothing of its own to blame. Where it does, it says so first.
-if ! sudo -u "$SERVICE_USER" .venv/bin/python -m pytest tests/ -q; then
+# The sound gate (`audio_provenance`) is not run here: it fails until the
+# operator fetches real effects with their own Freesound key, which needs this
+# install first, so a box that had not fetched yet died here on every run,
+# before the service was installed. It is reported below instead; the render
+# path still blocks every final on a placeholder.
+if ! sudo -u "$SERVICE_USER" .venv/bin/python -m pytest tests/ -q -m "not audio_provenance"; then
   if [ "$LFS_DEGRADED" -eq 1 ]; then
     die \
 "The offline test suite failed, and this run already knows why.
@@ -1016,6 +1032,13 @@ the failure above is real and reproducible with:
     cd $DEST && sudo -u $SERVICE_USER .venv/bin/python -m pytest -q"
 fi
 ok "suite green"
+if ! sudo -u "$SERVICE_USER" .venv/bin/python scripts/check_sfx.py >/dev/null 2>&1; then
+  warn "the sound effects are still placeholders, and every final render is"
+  warn "blocked until they are not. In the clone, with your Freesound key:"
+  warn "    cd $SRC && export FREESOUND_API_KEY=..."
+  warn "    $DEST/.venv/bin/python scripts/fetch_sfx.py"
+  warn "then commit assets/sfx/ and run this script again."
+fi
 
 # --------------------------------------------------------------------------
 # systemd units

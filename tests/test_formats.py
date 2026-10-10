@@ -87,6 +87,14 @@ def test_there_is_at_least_one_format_and_they_all_parse():
         assert load_format(name).shots
 
 
+def test_a_format_loads_from_any_working_folder(tmp_path, monkeypatch):
+    """`load_format` read `templates/shots` against the working folder, so a
+    render started anywhere but the checkout failed with "no shot template"."""
+    monkeypatch.chdir(tmp_path)
+    assert "short" in available_formats()
+    assert load_format("short").shots
+
+
 @pytest.mark.parametrize("name", VERTICAL)
 def test_every_plate_a_format_names_is_in_the_kit(name):
     """A name that resolves to nothing draws nothing.

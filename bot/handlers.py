@@ -1656,8 +1656,11 @@ class BotCore:
             tier = self.tts.tier_for(True)
             voice = {
                 "local": "free local voice",
-                "mock": "⚠ mock hum — Piper is not installed on this box, so "
-                        "you get real pictures over a placeholder tone",
+                "mock": ("⚠ mock hum — MOCK_MODE is on, so the voice and "
+                         "the pictures are placeholders"
+                         if self.settings.mocking_tts else
+                         "⚠ mock hum — Piper is not installed on this box, so "
+                         "you get real pictures over a placeholder tone"),
             }.get(tier, tier)
             kind = (JobKind.RENDER_PROOF_SHORT if fmt == "short"
                     else JobKind.RENDER_PROOF_LONG)
@@ -1682,8 +1685,10 @@ class BotCore:
             note = {
                 "local": "free local voice — listenable, timings interpolated "
                          "within each sentence",
-                "mock": "mock hum — the local voice isn't installed, so this "
-                        "checks timing only",
+                "mock": ("mock hum — MOCK_MODE is on, so this checks timing "
+                         "only" if self.settings.mocking_tts else
+                         "mock hum — the local voice isn't installed, so this "
+                         "checks timing only"),
             }.get(tier, tier)
             return JobKind.RENDER_DRAFT_LONG, (
                 f"🎬 queued LOW-RES DRAFT for {ticker}{self._from_date(ws)}"

@@ -129,6 +129,7 @@
      "opacity": 1,
      "tracking": "0.04em",
      "maxChars": 92,
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 92 is the floor (narrowest of 1), was 46"
     },
     "metric": {
@@ -138,6 +139,7 @@
      "colour": "structure",
      "tracking": "-.02em",
      "maxChars": 24,
+     "authoredSize": 68,
      "budget": "derived from the slot boxes that set this role; 24 is the floor (narrowest of 1), was 30"
     },
     "moment": {
@@ -148,6 +150,7 @@
      "opacity": 1,
      "tracking": "0.1em",
      "maxChars": 30,
+     "authoredSize": 30,
      "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 2), was 14"
     },
     "period": {
@@ -157,6 +160,7 @@
      "colour": "quiet",
      "opacity": 1,
      "maxChars": 5,
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 6), was 6"
     },
     "then": {
@@ -165,6 +169,7 @@
      "weight": 700,
      "colour": "otherParty",
      "maxChars": 9,
+     "authoredSize": 112,
      "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 1), was 6"
     },
     "now": {
@@ -173,6 +178,7 @@
      "weight": 700,
      "colour": "structure",
      "maxChars": 6,
+     "authoredSize": 168,
      "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 1), was 6"
     },
     "trough": {
@@ -180,7 +186,8 @@
      "size": 46,
      "weight": 700,
      "colour": "down",
-     "maxChars": 6
+     "maxChars": 6,
+     "authoredSize": 46
     },
     "caption": {
      "font": "Courier Prime",
@@ -189,6 +196,7 @@
      "colour": "quiet",
      "opacity": 1,
      "maxChars": 98,
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 98 is the floor (narrowest of 1), was 60"
     }
    },
@@ -200,6 +208,7 @@
      "y": 88,
      "w": 1540,
      "h": 30,
+     "authoredLines": 1,
      "maxChars": 92
     },
     "caption": {
@@ -209,6 +218,7 @@
      "y": 966,
      "w": 1540,
      "h": 30,
+     "authoredLines": 1,
      "maxChars": 98
     },
     "metric": {
@@ -218,6 +228,7 @@
      "y": 186,
      "w": 647,
      "h": 79,
+     "authoredLines": 1,
      "maxChars": 24
     },
     "then-date": {
@@ -227,6 +238,7 @@
      "y": 306,
      "w": 647,
      "h": 35,
+     "authoredLines": 1,
      "maxChars": 30
     },
     "then-value": {
@@ -236,6 +248,7 @@
      "y": 351,
      "w": 647,
      "h": 195,
+     "authoredLines": 1,
      "maxChars": 9
     },
     "now-date": {
@@ -245,6 +258,7 @@
      "y": 600,
      "w": 647,
      "h": 35,
+     "authoredLines": 1,
      "maxChars": 30
     },
     "now-value": {
@@ -254,6 +268,7 @@
      "y": 645,
      "w": 647,
      "h": 195,
+     "authoredLines": 1,
      "maxChars": 6
     },
     "head-1": {
@@ -263,6 +278,7 @@
      "y": 820,
      "w": 91,
      "h": 30,
+     "authoredLines": 1,
      "maxChars": 5
     },
     "head-2": {
@@ -272,6 +288,7 @@
      "y": 820,
      "w": 168,
      "h": 30,
+     "authoredLines": 1,
      "maxChars": 10
     },
     "head-3": {
@@ -281,6 +298,7 @@
      "y": 820,
      "w": 168,
      "h": 30,
+     "authoredLines": 1,
      "maxChars": 10
     },
     "head-4": {
@@ -290,6 +308,7 @@
      "y": 820,
      "w": 168,
      "h": 30,
+     "authoredLines": 1,
      "maxChars": 10
     },
     "head-5": {
@@ -299,6 +318,7 @@
      "y": 820,
      "w": 168,
      "h": 30,
+     "authoredLines": 1,
      "maxChars": 10
     },
     "head-6": {
@@ -308,6 +328,7 @@
      "y": 820,
      "w": 91,
      "h": 30,
+     "authoredLines": 1,
      "maxChars": 5
     },
     "path": {
@@ -451,6 +472,7 @@
      "opacity": 1,
      "tracking": "0.04em",
      "maxChars": 44,
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 44 is the floor (narrowest of 1), was 38"
     },
     "metric": {
@@ -460,6 +482,7 @@
      "colour": "structure",
      "tracking": "-.02em",
      "maxChars": 37,
+     "authoredSize": 62,
      "budget": "derived from the slot boxes that set this role; 37 is the floor (narrowest of 1), was 24"
     },
     "moment": {
@@ -470,6 +493,7 @@
      "opacity": 1,
      "tracking": "0.1em",
      "maxChars": 13,
+     "authoredSize": 28,
      "budget": "derived from the slot boxes that set this role; 13 is the floor (narrowest of 2), was 14"
     },
     "period": {
@@ -479,6 +503,7 @@
      "colour": "quiet",
      "opacity": 1,
      "maxChars": 4,
+     "authoredSize": 24,
      "budget": "derived from the slot boxes that set this role; 4 is the floor (narrowest of 6), was 6"
     },
     "then": {
@@ -487,6 +512,7 @@
      "weight": 700,
      "colour": "otherParty",
      "maxChars": 6,
+     "authoredSize": 100,
      "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 1), was 6"
     },
     "now": {
@@ -495,6 +521,7 @@
      "weight": 700,
      "colour": "structure",
      "maxChars": 4,
+     "authoredSize": 148,
      "budget": "derived from the slot boxes that set this role; 4 is the floor (narrowest of 1), was 6"
     },
     "trough": {
@@ -502,7 +529,8 @@
      "size": 35,
      "weight": 700,
      "colour": "down",
-     "maxChars": 6
+     "maxChars": 6,
+     "authoredSize": 42
     },
     "caption": {
      "font": "Courier Prime",
@@ -511,6 +539,7 @@
      "colour": "quiet",
      "opacity": 1,
      "maxChars": 47,
+     "authoredSize": 26,
      "budget": "derived from the slot boxes that set this role; 47 is the floor (narrowest of 1), was 60"
     }
    },
@@ -522,6 +551,7 @@
      "y": 170,
      "w": 972,
      "h": 25,
+     "authoredLines": 1,
      "maxChars": 44
     },
     "caption": {
@@ -531,6 +561,7 @@
      "y": 1455,
      "w": 972,
      "h": 25,
+     "authoredLines": 1,
      "maxChars": 47
     },
     "metric": {
@@ -540,6 +571,7 @@
      "y": 391,
      "w": 934,
      "h": 60,
+     "authoredLines": 1,
      "maxChars": 37
     },
     "then-date": {
@@ -549,6 +581,7 @@
      "y": 515,
      "w": 327,
      "h": 26,
+     "authoredLines": 1,
      "maxChars": 13
     },
     "then-value": {
@@ -558,6 +591,7 @@
      "y": 556,
      "w": 327,
      "h": 142,
+     "authoredLines": 1,
      "maxChars": 6
     },
     "now-date": {
@@ -567,6 +601,7 @@
      "y": 515,
      "w": 327,
      "h": 26,
+     "authoredLines": 1,
      "maxChars": 13
     },
     "now-value": {
@@ -576,6 +611,7 @@
      "y": 556,
      "w": 327,
      "h": 142,
+     "authoredLines": 1,
      "maxChars": 4
     },
     "head-1": {
@@ -585,6 +621,7 @@
      "y": 1236,
      "w": 84,
      "h": 23,
+     "authoredLines": 1,
      "maxChars": 4
     },
     "head-2": {
@@ -594,6 +631,7 @@
      "y": 1236,
      "w": 149,
      "h": 23,
+     "authoredLines": 1,
      "maxChars": 7
     },
     "head-3": {
@@ -603,6 +641,7 @@
      "y": 1236,
      "w": 149,
      "h": 23,
+     "authoredLines": 1,
      "maxChars": 7
     },
     "head-4": {
@@ -612,6 +651,7 @@
      "y": 1236,
      "w": 149,
      "h": 23,
+     "authoredLines": 1,
      "maxChars": 7
     },
     "head-5": {
@@ -621,6 +661,7 @@
      "y": 1236,
      "w": 149,
      "h": 23,
+     "authoredLines": 1,
      "maxChars": 7
     },
     "head-6": {
@@ -630,6 +671,7 @@
      "y": 1236,
      "w": 84,
      "h": 23,
+     "authoredLines": 1,
      "maxChars": 4
     },
     "path": {

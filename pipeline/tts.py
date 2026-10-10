@@ -731,6 +731,14 @@ class TTSEngine:
         """
         if not self.settings.elevenlabs_api_key:
             raise TTSError("ELEVENLABS_API_KEY is not set and MOCK_MODE is off.")
+        if not self.settings.voice_id(fmt or "short"):
+            # `_cache_dir` names an unset voice "mock-voice-<fmt>" so the
+            # free tiers have a key to cache under; sent to ElevenLabs it is
+            # a 404 at the moment of the first real final.
+            setting = "ELEVEN_VOICE_ID_SHORT" if fmt == "short" else "ELEVEN_VOICE_ID_LONG"
+            raise TTSError(f"{setting} is not set: pick the Dennis voice in "
+                           f"ElevenLabs and paste its id into .env. Nothing "
+                           f"was sent.")
         client = self._client or httpx.Client(timeout=120)
         files: list[Path] = []
         words: list[list[WordTimestamp]] = []

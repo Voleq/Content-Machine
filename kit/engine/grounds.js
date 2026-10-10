@@ -18,9 +18,8 @@
 
 const NOT_TEXT = ['band', 'marker', 'plot-area', 'bars', 'bridge', 'path', 'spark', 'point-column', 'bar',
   'media', 'highlight-band', 'wraps', 'control', 'mark-area'];
-/* The regions a plate draws its data in (R41, bot): a box grown for the type floor never slides into one it was clear of. */
 const DATA = ['plot-area', 'bars', 'bar', 'bridge', 'path', 'spark', 'media', 'mark-area'];
-const DATA_GAP = 14; // the authored gap between a 9:16 y-axis label and its axis line
+const DATA_GAP = 14;
 const isText = s => !(s.overlay || s.container || s.region || NOT_TEXT.indexOf(s.role) >= 0);
 
 function groundOf(key, tokens) {
@@ -176,6 +175,10 @@ function restyle(P, key, tokens) {
       Object.assign(info, { kx: +kx.toFixed(4), ky: +ky.toFixed(4), u: +Math.min(kx, ky).toFixed(4), tx: +(nx0 - b[0] * kx).toFixed(2), ty: +(ny0 - b[1] * ky).toFixed(2) });
     }
   }
+  /* 41b: how many lines each text box was authored for, before the fit and the
+   * 9:16 floor reshape it; motion.theNumber keeps a wrapping slot out of the
+   * one-line figure pick. Published as slot.authoredLines. */
+  Object.keys(S).forEach(n => { const s = S[n], R0 = roles[s.role]; if (isText(s) && R0 && R0.size) s.authoredLines = Math.max(1, Math.floor(s.h / (R0.size * 1.15))); });
   const mx = x => x * info.kx + info.tx, my = y => y * info.ky + info.ty;
   if (info.kx !== 1 || info.ky !== 1 || info.tx || info.ty) {
     Object.keys(S).forEach(n => {
@@ -198,10 +201,12 @@ function restyle(P, key, tokens) {
    * quiet ink, not structure at 0.72); on 9:16 nothing under the floors. */
   const used = {};
   Object.keys(S).forEach(n => { if (isText(S[n])) (used[S[n].role] = used[S[n].role] || []).push(n); });
-  const grew = [];
+  const grew = [], rank = {};
   Object.keys(roles).forEach(rn => {
     const R = roles[rn] = Object.assign({}, roles[rn]);
     const was = R.size || 30;
+    rank[rn] = was;
+    R.authoredSize = was; // published: the hierarchy before the 9:16 floor (motion.theNumber, 41b)
     let size = Math.round(was * info.u);
     if (R.opacity != null && R.opacity < 1) { if (R.opacity < 0.9 && (R.colour === 'structure' || !R.colour)) R.colour = 'quiet'; R.opacity = 1; }
     if (!land && used[rn]) {
@@ -212,6 +217,9 @@ function restyle(P, key, tokens) {
          * size does not cut the budget; otherwise the type still wins. */
         const k = floor / size;
         used[rn].forEach(n => {
+          /* rebuild-41b (bot fix 1): a box clamped at the zone edge may slide; it
+           * stops DATA_GAP short of any data region it was clear of, so a
+           * right-aligned axis label never crosses into the plot. */
           const s = S[n], w2 = Math.min(Math.round(s.w * k), Math.round(zone[2] - zone[0]));
           const place = w => {
             const x2 = s.align === 'right' ? s.x + s.w - w : s.align === 'center' ? s.x + (s.w - w) / 2 : s.x;
@@ -219,12 +227,6 @@ function restyle(P, key, tokens) {
           };
           const meets = (a, b) => !(a.x + a.w <= b.x || a.x >= b.x + b.w || a.y + a.h <= b.y || a.y >= b.y + b.h);
           const hitsText = c => Object.keys(S).some(m => m !== n && isText(S[m]) && meets(c, S[m]));
-          /* R41 (bot): clamped at the zone, a box slides past the edge its
-           * type is set against: a right-set y-axis label slid right, across
-           * the axis line and into the plot it labels. A slide like that
-           * never enters a region the plate draws its data in that the box
-           * was clear of, and keeps DATA_GAP clear of its edge; the box grows
-           * as far as it can short of that. */
           const slid = c => s.align === 'right' ? c.x + c.w > s.x + s.w : s.align !== 'center' && c.x < s.x;
           const padded = c => ({ x: c.x - DATA_GAP, y: c.y, w: c.w + 2 * DATA_GAP, h: c.h });
           const intrudes = c => slid(c) && Object.keys(S).some(m => m !== n && DATA.indexOf(S[m].role) >= 0 && !meets(s, S[m]) && meets(padded(c), S[m]));
@@ -299,6 +301,7 @@ function restyle(P, key, tokens) {
   }
   P.meta.typeRoles = roles;
   if (grew.length) info.grewForFloor = grew;
+  info.rank = rank; // authored sizes: motion.theNumber ranks by these (41b)
   P.meta.ground = ground;
   P.meta.restyle = info;
 

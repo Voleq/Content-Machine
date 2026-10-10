@@ -34,7 +34,7 @@ REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
-LOOK_VERSION = "47-64-4"
+LOOK_VERSION = "47-64-5"
 
 # How long one shot may take before the worker is taken for hung: a fixed
 # allowance for Blender to come up, and a generous one per frame (a Cycles
@@ -50,20 +50,33 @@ def _python(settings) -> list[str]:
 
 
 _BPY_FOUND: set[tuple[str, ...]] = set()
+# What the worker imports, run where it runs. `import bpy` alone passed a
+# Python that then failed every shot on the next import down (Pillow, or
+# anything `motion` reaches into `pipeline` for).
+_PROBE = ("import sys; sys.path[:0] = ['room3d', '.']; "
+          "import bpy, PIL, numpy, motion, dennis, pipeline.host")
+# Why the last probe said no, for the error that names it.
+_PROBE_ERROR: dict[tuple[str, ...], str] = {}
 
 
 def _has_bpy(python: tuple[str, ...]) -> bool:
-    """Whether `python` imports Blender's module. Only a YES is remembered:
-    a cached no meant installing bpy took a bot restart to be noticed."""
+    """Whether `python` can run the worker: Blender's module and everything
+    the worker imports. Only a YES is remembered: a cached no meant
+    installing bpy took a bot restart to be noticed."""
     if python in _BPY_FOUND:
         return True
     try:
-        ok = subprocess.run([*python, "-c", "import bpy"], capture_output=True,
-                            timeout=300).returncode == 0
-    except (OSError, subprocess.TimeoutExpired):
+        got = subprocess.run([*python, "-c", _PROBE], capture_output=True,
+                             text=True, cwd=str(REPO), timeout=300)
+        ok = got.returncode == 0
+        lines = (got.stderr or "").strip().splitlines()
+        _PROBE_ERROR[python] = lines[-1] if lines else f"exit {got.returncode}"
+    except (OSError, subprocess.TimeoutExpired) as e:
         ok = False
+        _PROBE_ERROR[python] = f"{type(e).__name__}: {e}"
     if ok:
         _BPY_FOUND.add(python)
+        _PROBE_ERROR.pop(python, None)
     return ok
 
 
@@ -80,10 +93,12 @@ def wanted(settings) -> bool:
     if mode == "auto":
         return ok
     if not ok:
+        python = tuple(_python(settings))
+        why = _PROBE_ERROR.get(python, "")
         raise RenderError(
-            "DENNIS_3D=on but Blender's Python module does not import "
-            f"({' '.join(_python(settings))} -c 'import bpy'). Install it with "
-            "`pip install bpy`, point DENNIS_3D_PYTHON at a Python that has it, "
+            f"DENNIS_3D=on but {' '.join(python)} cannot run the 3D worker"
+            f"{f' ({why})' if why else ''}. It needs Python 3.11 with "
+            "`pip install bpy==5.0.1 pillow`; point DENNIS_3D_PYTHON at it, "
             "or set DENNIS_3D=off for the drawn Dennis.")
     return True
 

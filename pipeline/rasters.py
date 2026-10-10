@@ -733,9 +733,17 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         else:
             merged.append([a, b, mv])
 
+    # A WORD SAID OVER A SHOT WITH CAPTIONS OFF IS NOT CAPTIONED, and the
+    # words either side of that shot are not one line. The lines used to be
+    # paged from the captioned words alone, so a sentence cut by the numbers
+    # sheet joined to the next one it could see: "Revenue went share count."
+    # burned under a chart, two sentences eight seconds apart. Each unbroken
+    # run of captioned words is paged on its own now.
     events: list[str] = []
-    pages = phrase_pages(words, max_words=max_words, max_chars=max_chars,
-                         min_words=min_words)
+    pages = [page for run in _captioned_runs(words, merged)
+             for page in phrase_pages(run, max_words=max_words,
+                                      max_chars=max_chars,
+                                      min_words=min_words)]
     for i, page in enumerate(pages):
         start = page[0].start
         if i + 1 < len(pages):
@@ -758,6 +766,21 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 f"Dialogue: 0,{_ass_time(a)},{_ass_time(b)},Caps,,0,0,{mv},,"
                 f"{prefix if n == 0 else ''}{text}")
     return header + "\n".join(events) + "\n"
+
+
+def _captioned_runs(words: list[WordTimestamp],
+                    merged: list[list]) -> list[list[WordTimestamp]]:
+    """The words said inside a window, in unbroken runs: a word said in no
+    window ends the run before it. No windows is one run of every word."""
+    if not merged:
+        return [list(words)] if words else []
+    runs: list[list[WordTimestamp]] = [[]]
+    for w in words:
+        if any(a <= float(w.start) < b for a, b, _ in merged):
+            runs[-1].append(w)
+        elif runs[-1]:
+            runs.append([])
+    return [r for r in runs if r]
 
 
 def _through_windows(start: float, end: float,

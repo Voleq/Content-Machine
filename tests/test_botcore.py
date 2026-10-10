@@ -450,6 +450,18 @@ def test_a_failed_push_tells_the_operator(core, tmp_path):
     assert said and "too big" in said[0]
 
 
+def test_a_proof_in_mock_mode_blames_mock_mode_for_the_hum(core, xlsx_bytes,
+                                                          short_valid_json):
+    """It said Piper was not installed, which sent an operator who had
+    installed Piper looking for a fault that was MOCK_MODE all along."""
+    core.start_lane(CHAT, "short", "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    core.intake_script(CHAT, short_valid_json)
+    kind, text, _ = core.render_request("EXMPL", "short", proof=True)
+    assert kind is not None
+    assert "MOCK_MODE is on" in text and "not installed" not in text
+
+
 def test_a_drive_final_is_not_world_readable_by_default(settings):
     """E4: an anyone-with-link permission was applied unconditionally to
     every final render of an unpublished video."""

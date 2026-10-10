@@ -118,7 +118,13 @@ def _sfx(settings, report: Report) -> None:
 
 
 def _sec_agent(settings, report: Report, live: bool) -> None:
-    if settings.sec_user_agent.strip():
+    agent = settings.sec_user_agent.strip()
+    if agent == "Your Name your@email" or (agent and "@" not in agent):
+        # `.env.example`'s own text passed as set; SEC wants a real contact
+        # and refuses requests that do not carry one
+        report.add(FAIL if live else SKIP, "SEC_USER_AGENT",
+                   f"{agent!r} is not a contact — your name and email address")
+    elif settings.sec_user_agent.strip():
         report.add(PASS, "SEC_USER_AGENT", settings.sec_user_agent.strip())
     elif live:
         report.add(FAIL, "SEC_USER_AGENT",
@@ -127,6 +133,48 @@ def _sec_agent(settings, report: Report, live: bool) -> None:
     else:
         report.add(SKIP, "SEC_USER_AGENT",
                    "unset; only matters with MOCK_MODE off (--live to check)")
+
+
+def _voice(settings, report: Report, live: bool) -> None:
+    """The paid voice: a key and both voice ids, which ship empty."""
+    missing = [name for name, value in (
+        ("ELEVENLABS_API_KEY", settings.elevenlabs_api_key),
+        ("ELEVEN_VOICE_ID_SHORT", settings.eleven_voice_id_short),
+        ("ELEVEN_VOICE_ID_LONG", settings.eleven_voice_id_long)) if not value]
+    model = settings.active_eleven_model
+    if not missing:
+        report.add(PASS, "ElevenLabs", f"{model}, short voice "
+                   f"{settings.eleven_voice_id_short}, long voice "
+                   f"{settings.eleven_voice_id_long}")
+    elif live:
+        report.add(FAIL, "ElevenLabs", f"{', '.join(missing)} not set — a "
+                   f"final cannot buy the voice")
+    else:
+        report.add(SKIP, "ElevenLabs",
+                   "only matters with MOCK_MODE off (--live to check)")
+
+
+def _dennis_3d(settings, report: Report, live: bool) -> None:
+    """The 3D Dennis: the only Dennis that ships (9 Oct: the drawn one "will
+    not be a thing"). `on` and a Blender Python that can run the worker."""
+    from pipeline import dennis3d
+    from pipeline.render_common import RenderError
+
+    mode = (settings.dennis_3d or "off").strip().lower()
+    if mode != "on":
+        state = FAIL if live else SKIP
+        report.add(state, "3D Dennis",
+                   f"DENNIS_3D={mode or 'off'} — set DENNIS_3D=on: off draws the old "
+                   f"Dennis and auto falls back to him quietly when Blender breaks")
+        return
+    try:
+        dennis3d.wanted(settings)
+    except RenderError as e:
+        report.add(FAIL, "3D Dennis", str(e))
+        return
+    python = " ".join(dennis3d._python(settings))
+    report.add(PASS, "3D Dennis", f"Blender runs the worker ({python}); time it once "
+               f"with `{python} room3d/perform.py --bench`")
 
 
 def _broll(settings, report: Report) -> None:
@@ -141,7 +189,12 @@ def _broll(settings, report: Report) -> None:
 
 def _delivery(settings, report: Report, live: bool) -> None:
     backend = settings.delivery_backend
-    if backend == "local" and live:
+    if backend == "gdrive" and not settings.gdrive_credentials and live:
+        report.add(FAIL, "DELIVERY_BACKEND",
+                   "gdrive with no GDRIVE_CREDENTIALS — every final fails at "
+                   "delivery, after the render. DELIVERY_BACKEND=telegram "
+                   "or local while you sit at the box")
+    elif backend == "local" and live:
         report.add(FAIL, "DELIVERY_BACKEND",
                    "`local` writes a file path and no link — correct for "
                    "testing, silently useless in production")
@@ -196,6 +249,8 @@ def main(argv: list[str] | None = None) -> int:
     _kit(settings, report)
     _sfx(settings, report)
     _sec_agent(settings, report, live)
+    _voice(settings, report, live)
+    _dennis_3d(settings, report, live)
     _broll(settings, report)
     _delivery(settings, report, live)
     _publish_window(settings, report)

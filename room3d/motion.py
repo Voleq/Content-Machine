@@ -12,8 +12,10 @@ What drives what:
   and eased from shape to shape, because a 3D mouth can move between its
   shapes where a drawn one can only swap.
 * STRESSED WORDS (long content words, figures, the first word after a pause)
-  get a nod, a lift of the brows and, while a hand is up, a beat of the hand.
-  The hand lands a little before the word, the way people do it.
+  get a small nod, the least lift of the brows and, while a hand is up, a
+  beat of the hand. The hand lands a little before the word, the way people
+  do it. He is deadpan (design's character sheet: tired, half-lidded, flat
+  mouth): a question raises one brow, never both.
 * PHRASES (cut at punctuation and pauses) each get one gesture: one hand or
   both up and beating, a shrug on a question, a point and a turn of the head
   when the phrase names the screen or the board, or, now and then, nothing,
@@ -51,6 +53,11 @@ def _arm(name: str, ab: int) -> dict[str, tuple[float, float, float]]:
         # reads as a paddle.
         "ready": {"shoulder": (-32, 9 * ab, 10 * ab), "elbow": (-90, 0, 0),
                   "wrist": (-10, 0, -45 * ab)},
+        # his talking hand to the camera: lower than "ready", the palm turned
+        # in to his body, so the camera sees the back of a loose fist and not
+        # a palm held up at it (that is a wave)
+        "beat": {"shoulder": (-24, 9 * ab, 12 * ab), "elbow": (-78, 0, 0),
+                 "wrist": (-8, 0, -8 * ab)},
         # the close-up's talking hand: forward at the belt, under the frame,
         # so a beat moves his shoulder and no palm comes up at the frame's edge
         "low": {"shoulder": (-12, 8 * ab, 6 * ab), "elbow": (-60, 0, 0),
@@ -114,6 +121,8 @@ def _arm(name: str, ab: int) -> dict[str, tuple[float, float, float]]:
 
 
 HANDS = {"relaxed": (25, 30, 35, 40, 15), "open": (4, 2, 4, 8, 5),
+         # half closed, a talking hand that is not showing its palm
+         "loose": (50, 58, 64, 70, 28),
          "point": (0, 95, 100, 100, 55), "fist": (100, 100, 100, 100, 60),
          # counting on his fingers, one to five
          "one": (0, 100, 100, 100, 60), "two": (0, 0, 100, 100, 60),
@@ -176,7 +185,9 @@ class Stance:
 
 
 STANCES: dict[str, Stance] = {
-    "to-camera": Stance(),
+    # To the camera he talks with a hand now and then, not all the time: a
+    # man explaining with both hands is selling something.
+    "to-camera": Stance(talk=(0.45, 0.1, 0.45)),
     "hands-in-pockets": Stance(home={"L": ("pocket", "fist"), "R": ("pocket", "fist")},
                                talk=(0.35, 0.0, 0.65)),
     "arms-crossed": Stance(home={"L": ("crossed-low", "grip"), "R": ("crossed-high", "grip")},
@@ -527,7 +538,8 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
             elif kind == "both":
                 pose = _hands(L=("wide", "open"), R=("wide", "open"))
             else:
-                pose = _hands(**{side: ("ready", "open")})
+                # a loose fist, palm in: a flat palm up at the camera is a wave
+                pose = _hands(**{side: ("beat", "loose")})
             arms.go(p.start + 0.02, pose, lead + 0.1)
             for w in stressed(p.words):
                 beats.append((w.start, "LR" if kind == "both" else side, rng.uniform(0.8, 1.2)))
@@ -610,9 +622,11 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
             a.update(_hand_channels(count_side, ("one", "two", "three", "four", "five")[up - 1]))
         g = gaze.sample(t)
         nod = sum(_bump(t, w.start + 0.03) for w in accents)
-        brow = max([0.6 * _bump(t, w.start, 0.08, 0.5) for w in accents] +
-                   [1.0 if q.words[-1].start - 0.3 <= t <= q.end + 0.4 else 0.0
-                    for q in questions] + [0.0])
+        # Deadpan: the brows barely move on the words he leans on, and a
+        # question raises ONE of them. Both up is eager; one is "really?".
+        brow = max([0.2 * _bump(t, w.start, 0.08, 0.5) for w in accents] + [0.0])
+        doubt = max([1.0 if q.words[-1].start - 0.3 <= t <= q.end + 0.4 else 0.0
+                     for q in questions] + [0.0])
         for side in "LR":
             ab = 1 if side == "L" else -1
             beat = sum(size * _bump(t, bt - 0.04, 0.12, 0.28)
@@ -641,10 +655,11 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
         put("chest.z", 0.15 * yaw)
         put("neck.x", 0.4 * (-pitch) + 1.2 * nod)
         put("neck.z", 0.3 * yaw)
-        put("head.x", 0.6 * (-pitch) + 4.2 * nod + 0.9 * wob[0] + 0.5 * wob[3])
+        put("head.x", 0.6 * (-pitch) + 2.6 * nod + 0.9 * wob[0] + 0.5 * wob[3])
         put("head.y", roll * 0.8 - 0.5 * w + 0.8 * wob[1])
         put("head.z", 0.55 * yaw + 1.0 * wob[2] + 0.4 * wob[4])
-        put("brow", min(brow + 0.08 * (1 + wob[5]), 1.0))
+        put("brow", min(brow + 0.05 * (1 + wob[5]), 1.0))
+        put("brow.one", doubt)
         bl = 0.0
         for b in blinks:
             d = t - b

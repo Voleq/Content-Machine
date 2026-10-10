@@ -2011,7 +2011,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # words at a time was most of the sentence; a figure or a turn word in
     # colour is what the eye takes from a line it only glances at.
     ass.write_text(build_phrase_ass(
-        spoken, settings=settings, play_res=(W, H),
+        words, settings=settings, play_res=(W, H),
         font_size=int(H * CAPTION_TYPE_FH), margin_v=int(H * 0.13),
         margin_h=int(W * CAPTION_SIDE_FW), max_words=4, min_words=2,
         max_chars=24, key_words=True,

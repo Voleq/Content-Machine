@@ -1,5 +1,15 @@
 # Dennis v2 — REBUILD_STATE.md
 
+> ## rebuild-41c — the bot's install report — DONE
+>
+> emit → export --index → audit --check: **33 of 33**. audit.test.js: **36 of 36**.
+> - The bot's axis-label slide stop is copied into `grounds.js` (DATA / DATA_GAP 14).
+> - The ten two-series charts now use `second` (sector-copy.js).
+> - `theNumber()` ranks by `typeRoles[r].authoredSize` and skips boxes with
+>   `slots[n].authoredLines > 1` on 9:16. Its anchors are identical to the unrestyled picks
+>   on all 540 data plates.
+> - Details: CHANGES.md top section. Sent as `dennis-kit-rebuild-41c.zip`.
+>
 > ## rebuild-41b — the bot's answers to ANSWERS §R41 — DONE
 >
 > emit → export --index → audit --check: **33 of 33**. audit.test.js: **36 of 36**.

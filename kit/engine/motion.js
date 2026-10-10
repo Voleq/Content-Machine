@@ -154,7 +154,17 @@
     if (named) return named;
     /* the biggest one-line slot, a figure (Courier) before a word at the same size */
     const fig = k => ((R[S[k].role] || {}).font === 'Courier Prime' ? 1 : 0), sz = k => (R[S[k].role] || {}).size || 0;
-    const big = textSlots(m).filter(k => !(S[k].maxLines > 1)).sort((a, b) => (sz(b) + fig(b) * 0.5) - (sz(a) + fig(a) * 0.5))[0];
+    /* rebuild-41b: ranked by the AUTHORED size (typeRoles[r].authoredSize), not the
+     * published one. The 9:16 type floor lifts kickers, units and headlines to
+     * the figures' size, so the published size no longer says which slot is the
+     * figure; the authored hierarchy still does, on every family, and reproduces
+     * the rebuild-40 anchor wherever the slot still exists. */
+    const sz2 = k => { const R0 = R[S[k].role] || {}; return R0.authoredSize != null ? R0.authoredSize : (R0.size || 0); };
+    /* a box authored for two lines stays a wrapping slot even where the floor
+     * now sets one line in it (share-of headlines, wire-strip headlines) */
+    const port = Array.isArray(m.canvas) && m.canvas[1] > m.canvas[0]; // the floor is 9:16 only
+    const wraps = k => S[k].maxLines > 1 || (port && S[k].maxLines != null && S[k].authoredLines > 1);
+    const big = textSlots(m).filter(k => !wraps(k)).sort((a, b) => (sz2(b) + fig(b) * 0.5) - (sz2(a) + fig(a) * 0.5))[0];
     return big ? latest(S, big) : null;
   }
   function figureAnchor(m, k) {

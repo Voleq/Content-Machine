@@ -45,6 +45,33 @@ def test_the_switch_is_off_by_default_and_on_means_on(settings, monkeypatch):
         dennis3d.wanted(settings)
 
 
+def test_on_names_what_the_blender_python_is_missing(settings, monkeypatch, tmp_path):
+    """A Python with bpy and nothing else passed `import bpy`, then failed
+    every shot of the render on the worker's next import."""
+    fake = tmp_path / "python"
+    fake.write_text("#!/bin/sh\necho \"ModuleNotFoundError: No module named 'PIL'\" >&2\n"
+                    "exit 1\n", encoding="utf-8")
+    fake.chmod(0o755)
+    dennis3d._has_bpy.cache_clear()
+    monkeypatch.setattr(settings, "dennis_3d_python", str(fake))
+    monkeypatch.setattr(settings, "dennis_3d", "on")
+    with pytest.raises(RenderError, match="No module named 'PIL'"):
+        dennis3d.wanted(settings)
+
+
+def test_the_worker_needs_no_pydantic():
+    """`room3d/motion.py` reads the mouths off `pipeline.host`, in Blender's
+    own Python, which the setup gives bpy and Pillow and nothing else."""
+    import subprocess
+
+    root = Path(dennis3d.__file__).resolve().parent.parent
+    got = subprocess.run(
+        [sys.executable, "-c", "import sys; sys.modules['pydantic'] = None; "
+         "sys.path[:0] = ['room3d', '.']; import pipeline.host"],
+        cwd=root, capture_output=True, text=True)
+    assert got.returncode == 0, got.stderr
+
+
 FAKE = textwrap.dedent('''
     import json, sys
     from pathlib import Path
