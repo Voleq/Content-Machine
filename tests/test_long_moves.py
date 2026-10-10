@@ -76,8 +76,9 @@ def test_bars_grow_one_column_at_a_time_inside_their_own_columns(reg, settings):
                       int((b["x"] + 2) * s):int((b["x"] + b["w"] - 2) * s)]
             want = shown.h / b["h"]
             assert abs((col > 0).mean() - want) < 0.02, (f, i)
-        # Between the columns the layer is never cut.
-        gap = cols[0]["box"]["x"] + cols[0]["box"]["w"] + 4
+        # Between the columns the layer is never cut (past the bar's own
+        # outline, which goes in with its column).
+        gap = cols[0]["box"]["x"] + cols[0]["box"]["w"] + MV.BAR_STROKE_BLEED + 4
         assert got[int(400 * s), int(gap * s)] == 255
 
 
@@ -375,6 +376,39 @@ def test_a_row_not_yet_said_keeps_the_sheet(reg, settings):
     b = plate.slots["band-3"]
     box = (slice(int(b.y * k), int((b.y + b.h) * k)), slice(int(b.x * k), int((b.x + b.w) * k)))
     assert np.abs(before[box] - bare[box]).max() <= 8, "the unsaid row lost the sheet's lines"
+
+
+def test_a_boxed_row_not_yet_said_is_not_an_empty_box(reg, settings):
+    """The sheet boxes its alternate rows in the art. With the row not yet
+    said, the box stood empty on the plate, an outlined field waiting for
+    something; until its word the row is the sheet's plain ground, column
+    rules and all, and the box comes on with the row."""
+    key = "tables/numbers-sheet-4r-16x9"
+    plate = reg.get(key)
+    values = {n: "12.4" for n, sl in plate.slots.items() if sl.is_text}
+    from types import SimpleNamespace
+
+    layer = SimpleNamespace(kind="plate", name="s", entry_key=key, values=values,
+                            x=0, y=0, w=1920, h=1080, seed="")
+    mv = MV.Move("row-on", "s", "s", "band-2", 1.0, 1)
+    comp = MV.MoveCompositor(MV.MovePlan(moves=[mv]), reg, settings, None)
+    before = np.asarray(comp.frame(layer, 0.5, 0).convert("RGB")).astype(int)
+    after = np.asarray(comp.frame(layer, 1.2, 0).convert("RGB")).astype(int)
+    k = before.shape[1] / plate.canvas[0]
+    plain, boxed = plate.slots["band-3"], plate.slots["band-2"]
+
+    def band(img, b):
+        return img[int(b.y * k):int((b.y + b.h) * k), int(b.x * k):int((b.x + b.w) * k)]
+
+    # unsaid, row 2 looks like the plain row below it, rules included
+    assert np.abs(np.median(band(before, boxed).reshape(-1, 3), axis=0)
+                  - np.median(band(before, plain).reshape(-1, 3), axis=0)).max() <= 3
+    rules = lambda img, b: (np.abs(band(img, b) - np.median(band(img, b).reshape(-1, 3), axis=0))
+                            .max(axis=2) > 12).mean(axis=0) > 0.6   # noqa: E731
+    assert rules(before, boxed).sum() >= 6, "the column rules stopped at the row"
+    # said, the box is back
+    assert np.abs(np.median(band(after, boxed).reshape(-1, 3), axis=0)
+                  - np.median(band(after, plain).reshape(-1, 3), axis=0)).max() > 6
 
 
 def test_a_card_s_figure_goes_on_with_its_word(reg, settings):

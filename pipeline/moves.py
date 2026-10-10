@@ -1213,6 +1213,37 @@ class MoveCompositor:
                                lambda: self._row_marks(plate, frame_i, box) or False)
             if marks:
                 img.paste(marks[0], box, marks[1])
+            boxed = self._part(("row-box", plate.key, frame_i, box),
+                               lambda: self._unboxed_row(plate, frame_i, box, s) or False)
+            if boxed:
+                img.paste(boxed[0], boxed[1])
+
+    def _unboxed_row(self, plate, frame_i: int, box: tuple[int, int, int, int], s: int):
+        """(patch, corner) that draws a BOXED row as a plain one, or None.
+
+        The sheet's alternate rows are boxed in the art, and with their row
+        not yet said the boxes stood empty on the plate, two outlined fields
+        waiting for something. Until the row comes on its band is the sheet's
+        own ground, out to the outline round it, with the column rules
+        running on through as they do across a plain row."""
+        import numpy as np
+        from PIL import Image
+
+        bare = np.asarray(self._base(plate, frame_i, (), ()).convert("RGB")).astype(np.int16)
+        ground = np.median(bare.reshape(-1, 3), axis=0)
+        x0, y0, x1, y1 = box
+        inner = bare[y0:y1, x0:x1]
+        if not inner.size or np.abs(np.median(inner.reshape(-1, 3), axis=0) - ground).max() <= 8:
+            return None                      # a plain row: nothing to take away
+        m = 4 * s                            # the outline sits up to 4 px outside the band
+        h, w = bare.shape[:2]
+        X0, Y0, X1, Y1 = max(x0 - m, 0), max(y0 - m, 0), min(x1 + m, w), min(y1 + m, h)
+        patch = np.empty((Y1 - Y0, X1 - X0, 3), np.int16)
+        patch[:] = ground
+        above = bare[max(Y0 - 2 * s, 0), X0:X1]
+        rule = np.abs(above - ground).max(axis=1) > 12
+        patch[:, rule] = above[rule]
+        return Image.fromarray(patch.clip(0, 255).astype(np.uint8), "RGB").convert("RGBA"), (X0, Y0)
 
     def _row_marks(self, plate, frame_i: int, box: tuple[int, int, int, int]):
         """(ground colour, mask) of the marks standing alone inside `box` on
