@@ -554,3 +554,43 @@ def test_a_pair_upload_does_not_send_a_clip_that_is_already_up(core, settings,
     sent.clear()
     core.upload_command(["EXMPL", "pair", "again"])
     assert sent == [30.0, 300.0]
+
+
+def test_the_channel_key_is_written_for_its_owner_only(tmp_path, monkeypatch):
+    # The refresh token is a standing key to the channel: a 0644 file let
+    # any account on the render box upload as him.
+    import importlib.util
+    import stat
+    import sys
+    import types
+
+    class Creds:
+        refresh_token = "r"
+
+        def to_json(self):
+            return '{"refresh_token": "r"}'
+
+    class Flow:
+        @classmethod
+        def from_client_secrets_file(cls, *_a, **_k):
+            return cls()
+
+        def run_local_server(self, **_k):
+            return Creds()
+
+    flow_mod = types.ModuleType("google_auth_oauthlib.flow")
+    flow_mod.InstalledAppFlow = Flow
+    monkeypatch.setitem(sys.modules, "google_auth_oauthlib",
+                        types.ModuleType("google_auth_oauthlib"))
+    monkeypatch.setitem(sys.modules, "google_auth_oauthlib.flow", flow_mod)
+    spec = importlib.util.spec_from_file_location(
+        "youtube_auth", Path(__file__).resolve().parents[1] / "scripts" / "youtube_auth.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    secret = tmp_path / "client.json"
+    secret.write_text("{}")
+    out = tmp_path / "state" / "youtube.json"
+    assert mod.main([str(secret), "--out", str(out), "--no-browser"]) == 0
+    assert stat.S_IMODE(out.stat().st_mode) == 0o600
+    assert "refresh_token" in out.read_text()

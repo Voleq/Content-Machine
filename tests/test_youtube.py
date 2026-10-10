@@ -203,6 +203,32 @@ def test_a_resumable_session_survives_a_restart(settings, video, tmp_path):
     a.clear(video)
 
 
+def test_a_session_opened_under_one_title_is_not_resumed_under_another(
+        settings, video):
+    # YouTube keeps the metadata a resumable session was opened with: a retry
+    # after the title or the publish time changed must start a new upload.
+    from pipeline.youtube import UploadSession
+
+    first = {"snippet": {"title": "EXMPL: cheap, or a trap?"}}
+    UploadSession(settings).save(video, "https://upload.example/s/1", first)
+    assert UploadSession(settings).load(video, first) == "https://upload.example/s/1"
+    assert UploadSession(settings).load(
+        video, {"snippet": {"title": "The EXMPL problem"}}) == ""
+
+
+def test_the_body_carries_no_bracket_youtube_refuses(package):
+    package.description = "P/E < 10 and margin > 20% — " + "—" * 3000
+    package.tags = ["<b>stocks</b>", "EXMPL"]
+    body = build_body(package)
+    desc, tags = body["snippet"]["description"], body["snippet"]["tags"]
+    assert "<" not in desc and ">" not in desc
+    assert not any("<" in t or ">" in t for t in tags)
+    # the limit is bytes, and an em dash is three of them
+    assert len(desc.encode("utf-8")) <= 5000
+    assert any("bytes" in p for p in
+               validate_package("t", package.description, package.tags))
+
+
 def test_public_is_never_requested(settings, package, video):
     client = FakeClient()
     upload_video(video, package, settings, client=client, now=NOW)

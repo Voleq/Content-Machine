@@ -41,6 +41,20 @@ def _journal(settings: Settings, job: JobRecord, what: str, **data) -> None:
                  job_kind=job.kind.value, status=job.status.value, **data)
 
 
+class _NotQueued(Exception):
+    """A transition that no longer applies: the job moved on under us."""
+
+
+def _start(job: JobRecord) -> None:
+    if job.status is not JobStatus.QUEUED:
+        raise _NotQueued
+    job.status = JobStatus.RUNNING
+
+
+def _cancelled(job: JobRecord) -> None:
+    job.status = JobStatus.CANCELLED
+
+
 class JobStore:
     """One JSON file per job, written atomically, read-modify-written under
     one lock.
@@ -242,27 +256,37 @@ class RenderJobQueue:
     async def _worker_loop(self) -> None:
         while True:
             job_id = await self._queue.get()
-            job = self.store.load(job_id)
-            if job is None or job.status is not JobStatus.QUEUED:
+            # Every transition is a read-change-write under the store's lock,
+            # as `/cancel` and the render's checkpoint thread do theirs: a
+            # load here and a save later wrote back whatever this copy held
+            # over a change saved in between.
+            try:
+                job = self.store.update(job_id, _start)
+            except _NotQueued:
+                job = None
+            if job is None:
                 continue  # cancelled while queued (or state file removed)
-            job.status = JobStatus.RUNNING
-            self.store.save(job)
             _journal(self.settings, job, "started")
             await self._notify(f"🎬 {job.ticker}: {job.kind.value} started")
             try:
                 artifact = await asyncio.to_thread(self.executor, job)
-                job = self.store.load(job_id) or job
-                if job.status is JobStatus.CANCELLED and not job.delivered_link:
+
+                def _finish(j: JobRecord) -> None:
+                    if j.status is JobStatus.CANCELLED and not j.delivered_link:
+                        raise _NotQueued  # a cancel that beat the delivery
+                    if j.status is JobStatus.CANCELLED:
+                        # The cancel landed after the delivery did: the video
+                        # is out and the thesis pinned, so "cancelled" would
+                        # be the one thing the record got wrong.
+                        j.detail = "delivered before the cancel landed"
+                    j.status = JobStatus.DONE
+                    j.artifact = artifact
+
+                try:
+                    job = self.store.update(job_id, _finish) or job
+                except _NotQueued:
                     await self._notify(f"🚫 {job.ticker}: cancelled")
                     continue
-                if job.status is JobStatus.CANCELLED:
-                    # The cancel landed after the delivery did: the video is
-                    # out and the thesis pinned, so "cancelled" would be the
-                    # one thing the record got wrong.
-                    job.detail = "delivered before the cancel landed"
-                job.status = JobStatus.DONE
-                job.artifact = artifact
-                self.store.save(job)
                 _journal(self.settings, job, "finished", artifact=artifact,
                          link=job.delivered_link)
                 # Success was the one outcome that sent nothing. A render
@@ -271,17 +295,18 @@ class RenderJobQueue:
                 # a finished video sat unnoticed for hours.
                 await self._notify(self._done_text(job))
             except JobCancelled:
-                job = self.store.load(job_id) or job
-                job.status = JobStatus.CANCELLED
-                self.store.save(job)
+                job = self.store.update(job_id, _cancelled) or job
                 _journal(self.settings, job, "cancelled mid-run")
                 await self._notify(f"🚫 {job.ticker}: cancelled")
             except Exception as e:  # report, never crash the worker
                 log.exception("job %s failed", job_id)
-                job = self.store.load(job_id) or job
-                job.status = JobStatus.FAILED
-                job.error = str(e)[:1500]
-                self.store.save(job)
+                error = str(e)[:1500]
+
+                def _failed(j: JobRecord) -> None:
+                    j.status = JobStatus.FAILED
+                    j.error = error
+
+                job = self.store.update(job_id, _failed) or job
                 _journal(self.settings, job, f"failed: {job.error[:200]}")
                 await self._notify(self._failed_text(job))
 

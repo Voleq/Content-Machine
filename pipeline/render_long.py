@@ -74,7 +74,6 @@ from pipeline.company_data import prepare_screenshot
 from pipeline.host import (build_host_clip, cast_pose, frame_shot, front_of,
                            host_shot, pick_shot, place_on_room, stands_on)
 from pipeline.chart import declared_layer, draw_declared
-from pipeline.media_frames import FrameRotation, composite as frame_media
 from pipeline.models import (
     CueKind,
     LongScript,
@@ -1312,55 +1311,22 @@ def _render_long(
     # [CLIP], [IMG], [SHOW FILING] and [SCREENGRAB] land INSIDE a frames/
     # plate. Raw and full-frame they destroy the drawn surface the rest of the
     # video is built on, and the treatments rotate so consecutive ones differ.
-    frame_rotation = FrameRotation()
+    def _full_media(seg_i: int, media_path: Path, *, document: bool = False) -> Path:
+        """A still from outside, filling the screen.
 
-    def _frame_plate(kind, *, needs_media: bool = True):
-        """The next frames/ plate in the rotation, or None when unavailable.
-
-        `needs_media` is True everywhere here: this path always has a real
-        image or clip in hand, so it needs a plate with an aperture. The
-        capture frame is for a document transcribed into slots and has none.
+        A photo whose shape is near enough the frame's is cropped to fill it;
+        anything else (a filing page, a tall grab) is shown whole and sharp
+        over a blurred copy of itself, never cropped through its text.
         """
-        from pipeline.media_frames import frame_for
-
-        return frame_for(reg, frame_rotation, aspect, kind=kind,
-                         needs_media=needs_media)
-
-    def _frame_bg(frame, seg, seg_i: int) -> tuple[Path, tuple[int, int, int, int]]:
-        """The empty frame as a background, and the aperture to play inside.
-
-        For FOOTAGE, which cannot be composited frame by frame in Pillow: the
-        plate is rendered once with its caption and source, and ffmpeg overlays
-        the clip into the aperture.
-        """
-        from pipeline.media_frames import aperture
-        from pipeline.plate_frames import render_still
-
-        dest = rdir / f"frame_{seg_i}.png"
-        values = {k: v for k, v in (seg.payload.get("values") or {}).items()
-                  if k in frame.slots}
-        img = render_still(frame, values, settings, reg)
-        img.convert("RGB").resize((W, H), Image.LANCZOS).save(dest)
-        ap = aperture(frame) or (0, 0, W, H)
-        k = W / frame.delivered[0]
-        return dest, (int(ap[0] * k), int(ap[1] * k),
-                      max(int(ap[2] * k), 1), max(int(ap[3] * k), 1))
-
-    def _framed_media(seg, seg_i: int, media_path: Path, kind) -> Path:
-        frame = _frame_plate(kind)
-        if frame is None:
-            return media_path
-        plates_used.add(frame.key)
+        dest = rdir / f"full_{seg_i}.png"
         try:
-            media = Image.open(media_path).convert("RGBA")
+            cover_fill_frame(media_path, W, H, keep_min=1.01 if document else 0.72,
+                             ground=role(settings, "ground"),
+                             line=role(settings, "structure"),
+                             border=False).save(dest)
         except Exception as exc:  # noqa: BLE001 — never fatal
-            log.warning("could not open %s (%s) — unframed", media_path, exc)
+            log.warning("could not open %s (%s) — shown as it is", media_path, exc)
             return media_path
-        values = {k: v for k, v in (seg.payload.get("values") or {}).items()
-                  if k in frame.slots}
-        out = frame_media(reg, frame, media, settings, values=values)
-        dest = rdir / f"framed_{seg_i}.png"
-        out.convert("RGB").resize((W, H), Image.LANCZOS).save(dest)
         return dest
 
     def _still_chain(input_i: int, seg, seg_len: float, seg_i: int,
@@ -1992,7 +1958,8 @@ def _render_long(
             return (
                 f"[{idx}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
                 f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
-                f"trim=0:{seg_len:.4f},scale={W}:{H}{tail}"
+                f"trim=0:{seg_len:.4f},scale={W}:{H}:force_original_aspect_ratio="
+                f"increase,crop={W}:{H}{tail}"
             )
 
         def _clip_input(visual) -> int:
@@ -2304,45 +2271,27 @@ def _render_long(
                                               seg_len, push + tail, front_i=front_i,
                                               window=window)
         elif seg.kind == "clip":
-            # Footage plays inside a frames/ plate rather than edge to edge.
-            # Raw and full-frame it destroys the drawn surface the rest of the
-            # video is built on: thirty minutes of ink, then a 4K stock shot,
-            # then back — two videos cut together.
+            # FOOTAGE FILLS THE SCREEN (Valentin, 10-10): b-roll, memes and
+            # filing pages, everything taken from outside, play edge to edge.
+            # They used to sit inside a taped paper frame on the drawn
+            # surface, which read as a clip held up to the camera.
             visual = content.resolve_clip(value, _take(seg, value))
-            frame_plate = _frame_plate(CueKind.CLIP)
-            clip_i = _clip_input(visual)
-            if frame_plate is None:
-                chain = _clip_motion(clip_i)
-            else:
-                bg, (ax, ay, aw, ah) = _frame_bg(frame_plate, seg, i)
-                bg_i = _still_input(bg)
-                chain = _scaled_overlay_chain(bg_i, clip_i, ax, ay, aw, ah,
-                                              seg_len, tail)
+            chain = _clip_motion(_clip_input(visual))
         elif seg.kind == "filing":
             if value not in shot_cache:
                 shot_cache[value] = prepare_screenshot(
                     workspace / value, rdir / f"shot_{Path(value).stem}.png", settings
                 )
             visual = None
-            still_i = _still_input(
-                _framed_media(seg, i, shot_cache[value], CueKind.FILING))
+            still_i = _still_input(_full_media(i, shot_cache[value], document=True))
             chain = _still_chain(still_i, seg, seg_len, i, tail)
         elif seg.kind == "screengrab":
             # operator-supplied capture — image or short clip, framed either way
             visual = content.resolve_screengrab(value)
             if visual.is_video:
-                clip_i = _clip_input(visual)
-                frame_plate = _frame_plate(CueKind.SCREENGRAB)
-                if frame_plate is None:
-                    chain = _clip_motion(clip_i)
-                else:
-                    bg, (ax, ay, aw, ah) = _frame_bg(frame_plate, seg, i)
-                    bg_i = _still_input(bg)
-                    chain = _scaled_overlay_chain(bg_i, clip_i, ax, ay, aw, ah,
-                                                  seg_len, tail)
+                chain = _clip_motion(_clip_input(visual))
             else:
-                still_i = _still_input(
-                    _framed_media(seg, i, visual.path, CueKind.SCREENGRAB))
+                still_i = _still_input(_full_media(i, visual.path, document=True))
                 chain = _still_chain(still_i, seg, seg_len, i, tail)
         elif seg.kind in ("plate", "chapter"):
             # The plate the DIRECTOR named, with the text they wrote in it.
@@ -2426,18 +2375,17 @@ def _render_long(
                     dest = rdir / f"meme_frame_{len(meme_frame_cache)}.png"
                     cover_fill_frame(visual.path, W, H, keep_min=1.1,
                                      ground=role(settings, "ground"),
-                                     line=role(settings, "structure")).save(dest)
+                                     line=role(settings, "structure"),
+                                     border=False).save(dest)
                     meme_frame_cache[visual.key] = dest
                 still = meme_frame_cache[visual.key]
             # A chart is a PLATE with a path drawn in it: it fills the frame,
             # or stands beside Dennis talking where the writer asked
-            # (`with=`). Photographs and memes are foreign media and go
-            # inside a frames/ plate instead.
+            # (`with=`). Photographs fill the screen as footage does; a meme
+            # was composed full-frame above.
             chain = None
-            if seg.kind in ("img", "meme"):
-                still = _framed_media(
-                    seg, i, still,
-                    CueKind.IMG if seg.kind == "img" else CueKind.MEME)
+            if seg.kind == "img":
+                still = _full_media(i, still)
             elif seg.payload.get("layout") == "two-shot" and not _annotated(seg):
                 with Image.open(still) as probe:
                     chain = _two_shot_chain("still", still, probe.size)

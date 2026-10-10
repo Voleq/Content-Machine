@@ -38,6 +38,9 @@ FPS = 30
 
 # The six mouths, in dennis.MOUTHS order; the first is the basis (shut).
 MOUTHS = ("mouthClosed", "mouthMid", "mouthWide", "mouthO", "mouthEE", "mouthFV")
+MIN_MOVE_S = 0.3                 # no move of his is quicker than this
+MOVE_S_PER_DEG = 1.0 / 160       # ...and a big one takes longer: 90 degrees ~0.86 s
+MAX_MOVE_S = 0.9
 MOUTH_HOLD_S = 1.0 / 12          # a 3D mouth may change twelve times a second
 MOUTH_EASE_S = 0.05              # and takes this long to go from one to the next
 
@@ -348,33 +351,45 @@ def stressed(words: Sequence) -> list:
 
 class _Track:
     """A channel set that eases from one pose to the next: `go(t, pose, dur)`
-    arrives at `pose` at `t`, having left the previous one at `t - dur`."""
+    arrives at `pose` at `t`, having left wherever it was at `t - dur`.
+
+    A move takes at least `MIN_MOVE_S`, and longer the further it goes
+    (`MOVE_S_PER_DEG`): an arm swung ninety degrees in 0.4 s, which at twelve
+    drawn frames a second was two frames, read as a jump, not a gesture. And a
+    move starts from where he IS when it begins, part-way through the last one
+    if that has not landed: the start used to be clamped to the last arrival,
+    which squeezed a move called soon after another into a frame or two.
+    """
 
     def __init__(self, start: dict[str, float]):
-        self.keys: list[tuple[float, float, dict[str, float]]] = [(-1e9, 0.0, dict(start))]
+        # (leaves at, arrives at, from, to)
+        self.keys: list[tuple[float, float, dict[str, float], dict[str, float]]] = [
+            (-2e9, -1e9, dict(start), dict(start))]
 
     def go(self, t: float, pose: dict[str, float], dur: float = 0.35) -> None:
+        last_t0, last_t, _, last_to = self.keys[-1]
         # a call for a moment already passed lands just after the last one,
         # so the keys stay in order
-        t = max(t, self.keys[-1][0] + 1e-3)
-        prev = self.keys[-1][2]
-        merged = dict(prev)
+        t = max(t, last_t + 1e-3)
+        merged = dict(last_to)
         merged.update(pose)
-        t0 = max(t - dur, self.keys[-1][0])
-        self.keys.append((t, max(t - t0, 1e-3), merged))
+        far = max((abs(v - last_to.get(k, 0.0)) for k, v in pose.items()), default=0.0)
+        dur = max(dur, MIN_MOVE_S, min(MIN_MOVE_S + far * MOVE_S_PER_DEG, MAX_MOVE_S))
+        t0 = max(t - dur, last_t0 + 1e-3)
+        self.keys.append((t0, t, self.sample(t0), merged))
 
     def sample(self, t: float) -> dict[str, float]:
-        cur = self.keys[0][2]
-        for kt, dur, pose in self.keys[1:]:
-            if t >= kt:
-                cur = pose
-                continue
-            if t > kt - dur:
-                a = _smooth((t - (kt - dur)) / dur)
-                return {k: cur.get(k, 0.0) + (pose.get(k, 0.0) - cur.get(k, 0.0)) * a
-                        for k in set(cur) | set(pose)}
-            break
-        return dict(cur)
+        cur = self.keys[0]
+        for key in self.keys[1:]:
+            if t < key[0]:
+                break
+            cur = key
+        t0, t1, frm, to = cur
+        if t >= t1:
+            return dict(to)
+        a = _smooth((t - t0) / (t1 - t0))
+        return {k: frm.get(k, 0.0) + (to.get(k, 0.0) - frm.get(k, 0.0)) * a
+                for k in set(frm) | set(to)}
 
 
 def _arm_channels(side: str, pose: str | dict) -> dict[str, float]:
@@ -633,11 +648,15 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
                      for q in questions] + [0.0])
         for side in "LR":
             ab = 1 if side == "L" else -1
-            beat = sum(size * _bump(t, bt - 0.04, 0.12, 0.28)
+            # A beat on a stressed word is a small drop of the forearm, not a
+            # flick: up over a sixth of a second, and settling slower than it
+            # rose. The old 13 degrees in 0.12 s took the hand out of sight
+            # behind the desk and back in two drawn frames.
+            beat = sum(size * _bump(t, bt - 0.06, 0.16, 0.38)
                        for bt, sides, size in beats if side in sides)
-            a[f"elbow.{side}.x"] += 13 * beat
-            a[f"shoulder.{side}.x"] += 3 * beat
-            a[f"wrist.{side}.x"] = a.get(f"wrist.{side}.x", 0.0) - 10 * beat
+            a[f"elbow.{side}.x"] += 9 * beat
+            a[f"shoulder.{side}.x"] += 2 * beat
+            a[f"wrist.{side}.x"] = a.get(f"wrist.{side}.x", 0.0) - 7 * beat
             # breathing reaches the arms a little
             a[f"shoulder.{side}.y"] += 0.6 * ab * math.sin(2 * math.pi * t / 4.2)
         for k, v in a.items():

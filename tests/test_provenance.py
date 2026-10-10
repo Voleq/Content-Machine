@@ -24,16 +24,15 @@ def _degraded_cache(settings, ticker: str) -> None:
     and the render's own record will see — the same object the chart would
     have been drawn from.
     """
-    from pipeline.prices import PriceSeries
+    from pipeline.prices import PriceSeries, price_cache_file
 
-    cdir = settings.cache_dir / "prices"
-    cdir.mkdir(parents=True, exist_ok=True)
+    cfile = price_cache_file(ticker, settings.price_history_days, settings)
+    cfile.parent.mkdir(parents=True, exist_ok=True)
     fake = PriceSeries(ticker=ticker.upper(),
                        dates=["2026-01-01", "2026-01-02", "2026-01-03"],
                        closes=[10.0, 10.4, 10.2],
                        source="synthetic", degraded=True)
-    (cdir / f"{ticker.upper()}_{settings.price_history_days}.json").write_text(
-        fake.to_json(), encoding="utf-8")
+    cfile.write_text(fake.to_json(), encoding="utf-8")
 
 
 # --------------------------------------------------------------------------

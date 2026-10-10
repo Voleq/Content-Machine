@@ -32,6 +32,17 @@ def test_save_short_clears_previous_approval(settings, short_valid_json):
     assert ws.approved_sha("short") is None
 
 
+def test_a_script_the_schema_no_longer_reads_is_not_approved(settings, short_valid_json):
+    # An update that changes the script schema must not turn /status and
+    # /render into a crash on an old workspace: the approval just lapses.
+    ws = Workspace(settings, "EXMPL", "2026-07-01").create()
+    script = _script(short_valid_json)
+    ws.save_short(script, short_valid_json)
+    ws.approve("short", script.content_sha(), "r")
+    (ws.path / "script_short.json").write_text('{"ticker": 7}', encoding="utf-8")
+    assert ws.is_approved("short") is False
+
+
 def test_latest_for_picks_newest_date(settings):
     Workspace(settings, "ABC", "2026-06-01").create()
     Workspace(settings, "ABC", "2026-07-01").create()

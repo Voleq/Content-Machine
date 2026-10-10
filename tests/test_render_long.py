@@ -295,6 +295,17 @@ def rendered_doodles(tmp_path_factory):
         grab.unlink(missing_ok=True)
 
 
+def test_footage_from_outside_plays_edge_to_edge(rendered):
+    # Valentin, 10-10: b-roll, memes and filing pages fill the screen. The
+    # clip used to be laid into a taped paper frame (overlay at 307:130).
+    settings, script, tts, out, manifest = rendered
+    clip = next(s for s in manifest["segments"] if s["kind"] == "clip")
+    assert "overlay" not in clip["filter"]
+    assert "crop=1920:1080" in clip["filter"] or "crop=" in clip["filter"]
+    assert not any(k.startswith("frames/media-frame")
+                   for k in manifest.get("plates_used") or [])
+
+
 def test_screengrab_and_marker_chart_segments(rendered_doodles):
     settings, script, tts, out, manifest = rendered_doodles
     segs = manifest["segments"]

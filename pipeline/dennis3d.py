@@ -34,7 +34,7 @@ REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
-LOOK_VERSION = "47-64-6"
+LOOK_VERSION = "47-64-7"
 
 # How long one shot may take before the worker is taken for hung: a fixed
 # allowance for Blender to come up, and a generous one per frame (a Cycles

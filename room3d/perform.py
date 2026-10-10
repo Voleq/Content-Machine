@@ -12,7 +12,7 @@ goes underneath in the pipeline. Nothing here knows about videos.
 reads one JSON job per line on stdin:
 
     {"angle": "desk-front", "season": "plain", "aspect": "16x9",
-     "size": [2560, 1440], "fps": 12, "samples": 8, "seed": "EXMPL|12",
+     "size": [2560, 1440], "fps": 30, "samples": 8, "seed": "EXMPL|12",
      "words": [{"word": "So.", "start": 0.12, "end": 0.40}, ...],
      "duration": 4.93, "stance": "host/arms-crossed", "out": "/abs/folder"}
 
@@ -60,6 +60,8 @@ from mathutils import Matrix, Vector  # noqa: E402
 import build as room  # noqa: E402
 import motion  # noqa: E402
 from dennis import JOINTS, bounds, build_dennis  # noqa: E402
+
+FPS = 30  # as config.dennis_3d_fps: the bench times what a render will draw
 
 BEARD = "short"          # item 64, 3 Oct
 
@@ -452,20 +454,21 @@ def bench() -> int:
                                           ("long close-up", "16x9", [1920, 1080], True),
                                           ("short close-up", "9x16", [1440, 2560], True)):
             job = {"angle": "desk-front", "season": "plain", "aspect": aspect, "size": size,
-                   "fps": 12, "samples": 8, "seed": "bench",
+                   "fps": FPS, "samples": 8, "seed": "bench",
                    "stance": "host/close-up" if close else "host/to-camera",
                    "duration": 0.25, "words": words, "close": close,
                    "out": str(Path(tmp) / name.replace(" ", "-"))}
-            stage.shot({**job, "duration": 1 / 12})        # warm: build, first frame
+            stage.shot({**job, "duration": 1 / FPS})       # warm: build, first frame
             t = time.monotonic()
             got = stage.shot({**job, "out": job["out"] + "-timed"})
             per[name] = (time.monotonic() - t) / max(got["frames"], 1)
             print(f"{name}: {per[name]:.1f} s a frame on the {stage.device}", flush=True)
     long = (per["long wide"] * 3 + per["long close-up"]) / 4    # most of his shots are wide
-    # twelve drawings a second; a proof draws him at half the size, about a quarter of this
-    print(f"each minute of him in a long: about {long * 12:.0f} minutes to draw; "
+    # FPS drawings a second; a proof draws him at half the size, about a quarter of this
+    print(f"each minute of him in a long: about {long * FPS:.0f} minutes to draw; "
           f"the short's three-second shot of him: about "
-          f"{per['short close-up'] * 36 / 60:.0f} minutes (a proof: about a quarter)", flush=True)
+          f"{per['short close-up'] * 3 * FPS / 60:.0f} minutes (a proof: about a quarter)",
+          flush=True)
     return 0
 
 

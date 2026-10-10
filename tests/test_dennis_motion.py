@@ -217,3 +217,28 @@ def test_in_close_up_his_hands_talk_under_the_frame():
         assert min(perf.channels[f"shoulder.{side}.x"]) > -22, f"{side} hand came up"
     assert min(min(perf.channels["elbow.L.x"]), min(perf.channels["elbow.R.x"])) < -45, \
         "and they do still talk"
+
+
+def test_no_move_of_his_is_a_jump():
+    # Valentin, 10-10: "his moves don't seem natural". A gesture called soon
+    # after another was squeezed into a frame or two, and a ninety-degree
+    # swing took 0.4 s: at twelve drawings a second, two jumps. At thirty a
+    # second no joint of either arm turns more than ten degrees a frame.
+    worst = 0.0
+    for stance in ("", "host/pointing-down-at-desk", "host/holding-a-mug",
+                   "host/turn-to-screen"):
+        p = motion.perform(LINE, LINE[-1].end + 1.2, fps=30, seed="j", stance=stance,
+                           looks={"screen": SCREEN})
+        for name, vals in p.channels.items():
+            if name.startswith(("shoulder.", "elbow.", "wrist.")):
+                worst = max([worst] + [abs(b - a) for a, b in zip(vals, vals[1:])])
+    assert worst < 10.0, worst
+
+
+def test_a_move_called_on_the_heels_of_another_still_eases():
+    tr = motion._Track({"a": 0.0})
+    tr.go(1.0, {"a": 90.0}, 0.4)
+    tr.go(1.05, {"a": 0.0}, 0.1)        # straight back, almost at once
+    steps = [tr.sample(1.0 + k / 30)["a"] for k in range(30)]
+    assert max(abs(b - a) for a, b in zip(steps, steps[1:])) < 12.0
+    assert tr.sample(3.0)["a"] == 0.0

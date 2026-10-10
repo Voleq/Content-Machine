@@ -514,7 +514,10 @@ class Settings(BaseSettings):
     # `DENNIS_3D_PYTHON` is the Python that has `bpy` (default: this one).
     dennis_3d: str = Field(default="off", alias="DENNIS_3D")
     dennis_3d_python: str = Field(default="", alias="DENNIS_3D_PYTHON")
-    dennis_3d_fps: int = 12             # drawn on twos, as the kit's Dennis
+    # Drawn at the video's own rate (Valentin, 10-10: "make him smoother").
+    # Twelve, on twos like the kit's 2D Dennis, stepped unevenly into 30 fps
+    # (3, 2, 3, 2 frames a drawing) and read as judder; 30 costs 2.5x the draw.
+    dennis_3d_fps: int = 30
     dennis_3d_samples: int = 8
     short_width: int = 1080
     short_height: int = 1920

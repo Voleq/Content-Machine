@@ -57,7 +57,11 @@ TTL_SECONDS = {
 
 def _cache_path(settings: Settings, kind: str, key: str) -> Path:
     safe = re.sub(r"[^A-Za-z0-9._-]", "_", key)[:80]
-    return settings.cache_dir / "sources" / kind / f"{safe}.json"
+    # Fixture payloads live apart from fetched ones: a mock run's "IR item"
+    # and canned CPI were otherwise served to the first live run inside
+    # their lifetime, as if fetched.
+    root = "sources-mock" if settings.mock_mode else "sources"
+    return settings.cache_dir / root / kind / f"{safe}.json"
 
 
 def cached(settings: Settings, kind: str, key: str) -> Any | None:
@@ -372,9 +376,11 @@ def ir_feed(url: str, settings: Settings, limit: int = 10) -> dict:
     try:
         import httpx
 
+        # Not SEC_USER_AGENT: the SEC asks for a name and an email in it,
+        # and this is the company's own website, which gets neither.
         resp = httpx.get(url, timeout=20.0, follow_redirects=True,
-                         headers={"User-Agent": settings.sec_user_agent
-                                  or "Dennis research bot"})
+                         headers={"User-Agent": "Mozilla/5.0 (compatible; "
+                                                "dennis-content-machine/1.0)"})
         resp.raise_for_status()
         items = parse_rss(resp.text, limit)
     except Exception as e:  # noqa: BLE001

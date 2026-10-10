@@ -223,7 +223,8 @@ def test_a_value_round_trips_through_the_cache(settings):
 
 def test_a_stale_entry_is_a_miss(settings):
     store(settings, "8k", "EXMPL", {"v": 1})
-    p = next((settings.cache_dir / "sources" / "8k").glob("*.json"))
+    from pipeline.sources import _cache_path
+    p = _cache_path(settings, "8k", "EXMPL")
     payload = json.loads(p.read_text(encoding="utf-8"))
     payload["_at"] = 0        # 1970
     p.write_text(json.dumps(payload), encoding="utf-8")
@@ -237,7 +238,8 @@ def test_ttls_reflect_how_often_each_source_actually_changes():
 
 def test_a_corrupt_cache_file_is_a_miss_not_a_crash(settings):
     store(settings, "fred", "X", {"v": 1})
-    next((settings.cache_dir / "sources" / "fred").glob("*.json")).write_text("{{{", encoding="utf-8")
+    from pipeline.sources import _cache_path
+    _cache_path(settings, "fred", "X").write_text("{{{", encoding="utf-8")
     assert cached(settings, "fred", "X") is None
 
 
@@ -274,3 +276,37 @@ def test_everything_runs_offline_in_mock_mode(settings):
                     fred_series("cpi", settings),
                     ir_feed("https://ir.example.com/rss", settings)):
         assert payload["status"] == "ok", payload
+
+
+def test_a_mock_run_s_payload_is_not_served_to_a_live_one(settings, monkeypatch):
+    # A mock run's canned CPI and "IR item" were cached under the same key a
+    # live run reads, and came back to it as if fetched.
+    store(settings, "fred", "cpi", {"status": "ok", "fixture": True})
+    live = settings.model_copy(update={"mock_mode": False})
+    assert cached(live, "fred", "cpi") is None
+    assert cached(settings, "fred", "cpi") == {"status": "ok", "fixture": True}
+
+
+def test_the_ir_site_never_gets_the_sec_contact(settings, monkeypatch):
+    # The SEC asks for a name and an email in the User-Agent; a company's own
+    # website is not the SEC, and gets neither.
+    import httpx
+
+    seen = {}
+
+    class Resp:
+        text = "<rss><channel><item><title>t</title><link>l</link></item></channel></rss>"
+
+        def raise_for_status(self):
+            pass
+
+    def fake_get(url, **kw):
+        seen.update(kw.get("headers") or {})
+        return Resp()
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "sec_user_agent": "Someone someone@example.com"})
+    ir_feed("https://ir.example.com/rss", live)
+    assert "@" not in seen.get("User-Agent", "")
+    assert "someone" not in seen.get("User-Agent", "").lower()
