@@ -15,7 +15,7 @@ avg_volume_3m,8000000
 beta,1.6
 week52_high,120.0
 week52_low,40.0
-pct_from_52w_high,-29.83
+pct_from_52w_high,-0.2983
 pe_ttm,#N/A
 forward_pe,#N/A
 ps_ttm,62.0
@@ -26,7 +26,7 @@ pb,18.0
 p_fcf,#N/A
 peg,#N/A
 earnings_yield,#N/A
-fcf_yield,-5.0
+fcf_yield,-0.05
 dividend_yield,0.0
 buyback_yield,0.0
 shareholder_yield,0.0
@@ -34,12 +34,12 @@ cash_st,410000000
 total_debt_now,1450000000
 net_debt_now,1040000000
 net_debt_ebitda_now,9.8
-debt_to_equity,140.0
+debt_to_equity,1.4
 current_ratio,1.4
 quick_ratio,1.1
 interest_coverage,0.9
 goodwill_intang,#N/A
 tangible_bv,#N/A
-short_interest,11.0
+short_interest,0.11
 insider_own,0.08
 institutional_own,0.62

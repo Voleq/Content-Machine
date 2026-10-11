@@ -100,6 +100,64 @@ def test_company_data_without_history():
     assert "[history" not in data.as_prompt_block()
 
 
+# --------------------------------------------------------------------------
+# D6 - the template holds its yields as FRACTIONS and the fixture held
+# percentages, so a thumbnail read the real workbook's FCF yield as "-0%".
+# --------------------------------------------------------------------------
+
+
+def test_every_percent_cell_in_the_template_is_a_fraction_here():
+    """The shipped template is the data contract. A Snapshot cell it formats as
+    a percent holds 0.074, not 7.4 - `D24` is `=D15/D22-1` under `0%` and
+    `D43` divides the add-in's percent by 100 - and `D35` divides by 100 too,
+    though its format is General."""
+    import pathlib
+
+    from openpyxl import load_workbook
+
+    from pipeline.models import _FRACTION_FIELDS
+
+    template = (pathlib.Path(__file__).resolve().parents[1] / "templates"
+                / "dennis_data_template.xlsx")
+    sheet = load_workbook(template)["Snapshot"]
+    formatted = {sheet.cell(r, 2).value for r in range(1, sheet.max_row + 1)
+                 if sheet.cell(r, 2).value and "%" in sheet.cell(r, 4).number_format}
+    assert {"pct_from_52w_high", "debt_to_equity", "short_interest"} <= formatted
+    assert formatted <= _FRACTION_FIELDS, formatted - _FRACTION_FIELDS
+    assert "fcf_yield" in _FRACTION_FIELDS
+
+
+def test_the_fixture_holds_fractions_like_the_template(fixtures_dir):
+    from pipeline.company_data import load_company_data
+
+    data = load_company_data(fixtures_dir / "company_data")
+    assert data.values["fcf_yield"] == pytest.approx(-0.05)
+    assert data.values["short_interest"] == pytest.approx(0.11)
+    assert data.values["pct_from_52w_high"] == pytest.approx(-0.2983)
+    # Debt / equity is a ratio shown as a percent: 1.4 is 140.0%.
+    assert data.values["debt_to_equity"] == pytest.approx(1.4)
+    assert data.dashboard["FCF yield"] == pytest.approx(-0.05)
+
+
+def test_a_fraction_reaches_the_writer_as_a_percent():
+    data = CompanyData(
+        values={"fcf_yield": -0.05, "debt_to_equity": 1.4, "insider_own": 0.08,
+                "ps_ttm": 62.0},
+        dashboard={"FCF yield": -0.05, "% from 52w high": -0.2983,
+                   "Net margin (LTM)": -18.0},
+    )
+    block = data.as_prompt_block()
+    assert "fcf_yield = -5.0% (fraction -0.05)" in block
+    assert "debt_to_equity = 140.0% (fraction 1.4)" in block
+    assert "insider_own = 8.0% of shares outstanding (fraction 0.08)" in block
+    assert "FCF yield: -5.0% (fraction -0.05)" in block
+    assert "% from 52w high: -29.8% (fraction -0.2983)" in block
+    # A multiple, and a margin that the History sheet holds in points, are
+    # not fractions and are left exactly as they were.
+    assert "ps_ttm = 62.0" in block
+    assert "Net margin (LTM): -18.0" in block
+
+
 def test_cost_report_render_text_short():
     report = CostReport(
         ticker="EXMPL",

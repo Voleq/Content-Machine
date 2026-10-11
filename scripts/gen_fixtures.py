@@ -50,7 +50,11 @@ EXMPL_SNAPSHOT = [
     ("", "beta", "Beta (5y)", 1.6, "TR.Beta"),
     ("", "week52_high", "52-Week High", 120.0, "TR.Price52WeekHigh"),
     ("", "week52_low", "52-Week Low", 40.0, "TR.Price52WeekLow"),
-    ("", "pct_from_52w_high", "% From 52w High", -29.83, "computed"),
+    # FRACTIONS, as the template's formulas return them (`D24` is `=D15/D22-1`,
+    # `D35`, `D36`, `D43` and `D49` divide the add-in's percent by 100): -0.2983
+    # is 29.83% below the high, and debt / equity 1.4 is the "140.0%" the cell
+    # displays. `models._FRACTION_FIELDS` names them.
+    ("", "pct_from_52w_high", "% From 52w High", -0.2983, "computed"),
     ("Valuation (now)", "pe_ttm", "P/E (TTM)", NA, "TR.PE"),
     ("", "forward_pe", "Forward P/E", NA, "TR.FwdPE"),
     ("", "ps_ttm", "P/S (TTM)", 62.0, "TR.PriceToSalesPerShare"),
@@ -61,7 +65,7 @@ EXMPL_SNAPSHOT = [
     ("", "p_fcf", "P / FCF", NA, "TR.PriceToFCFPerShare"),
     ("", "peg", "PEG", NA, "TR.PEG"),
     ("", "earnings_yield", "Earnings Yield (%)", NA, "computed"),
-    ("", "fcf_yield", "FCF Yield (%)", -5.0, "TR.FCFYield"),
+    ("", "fcf_yield", "FCF Yield (%)", -0.05, "TR.FCFYield"),
     ("", "dividend_yield", "Dividend Yield (%)", 0.0, "TR.DividendYield"),
     ("", "buyback_yield", "Buyback Yield (%)", 0.0, "TR.BuybackYield"),
     ("", "shareholder_yield", "Shareholder Yield (%)", 0.0, "computed"),
@@ -69,13 +73,13 @@ EXMPL_SNAPSHOT = [
     ("", "total_debt_now", "Total Debt", 1_450_000_000, "TR.TotalDebtOutstanding"),
     ("", "net_debt_now", "Net Debt", 1_040_000_000, "computed"),
     ("", "net_debt_ebitda_now", "Net Debt / EBITDA", 9.8, "TR.NetDebtToEBITDA"),
-    ("", "debt_to_equity", "Debt / Equity (%)", 140.0, "TR.TotalDebtToTotalEquityPct"),
+    ("", "debt_to_equity", "Debt / Equity (%)", 1.4, "TR.TotalDebtToTotalEquityPct"),
     ("", "current_ratio", "Current Ratio", 1.4, "TR.CurrentRatio"),
     ("", "quick_ratio", "Quick Ratio", 1.1, "TR.QuickRatio"),
     ("", "interest_coverage", "Interest Coverage", 0.9, "TR.InterestCoverageRatio"),
     ("", "goodwill_intang", "Goodwill & Intangibles", NA, "TR.GoodwillGross"),
     ("", "tangible_bv", "Tangible BV / Share", NA, "TR.TangibleBVPerShare"),
-    ("Ownership & Risk", "short_interest", "Short Interest (% float)", 11.0, "TR.ShortInterestPercentOfFloat"),
+    ("Ownership & Risk", "short_interest", "Short Interest (% float)", 0.11, "TR.ShortInterestPercentOfFloat"),
     # FRACTIONS, 0-1, the same convention `short_interest` uses — and computed
     # from the resolver block at G47:M51 rather than read from a vendor field,
     # because `TR.InsiderPercentHeld` and `TR.InstitutionsPercentHeld` do not
@@ -182,7 +186,7 @@ EXMPL_DASHBOARD = [
     ("Company", "Example Corp"),
     ("Price", 84.20),
     ("Market cap", 30_700_000_000),
-    ("% from 52w high", -29.83),
+    ("% from 52w high", -0.2983),     # =Snapshot!D24, a fraction
     ("Revenue (LTM)", 496*M),
     ("Revenue 4y CAGR", 5.5),
     ("Gross margin (LTM)", 58.0),
@@ -190,7 +194,7 @@ EXMPL_DASHBOARD = [
     ("Net margin (LTM)", -18.0),
     ("FCF (LTM)", -15*M),
     ("FCF margin (LTM)", -3.0),
-    ("FCF yield", -5.0),
+    ("FCF yield", -0.05),             # =Snapshot!D35, a fraction
     ("Net debt / EBITDA", 9.8),
     ("ROIC (LTM)", -3.6),
     ("Share count 4y CAGR", 5.2),
