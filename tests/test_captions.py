@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from pipeline.compose import (CAPTION_BAND, CAPTION_CLEARANCE_FH,
+from pipeline.compose import (CAPTION_BAND, CAPTION_CLEARANCE_FH, Layer,
                               CAPTION_SIDE_FW, CAPTION_TYPE_FH, build_layers,
                               caption_band, caption_obstacles, place_caption)
 from pipeline.models import WordTimestamp
@@ -644,3 +644,20 @@ def test_the_render_burns_each_caption_where_its_shot_placed_it(
     (args,) = burns
     vf = args[args.index("-vf") + 1]
     assert "fontsdir=" in vf and str(settings.fonts_dir).replace(":", "\\:") in vf
+
+
+def test_a_bar_charts_bars_are_in_the_captions_way(reg):
+    """A bar chart's plot carries no value of its own: its bars are drawn
+    from the figures printed over them. They are still what is being read,
+    so where they actually draw is an obstacle like a line's ink."""
+    plate = reg.get("charts/bars-6y-9x16")
+    values = {"unit": "Revenue, $M",
+              **{f"value-{i}": str(v) for i, v in enumerate((120, 150, 180, 210, 260, 300), 1)},
+              **{f"head-{i}": f"FY{19 + i}" for i in range(1, 7)}}
+    layer = Layer(name="bars", kind="plate", shot_id="s", t_start=0.0, t_end=3.0,
+                  w=1080, h=1920, entry_key=plate.key, values=values)
+    got = dict(caption_obstacles(reg, [layer]))
+    x, y, w, h = got["plot-area"]
+    tops = got["value-1"][1] + got["value-1"][3]
+    assert tops <= y and y + h <= got["head-1"][1]      # the bars, between their labels
+    assert w > 600 and h > 600

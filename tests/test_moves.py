@@ -89,6 +89,7 @@ def _plans(fmt, result, words, reg, settings, n=40):
     ("-$71M", True), ("5×", True), ("(12.5)", True), ("496", True),
     ("FY2025", False), ("today · 5× average volume", False), ("Revenue", False),
     ("$400M to $496M", False), ("", False), ("Q3", False),
+    ("$3.4T", True), ("+1.5pp", True),
 ])
 def test_only_a_slot_holding_one_figure_counts_up(text, want):
     assert MV.is_one_figure(text) is want
@@ -750,3 +751,37 @@ def test_the_short_draws_its_paper_wipe_at_night(short, reg, settings):
     w = wipes[0]
     img = comp._wipe_frame(w, w.cut_frame, 108, 192).convert("RGB")
     assert sum(img.getpixel((27, 96))) / 3 > 180
+
+
+def test_a_loss_grows_down_from_zero_and_no_stroke_shows_before_its_bar(reg, settings):
+    """A loss hangs from the zero line (`series.column_bars`) and was
+    revealed from the bottom of its column like a gain: it grew tip first,
+    up towards zero. And the tallest bar's top stroke, half outside the
+    column, stood over the empty chart before its bar arrived."""
+    import numpy as np
+
+    plate = reg.get("charts/bars-6y-9x16")
+
+    def m(v):
+        return f"-${-v}M" if v < 0 else f"${v}M"
+
+    values = {f"value-{i}": m(v) for i, v in enumerate((-50, -30, 20, 40, -10, 60), 1)}
+    values.update({f"y-{i}": m(v) for i, v in enumerate((-60, -30, 0, 30, 60), 1)})
+    move = MV.Move("bars-grow", "s", "l", "plot-area", 0.0, 13, "out")
+    comp = MV.MoveCompositor(MV.MovePlan(moves=[move]), reg, settings, None)
+    data = comp._data(plate, tuple(sorted(values.items())), "")
+    full = np.asarray(data)[..., 3]
+    k = plate.export_scale
+    cols = MV._columns(plate)
+    hidden = np.asarray(comp._reveal(data, plate, move, None, values))[..., 3]
+    for c in cols:
+        b = c["box"]
+        x0, x1 = int((b["x"] - 3) * k), int((b["x"] + b["w"] + 3) * k)
+        assert not hidden[:, x0:x1].any(), c["slots"]
+    early = np.asarray(comp._reveal(data, plate, move, 2, values))[..., 3]
+    b = cols[0]["box"]                                     # -$50M, the first to grow
+    x0, x1 = int(b["x"] * k), int((b["x"] + b["w"]) * k)
+    bar = np.nonzero(full[:, x0:x1].any(1))[0]
+    seen = np.nonzero(early[:, x0:x1].any(1))[0]
+    assert 0 < len(seen) < len(bar)
+    assert seen.min() == bar.min() and seen.max() < bar.max()   # from zero, down

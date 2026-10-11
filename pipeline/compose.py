@@ -1881,8 +1881,13 @@ def caption_obstacles(reg: Registry, shot_layers: Sequence[Layer]
                     # A slot code places (a dense chart's last price, a
                     # scatter's names) is set inside the data's own ink.
                     continue
-                if str(l.values.get(name, "")).strip() or (slot.renderer and l.values):
-                    ink = _data_ink(reg, plate, l.values) if slot.role == "plot-area" else None
+                filled = str(l.values.get(name, "")).strip() or (slot.renderer and l.values)
+                # A bar chart's plot holds no value of its own (its bars are
+                # drawn from the figures printed over them) and is still
+                # what is being read.
+                ink = (_data_ink(reg, plate, l.values)
+                       if slot.role == "plot-area" and l.values else None)
+                if filled or ink:
                     out.append((name, _canvas_in_frame(plate, ink, box) if ink
                                 else _slot_in_frame(plate, name, box)))
         elif l.kind in ("fill", "media", "text", "mark"):

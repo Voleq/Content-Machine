@@ -118,7 +118,7 @@ ZOOM_MAX = 1.6
 # information.
 _ONE_FIGURE = re.compile(
     r"^\(?[+\-−]?[$€£]?\d[\d,]*(?:\.\d+)?"
-    r"\s?(?:%|x|×|bn|b|m|k|tn|pt|pts|bps)?\)?$", re.IGNORECASE)
+    r"\s?(?:%|x|×|bn|b|m|k|tn|t|pt|pts|pp|bps)?\)?$", re.IGNORECASE)
 # Slots that carry THE figure of a plate, by the kit's own names. Design's
 # anchor comes first where it holds a figure; these are the others worth
 # counting (the two sides of a comparison, a callout's latest reading).
@@ -129,7 +129,8 @@ FIGURE_SLOTS = ("value", "value-1", "value-2", "num", "delta", "huge", "move",
 # is not taken for "3%".
 _UNIT_WORDS = {"%": "percent", "x": "times", "×": "times", "bn": "billion",
                "b": "billion", "m": "million", "k": "thousand", "tn": "trillion",
-               "bps": "basis", "pt": "points", "pts": "points"}
+               "t": "trillion", "bps": "basis", "pt": "points", "pts": "points",
+               "pp": "points"}
 
 _STRIP = " \t\n\"'“”‘’.,;:!?()[]{}—–-"
 
@@ -284,6 +285,18 @@ def _columns(plate) -> list[dict]:
     """A bars-grow's columns on `plate`, oldest first, as design anchors them."""
     got = ((plate.motion or {}).get("bars-grow") or {}).get("columns") if plate else None
     return [c for c in (got or ()) if isinstance(c, dict) and isinstance(c.get("box"), dict)]
+
+
+def _loss(column: dict, values: dict) -> bool:
+    """Whether a bars-grow column's figure is below zero."""
+    from pipeline import series as S
+
+    for name in column.get("slots") or ():
+        got = re.match(r"^bar-(\d+)$", str(name))
+        if got:
+            v = S.figure(values.get(f"value-{got.group(1)}"))
+            return v is not None and v < 0
+    return False
 
 
 def _plot_slot(plate, move: str) -> str:
@@ -1501,17 +1514,30 @@ class MoveCompositor:
             if accent is not None:
                 columns.append(columns.pop(accent))
             base = max(m.frames - (len(columns) - 1), 1)
+            s = max(int(plate.export_scale or 1), 1)
             shown = []
             for i, c in enumerate(columns):
                 b = c["box"]
                 k = 0.0 if f is None else M.out(M.stagger(f, i, base))
                 # The bar's outline straddles the column's edges. Clipped to
                 # the box alone, its two sides stood the full height of every
-                # bar before the bar grew: on paper, black posts in an empty
-                # chart. The box takes the stroke in with it.
-                box = M.Box(b["x"] - BAR_STROKE_BLEED, b["y"],
-                            b["w"] + 2 * BAR_STROKE_BLEED, b["h"])
-                shown.append((box, M.reveal(box, k, "bottom")))
+                # bar before the bar grew (on paper, black posts in an empty
+                # chart) and the tallest bar's top stood over it. The box
+                # takes the stroke in with it, on every side.
+                box = M.outset(M.Box(b["x"], b["y"], b["w"], b["h"]), BAR_STROKE_BLEED)
+                side = "bottom"
+                # A BAR GROWS FROM ZERO. It is revealed from the end that
+                # stands on the zero line: the foot of a gain, the top of a
+                # loss, which hangs from zero (`series.column_bars`) and grew
+                # tip first, up towards the line, when every bar rose from
+                # the bottom of its column.
+                ink = data.crop((int(box.x * s), int(box.y * s), int((box.x + box.w) * s),
+                                 int((box.y + box.h) * s))).getchannel("A").getbbox()
+                if ink:
+                    box = M.Box(box.x, box.y + ink[1] / s, box.w, (ink[3] - ink[1]) / s)
+                    if _loss(c, values or {}):
+                        side = "top"
+                shown.append((box, M.reveal(box, k, side)))
             return self._clip(data, plate, shown)
         boxes = []
         box = anchor.get("box")
