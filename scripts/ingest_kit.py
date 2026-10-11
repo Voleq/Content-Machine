@@ -124,17 +124,16 @@ def _node(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
 PLATE_GROUND = "paper"
 
 
-def _one_ground(staged: Path, ground: str | None = PLATE_GROUND) -> list[str]:
-    """Put every family on `ground` in the staged tokens and redraw the kit's
-    manifests from them. Problems, as `_kit_proves_itself` gives them."""
-    if not ground:
-        return []
-    path = staged / "design-tokens.json"
+def ground_tokens(kit: Path, ground: str) -> tuple[list[str], list[str]]:
+    """Every family put on `ground` in `kit`'s tokens, in place: (the
+    families, problems). The kit's engine reads the ground from there, so a
+    copy of the kit with these tokens draws what the ingest installed."""
+    path = kit / "design-tokens.json"
     tokens = json.loads(path.read_text(encoding="utf-8"))
     grounds = (tokens.get("plateStyle") or {}).get("grounds")
     if not isinstance(grounds, dict) or not isinstance(grounds.get(ground), list):
-        return [f"design-tokens.json has no plateStyle.grounds.{ground} to put "
-                f"every plate on"]
+        return [], [f"design-tokens.json has no plateStyle.grounds.{ground} to put "
+                    f"every plate on"]
     families: list[str] = []
     for name in ("paper", "screen"):
         families += [f for f in grounds.get(name) or [] if f not in families]
@@ -142,8 +141,18 @@ def _one_ground(staged: Path, ground: str | None = PLATE_GROUND) -> list[str]:
     grounds[ground] = families
     grounds["screenKeys"] = []
     path.write_text(json.dumps(tokens, indent=2) + "\n", encoding="utf-8")
+    return families, []
+
+
+def _one_ground(staged: Path, ground: str | None = PLATE_GROUND) -> list[str]:
+    """Put every family on `ground` in the staged tokens and redraw the kit's
+    manifests from them. Problems, as `_kit_proves_itself` gives them."""
+    if not ground:
+        return []
+    families, problems = ground_tokens(staged, ground)
+    if problems:
+        return problems
     print(f"  every plate on {ground}: {', '.join(families)}")
-    problems: list[str] = []
     for step in (["node", "engine/emit.js"], ["node", "engine/export.js"]):
         proc = _node(step, staged)
         if proc.returncode != 0:

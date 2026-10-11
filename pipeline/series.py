@@ -410,11 +410,24 @@ def spread_fill(box, a, b, ink, *, columns=(), min=None, max=None) -> dict:  # n
           else [box["x"] + (i / (len(a) - 1)) * box["w"] for i in range(len(a))])
     e = extent(list(a) + list(b), min=min, max=max)
     y = lambda v: box["y"] + box["h"] - ((v - e.lo) / e.span) * box["h"]  # noqa: E731
-    up = [(xs[i], y(v)) for i, v in enumerate(a)]
-    dn = list(reversed([(xs[i], y(v)) for i, v in enumerate(b)]))
-    return {"nodes": [{"tag": "path", "attrs": {"d": "M" + _pts(up + dn) + "Z",
-                                                "fill": _ink(ink, "band", "#1F2634")}}],
-            "returns": {"lo": e.lo, "hi": e.hi}}
+    # A period missing from either line is a hole in the gap too, as it is
+    # in `line_path`: each stretch where both lines have a figure is filled
+    # on its own, and nothing is filled across the hole.
+    runs: list[list[int]] = [[]]
+    for i in range(len(a)):
+        if num(a[i]) is None or num(b[i]) is None:
+            runs.append([])
+        else:
+            runs[-1].append(i)
+    nodes = []
+    for run in runs:
+        if len(run) < 2:
+            continue
+        up = [(xs[i], y(a[i])) for i in run]
+        dn = [(xs[i], y(b[i])) for i in reversed(run)]
+        nodes.append({"tag": "path", "attrs": {"d": "M" + _pts(up + dn) + "Z",
+                                               "fill": _ink(ink, "band", "#1F2634")}})
+    return {"nodes": nodes, "returns": {"lo": e.lo, "hi": e.hi}}
 
 
 def bridge(box, columns, steps, ink, *, open=0, close=0, open_column=None,  # noqa: A002

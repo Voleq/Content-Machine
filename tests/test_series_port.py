@@ -18,6 +18,7 @@ sample set is always the installed kit's, never a fixture that goes stale.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import math
 import re
@@ -65,6 +66,13 @@ process.stdout.write(JSON.stringify(out));
 """
 
 
+def _ingest():
+    spec = importlib.util.spec_from_file_location("ingest_kit", ROOT / "scripts" / "ingest_kit.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 @pytest.fixture(scope="module")
 def reg():
     return load_plates(Settings(_env_file=None).assets_dir)
@@ -80,9 +88,18 @@ def samples(tmp_path_factory):
     node = shutil.which("node")
     if node is None or not (KIT / "engine" / "export.js").exists():
         pytest.skip("needs node and the kit's engine")
-    script = tmp_path_factory.mktemp("kit") / "samples.js"
+    tmp = tmp_path_factory.mktemp("kit")
+    script = tmp / "samples.js"
     script.write_text(_DUMP, encoding="utf-8")
-    proc = subprocess.run([node, str(script), str(KIT)], capture_output=True, text=True,
+    # The kit as the ingest installed it: every family on one ground
+    # (`PLATE_GROUND`), so its samples are drawn in the inks the bot uses.
+    kit = tmp / "delivery"
+    shutil.copytree(KIT, kit, ignore=shutil.ignore_patterns("out"))
+    ingest = _ingest()
+    if ingest.PLATE_GROUND:
+        _, problems = ingest.ground_tokens(kit, ingest.PLATE_GROUND)
+        assert not problems, problems
+    proc = subprocess.run([node, str(script), str(kit)], capture_output=True, text=True,
                           timeout=600, cwd=ROOT)
     assert proc.returncode == 0, proc.stderr[-2000:]
     rows = json.loads(proc.stdout)
@@ -175,6 +192,16 @@ def test_a_missing_period_breaks_the_line_instead_of_crashing_the_render():
     assert accented["nodes"][-1]["attrs"]["fill"] == "#A"
     assert accented["nodes"][-1]["attrs"]["cx"] == 633.3, "the third of four columns"
     assert len(accented["returns"]["points"]) == 3
+
+
+def test_a_missing_period_leaves_a_hole_in_the_filled_gap():
+    """Price against cost with one period blank in either line: the gap is
+    filled either side of the hole, never across it, and never crashes."""
+    full = S.spread_fill(_PLOT, [10, 12, 14, 16], [5, 6, 7, 8], _INK)
+    assert len(full["nodes"]) == 1
+    holed = S.spread_fill(_PLOT, [10, 12, None, 16, 18], [5, 6, 7, 8, 9], _INK)
+    assert len(holed["nodes"]) == 2
+    assert S.spread_fill(_PLOT, [10, None, 14], [5, 6, None], _INK)["nodes"] == []
 
 
 def test_a_mark_is_drawn_in_the_ink_its_slot_publishes():
