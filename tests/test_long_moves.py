@@ -175,6 +175,31 @@ def test_each_chapter_lands_on_its_own_cut():
         [2.0, 7.0, 9.0, None]
 
 
+def test_a_chapter_lands_on_the_cut_the_frame_grid_put_just_before_it():
+    """The plan snaps every cut to the nearest frame, so the cut a chapter
+    belongs on can sit a fraction of a frame ahead of its time: 20.012 s
+    against the cut at frame 600 of a 30 fps cut, 20.000 s. Read strictly it
+    was missed and the card went up on the next cut, ten seconds late."""
+    chapters = [(0.0, "a", "x"), (20.012, "b", "y")]
+    starts = [0.0, 10.0, 20.0, 30.0]
+    assert RL._chapter_cuts(chapters, starts, intro_dur=0.5, duration=60.0) == \
+        [None, 20.0]
+    assert RL._chapter_cuts(chapters, starts, intro_dur=0.5, duration=60.0,
+                            fps=30) == [None, 20.0]
+    # And the float error alone: 1.1 + 2.2 is not 3.3.
+    assert RL._chapter_cuts([(0.0, "a", "x"), (1.1 + 2.2, "b", "y")],
+                            [0.0, 3.3, 9.0], intro_dur=0.5, duration=60.0) == \
+        [None, 3.3]
+
+
+def test_a_cut_a_whole_frame_early_is_still_before_the_chapter():
+    """The slack is the grid's half frame, not a licence to take the cut
+    before: a chapter at 20.1 s does not land on the cut at 20.0 s."""
+    chapters = [(0.0, "a", "x"), (20.1, "b", "y")]
+    assert RL._chapter_cuts(chapters, [0.0, 10.0, 20.0, 30.0], intro_dur=0.5,
+                            duration=60.0, fps=30) == [None, 30.0]
+
+
 def test_a_first_chapter_under_the_opening_title_has_no_second_opener():
     """The title card is chapter one's opener: its headline is the chapter's
     title. Landed on the first cut after the card as well, it was the empty
