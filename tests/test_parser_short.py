@@ -191,6 +191,29 @@ def test_reject_vendor_name_on_screen(short_valid_json, settings):
         parse_short_script(raw, settings)
 
 
+def test_capital_iq_is_a_vendor_name_too(short_valid_json, settings):
+    raw = short_valid_json.replace(
+        '"move_summary": "+29% today · 5× average volume"',
+        '"move_summary": "+29% today per Capital IQ"',
+    )
+    assert raw != short_valid_json
+    with pytest.raises(ScriptParseError, match="vendor"):
+        parse_short_script(raw, settings)
+
+
+@pytest.mark.parametrize("vendor", ["Refinitiv", "Capital IQ"])
+def test_a_plate_that_names_the_vendor_is_refused(short_valid_json, settings,
+                                                  vendor):
+    """A plate's slots are drawn on screen. The script's own fields were
+    checked after the tags were stripped out of `audio_script`, which took
+    the plate's text with them."""
+    raw = short_valid_json.replace("caption=From the filing]",
+                                   f"caption=From {vendor}]")
+    assert raw != short_valid_json
+    with pytest.raises(ScriptParseError, match="vendor"):
+        parse_short_script(raw, settings)
+
+
 def test_reject_non_json(settings):
     with pytest.raises(ScriptParseError, match="No JSON"):
         parse_short_script("here is your script: buy low sell high", settings)

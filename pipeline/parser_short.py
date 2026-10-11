@@ -35,7 +35,7 @@ from pipeline.tagging import parse_hold, tokenize_tags
 
 log = logging.getLogger(__name__)
 
-VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "workspace.refinitiv")
+VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "workspace.refinitiv", "capital iq")
 
 # The spoken length a SHORT is written to: 140–160 words, which is 45–55
 # seconds at the short voice's pace. It was 180–210 for a 60–75 second short.
@@ -162,6 +162,10 @@ def vendor_name_hits(script: ShortScript) -> list[str]:
         surfaces[f"numbers[{i}]"] = f"{row.label} {' '.join(row.values)}"
     for key, text in script.sources.items():
         surfaces[f"sources[{key}]"] = text
+    # The plates the writer tagged inline: their slots are drawn in shot, and
+    # `audio_script` has been stripped of the tags that carried them.
+    for i, e in enumerate(script.inline_events):
+        surfaces[f"inline_events[{i}]"] = " ".join(str(v) for v in e.values.values())
     for name, text in surfaces.items():
         low = text.lower()
         if any(w in low for w in VENDOR_WORDS):

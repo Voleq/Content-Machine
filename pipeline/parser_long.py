@@ -71,7 +71,7 @@ from pipeline.tagging import (parse_chart_payload, parse_hold, pop_field,
 
 log = logging.getLogger(__name__)
 
-VENDOR_WORDS = ("refinitiv", "lseg", "eikon")
+VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "capital iq")
 
 
 class LongScriptError(Exception):
@@ -385,6 +385,13 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
                 f"[SOURCE: {e.payload}] names the data vendor — it would be on "
                 f'screen. Name the filing ("Q2 10-Q", "FY24 10-K") or the '
                 f"agency, never the vendor.")
+        # A plate's slots are drawn in shot, and its text is not narration.
+        plate_text = " ".join(str(v) for v in e.values.values()).lower()
+        if any(w in plate_text for w in VENDOR_WORDS):
+            raise LongScriptError(
+                f"[{e.type.value}: {e.payload}] names the data vendor in its "
+                f"slots — it would be on screen. Name the filing "
+                f'("Q2 10-Q", "FY24 10-K") or the agency, never the vendor.')
 
     budget = settings.max_chars("long")
     if len(narration) > budget:
