@@ -135,10 +135,12 @@ _TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60,
          "seventy": 70, "eighty": 80, "ninety": 90}
 _SCALES = {"hundred": 100, "thousand": 1_000, "million": 1_000_000,
            "billion": 1_000_000_000, "trillion": 1_000_000_000_000}
-_NUMBER_WORDS = set(_UNITS) | set(_TENS) | set(_SCALES) | {"and", "point", "a"}
+_NUMBER_WORDS = set(_UNITS) | set(_TENS) | set(_SCALES) | {"and", "point", "a",
+                                                           "half"}
 
 _SUFFIX = {"k": 1_000, "m": 1_000_000, "b": 1_000_000_000, "bn": 1_000_000_000,
-           "t": 1_000_000_000_000}
+           "t": 1_000_000_000_000, "thousand": 1_000, "million": 1_000_000,
+           "billion": 1_000_000_000, "trillion": 1_000_000_000_000}
 
 
 def _words_to_number(tokens: list[str]) -> float | None:
@@ -168,6 +170,13 @@ def _words_to_number(tokens: list[str]) -> float | None:
                 break
             current = (current or 0) + float("0." + "".join(frac))
             seen = True
+            continue
+        if t == "half":
+            # Only ever reaches here from `_half_is_a_number`: "half a
+            # billion" and "two and a half billion".
+            current += 0.5
+            seen = True
+            i += 1
             continue
         if t in _UNITS:
             value = _UNITS[t]
@@ -207,8 +216,12 @@ def _words_to_number(tokens: list[str]) -> float | None:
     return total + current
 
 
+# A scale WORD after digits belongs to them: "496 million" is one number. It
+# used to stop at the digits, leaving "million" for the word parser to read as
+# a figure of its own — 1,000,000, checked against revenue.
 _DIGIT_RE = re.compile(
-    r"(?<![\w.])(\d[\d,]*(?:\.\d+)?)\s*(percent|%|bn|[kmbt])?(?![\w])",
+    r"(?<![\w.])(\d[\d,]*(?:\.\d+)?)\s*"
+    r"(percent|%|bn|thousand|million|billion|trillion|[kmbt])?(?![\w])",
     re.IGNORECASE,
 )
 
@@ -234,11 +247,28 @@ class SpokenNumber:
     end: int = -1
 
 
+def _half_is_a_number(tokens: list[str], k: int) -> bool:
+    """Is the "half" at `tokens[k]` part of a figure, or just the word?
+
+    "Two and a half billion" and "half a billion" are figures; "the first half
+    of the year" and "in half" are not, and reading them as 0.5 would hand the
+    fact-check a number nobody said. So a "half" counts only inside one of
+    those two shapes.
+    """
+    if k >= 3 and tokens[k - 2:k] == ["and", "a"]:
+        return tokens[k - 3] in _UNITS or tokens[k - 3] in _TENS \
+            or tokens[k - 3] in _SCALES
+    after = tokens[k + 1:k + 3]
+    return (len(after) == 2 and after[0] == "a"
+            and (after[1] in _SCALES or after[1] == "percent"))
+
+
 def extract_numbers(sentence: str) -> list[SpokenNumber]:
     """Every number a sentence states, digits or words."""
     out: list[SpokenNumber] = []
     low = sentence.lower()
 
+    taken: list[tuple[int, int]] = []
     for m in _DIGIT_RE.finditer(low):
         raw = m.group(1).replace(",", "")
         try:
@@ -251,9 +281,15 @@ def extract_numbers(sentence: str) -> list[SpokenNumber]:
             value *= _SUFFIX[suffix]
         out.append(SpokenNumber(value, m.group(0).strip(), pct,
                                 m.start(), m.end()))
+        taken.append((m.start(), m.end()))
 
     words = list(re.finditer(r"[a-z]+|%", low))
-    tokens = [w.group(0) for w in words]
+    # A word the digits already took ("million" in "496 million") is not read
+    # again as a number of its own.
+    tokens = ["" if any(a <= w.start() < b for a, b in taken) else w.group(0)
+              for w in words]
+    tokens = [t if t != "half" or _half_is_a_number(tokens, k) else ""
+              for k, t in enumerate(tokens)]
     i = 0
     while i < len(tokens):
         if tokens[i] not in _NUMBER_WORDS or tokens[i] in ("and", "a", "point"):
@@ -311,6 +347,7 @@ _METRIC_WORDS = {
     "ebitda": ("ebitda",),
     "net_income": ("net income", "bottom line", "earnings"),
     "fcf": ("free cash flow", "fcf"),
+    "fcf_margin": ("free cash flow margin", "fcf margin"),
     "operating_cf": ("cash from operations", "operating cash flow"),
     "capex": ("capex", "capital expenditure"),
     "sbc": ("stock comp", "stock-based compensation", "share-based comp"),
@@ -521,7 +558,11 @@ _DECOY_PHRASES = (
 _ATTACHED_RE = re.compile(r"^\s*(?:on|for|in|per|across|toward|towards)\s+"
                           r"((?:[a-z][\w'-]*\s+){0,4}[a-z][\w'-]*)")
 
-_NEGATIVE_RE = re.compile(r"(?:minus|negative|-)\s*$")
+# "A loss of 89 million" is a minus without the word: the figure is a loss and
+# the sheet holds it as -89M.
+_NEGATIVE_RE = re.compile(
+    r"(?:minus|negative|-|\b(?:loss(?:es)?|deficit) of"
+    r"(?: about| around| roughly| nearly| almost)?)\s*$")
 
 # A PRICE MOVE IS NOT A METRIC CLAIM. "EXMPL is up twelve percent because the
 # boring machine beat earnings again" names earnings, and the nearest-metric
@@ -714,6 +755,60 @@ _DIGIT_YEAR_RE = re.compile(
 _MULTIPLE_RE = re.compile(r"^\s*(?:x|times)\b", re.IGNORECASE)
 
 
+# A SHARE IS NOT A MEASURE OF THE NEAREST METRIC. "About three percent of
+# revenue" is a ratio to something, and the nearest-metric rule read it as
+# revenue's growth.
+_SHARE_OF_RE = re.compile(r"^\s*(?:percent\b|%)?\s*of\b")
+
+# A NUMBER THAT COUNTS THINGS IS NOT A FIGURE. "Flat for three years", "two of
+# the last five", "three cents a share", "two hundred layoffs": each is a
+# number in a sentence that happens to name a metric, and read as a claim about
+# it the script is refused over a sentence that never claimed anything.
+#
+# What gives a count away is what it counts, so the word right after the number
+# is the evidence: a unit of time or of cents, a partitive ("of the last"), or
+# any other plural noun. Plural nouns are told apart from the words that
+# happen to end in -s by an exclusion list rather than a vocabulary, and the
+# units a sheet really does state in — points of margin, shares — are kept.
+#
+# ONLY A BARE NUMBER IS EVER A COUNT. One that carries a million, a billion or
+# a trillion is an amount, and "fifty two million becomes twelve" is a verb
+# after a figure, not a noun it counts.
+_COUNT_UNITS = frozenset({"year", "quarter", "month", "week", "day", "decade",
+                          "hour", "minute", "cent", "time"})
+_PARTITIVES = frozenset({"the", "those", "these", "them"})
+_FIGURE_UNITS = frozenset({"points", "shares"})
+_NOT_NOUNS = frozenset({"versus", "across", "unless", "towards", "whereas",
+                        "besides", "always", "perhaps"})
+_COUNTED_RE = re.compile(r"^[\s-]*([a-z]+)(?:\s+([a-z]+))?")
+_LAST_N_RE = re.compile(r"\b(?:last|past|previous|prior|next|first|final)\s+$")
+_SCALED_RE = re.compile(r"million|billion|trillion|\d\s*(?:[mbt]|bn)$")
+
+
+def _counts_things(low: str, num: SpokenNumber) -> bool:
+    """Is this number a COUNT of something rather than an amount of it?"""
+    if num.is_percent or _SCALED_RE.search(num.text):
+        return False
+    # A run that ends on "a" or "and" hands the next word to the article:
+    # "two hundred and twelve million a year" counts nothing.
+    if num.text.split()[-1] in ("a", "and"):
+        return False
+    # "The last five", "the past three": a small number after a period word.
+    if num.value < 100 and _LAST_N_RE.search(low[:num.start]):
+        return True
+    m = _COUNTED_RE.match(low[num.end:])
+    if not m:
+        return False
+    word, after = m.groups()
+    if word == "of":
+        return after in _PARTITIVES
+    if word.rstrip("s") in _COUNT_UNITS:
+        return True
+    if word in _FIGURE_UNITS or word in _NOT_NOUNS:
+        return False
+    return len(word) > 4 and word.endswith("s")
+
+
 def _blank(m) -> str:
     return "·" * len(m.group(0))
 
@@ -747,15 +842,30 @@ def _mask_decoys(text: str) -> str:
     return text
 
 
-def _metrics_named(low: str) -> dict[str, int]:
-    """metric -> character position of its first mention, decoys removed."""
-    masked = _mask_decoys(low)
-    out: dict[str, int] = {}
-    for metric, words in _METRIC_WORDS.items():
-        best = min((masked.find(w) for w in words if masked.find(w) >= 0),
-                   default=-1)
-        if best >= 0:
-            out[metric] = best
+def _metric_spans(masked: str) -> list[tuple[str, int, int]]:
+    """Every metric word in `masked` as (metric, start, end).
+
+    A word that sits INSIDE a longer word of another metric is not a mention
+    of its own metric: "ebit" is in "ebitda" and "fcf" is in "fcf margin", and
+    matching the shorter one checked EBITDA against operating income and a
+    free-cash-flow margin against free cash flow itself.
+    """
+    spans = [(metric, at, at + len(w))
+             for metric, words in _METRIC_WORDS.items() for w in words
+             for at in (m.start() for m in re.finditer(re.escape(w), masked))]
+    return [s for s in spans
+            if not any(o[0] != s[0] and o[1] <= s[1] and s[2] <= o[2]
+                       and o[2] - o[1] > s[2] - s[1] for o in spans)]
+
+
+def _metrics_named(low: str) -> dict[str, tuple[int, int]]:
+    """metric -> (start, end) of its first mention, decoys removed."""
+    spans = _metric_spans(_mask_decoys(low))
+    out: dict[str, tuple[int, int]] = {}
+    for metric in _METRIC_WORDS:
+        mine = [(start, end) for m, start, end in spans if m == metric]
+        if mine:
+            out[metric] = min(mine)
     return out
 
 
@@ -787,8 +897,17 @@ def _is_period_phrase(phrase: str) -> bool:
     return not words
 
 
-def _owner_of(number_end: int, tail: str, named: dict[str, int],
-              low: str) -> str | None:
+def _gap(mention: tuple[int, int], start: int, end: int) -> int:
+    """Characters between a metric's name and a number, whichever comes first."""
+    if mention[1] <= start:
+        return start - mention[1]
+    if mention[0] >= end:
+        return mention[0] - end
+    return 0
+
+
+def _owner_of(number_start: int, number_end: int, tail: str,
+              named: dict[str, tuple[int, int]], low: str) -> str | None:
     """Which metric a number is a claim about, or None if it is not one.
 
     Two rules, in order:
@@ -800,7 +919,11 @@ def _owner_of(number_end: int, tail: str, named: dict[str, int],
        correct script.
     2. Otherwise the nearest metric mention owns it, which in the common
        single-metric sentence means all of them — so a recital of a whole
-       series is checked rather than only its first number.
+       series is checked rather than only its first number. Nearest is the
+       gap between the number and the metric's NAME, not between the number
+       and where the name starts: "free cash flow was negative fifteen
+       million, or about three percent of revenue" put the fifteen nearer to
+       "revenue" than to the start of "free cash flow".
     """
     if not named:
         return None
@@ -808,14 +931,11 @@ def _owner_of(number_end: int, tail: str, named: dict[str, int],
         return None          # "eleven times earnings" is a multiple
     attached = _ATTACHED_RE.match(tail)
     if attached and not _is_period_phrase(attached.group(1)):
-        phrase = _mask_decoys(attached.group(1))
-        owners = [m for m, words in _METRIC_WORDS.items()
-                  if any(w in phrase for w in words)]
-        owners = [m for m in owners if m in named]
+        owners = [m for m in _metrics_named(attached.group(1)) if m in named]
         if not owners:
             return None          # attached to something the export has no row for
         return owners[0]
-    return min(named, key=lambda m: abs(named[m] - number_end))
+    return min(named, key=lambda m: _gap(named[m], number_start, number_end))
 
 
 def fact_check(narration: str, data, *,
@@ -849,8 +969,11 @@ def fact_check(narration: str, data, *,
 
     Sentence-level attribution is the one thing a regex cannot do, and it is
     handled conservatively: a number attached to its own subject by a
-    preposition is not read as a claim about a metric named elsewhere. The
-    coreference case the tighter rule still cannot reach — a figure whose
+    preposition is not read as a claim about a metric named elsewhere, a
+    bare number that counts something ("three years", "two hundred
+    layoffs") is not a figure, and a percentage OF something ("three percent
+    of revenue") is a share of it, not a measure of a metric named beside it.
+    The coreference case the tighter rule still cannot reach — a figure whose
     metric was named in the PREVIOUS sentence — is deliberately out of scope
     here rather than approximated.
     """
@@ -881,7 +1004,11 @@ def fact_check(narration: str, data, *,
                 pos, end = num.start, num.end
                 if num.is_percent and price_move.search(low[:pos]):
                     continue
-                metric = _owner_of(end, low[end:], named, low)
+                if num.is_percent and _SHARE_OF_RE.match(low[end:]):
+                    continue
+                if _counts_things(low, num):
+                    continue
+                metric = _owner_of(pos, end, low[end:], named, low)
                 if metric is None:
                     continue
 
@@ -1395,6 +1522,9 @@ def _declared_unit(values: dict[str, str]) -> float | None:
 # because what is being checked is what the director actually wrote.
 _ROW_STEMS = ("cell", "row", "subtotal", "total")
 
+# A row label that says it holds a RATE OF CHANGE of the line it names.
+_GROWTH_LABEL_RE = re.compile(r"\bgrowth\b|\byoy\b|\by/y\b|\bcagr\b")
+
 
 def _row_figures(values: dict[str, str]) -> list[tuple[str, list[str]]]:
     """(label, its figures) for every labelled row the director filled.
@@ -1485,14 +1615,23 @@ def onscreen_fact_check(script, data) -> list[Finding]:
         if not values:
             continue
         declared = _declared_unit(values)
-        scale = declared if declared is not None else 1.0
         for label, figures in _row_figures(values):
             low = str(label).lower()
-            metric = next((m for m, words in _METRIC_WORDS.items()
-                           if any(w in low for w in words)), "")
+            metric = next(iter(_metrics_named(low)), "")
             series = known.get(metric) or []
             if not metric or not series:
                 continue
+            # A GROWTH ROW IS NOT THE LEVEL IT NAMES. "Revenue growth" names
+            # revenue, and its percentages were compared with revenue in
+            # dollars. The export holds no growth row to check them against,
+            # so the row is left alone rather than blocked.
+            if metric not in _RATE_METRICS and _GROWTH_LABEL_RE.search(low):
+                continue
+            # THE SHEET'S UNIT IS ITS CURRENCY. `unit=$M` scales the money
+            # rows; a margin on the same sheet is already in percent, and
+            # multiplying it by a million compared 58% with 58,000,000.
+            scale = 1.0 if metric in _RATE_METRICS or declared is None \
+                else declared
 
             # POSITION MATTERS ON A SHEET. Six cells under six period heads
             # against a six-period history is a column-by-column comparison,
@@ -1507,6 +1646,8 @@ def onscreen_fact_check(script, data) -> list[Finding]:
                 stated = _cell_value(figure)
                 if stated is None:
                     continue            # an empty cell means NO DATA
+                if "%" in figure and metric not in _RATE_METRICS:
+                    continue            # a share of a money line is not its level
                 stated *= scale
                 if aligned:
                     want = aligned[i]

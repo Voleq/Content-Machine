@@ -834,6 +834,192 @@ def test_the_gate_can_still_be_asked_for_advisory_findings(settings, data):
 
 
 # --------------------------------------------------------------------------
+# D1-D5 — the fact-check blocking a CORRECT script. Each of these is a
+# sentence or a sheet row a careful writer produces, and the gate has to be
+# right about it or it is worse than no gate.
+# --------------------------------------------------------------------------
+
+
+def _sheet(**history):
+    """A workbook holding only the series a test names, in dollars.
+
+    The EXMPL fixture carries so many series that a wrong figure can land on
+    one of its consecutive deltas by accident; a sheet of two or three rows
+    cannot.
+    """
+    from pipeline.models import CompanyData
+
+    n = len(next(iter(history.values())))
+    return CompanyData(history_years=[f"FY-{n - 1 - i}" for i in range(n)],
+                       history=history)
+
+
+def _plate_row(label, cells, **extra):
+    """A script holding one plate with one labelled row, as the parser fills it."""
+    from types import SimpleNamespace
+
+    values = {"label-1": label, **extra}
+    values.update({f"cell-1-{i}": c for i, c in enumerate(cells, 1)})
+    return SimpleNamespace(events=[SimpleNamespace(values=values)])
+
+
+def test_ebitda_is_not_read_as_ebit(data):
+    """"ebit" is inside "ebitda", so every EBITDA claim was checked against
+    OPERATING INCOME: a correct figure blocked and EBIT's passed as EBITDA's."""
+    assert not fact_check("EBITDA was minus forty five million.", data)
+    wrong = fact_check("EBITDA was minus sixty million.", data)   # that is EBIT's
+    assert wrong and "ebitda" in wrong[0].message
+    # EBIT is still operating income.
+    assert not fact_check("EBIT was minus sixty million.", data)
+    out = fact_check("EBIT was minus forty five million.", data)
+    assert out and "operating_income" in out[0].message
+
+
+def test_an_ebitda_row_on_screen_is_checked_against_ebitda(data):
+    from pipeline.gates import onscreen_fact_check
+
+    row = ["10", "-5", "-20", "-35", "-45", "-45"]
+    assert onscreen_fact_check(_plate_row("EBITDA", row, unit="$M"), data) == []
+    wrong = onscreen_fact_check(
+        _plate_row("EBITDA", row[:-2] + ["-60", "-60"], unit="$M"), data)
+    assert wrong and "ebitda" in wrong[0].message
+
+
+@pytest.mark.parametrize("line", [
+    "Revenue has been flat for three years.",
+    "Revenue fell in two of the last five.",
+    "Revenue held up after two hundred layoffs.",
+    "Revenue added three cents a share.",
+    "Revenue stalled for four quarters, and the guide came down.",
+])
+def test_a_count_of_things_is_not_a_figure(line):
+    """"Three years", "two of the last five", "three cents", "two hundred
+    layoffs": numbers, in a sentence that happens to name revenue. Read as
+    revenue figures they were refused, and with them the whole script."""
+    assert fact_check(line, _sheet(revenue=[452e6, 471e6, 486e6])) == []
+
+
+def test_a_figure_beside_a_count_is_still_held_to_the_sheet():
+    sheet = _sheet(revenue=[452e6, 471e6, 486e6])
+    out = fact_check("Revenue was nine hundred million, flat for three years.",
+                     sheet)
+    assert len(out) == 1 and "nine hundred million" in out[0].message
+    # A spoken shorthand figure followed by a period is still a figure.
+    assert not fact_check("Revenue went four fifty two to four eighty six "
+                          "in three years.", sheet)
+
+
+def test_digits_and_a_scale_word_are_one_number():
+    """"496 million" came out as 496 AND a bare "million", and the bare
+    "million" (1,000,000) was then checked against revenue."""
+    nums = extract_numbers("Revenue was 496 million.")
+    assert [(n.value, n.text) for n in nums] == [(496_000_000, "496 million")]
+    nums = extract_numbers("Debt is 1.4 billion and cash is 410 million.")
+    assert [n.value for n in nums] == [1_400_000_000, 410_000_000]
+
+    sheet = _sheet(revenue=[452e6, 471e6, 496e6])
+    assert fact_check("Revenue was 496 million.", sheet) == []
+    out = fact_check("Revenue was 900 million.", sheet)
+    assert len(out) == 1 and "900 million" in out[0].message
+
+
+def test_half_a_billion_and_two_and_a_half_billion_parse():
+    """"Half a billion" read as a bare "billion" (1e9) and "two and a half
+    billion" as a 2 and a separate "billion"."""
+    assert [n.value for n in extract_numbers("Revenue was half a billion.")] \
+        == [500_000_000]
+    assert [n.value for n in extract_numbers("Debt is two and a half billion.")] \
+        == [2_500_000_000]
+    pct = extract_numbers("Margin is one and a half percent.")
+    assert [(n.value, n.is_percent) for n in pct] == [(1.5, True)]
+    # "Half" alone is a word, not a figure.
+    assert extract_numbers("Revenue slipped in the first half of the year.") == []
+
+    assert fact_check("Revenue was half a billion.",
+                      _sheet(revenue=[480e6, 500e6])) == []
+    assert fact_check("Total debt reached two and a half billion.",
+                      _sheet(total_debt=[2.0e9, 2.5e9])) == []
+    assert fact_check("Revenue was half a billion.",
+                      _sheet(revenue=[480e6, 800e6]))
+
+
+def test_a_long_metric_name_does_not_lose_its_number_to_the_next_metric(data):
+    """The nearest metric was measured from where its name STARTS, so a long
+    name ("free cash flow") lost the figure that followed it to a metric
+    named a few words later."""
+    line = ("Free cash flow was negative fifteen million, or about three "
+            "percent of revenue.")
+    assert fact_check(line, data) == []
+    out = fact_check(line.replace("fifteen", "forty"), data)
+    assert len(out) == 1 and "fcf" in out[0].message
+
+
+def test_fcf_margin_is_not_fcf_growth(data):
+    """"FCF margin" matched the bare "fcf", so a percentage was read as the
+    growth of free cash flow; the sheet's own `fcf_margin` row was never
+    looked at."""
+    assert fact_check("FCF margin was minus three percent.", data) == []
+    assert fact_check("Free cash flow margin was minus three percent.",
+                      data) == []
+    out = fact_check("FCF margin was minus nine percent.", data)
+    assert out and "fcf_margin" in out[0].message
+    # Free cash flow itself is still free cash flow.
+    out = fact_check("Free cash flow grew forty percent.", data)
+    assert out and "fcf growth" in out[0].message
+
+
+def test_a_loss_is_a_negative_figure(data):
+    """"A loss of 89 million" carries no minus sign and no "negative", and was
+    compared as +89M against a net income of -89M."""
+    assert fact_check("Net income was a loss of eighty nine million.", data) == []
+    assert fact_check("Net income was a loss of 89 million.", data) == []
+    out = fact_check("Net income was a loss of ninety nine million.", data)
+    assert out and "ninety nine million" in out[0].message
+
+
+def test_a_percent_row_is_not_scaled_by_the_sheets_unit(data):
+    """`unit=$M` is the sheet's currency. A "Gross margin 58%" row on it was
+    multiplied by a million and compared with 58."""
+    from pipeline.gates import onscreen_fact_check
+
+    row = ["63%", "62%", "61%", "59%", "58%", "58%"]
+    assert onscreen_fact_check(_plate_row("Gross margin", row, unit="$M"),
+                               data) == []
+    out = onscreen_fact_check(
+        _plate_row("Gross margin", row[:-2] + ["81%", "81%"], unit="$M"), data)
+    assert out and "gross_margin" in out[0].message
+
+
+def test_an_fcf_margin_row_is_checked_against_the_margin_series(data):
+    from pipeline.gates import onscreen_fact_check
+
+    row = ["3%", "-0.4%", "-1.3%", "-2.2%", "-3%", "-3%"]
+    assert onscreen_fact_check(_plate_row("FCF margin", row), data) == []
+    out = onscreen_fact_check(
+        _plate_row("FCF margin", row[:-2] + ["-9%", "-9%"]), data)
+    assert out and "fcf_margin" in out[0].message
+
+
+def test_a_growth_row_is_not_compared_with_the_level(data):
+    """"Revenue growth" named revenue, and its percentages were compared with
+    revenue in dollars. The export carries no growth row to check them
+    against, so the row is left alone rather than blocked."""
+    from pipeline.gates import onscreen_fact_check
+
+    pct = ["", "13%", "4%", "4%", "1%", "0%"]
+    assert onscreen_fact_check(
+        _plate_row("Revenue growth", pct, unit="$M"), data) == []
+    assert onscreen_fact_check(
+        _plate_row("Revenue growth, %", ["", "13", "4", "4", "1", "0"],
+                   unit="$M"), data) == []
+    # The revenue row beside it is still checked.
+    out = onscreen_fact_check(
+        _plate_row("Revenue", ["400", "452", "471", "491", "496", "720"],
+                   unit="$M"), data)
+    assert out and "revenue" in out[0].message
+
+
+# --------------------------------------------------------------------------
 # B3 — the SHORT lane runs the battery. It used to run `build_short_report`
 # and nothing else, on the higher-volume format.
 # --------------------------------------------------------------------------
