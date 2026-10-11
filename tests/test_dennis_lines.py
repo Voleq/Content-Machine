@@ -160,8 +160,16 @@ def test_a_line_does_not_run_on_into_weaker_evidence_that_leads_nowhere():
     it is sure. Carried on, it would be a tick hanging off its end (as at
     the ends of his moustache)."""
     outline, _ = _edges(_side_over_arm([0.3] * 10 + [0.6] * 20))
-    assert outline[8:14, 30].all()                # (its last pixel goes with the specks)
+    assert outline[8:15, 30].all()
     assert not outline[15:15 + lines.SIL_BRIDGE_PX, 29:32].any()
+
+
+def test_a_speck_below_a_line_is_not_joined_on():
+    """A pixel of sure evidence four below a line's end, weaker evidence
+    between: joined on, it is the same tick; alone, it is a speck."""
+    outline, _ = _edges(_side_over_arm([0.3] * 10 + [0.6] * 4 + [0.3] + [0.6] * 15))
+    assert outline[8:15, 30].all()
+    assert not outline[15:21, 29:32].any()
 
 
 def _sleeve_into_side(side_slope: float):

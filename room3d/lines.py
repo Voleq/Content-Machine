@@ -204,7 +204,8 @@ def _groups(mask) -> list[np.ndarray]:
 
 def _bridge(line, faint) -> np.ndarray:
     """`line` carried on along `faint` for up to `SIL_BRIDGE_PX` pixels
-    where that joins two pieces of it which do not meet near there."""
+    where that joins two pieces of it, more than specks, which do not meet
+    near there."""
     grown = line
     for _ in range(SIL_BRIDGE_PX):
         more = faint & ~grown & (_neighbours(grown) > 0)
@@ -223,20 +224,22 @@ def _bridge(line, faint) -> np.ndarray:
         here = np.zeros((min(y1, h) - y0, min(x1, w) - x0), bool)
         here[g[:, 0] - y0, g[:, 1] - x0] = True
         touched = line[y0:y1, x0:x1] & (_neighbours(here) > 0)
-        pieces = _groups(line[y0:y1, x0:x1])
+        # a speck is no piece of line: joined on, it is a tick
+        pieces = [p for p in _groups(line[y0:y1, x0:x1]) if len(p) > SPECK_PX]
         if sum(bool(touched[p[:, 0], p[:, 1]].any()) for p in pieces) >= 2:
             out[g[:, 0], g[:, 1]] = True
     return out
 
 
 def _despeck(mask) -> np.ndarray:
-    """`mask` without its specks: a mark with no more than `SPECK_PX` pixels
-    within two of it. A line always has more; a line's last pixel may not,
-    and the line is a pixel shorter for it."""
-    p = np.pad(mask, 2).astype(np.uint8)
-    h, w = mask.shape
-    near = sum(p[dy:dy + h, dx:dx + w] for dy in range(5) for dx in range(5))
-    return mask & (near > SPECK_PX)
+    """`mask` without its specks: marks of no more than `SPECK_PX` pixels
+    touching no other, however near a line they lie (a dot just off a line
+    is a bump on it)."""
+    out = mask.copy()
+    for g in _groups(mask):
+        if len(g) <= SPECK_PX:
+            out[g[:, 0], g[:, 1]] = False
+    return out
 
 
 def edges(depth, normal, obj, mat, toward=None) -> tuple[np.ndarray, np.ndarray]:
