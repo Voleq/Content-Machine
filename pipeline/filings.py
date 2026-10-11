@@ -240,6 +240,19 @@ def pick_filings(cik: str, ticker: str, submissions: dict,
             primary_doc=primary, url=url,
             filed=dates[i] if i < len(dates) else "",
             period=periods[i] if i < len(periods) else ""))
+    # ONE FILING PER PERIOD. An amendment restates a period its original
+    # already covers, and kept as a filing of its own it sorted first (newest
+    # first) — so "the prior year" was the original of the year just read, and
+    # a year was compared with itself. The original is the one kept; an
+    # amendment stands only for a period nothing else in the list reports on.
+    best: dict[str, FilingRef] = {}
+    for ref in out:
+        key = ref.period or ref.accession
+        held = best.get(key)
+        if held is None or (held.form.endswith("/A")
+                            and not ref.form.endswith("/A")):
+            best[key] = ref
+    out = [ref for ref in out if best[ref.period or ref.accession] is ref]
     if not out:
         # foreign filer / no domestic report — degrade, but say why
         present = set(all_forms[:20])
