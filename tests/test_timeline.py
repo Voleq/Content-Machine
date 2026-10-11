@@ -220,6 +220,25 @@ def test_a_long_untagged_stretch_is_named_in_the_warnings():
     assert any("95s" in w or "0s to 95s" in w for w in warnings), warnings
 
 
+def test_a_chapter_that_starts_inside_an_untagged_stretch_gets_its_cut():
+    """The stretch was cut into even parts and a chapter that began inside
+    one had its card on the next cut: up to a whole part late, 4 s here and
+    nearly 12 s at the longest. A chapter starts on a cut."""
+    from pipeline.timeline import MIN_HOST_BEAT_S
+
+    segments, _ = plan_long_segments([], 60.0, chapter_starts=[0.0, 20.0])
+    _tiled(segments, 60.0)
+    assert any(s.start == pytest.approx(20.0) for s in segments), \
+        [round(s.start, 2) for s in segments]
+    # Even parts either side of it, all of them still Dennis.
+    assert {s.kind for s in segments} == {"host"}
+    # A chapter a breath from another's start, or from the end, makes no sliver.
+    segments, _ = plan_long_segments([], 60.0, chapter_starts=[0.0, 20.0, 20.5, 59.5])
+    _tiled(segments, 60.0)
+    assert min(s.length for s in segments) >= MIN_HOST_BEAT_S - 1e-6
+    assert any(s.start == pytest.approx(20.0) for s in segments)
+
+
 def test_a_short_gap_is_not_split():
     from pipeline.timeline import MAX_HOST_BEAT_S
 
@@ -715,3 +734,52 @@ def test_a_chart_of_what_a_chart_plate_just_drew_is_dropped():
     assert [(r["what"], r["cue"].t) for r in report] == [("dropped", 12.0)]
     assert "already charts revenue" in report[0]["why"]
     assert any("[CHART: revenue] dropped" in w for w in warnings)
+
+
+def test_a_chart_long_after_the_plate_is_a_second_look_not_a_twin():
+    """The twin rule is for two revenue charts five seconds apart. Ninety
+    seconds on, in a chapter that runs a good deal longer, the plate is long
+    gone and the viewer has had a minute and a half of other things: the
+    chart is the writer's own second look, and it goes up."""
+    from pipeline.models import Cue
+    from pipeline.timeline import SAME_FIGURE_WINDOW_S
+
+    line = Cue(t=5.0, kind=CueKind.PLATE, payload={
+        "value": "charts/line-6y-16x9", "order": 0,
+        "values": {"unit": "Revenue, $M", "value-1": "400"}})
+
+    def chart(t, order):
+        return Cue(t=t, kind=CueKind.CHART, payload={"value": "revenue", "order": order})
+
+    for t, kept in ((5.0 + SAME_FIGURE_WINDOW_S, False), (95.0, True)):
+        report: list = []
+        segments, _ = plan_long_segments([line, chart(t, 1)], 300.0,
+                                         chapter_starts=[0.0, 200.0], report=report)
+        _tiled(segments, 300.0)
+        shown = [s.payload.get("value") for s in segments if s.kind == "chart"]
+        assert shown == (["revenue"] if kept else []), (t, shown)
+        assert [r["what"] for r in report] == ([] if kept else ["dropped"]), t
+
+
+def test_a_chart_of_one_row_is_not_dropped_for_a_plate_that_names_it_inside_another():
+    """`cash` is the balance sheet's row and "free cash flow" is another one.
+    A free cash flow plate ahead of a [CHART: cash] said "cash", and the chart
+    went, for a picture of a different figure."""
+    from pipeline.models import Cue
+
+    fcf = Cue(t=5.0, kind=CueKind.PLATE, payload={
+        "value": "charts/line-6y-16x9", "order": 0,
+        "values": {"unit": "Free cash flow, $M", "value-1": "400"}})
+
+    def chart(t, metric, order):
+        return Cue(t=t, kind=CueKind.CHART, payload={"value": metric, "order": order})
+
+    report: list = []
+    segments, _ = plan_long_segments(
+        [fcf, chart(12.0, "cash", 1), chart(20.0, "fcf", 2)], 60.0,
+        chapter_starts=[0.0, 30.0], report=report)
+    _tiled(segments, 60.0)
+    shown = [(s.kind, s.payload.get("value")) for s in segments if s.kind != "host"]
+    assert shown == [("plate", "charts/line-6y-16x9"), ("chart", "cash")], shown
+    # the plate's own row is still the twin
+    assert [(r["what"], r["cue"].payload["value"]) for r in report] == [("dropped", "fcf")]

@@ -365,6 +365,33 @@ def test_a_generation_that_dies_midway_still_meters_what_was_billed(
         "two paid chunks came back — the cap must know about them"
 
 
+@pytest.mark.parametrize("body", [
+    pytest.param({"json": {"audio_base64": "AAAA"}}, id="no-alignment"),
+    pytest.param({"text": "<html>upstream hiccup</html>"}, id="not-json"),
+])
+def test_a_paid_reply_that_cannot_be_read_is_still_metered(settings, body):
+    """ElevenLabs bills a 200 when it sends it, whatever is in the body. The
+    body was read BEFORE the spend was written down, so a reply with no
+    alignment (or no JSON) raised with $0 on the ledger and the retry paid
+    for the same chunk again without the cap ever seeing the first."""
+    live = _live(settings)
+    calls: list = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(200, **body)
+
+    engine = TTSEngine(live, ledger=SpendLedger(live), client=httpx.Client(
+        transport=httpx.MockTransport(handler)))
+
+    with pytest.raises(Exception):
+        engine.synthesize(_multi_chunk_text(), "long")
+
+    assert len(calls) == 1, "the first reply was the failure"
+    assert engine.ledger.mtd_spend_usd() > 0, \
+        "a paid call came back and the cap does not know about it"
+
+
 def test_a_retry_resumes_instead_of_re_paying_for_finished_chunks(
         settings, alignment_sample, tmp_path):
     """`unchanged content => zero calls` has to survive a partial failure."""

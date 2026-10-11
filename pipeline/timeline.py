@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 
 from pipeline.models import (
     DELIVERY_TAG_TYPES,
+    HISTORY_FIELDS,
     Cue,
     CueKind,
     LongScript,
@@ -579,16 +580,41 @@ def short_key(key: str) -> str:
     return re.sub(r"-(16x9|9x16)$", "", key.rsplit("/", 1)[-1])
 
 
+# How long after a chart plate a [CHART] of the same row is still the same
+# picture twice: as long as a readable beat can stay up. Past it the plate is
+# long gone and the chart is the writer's own second look.
+SAME_FIGURE_WINDOW_S = MAX_READABLE_S
+
+
+def _row_names(row: str) -> tuple[str, ...]:
+    return _METRIC_WORDS.get(row, (row.replace("_", " "),))
+
+
+def _names(word: str, text: str) -> bool:
+    return re.search(rf"(?<![a-z]){re.escape(word)}(?![a-z])", text) is not None
+
+
 def charts_the_same(plate: Cue, chart: Cue) -> bool:
     """Whether `plate` is a charts/ plate whose own words name the history
-    row the later `chart` draws: the same figure, pictured twice."""
+    row the later `chart` draws: the same figure, pictured twice.
+
+    A row named only inside a longer row's name is not named: "cash" in
+    "free cash flow" is the cash flow, not the balance sheet's cash."""
     metric = chart_metric(chart)
     key = str(plate.payload.get("value") or "")
     if not metric or plate.kind is not CueKind.PLATE or not key.startswith("charts/"):
         return False
     text = " ".join(str(v) for v in (plate.payload.get("values") or {}).values()).lower()
-    words = _METRIC_WORDS.get(metric, (metric.replace("_", " "),))
-    return any(re.search(rf"(?<![a-z]){re.escape(w)}(?![a-z])", text) for w in words)
+    for word in _row_names(metric):
+        longer = sorted((n for row in HISTORY_FIELDS if row != metric
+                         for n in _row_names(row) if n != word and _names(word, n)),
+                        key=len, reverse=True)
+        bare = text
+        for n in longer:
+            bare = re.sub(rf"(?<![a-z]){re.escape(n)}(?![a-z])", " ", bare)
+        if _names(word, bare):
+            return True
+    return False
 
 
 def plan_long_segments(
@@ -724,7 +750,20 @@ def plan_long_segments(
         host_i += 1
 
     def _undirected(a: float, b: float) -> None:
-        """Beats of him the writer left to the bot: even parts, as ever."""
+        """Beats of him the writer left to the bot: even parts, as ever.
+
+        A chapter that starts inside the stretch gets its cut, as one inside
+        a scene does: the card lands on the first cut at or after its time,
+        and even parts across the boundary put it up to a part late."""
+        edges = [a]
+        for t in sorted(x for x in starts if a + MIN_HOST_BEAT_S < x < b - MIN_HOST_BEAT_S):
+            if t - edges[-1] >= MIN_HOST_BEAT_S:
+                edges.append(t)
+        edges.append(b)
+        for p0, p1 in zip(edges, edges[1:]):
+            _even_parts(p0, p1)
+
+    def _even_parts(a: float, b: float) -> None:
         nonlocal host_i
         span = b - a
         if span > HOST_GAP_WARN_S:
@@ -780,7 +819,8 @@ def plan_long_segments(
     kept: list[Cue] = []
     for c in visual:
         twin = next((p for p in reversed(kept)
-                     if chapter_of(p.t) == chapter_of(c.t) and charts_the_same(p, c)),
+                     if chapter_of(p.t) == chapter_of(c.t)
+                     and c.t - p.t <= SAME_FIGURE_WINDOW_S and charts_the_same(p, c)),
                     None)
         if twin is not None:
             why = (f"the {short_key(str(twin.payload.get('value') or ''))} plate "

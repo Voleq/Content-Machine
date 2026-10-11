@@ -553,6 +553,21 @@ def test_a_chart_over_years_heads_its_periods_with_month_and_year():
     assert price_labels(s)["head-4"] == "09-10"
 
 
+def test_a_price_over_a_thousand_is_rounded_to_fit_its_mark_not_cut_off():
+    """The marks hold seven characters. Cutting the string to fit made 1,234.56
+    "1,234.5" and 12,345.67 "12,345.": a price nobody paid, and one with its
+    last digits gone. The cents go instead, and the figure is rounded."""
+    from pipeline.chart import price_labels
+    from pipeline.prices import PriceSeries
+
+    s = PriceSeries(ticker="EXMPL", dates=["2021-09-10", "2023-01-02", "2026-09-10"],
+                    closes=[987.65, 12345.67, 1234.56], source="fixture")
+    got = price_labels(s)
+    assert (got["mark-high"], got["mark-low"], got["mark-last"]) == (
+        "12,346", "987.65", "1,234.6")
+    assert all(len(got[k]) <= 7 for k in ("mark-high", "mark-low", "mark-last"))
+
+
 def test_the_live_feed_asks_for_calendar_days_not_trading_bars(settings, monkeypatch):
     """Yahoo reads `period="1826d"` as 1,826 TRADING days: seven and a quarter
     years under a monitor labelled 5Y, where the fixture and the synthetic

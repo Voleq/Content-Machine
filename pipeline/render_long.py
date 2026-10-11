@@ -171,14 +171,22 @@ def _chapter_plan(script, duration: float,
 
 
 def _chapter_cuts(chapters: list[tuple[float, str, str]], seg_starts: list[float],
-                  *, intro_dur: float, duration: float) -> list[float | None]:
+                  *, intro_dur: float, duration: float,
+                  fps: int = 15) -> list[float | None]:
     """The cut each chapter's opener lands on, or None where it has none:
     the first cut at or after the chapter's own time, each cut used once.
+
+    "At" is to within half a frame. The plan snaps every cut to the nearest
+    frame, so the cut a chapter belongs on can sit a hair BEFORE its time
+    (20.012 s against the cut at 20.000 s); read strictly it was missed and
+    the card went up on the next cut, as late as the longest beat. `fps`
+    defaults to the coarsest rate rendered, the preview's.
 
     A first chapter that starts under the opening title has none: the title
     card IS its opener, its headline the chapter's title. Landed on the first
     cut after the card, it was the empty room with the same title in it
     again, five seconds in, over him."""
+    slack = 0.5 / fps + 1e-6
     used: set[float] = set()
     out: list[float | None] = []
     for k, (target, _title, _type) in enumerate(chapters):
@@ -186,7 +194,7 @@ def _chapter_cuts(chapters: list[tuple[float, str, str]], seg_starts: list[float
             out.append(None)
             continue
         t = next((s for s in seg_starts
-                  if s >= max(target, intro_dur) and s not in used), None)
+                  if s >= max(target, intro_dur) - slack and s not in used), None)
         if t is None or t < 0.6 or t > duration - 1.2:
             out.append(None)
             continue

@@ -801,18 +801,20 @@ class TTSEngine:
                     raise TTSError(
                         f"ElevenLabs error {resp.status_code}: {resp.text[:300]}"
                     )
+                # Recorded HERE, against this chunk's own character count,
+                # before the body is read or anything downstream can raise: a
+                # 200 is billed whatever is in it, and a reply that will not
+                # parse is a paid call the retry would pay for again unseen.
+                # The cap is metered on what was actually billed.
+                spent = estimate_tts_usd(len(chunk), self.settings)
+                self.ledger.record_tts(spent, lane=fmt, ticker=ticker,
+                                       chars=len(chunk), tier=tier)
+                cost_usd += spent
                 payload = resp.json()
                 f.write_bytes(base64.b64decode(payload["audio_base64"]))
                 cwords = words_from_alignment(chunk, payload["alignment"])
                 wf.write_text(json.dumps([w.model_dump() for w in cwords]),
                               encoding="utf-8")
-                # Recorded HERE, against this chunk's own character count,
-                # before anything downstream can raise. The cap is metered on
-                # what was actually billed.
-                spent = estimate_tts_usd(len(chunk), self.settings)
-                self.ledger.record_tts(spent, lane=fmt, ticker=ticker,
-                                       chars=len(chunk), tier=tier)
-                cost_usd += spent
                 files.append(f)
                 words.append(cwords)
         finally:

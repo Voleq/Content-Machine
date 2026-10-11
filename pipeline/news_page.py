@@ -169,7 +169,10 @@ def fetch_release(url: str, settings) -> dict[str, str] | None:
     got = read_page(html) if html else {}
     if not got.get("body"):
         got = {}
-    if not settings.mock_mode or got:
+    # A page that came back with no story on it is kept as empty, so it is not
+    # asked for twice. A fetch that FAILED says nothing about the page, and is
+    # not kept: cached, one bad minute took the release off every later run.
+    if got or (html and not settings.mock_mode):
         cache.parent.mkdir(parents=True, exist_ok=True)
         cache.write_text(json.dumps(got, indent=2), encoding="utf-8")
     return got or None

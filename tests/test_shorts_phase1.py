@@ -70,6 +70,33 @@ def test_the_release_card_is_read_off_the_page_the_news_sheet_links(
     assert card["date"] and card["source"]
 
 
+def test_a_release_that_could_not_be_fetched_is_asked_for_again(settings, monkeypatch):
+    """A failed fetch (a timeout, a 503) was written to the cache as an empty
+    page, and an empty page is read back as "no release" for good: one bad
+    minute took the story's release card off every later run. A page that was
+    read and has no story on it is still kept, so that is not asked for twice."""
+    live = settings.model_copy(update={"mock_mode": False})
+    url = "https://example.com/news/ai-partnership"
+    page = (Path(settings.fixtures_dir) / "news_pages"
+            / "ai-partnership.html").read_text(encoding="utf-8")
+    asked: list = []
+    pages = iter([None, page])           # down, then back
+    monkeypatch.setattr(news_page, "_get", lambda u: asked.append(u) or next(pages))
+    assert news_page.fetch_release(url, live) is None
+    assert not news_page._cache_file(live, url).exists()
+    got = news_page.fetch_release(url, live)
+    assert got and got["body"], "the second run never asked"
+    assert news_page.fetch_release(url, live) == got and len(asked) == 2
+
+    bare = "https://example.com/news/nothing-here"
+    monkeypatch.setattr(news_page, "_get",
+                        lambda u: asked.append(u) or "<html><body><p>Hi.</p></body></html>")
+    asked.clear()
+    assert news_page.fetch_release(bare, live) is None
+    assert news_page.fetch_release(bare, live) is None
+    assert len(asked) == 1, "a page with no story on it was fetched twice"
+
+
 def test_the_push_in_on_a_release_never_cuts_its_date_in_half(settings):
     """Pushing in on the headline took the date off the side of the frame
     at "6 July 202". A push that leaves a line half in view is not taken;

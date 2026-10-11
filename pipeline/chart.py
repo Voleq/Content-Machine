@@ -793,6 +793,17 @@ def month_day(date: str) -> str:
     return str(date)[-5:]
 
 
+def _price_text(price: float, room: int = 7) -> str:
+    """A close in the `room` characters a mark holds: the cents go before a
+    digit does. Cut to length it was a different price ("1,234.56" read
+    "1,234.5") or a figure with a stop on its end ("12,345.")."""
+    for places in (2, 1, 0):
+        text = f"{price:,.{places}f}"
+        if len(text) <= room:
+            break
+    return text
+
+
 def price_labels(series, *, head=month_day) -> dict[str, str]:
     """The period heads and the three marks `line-dense` declares.
 
@@ -806,9 +817,9 @@ def price_labels(series, *, head=month_day) -> dict[str, str]:
         return {}
     lo, hi = min(closes), max(closes)
     out: dict[str, str] = {
-        "mark-high": f"{hi:,.2f}"[:7],
-        "mark-low": f"{lo:,.2f}"[:7],
-        "mark-last": f"{closes[-1]:,.2f}"[:7],
+        "mark-high": _price_text(hi),
+        "mark-low": _price_text(lo),
+        "mark-last": _price_text(closes[-1]),
     }
     for i in range(4):
         if dates:
