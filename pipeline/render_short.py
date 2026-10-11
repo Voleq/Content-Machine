@@ -1369,8 +1369,7 @@ def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
     are, with the board wiped and the monitor on a flat backlight, and each
     says where they are (`Plate.writable`). A short writes the ticker and
     the price's run on them (`pipeline.room_dressing`; no episode number, no
-    chapters, which a short does not have), and its monitor's cursor blinks,
-    so a room layer that held still now loops. Returns the registry the
+    chapters, which a short does not have). Returns the registry the
     frames are drawn from and the rooms written; the registry itself when
     nothing in the cut has a board or a monitor in shot.
     """

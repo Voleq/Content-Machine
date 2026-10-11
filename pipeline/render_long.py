@@ -1126,8 +1126,8 @@ def _render_long(
                 _plate_fingerprint(f) for f in files).encode()).hexdigest()[:8]
             weather = f"_{plate.weather}" if plate.weather else ""
             dest = rdir / f"{kind}loop_{plate.name}{weather}_{stamp}_{fps}.mov"
-            # A blinking cursor is twelve frames over two pictures: each
-            # picture is opened and brought down to the frame once.
+            # A loop shows each of its pictures many times: each is opened
+            # and brought down to the frame once.
             opened: dict[Path, Image.Image] = {}
 
             def _frame(i: int) -> Image.Image:
@@ -1142,14 +1142,23 @@ def _render_long(
                 fps, dest)
         return room_cache[key]
 
+    def _held(still: Path, mode: str, name: str) -> Path:
+        """A second of `still` at the frame's size and rate: the tail a
+        chapter's draw-in hands over to in a room that holds still, the same
+        kind of clip as the draw-in, so the two concatenate."""
+        key = (name, f"held-{still}")
+        if key not in room_cache:
+            dest = rdir / f"held_{Path(still).stem}_{_plate_fingerprint(still)}_{fps}.mov"
+            img = Image.open(still).convert(mode).resize((W, H), Image.LANCZOS)
+            room_cache[key] = _played_clip([0] * int(fps), lambda _: img, fps, dest)
+        return room_cache[key]
+
     def _room_loop(plate) -> Path | None:
         """A room that keeps moving behind him, as a clip; None if it is still.
 
         THE ROOM LOOPS ARE BAKED INTO THE ROOM'S FRAMES (item 19): bulbs,
-        snow or rain in the window, and the cursor on his monitor's prompt
-        (item 54), which makes any room with the monitor in shot loop once
-        it is written. Held on its base file the room is frame one of that
-        loop, frozen.
+        snow or rain in the window. Held on its base file the room is frame
+        one of that loop, frozen.
         """
         plate = _written(plate)
         if not plate.animated or plate.plays_once:
@@ -1981,12 +1990,13 @@ def _render_long(
 
             On the chapter's first shot of a room with the monitor in shot,
             once the frame is clear of the bumper: a second of the chart going
-            on, then the room's loop. As (room, front) ffconcat listings: the
-            draw-in clip, then the loop as many times as the beat needs, read
-            as one input, so nothing downstream knows it is two clips. None
-            when this is not that shot or it is too short to draw in.
+            on, then the room's loop, or a second of the room held still. As
+            (room, front) ffconcat listings: the draw-in clip, then the tail
+            as many times as the beat needs, read as one input, so nothing
+            downstream knows it is two clips. None when this is not that shot
+            or it is too short to draw in.
             """
-            from pipeline.room_dressing import BLINK_FPS, REVEAL_FRAMES, reveal_frames
+            from pipeline.room_dressing import REVEAL_FPS, REVEAL_FRAMES, reveal_frames
 
             if room is None or "screen" not in (getattr(room, "writable", None) or {}):
                 return None
@@ -1994,18 +2004,24 @@ def _render_long(
             if pick is None or pick.chapter in screen_intro_done:
                 return None
             delay = max(_cleared(seg.start, covers) - seg.start, 0.0)
-            reveal_s = REVEAL_FRAMES / BLINK_FPS
+            reveal_s = REVEAL_FRAMES / REVEAL_FPS
             if delay + reveal_s > seg_len - 0.2:
                 return None
-            loop, front_loop = _room_loop(room), _front_loop(room)
             frames = reveal_frames(room, _screen_dressing(seg.start),
                                    settings.fonts_dir, (W, H))
-            if not frames or loop is None:
+            if not frames:
                 return None
+            loop, front_loop = _room_loop(room), _front_loop(room)
+            if loop is None:
+                loop = _held(_room_file(room), "RGB", f"room-{room.key}")
+            if front_loop is None and frames[0][1] is not None:
+                still = _front_file(room)
+                front_loop = (_held(still, "RGBA", f"front-{room.key}")
+                              if still is not None else None)
             screen_intro_done.add(pick.chapter)
             screen_intro_end[i] = delay + reveal_s
             idx = ([0] * int(round(delay * fps))
-                   + [min(int(j / fps * BLINK_FPS), len(frames) - 1)
+                   + [min(int(j / fps * REVEAL_FPS), len(frames) - 1)
                       for j in range(int(round(reveal_s * fps)))])
             passes = int(seg_len - delay - reveal_s) + 2
 
