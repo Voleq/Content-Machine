@@ -519,11 +519,12 @@ class Settings(BaseSettings):
     # (3, 2, 3, 2 frames a drawing) and read as judder; 30 costs 2.5x the draw.
     dennis_3d_fps: int = 30
     dennis_3d_samples: int = 8
-    # HOW HIS LINES ARE DRAWN: `freestyle`, Blender's line tracer, on the CPU
-    # whatever the GPU does; or `passes`, found in the GPU render's own depth,
+    # HOW HIS LINES ARE DRAWN: `passes`, found in the GPU render's own depth,
     # normal and part pictures (room3d/lines.py), which takes most of a frame's
-    # time out on a GPU. Stays `freestyle` until Valentin has seen the two.
-    dennis_3d_lines: str = Field(default="freestyle", alias="DENNIS_3D_LINES")
+    # time out on a GPU; or `freestyle`, Blender's line tracer, on the CPU
+    # whatever the GPU does. Valentin, 11 Oct, having seen the two side by
+    # side: "we go for the gpu since it halfs the time".
+    dennis_3d_lines: str = Field(default="passes", alias="DENNIS_3D_LINES")
     short_width: int = 1080
     short_height: int = 1920
     long_width: int = 1920
@@ -822,7 +823,7 @@ class Settings(BaseSettings):
     def _check_lines(cls, v: str) -> str:
         # A typo would quietly draw him the slow way; say so at start instead.
         allowed = {"freestyle", "passes"}
-        v = (v or "freestyle").strip().lower()
+        v = (v or "passes").strip().lower()
         if v not in allowed:
             raise ValueError(f"DENNIS_3D_LINES must be one of {sorted(allowed)}")
         return v

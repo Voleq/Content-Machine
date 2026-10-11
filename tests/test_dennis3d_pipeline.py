@@ -141,6 +141,24 @@ def test_a_shot_comes_back_as_his_layer_and_is_drawn_once(performer, tmp_path):
     assert performer.shots[-1]["cached"] is True
 
 
+def test_gpu_lines_are_the_default_and_a_change_to_them_draws_him_again(performer,
+                                                                      monkeypatch):
+    """Valentin chose the lines found in the GPU render's passes (11 Oct).
+    A shot drawn so is keyed on what finds them (room3d/lines.py): after a
+    change to it the shot is drawn again, not served as it was drawn before."""
+    words = [SimpleNamespace(word="So.", start=0.2, end=0.5)]
+    room = _room("room/desk-front-16x9")
+    assert performer.settings.dennis_3d_lines == "passes"
+    first = performer.shot(room, words, 0.0, 0.5, (320, 180), seed="lines")
+    assert json.loads((first.parent / "job.json").read_text(encoding="utf-8"))["lines"] == "passes"
+    assert performer.shot(room, words, 0.0, 0.5, (320, 180), seed="lines") == first
+    monkeypatch.setattr(dennis3d, "_lines_digest", lambda: "lines.py changed")
+    assert performer.shot(room, words, 0.0, 0.5, (320, 180), seed="lines") != first
+    monkeypatch.setattr(performer.settings, "dennis_3d_lines", "freestyle")
+    traced = performer.shot(room, words, 0.0, 0.5, (320, 180), seed="lines")
+    assert "lines" not in json.loads((traced.parent / "job.json").read_text(encoding="utf-8"))
+
+
 def test_a_proof_draws_him_at_half_the_size_and_the_final_at_full(performer):
     """The proof's voice is not the final's, so the final draws him again to
     its own words: the proof's drawing is thrown away and costs a quarter."""

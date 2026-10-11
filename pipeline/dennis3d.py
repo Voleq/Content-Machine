@@ -13,6 +13,7 @@ render of the same script draws nothing again.
 """
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import logging
@@ -35,6 +36,13 @@ WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
 LOOK_VERSION = "47-64-7"
+
+
+@functools.cache
+def _lines_digest() -> str:
+    """What draws his lines from the passes (room3d/lines.py), as a short
+    digest of its text."""
+    return hashlib.sha256((REPO / "room3d" / "lines.py").read_bytes()).hexdigest()[:12]
 
 # How long one shot may take before the worker is taken for hung: a fixed
 # allowance for Blender to come up, and a generous one per frame (a Cycles
@@ -340,9 +348,12 @@ class Performer:
 
     def _line_style(self) -> dict:
         """How his lines are drawn, in the job only when it is not Freestyle,
-        so every shot drawn before the choice keeps its cache."""
-        how = str(getattr(self.settings, "dennis_3d_lines", "freestyle") or "freestyle")
-        return {"lines": how} if how != "freestyle" else {}
+        so a shot Freestyle drew keeps its cache. Lines found in the passes
+        carry what finds them, so a change to that draws them again."""
+        how = str(getattr(self.settings, "dennis_3d_lines", "passes") or "passes")
+        if how == "freestyle":
+            return {}
+        return {"lines": how, "lines_by": _lines_digest()}
 
     @staticmethod
     def frames(layer: Path) -> Path:

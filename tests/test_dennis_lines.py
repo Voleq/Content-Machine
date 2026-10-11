@@ -148,12 +148,57 @@ def test_where_two_surfaces_nearly_touch_the_one_turning_away_is_outlined():
 
 def test_a_line_carries_over_a_short_stretch_of_weaker_evidence():
     """Sure for ten rows, half sure for five, sure again: one line, not
-    two dashes. Half sure all the way, it runs only a few pixels in from the
-    outline it starts at, and never down the middle."""
+    two dashes. Half sure all the way, nothing is drawn down the middle."""
     outline, _ = _edges(_side_over_arm([0.3] * 10 + [0.6] * 5 + [0.3] * 15))
     assert outline[8:32, 30].all()
     outline, _ = _edges(_side_over_arm([0.6] * 30))
     assert not outline[5 + lines.SIL_BRIDGE_PX + 1:35 - lines.SIL_BRIDGE_PX - 1, 28:32].any()
+
+
+def test_a_line_does_not_run_on_into_weaker_evidence_that_leads_nowhere():
+    """Sure for ten rows, then half sure to the bottom: the line stops where
+    it is sure. Carried on, it would be a tick hanging off its end (as at
+    the ends of his moustache)."""
+    outline, _ = _edges(_side_over_arm([0.3] * 10 + [0.6] * 20))
+    assert outline[8:14, 30].all()                # (its last pixel goes with the specks)
+    assert not outline[15:15 + lines.SIL_BRIDGE_PX, 29:32].any()
+
+
+def _sleeve_into_side(side_slope: float):
+    """His sleeve and his side, two parts of one stuff, each sloping deeper
+    into the fold where they meet (the sleeve 1.3 mm a pixel, the side
+    `side_slope`), the side's edge pixels turning away and the sleeve's
+    facing the camera more: what an edge in front would look like, but for
+    how the depths run."""
+    s = _scene()
+    depth, normal, obj, mat, _ = s
+    _block(s, 5, 35, 10, 30, d=2.0, o=1, m=1)         # sleeve
+    _block(s, 5, 35, 30, 50, d=2.0, o=2, m=1)         # side
+    for x in range(10, 30):
+        depth[5:35, x] = 2.0247 - 0.0013 * (29 - x)
+    for x in range(30, 50):
+        depth[5:35, x] = 2.0209 - side_slope * (x - 30)
+    normal[5:35, 30] = (-np.sqrt(1 - 0.26 ** 2), 0.0, 0.26)
+    normal[5:35, 29] = (np.sqrt(1 - 0.75 ** 2), 0.0, 0.75)
+    return s
+
+
+def test_two_parts_running_into_each_other_are_no_line():
+    outline, _ = _edges(_sleeve_into_side(0.0055))
+    assert not outline[8:32, 27:33].any()
+    # the side flat, its edge 4 mm in front of the sleeve: in front of it
+    outline, _ = _edges(_sleeve_into_side(0.0))
+    assert outline[8:32, 30].all() and not outline[8:32, 29].any()
+
+
+def test_a_nose_turning_away_steeply_is_still_outlined():
+    """Its edge pixels already 3 mm deeper than the next ones in, and the
+    face 7 mm behind them: more than its own slope would reach."""
+    s = _nose(0.3)
+    depth = s[0]
+    depth[12:28, 25] = depth[12:28, 34] = 1.993
+    outline, _ = _edges(s)
+    assert outline[14:26, 25].all() and outline[14:26, 34].all()
 
 
 def test_a_speck_is_not_drawn():

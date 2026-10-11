@@ -45,10 +45,19 @@ SIL_STEP_M = 0.004
 SIL_EDGE_FACING = 0.5
 SIL_EDGE_TURN = 0.2
 SIL_EDGE_STEP_M = 0.001
+# Where two of his parts run into each other (his sleeve into his side, his
+# ear into his head) the nearer one goes on deeper until it is inside the
+# other: no edge of either is seen there, and Freestyle draws none. It is a
+# step no deeper than the nearer surface was already going from one pixel to
+# the next; twice that where the one behind runs deeper toward it too, by
+# this much a pixel, the two sloping into the fold between them.
+FOLD_STEPS = 2.0
+FOLD_DEEPER_M = 0.0005
 # Along such an edge the evidence comes and goes from pixel to pixel, and a
 # line drawn only where it is sure is a row of dashes. Where it is half as
-# sure, a line carries on from where it is drawn, for a few pixels, so the
-# gaps close without a line ever starting from nothing.
+# sure, a line carries on for a few pixels to close a gap between two
+# pieces of line; one that only runs out into the weaker evidence and stops
+# is a tick, and is not drawn.
 SIL_FAINT = 0.5
 SIL_BRIDGE_PX = 5
 # A mark this many pixels or fewer, touching no other, is a speck.
@@ -111,10 +120,26 @@ def _row_edges(depth, facing, normal, obj, mat, own, turn):
     # behind runs on, one pixel further from the edge
     dp = np.pad(depth, ((0, 0), (1, 1)), mode="edge")
     d_before, d_after = dp[:, :-3], dp[:, 3:]
+    op = np.pad(obj, ((0, 0), (1, 1)), mode="edge")
+    o_before, o_after = op[:, :-3], op[:, 3:]
     near_a = da <= db
     step = np.abs(da - db)
     jump = step > np.maximum(DEPTH_JUMP * np.minimum(da, db), DEPTH_JUMP_M)
-    runs_on = np.where(near_a, np.abs(d_after - db), np.abs(d_before - da))
+    near, far = np.where(near_a, da, db), np.where(near_a, db, da)
+    # one pixel further from the edge on the nearer side, and on the
+    # farther, and whether each is still the same part
+    inner = np.where(near_a, d_before, d_after)
+    beyond = np.where(near_a, d_after, d_before)
+    inner_same = np.abs(np.where(near_a, o_before - oa, o_after - ob)) < 0.5
+    beyond_same = np.abs(np.where(near_a, o_after - ob, o_before - oa)) < 0.5
+    runs_on = np.abs(beyond - far)
+    # past the part behind is another part, which says nothing of how the
+    # one behind runs on: how the nearer one was already going does
+    runs_on = np.where(beyond_same | ~inner_same, runs_on,
+                       np.maximum(runs_on, np.abs(near - inner)))
+    steps = np.where(beyond_same & (far - beyond > FOLD_DEEPER_M), FOLD_STEPS, 1.0)
+    fold = (inner_same & (np.abs(oa - ob) > 0.5)
+            & (near + steps * (near - inner) >= far))
     f_near = np.where(near_a, fa, fb)
     f_far = np.where(near_a, fb, fa)
     sil = (f_near < SIL_FACING) & (step > np.maximum(SIL_RATIO * runs_on, SIL_STEP_M))
@@ -125,6 +150,8 @@ def _row_edges(depth, facing, normal, obj, mat, own, turn):
              & (step > np.maximum(SIL_RATIO * k * runs_on, SIL_STEP_M * k))) | (
         (f_near < SIL_EDGE_FACING + (1 - SIL_EDGE_FACING) * k)
         & (f_far - f_near > SIL_EDGE_TURN * k) & (step > SIL_EDGE_STEP_M * k))
+    sil &= ~fold
+    faint &= ~fold
     # his edge against what is behind him: on his side of it
     a_out = ha & ~hb & (db > da)
     b_out = hb & ~ha & (da > db)
@@ -152,14 +179,54 @@ def _neighbours(mask) -> np.ndarray:
             + p[2:, :-2] + p[2:, 1:-1] + p[2:, 2:])
 
 
+def _groups(mask) -> list[np.ndarray]:
+    """The pixels of each 8-connected group in `mask`, as (n, 2) rows of
+    (y, x)."""
+    h, w = mask.shape
+    left = mask.copy()
+    out = []
+    for y0, x0 in zip(*np.nonzero(mask)):
+        if not left[y0, x0]:
+            continue
+        left[y0, x0] = False
+        todo, got = [(y0, x0)], []
+        while todo:
+            y, x = todo.pop()
+            got.append((y, x))
+            for ny in (y - 1, y, y + 1):
+                for nx in (x - 1, x, x + 1):
+                    if 0 <= ny < h and 0 <= nx < w and left[ny, nx]:
+                        left[ny, nx] = False
+                        todo.append((ny, nx))
+        out.append(np.array(got))
+    return out
+
+
 def _bridge(line, faint) -> np.ndarray:
-    """`line` carried on along `faint` for `SIL_BRIDGE_PX` pixels."""
+    """`line` carried on along `faint` for up to `SIL_BRIDGE_PX` pixels
+    where that joins two pieces of it which do not meet near there."""
+    grown = line
     for _ in range(SIL_BRIDGE_PX):
-        more = faint & ~line & (_neighbours(line) > 0)
+        more = faint & ~grown & (_neighbours(grown) > 0)
         if not more.any():
             break
-        line = line | more
-    return line
+        grown = grown | more
+    added = grown & ~line
+    if not added.any():
+        return line
+    h, w = line.shape
+    r = SIL_BRIDGE_PX + 2
+    out = line.copy()
+    for g in _groups(added):
+        y0, x0 = np.maximum(g.min(0) - r, 0)
+        y1, x1 = g.max(0) + r + 1
+        here = np.zeros((min(y1, h) - y0, min(x1, w) - x0), bool)
+        here[g[:, 0] - y0, g[:, 1] - x0] = True
+        touched = line[y0:y1, x0:x1] & (_neighbours(here) > 0)
+        pieces = _groups(line[y0:y1, x0:x1])
+        if sum(bool(touched[p[:, 0], p[:, 1]].any()) for p in pieces) >= 2:
+            out[g[:, 0], g[:, 1]] = True
+    return out
 
 
 def _despeck(mask) -> np.ndarray:

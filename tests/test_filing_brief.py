@@ -247,7 +247,7 @@ def test_the_cache_holds_the_reading_not_one_videos_cross_check(
     assert kept.contradictions == brief.contradictions
     assert kept.grading == brief.grading
     # ...the shared cache only what the filings say
-    cached = json.loads(cache_path(brief.accessions, live).read_text())
+    cached = json.loads(cache_path(brief.accessions, live).read_text(encoding="utf-8"))
     assert not cached.get("contradictions") and not cached.get("grading")
     again = build_brief("EXMPL", tmp_path / "next", live)
     assert again.body == brief.body

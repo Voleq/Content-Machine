@@ -616,7 +616,8 @@ def test_no_two_repo_paths_collide_case_insensitively():
 _IO_NAMES = ("open", "read_text", "write_text")
 # `X.open(...)` where X is one of these is not text I/O at all.
 _NON_TEXT_OPEN_BASES = {"Image", "wave", "zipfile", "np", "cv2", "gzip",
-                        "tarfile", "sf", "soundfile", "io"}
+                        "tarfile", "sf", "soundfile", "io",
+                        "os"}    # os.open is a file descriptor, not text
 
 
 def _text_io_without_encoding(path: Path) -> list[str]:

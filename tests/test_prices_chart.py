@@ -622,7 +622,8 @@ def test_a_mock_run_s_walk_is_never_served_to_a_live_one(settings, tmp_path):
     old = price_cache_file("YYYY", live.price_history_days, live)
     old.parent.mkdir(parents=True, exist_ok=True)
     old.write_text(PriceSeries(ticker="YYYY", dates=["2026-01-01", "2026-01-02"],
-                               closes=[5.0, 6.0], source="fixture").to_json())
+                               closes=[5.0, 6.0], source="fixture").to_json(),
+                   encoding="utf-8")
     assert get_price_history("YYYY", live, source=LiveFeed()).source == "yahoo"
 
 

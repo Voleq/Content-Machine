@@ -589,8 +589,8 @@ def test_the_channel_key_is_written_for_its_owner_only(tmp_path, monkeypatch):
     spec.loader.exec_module(mod)
 
     secret = tmp_path / "client.json"
-    secret.write_text("{}")
+    secret.write_text("{}", encoding="utf-8")
     out = tmp_path / "state" / "youtube.json"
     assert mod.main([str(secret), "--out", str(out), "--no-browser"]) == 0
     assert stat.S_IMODE(out.stat().st_mode) == 0o600
-    assert "refresh_token" in out.read_text()
+    assert "refresh_token" in out.read_text(encoding="utf-8")
