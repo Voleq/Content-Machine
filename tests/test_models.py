@@ -94,6 +94,13 @@ def test_company_data_prompt_block_with_history():
     assert data.has_history
 
 
+def test_a_history_cell_keeps_every_digit():
+    """`{:g}` kept six figures: revenue in raw dollars read 3.91035e+11."""
+    data = CompanyData(values={"company_name": "X"}, history_years=["FY-1", "FY-0"],
+                       history={"revenue": [391035000000.0, 1234.5678]})
+    assert "revenue: 391035000000 | 1234.5678" in data.as_prompt_block()
+
+
 def test_company_data_without_history():
     data = CompanyData(values={"company_name": "X"})
     assert not data.has_history

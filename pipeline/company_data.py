@@ -508,15 +508,14 @@ def _check_contents(check: ExportCheck, pairs: dict, expect_ticker: str,
 
 def _as_of_age_days(as_of: str, today: _dt.date | None = None) -> int | None:
     """Age in days of an as-of date string, or None if it cannot be read."""
-    if not as_of:
+    # The freshness gate's reader, so the upload's warning and the gate read
+    # 09/03/2026 as the same day (US first: 9 March), not six months apart.
+    from pipeline.gates import _parse_as_of
+
+    parsed = _parse_as_of(as_of)
+    if parsed is None:
         return None
-    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
-        try:
-            parsed = _dt.datetime.strptime(as_of.strip()[:10], fmt).date()
-        except ValueError:
-            continue
-        return ((today or _dt.date.today()) - parsed).days
-    return None
+    return ((today or _dt.date.today()) - parsed).days
 
 
 # --------------------------------------------------------------------------

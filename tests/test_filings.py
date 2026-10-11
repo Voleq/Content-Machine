@@ -120,6 +120,24 @@ def test_segment_filing_labels_sections(settings):
     assert "net debt to EBITDA" in sections["MD&A"]
 
 
+def test_an_inline_xbrl_filing_keeps_its_prose():
+    """Most 10-Ks are inline XBRL now: spans in divs, not one <p>. Only
+    <p>, <li> and <td> were read, so the brief saw its tables and none of
+    its words. A div with nothing block-level in it is a paragraph; the
+    divs around it are not read twice."""
+    risk = ("Our customers are concentrated, and the loss of any one of them "
+            "would reduce our revenue materially.")
+    html = ("<html><body><div><div><span style='font-weight:700'>Item 1A. Risk "
+            "Factors</span></div>"
+            f"<div><span>{risk}</span></div><div><span>23</span></div>"
+            "<div><table><tr><td>Revenue grew 4%.</td></tr></table></div>"
+            "</div></body></html>")
+    sections = {s["title"]: s["text"] for s in F.segment_filing(html)}
+    assert sections["Risk Factors"].count("customers are concentrated") == 1
+    assert "23" not in sections["Risk Factors"].split()
+    assert sections["Risk Factors"].count("Revenue grew 4%") == 1
+
+
 def test_flag_quotes_mock_are_verbatim(settings):
     html = _sample_html(settings)
     sections = F.segment_filing(html)

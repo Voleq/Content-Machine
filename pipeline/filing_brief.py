@@ -764,6 +764,8 @@ def _from_cache(accessions: list[str], settings: Settings) -> FilingBrief | None
 
 
 def _dashboard_lines(data) -> str:
+    from pipeline.models import plain_number
+
     rows = getattr(data, "dashboard", None) or {}
     out = [f"{k}: {v}" for k, v in rows.items() if v not in (None, "")]
     hist = getattr(data, "history", None) or {}
@@ -774,7 +776,7 @@ def _dashboard_lines(data) -> str:
         vals = hist.get(key)
         if vals:
             out.append(f"{key}: " + " | ".join(
-                "n/a" if v is None else f"{v:g}" for v in vals))
+                "n/a" if v is None else plain_number(v) for v in vals))
     return "\n".join(out)
 
 

@@ -977,6 +977,15 @@ def _moves_line(moves: dict) -> str:
                         "needs five quarters of history"))
 
 
+def plain_number(v) -> str:
+    """A table cell as the writer reads it: every digit, no exponent.
+    `{:g}` keeps six figures, so a raw-dollar 391035000000 was 3.91035e+11."""
+    v = float(v)
+    if v.is_integer():
+        return str(int(v))
+    return f"{v:.4f}".rstrip("0").rstrip(".")
+
+
 def _present(field: str, value):
     """One snapshot value as the writer should read it.
 
@@ -1230,7 +1239,7 @@ class CompanyData(BaseModel):
             for f in HISTORY_FIELDS:
                 vals = self.history.get(f)
                 if vals and any(v is not None for v in vals):
-                    cells = " | ".join("n/a" if v is None else f"{v:g}" for v in vals)
+                    cells = " | ".join("n/a" if v is None else plain_number(v) for v in vals)
                     lines.append(f"  {f}: {cells}")
         # The quarterly table is NOT emitted here. It is its own entry in
         # `bot.prompts.PAYLOAD` (`{{quarters}}`), placed directly after

@@ -474,6 +474,10 @@ def _section_for(text: str, current: str) -> str:
     return current
 
 
+_BLOCKS = ["div", "p", "li", "td", "table", "h1", "h2", "h3", "h4", "h5"]
+_DIV_PROSE_CHARS = 40
+
+
 def segment_filing(html: str) -> list[dict]:
     """Split the filing into sections. Returns [{title, text}] — the text the
     LLM reads. Best-effort; unlabeled bodies land under 'Filing'."""
@@ -488,7 +492,10 @@ def segment_filing(html: str) -> list[dict]:
     sections: dict[str, list[str]] = {}
     current = "Business"
     # short elements (incl. header divs) can SWITCH the section; only true text
-    # blocks (p/li/td) become body — so container divs never double-count.
+    # blocks become body — so container divs never double-count. A filing in
+    # inline XBRL (most 10-Ks now) has no <p> at all: its prose is spans in a
+    # div with nothing block-level inside, and that div is a text block too,
+    # once it is longer than a page number or a running head.
     for el in soup.find_all(["h1", "h2", "h3", "h4", "h5", "div", "b", "strong",
                              "p", "li", "td"]):
         txt = _norm(el.get_text(" "))
@@ -499,7 +506,9 @@ def segment_filing(html: str) -> list[dict]:
             if new != current:
                 current = new
                 continue  # a header line — not body
-        if el.name in ("p", "li", "td"):
+        if el.name in ("p", "li", "td") or (
+                el.name == "div" and len(txt) >= _DIV_PROSE_CHARS
+                and el.find(_BLOCKS) is None):
             sections.setdefault(current, []).append(txt)
     return [{"title": name, "text": " ".join(chunks)}
             for name, chunks in sections.items() if chunks]

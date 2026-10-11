@@ -437,3 +437,19 @@ def test_list_screenshots_excludes_exports(workspace):
     (workspace / "_hidden.png").write_bytes(b"png")
     shots = list_screenshots(workspace)
     assert shots == ["income_statement.png"]
+
+
+def test_the_uploads_age_reads_a_date_as_the_freshness_gate_does():
+    """09/03/2026 on a US sheet is 9 March. The upload read it day-first as
+    3 September while the gate read 9 March: one said fresh, one stale."""
+    import datetime as dt
+
+    from pipeline.company_data import _as_of_age_days
+    from pipeline.gates import _parse_as_of
+
+    today = dt.date(2026, 9, 10)
+    assert _parse_as_of("09/03/2026") == dt.date(2026, 9, 3)
+    assert _as_of_age_days("09/03/2026", today) == 7
+    assert _as_of_age_days("2026-09-03", today) == 7
+    assert _as_of_age_days("Sep 3, 2026", today) == 7
+    assert _as_of_age_days("not a date", today) is None
