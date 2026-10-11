@@ -79,9 +79,12 @@ PROPS = {
     "page": ((-0.07, -0.032, -0.15), (0, 0, 0)),
     "filing": ((0.0, -0.11, -0.10), (0, 0, 90)),
 }
-# the mug is the red one off his desk; the filing is the desk's annual report
-# and the phone's back is light, or it is lost against the navy sweater
-MUG, PHONE, PAPER, FOLDER = "#C24A38", "#B4BCC8", "#F2EEE6", "#E6E4DC"
+# the mug is the cream one off the credenza, not the red one off his desk:
+# the room is drawn once with the red mug standing on the desk, so his
+# holding it put the same mug in his hand and on the desk at once. The filing
+# is the desk's annual report and the phone's back is light, or it is lost
+# against the navy sweater
+MUG, PHONE, PAPER, FOLDER = "#E8E4DA", "#B4BCC8", "#F2EEE6", "#E6E4DC"
 TEXTURES = Path(__file__).resolve().parent / "textures"
 # Beards: how far each sits off the skin, metres.
 BEARDS = {"none": 0.0, "stubble": 0.0022, "short": 0.0065}

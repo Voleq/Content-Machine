@@ -12,13 +12,17 @@ goes underneath in the pipeline. Nothing here knows about videos.
 reads one JSON job per line on stdin:
 
     {"angle": "desk-front", "season": "plain", "aspect": "16x9",
-     "size": [2560, 1440], "fps": 12, "samples": 8, "seed": "EXMPL|12",
+     "size": [2560, 1440], "fps": 30, "samples": 8, "seed": "EXMPL|12",
      "words": [{"word": "So.", "start": 0.12, "end": 0.40}, ...],
      "duration": 4.93, "stance": "host/arms-crossed", "out": "/abs/folder"}
 
 and, for a two-shot, `"plate": [u, v]`, where the evidence sits in the frame
 (0-1 from the top left), so he can show it; for the close-up, `"close": true`;
-for a cover, `"still": true` and no words: one frame of him mid-sentence, to
+for the push-in on a chapter's wide shot, `"push": {"z": 1.9, "t0": 0.4,
+"t1": 3.9}`: the camera goes in `z` times between those seconds of the shot;
+with `"lines": "passes"`, his lines are found in the render's own passes
+(`lines.py`) instead of traced by Freestyle; for a cover, `"still": true` and
+no words: one frame of him mid-sentence, to
 the camera, with nothing of the room drawn (no shadow, nothing in front of
 him), so the cover can stand him where its type leaves room; with
 `"in_room": true` as well, the room stays as a shot has it: the desk in front
@@ -30,7 +34,8 @@ It renders `out/d_0000.png` ... and answers with one line that starts with
        "window": null}
 
 where `window` is, for a close-up, the piece of the room's picture that is
-behind him ([x0, y0, x1, y1], 0-1 from the top left), blown up to the frame.
+behind him ([x0, y0, x1, y1], 0-1 from the top left), blown up to the frame;
+for a push-in the answer carries `"push"` instead, that piece for every frame.
 
 An empty line or `{"op": "quit"}` ends it. A frame already on disk is not
 drawn again, so a render that stopped picks up where it was.
@@ -58,8 +63,11 @@ import bpy  # noqa: E402
 from mathutils import Matrix, Vector  # noqa: E402
 
 import build as room  # noqa: E402
+import lines  # noqa: E402
 import motion  # noqa: E402
 from dennis import JOINTS, bounds, build_dennis  # noqa: E402
+
+FPS = 30  # as config.dennis_3d_fps: the bench times what a render will draw
 
 BEARD = "short"          # item 64, 3 Oct
 
@@ -93,6 +101,10 @@ class Stage:
         self.device = "CPU"
         self.size: tuple[int, int] | None = None
         self.samples = 0
+        self.lines = "freestyle"
+        self._pass_dir: Path | None = None
+        self._pushes: list[tuple[float, float, float]] = []
+        self._lens0 = 0.0
         self._looks: dict[tuple, dict] = {}
 
     def build(self, season: str) -> None:
@@ -110,8 +122,8 @@ class Stage:
                 o.is_shadow_catcher = True
         self.season, self.size, self._looks = season, None, {}
 
-    def frame_up(self, size: tuple[int, int], samples: int) -> None:
-        if self.size == size and self.samples == samples:
+    def frame_up(self, size: tuple[int, int], samples: int, how: str = "freestyle") -> None:
+        if self.size == size and self.samples == samples and self.lines == how:
             return
         scn = bpy.context.scene
         room.setup_render(size, samples)
@@ -135,7 +147,82 @@ class Stage:
             ls.face_mark_condition = "ONE"
         scn.render.image_settings.file_format = "PNG"
         scn.render.image_settings.color_mode = "RGBA"
-        self.size, self.samples = size, samples
+        if how == "passes":
+            self._passes()
+        self.size, self.samples, self.lines = size, samples, how
+
+    PASSES = ("Depth", "Normal", "Object Index", "Material Index")
+
+    def _passes(self) -> None:
+        """His lines from the render's own passes: Freestyle off, and his
+        depth, normals and parts written beside each frame for `lines.py`.
+        His parts are numbered from one and the room is nought; his
+        materials likewise, so a collar or his glasses is an edge."""
+        import atexit
+        import shutil
+        import tempfile
+
+        scn = bpy.context.scene
+        vl = bpy.context.view_layer
+        scn.render.use_freestyle = False
+        vl.use_pass_z = vl.use_pass_normal = True
+        vl.use_pass_object_index = vl.use_pass_material_index = True
+        mats: dict = {}
+        for k, o in enumerate(sorted(self.rig.objects(), key=lambda o: o.name)):
+            o.pass_index = k + 1
+            for slot in getattr(o, "material_slots", ()):
+                if slot.material is not None:
+                    slot.material.pass_index = mats.setdefault(slot.material.name, len(mats) + 1)
+        if self._pass_dir is None:
+            self._pass_dir = Path(tempfile.mkdtemp(prefix="dennis_passes_"))
+            atexit.register(shutil.rmtree, self._pass_dir, True)
+        old = bpy.data.node_groups.get("passes")
+        if old is not None:
+            bpy.data.node_groups.remove(old)
+        ng = bpy.data.node_groups.new("passes", "CompositorNodeTree")
+        scn.compositing_node_group = ng
+        rl = ng.nodes.new("CompositorNodeRLayers")
+        fo = ng.nodes.new("CompositorNodeOutputFile")
+        fo.directory = str(self._pass_dir) + "/"
+        fo.file_name = "p"
+        fo.format.file_format = "OPEN_EXR_MULTILAYER"
+        fo.format.color_depth = "16"
+        fo.format.exr_codec = "NONE"
+        for name in self.PASSES:
+            fo.file_output_items.new("VECTOR" if name == "Normal" else "FLOAT", name)
+            ng.links.new(rl.outputs[name], fo.inputs[name])
+
+    def _ink(self, png: Path) -> None:
+        """His lines drawn on the frame `png` from the passes of its render."""
+        import numpy as np
+        from PIL import Image
+
+        from exr import read_exr
+
+        exr = next(self._pass_dir.glob("p*.exr"))
+        got = read_exr(exr)
+        exr.unlink()                    # the next frame's can never be this one
+
+        def plane(name: str, ch: str = "V"):
+            return next(v for k, v in got.items() if k.endswith(f"{name}.{ch}"))
+
+        normal = np.stack([plane("Normal", c) for c in "XYZ"], axis=-1)
+        rgba = np.asarray(Image.open(png).convert("RGBA"))
+        scale = max(self.size) / max(room.FULL)
+        ink_rgb = tuple(int(room.INK.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+        out = lines.draw(rgba, plane("Depth"), normal, plane("Object Index"),
+                         plane("Material Index"), outline_px=max(3.6 * scale, 1.4),
+                         detail_px=max(2.0 * scale, 1.4), colour=ink_rgb,
+                         toward=self._toward())
+        Image.fromarray(out, "RGBA").save(png)
+
+    def _toward(self):
+        """From each pixel toward the camera: which way a surface must face
+        to be seen square on."""
+        scn = bpy.context.scene
+        turn = scn.camera.matrix_world.to_3x3()
+        tr, _br, bl, tl = (turn @ v for v in scn.camera.data.view_frame(scene=scn))
+        return lines.toward(tuple(tl), tuple(tr), tuple(bl), self.size)
 
     def place(self, angle: str, aspect: str) -> None:
         """The camera, and him on the angle's spot, turned to the camera."""
@@ -229,8 +316,10 @@ class Stage:
 
     def looks(self, angle: str, aspect: str) -> dict:
         """Where the screen and the board are from his spot, and the arm
-        angles that reach for each (solved once per spot)."""
-        spot = tuple(room.view(angle, aspect)["spot"])
+        angles that reach for each (solved once per angle). Not once per
+        spot: two angles can share his spot (board-side, board-wide) and he
+        turns to each one's camera, so the screen is somewhere else from him."""
+        spot = (angle, aspect)
         if spot in self._looks:
             return self._looks[spot]
         self.rest()
@@ -284,6 +373,52 @@ class Stage:
         bpy.context.view_layer.update()
         return [round(cx - half, 5), round(1 - (cy + half), 5),
                 round(cx + half, 5), round(1 - (cy - half), 5)]
+
+    def push_in(self, push: dict, fps: int, frames: int) -> list[list[float]]:
+        """THE WIDE SHOT GOES IN TO HIM (10 Oct 2026): from the whole room to
+        a piece of it `push["z"]` times smaller, with his head near its top,
+        between `t0` and `t1` seconds, eased at both ends. The same camera
+        with a longer lens and its frame shifted, as the close-up is, so what
+        is behind him is exactly a piece of the room's picture. Returns that
+        piece for every frame, [x0, y0, x1, y1], 0-1 from the top left; the
+        camera is set per frame by `_aim`."""
+        from bpy_extras.object_utils import world_to_camera_view
+
+        scn = bpy.context.scene
+        cam = scn.camera
+        self.rest()
+        head = self.rig.joints["head"].matrix_world.translation
+        top = world_to_camera_view(scn, cam, head + Vector((0.0, 0.0, 0.36)))
+        h1 = 1.0 / min(max(float(push.get("z", 1.0)), 1.0), 4.0)
+        # his hair a little under the top of the last piece, centred on him
+        c1 = (min(max(top.x, h1 / 2), 1 - h1 / 2),
+              min(max(top.y - 0.42 * h1, h1 / 2), 1 - h1 / 2))   # y from the bottom
+        t0 = float(push.get("t0", 0.0))
+        t1 = max(float(push.get("t1", t0 + 1.0)), t0 + 1e-3)
+        self._lens0 = cam.data.lens
+        self._pushes = []
+        out = []
+        for i in range(frames):
+            e = min(max((i / fps - t0) / (t1 - t0), 0.0), 1.0)
+            e = e * e * e * (e * (e * 6 - 15) + 10)
+            # the size goes in evenly to the eye; the centre goes with it
+            h = h1 ** e
+            g = (1 - h) / (1 - h1) if h1 < 1 else 0.0
+            cx, cy = 0.5 + (c1[0] - 0.5) * g, 0.5 + (c1[1] - 0.5) * g
+            self._pushes.append((h, cx, cy))
+            out.append([round(cx - h / 2, 6), round(1 - (cy + h / 2), 6),
+                        round(cx + h / 2, 6), round(1 - (cy - h / 2), 6)])
+        return out
+
+    def _aim(self, i: int) -> None:
+        """The camera at frame `i` of a push-in."""
+        h, cx, cy = self._pushes[min(i, len(self._pushes) - 1)]
+        cam = bpy.context.scene.camera
+        W, H = bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y
+        big = max(W, H)
+        cam.data.lens = self._lens0 / h
+        cam.data.shift_x = (cx - 0.5) / h * W / big
+        cam.data.shift_y = (cy - 0.5) / h * H / big
 
     def fit(self, st: motion.Stance) -> motion.Stance:
         """The stance as it can play on this spot. A hand meant for the desk
@@ -341,7 +476,8 @@ class Stage:
         if season != self.season:
             self.build(season)
         aspect = job.get("aspect", "16x9")
-        self.frame_up(tuple(job["size"]), int(job.get("samples", 8)))
+        self.frame_up(tuple(job["size"]), int(job.get("samples", 8)),
+                      str(job.get("lines", "freestyle")))
         self.place(job["angle"], aspect)
         looks = self.looks(job["angle"], aspect)
         if job.get("plate"):
@@ -363,14 +499,18 @@ class Stage:
             perf = motion.perform(words, float(job["duration"]), fps=fps,
                                   seed=str(job.get("seed", "")), looks=looks, stance=st)
             frames = range(perf.frames)
+        self._pushes = []
+        pushes = (self.push_in(job["push"], fps, perf.frames)
+                  if job.get("push") and not still and window is None else None)
         self.rig.hold(st.prop, st.prop_side)
         self._bare(still and not job.get("in_room"))
         try:
-            return self._render(job, perf, frames, fps, window, t0)
+            return self._render(job, perf, frames, fps, window, t0, pushes)
         finally:
             self._bare(False)
 
-    def _render(self, job: dict, perf, frames, fps: int, window, t0: float) -> dict:
+    def _render(self, job: dict, perf, frames, fps: int, window, t0: float,
+                pushes=None) -> dict:
         out = Path(job["out"])
         out.mkdir(parents=True, exist_ok=True)
         scn = bpy.context.scene
@@ -381,6 +521,8 @@ class Stage:
             if f.exists():
                 continue
             self.rig.apply(perf.at(i))
+            if self._pushes:
+                self._aim(i)
             bpy.context.view_layer.update()
             # Only round him and the shadow he throws is drawn.
             mn, mx = bounds(self.rig)
@@ -394,16 +536,19 @@ class Stage:
             r.border_max_y = min(max(p.y for p in pts) + 0.05, 1.0)
             r.filepath = str(f.with_suffix(".part.png"))
             bpy.ops.render.render(write_still=True)
+            if self.lines == "passes":
+                self._ink(f.with_suffix(".part.png"))
             _feather(f.with_suffix(".part.png"),
                      (r.border_min_x, r.border_max_x, r.border_min_y, r.border_max_y),
                      (min(p.x for p in pts), max(p.x for p in pts),
                       min(p.y for p in pts), max(p.y for p in pts)))
             f.with_suffix(".part.png").replace(f)
         meta = {"fps": fps, "frames": len(frames), "duration": perf.frames / fps,
-                "device": self.device, "window": window}
+                "device": self.device, "window": window, "push": pushes}
         (out / "perf.json").write_text(json.dumps(meta), encoding="utf-8")
         return {"ok": True, "frames": len(frames), "out": str(out), "window": window,
-                "seconds": round(time.monotonic() - t0, 1), "device": self.device}
+                "push": pushes, "seconds": round(time.monotonic() - t0, 1),
+                "device": self.device}
 
 
 def _feather(png: Path, border, body) -> None:
@@ -438,34 +583,41 @@ def _feather(png: Path, border, body) -> None:
 
 
 def bench() -> int:
-    """Seconds a frame of him takes here, and what a video costs at that."""
+    """Seconds a frame of him takes here, with each way of drawing his lines
+    (`DENNIS_3D_LINES`), and what a video costs at that."""
     import tempfile
 
     stage = Stage()
     stage.build("plain")
     words = [{"word": w, "start": 0.2 + k * 0.32, "end": 0.45 + k * 0.32}
              for k, w in enumerate("So here is the number that matters most.".split())]
-    per = {}
+    styles = (("freestyle", "Freestyle lines"), ("passes", "GPU lines"))
+    per: dict[tuple[str, str], float] = {}
     with tempfile.TemporaryDirectory() as tmp:
         # the long's two shots of him at 1920x1080, the short's close-up at its file's size
         for name, aspect, size, close in (("long wide", "16x9", [1920, 1080], False),
                                           ("long close-up", "16x9", [1920, 1080], True),
                                           ("short close-up", "9x16", [1440, 2560], True)):
-            job = {"angle": "desk-front", "season": "plain", "aspect": aspect, "size": size,
-                   "fps": 12, "samples": 8, "seed": "bench",
-                   "stance": "host/close-up" if close else "host/to-camera",
-                   "duration": 0.25, "words": words, "close": close,
-                   "out": str(Path(tmp) / name.replace(" ", "-"))}
-            stage.shot({**job, "duration": 1 / 12})        # warm: build, first frame
-            t = time.monotonic()
-            got = stage.shot({**job, "out": job["out"] + "-timed"})
-            per[name] = (time.monotonic() - t) / max(got["frames"], 1)
-            print(f"{name}: {per[name]:.1f} s a frame on the {stage.device}", flush=True)
-    long = (per["long wide"] * 3 + per["long close-up"]) / 4    # most of his shots are wide
-    # twelve drawings a second; a proof draws him at half the size, about a quarter of this
-    print(f"each minute of him in a long: about {long * 12:.0f} minutes to draw; "
-          f"the short's three-second shot of him: about "
-          f"{per['short close-up'] * 36 / 60:.0f} minutes (a proof: about a quarter)", flush=True)
+            said = []
+            for how, label in styles:
+                job = {"angle": "desk-front", "season": "plain", "aspect": aspect,
+                       "size": size, "fps": FPS, "samples": 8, "seed": "bench",
+                       "stance": "host/close-up" if close else "host/to-camera",
+                       "duration": 0.25, "words": words, "close": close, "lines": how,
+                       "out": str(Path(tmp) / f"{name.replace(' ', '-')}-{how}")}
+                stage.shot({**job, "duration": 1 / FPS})       # warm: build, first frame
+                t = time.monotonic()
+                got = stage.shot({**job, "out": job["out"] + "-timed"})
+                per[name, how] = (time.monotonic() - t) / max(got["frames"], 1)
+                said.append(f"{per[name, how]:.1f} s with {label}")
+            print(f"{name}: a frame takes {', '.join(said)}, on the {stage.device}", flush=True)
+    for how, label in styles:
+        long = (per["long wide", how] * 3 + per["long close-up", how]) / 4  # most of his shots are wide
+        # FPS drawings a second; a proof draws him at half the size, about a quarter of this
+        print(f"{label} (DENNIS_3D_LINES={how}): each minute of him in a long, about "
+              f"{long * FPS:.0f} minutes to draw; the short's three-second shot of him, about "
+              f"{per['short close-up', how] * 3 * FPS / 60:.0f} minutes (a proof: about a quarter)",
+              flush=True)
     return 0
 
 

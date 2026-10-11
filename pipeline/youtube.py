@@ -24,6 +24,7 @@ the package to upload by hand, which is exactly how it worked before.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 import logging
@@ -134,9 +135,10 @@ def validate_package(title: str, description: str,
         problems.append(f"the title is {len(title)} chars (max {TITLE_MAX})")
     if "<" in title or ">" in title:
         problems.append("angle brackets in the title are rejected by YouTube")
-    if len(description) > DESCRIPTION_MAX:
+    size = len(description.encode("utf-8"))
+    if size > DESCRIPTION_MAX:
         problems.append(
-            f"the description is {len(description)} chars (max {DESCRIPTION_MAX})")
+            f"the description is {size} bytes (max {DESCRIPTION_MAX})")
     total_tags = sum(len(t) + 1 for t in tags)
     if total_tags > TAGS_MAX_CHARS:
         problems.append(f"tags total {total_tags} chars (max {TAGS_MAX_CHARS})")
@@ -290,7 +292,7 @@ class YouTubeClient:
         request = self._youtube.videos().insert(
             part="snippet,status", body=body, media_body=media)
         if session is not None:
-            resume_uri = session.load(path)
+            resume_uri = session.load(path, body)
             if resume_uri:
                 log.info("resuming the youtube upload of %s", path.name)
                 request.resumable_uri = resume_uri
@@ -310,13 +312,15 @@ class YouTubeClient:
                 log.warning("youtube upload chunk failed (%s) — retry %d/%d",
                             e, attempts, self.settings.youtube_upload_retries)
                 if session is not None:
-                    session.save(path, getattr(request, "resumable_uri", ""))
+                    session.save(path, getattr(request, "resumable_uri", ""),
+                                 body)
                 time.sleep(min(2 ** attempts, 30))
                 continue
             if status:
                 log.info("youtube upload %d%%", int(status.progress() * 100))
                 if session is not None:
-                    session.save(path, getattr(request, "resumable_uri", ""))
+                    session.save(path, getattr(request, "resumable_uri", ""),
+                                 body)
         vid = response.get("id")
         if not vid:
             raise UploadError(f"upload returned no video id: {response}")
@@ -326,7 +330,7 @@ class YouTubeClient:
         # are not: a body field the API drops fails silently and for ever.
         self.last_upload_status = dict(response.get("status") or {})
         if session is not None:
-            session.clear(path)
+            session.clear(path, body)
         return vid
 
     def set_thumbnail(self, video_id: str, image: Path) -> None:
@@ -420,27 +424,35 @@ class UploadSession:
             return {}
 
     @staticmethod
-    def _key(video: Path) -> str:
+    def _key(video: Path, body: dict | None = None) -> str:
+        # The title, description and publish time travel with the session:
+        # YouTube applies the metadata the session was OPENED with, so a
+        # retry with a new title resumed into the old one and went up under
+        # it. A different body is a different upload.
+        tail = ""
+        if body is not None:
+            tail = "|" + hashlib.sha256(json.dumps(
+                body, sort_keys=True, default=str).encode()).hexdigest()[:16]
         try:
             st = video.stat()
-            return f"{video.resolve()}|{st.st_size}|{int(st.st_mtime)}"
+            return f"{video.resolve()}|{st.st_size}|{int(st.st_mtime)}{tail}"
         except OSError:
-            return str(video)
+            return str(video) + tail
 
-    def load(self, video: Path) -> str:
-        return str(self._all().get(self._key(video), ""))
+    def load(self, video: Path, body: dict | None = None) -> str:
+        return str(self._all().get(self._key(video, body), ""))
 
-    def save(self, video: Path, uri: str) -> None:
+    def save(self, video: Path, uri: str, body: dict | None = None) -> None:
         if not uri:
             return
         data = self._all()
-        data[self._key(video)] = uri
+        data[self._key(video, body)] = uri
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-    def clear(self, video: Path) -> None:
+    def clear(self, video: Path, body: dict | None = None) -> None:
         data = self._all()
-        if data.pop(self._key(video), None) is not None:
+        if data.pop(self._key(video, body), None) is not None:
             self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
@@ -493,6 +505,23 @@ def available(settings: Settings) -> tuple[bool, str]:
 # --------------------------------------------------------------------------
 
 
+def _api_text(text: str, max_bytes: int) -> str:
+    """Text the Data API takes as it is.
+
+    YouTube refuses `<` and `>` anywhere in a description or a tag (the
+    insert fails with invalidDescription / invalidTags after the whole file
+    went up), and its 5000 limit is BYTES: a description with dashes and
+    arrows in it passed a character count and was still refused. Brackets
+    become their single-angle look-alikes, and the text is cut on a whole
+    character inside the byte limit.
+    """
+    text = str(text).replace("<", "\u2039").replace(">", "\u203a")
+    raw = text.encode("utf-8")
+    if len(raw) <= max_bytes:
+        return text
+    return raw[:max_bytes].decode("utf-8", errors="ignore")
+
+
 def build_body(package, *, title: str = "", publish_at: datetime | None = None,
                settings: Settings | None = None) -> dict:
     """The Data API insert body. Private unless a publish time says otherwise."""
@@ -518,8 +547,9 @@ def build_body(package, *, title: str = "", publish_at: datetime | None = None,
     body = {
         "snippet": {
             "title": chosen[:TITLE_MAX],
-            "description": package.description[:DESCRIPTION_MAX],
-            "tags": list(package.tags),
+            "description": _api_text(package.description, DESCRIPTION_MAX),
+            "tags": [t for t in (_api_text(t, TAGS_MAX_CHARS)
+                                 for t in package.tags) if t.strip()],
             "categoryId": (settings.youtube_category_id if settings else "25"),
         },
         "status": status,

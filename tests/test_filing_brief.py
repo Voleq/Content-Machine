@@ -13,6 +13,7 @@ Where an answering LLM is needed it is injected — never reached for.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -223,6 +224,34 @@ def test_the_cache_is_keyed_on_the_filings_not_the_ticker(live, answering,
     roomy = build_brief("EXMPL", tmp_path / "roomy", live)
     assert roomy.context_held is True, \
         "the truncated brief was served back for a roomier window"
+
+
+def test_the_cache_holds_the_reading_not_one_videos_cross_check(
+        live, answering, workspace, tmp_path):
+    """The cross-check is against one workspace's workbook and the grading
+    against one ticker's last claim. Cached on the filings, the next video
+    on the same filings was shown the last one's contradictions whenever
+    its own cross-check did not answer."""
+    from pipeline.filing_brief import (cache_path, cross_check,
+                                       grade_prior_coverage, save_brief)
+    from pipeline.company_data import load_company_data
+
+    brief = build_brief("EXMPL", workspace, live)
+    cross_check(brief, load_company_data(workspace), live)
+    grade_prior_coverage(brief, "CLAIM: margins would recover by Q3.", live)
+    assert brief.contradictions and brief.grading
+    save_brief(workspace, brief, live)
+
+    # the workspace keeps its own...
+    kept = load_brief(workspace)
+    assert kept.contradictions == brief.contradictions
+    assert kept.grading == brief.grading
+    # ...the shared cache only what the filings say
+    cached = json.loads(cache_path(brief.accessions, live).read_text(encoding="utf-8"))
+    assert not cached.get("contradictions") and not cached.get("grading")
+    again = build_brief("EXMPL", tmp_path / "next", live)
+    assert again.body == brief.body
+    assert again.contradictions == "" and again.grading == ""
 
 
 # --------------------------------------------------------------------------

@@ -522,8 +522,9 @@ def test_the_long_reads_five_years_and_the_short_its_months(settings, tmp_path):
     get_price_history("EXMPL", s, source=Feed())
     get_price_history("EXMPL", s, source=Feed(), days=long_history_days(s))
     assert asked == [s.price_history_days, 1826]
+    # (a mock run's files carry `_mock`, so a live run never reads them)
     assert sorted(p.name for p in (tmp_path / "c" / "prices").iterdir()) == [
-        "EXMPL_120.json", "EXMPL_1826.json"]
+        "EXMPL_120_mock.json", "EXMPL_1826_mock.json"]
 
 
 def test_the_mock_long_chart_has_five_years_ending_on_the_short_s_closes(settings):
@@ -550,6 +551,21 @@ def test_a_chart_over_years_heads_its_periods_with_month_and_year():
         "38.60", "15.40", "15.40")
     # the short's months keep their day heads
     assert price_labels(s)["head-4"] == "09-10"
+
+
+def test_a_price_over_a_thousand_is_rounded_to_fit_its_mark_not_cut_off():
+    """The marks hold seven characters. Cutting the string to fit made 1,234.56
+    "1,234.5" and 12,345.67 "12,345.": a price nobody paid, and one with its
+    last digits gone. The cents go instead, and the figure is rounded."""
+    from pipeline.chart import price_labels
+    from pipeline.prices import PriceSeries
+
+    s = PriceSeries(ticker="EXMPL", dates=["2021-09-10", "2023-01-02", "2026-09-10"],
+                    closes=[987.65, 12345.67, 1234.56], source="fixture")
+    got = price_labels(s)
+    assert (got["mark-high"], got["mark-low"], got["mark-last"]) == (
+        "12,346", "987.65", "1,234.6")
+    assert all(len(got[k]) <= 7 for k in ("mark-high", "mark-low", "mark-last"))
 
 
 def test_the_live_feed_asks_for_calendar_days_not_trading_bars(settings, monkeypatch):
@@ -582,3 +598,62 @@ def test_the_live_feed_asks_for_calendar_days_not_trading_bars(settings, monkeyp
     (kw,) = asked
     assert "period" not in kw
     assert kw["start"] == (date.today() - timedelta(days=1826)).isoformat()
+
+
+def test_a_mock_run_s_walk_is_never_served_to_a_live_one(settings, tmp_path):
+    # The mock floor is a synthetic walk NOT marked degraded. Sharing one
+    # cache file, it came back to the first live run as if Yahoo had sent it,
+    # and no gate stopped the final render.
+    from pipeline.prices import PriceSeries, get_price_history, price_cache_file
+
+    mock = settings.model_copy(update={"cache_dir": tmp_path / "c"})
+    walk = get_price_history("ZZZZ", mock)
+    assert walk.source == "synthetic" and not walk.degraded
+
+    class LiveFeed:
+        def history(self, ticker, days):
+            return PriceSeries(ticker=ticker, dates=["2026-01-01", "2026-01-02"],
+                               closes=[10.0, 11.0], source="yahoo")
+
+    live = mock.model_copy(update={"mock_mode": False})
+    assert get_price_history("ZZZZ", live, source=LiveFeed()).source == "yahoo"
+
+    # and a file a mock run wrote before the two were split is refetched
+    old = price_cache_file("YYYY", live.price_history_days, live)
+    old.parent.mkdir(parents=True, exist_ok=True)
+    old.write_text(PriceSeries(ticker="YYYY", dates=["2026-01-01", "2026-01-02"],
+                               closes=[5.0, 6.0], source="fixture").to_json(),
+                   encoding="utf-8")
+    assert get_price_history("YYYY", live, source=LiveFeed()).source == "yahoo"
+
+
+def test_one_missing_close_does_not_throw_five_years_away(settings, monkeypatch):
+    import sys
+    import types
+    from datetime import datetime
+
+    from pipeline.prices import YahooPriceSource
+
+    class Col(list):
+        def tolist(self):
+            return list(self)
+
+    class Hist:
+        index = Col([datetime(2026, 1, d) for d in (5, 6, 7, 8)])
+
+        def __getitem__(self, key):
+            return Col([10.0, float("nan"), 10.5, 11.0])
+
+    class Ticker:
+        def __init__(self, _t):
+            pass
+
+        def history(self, **_k):
+            return Hist()
+
+    monkeypatch.setitem(sys.modules, "yfinance",
+                        types.SimpleNamespace(Ticker=Ticker))
+    got = YahooPriceSource(settings).history("EXMPL", 30)
+    assert got.source == "yahoo" and not got.degraded
+    assert got.closes == [10.0, 10.5, 11.0]
+    assert got.dates == ["2026-01-05", "2026-01-07", "2026-01-08"]

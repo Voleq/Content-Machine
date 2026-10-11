@@ -47,6 +47,66 @@ def test_foreign_filer_degrades_to_none(settings):
     assert F.resolve_filing("NOPE", settings) is None
 
 
+def _submissions(rows):
+    """EDGAR's `recent` block from (form, accession, filed, period) rows,
+    newest first, as the SEC serves it."""
+    return {"filings": {"recent": {
+        "form": [r[0] for r in rows],
+        "accessionNumber": [r[1] for r in rows],
+        "primaryDocument": [f"doc-{i}.htm" for i, _ in enumerate(rows)],
+        "filingDate": [r[2] for r in rows],
+        "reportDate": [r[3] for r in rows],
+    }}}
+
+
+AMENDED = [
+    ("10-K/A", "0001234567-26-000020", "2026-04-20", "2025-12-31"),
+    ("10-K", "0001234567-26-000012", "2026-02-20", "2025-12-31"),
+    ("10-Q/A", "0001234567-25-000050", "2025-12-01", "2025-09-30"),
+    ("10-Q", "0001234567-25-000045", "2025-11-04", "2025-09-30"),
+    ("10-K", "0001234567-25-000010", "2025-02-20", "2024-12-31"),
+    ("10-Q", "0001234567-24-000046", "2024-11-05", "2024-09-30"),
+]
+
+
+def test_an_amendment_does_not_stand_in_for_its_own_year():
+    """A 10-K/A restates the year its 10-K already covers. Kept as a filing of
+    its own it came first, newest-first, and the year-over-year pair was the
+    amendment and the original of the SAME year."""
+    subs = _submissions(AMENDED)
+    annual = F.pick_filings("0001234567", "EXMPL", subs, F.ANNUAL_FORMS)
+    assert [(r.form, r.period) for r in annual] == [
+        ("10-K", "2025-12-31"), ("10-K", "2024-12-31")]
+    quarterly = F.pick_filings("0001234567", "EXMPL", subs, F.QUARTERLY_FORMS)
+    assert [(r.form, r.period) for r in quarterly] == [
+        ("10-Q", "2025-09-30"), ("10-Q", "2024-09-30")]
+
+
+def test_an_amendment_is_kept_when_nothing_else_covers_its_period():
+    subs = _submissions([("10-K/A", "0001234567-26-000021", "2026-05-20",
+                          "2025-12-31"),
+                         ("10-K/A", "0001234567-26-000020", "2026-04-20",
+                          "2025-12-31")])
+    annual = F.pick_filings("0001234567", "EXMPL", subs, F.ANNUAL_FORMS)
+    assert [r.accession for r in annual] == ["0001234567-26-000021"]
+
+
+def test_the_reading_list_never_pairs_a_year_with_itself(settings, monkeypatch):
+    monkeypatch.setattr(F, "_load_company_tickers", lambda s: {
+        "0": {"ticker": "EXMPL", "cik_str": 1234567}})
+    monkeypatch.setattr(F, "_load_submissions",
+                        lambda cik, s: _submissions(AMENDED))
+    fs = F.resolve_filings("EXMPL", settings)
+    assert (fs.latest_annual.form, fs.latest_annual.period) == \
+        ("10-K", "2025-12-31")
+    assert (fs.prior_annual.form, fs.prior_annual.period) == \
+        ("10-K", "2024-12-31")
+    # The newest 10-K reports on a later period than the newest 10-Q, so the
+    # quarter is inside it — and the year-ago quarter is the prior 10-K.
+    assert fs.latest_quarter.period != fs.year_ago_quarter.period
+    assert len({r.accession for r in fs.refs()}) == len(fs.refs())
+
+
 # --------------------------------------------------------------- segment / flag
 
 def _sample_html(settings) -> str:
@@ -58,6 +118,24 @@ def test_segment_filing_labels_sections(settings):
     assert {"Business", "Risk Factors", "MD&A"} <= set(sections)
     assert "net losses" in sections["Risk Factors"]
     assert "net debt to EBITDA" in sections["MD&A"]
+
+
+def test_an_inline_xbrl_filing_keeps_its_prose():
+    """Most 10-Ks are inline XBRL now: spans in divs, not one <p>. Only
+    <p>, <li> and <td> were read, so the brief saw its tables and none of
+    its words. A div with nothing block-level in it is a paragraph; the
+    divs around it are not read twice."""
+    risk = ("Our customers are concentrated, and the loss of any one of them "
+            "would reduce our revenue materially.")
+    html = ("<html><body><div><div><span style='font-weight:700'>Item 1A. Risk "
+            "Factors</span></div>"
+            f"<div><span>{risk}</span></div><div><span>23</span></div>"
+            "<div><table><tr><td>Revenue grew 4%.</td></tr></table></div>"
+            "</div></body></html>")
+    sections = {s["title"]: s["text"] for s in F.segment_filing(html)}
+    assert sections["Risk Factors"].count("customers are concentrated") == 1
+    assert "23" not in sections["Risk Factors"].split()
+    assert sections["Risk Factors"].count("Revenue grew 4%") == 1
 
 
 def test_flag_quotes_mock_are_verbatim(settings):

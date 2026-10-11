@@ -508,15 +508,14 @@ def _check_contents(check: ExportCheck, pairs: dict, expect_ticker: str,
 
 def _as_of_age_days(as_of: str, today: _dt.date | None = None) -> int | None:
     """Age in days of an as-of date string, or None if it cannot be read."""
-    if not as_of:
+    # The freshness gate's reader, so the upload's warning and the gate read
+    # 09/03/2026 as the same day (US first: 9 March), not six months apart.
+    from pipeline.gates import _parse_as_of
+
+    parsed = _parse_as_of(as_of)
+    if parsed is None:
         return None
-    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
-        try:
-            parsed = _dt.datetime.strptime(as_of.strip()[:10], fmt).date()
-        except ValueError:
-            continue
-        return ((today or _dt.date.today()) - parsed).days
-    return None
+    return ((today or _dt.date.today()) - parsed).days
 
 
 # --------------------------------------------------------------------------
@@ -786,9 +785,15 @@ def _read_valuation(ws) -> dict:
             name = _cell_text(row[0]) if row else ""
             if name.lower() not in ("bear", "base", "bull"):
                 continue
+            # The template's B column is the per-share figure itself (`=B6`,
+            # the LTM EPS) and C its name ("EPS"); older sheets name the
+            # multiple in B. Read as text first, B gave "metric=4.25".
+            pair = list(row[1:3])
             scenarios.append({
                 "scenario": name,
-                "metric": _cell_text(row[1]) or _cell_text(row[2]) if len(row) > 2 else "",
+                "metric": next((_cell_text(c) for c in pair
+                                if _cell_text(c) and _num(c) is None), ""),
+                "per_share": next((_num(c) for c in pair if _num(c) is not None), None),
                 "exit_multiple": _num(row[3]) if len(row) > 3 else None,
                 "implied_price": _num(row[4]) if len(row) > 4 else None,
                 "upside_pct": _num(row[5]) if len(row) > 5 else None,

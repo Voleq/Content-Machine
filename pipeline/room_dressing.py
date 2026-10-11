@@ -10,14 +10,16 @@ perspective and in its light:
 - THE BOARD AS INK, multiplied into the painted surface in linear light, so
   the writing darkens with the room when the screen dips and goes behind
   whatever stands between the camera and the board;
-- THE MONITOR AS A PICTURE SHONE THROUGH ITS BACKLIGHT, so it dims with the
-  render's own dip and a sticky note on the glass stays on top of it.
+- THE MONITOR AS A PICTURE SHONE AT THE RENDER'S OWN BRIGHTNESS, over the
+  whole glass, so the made-up app the room was rendered with goes under it
+  and a sticky note on the glass stays on top of it.
 
 THE MONITOR FOLLOWS THE CHAPTER (items 49, 54): through each chapter it shows
 a plate that chapter puts on screen, drawn with the chapter's own figures
-(`pipeline/room_screen.py` decides which), or the price's run. It is not a
-still picture: a cursor blinks on its prompt line, which makes every room
-with the monitor in shot a one-second loop, and the first time a chapter's
+(`pipeline/room_screen.py` decides which), or the price's run. Since 10 Oct
+2026 it is a sheet of the plates' own paper filling the glass, with no app
+round it (no title bar, prompt or sidebar), so the picture on his screen and
+the plate the camera cuts to are one page; the first time a chapter's
 picture is seen it draws itself in (`reveal_frames`).
 
 Every frame and every front layer of a room is written the same way, so the
@@ -34,7 +36,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import math
 import random
 import textwrap
 from dataclasses import dataclass, replace
@@ -43,7 +44,7 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 # Bumped when the drawing changes, so a workspace's written rooms are redone.
-VERSION = "2"
+VERSION = "3"
 
 # What the board asks when the writer's script sets no [BOARD].
 BOARD_DEFAULT_QUESTION = "what are we paying for?"
@@ -54,25 +55,44 @@ BOARD_MAX_CHAPTERS = 6
 
 # Marker colours, as they read on the board's paper.
 _INK = {"black": (34, 38, 48), "blue": (30, 58, 132), "red": (176, 34, 40)}
-# The monitor's chart.
-_SCREEN_BG = (12, 20, 32)
-_SCREEN_GRID = (32, 46, 66)
-_SCREEN_LINE = (86, 214, 250)
-_SCREEN_FILL = (22, 64, 86)
-_SCREEN_TEXT = (168, 184, 204)
+# THE MONITOR ON PAPER: the kit's paper and its inks (subject, structure,
+# quiet), the sheet every plate is drawn on. A chapter's picture brings its
+# own paper to the glass; these draw the price's run.
+_PAPER = (244, 242, 234)
+_PAPER_INK = (40, 60, 154)
+_PAPER_TEXT = (11, 14, 22)
+_PAPER_QUIET = (85, 90, 102)
 
-# THE CURSOR (item 54): on for half a second, off for half, as a terminal's
-# does. A room with the monitor in shot loops at the room's own twelve frames
-# a second; a room that held still becomes a one-second loop of twelve.
-BLINK_FPS = 12
-BLINK_FRAMES = 12
-# How many pictures the chapter's chart takes to draw itself in: a second.
+# THE WHOLE GLASS. The room renders a made-up charting app on the monitor (a
+# title bar, tabs, a sidebar of coloured bars) round the flat backlit chart
+# area rooms.json names, and it read as a fake app. The picture now covers
+# the glass: its corners are the chart area's carried out through the same
+# perspective, from where that area sits in the screen's texture
+# (room3d/textures.py SCREEN_TEX and SCREEN_CHART). The screen's mask is the
+# whole glass already, less the notes stuck on it.
+_SCREEN_TEX = (1920, 1080)
+_SCREEN_CHART = (60, 116, 1392, 1044)
+# The glass's width over its height in the room: build.py's screenface
+# plane, 0.80 of Kenney's screen across and 0.60 of it up. Pictures are drawn
+# at this shape before they go on the glass; drawn at the chart area's
+# texture pixels, they came out a fifth too wide.
+GLASS_ASPECT = 2.16
+# Where the chapter's picture goes on the glass, as fractions of it: as tall
+# as the glass less a hair, and clear of the sticky notes on its corners,
+# which build.py keeps within 0.11 of either side. A 16:9 plate fills it.
+_PICTURE_BOX = (0.115, 0.03, 0.885, 0.97)
+# How bright the glass shines its paper, as a share of the picture: a screen
+# turned down for a night room, not a light box.
+SCREEN_LEVEL = 0.85
+# THE GLOW: a lit screen in a dark room spills past its edge in a camera.
+# What spills, as a share of what the glass shines, and how far, as a share
+# of the glass's width.
+GLOW = 0.3
+GLOW_RADIUS = 0.05
+# How many pictures the chapter's chart takes to draw itself in, at what rate:
+# a second.
 REVEAL_FRAMES = 12
-
-
-def cursor_on(frame: int, fps: float = BLINK_FPS) -> bool:
-    """Whether the cursor shows on frame `frame` of a loop at `fps`."""
-    return (frame / float(fps or BLINK_FPS)) % 1.0 < 0.5
+REVEAL_FPS = 12
 
 
 @dataclass(frozen=True)
@@ -92,7 +112,7 @@ class Dressing:
     screen: str = ""
     # The picture's content hash: a new picture is a new written room.
     screen_stamp: str = ""
-    # What the terminal's title bar says after the ticker.
+    # What the picture is, for the manifest; nothing on the glass says it.
     screen_label: str = ""
 
     @property
@@ -305,108 +325,99 @@ def board_ink(d: Dressing, fonts: Path, size: tuple[int, int]):
     return img
 
 
-def _fit_text(dr, text: str, fonts: Path, face: str, size: float, width: float):
-    """(font, text) at `size` or smaller, shortened with an ellipsis to fit."""
-    font = _font(fonts, face, size)
-    while dr.textlength(text, font=font) > width and font.size > 0.6 * size:
-        font = _font(fonts, face, font.size * 0.92)
-    while dr.textlength(text, font=font) > width and len(text) > 4:
-        text = text[:-2].rstrip() + "…"
-    return font, text
+def _ground_of(pic) -> tuple[int, int, int]:
+    """The paper a picture is drawn on: the median of its outermost pixels."""
+    import numpy as np
+
+    a = np.asarray(pic.convert("RGB"))
+    ring = np.concatenate([a[:2].reshape(-1, 3), a[-2:].reshape(-1, 3),
+                           a[:, :2].reshape(-1, 3), a[:, -2:].reshape(-1, 3)])
+    return tuple(int(v) for v in np.median(ring, axis=0))
 
 
-def _prompt(dr, d: Dressing, fonts: Path, W: int, H: int, cursor: bool) -> None:
-    """The terminal's prompt line along the bottom, with its cursor.
-
-    Starts clear of the note stuck on the glass's bottom left corner.
-    """
-    dr.line([(0.035 * W, 0.885 * H), (0.965 * W, 0.885 * H)], fill=_SCREEN_GRID,
-            width=max(W // 500, 1))
-    f = _font(fonts, "ArchivoNarrow[wght].ttf", 0.058 * H)
-    text = f"{d.ticker} ›"
-    x, y = 0.17 * W, 0.905 * H
-    dr.text((x, y), text, font=f, fill=_SCREEN_TEXT)
-    if cursor:
-        cx = x + dr.textlength(text + " ", font=f)
-        asc, _ = f.getmetrics()
-        dr.rectangle([cx, y + 0.12 * asc, cx + 0.022 * W, y + 1.02 * asc],
-                     fill=_SCREEN_TEXT)
+def _fit(pw: int, ph: int, box) -> tuple[float, float, float, float]:
+    """`pw` x `ph` fitted whole in `box` (x0, y0, x1, y1) and centred in it."""
+    x0, y0, x1, y1 = box
+    k = min((x1 - x0) / pw, (y1 - y0) / ph)
+    w, h = pw * k, ph * k
+    x, y = x0 + (x1 - x0 - w) / 2, y0 + (y1 - y0 - h) / 2
+    return x, y, x + w, y + h
 
 
-# The box the chapter's picture is fitted into on the monitor, as fractions
-# of the screen: under the title bar, over the prompt line.
-_PICTURE_BOX = (0.035, 0.135, 0.965, 0.865)
-
-
-def _picture(img, path: str, box, reveal: float) -> None:
-    """The chapter's plate in `box`, fitted whole, drawn in from the left as
-    far as `reveal` with a bright edge where it is being drawn."""
+def _picture(img, pic, box, reveal: float) -> None:
+    """The chapter's plate `pic` in `box`, fitted whole, drawn in from the
+    left as far as `reveal` with a pen's edge where it is being drawn."""
     from PIL import Image, ImageDraw
 
-    x0, y0, x1, y1 = box
-    pic = Image.open(path).convert("RGBA")
-    k = min((x1 - x0) / pic.width, (y1 - y0) / pic.height)
-    pw, ph = max(int(pic.width * k), 1), max(int(pic.height * k), 1)
+    x0, y0, x1, y1 = _fit(pic.width, pic.height, box)
+    px, py = int(round(x0)), int(round(y0))
+    pw, ph = max(int(round(x1)) - px, 1), max(int(round(y1)) - py, 1)
     pic = pic.resize((pw, ph), Image.LANCZOS)
-    px, py = int(x0 + (x1 - x0 - pw) / 2), int(y0 + (y1 - y0 - ph) / 2)
     show = int(pw * max(min(reveal, 1.0), 0.0))
     if show <= 0:
         return
-    ground = Image.new("RGBA", (show, ph), _SCREEN_BG + (255,))
-    ground.alpha_composite(pic.crop((0, 0, show, ph)))
-    img.paste(ground.convert("RGB"), (px, py))
+    img.paste(pic.crop((0, 0, show, ph)), (px, py))
     if show < pw:
         ImageDraw.Draw(img).line([(px + show, py), (px + show, py + ph)],
-                                 fill=_SCREEN_LINE, width=max(img.width // 300, 2))
+                                 fill=_PAPER_INK, width=max(img.width // 400, 2))
 
 
 def screen_chart(d: Dressing, fonts: Path, size: tuple[int, int], *,
-                 reveal: float = 1.0, cursor: bool = True):
-    """The monitor's picture: the chapter's plate, or the price's run on a dark
-    terminal with no value on it; drawn in as far as `reveal`, with the
-    prompt's cursor on or off."""
+                 reveal: float = 1.0):
+    """The monitor's whole glass, `size` big at the glass's shape: the
+    chapter's plate on its own paper, or the price's run on the kit's paper
+    with no value on it; drawn in as far as `reveal`."""
     from PIL import Image, ImageDraw
 
     W, H = size
-    img = Image.new("RGB", size, _SCREEN_BG)
-    dr = ImageDraw.Draw(img)
-    # Clear of the note stuck on the glass's top left corner.
-    hx = 0.13 * W
     if d.screen:
-        label = f"{d.ticker}  ·  {d.screen_label}" if d.screen_label else d.ticker
-        head, label = _fit_text(dr, label, fonts, "ArchivoNarrow[wght].ttf",
-                                0.075 * H, 0.965 * W - hx)
-        dr.text((hx, 0.03 * H), label, font=head, fill=_SCREEN_TEXT)
+        pic = Image.open(d.screen).convert("RGB")
+        img = Image.new("RGB", size, _ground_of(pic))
         bx0, by0, bx1, by1 = _PICTURE_BOX
-        _picture(img, d.screen, (bx0 * W, by0 * H, bx1 * W, by1 * H), reveal)
-        _prompt(dr, d, fonts, W, H, cursor)
+        _picture(img, pic, (bx0 * W, by0 * H, bx1 * W, by1 * H), reveal)
         return img
-    for i in range(1, 6):
-        x = W * i / 6
-        dr.line([(x, 0), (x, 0.865 * H)], fill=_SCREEN_GRID, width=max(W // 600, 1))
-    for i in range(1, 4):
-        y = 0.865 * H * i / 4
-        dr.line([(0, y), (W, y)], fill=_SCREEN_GRID, width=max(W // 600, 1))
-    head = _font(fonts, "ArchivoNarrow[wght].ttf", 0.075 * H)
-    dr.text((hx, 0.03 * H), f"{d.ticker}  ·  {d.span}", font=head, fill=_SCREEN_TEXT)
+    img = Image.new("RGB", size, _PAPER)
+    dr = ImageDraw.Draw(img)
+    x0, y0, x1, y1 = 0.13 * W, 0.26 * H, 0.87 * W, 0.86 * H
+    head = _font(fonts, "ArchivoNarrow[wght].ttf", 0.09 * H)
+    dr.text((x0, 0.07 * H), f"{d.ticker}  ·  {d.span}", font=head, fill=_PAPER_TEXT)
+    rule = tuple(int(p + (q - p) * 0.3) for p, q in zip(_PAPER, _PAPER_QUIET))
+    for i in range(4):
+        y = y0 + (y1 - y0) * i / 3
+        dr.line([(x0, y), (x1, y)], fill=rule, width=max(W // 700, 1))
     if len(d.closes) >= 2:
-        pts = _path(d.closes, (0.035 * W, 0.17 * H, 0.965 * W, 0.80 * H))
+        pts = _path(d.closes, (x0, y0 + 0.03 * H, x1, y1 - 0.03 * H))
         n = len(pts) if reveal >= 1 else int(len(pts) * max(reveal, 0.0))
         if n >= 2:
             pts = pts[:n]
-            dr.polygon(pts + [(pts[-1][0], 0.84 * H), (pts[0][0], 0.84 * H)],
-                       fill=_SCREEN_FILL)
-            dr.line(pts, fill=_SCREEN_LINE, width=max(int(0.005 * W), 2), joint="curve")
+            tint = tuple(int(p + (q - p) * 0.12) for p, q in zip(_PAPER, _PAPER_INK))
+            dr.polygon(pts + [(pts[-1][0], y1), (pts[0][0], y1)], fill=tint)
+            dr.line(pts, fill=_PAPER_INK, width=max(int(0.006 * W), 2), joint="curve")
             x, y = pts[-1]
-            r = 0.009 * W
-            dr.ellipse([x - r, y - r, x + r, y + r], fill=_SCREEN_LINE)
+            r = 0.008 * W
+            dr.ellipse([x - r, y - r, x + r, y + r], fill=_PAPER_INK)
     else:
         f = _font(fonts, "ArchivoNarrow[wght].ttf", 0.12 * H)
         msg = "NO DATA"
-        dr.text(((W - dr.textlength(msg, font=f)) / 2, 0.38 * H), msg, font=f,
-                fill=_SCREEN_TEXT)
-    _prompt(dr, d, fonts, W, H, cursor)
+        dr.text(((W - dr.textlength(msg, font=f)) / 2, 0.44 * H), msg, font=f,
+                fill=_PAPER_QUIET)
     return img
+
+
+def glass_quad(surf: dict, k: float = 1.0) -> list[tuple[float, float]]:
+    """The monitor's whole glass as four points (top left, top right, bottom
+    right, bottom left), from the chart area's `surf["quad"]` in canvas
+    units, times `k`."""
+    W, H = _SCREEN_TEX
+    x0, y0, x1, y1 = _SCREEN_CHART
+    h = _homography([(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+                    [(x * k, y * k) for x, y in surf["quad"]])
+
+    def at(x, y):
+        p = h @ (x, y, 1.0)
+        return (float(p[0] / p[2]), float(p[1] / p[2]))
+
+    return [at(0, 0), at(W, 0), at(W, H), at(0, H)]
 
 
 def picture_quad(plate, d: Dressing, size: tuple[int, int]):
@@ -414,7 +425,7 @@ def picture_quad(plate, d: Dressing, size: tuple[int, int]):
     frame `size` big (top left, top right, bottom right, bottom left); None
     when the room has no monitor in shot or the monitor shows the price.
 
-    The same fit `_picture` draws it with, carried through the screen's
+    The same fit `_picture` draws it with, carried through the glass's
     corners: item 60 pushes the camera into exactly this, so the plate the
     cut lands on is the picture that was on the monitor.
     """
@@ -423,16 +434,13 @@ def picture_quad(plate, d: Dressing, size: tuple[int, int]):
     surf = (getattr(plate, "writable", None) or {}).get("screen")
     if surf is None or not d.screen:
         return None
-    sw, sh = surf.get("size") or (16, 9)
     pw, ph = Image.open(d.screen).size
     bx0, by0, bx1, by1 = _PICTURE_BOX
-    k = min((bx1 - bx0) * sw / pw, (by1 - by0) * sh / ph)
-    u0 = bx0 + ((bx1 - bx0) - pw * k / sw) / 2
-    v0 = by0 + ((by1 - by0) - ph * k / sh) / 2
-    u1, v1 = u0 + pw * k / sw, v0 + ph * k / sh
-    s = size[0] / plate.canvas[0]
+    # In units of the glass's height, so its width is its aspect.
+    u0, v0, u1, v1 = _fit(pw, ph, (bx0 * GLASS_ASPECT, by0, bx1 * GLASS_ASPECT, by1))
+    u0, u1 = u0 / GLASS_ASPECT, u1 / GLASS_ASPECT
     h = _homography([(0, 0), (1, 0), (1, 1), (0, 1)],
-                    [(x * s, y * s) for x, y in surf["quad"]])
+                    glass_quad(surf, size[0] / plate.canvas[0]))
 
     def at(u, v):
         x, y, w = h @ (u, v, 1.0)
@@ -455,19 +463,19 @@ def _homography(src, dst):
     return np.append(h, 1.0).reshape(3, 3)
 
 
-def _warp(tex, quad, frame_size):
+def _warp(tex, quad, frame_size, pad: int = 0):
     """`tex` laid on `quad` (frame pixels), as (RGBA crop, (x0, y0)), or None.
 
-    Only the quad's box is drawn, so a board a tenth of the frame costs a
-    tenth of it.
+    Only the quad's box is drawn, `pad` more each way, so a board a tenth of
+    the frame costs a tenth of it.
     """
     import numpy as np
     from PIL import Image
 
     W, H = frame_size
     xs, ys = [p[0] for p in quad], [p[1] for p in quad]
-    x0, y0 = max(int(min(xs)) - 2, 0), max(int(min(ys)) - 2, 0)
-    x1, y1 = min(int(max(xs)) + 3, W), min(int(max(ys)) + 3, H)
+    x0, y0 = max(int(min(xs)) - 2 - pad, 0), max(int(min(ys)) - 2 - pad, 0)
+    x1, y1 = min(int(max(xs)) + 3 + pad, W), min(int(max(ys)) + 3 + pad, H)
     if x1 <= x0 or y1 <= y0:
         return None
     tw, th = tex.size
@@ -508,15 +516,19 @@ class _Layer:
     at: tuple[int, int]
     mask: object        # float crop, 0..1, what the camera sees of the surface
     colour: object      # the surface's painted colour, linear
+    # The screen's: where the render shows its bare backlight (the chart area
+    # it was rendered with), to read how bright it drew it; and how far its
+    # glow spills, in pixels.
+    probe: object = None
+    glow: float = 0.0
 
 
 def _layers(plate, d: Dressing, fonts: Path, *, size: tuple[int, int] | None = None,
-            cursor: bool = True, reveal: float = 1.0,
-            only: frozenset[str] | None = None) -> list[_Layer]:
+            reveal: float = 1.0, only: frozenset[str] | None = None) -> list[_Layer]:
     """The board's ink and the monitor's picture, each warped into a frame
     `size` big (the plate's delivered size unless said)."""
     import numpy as np
-    from PIL import Image
+    from PIL import Image, ImageDraw
 
     size = tuple(size or plate.delivered)
     k = size[0] / plate.canvas[0]
@@ -524,20 +536,27 @@ def _layers(plate, d: Dressing, fonts: Path, *, size: tuple[int, int] | None = N
     for which, surf in sorted(plate.writable.items()):
         if only is not None and which not in only:
             continue
-        quad = [(x * k, y * k) for x, y in surf["quad"]]
+        if which == "screen":
+            quad = glass_quad(surf, k)
+        else:
+            quad = [(x * k, y * k) for x, y in surf["quad"]]
         edge = max(abs(quad[1][0] - quad[0][0]), abs(quad[2][0] - quad[3][0]))
-        sw, sh = surf.get("size") or (16, 9)
         tw = int(min(max(edge * 1.25, 640), 3000))
-        th = max(int(tw * sh / sw), 16)
+        pad = 0
         if which == "board":
+            sw, sh = surf.get("size") or (16, 9)
+            th = max(int(tw * sh / sw), 16)
             tex = board_ink(d, fonts, (tw, th))
             colour = surf.get("paper")
         elif which == "screen":
-            tex = screen_chart(d, fonts, (tw, th), reveal=reveal, cursor=cursor)
+            th = max(int(tw / GLASS_ASPECT), 16)
+            tex = screen_chart(d, fonts, (tw, th), reveal=reveal)
             colour = surf.get("backlight")
+            glow = GLOW_RADIUS * edge
+            pad = int(3 * glow) + 1
         else:
             continue
-        warped = _warp(tex, quad, size)
+        warped = _warp(tex, quad, size, pad)
         mpath = plate.writable_mask(which)
         if warped is None or colour is None or mpath is None or not mpath.exists():
             continue
@@ -547,9 +566,39 @@ def _layers(plate, d: Dressing, fonts: Path, *, size: tuple[int, int] | None = N
         if m.size != size:
             m = m.resize(size, Image.BILINEAR)
         mask = np.asarray(m.crop((x0, y0, x0 + w, y0 + h)), dtype=np.float32) / 255.0
-        out.append(_Layer(which, px, (x0, y0), mask,
-                          _linear(np.asarray(colour, dtype=np.uint8)).astype(np.float32)))
+        layer = _Layer(which, px, (x0, y0), mask,
+                       _linear(np.asarray(colour, dtype=np.uint8)).astype(np.float32))
+        if which == "screen":
+            # The chart area drawn in a tenth from its edges: the backlight
+            # and nothing of the app round it.
+            chart = [(x * k - x0, y * k - y0) for x, y in surf["quad"]]
+            cx = sum(p[0] for p in chart) / 4
+            cy = sum(p[1] for p in chart) / 4
+            probe = Image.new("L", (w, h), 0)
+            ImageDraw.Draw(probe).polygon(
+                [(cx + (x - cx) * 0.8, cy + (y - cy) * 0.8) for x, y in chart], fill=255)
+            layer.probe = np.asarray(probe) > 0
+            layer.glow = glow
+        out.append(layer)
     return out
+
+
+def _soft(a, r: float):
+    """`a` (h, w, channels) blurred about `r` pixels: three box passes each
+    way, which reads as a Gaussian."""
+    import numpy as np
+
+    r = max(int(round(r / 1.7)), 1)
+    out = a.astype(np.float64)
+    for axis in (0, 1):
+        for _ in range(3):
+            pad = [(0, 0)] * out.ndim
+            pad[axis] = (r + 1, r)
+            c = np.cumsum(np.pad(out, pad), axis=axis)
+            n = out.shape[axis]
+            out = (np.take(c, range(2 * r + 1, n + 2 * r + 1), axis=axis)
+                   - np.take(c, range(0, n), axis=axis)) / (2 * r + 1)
+    return out.astype(np.float32)
 
 
 def dress(img, layers: list[_Layer]):
@@ -565,14 +614,26 @@ def dress(img, layers: list[_Layer]):
         f = _linear(region)
         a = (L.pixels[..., 3] * L.mask)[..., None]
         tex = _linear((L.pixels[..., :3] * 255 + 0.5).astype(np.uint8))
-        ratio = tex / np.maximum(L.colour, 1e-4)
         if L.kind == "board":
             # Ink takes light away from the paint it is on: darker by the
             # ink's share of the paper, and only where it is.
+            ratio = tex / np.maximum(L.colour, 1e-4)
             f = f * (1 - a * (1 - np.minimum(ratio, 1.0)))
         else:
-            # The chart replaces the backlight it is shone through.
-            f = f * (1 - a + a * ratio)
+            # The glass shines the picture as bright as the render drew its
+            # backlight (dimmer where the room dips), replacing what was on
+            # it: the app the room was rendered with goes under the picture.
+            lit_b = L.colour
+            if L.probe is not None:
+                sel = L.probe & (L.mask > 0.99)
+                if arr.shape[2] == 4:
+                    sel &= arr[y0:y0 + h, x0:x0 + w, 3] > 0
+                if sel.sum() >= 16:
+                    lit_b = np.median(f[sel], axis=0)
+            lit = a * tex * (SCREEN_LEVEL * lit_b / np.maximum(L.colour, 1e-4))
+            f = f * (1 - a) + lit
+            if L.glow > 0:
+                f = f + GLOW * _soft(lit, L.glow) * (1 - a)
         arr[y0:y0 + h, x0:x0 + w, :3] = _encode(f)
         if arr.shape[2] == 4:
             # A front layer is clear where nothing stands in front of him.
@@ -600,26 +661,13 @@ def _stamp(plate, d: Dressing, names: list[str]) -> str:
     return stamp.hexdigest()[:12]
 
 
-def _off(name: str) -> str:
-    """The name the cursor-off picture of `name` is written under."""
-    p = Path(name)
-    return str(p.with_name(p.stem + ".off" + p.suffix))
-
-
 def written_room(plate, d: Dressing, out: Path, fonts: Path):
     """`plate` with this episode on its board and monitor, or `plate` itself.
 
     The written pictures go under `out`, named as the kit names them, and the
     plate that comes back is the same plate rooted there: every renderer that
     opens a frame, a front layer or the base file opens the written one, and
-    nothing else about the room (its anchor, its slots) changes.
-
-    A room with the monitor in shot comes back LOOPING (item 54): the cursor
-    on the prompt line is on for half of each second and off for the other,
-    so a room that held still is now twelve frames a second over its two
-    pictures, and a room that already looped (the December lights, the rain)
-    keeps its own frames with the cursor written on each. Every renderer that
-    plays a looping room plays it unchanged.
+    nothing else about the room (its anchor, its slots, its own loop) changes.
 
     Done once per room, dressing and drawing; a second call finds it on disk.
     """
@@ -630,75 +678,30 @@ def written_room(plate, d: Dressing, out: Path, fonts: Path):
     root = out / f"{plate.name}_{_stamp(plate, d, names)}"
     fam = root / plate.family
     done = fam / ".written"
-    screen = "screen" in plate.writable
-    if screen:
-        loop = list(plate.frames) if plate.animated else []
-        fps = float(plate.fps or BLINK_FPS) if loop else float(BLINK_FPS)
-        if loop:
-            # Long enough for the cursor's whole second to come round on the
-            # room's own loop: a three-frame loop would only ever show it on.
-            per = max(int(round(fps)), 1)
-            loop = [loop[i % len(loop)]
-                    for i in range(len(loop) * per // math.gcd(len(loop), per))]
-            # A frame that names no front of its own has the room's one front,
-            # which carries the monitor too and so blinks with it.
-            front = plate.layers.get("front", "")
-            loop = [f if f.front or not front else replace(f, front=front) for f in loop]
-        else:
-            # A room that held still: its one picture, twelve times.
-            base = (plate.frames[0] if plate.frames else None)
-            front = plate.layers.get("front", "")
-            loop = [replace(base, png=plate.files_png, front=front) if base is not None
-                    else _frame(plate.files_png, front)] * BLINK_FRAMES
-        offs = sorted({n for i, f in enumerate(loop) if not cursor_on(i, fps)
-                       for n in (f.png, f.front) if n})
     if not done.exists():
         from PIL import Image
 
         layers = _layers(plate, d, fonts)
         if not layers:
             return plate
-        # The same with the cursor off: the board as it is, the monitor again.
-        dark = ([L for L in layers if L.kind != "screen"]
-                + _layers(plate, d, fonts, cursor=False, only=frozenset({"screen"}))
-                if screen else [])
         fam.mkdir(parents=True, exist_ok=True)
-
-        def _open(n):
+        for n in names:
             im = Image.open(src / n)
             im = im.convert("RGBA" if "A" in im.getbands() else "RGB")
             if im.size != tuple(plate.delivered):
                 im = im.resize(tuple(plate.delivered), Image.LANCZOS)
-            return im
-
-        for n in names:
-            im = dress(_open(n), layers)
-            im.save(fam / n, compress_level=1)
-            if screen and n in offs:
-                dress(_open(n), dark).save(fam / _off(n), compress_level=1)
+            dress(im, layers).save(fam / n, compress_level=1)
         done.write_text(d.fingerprint, encoding="utf-8")
         log.info("room: wrote episode %d on %s (%s)", d.episode, plate.key,
                  ", ".join(L.kind for L in layers))
-    if not screen:
-        return replace(plate, root=root, writable={})
-    frames = tuple(f if cursor_on(i, fps) else
-                   replace(f, png=_off(f.png), front=_off(f.front) if f.front else "")
-                   for i, f in enumerate(loop))
-    return replace(plate, root=root, writable={}, frames=frames, playback="loop",
-                   fps=fps, frame_count=len(frames), base_is_frame=frames[0].tag)
-
-
-def _frame(png: str, front: str = ""):
-    from pipeline.plates import Frame
-
-    return Frame(tag="f0", png=png, front=front)
+    return replace(plate, root=root, writable={})
 
 
 def reveal_frames(plate, d: Dressing, fonts: Path, size: tuple[int, int], *,
                   frames: int = REVEAL_FRAMES):
     """The chapter's picture drawing itself on the monitor, as `frames` pairs
-    of (room, front or None) at `size`, cursor on; None if the room has no
-    monitor in shot.
+    of (room, front or None) at `size`; None if the room has no monitor in
+    shot.
 
     Kept in memory, not written beside the kit's names: only the renderer's
     clip of a chapter's first shot of the room plays them. On a room that

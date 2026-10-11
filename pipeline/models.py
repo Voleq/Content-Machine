@@ -911,12 +911,30 @@ RATE_FIELDS = frozenset({
 # back as "0.08% insider ownership" — a real number, off by a hundred, in a
 # sentence that reads perfectly well.
 #
-# Only the two ownership fields are here. `fcf_yield`, `dividend_yield`,
-# `debt_to_equity` and `short_interest` are fractions in the template too, but
-# the committed fixture still carries them as percentages, so formatting them
-# here would show a 100x error rather than fix one. That disagreement is real
-# and is reported with this pack; it is not silently patched from this end.
-_FRACTION_FIELDS = frozenset({"insider_own", "institutional_own"})
+# Every Snapshot cell the template formats as a percent is a fraction, and so is
+# the one it leaves in General: `D24` is `=D15/D22-1` under `0%`, `D34` is
+# `=1/D25`, `D36`/`D43`/`D49` divide the add-in's percent by 100, `D37` is a
+# buyback over a market cap, `D38` adds two of them, and `D35` divides the
+# percent the add-in returns by 100 (which is why it printed "-0%" on a cover).
+# `debt_to_equity` is a RATIO shown as a percent — 1.4 is the "140.0%" the cell
+# displays — so it reads as 140%, never as 1.4%.
+#
+# The committed fixture used to carry these as percentages, which is the
+# disagreement this list could not paper over from this end; it now carries the
+# template's values, so there is one convention rather than two.
+_FRACTION_FIELDS = frozenset({
+    "pct_from_52w_high", "earnings_yield", "fcf_yield", "dividend_yield",
+    "buyback_yield", "shareholder_yield", "debt_to_equity", "short_interest",
+    "insider_own", "institutional_own",
+})
+
+# The percentages of SHARES OUTSTANDING; the rest are of something else.
+_OWN_FIELDS = frozenset({"insider_own", "institutional_own"})
+
+# The Dashboard rows that are `=Snapshot!D24` and `=Snapshot!D35`, and so hold
+# the same fractions under their own labels.
+_FRACTION_DASHBOARD = {"% from 52w high": "pct_from_52w_high",
+                       "FCF yield": "fcf_yield"}
 
 
 def _mag(v: float) -> str:
@@ -959,6 +977,15 @@ def _moves_line(moves: dict) -> str:
                         "needs five quarters of history"))
 
 
+def plain_number(v) -> str:
+    """A table cell as the writer reads it: every digit, no exponent.
+    `{:g}` keeps six figures, so a raw-dollar 391035000000 was 3.91035e+11."""
+    v = float(v)
+    if v.is_integer():
+        return str(int(v))
+    return f"{v:.4f}".rstrip("0").rstrip(".")
+
+
 def _present(field: str, value):
     """One snapshot value as the writer should read it.
 
@@ -968,7 +995,8 @@ def _present(field: str, value):
     claim about the company rather than about the data.
     """
     if field in _FRACTION_FIELDS and isinstance(value, (int, float)):
-        return f"{value * 100:.1f}% of shares outstanding (fraction {value:g})"
+        of = " of shares outstanding" if field in _OWN_FIELDS else ""
+        return f"{value * 100:.1f}%{of} (fraction {value:g})"
     return value
 
 
@@ -1211,7 +1239,7 @@ class CompanyData(BaseModel):
             for f in HISTORY_FIELDS:
                 vals = self.history.get(f)
                 if vals and any(v is not None for v in vals):
-                    cells = " | ".join("n/a" if v is None else f"{v:g}" for v in vals)
+                    cells = " | ".join("n/a" if v is None else plain_number(v) for v in vals)
                     lines.append(f"  {f}: {cells}")
         # The quarterly table is NOT emitted here. It is its own entry in
         # `bot.prompts.PAYLOAD` (`{{quarters}}`), placed directly after
@@ -1223,7 +1251,8 @@ class CompanyData(BaseModel):
             lines.append("[dashboard · one-glance summary + flags]")
             for label, val in self.dashboard.items():
                 if val not in (None, ""):
-                    lines.append(f"  {label}: {val}")
+                    shown = _present(_FRACTION_DASHBOARD.get(label, label), val)
+                    lines.append(f"  {label}: {shown}")
         if self.has_valuation:
             lines.append("[valuation · bear/base/bull]")
             for k in ("current_price", "ltm_eps", "ltm_fcf_ps"):

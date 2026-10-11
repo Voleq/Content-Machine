@@ -514,8 +514,17 @@ class Settings(BaseSettings):
     # `DENNIS_3D_PYTHON` is the Python that has `bpy` (default: this one).
     dennis_3d: str = Field(default="off", alias="DENNIS_3D")
     dennis_3d_python: str = Field(default="", alias="DENNIS_3D_PYTHON")
-    dennis_3d_fps: int = 12             # drawn on twos, as the kit's Dennis
+    # Drawn at the video's own rate (Valentin, 10-10: "make him smoother").
+    # Twelve, on twos like the kit's 2D Dennis, stepped unevenly into 30 fps
+    # (3, 2, 3, 2 frames a drawing) and read as judder; 30 costs 2.5x the draw.
+    dennis_3d_fps: int = 30
     dennis_3d_samples: int = 8
+    # HOW HIS LINES ARE DRAWN: `passes`, found in the GPU render's own depth,
+    # normal and part pictures (room3d/lines.py), which takes most of a frame's
+    # time out on a GPU; or `freestyle`, Blender's line tracer, on the CPU
+    # whatever the GPU does. Valentin, 11 Oct, having seen the two side by
+    # side: "we go for the gpu since it halfs the time".
+    dennis_3d_lines: str = Field(default="passes", alias="DENNIS_3D_LINES")
     short_width: int = 1080
     short_height: int = 1920
     long_width: int = 1920
@@ -635,6 +644,13 @@ class Settings(BaseSettings):
     # one under its voice; its music is the theme, as intro and outro.
     short_bed: bool = Field(default=True, alias="SHORT_BED")
     short_bed_gain_db: float = Field(default=-24.0, alias="SHORT_BED_GAIN_DB")
+
+    # The meme a SHORT's verdict used to end on: picked by the bot off the
+    # script's words and laid over the payoff's last second and a half. Off
+    # since 2026-10-10: nothing the voice says points at it, so it was a
+    # picture that flashed and went, unexplained. Kept as a setting rather
+    # than torn out; the long's memes are the writer's [MEME] and unaffected.
+    short_meme: bool = Field(default=False, alias="SHORT_MEME")
 
     # --- encode politeness ------------------------------------------------
     # The render box is the operator's daily-driver desktop, and renders are
@@ -800,6 +816,16 @@ class Settings(BaseSettings):
         v = v.lower()
         if v not in allowed:
             raise ValueError(f"DELIVERY_BACKEND must be one of {sorted(allowed)}")
+        return v
+
+    @field_validator("dennis_3d_lines")
+    @classmethod
+    def _check_lines(cls, v: str) -> str:
+        # A typo would quietly draw him the slow way; say so at start instead.
+        allowed = {"freestyle", "passes"}
+        v = (v or "passes").strip().lower()
+        if v not in allowed:
+            raise ValueError(f"DENNIS_3D_LINES must be one of {sorted(allowed)}")
         return v
 
     # ------------------------------------------------------------------ mocks

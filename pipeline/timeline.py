@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 
 from pipeline.models import (
     DELIVERY_TAG_TYPES,
+    HISTORY_FIELDS,
     Cue,
     CueKind,
     LongScript,
@@ -556,6 +557,66 @@ def cue_label(c: Cue) -> str:
     return f"[{c.kind.value.upper()}: {name.split('/')[-1]}]"
 
 
+# What a chart plate's own words call a history row, where that is not just
+# the row's key with spaces.
+_METRIC_WORDS = {
+    "fcf": ("free cash flow", "fcf"),
+    "diluted_shares": ("share count", "shares outstanding", "diluted shares"),
+    "net_income": ("net income", "net loss"),
+    "eps": ("eps", "earnings per share"),
+}
+
+
+def chart_metric(c: Cue) -> str:
+    """The history row a [CHART] draws ("" for the price, or not a chart)."""
+    if c.kind is not CueKind.CHART:
+        return ""
+    metric = str(c.payload.get("value") or "").strip().lower()
+    return "" if metric in ("", "price") else metric
+
+
+def short_key(key: str) -> str:
+    """`charts/line-6y-16x9` -> `line-6y`."""
+    return re.sub(r"-(16x9|9x16)$", "", key.rsplit("/", 1)[-1])
+
+
+# How long after a chart plate a [CHART] of the same row is still the same
+# picture twice: as long as a readable beat can stay up. Past it the plate is
+# long gone and the chart is the writer's own second look.
+SAME_FIGURE_WINDOW_S = MAX_READABLE_S
+
+
+def _row_names(row: str) -> tuple[str, ...]:
+    return _METRIC_WORDS.get(row, (row.replace("_", " "),))
+
+
+def _names(word: str, text: str) -> bool:
+    return re.search(rf"(?<![a-z]){re.escape(word)}(?![a-z])", text) is not None
+
+
+def charts_the_same(plate: Cue, chart: Cue) -> bool:
+    """Whether `plate` is a charts/ plate whose own words name the history
+    row the later `chart` draws: the same figure, pictured twice.
+
+    A row named only inside a longer row's name is not named: "cash" in
+    "free cash flow" is the cash flow, not the balance sheet's cash."""
+    metric = chart_metric(chart)
+    key = str(plate.payload.get("value") or "")
+    if not metric or plate.kind is not CueKind.PLATE or not key.startswith("charts/"):
+        return False
+    text = " ".join(str(v) for v in (plate.payload.get("values") or {}).values()).lower()
+    for word in _row_names(metric):
+        longer = sorted((n for row in HISTORY_FIELDS if row != metric
+                         for n in _row_names(row) if n != word and _names(word, n)),
+                        key=len, reverse=True)
+        bare = text
+        for n in longer:
+            bare = re.sub(rf"(?<![a-z]){re.escape(n)}(?![a-z])", " ", bare)
+        if _names(word, bare):
+            return True
+    return False
+
+
 def plan_long_segments(
     cues: list[Cue],
     duration: float,
@@ -689,7 +750,20 @@ def plan_long_segments(
         host_i += 1
 
     def _undirected(a: float, b: float) -> None:
-        """Beats of him the writer left to the bot: even parts, as ever."""
+        """Beats of him the writer left to the bot: even parts, as ever.
+
+        A chapter that starts inside the stretch gets its cut, as one inside
+        a scene does: the card lands on the first cut at or after its time,
+        and even parts across the boundary put it up to a part late."""
+        edges = [a]
+        for t in sorted(x for x in starts if a + MIN_HOST_BEAT_S < x < b - MIN_HOST_BEAT_S):
+            if t - edges[-1] >= MIN_HOST_BEAT_S:
+                edges.append(t)
+        edges.append(b)
+        for p0, p1 in zip(edges, edges[1:]):
+            _even_parts(p0, p1)
+
+    def _even_parts(a: float, b: float) -> None:
         nonlocal host_i
         span = b - a
         if span > HOST_GAP_WARN_S:
@@ -736,6 +810,26 @@ def plan_long_segments(
 
     def chapter_of(t: float) -> int:
         return sum(1 for s in starts if s <= t + 0.05)
+
+    # ONE FIGURE, ONE PICTURE. A [CHART: revenue] after a chart plate that
+    # already drew revenue in the same chapter is the same picture twice,
+    # the second on a scale of its own: two revenue charts five seconds
+    # apart, one from zero and one from 400. The plate is the writer's own
+    # figures, so it stays and the chart goes.
+    kept: list[Cue] = []
+    for c in visual:
+        twin = next((p for p in reversed(kept)
+                     if chapter_of(p.t) == chapter_of(c.t)
+                     and c.t - p.t <= SAME_FIGURE_WINDOW_S and charts_the_same(p, c)),
+                    None)
+        if twin is not None:
+            why = (f"the {short_key(str(twin.payload.get('value') or ''))} plate "
+                   f"before it already charts {chart_metric(c).replace('_', ' ')}")
+            warnings.append(f"visual cue at {c.t:.2f}s {cue_label(c)} dropped — {why}")
+            note(c, "dropped", why=why)
+            continue
+        kept.append(c)
+    visual = kept
 
     cursor = 0.0
     for k, c in enumerate(visual):

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 
 from pipeline.sources import (
     FRED_SERIES,
@@ -211,6 +212,57 @@ def test_an_edgar_miss_is_unavailable_with_a_reason(settings, monkeypatch):
         assert got.get("reason"), fn.__name__
 
 
+class _SecResp:
+    def __init__(self, data):
+        self._data = data
+
+    def json(self):
+        return self._data
+
+
+def _sec_answering(forms, asked):
+    """A stand-in for `filings._sec_get`: the ticker map, and a submissions
+    list holding only `forms`."""
+    def get(url, settings):
+        asked.append(url)
+        if url.endswith("company_tickers.json"):
+            return _SecResp({"0": {"ticker": "EXMPL", "cik_str": 1234, "title": "Example"}})
+        return _SecResp({"filings": {"recent": {
+            "form": forms, "accessionNumber": ["0001234-26-000001"] * len(forms),
+            "primaryDocument": ["a.htm"] * len(forms),
+            "filingDate": ["2026-07-21"] * len(forms)}}})
+    return get
+
+
+@pytest.mark.parametrize("fn, kind", [(latest_8k, "8k"), (insider_transactions, "form4")])
+def test_an_sec_that_could_not_be_read_is_not_cached_as_one_with_nothing_on_file(
+        settings, monkeypatch, fn, kind):
+    """"No recent 8-K on file" is a fact about the company. The SEC being
+    down is not, and was stored as the same fact: the next ask, a retry
+    minutes later, was told it from the cache without the SEC being asked."""
+    from pipeline import filings
+
+    live = settings.model_copy(update={"mock_mode": False})
+    asked: list = []
+    monkeypatch.setattr(filings, "_sec_get", lambda url, s: asked.append(url))
+
+    got = fn("EXMPL", live)
+    assert got["status"] == UNAVAILABLE and got.get("reason")
+    assert cached(live, kind, "EXMPL") is None
+    fn("EXMPL", live)
+    assert len(asked) == 2, "the second ask was answered from the cache"
+
+    # A SEC that answered, and has no such filing, is a fact and is kept.
+    asked.clear()
+    monkeypatch.setattr(filings, "_sec_get", _sec_answering(["10-K"], asked))
+    got = fn("EXMPL", live)
+    assert got["status"] == UNAVAILABLE and got.get("reason")
+    assert cached(live, kind, "EXMPL") == got
+    n = len(asked)
+    fn("EXMPL", live)
+    assert len(asked) == n
+
+
 # --------------------------------------------------------------------------
 # The cache: these endpoints are rate- or key-limited.
 # --------------------------------------------------------------------------
@@ -223,7 +275,8 @@ def test_a_value_round_trips_through_the_cache(settings):
 
 def test_a_stale_entry_is_a_miss(settings):
     store(settings, "8k", "EXMPL", {"v": 1})
-    p = next((settings.cache_dir / "sources" / "8k").glob("*.json"))
+    from pipeline.sources import _cache_path
+    p = _cache_path(settings, "8k", "EXMPL")
     payload = json.loads(p.read_text(encoding="utf-8"))
     payload["_at"] = 0        # 1970
     p.write_text(json.dumps(payload), encoding="utf-8")
@@ -237,7 +290,8 @@ def test_ttls_reflect_how_often_each_source_actually_changes():
 
 def test_a_corrupt_cache_file_is_a_miss_not_a_crash(settings):
     store(settings, "fred", "X", {"v": 1})
-    next((settings.cache_dir / "sources" / "fred").glob("*.json")).write_text("{{{", encoding="utf-8")
+    from pipeline.sources import _cache_path
+    _cache_path(settings, "fred", "X").write_text("{{{", encoding="utf-8")
     assert cached(settings, "fred", "X") is None
 
 
@@ -274,3 +328,55 @@ def test_everything_runs_offline_in_mock_mode(settings):
                     fred_series("cpi", settings),
                     ir_feed("https://ir.example.com/rss", settings)):
         assert payload["status"] == "ok", payload
+
+
+def test_a_mock_run_s_payload_is_not_served_to_a_live_one(settings, monkeypatch):
+    # A mock run's canned CPI and "IR item" were cached under the same key a
+    # live run reads, and came back to it as if fetched.
+    store(settings, "fred", "cpi", {"status": "ok", "fixture": True})
+    live = settings.model_copy(update={"mock_mode": False})
+    assert cached(live, "fred", "cpi") is None
+    assert cached(settings, "fred", "cpi") == {"status": "ok", "fixture": True}
+
+
+def test_the_ir_site_never_gets_the_sec_contact(settings, monkeypatch):
+    # The SEC asks for a name and an email in the User-Agent; a company's own
+    # website is not the SEC, and gets neither.
+    import httpx
+
+    seen = {}
+
+    class Resp:
+        text = "<rss><channel><item><title>t</title><link>l</link></item></channel></rss>"
+
+        def raise_for_status(self):
+            pass
+
+    def fake_get(url, **kw):
+        seen.update(kw.get("headers") or {})
+        return Resp()
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "sec_user_agent": "Someone someone@example.com"})
+    ir_feed("https://ir.example.com/rss", live)
+    assert "@" not in seen.get("User-Agent", "")
+    assert "someone" not in seen.get("User-Agent", "").lower()
+
+
+def test_a_page_that_is_not_a_feed_is_no_feed(settings, monkeypatch):
+    """A site that answers /rss with its home page: a 200 with no items. Said
+    as found, the news merge stopped there and never tried /feed."""
+    import httpx
+
+    class Resp:
+        text = "<!doctype html><html><body>Welcome</body></html>"
+
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(httpx, "get", lambda url, **kw: Resp())
+    live = settings.model_copy(update={"mock_mode": False})
+    got = ir_feed("https://ir.example.com/rss", live)
+    assert got["status"] == UNAVAILABLE
+    assert cached(live, "rss", "https://ir.example.com/rss") is None

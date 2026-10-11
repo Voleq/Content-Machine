@@ -135,6 +135,7 @@ CC0_FILTER = 'license:"Creative Commons 0"'
 MAX_SECONDS = 4.0        # an effect longer than this is a recording, not a cue
 ROOM_MAX_SECONDS = 60.0
 AMBIENCE_MIN_SECONDS = 8.0   # shorter than this loops audibly
+MIN_CUE_SECONDS = 0.1       # less than this left after normalising is a failure
 LOOP_SECONDS = 30.0          # what a loop is cut to, seam crossfaded
 LOOP_SEAM_SECONDS = 1.0
 
@@ -202,7 +203,8 @@ def search_many(query: str, token: str, *, max_s: float, min_s: float = 0.1,
     return []
 
 
-def download(hit: dict, dest: Path, *, loop: bool = False) -> bool:
+def download(hit: dict, dest: Path, *, loop: bool = False,
+             trim_lead: bool = True) -> bool:
     """Fetch the preview and normalise it to the shared peak."""
     import httpx
 
@@ -220,10 +222,11 @@ def download(hit: dict, dest: Path, *, loop: bool = False) -> bool:
         except Exception as exc:  # noqa: BLE001
             print(f"  download failed: {exc}", file=sys.stderr)
             return False
-        return normalise(raw, dest, loop=loop)
+        return normalise(raw, dest, loop=loop, trim_lead=trim_lead)
 
 
-def normalise(src: Path, dest: Path, *, loop: bool = False) -> bool:
+def normalise(src: Path, dest: Path, *, loop: bool = False,
+              trim_lead: bool = True) -> bool:
     """One peak for every cue, so the mix under them never has to move.
 
     A LOOP is also cut to `LOOP_SECONDS` with its seam crossfaded: the take
@@ -232,6 +235,7 @@ def normalise(src: Path, dest: Path, *, loop: bool = False) -> bool:
     a click and a jump in the rain.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_name(dest.stem + ".part.wav")
     level = (f"loudnorm=I=-18:TP={TARGET_PEAK_DBFS}:LRA=11,"
              f"alimiter=limit={10 ** (TARGET_PEAK_DBFS / 20):.4f}")
     if loop:
@@ -241,20 +245,34 @@ def normalise(src: Path, dest: Path, *, loop: bool = False) -> bool:
                  f"[b]atrim=0:{d},asetpts=PTS-STARTPTS[head];"
                  f"[body][head]acrossfade=d={d}:c1=tri:c2=tri,{level}[out]")
         af = ["-filter_complex", graph, "-map", "[out]"]
-    else:
+    elif trim_lead:
         # A one-shot starts on its first sound, not on the silence the
         # uploader left before it: the renderer places a knock or a hit on a
         # frame, and 80 ms of lead-in puts it two frames late.
         af = ["-af", f"silenceremove=start_periods=1:start_threshold=-50dB,{level}"]
+    else:
+        # Room tone IS the quiet: every sample of a still room can sit under
+        # -50 dB, and the trim above then removed all of it.
+        af = ["-af", level]
     cmd = [
         "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(src),
-        *af, "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(dest),
+        *af, "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(tmp),
     ]
     try:
         subprocess.run(cmd, check=True, capture_output=True)
     except (OSError, subprocess.CalledProcessError) as exc:
         print(f"  normalise failed: {exc}", file=sys.stderr)
+        tmp.unlink(missing_ok=True)
         return False
+    # A file with no sound left in it is a failure, not a cue: looped under a
+    # render, a zero-length wav never ends and the render hangs on it. The
+    # file already there (the offline placeholder) stays until one is good.
+    if tmp.stat().st_size < 44 + int(44100 * 2 * MIN_CUE_SECONDS):
+        print(f"  normalise left under {MIN_CUE_SECONDS}s of sound",
+              file=sys.stderr)
+        tmp.unlink(missing_ok=True)
+        return False
+    tmp.replace(dest)
     return True
 
 
@@ -347,7 +365,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.force or rt is None or rt.generated:
             print(f"  {ROOM_TONE_NAME} ...", end=" ", flush=True)
             hit = search(ROOM_QUERY, token, max_s=ROOM_MAX_SECONDS)
-            if hit is not None and download(hit, out / ROOM_TONE_NAME):
+            if hit is not None and download(hit, out / ROOM_TONE_NAME,
+                                            trim_lead=False):
                 known[ROOM_TONE_NAME] = AudioSource(
                     name=ROOM_TONE_NAME,
                     source=f"https://freesound.org/s/{hit.get('id')}/",

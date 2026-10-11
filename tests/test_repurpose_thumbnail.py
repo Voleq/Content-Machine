@@ -144,6 +144,21 @@ def test_shock_metric_priority():
     assert shock_metric(CompanyData(values={})) == ""
 
 
+def test_shock_metric_reads_the_templates_fractions_as_percents():
+    """The template holds FCF yield as -0.05 and debt / equity as 1.4, so the
+    cover said "FCF yield: -0%" and never flagged a leveraged balance sheet."""
+    from pipeline.models import CompanyData
+
+    assert shock_metric(CompanyData(values={"fcf_yield": -0.05})) == "FCF yield: -5%"
+    assert shock_metric(CompanyData(values={"debt_to_equity": 1.4})) \
+        == "Debt/Equity: 140%"
+    assert shock_metric(CompanyData(values={"short_interest": 0.11})) \
+        == "Short interest: 11%"
+    # The Dashboard row mirrors the same cell.
+    assert shock_metric(CompanyData(values={}, dashboard={"FCF yield": -0.05})) \
+        == "FCF yield: -5%"
+
+
 def test_make_thumbnail(settings, workspace, long_valid_text):
     from pipeline.parser_long import parse_long_script
     from pipeline.workspace import Workspace

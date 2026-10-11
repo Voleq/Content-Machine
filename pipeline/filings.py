@@ -240,6 +240,19 @@ def pick_filings(cik: str, ticker: str, submissions: dict,
             primary_doc=primary, url=url,
             filed=dates[i] if i < len(dates) else "",
             period=periods[i] if i < len(periods) else ""))
+    # ONE FILING PER PERIOD. An amendment restates a period its original
+    # already covers, and kept as a filing of its own it sorted first (newest
+    # first) — so "the prior year" was the original of the year just read, and
+    # a year was compared with itself. The original is the one kept; an
+    # amendment stands only for a period nothing else in the list reports on.
+    best: dict[str, FilingRef] = {}
+    for ref in out:
+        key = ref.period or ref.accession
+        held = best.get(key)
+        if held is None or (held.form.endswith("/A")
+                            and not ref.form.endswith("/A")):
+            best[key] = ref
+    out = [ref for ref in out if best[ref.period or ref.accession] is ref]
     if not out:
         # foreign filer / no domestic report — degrade, but say why
         present = set(all_forms[:20])
@@ -461,6 +474,10 @@ def _section_for(text: str, current: str) -> str:
     return current
 
 
+_BLOCKS = ["div", "p", "li", "td", "table", "h1", "h2", "h3", "h4", "h5"]
+_DIV_PROSE_CHARS = 40
+
+
 def segment_filing(html: str) -> list[dict]:
     """Split the filing into sections. Returns [{title, text}] — the text the
     LLM reads. Best-effort; unlabeled bodies land under 'Filing'."""
@@ -475,7 +492,10 @@ def segment_filing(html: str) -> list[dict]:
     sections: dict[str, list[str]] = {}
     current = "Business"
     # short elements (incl. header divs) can SWITCH the section; only true text
-    # blocks (p/li/td) become body — so container divs never double-count.
+    # blocks become body — so container divs never double-count. A filing in
+    # inline XBRL (most 10-Ks now) has no <p> at all: its prose is spans in a
+    # div with nothing block-level inside, and that div is a text block too,
+    # once it is longer than a page number or a running head.
     for el in soup.find_all(["h1", "h2", "h3", "h4", "h5", "div", "b", "strong",
                              "p", "li", "td"]):
         txt = _norm(el.get_text(" "))
@@ -486,7 +506,9 @@ def segment_filing(html: str) -> list[dict]:
             if new != current:
                 current = new
                 continue  # a header line — not body
-        if el.name in ("p", "li", "td"):
+        if el.name in ("p", "li", "td") or (
+                el.name == "div" and len(txt) >= _DIV_PROSE_CHARS
+                and el.find(_BLOCKS) is None):
             sections.setdefault(current, []).append(txt)
     return [{"title": name, "text": " ".join(chunks)}
             for name, chunks in sections.items() if chunks]

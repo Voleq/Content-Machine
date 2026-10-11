@@ -18,6 +18,7 @@ import csv
 import io
 import logging
 import math
+import re
 import time
 from dataclasses import dataclass
 from datetime import date
@@ -83,9 +84,9 @@ def pick(script) -> Series | None:
                      for h in (getattr(script, "headlines", None) or []))
     said = " ".join([heads, str(getattr(script, "move_summary", "") or ""),
                      str(getattr(script, "hook_text", "") or "")]).lower()
-    said = f" {said} "
+    # Whole words: "market turmoil" is not a story about oil.
     for s in SERIES:
-        if any(w in said for w in s.words):
+        if any(re.search(rf"\b{re.escape(w.strip())}\b", said) for w in s.words):
             return s
     return None
 

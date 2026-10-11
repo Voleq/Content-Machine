@@ -13,6 +13,7 @@ render of the same script draws nothing again.
 """
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import logging
@@ -34,7 +35,14 @@ REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
-LOOK_VERSION = "47-64-5"
+LOOK_VERSION = "47-64-7"
+
+
+@functools.cache
+def _lines_digest() -> str:
+    """What draws his lines from the passes (room3d/lines.py), as a short
+    digest of its text."""
+    return hashlib.sha256((REPO / "room3d" / "lines.py").read_bytes()).hexdigest()[:12]
 
 # How long one shot may take before the worker is taken for hung: a fixed
 # allowance for Blender to come up, and a generous one per frame (a Cycles
@@ -254,13 +262,16 @@ class Performer:
     # ------------------------------------------------------------------ shots
     def shot(self, room, words, start: float, duration: float, size: tuple[int, int],
              *, seed: str, stance: str = "", plate: tuple[float, float] | None = None,
-             close: bool = False) -> Path:
+             close: bool = False, push: dict | None = None) -> Path:
         """His layer for one shot in `room`: an RGBA .mov, `size` big, at
         `dennis_3d_fps`. `words` carry `.word`, `.start`, `.end` on the
         programme clock; `start` is the shot's start on it. `stance` is the
         kit pose he plays; `plate` is where a two-shot's evidence sits in the
         frame (0-1 from the top left), for him to show; `close` is the
-        close-up, whose background is `window(layer)` of the room's picture.
+        close-up, whose background is `window(layer)` of the room's picture;
+        `push` the push-in on a chapter's wide shot (`{"z", "t0", "t1"}`: how
+        many times closer it ends, between which seconds of the shot), whose
+        background is `pushed(layer)`, a piece of the room for every frame.
         A draft performer's layer is half `size`; whoever lays it in scales
         it to the frame."""
         where = angle_of(room)
@@ -275,6 +286,9 @@ class Performer:
                "seed": seed, "stance": stance, "duration": round(float(duration), 4),
                **({"plate": [round(float(c), 4) for c in plate]} if plate else {}),
                **({"close": True} if close else {}),
+               **({"push": {k: round(float(v), 3) for k, v in push.items()}}
+                  if push else {}),
+               **self._line_style(),
                "words": [{"word": w.word, "start": round(w.start - start, 3),
                           "end": round(w.end - start, 3)} for w in words]}
         key = hashlib.sha256(json.dumps({**job, "v": LOOK_VERSION},
@@ -293,6 +307,8 @@ class Performer:
                     "-c:v", "png", "-pix_fmt", "rgba", "-f", "mov", str(part)])
         if reply.get("window"):
             (folder / "window.json").write_text(json.dumps(reply["window"]), encoding="utf-8")
+        if reply.get("push"):
+            (folder / "push.json").write_text(json.dumps(reply["push"]), encoding="utf-8")
         part.replace(layer)
         self.shots.append({"angle": angle, "aspect": aspect, "frames": reply.get("frames"),
                            "seconds": reply.get("seconds"), "device": reply.get("device")})
@@ -314,7 +330,7 @@ class Performer:
                "fps": int(self.settings.dennis_3d_fps),
                "samples": max(int(self.settings.dennis_3d_samples), 16),
                "seed": seed, "stance": stance, "still": True,
-               **({"in_room": True} if in_room else {})}
+               **({"in_room": True} if in_room else {}), **self._line_style()}
         key = hashlib.sha256(json.dumps({**job, "v": LOOK_VERSION},
                                         sort_keys=True).encode()).hexdigest()[:20]
         folder = self.cache / key
@@ -329,6 +345,15 @@ class Performer:
         self.shots.append({"angle": angle, "aspect": aspect, "still": True,
                            "seconds": reply.get("seconds"), "device": reply.get("device")})
         return out
+
+    def _line_style(self) -> dict:
+        """How his lines are drawn, in the job only when it is not Freestyle,
+        so a shot Freestyle drew keeps its cache. Lines found in the passes
+        carry what finds them, so a change to that draws them again."""
+        how = str(getattr(self.settings, "dennis_3d_lines", "passes") or "passes")
+        if how == "freestyle":
+            return {}
+        return {"lines": how, "lines_by": _lines_digest()}
 
     @staticmethod
     def frames(layer: Path) -> Path:
@@ -352,11 +377,18 @@ class Performer:
         return float(x0), float(y0), float(x1), float(y1)
 
 
-def extent(layer: Path, size: tuple[int, int]) -> tuple[int, int, int, int] | None:
-    """Where he is in his layer over the whole shot: the box (x0, y0, x1, y1,
-    frame pixels) round every pixel of him in any frame, read off the alpha at
-    an eighth of the size. None when there is nothing of him, or it cannot be
-    read."""
+def pushed(layer: Path) -> list[tuple[float, float, float, float]] | None:
+    """For a push-in's layer, the piece of the room's picture behind him on
+    every frame (x0, y0, x1, y1, 0-1 from the top left); None otherwise."""
+    f = Path(layer).parent / "push.json"
+    if not f.exists():
+        return None
+    return [tuple(float(c) for c in w) for w in json.loads(f.read_text(encoding="utf-8"))]
+
+
+def _presence(layer: Path, size: tuple[int, int]):
+    """Every pixel of him in any frame of his layer, read off the alpha at an
+    eighth of `size`: a (h, w) bool array, or None when it cannot be read."""
     import numpy as np
 
     W, H = size
@@ -371,9 +403,43 @@ def extent(layer: Path, size: tuple[int, int]) -> tuple[int, int, int, int] | No
     n = len(raw) // (w * h)
     if not n:
         return None
-    him = (np.frombuffer(raw[:n * w * h], np.uint8).reshape(n, h, w) > 64).any(axis=0)
+    return (np.frombuffer(raw[:n * w * h], np.uint8).reshape(n, h, w) > 64).any(axis=0)
+
+
+def extent(layer: Path, size: tuple[int, int]) -> tuple[int, int, int, int] | None:
+    """Where he is in his layer over the whole shot: the box (x0, y0, x1, y1,
+    frame pixels) round every pixel of him in any frame, read off the alpha at
+    an eighth of the size. None when there is nothing of him, or it cannot be
+    read."""
+    import numpy as np
+
+    him = _presence(layer, size)
+    if him is None:
+        return None
+    W, H = size
+    h, w = him.shape
     ys, xs = np.nonzero(him)
     if not len(xs):
         return None
     return (int(xs.min() * W / w), int(ys.min() * H / h),
             int(min((xs.max() + 1) * W / w, W)), int(min((ys.max() + 1) * H / h, H)))
+
+
+def under(layer: Path, size: tuple[int, int], rect: tuple[int, int, int, int],
+          margin: int = 0) -> bool | None:
+    """Whether any pixel of him, in any frame of the shot, falls inside `rect`
+    (x0, y0, x1, y1, frame pixels) grown by `margin`: what a card laid there
+    would cover of him. None when his layer cannot be read."""
+    him = _presence(layer, size)
+    if him is None:
+        return None
+    W, H = size
+    h, w = him.shape
+    x0, y0, x1, y1 = rect
+    c0 = max(int((x0 - margin) * w / W), 0)
+    r0 = max(int((y0 - margin) * h / H), 0)
+    c1 = min(-(-(x1 + margin) * w // W), w)
+    r1 = min(-(-(y1 + margin) * h // H), h)
+    if c1 <= c0 or r1 <= r0:
+        return False
+    return bool(him[r0:r1, c0:c1].any())

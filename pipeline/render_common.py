@@ -473,6 +473,16 @@ class CompositeSpec:
         return sum(1 for a in self.base_input_args if a == "-i")
 
 
+def _no_length(path: Path) -> bool:
+    try:
+        empty = ffprobe_duration(path) < 0.05
+    except (RenderError, OSError, ValueError, subprocess.SubprocessError):
+        empty = True
+    if empty:
+        log.warning("audio: %s has no length to loop; left out of the mix", path)
+    return empty
+
+
 def audio_graph(spec: CompositeSpec, first_input: int) -> tuple[list[str], list[str]]:
     """The mix: input args, and filter lines that end in `[aout]`.
 
@@ -488,7 +498,10 @@ def audio_graph(spec: CompositeSpec, first_input: int) -> tuple[list[str], list[
     lines: list[str] = []
     idx = first_input
     a_labels: list[str] = []
-    tracks = spec.audio
+    # A looped file with no length never ends: `-stream_loop -1` on a
+    # zero-second wav spins the demuxer for ever and the render hangs with
+    # no error. Such a track is left out of the mix, loudly.
+    tracks = [t for t in spec.audio if not (t.loop and _no_length(t.path))]
     voice_j = next((j for j, t in enumerate(tracks) if t.voice), None)
     duckers = ([j for j, t in enumerate(tracks) if t.duck]
                if voice_j is not None else [])

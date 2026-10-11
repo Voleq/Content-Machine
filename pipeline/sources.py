@@ -57,7 +57,11 @@ TTL_SECONDS = {
 
 def _cache_path(settings: Settings, kind: str, key: str) -> Path:
     safe = re.sub(r"[^A-Za-z0-9._-]", "_", key)[:80]
-    return settings.cache_dir / "sources" / kind / f"{safe}.json"
+    # Fixture payloads live apart from fetched ones: a mock run's "IR item"
+    # and canned CPI were otherwise served to the first live run inside
+    # their lifetime, as if fetched.
+    root = "sources-mock" if settings.mock_mode else "sources"
+    return settings.cache_dir / root / kind / f"{safe}.json"
 
 
 def cached(settings: Settings, kind: str, key: str) -> Any | None:
@@ -100,26 +104,23 @@ class Filing:
         return asdict(self)
 
 
-def _recent(cik: str, settings: Settings) -> dict:
-    from pipeline.filings import _load_submissions
-
-    subs = _load_submissions(cik, settings)
-    return ((subs or {}).get("filings") or {}).get("recent") or {}
-
-
-def _cik_for(ticker: str, settings: Settings) -> str | None:
-    from pipeline.filings import _load_company_tickers, resolve_cik
-
-    return resolve_cik(ticker, _load_company_tickers(settings))
-
-
 def _filings_of(ticker: str, settings: Settings, forms: Sequence[str],
-                limit: int = 5) -> list[Filing]:
-    """The most recent filings of the given forms. [] when anything is off."""
-    cik = _cik_for(ticker, settings)
+                limit: int = 5) -> list[Filing] | None:
+    """The most recent filings of the given forms: [] when there are none, and
+    None when the SEC could not be read. The first is a fact about the company;
+    the second is not, and is never cached as one."""
+    from pipeline.filings import _load_company_tickers, _load_submissions, resolve_cik
+
+    tickers = _load_company_tickers(settings)
+    if tickers is None:
+        return None
+    cik = resolve_cik(ticker, tickers)
     if not cik:
         return []
-    recent = _recent(cik, settings)
+    subs = _load_submissions(cik, settings)
+    if subs is None:
+        return None
+    recent = (subs.get("filings") or {}).get("recent") or {}
     out: list[Filing] = []
     names = recent.get("form") or []
     accns = recent.get("accessionNumber") or []
@@ -157,6 +158,9 @@ def latest_8k(ticker: str, settings: Settings) -> dict:
         return store(settings, "8k", key, _fixture(settings, "sec_8k.json", {
             "status": UNAVAILABLE, "ticker": key}))
     filings = _filings_of(ticker, settings, ("8-K", "8-K/A"), limit=1)
+    if filings is None:
+        return {"status": UNAVAILABLE, "ticker": key,
+                "reason": "the SEC could not be read"}
     if not filings:
         return store(settings, "8k", key,
                      {"status": UNAVAILABLE, "ticker": key,
@@ -229,6 +233,9 @@ def insider_transactions(ticker: str, settings: Settings,
                      _fixture(settings, "sec_form4.json",
                               {"status": UNAVAILABLE, "ticker": key}))
     filings = _filings_of(ticker, settings, ("4", "4/A"), limit=limit)
+    if filings is None:
+        return {"status": UNAVAILABLE, "ticker": key,
+                "reason": "the SEC could not be read"}
     if not filings:
         return store(settings, "form4", key,
                      {"status": UNAVAILABLE, "ticker": key,
@@ -372,14 +379,21 @@ def ir_feed(url: str, settings: Settings, limit: int = 10) -> dict:
     try:
         import httpx
 
+        # Not SEC_USER_AGENT: the SEC asks for a name and an email in it,
+        # and this is the company's own website, which gets neither.
         resp = httpx.get(url, timeout=20.0, follow_redirects=True,
-                         headers={"User-Agent": settings.sec_user_agent
-                                  or "Dennis research bot"})
+                         headers={"User-Agent": "Mozilla/5.0 (compatible; "
+                                                "dennis-content-machine/1.0)"})
         resp.raise_for_status()
         items = parse_rss(resp.text, limit)
     except Exception as e:  # noqa: BLE001
         log.warning("IR feed %s failed: %s", url, e)
         return {"status": UNAVAILABLE, "url": url, "reason": str(e)[:120]}
+    if not items:
+        # Many sites answer any address with their home page: a 200 that is
+        # no feed. Said as found, the caller stopped there and never tried
+        # the site's next feed address.
+        return {"status": UNAVAILABLE, "url": url, "reason": "no feed at this address"}
     return store(settings, "rss", url,
                  {"status": "ok", "url": url,
                   "items": [i.to_json() for i in items]})

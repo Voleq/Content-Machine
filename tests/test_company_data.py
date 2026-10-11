@@ -213,6 +213,25 @@ def test_valuation_wacc_and_reverse_dcf_keys(workspace):
     assert len(val["scenarios"]) == 3
 
 
+def test_a_scenario_names_its_metric_not_its_figure(workspace):
+    """The real template's scenario rows carry the per-share figure in B
+    (`=B6`, the LTM EPS) and its name in C. Read as text first, B gave the
+    writer "metric=4.25"."""
+    from openpyxl import load_workbook
+
+    xlsx = workspace / "dennis_data.xlsx"
+    assert [s["metric"] for s in load_company_data(workspace).valuation["scenarios"]] \
+        == ["P/S"] * 3                          # the fixture's older layout
+    wb = load_workbook(xlsx)
+    ws = wb["Valuation"]
+    for row in ws.iter_rows():
+        if str(row[0].value or "").strip() in ("Bear", "Base", "Bull"):
+            row[1].value, row[2].value = 4.25, "EPS"
+    wb.save(xlsx)
+    got = load_company_data(workspace).valuation["scenarios"]
+    assert [(s["metric"], s["per_share"]) for s in got] == [("EPS", 4.25)] * 3
+
+
 def test_missing_news_sheet_degrades(workspace):
     # dropping the OPTIONAL News sheet must degrade (news == []), never raise
     from openpyxl import load_workbook
@@ -418,3 +437,19 @@ def test_list_screenshots_excludes_exports(workspace):
     (workspace / "_hidden.png").write_bytes(b"png")
     shots = list_screenshots(workspace)
     assert shots == ["income_statement.png"]
+
+
+def test_the_uploads_age_reads_a_date_as_the_freshness_gate_does():
+    """09/03/2026 on a US sheet is 9 March. The upload read it day-first as
+    3 September while the gate read 9 March: one said fresh, one stale."""
+    import datetime as dt
+
+    from pipeline.company_data import _as_of_age_days
+    from pipeline.gates import _parse_as_of
+
+    today = dt.date(2026, 9, 10)
+    assert _parse_as_of("09/03/2026") == dt.date(2026, 9, 3)
+    assert _as_of_age_days("09/03/2026", today) == 7
+    assert _as_of_age_days("2026-09-03", today) == 7
+    assert _as_of_age_days("Sep 3, 2026", today) == 7
+    assert _as_of_age_days("not a date", today) is None

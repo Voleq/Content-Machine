@@ -464,6 +464,30 @@ def test_the_vendor_block_still_fires_before_the_floor(settings):
         parse_long_script("According to Refinitiv, revenue fell.", "EXMPL", real)
 
 
+def test_capital_iq_is_a_vendor_name_too(long_valid_text, settings):
+    """The workbook comes out of the Capital IQ add-in, and the gate list
+    already names it; the parser's own list did not, so a narration crediting
+    it was spoken and captioned."""
+    text = long_valid_text.replace("Revenue went from four hundred million",
+                                   "Per Capital IQ, revenue went from four "
+                                   "hundred million")
+    assert text != long_valid_text
+    with pytest.raises(LongScriptError, match="vendor"):
+        parse_long_script(text, "EXMPL", settings)
+
+
+@pytest.mark.parametrize("vendor", ["Refinitiv", "Capital IQ"])
+def test_a_plate_that_names_the_vendor_is_refused(long_valid_text, settings,
+                                                  vendor):
+    """A plate's slots are drawn on screen. The narration, `[BOARD]` and
+    `[SOURCE]` were checked and the plate's own text was not."""
+    text = long_valid_text.replace("source=Earnings call transcript",
+                                   f"source={vendor}")
+    assert text != long_valid_text
+    with pytest.raises(LongScriptError, match="PLATE"):
+        parse_long_script(text, "EXMPL", settings)
+
+
 def _evenly_tagged(settings, minutes: float, every_s: float, *, stop_s=None):
     """A long of `minutes`, a visual every `every_s` seconds (up to `stop_s`)."""
     from pipeline.models import Chapter, LongScript, TagEvent

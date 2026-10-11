@@ -100,7 +100,7 @@ is generated from the table the pipeline actually performs the tags from, so a
 tag that is not on that list is a tag nothing will honour.
 
 ## THE SCENES — where Dennis is, and what he is doing
-[SCENE: room | pose=name] sets the room angle he is in and the pose he is in, from that word until your next [SCENE], across every cutaway in between. You imagine each scene; the bot only shoots it, and picks for any beat you leave undirected. Open the video with one before the first word and put one at the top of each movement at least. The exit (the doorway, walking out of frame) is for the end only; head-in-hands is once a video and has no mouth; the reading rooms are for reading a filing or a figure off the page; the two rooms nobody stands in are inserts over a sentence or two.
+[SCENE: room | pose=name] sets the room angle he is in and the pose he is in, from that word until your next [SCENE], across every cutaway in between. You imagine each scene; the bot only shoots it, and picks for any beat you leave undirected. Open the video with one before the first word and put one at the top of each movement at least. The wide rooms (desk-wide, window-wide, board-wide, the doorway) are for the first shot of him in a chapter, where the camera goes in to him; anywhere else the bot shoots the closer angle; close at the desk, to camera; head-in-hands is once a video and has no mouth; the reading rooms are for reading a filing or a figure off the page; the two rooms nobody stands in are inserts over a sentence or two.
 
 {{scene_catalogue}}
 

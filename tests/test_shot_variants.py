@@ -56,6 +56,11 @@ class StubResolver:
             return None
         if src == "numbers.header":
             return "\tFY-4\tFY-3\tFY-2\tFY-1\tFY-0"
+        # The payoff's figure is ONE row's latest. Were it every row's, as
+        # "3.4%" everywhere made it, no row could ever take the one-figure
+        # card (`test_the_payoff_figure_is_not_put_up_early_on_its_own_row`).
+        if src == "numbers.headline_figure":
+            return "$1.2B"
         parts = set(src.split("."))
         # Today's session in the six points the move plates draw.
         if {"series", "figures", "path-6"} & parts:
@@ -657,6 +662,38 @@ def test_every_declared_order_cuts_a_whole_video(name, reg):
             f, result, host_shots=[sh.id for sh in f.shots if sh.host])
         assert not problems, f"{name}/{order}: {problems[:3]}"
         assert not check_budgets(f, result, reg)
+
+
+class PayoffRow(StubResolver):
+    """Three rows, each with its own latest figure; the payoff is row 3's."""
+
+    LAST = {"0": "$400M", "1": "-$89M", "2": "-$15M"}
+
+    def text_for(self, src: str) -> str | None:
+        if src == "numbers.headline_figure":
+            return self.LAST["2"]
+        got = re.match(r"^numbers\.last\.(\d+)$", src)
+        if got:
+            return self.LAST.get(got.group(1))
+        return super().text_for(src)
+
+
+def test_the_payoff_figure_is_not_put_up_early_on_its_own_row(reg):
+    """10 Oct 2026: free cash flow went up as "-$15M, from $12M in FY21" and
+    the payoff put up the same -$15M with the same line under it twenty
+    seconds later. The payoff's row draws its years or its start and end; the
+    other rows may still take the one-figure card."""
+    base = load_format("short")
+    others = set()
+    for i in range(16):
+        _fmt, _result, plates = _cut(base, reg, f"seed-{i}",
+                                     resolver=PayoffRow())
+        assert plates.get("numbers-3", "").rsplit("/", 1)[-1].split("-9x16")[0] \
+            not in {"big-number-l1", "big-number-l1-dusk"}, (i, plates["numbers-3"])
+        others |= {plates.get(k) for k in ("numbers-1", "numbers-2")}
+    assert any(k and "big-number-l1" in k for k in others), (
+        "no other row ever took the one-figure card: the refusal is not "
+        "aimed at the payoff's row alone")
 
 
 # ---------------------------------------------------------------------------

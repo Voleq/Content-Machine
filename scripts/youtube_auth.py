@@ -25,6 +25,7 @@ Needs `pip install '.[youtube]'`.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -67,7 +68,12 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
         return 1
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(creds.to_json(), encoding="utf-8")
+    # The refresh token is a standing key to the channel: owner-only from
+    # the moment it exists, never world-readable even for an instant.
+    fd = os.open(args.out, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(creds.to_json())
+    os.chmod(args.out, 0o600)
     print(f"wrote {args.out} with scopes:\n  " + "\n  ".join(SCOPES))
     print(f"set YOUTUBE_CREDENTIALS={args.out} in .env")
     return 0

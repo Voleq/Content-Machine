@@ -90,16 +90,24 @@ _SHOCK_SOURCES = {
 }
 
 
+# The rules whose number the workbook holds as a FRACTION (-0.05, 1.4), where
+# the rule's format and threshold are written in percent. Read raw, the real
+# template's FCF yield printed as "-0%" and its 1.4 debt / equity never reached
+# the 100 the rule waits for.
+_FRACTION_RULES = frozenset({"fcf_yield", "debt_to_equity", "short_interest"})
+
+
 def _shock_value(data: CompanyData, key: str):
     snap_key, dash_label = _SHOCK_SOURCES.get(key, (key, None))
+    scale = 100 if key in _FRACTION_RULES else 1
     if snap_key:
         v = data.get(snap_key)
         if isinstance(v, (int, float)):
-            return v
+            return v * scale
     if dash_label:
         v = data.dashboard_get(dash_label)
         if isinstance(v, (int, float)):
-            return v
+            return v * scale
     return None
 
 

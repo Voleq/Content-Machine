@@ -24,16 +24,15 @@ def _degraded_cache(settings, ticker: str) -> None:
     and the render's own record will see — the same object the chart would
     have been drawn from.
     """
-    from pipeline.prices import PriceSeries
+    from pipeline.prices import PriceSeries, price_cache_file
 
-    cdir = settings.cache_dir / "prices"
-    cdir.mkdir(parents=True, exist_ok=True)
+    cfile = price_cache_file(ticker, settings.price_history_days, settings)
+    cfile.parent.mkdir(parents=True, exist_ok=True)
     fake = PriceSeries(ticker=ticker.upper(),
                        dates=["2026-01-01", "2026-01-02", "2026-01-03"],
                        closes=[10.0, 10.4, 10.2],
                        source="synthetic", degraded=True)
-    (cdir / f"{ticker.upper()}_{settings.price_history_days}.json").write_text(
-        fake.to_json(), encoding="utf-8")
+    cfile.write_text(fake.to_json(), encoding="utf-8")
 
 
 # --------------------------------------------------------------------------
@@ -646,3 +645,23 @@ def test_the_bot_opens_a_scope_around_every_path_that_can_reach_an_llm(settings)
                  "_start_filing_read", "_approval_blockers"):
         src = inspect.getsource(getattr(BotCore, name))
         assert "llm_scope" in src, f"BotCore.{name} tallies against nothing"
+
+
+def test_the_record_names_the_voice_model_not_its_tier(settings, tmp_path):
+    """The audio line promises which ElevenLabs model spoke; it said "paid"."""
+    from pipeline.models import TTSResult
+    from pipeline.provenance import build
+
+    def voice(tier):
+        return TTSResult(audio_path=tmp_path / "a.mp3", words=[], duration_s=1.0,
+                         chars=10, cached=False, cost_usd=0.1, tier=tier)
+
+    s = settings.model_copy(update={"eleven_model_id": "eleven_v3",
+                                    "local_tts_model": "/v/en_US-ryan-high.onnx"})
+    paid = build(ticker="E", fmt="long", workdate="d", duration_s=1.0,
+                 tts=voice("paid"), settings=s)
+    assert paid.audio["model"] == "eleven_v3"
+    assert "chunks" not in paid.audio
+    local = build(ticker="E", fmt="long", workdate="d", duration_s=1.0,
+                  tts=voice("local"), settings=s)
+    assert local.audio["model"] == "piper en_US-ryan-high"

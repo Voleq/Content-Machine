@@ -76,8 +76,9 @@ def test_bars_grow_one_column_at_a_time_inside_their_own_columns(reg, settings):
                       int((b["x"] + 2) * s):int((b["x"] + b["w"] - 2) * s)]
             want = shown.h / b["h"]
             assert abs((col > 0).mean() - want) < 0.02, (f, i)
-        # Between the columns the layer is never cut.
-        gap = cols[0]["box"]["x"] + cols[0]["box"]["w"] + 4
+        # Between the columns the layer is never cut (past the bar's own
+        # outline, which goes in with its column).
+        gap = cols[0]["box"]["x"] + cols[0]["box"]["w"] + MV.BAR_STROKE_BLEED + 4
         assert got[int(400 * s), int(gap * s)] == 255
 
 
@@ -168,10 +169,45 @@ def test_a_beat_under_a_cover_waits_for_it_to_lift():
 
 
 def test_each_chapter_lands_on_its_own_cut():
-    chapters = [(0.0, "a", "x"), (6.0, "b", "y"), (6.5, "c", "z"), (40.0, "d", "w")]
+    chapters = [(1.0, "a", "x"), (6.0, "b", "y"), (6.5, "c", "z"), (40.0, "d", "w")]
     starts = [0.0, 2.0, 7.0, 9.0, 12.0]
+    assert RL._chapter_cuts(chapters, starts, intro_dur=0.5, duration=30.0) == \
+        [2.0, 7.0, 9.0, None]
+
+
+def test_a_chapter_lands_on_the_cut_the_frame_grid_put_just_before_it():
+    """The plan snaps every cut to the nearest frame, so the cut a chapter
+    belongs on can sit a fraction of a frame ahead of its time: 20.012 s
+    against the cut at frame 600 of a 30 fps cut, 20.000 s. Read strictly it
+    was missed and the card went up on the next cut, ten seconds late."""
+    chapters = [(0.0, "a", "x"), (20.012, "b", "y")]
+    starts = [0.0, 10.0, 20.0, 30.0]
+    assert RL._chapter_cuts(chapters, starts, intro_dur=0.5, duration=60.0) == \
+        [None, 20.0]
+    assert RL._chapter_cuts(chapters, starts, intro_dur=0.5, duration=60.0,
+                            fps=30) == [None, 20.0]
+    # And the float error alone: 1.1 + 2.2 is not 3.3.
+    assert RL._chapter_cuts([(0.0, "a", "x"), (1.1 + 2.2, "b", "y")],
+                            [0.0, 3.3, 9.0], intro_dur=0.5, duration=60.0) == \
+        [None, 3.3]
+
+
+def test_a_cut_a_whole_frame_early_is_still_before_the_chapter():
+    """The slack is the grid's half frame, not a licence to take the cut
+    before: a chapter at 20.1 s does not land on the cut at 20.0 s."""
+    chapters = [(0.0, "a", "x"), (20.1, "b", "y")]
+    assert RL._chapter_cuts(chapters, [0.0, 10.0, 20.0, 30.0], intro_dur=0.5,
+                            duration=60.0, fps=30) == [None, 30.0]
+
+
+def test_a_first_chapter_under_the_opening_title_has_no_second_opener():
+    """The title card is chapter one's opener: its headline is the chapter's
+    title. Landed on the first cut after the card as well, it was the empty
+    room with the same title in it, five seconds in, and he vanished."""
+    chapters = [(0.0, "a", "x"), (6.0, "b", "y"), (6.5, "c", "z")]
+    starts = [0.0, 2.0, 5.0, 7.0, 9.0]
     assert RL._chapter_cuts(chapters, starts, intro_dur=2.6, duration=30.0) == \
-        [7.0, 9.0, 12.0, None]
+        [None, 7.0, 9.0]
 
 
 # ---------------------------------------------------------------------------
@@ -365,6 +401,39 @@ def test_a_row_not_yet_said_keeps_the_sheet(reg, settings):
     b = plate.slots["band-3"]
     box = (slice(int(b.y * k), int((b.y + b.h) * k)), slice(int(b.x * k), int((b.x + b.w) * k)))
     assert np.abs(before[box] - bare[box]).max() <= 8, "the unsaid row lost the sheet's lines"
+
+
+def test_a_boxed_row_not_yet_said_is_not_an_empty_box(reg, settings):
+    """The sheet boxes its alternate rows in the art. With the row not yet
+    said, the box stood empty on the plate, an outlined field waiting for
+    something; until its word the row is the sheet's plain ground, column
+    rules and all, and the box comes on with the row."""
+    key = "tables/numbers-sheet-4r-16x9"
+    plate = reg.get(key)
+    values = {n: "12.4" for n, sl in plate.slots.items() if sl.is_text}
+    from types import SimpleNamespace
+
+    layer = SimpleNamespace(kind="plate", name="s", entry_key=key, values=values,
+                            x=0, y=0, w=1920, h=1080, seed="")
+    mv = MV.Move("row-on", "s", "s", "band-2", 1.0, 1)
+    comp = MV.MoveCompositor(MV.MovePlan(moves=[mv]), reg, settings, None)
+    before = np.asarray(comp.frame(layer, 0.5, 0).convert("RGB")).astype(int)
+    after = np.asarray(comp.frame(layer, 1.2, 0).convert("RGB")).astype(int)
+    k = before.shape[1] / plate.canvas[0]
+    plain, boxed = plate.slots["band-3"], plate.slots["band-2"]
+
+    def band(img, b):
+        return img[int(b.y * k):int((b.y + b.h) * k), int(b.x * k):int((b.x + b.w) * k)]
+
+    # unsaid, row 2 looks like the plain row below it, rules included
+    assert np.abs(np.median(band(before, boxed).reshape(-1, 3), axis=0)
+                  - np.median(band(before, plain).reshape(-1, 3), axis=0)).max() <= 3
+    rules = lambda img, b: (np.abs(band(img, b) - np.median(band(img, b).reshape(-1, 3), axis=0))
+                            .max(axis=2) > 12).mean(axis=0) > 0.6   # noqa: E731
+    assert rules(before, boxed).sum() >= 6, "the column rules stopped at the row"
+    # said, the box is back
+    assert np.abs(np.median(band(after, boxed).reshape(-1, 3), axis=0)
+                  - np.median(band(after, plain).reshape(-1, 3), axis=0)).max() > 6
 
 
 def test_a_card_s_figure_goes_on_with_its_word(reg, settings):

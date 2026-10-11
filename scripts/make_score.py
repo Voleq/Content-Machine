@@ -232,18 +232,49 @@ def main(argv: list[str] | None = None) -> int:
         ledger.release_reservation(reservation)
 
 
+def _kept_paths(out: Path, piece: Piece) -> tuple[Path, Path]:
+    return out / f".{piece.name}.paid.mp3", out / f".{piece.name}.paid.id"
+
+
+def _keep(out: Path, piece: Piece, audio: bytes, song_id: str) -> tuple[Path, Path]:
+    audio_path, id_path = _kept_paths(out, piece)
+    audio_path.write_bytes(audio)
+    id_path.write_text(str(song_id), encoding="utf-8")
+    return audio_path, id_path
+
+
+def _kept(out: Path, piece: Piece) -> tuple[bytes | None, str]:
+    audio_path, id_path = _kept_paths(out, piece)
+    try:
+        return audio_path.read_bytes(), id_path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None, ""
+
+
+def _forget(out: Path, piece: Piece) -> None:
+    for f in _kept_paths(out, piece):
+        f.unlink(missing_ok=True)
+
+
 def _make(todo, out, known, settings, ledger, tier: str) -> int:
     out.mkdir(parents=True, exist_ok=True)
     made = 0
     for p in todo:
         print(f"  {p.name} ...", end=" ", flush=True)
-        try:
-            audio, song_id = generate(p, settings)
-        except Exception as exc:  # noqa: BLE001 — one failed piece is not fatal
-            print(f"failed: {exc}")
-            continue
-        usd = round(p.length_ms / 60_000 * USD_PER_MINUTE, 4)
-        ledger.record_tts(usd, lane="score", tier="music")
+        # A piece paid for whose encode failed last time is kept, and this
+        # run encodes it again instead of paying for it twice.
+        kept, kept_id = _kept(out, p)
+        usd = 0.0
+        if kept is not None:
+            audio, song_id = kept, kept_id
+        else:
+            try:
+                audio, song_id = generate(p, settings)
+            except Exception as exc:  # noqa: BLE001 — one failed piece is not fatal
+                print(f"failed: {exc}")
+                continue
+            usd = round(p.length_ms / 60_000 * USD_PER_MINUTE, 4)
+            ledger.record_tts(usd, lane="score", tier="music")
         with tempfile.TemporaryDirectory(prefix="score_") as td:
             raw = Path(td) / "raw.mp3"
             raw.write_bytes(audio)
@@ -252,8 +283,11 @@ def _make(todo, out, known, settings, ledger, tier: str) -> int:
                 if p.name == "theme":
                     _level(raw, out / THEME_INTRO, seconds=INTRO_SECONDS)
             except (OSError, subprocess.CalledProcessError) as exc:
-                print(f"could not encode: {exc}")
+                audio_path, _ = _keep(out, p, audio, song_id)
+                print(f"could not encode: {exc}\n    the paid audio is kept at "
+                      f"{audio_path}; run this again to encode it, at no charge")
                 continue
+        _forget(out, p)
         for f in p.files:
             known[f] = AudioSource(
                 name=f, source=f"elevenlabs.io/v1/music {MODEL} song {song_id}",

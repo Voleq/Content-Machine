@@ -18,6 +18,9 @@ FONTS = ROOT / "assets" / "fonts"
 PAPER = (238, 241, 242)
 BACKLIGHT = (148, 158, 170)
 CLOSES = tuple(10 + i % 7 + i / 40 for i in range(300))
+APP = (18, 28, 42)
+_CHART_QUAD = [[105 + 90 * x / 1920, 5 + 90 * y / 1080]
+               for x, y in ((60, 116), (1392, 116), (1392, 1044), (60, 1044))]
 
 
 def _dressing(**kw) -> rd.Dressing:
@@ -47,7 +50,7 @@ def test_no_price_line_without_a_real_series():
     red = lambda im: ((im[..., 0] > 150) & (im[..., 1] < 60) & (im[..., 3] > 0)).sum()  # noqa: E731
     assert red(with_line) > 0 and red(without) == 0
     chart = np.asarray(rd.screen_chart(_dressing(closes=()), FONTS, (640, 450)))
-    assert not ((chart[..., 1] > 180) & (chart[..., 2] > 220)).any(), \
+    assert not ((chart[..., 2] > 120) & (chart[..., 0] < 80)).any(), \
         "the monitor drew a line with no series"
 
 
@@ -83,6 +86,10 @@ def _plate(tmp: Path, *, frames=("r.png", "r.png", "r_f03.png"), front=True) -> 
     mask_b[:, :200] = 255
     mask_b[:, 90:110] = 0          # something stands in front of the board here
     Image.fromarray(mask_b).save(fam / "r_mask_board.png")
+    # The made-up app the room is rendered with, round the chart area: a
+    # dark sidebar on the glass, right of the backlight.
+    paper[30:170, 352:384] = APP
+    Image.fromarray(paper).save(fam / "r.png")
     mask_s = np.zeros((200, 400), np.uint8)
     mask_s[:, 200:] = 255
     mask_s[10:30, 210:240] = 0     # a sticky note on the glass
@@ -95,7 +102,9 @@ def _plate(tmp: Path, *, frames=("r.png", "r.png", "r_f03.png"), front=True) -> 
     writable = {
         "board": {"quad": [[5, 5], [95, 5], [95, 95], [5, 95]], "paper": list(PAPER),
                   "size": [1.4, 1.0], "mask": "r_mask_board.png"},
-        "screen": {"quad": [[105, 5], [195, 5], [195, 95], [105, 95]],
+        # The chart area, placed where the room's texture puts it inside a
+        # glass that is canvas x 105..195, y 5..95.
+        "screen": {"quad": _CHART_QUAD,
                    "backlight": list(BACKLIGHT), "size": [1332, 928],
                    "mask": "r_mask_screen.png"},
     }
@@ -116,9 +125,8 @@ def test_a_written_room_is_the_same_room_rooted_elsewhere(tmp_path):
     out = rd.written_room(plate, _dressing(), tmp_path / "written", FONTS)
     assert out is not plate and out.root != plate.root
     assert out.key == plate.key and not out.writable
-    # The kit's frames, in order, round to a whole second of the cursor.
-    assert [f.png.replace(".off", "") for f in out.frames] == \
-        [plate.frames[i % 3].png for i in range(12)]
+    # The kit's frames, in order.
+    assert [f.png for f in out.frames] == [f.png for f in plate.frames]
     for p in [out.path, *out.frame_paths(), out.front_path(0)]:
         assert p.exists() and Image.open(p).size == (400, 200)
     # Written once: a second call finds it and writes nothing.
@@ -139,10 +147,11 @@ def test_the_writing_follows_the_room_light_and_what_stands_in_front(tmp_path):
     assert (after[board] < before[board] - 8).any(), "nothing was written on the board"
     assert (after[:, 90:110] == before[:, 90:110]).all(), \
         "the board's writing was drawn over what stands in front of it"
-    assert (after[12:28, 212:238] == before[12:28, 212:238]).all(), \
+    # The screen's glow may lift the note a little; the chart is not on it.
+    assert np.abs(after[12:28, 212:238] - before[12:28, 212:238]).max() < 40, \
         "the chart was drawn over the sticky note"
-    # Off the surfaces nothing changes.
-    assert (after[:5] == before[:5]).all()
+    # Off the surfaces nothing changes, but for the screen's glow beside it.
+    assert (after[:5, :170] == before[:5, :170]).all()
 
     # THE DIP: the screen frame at 55% shows the same chart at 55%.
     bright = _lin(after[40:190, 215:385])
@@ -253,22 +262,45 @@ def _picture(tmp: Path) -> Path:
     return path
 
 
-def test_a_still_room_with_the_monitor_in_shot_loops_its_cursor(tmp_path):
-    out = rd.written_room(_still(tmp_path / "kit"), _dressing(), tmp_path / "w", FONTS)
-    assert out.animated and out.playback == "loop" and out.fps == rd.BLINK_FPS
-    assert out.frame_count == rd.BLINK_FRAMES == len(out.frames)
-    on, off = out.frame_paths()[0], out.frame_paths()[-1]
-    assert out.frame_paths()[:6] == [on] * 6 and out.frame_paths()[6:] == [off] * 6
-    a = np.asarray(Image.open(on).convert("RGB")).astype(int)
-    b = np.asarray(Image.open(off).convert("RGB")).astype(int)
-    diff = np.abs(a - b).sum(axis=2) > 0
-    assert diff.any(), "the cursor does not blink"
-    ys, xs = np.nonzero(diff)
-    # Only on the monitor, and only along its prompt line at the bottom.
-    assert xs.min() >= 200 and ys.min() > 150, "the blink touched more than the prompt"
-    # The desk in front blinks with it.
-    assert out.front_path(0) != out.front_path(11)
-    assert out.front_path(11).exists()
+def test_the_glass_is_all_picture_and_the_room_holds_still(tmp_path):
+    """The room's made-up app (a sidebar of bars round the chart area) goes
+    under the picture, and a room that held still still does: nothing on
+    the monitor moves but the chapter's picture drawing in."""
+    plate = _still(tmp_path / "kit")
+    before = np.asarray(Image.open(plate.path).convert("RGB")).astype(int)
+    out = rd.written_room(plate, _dressing().showing(_picture(tmp_path), "The cash"),
+                          tmp_path / "w", FONTS)
+    assert not out.animated and len(out.frames) <= 1
+    after = np.asarray(Image.open(out.path).convert("RGB")).astype(int)
+    side = after[40:160, 356:380]
+    assert (np.abs(before[40:160, 356:380] - APP).max() < 3), "the fixture has no app"
+    assert side.mean() > 150, "the app's sidebar still shows on the glass"
+    # The picture's own paper, not the backlight's grey.
+    assert side[..., 0].mean() > side[..., 2].mean()
+
+
+def test_the_glass_is_drawn_at_its_own_shape(tmp_path):
+    """The glass is wider than the 16:9 texture stretched over it: a square
+    on the picture must come out square in the room."""
+    sq = np.full((90, 160, 3), 240, np.uint8)
+    sq[25:65, 60:100] = (200, 40, 40)
+    pic = tmp_path / "sq.png"
+    Image.fromarray(sq).save(pic)
+    plate = _still(tmp_path / "kit")
+    from dataclasses import replace
+
+    # A front-on glass in the room as wide as the real one is for its height.
+    h = 60
+    w = h * rd.GLASS_ASPECT
+    x0, y0 = 100 + (100 - w) / 2, 20
+    chart = [[x0 + w * x / 1920, y0 + h * y / 1080]
+             for x, y in ((60, 116), (1392, 116), (1392, 1044), (60, 1044))]
+    plate = replace(plate, writable={"screen": {**plate.writable["screen"], "quad": chart}})
+    out = rd.written_room(plate, _dressing().showing(pic, "x"), tmp_path / "w", FONTS)
+    img = np.asarray(Image.open(out.path).convert("RGB")).astype(int)
+    red = (img[..., 0] > img[..., 1] + 60) & (img[..., 0] > img[..., 2] + 60)
+    ys, xs = np.nonzero(red)
+    assert abs((xs.max() - xs.min()) / (ys.max() - ys.min()) - 1) < 0.08
 
 
 def test_a_board_only_room_still_holds_still(tmp_path):
@@ -277,17 +309,13 @@ def test_a_board_only_room_still_holds_still(tmp_path):
     assert not out.animated and out.frames == plate.frames
 
 
-def test_a_room_that_loops_keeps_its_frames_and_blinks_on_them(tmp_path):
-    from dataclasses import replace
-
+def test_a_room_that_loops_keeps_its_frames_each_written(tmp_path):
     plate = _plate(tmp_path / "kit", frames=tuple("r.png" if i != 3 else "r_f03.png"
                                                   for i in range(12)))
     out = rd.written_room(plate, _dressing(), tmp_path / "w", FONTS)
-    assert out.frame_count == 12
-    assert out.frames[3].png == "r_f03.png" and out.frames[9].png == "r.off.png"
-    assert all(f.front.endswith(".off.png") == (i >= 6) for i, f in enumerate(out.frames))
-    # Nothing else of the room's own loop changes.
-    assert replace(out.frames[3], png="", front="") == replace(plate.frames[3], png="", front="")
+    assert out.frames == plate.frames and out.fps == plate.fps
+    for p in out.frame_paths():
+        assert p.exists() and tmp_path / "w" in p.parents
 
 
 def test_the_monitor_shows_the_chapters_picture(tmp_path):
@@ -296,11 +324,11 @@ def test_the_monitor_shows_the_chapters_picture(tmp_path):
     shown = d.showing(pic, "The cash")
     assert shown.fingerprint != d.fingerprint
     assert d.showing(None) == d and shown.showing(None).fingerprint == d.fingerprint
-    tex = np.asarray(rd.screen_chart(shown, FONTS, (666, 464)))
+    tex = np.asarray(rd.screen_chart(shown, FONTS, (666, 308)))
     red = (tex[..., 0] > 170) & (tex[..., 1] < 70)
     assert red.mean() > 0.2, "the plate's picture is not on the monitor"
     # Not the price's line.
-    assert not ((tex[..., 1] > 180) & (tex[..., 2] > 220) & (tex[..., 0] < 120)).sum() > 400
+    assert not ((tex[..., 2] > 120) & (tex[..., 0] < 80)).sum() > 400
     # A new picture is a new written room.
     plate = _still(tmp_path / "kit")
     a = rd.written_room(plate, d, tmp_path / "w", FONTS)
@@ -312,12 +340,11 @@ def test_the_picture_draws_itself_in(tmp_path):
     pic = _picture(tmp_path)
     shown = _dressing().showing(pic, "The cash")
     red = lambda im: ((im[..., 0] > 170) & (im[..., 1] < 70)).sum()  # noqa: E731
-    steps = [red(np.asarray(rd.screen_chart(shown, FONTS, (666, 464), reveal=r)))
+    steps = [red(np.asarray(rd.screen_chart(shown, FONTS, (666, 308), reveal=r)))
              for r in (0.0, 0.3, 0.6, 1.0)]
     assert steps[0] == 0 and steps[0] < steps[1] < steps[2] < steps[3]
-    line = lambda im: ((im[..., 1] > 180) & (im[..., 2] > 220)).sum()  # noqa: E731
-    price = [line(np.asarray(rd.screen_chart(_dressing(), FONTS, (666, 464), reveal=r,
-                                             cursor=False)))
+    line = lambda im: ((im[..., 2] > 120) & (im[..., 0] < 80)).sum()  # noqa: E731
+    price = [line(np.asarray(rd.screen_chart(_dressing(), FONTS, (666, 308), reveal=r)))
              for r in (0.0, 0.5, 1.0)]
     assert price[0] == 0 and price[0] < price[1] < price[2]
 
@@ -329,8 +356,8 @@ def test_reveal_frames_end_on_the_written_room(tmp_path):
     assert len(frames) == rd.REVEAL_FRAMES and all(f is not None for _, f in frames)
     out = rd.written_room(plate, d, tmp_path / "w", FONTS)
     last = np.asarray(frames[-1][0]).astype(int)
-    written = np.asarray(Image.open(out.frame_paths()[0]).convert("RGB")).astype(int)
-    assert np.abs(last - written).max() <= 2, "the draw-in does not land on the loop"
+    written = np.asarray(Image.open(out.path).convert("RGB")).astype(int)
+    assert np.abs(last - written).max() <= 2, "the draw-in does not land on the room"
     first = np.asarray(frames[0][0]).astype(int)
     assert np.abs(first - written).sum() > 0
     assert rd.reveal_frames(_board_only(tmp_path / "kit2"), d, FONTS, (400, 200)) is None
@@ -340,7 +367,10 @@ def test_the_picture_s_corners_are_where_it_is_drawn(tmp_path):
     """Item 60 pushes the camera into these corners: they must be the picture."""
     plate = _still(tmp_path / "kit")
     pic = tmp_path / "solid.png"
-    Image.new("RGB", (160, 90), (200, 40, 40)).save(pic)
+    # Red to its paper edge: the glass round the picture takes the paper.
+    solid = Image.new("RGB", (160, 90), (240, 238, 230))
+    solid.paste((200, 40, 40), (1, 1, 159, 89))
+    solid.save(pic)
     d = _dressing().showing(pic, "The cash")
     q = rd.picture_quad(plate, d, (400, 200))
     assert q is not None and len(q) == 4
@@ -393,9 +423,9 @@ def test_the_short_writes_on_the_rooms_it_cuts_to(tmp_path):
     w = got.get(plate.key)
     assert w is not plate and (tmp_path / "w" / "written") in w.root.parents
     assert got.base_hour == "night", "the rest is asked of the registry"
-    # The cursor blinks: the room layer loops now.
+    # A room that held still still does.
     room = result.layers[0]
-    assert (room.frame_count, room.fps, room.loops) == (12, 12, True)
+    assert (room.frame_count, room.loops) == (1, False)
     assert result.layers[1].frame_count == 1
     # Nothing in the cut with a board or a monitor: the registry as it was.
     bare = BuildResult(layers=[layers[1]], spans=[], frame=(1080, 1920))

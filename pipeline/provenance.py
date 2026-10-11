@@ -39,6 +39,7 @@ record is plumbing, not measurement.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 # `Visual.source` was already exactly the right vocabulary; this only says
 # which bucket each value belongs in.
@@ -272,14 +273,28 @@ def build(*, ticker: str, fmt: str, workdate: str, duration_s: float,
     if tts is not None:
         p.audio = {
             "tier": getattr(tts, "tier", ""),
-            "model": getattr(tts, "model_id", "") or getattr(tts, "tier", ""),
+            "model": _voice_model(tts, settings),
             "draft": bool(getattr(tts, "draft", False)),
             "cached": bool(getattr(tts, "cached", False)),
             "cost_usd": float(getattr(tts, "cost_usd", 0.0) or 0.0),
-            "chunks": getattr(tts, "chunks", None),
         }
     if settings is not None:
         p.llm = llm_summary(settings)
     if gate_report is not None:
         p.gates = gate_report.ran_line()
     return p
+
+
+def _voice_model(tts, settings) -> str:
+    """Which voice spoke it. The result carries only its tier, so the record
+    said "paid" where it promises the ElevenLabs model the narration came
+    from, the line a disclosure question is answered from."""
+    tier = str(getattr(tts, "tier", "") or "")
+    if settings is None:
+        return tier
+    if tier == "paid":
+        return settings.active_eleven_model
+    if tier == "local":
+        voice = Path(str(getattr(settings, "local_tts_model", "") or "")).stem
+        return f"piper {voice}".strip()
+    return tier

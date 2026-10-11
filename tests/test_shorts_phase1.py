@@ -70,6 +70,33 @@ def test_the_release_card_is_read_off_the_page_the_news_sheet_links(
     assert card["date"] and card["source"]
 
 
+def test_a_release_that_could_not_be_fetched_is_asked_for_again(settings, monkeypatch):
+    """A failed fetch (a timeout, a 503) was written to the cache as an empty
+    page, and an empty page is read back as "no release" for good: one bad
+    minute took the story's release card off every later run. A page that was
+    read and has no story on it is still kept, so that is not asked for twice."""
+    live = settings.model_copy(update={"mock_mode": False})
+    url = "https://example.com/news/ai-partnership"
+    page = (Path(settings.fixtures_dir) / "news_pages"
+            / "ai-partnership.html").read_text(encoding="utf-8")
+    asked: list = []
+    pages = iter([None, page])           # down, then back
+    monkeypatch.setattr(news_page, "_get", lambda u: asked.append(u) or next(pages))
+    assert news_page.fetch_release(url, live) is None
+    assert not news_page._cache_file(live, url).exists()
+    got = news_page.fetch_release(url, live)
+    assert got and got["body"], "the second run never asked"
+    assert news_page.fetch_release(url, live) == got and len(asked) == 2
+
+    bare = "https://example.com/news/nothing-here"
+    monkeypatch.setattr(news_page, "_get",
+                        lambda u: asked.append(u) or "<html><body><p>Hi.</p></body></html>")
+    asked.clear()
+    assert news_page.fetch_release(bare, live) is None
+    assert news_page.fetch_release(bare, live) is None
+    assert len(asked) == 1, "a page with no story on it was fetched twice"
+
+
 def test_the_push_in_on_a_release_never_cuts_its_date_in_half(settings):
     """Pushing in on the headline took the date off the side of the frame
     at "6 July 202". A push that leaves a line half in view is not taken;
@@ -396,3 +423,18 @@ def test_a_row_of_figures_is_set_at_one_size(kit):
     assert drawn_box(bars, unit, "Revenue", s, kit)[3] > drawn_box(
         bars, unit, "Revenue", Settings(_env_file=None, short_type_grow=1.0), kit)[3]
 
+
+
+def test_a_52_week_price_over_a_thousand_loses_cents_not_digits():
+    """Cut to eight characters, $1,234.56 read "$1,234.5" and $12,345.67
+    "$12,345." on the year's card: different prices."""
+    from pipeline.short_data import week52
+
+    got = week52({"week52_high": 12345.67, "week52_low": 1234.56, "price": 4567.89,
+                  "ticker": "BKNG"})
+    assert got["figure-high"] == "$12,346"
+    assert got["figure-low"] == "$1,234.6"
+    assert got["now"] == "$4,567.89"
+    small = week52({"week52_high": 21.5, "week52_low": 9.25, "price": 15.42})
+    assert (small["figure-high"], small["now"], small["figure-low"]) == (
+        "$21.50", "$15.42", "$9.25")

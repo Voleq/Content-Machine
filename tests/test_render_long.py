@@ -97,12 +97,15 @@ def test_host_anchored_structure_with_all_kinds(rendered):
     assert {"clip", "img", "chart", "filing", "meme", "host"} <= kinds
 
     # deliberate pacing: nothing flashes by, and every gap is ONE held host
-    # beat rather than a run of chopped filler
+    # beat rather than a run of chopped filler. Two host beats meet only where
+    # a chapter starts: that is the cut its card lands on.
     for s in segs:
         assert s["end"] - s["start"] >= 1.0, f"{s['kind']} flashes by"
+    chapter_times = [c["t"] for c in manifest["chapters"]]
     for a, b in zip(segs, segs[1:]):
-        assert not (a["kind"] == "host" and b["kind"] == "host"), \
-            "consecutive host beats mean the gap was chopped"
+        if a["kind"] == "host" and b["kind"] == "host":
+            assert any(abs(b["start"] - t) < 0.05 for t in chapter_times), \
+                "consecutive host beats mean the gap was chopped"
 
     # visual segments start on their cue's anchor-word time, or later when a
     # data visual before them was still being read
@@ -112,6 +115,17 @@ def test_host_anchored_structure_with_all_kinds(rendered):
         if seg["kind"] == "host":
             continue
         assert any(seg["start"] >= t - 1e-3 for t in cue_times)
+
+
+def test_every_chapter_has_a_cut_on_its_own_time(rendered):
+    """A chapter's card lands on the first cut at or after its time. With a
+    stretch of him held across the chapter's start that cut was the next
+    visual's, as much as five seconds late."""
+    settings, script, tts, out, manifest = rendered
+    starts = [s["start"] for s in manifest["segments"]]
+    for c in manifest["chapters"][1:]:
+        assert any(abs(t - c["t"]) < 0.05 for t in starts), \
+            f"{c['title']!r} at {c['t']}s has no cut on it: {starts}"
 
 
 def test_cue_times_reached_the_filtergraph(rendered):
@@ -293,6 +307,17 @@ def rendered_doodles(tmp_path_factory):
         yield settings, script, tts, out, json.loads(manifest.read_text(encoding="utf-8"))
     finally:
         grab.unlink(missing_ok=True)
+
+
+def test_footage_from_outside_plays_edge_to_edge(rendered):
+    # Valentin, 10-10: b-roll, memes and filing pages fill the screen. The
+    # clip used to be laid into a taped paper frame (overlay at 307:130).
+    settings, script, tts, out, manifest = rendered
+    clip = next(s for s in manifest["segments"] if s["kind"] == "clip")
+    assert "overlay" not in clip["filter"]
+    assert "crop=1920:1080" in clip["filter"] or "crop=" in clip["filter"]
+    assert not any(k.startswith("frames/media-frame")
+                   for k in manifest.get("plates_used") or [])
 
 
 def test_screengrab_and_marker_chart_segments(rendered_doodles):
@@ -888,7 +913,7 @@ def test_a_gesture_with_no_second_variant_is_never_swapped(settings):
 
 
 def test_an_empty_slot_has_no_box_to_solve_a_mark_onto(settings):
-    """No ink, no box — and the caller falls back to a centred mark.
+    """No ink, no box — and the caller draws no mark.
 
     An empty cell means NO DATA in this library, so a mark aimed at one has
     nothing to sit on. Returning a box anyway would put a strike through a
@@ -1278,3 +1303,64 @@ def test_the_manifest_carries_the_writer_moves_for_the_renderer(rendered):
     # RAW names no [MOVE]; the field is there, empty, rather than absent.
     assert manifest["writer_moves"] == []
     assert manifest["move_warnings"] == []
+
+
+def test_the_strip_leaves_out_a_beat_it_would_sit_on_him_in():
+    """10 Oct 2026: on the turn to the screen the lower third covered his face."""
+    from types import SimpleNamespace as NS
+
+    from pipeline.render_long import _on_him
+
+    segs = [NS(kind="host", start=0.0, end=4.0), NS(kind="host", start=4.0, end=8.0),
+            NS(kind="plate", start=8.0, end=10.0), NS(kind="host", start=10.0, end=11.0)]
+    assert _on_him(segs, []) == [(0.0, 8.0)]
+    assert _on_him(segs, [], skip={1}) == [(0.0, 4.0)]
+    assert _on_him(segs, [(0.0, 1.0)], skip={0}) == [(4.0, 8.0)]
+    # the disclaimer's rim takes every stretch of him, however short
+    assert _on_him(segs, [], min_s=0.0) == [(0.0, 8.0), (10.0, 11.0)]
+
+
+# ------------------------------------------------- the wide rooms (10 Oct)
+def test_a_wide_room_is_for_the_first_beat_of_him_in_a_chapter():
+    from types import SimpleNamespace as NS
+
+    from pipeline.render_long import chapter_openers
+
+    segs = [NS(kind="host", start=0.0), NS(kind="plate", start=3.0),
+            NS(kind="host", start=6.0), NS(kind="host", start=12.0),
+            NS(kind="plate", start=15.0), NS(kind="host", start=18.0)]
+    chapters = [(0.0, "a", "x"), (12.0, "b", "y")]
+    assert chapter_openers(segs, chapters, 20.0) == {0, 3}
+    # the cold open's first shot of him is one too, under the title or not
+    assert chapter_openers(segs, chapters, 20.0, cold_i=2) == {0, 2, 3}
+
+
+def test_every_wide_room_has_a_closer_angle_he_can_stand_in(settings):
+    from pipeline.plates import load_plates
+    from pipeline.render_long import CLOSER_ROOM, WIDE_SHARE
+
+    reg = load_plates(settings.assets_dir)
+    desk = reg.get(reg.aspect_key("room/desk-front", "16x9") or "")
+    if desk is None or desk.slot("host-anchor") is None:
+        pytest.skip("the kit is not ingested")
+    desk_h = desk.slot("host-anchor").h
+
+    def height(key):
+        a = reg.get(key).slot("host-anchor")
+        return a.h if a is not None else None
+
+    wide = set()
+    for key in reg.all_plates():
+        p = reg.get(key)
+        if p is None or p.family != "room" or p.aspect != "16x9" or p.refuses_host:
+            continue
+        h = height(key)
+        if h is not None and h < WIDE_SHARE * desk_h:
+            wide.add(reg.base_key(key))
+    assert wide, "the kit has wide rooms"
+    for base in wide:
+        stem = next((k for k in CLOSER_ROOM if base.startswith(k + "-")), None)
+        assert stem, f"{base} is wide and has no closer angle"
+        closer = reg.aspect_key(CLOSER_ROOM[stem], "16x9")
+        assert closer is not None, f"{CLOSER_ROOM[stem]} is not in the kit"
+        assert height(closer) >= WIDE_SHARE * desk_h, f"{closer} is wide too"

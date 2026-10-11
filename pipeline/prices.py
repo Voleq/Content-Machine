@@ -21,6 +21,7 @@ import random
 import time
 from dataclasses import dataclass
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Protocol
 
 from config import Settings
@@ -143,9 +144,16 @@ class YahooPriceSource:
             hist = yf.Ticker(ticker).history(
                 start=start.isoformat(), interval="1d", auto_adjust=True,
             )
-            closes = [round(float(c), 4) for c in hist["Close"].tolist()]
-            dates = [d.date().isoformat() if hasattr(d, "date") else str(d)[:10]
-                     for d in hist.index.tolist()]
+            # A day Yahoo has no close for comes back NaN (a halt, a bad
+            # print). One NaN made the whole series non-finite, and the
+            # caller then threw five real years away for the synthetic
+            # floor. The day is dropped instead, with its date.
+            pairs = [(d.date().isoformat() if hasattr(d, "date") else str(d)[:10],
+                      float(c))
+                     for d, c in zip(hist.index.tolist(), hist["Close"].tolist())]
+            pairs = [(d, round(c, 4)) for d, c in pairs if math.isfinite(c)]
+            dates = [d for d, _ in pairs]
+            closes = [c for _, c in pairs]
             if len(closes) >= 2:
                 return PriceSeries(ticker=ticker.upper(), dates=dates,
                                    closes=closes, source="yahoo")
@@ -174,6 +182,19 @@ def long_history_days(settings: Settings) -> int:
                or settings.price_history_days)
 
 
+def price_cache_file(ticker: str, days: int, settings: Settings) -> Path:
+    """Where `get_price_history` keeps one ticker's series of one length.
+
+    A mock run's series is cached apart from a live one's. It shared the
+    file, and the mock floor is a synthetic walk NOT marked degraded (it is
+    the mock default, not a failure), so the first live run inside the cache
+    lifetime drew an invented price history as if Yahoo had sent it, and
+    nothing blocked the final render.
+    """
+    tail = "_mock" if settings.mocking_prices else ""
+    return settings.cache_dir / "prices" / f"{ticker.upper()}_{int(days)}{tail}.json"
+
+
 def get_price_history(ticker: str, settings: Settings,
                       source: PriceSource | None = None, *,
                       days: int | None = None) -> PriceSeries:
@@ -184,13 +205,17 @@ def get_price_history(ticker: str, settings: Settings,
     `long_history_days` for the long. Each length is cached on its own."""
     ticker = ticker.upper()
     days = int(days or settings.price_history_days)
-    cdir = settings.cache_dir / "prices"
-    cfile = cdir / f"{ticker}_{days}.json"
+    mocking = settings.mocking_prices
+    cfile = price_cache_file(ticker, days, settings)
+    cdir = cfile.parent
     try:
         age = time.time() - cfile.stat().st_mtime if cfile.exists() else None
         if age is not None and age < settings.prices_cache_ttl_s:
             series = PriceSeries.from_json(cfile.read_text(encoding="utf-8"))
-            if not series.degraded or age < DEGRADED_TTL_S:
+            # ...and a file a mock run wrote before that split is not data.
+            canned = (not mocking and not series.degraded
+                      and series.source in ("fixture", "synthetic"))
+            if not canned and (not series.degraded or age < DEGRADED_TTL_S):
                 return series
     except (json.JSONDecodeError, KeyError, ValueError, OSError):
         pass

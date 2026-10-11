@@ -18,6 +18,7 @@ sample set is always the installed kit's, never a fixture that goes stale.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import math
 import re
@@ -65,6 +66,13 @@ process.stdout.write(JSON.stringify(out));
 """
 
 
+def _ingest():
+    spec = importlib.util.spec_from_file_location("ingest_kit", ROOT / "scripts" / "ingest_kit.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 @pytest.fixture(scope="module")
 def reg():
     return load_plates(Settings(_env_file=None).assets_dir)
@@ -80,9 +88,18 @@ def samples(tmp_path_factory):
     node = shutil.which("node")
     if node is None or not (KIT / "engine" / "export.js").exists():
         pytest.skip("needs node and the kit's engine")
-    script = tmp_path_factory.mktemp("kit") / "samples.js"
+    tmp = tmp_path_factory.mktemp("kit")
+    script = tmp / "samples.js"
     script.write_text(_DUMP, encoding="utf-8")
-    proc = subprocess.run([node, str(script), str(KIT)], capture_output=True, text=True,
+    # The kit as the ingest installed it: every family on one ground
+    # (`PLATE_GROUND`), so its samples are drawn in the inks the bot uses.
+    kit = tmp / "delivery"
+    shutil.copytree(KIT, kit, ignore=shutil.ignore_patterns("out"))
+    ingest = _ingest()
+    if ingest.PLATE_GROUND:
+        _, problems = ingest.ground_tokens(kit, ingest.PLATE_GROUND)
+        assert not problems, problems
+    proc = subprocess.run([node, str(script), str(kit)], capture_output=True, text=True,
                           timeout=600, cwd=ROOT)
     assert proc.returncode == 0, proc.stderr[-2000:]
     rows = json.loads(proc.stdout)
@@ -153,6 +170,38 @@ def test_a_range_behind_a_line_is_painted_before_it():
     nodes = S.data_layer(slots, {"series": [10, 12, 14], "bands": {"range": [0.2, 0.6]}}, _INK)
     assert nodes[0]["tag"] == "rect" and nodes[0]["attrs"]["fill"] == "#B"
     assert any(n["tag"] == "path" for n in nodes[1:])
+
+
+def test_a_missing_period_breaks_the_line_instead_of_crashing_the_render():
+    """A plate written with one figure left blank hands the line a hole. It
+    is NO DATA, as `chart.draw_line` has it: the line breaks there rather
+    than running across, no dot sits on the gap, and the other periods keep
+    the columns they were given."""
+    slots = {"plot-area": dict(_PLOT)}
+    nodes = S.data_layer(slots, {"series": [10, 12, None, 16, 18, 20]}, _INK)
+    lines = [n for n in nodes if n["tag"] == "path"]
+    dots = [n for n in nodes if n["tag"] == "circle"]
+    assert len(lines) == 2, "one run either side of the hole"
+    assert [n["attrs"]["cx"] for n in dots] == [100, 260, 580, 740, 900]
+    # A run of one is a dot and no stroke; a series of nothing draws nothing.
+    lone = S.data_layer(slots, {"series": [10, None, 16, None, 20]}, _INK)
+    assert [n["tag"] for n in lone] == ["circle"] * 3
+    assert S.data_layer(slots, {"series": [None, None]}, _INK) == []
+    # The accent is on the last period that has a figure.
+    accented = S.line_path(_PLOT, [10, 12, 14, None], _INK, accent_last=True)
+    assert accented["nodes"][-1]["attrs"]["fill"] == "#A"
+    assert accented["nodes"][-1]["attrs"]["cx"] == 633.3, "the third of four columns"
+    assert len(accented["returns"]["points"]) == 3
+
+
+def test_a_missing_period_leaves_a_hole_in_the_filled_gap():
+    """Price against cost with one period blank in either line: the gap is
+    filled either side of the hole, never across it, and never crashes."""
+    full = S.spread_fill(_PLOT, [10, 12, 14, 16], [5, 6, 7, 8], _INK)
+    assert len(full["nodes"]) == 1
+    holed = S.spread_fill(_PLOT, [10, 12, None, 16, 18], [5, 6, 7, 8, 9], _INK)
+    assert len(holed["nodes"]) == 2
+    assert S.spread_fill(_PLOT, [10, None, 14], [5, 6, None], _INK)["nodes"] == []
 
 
 def test_a_mark_is_drawn_in_the_ink_its_slot_publishes():
@@ -599,6 +648,21 @@ def test_a_line_accents_only_its_last_point(reg):
     base = {"series": "6,5,4,3,2,1,1,1"}
     assert S.plate_data(plate, base | {"accent": "last"}).data.get("accentLast") is True
     assert S.plate_data(plate, base | {"accent": "3"}).problems
+
+
+def test_a_plate_written_with_a_blank_period_draws_the_rest(reg, settings):
+    """`[PLATE: line-6y | value-2= | …]` hands the line a hole, and the render
+    died on it (`None - float`) rather than drawing the other five years."""
+    from pipeline.chart import declared_layer
+
+    night = reg.at("night")
+    plate = night.get("charts/line-6y-16x9")
+    values = {"value-1": "400", "value-2": "", "value-3": "480", "value-4": "500",
+              "value-5": "520", "value-6": "560",
+              **{f"y-{i + 1}": str(y) for i, y in enumerate((0, 200, 400, 600, 800))}}
+    assert S.plate_data(plate, values).data["series"][1] is None
+    layer = declared_layer(night, plate, values, settings=settings)
+    assert layer is not None and layer.getbbox() is not None
 
 
 def test_a_rail_plate_takes_the_row_the_script_is_about(reg):

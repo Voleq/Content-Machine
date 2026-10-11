@@ -362,7 +362,10 @@ class Workspace:
         sha = self.approved_sha(fmt)
         if sha is None:
             return False
-        script = self.load_short() if fmt == "short" else self.load_long()
+        try:
+            script = self.load_short() if fmt == "short" else self.load_long()
+        except ValueError:  # a script the current schema no longer reads
+            return False
         return script is not None and script.content_sha() == sha
 
     def _invalidate_approval(self, fmt: str) -> None:

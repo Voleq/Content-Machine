@@ -184,15 +184,21 @@ def bumper_frames(reg, settings, *, aspect: str, n: int, total: int, title: str,
     return frames
 
 
-def wipe_frames(reg, name: str, aspect: str, size: tuple[int, int]) -> tuple[list, int]:
+def wipe_frames(reg, name: str, aspect: str, size: tuple[int, int],
+                ground=None) -> tuple[list, int]:
     """A wipe's frames sized to the cut, and the index of the frame the cut
-    goes under (design's `cutAt`, counted from one)."""
+    goes under (design's `cutAt`, counted from one). With `ground` (a plate),
+    the wipe is the one drawn at the hour whose ground is nearest that
+    plate's (`moves.wipe_for_ground`)."""
     from PIL import Image
 
     key = reg.aspect_key(f"overlays/{name}", aspect)
     plate = reg.get(key) if key else None
     if plate is None:
         return [], 0
+    if ground is not None:
+        from pipeline.moves import wipe_for_ground
+        plate = wipe_for_ground(reg, plate, ground)
     spec = plate.transition or {}
     cut_frame = max(int(spec.get("cutAt") or 4) - 1, 0)
     frames = []
@@ -222,11 +228,12 @@ def bumper_clip(reg, settings, out: Path, *, aspect: str, at: float, n: int,
 
 
 def wipe_clip(reg, out: Path, *, name: str, aspect: str, cut: float,
-              size: tuple[int, int]) -> Clip | None:
-    """A wipe laid so its full cover is on screen at `cut`."""
+              size: tuple[int, int], ground=None) -> Clip | None:
+    """A wipe laid so its full cover is on screen at `cut`, drawn at the
+    hour matching `ground`'s plate when one is given."""
     from pipeline.rasters import frames_to_alpha_clip
 
-    frames, cut_frame = wipe_frames(reg, name, aspect, size)
+    frames, cut_frame = wipe_frames(reg, name, aspect, size, ground=ground)
     if not frames:
         return None
     start = cut - cut_frame / FPS

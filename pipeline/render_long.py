@@ -74,7 +74,6 @@ from pipeline.company_data import prepare_screenshot
 from pipeline.host import (build_host_clip, cast_pose, frame_shot, front_of,
                            host_shot, pick_shot, place_on_room, stands_on)
 from pipeline.chart import declared_layer, draw_declared
-from pipeline.media_frames import FrameRotation, composite as frame_media
 from pipeline.models import (
     CueKind,
     LongScript,
@@ -172,20 +171,41 @@ def _chapter_plan(script, duration: float,
 
 
 def _chapter_cuts(chapters: list[tuple[float, str, str]], seg_starts: list[float],
-                  *, intro_dur: float, duration: float) -> list[float | None]:
+                  *, intro_dur: float, duration: float,
+                  fps: int = 15) -> list[float | None]:
     """The cut each chapter's opener lands on, or None where it has none:
-    the first cut at or after the chapter's own time, each cut used once."""
+    the first cut at or after the chapter's own time, each cut used once.
+
+    "At" is to within half a frame. The plan snaps every cut to the nearest
+    frame, so the cut a chapter belongs on can sit a hair BEFORE its time
+    (20.012 s against the cut at 20.000 s); read strictly it was missed and
+    the card went up on the next cut, as late as the longest beat. `fps`
+    defaults to the coarsest rate rendered, the preview's.
+
+    A first chapter that starts under the opening title has none: the title
+    card IS its opener, its headline the chapter's title. Landed on the first
+    cut after the card, it was the empty room with the same title in it
+    again, five seconds in, over him."""
+    slack = 0.5 / fps + 1e-6
     used: set[float] = set()
     out: list[float | None] = []
-    for target, _title, _type in chapters:
+    for k, (target, _title, _type) in enumerate(chapters):
+        if k == 0 and _on_the_title(target, intro_dur):
+            out.append(None)
+            continue
         t = next((s for s in seg_starts
-                  if s >= max(target, intro_dur) and s not in used), None)
+                  if s >= max(target, intro_dur) - slack and s not in used), None)
         if t is None or t < 0.6 or t > duration - 1.2:
             out.append(None)
             continue
         used.add(t)
         out.append(t)
     return out
+
+
+def _on_the_title(target: float, intro_dur: float) -> bool:
+    """Whether a first chapter starting at `target` opens under the title."""
+    return target < intro_dur
 
 
 def _host_covers_picture(clip: Path, box: tuple[int, int, int, int],
@@ -259,18 +279,23 @@ LOWER_THIRD_AT = (24, 20)
 # A window of him shorter than this gets no lower third: on and off inside a
 # second reads as a flicker, not a strip.
 LOWER_THIRD_MIN_S = 1.5
+# The dark rim the disclaimer wears over the room (RGBA): the room's night
+# blue, not black, so it reads as the line's shadow rather than an outline.
+DISCLAIMER_RIM = (12, 16, 30, 190)
 
 
-def _on_him(segments, covers: list[tuple[float, float]]) -> list[tuple[float, float]]:
+def _on_him(segments, covers: list[tuple[float, float]], *,
+            skip=frozenset(), min_s: float = LOWER_THIRD_MIN_S) -> list[tuple[float, float]]:
     """The stretches the frame is a beat of him with nothing covering it.
 
     Consecutive beats of him are one stretch, so the strip does not blink on
     the cut between two of his shots; a cover (the opening title, a chapter
-    card, a wipe) is taken out of it.
+    card, a wipe) is taken out of it, and so is a beat whose index is in
+    `skip` (one the strip would sit on his face in).
     """
     runs: list[list[float]] = []
-    for sg in segments:
-        if sg.kind != "host":
+    for i, sg in enumerate(segments):
+        if sg.kind != "host" or i in skip:
             continue
         if runs and abs(runs[-1][1] - sg.start) < 1e-6:
             runs[-1][1] = sg.end
@@ -290,7 +315,7 @@ def _on_him(segments, covers: list[tuple[float, float]]) -> list[tuple[float, fl
                 if cb < pb:
                     nxt.append((cb, pb))
             pieces = nxt
-        out.extend((pa, pb) for pa, pb in pieces if pb - pa >= LOWER_THIRD_MIN_S)
+        out.extend((pa, pb) for pa, pb in pieces if pb - pa >= min_s)
     return out
 
 # THE COLD OPEN STARTS WIDE. A long opened on the same talking-head angle as
@@ -310,7 +335,40 @@ COLD_OPEN_PREFERRED = "room/window-wide"
 # and missing here is a drawing every long puts on screen that the audit
 # reports as having no route to one.
 LONG_ROOM_ROLES = ("talk", "panel")          # and the opener, `opener_role`
+
+# THE WIDE ROOMS OPEN A CHAPTER (Valentin, 10 Oct 2026: "he is way too small
+# for the angle ... maybe we could use that only when we're restarting a
+# chapter"). A room is wide where he stands under this share of his height
+# at the desk; the first beat of him in a chapter may be one, and the camera
+# goes in to him there, and anywhere else the beat is shot from the closer
+# angle of the same place.
+WIDE_SHARE = 0.65
+CLOSER_ROOM = {"room/desk-wide": "room/desk-front", "room/window-wide": "room/window-wall",
+               "room/board-wide": "room/board-side", "room/doorway": "room/desk-front",
+               "room/doorway-wide": "room/desk-front"}
+# How close the push-in goes: to this share of his size at the desk, and
+# never more than this many times in (the room's picture is drawn at twice
+# the frame, so the room stays sharp all the way); over how long, once the
+# frame is clear of any cover; and the shortest beat worth pushing on.
+PUSH_TO_SHARE = 0.8
+PUSH_MAX_Z = 2.0
+PUSH_IN_S = 3.5
+PUSH_MIN_BEAT_S = 1.5
 LONG_HOST_ROLES = ("beat", "panel", "rests-on")
+
+
+def chapter_openers(segments, chapters, duration: float,
+                    cold_i: int | None = None) -> set[int]:
+    """The segments that are the first beat of him in a chapter, and the cold
+    open's first shot of him: the beats a wide room may be used on."""
+    out = {cold_i} if cold_i is not None else set()
+    bounds = [t for t, _title, _type in chapters] + [duration + 1.0]
+    for a, b in zip(bounds, bounds[1:]):
+        inside = [i for i, sg in enumerate(segments)
+                  if sg.kind == "host" and a <= sg.start < b]
+        if inside:
+            out.add(inside[0])
+    return out
 
 
 def opener_role(reg) -> str:
@@ -401,7 +459,9 @@ def cold_open_segment(segments, duration: float,
 
 
 # NOTHING PANS OR ZOOMS. Dennis carries the motion — the mouth flap, the boil
-# pairs, the cuts and real video footage. Everything else holds dead still.
+# pairs, the cuts and real video footage. Everything else holds dead still,
+# but for three camera moves that are a lens, not a drift: his close-up, the
+# push into his monitor (item 60) and the push-in on a chapter's wide shot.
 #
 # The old engine drifted every still because nothing else on screen moved;
 # once the host arrived that stopped being true, and a drifting frame is both
@@ -570,6 +630,11 @@ PUSH_S = 0.6
 # HOW LONG A CHAPTER OPENER IS ON SCREEN. A looping opener room is encoded to
 # cover all of it, because a clip overlay that runs out mid-window vanishes.
 CHAPTER_OPENER_S = 1.6
+
+# A [SCRIBBLE] whose plate went up late goes on once the plate is in and its
+# data has drawn on, and only if it can then stay up long enough to be seen.
+MARK_AFTER_PLATE_S = 0.8
+MARK_MIN_S = 1.0
 
 
 def _provenance(script, settings, workspace: Path, duration: float,
@@ -848,7 +913,7 @@ def _render_long(
     # under one holds its moves until it lifts.
     intro_dur = min(INTRO_CARD_S, duration * 0.5)
     chapter_cuts = _chapter_cuts(chapters, [s.start for s in segments],
-                                 intro_dur=intro_dur, duration=duration)
+                                 intro_dur=intro_dur, duration=duration, fps=fps)
     end_cut = max((s.start for s in segments if s.start > intro_dur + 2.0),
                   default=None)
     _bumper = reg.get(reg.aspect_key("structure/chapter-bumper", aspect) or "")
@@ -1104,8 +1169,8 @@ def _render_long(
                 _plate_fingerprint(f) for f in files).encode()).hexdigest()[:8]
             weather = f"_{plate.weather}" if plate.weather else ""
             dest = rdir / f"{kind}loop_{plate.name}{weather}_{stamp}_{fps}.mov"
-            # A blinking cursor is twelve frames over two pictures: each
-            # picture is opened and brought down to the frame once.
+            # A loop shows each of its pictures many times: each is opened
+            # and brought down to the frame once.
             opened: dict[Path, Image.Image] = {}
 
             def _frame(i: int) -> Image.Image:
@@ -1120,14 +1185,23 @@ def _render_long(
                 fps, dest)
         return room_cache[key]
 
+    def _held(still: Path, mode: str, name: str) -> Path:
+        """A second of `still` at the frame's size and rate: the tail a
+        chapter's draw-in hands over to in a room that holds still, the same
+        kind of clip as the draw-in, so the two concatenate."""
+        key = (name, f"held-{still}")
+        if key not in room_cache:
+            dest = rdir / f"held_{Path(still).stem}_{_plate_fingerprint(still)}_{fps}.mov"
+            img = Image.open(still).convert(mode).resize((W, H), Image.LANCZOS)
+            room_cache[key] = _played_clip([0] * int(fps), lambda _: img, fps, dest)
+        return room_cache[key]
+
     def _room_loop(plate) -> Path | None:
         """A room that keeps moving behind him, as a clip; None if it is still.
 
         THE ROOM LOOPS ARE BAKED INTO THE ROOM'S FRAMES (item 19): bulbs,
-        snow or rain in the window, and the cursor on his monitor's prompt
-        (item 54), which makes any room with the monitor in shot loop once
-        it is written. Held on its base file the room is frame one of that
-        loop, frozen.
+        snow or rain in the window. Held on its base file the room is frame
+        one of that loop, frozen.
         """
         plate = _written(plate)
         if not plate.animated or plate.plays_once:
@@ -1289,55 +1363,22 @@ def _render_long(
     # [CLIP], [IMG], [SHOW FILING] and [SCREENGRAB] land INSIDE a frames/
     # plate. Raw and full-frame they destroy the drawn surface the rest of the
     # video is built on, and the treatments rotate so consecutive ones differ.
-    frame_rotation = FrameRotation()
+    def _full_media(seg_i: int, media_path: Path, *, document: bool = False) -> Path:
+        """A still from outside, filling the screen.
 
-    def _frame_plate(kind, *, needs_media: bool = True):
-        """The next frames/ plate in the rotation, or None when unavailable.
-
-        `needs_media` is True everywhere here: this path always has a real
-        image or clip in hand, so it needs a plate with an aperture. The
-        capture frame is for a document transcribed into slots and has none.
+        A photo whose shape is near enough the frame's is cropped to fill it;
+        anything else (a filing page, a tall grab) is shown whole and sharp
+        over a blurred copy of itself, never cropped through its text.
         """
-        from pipeline.media_frames import frame_for
-
-        return frame_for(reg, frame_rotation, aspect, kind=kind,
-                         needs_media=needs_media)
-
-    def _frame_bg(frame, seg, seg_i: int) -> tuple[Path, tuple[int, int, int, int]]:
-        """The empty frame as a background, and the aperture to play inside.
-
-        For FOOTAGE, which cannot be composited frame by frame in Pillow: the
-        plate is rendered once with its caption and source, and ffmpeg overlays
-        the clip into the aperture.
-        """
-        from pipeline.media_frames import aperture
-        from pipeline.plate_frames import render_still
-
-        dest = rdir / f"frame_{seg_i}.png"
-        values = {k: v for k, v in (seg.payload.get("values") or {}).items()
-                  if k in frame.slots}
-        img = render_still(frame, values, settings, reg)
-        img.convert("RGB").resize((W, H), Image.LANCZOS).save(dest)
-        ap = aperture(frame) or (0, 0, W, H)
-        k = W / frame.delivered[0]
-        return dest, (int(ap[0] * k), int(ap[1] * k),
-                      max(int(ap[2] * k), 1), max(int(ap[3] * k), 1))
-
-    def _framed_media(seg, seg_i: int, media_path: Path, kind) -> Path:
-        frame = _frame_plate(kind)
-        if frame is None:
-            return media_path
-        plates_used.add(frame.key)
+        dest = rdir / f"full_{seg_i}.png"
         try:
-            media = Image.open(media_path).convert("RGBA")
+            cover_fill_frame(media_path, W, H, keep_min=1.01 if document else 0.72,
+                             ground=role(settings, "ground"),
+                             line=role(settings, "structure"),
+                             border=False).save(dest)
         except Exception as exc:  # noqa: BLE001 — never fatal
-            log.warning("could not open %s (%s) — unframed", media_path, exc)
+            log.warning("could not open %s (%s) — shown as it is", media_path, exc)
             return media_path
-        values = {k: v for k, v in (seg.payload.get("values") or {}).items()
-                  if k in frame.slots}
-        out = frame_media(reg, frame, media, settings, values=values)
-        dest = rdir / f"framed_{seg_i}.png"
-        out.convert("RGB").resize((W, H), Image.LANCZOS).save(dest)
         return dest
 
     def _still_chain(input_i: int, seg, seg_len: float, seg_i: int,
@@ -1374,6 +1415,30 @@ def _render_long(
                   if sg.kind == "host" and _a <= sg.start < _b]
         if inside:
             lands_a_chapter.add(inside[-1])
+    # And the first beat of him in a chapter is the one that may be wide.
+    opens_chapter = chapter_openers(segments, chapters, duration, cold_i)
+
+    _desk = reg.get(reg.aspect_key("room/desk-front", aspect) or "")
+    _desk_anchor = _desk.slot("host-anchor") if _desk is not None else None
+
+    def _his_height(room) -> float:
+        """His height in `room` over his height at the desk; 1 where unknown."""
+        a = room.slot("host-anchor") if room is not None else None
+        if a is None or _desk_anchor is None or not _desk_anchor.h:
+            return 1.0
+        return float(a.h) / float(_desk_anchor.h)
+
+    def _closer(room, seg_i: int, variant: int):
+        """The closer angle of a wide room's place, for a beat that does not
+        open a chapter; the bot's talking room where the kit has none."""
+        stem = next((v for k, v in CLOSER_ROOM.items()
+                     if reg.base_key(room.key).startswith(k + "-")), None)
+        got = _scene_room({"room": stem}) if stem else None
+        if got is None:
+            got = _room_plate("talk", seed=f"{script.ticker}|{variant % 3}")
+        log.info("rooms: %s is a wide room on a beat inside a chapter (%.1fs) — "
+                 "shot from %s", room.key, segments[seg_i].start, got.key)
+        return got
 
     # THE CLOSE, as far as casting him goes: the last beat of the final
     # chapter he STANDS in. The line the chapter rests on is the close-up
@@ -1895,6 +1960,68 @@ def _render_long(
     screen_intro_end: dict[int, float] = {}
     push_meta: list[dict] = []
 
+    def _screen_seen(t: float) -> None:
+        """The chapter's picture counts as seen on the monitor at `t`: a
+        push-in shows it already up (its room is drawn from the written
+        picture), so it does not draw itself in on a later shot."""
+        pick = pick_at(screen_picks, t)
+        if pick is not None:
+            screen_intro_done.add(pick.chapter)
+
+    def _pushed_room(room, windows: list, seg_i: int, seg_len: float) -> Path:
+        """The room behind a push-in, as a clip: on each frame the piece of
+        the room's picture the camera sees (`windows`, 0-1 from the top
+        left), cut out of the written room at its full size and brought down
+        to the frame, so it is sharp from the first frame to the last.
+
+        Streamed to the encoder a frame at a time: a shot is a few hundred
+        frames, and holding them would be gigabytes.
+        """
+        import subprocess
+
+        from config import detect_ffmpeg
+        from pipeline.plate_frames import frame_indices
+
+        plates_used.add(room.key)
+        room = _written(room)
+        n = max(int(round(seg_len * fps)), 1)
+        windows = list(windows) or [(0.0, 0.0, 1.0, 1.0)]
+        dfps = int(getattr(settings, "dennis_3d_fps", 0) or fps)
+        files = room.frame_paths() if room.animated and not room.plays_once else []
+        idx = frame_indices(room, seg_len, fps) if files else [0] * n
+        opened: dict[Path, Image.Image] = {}
+
+        def _src(k: int) -> Image.Image:
+            f = files[idx[min(k, len(idx) - 1)] % len(files)] if files else room.path
+            if f not in opened:
+                opened[f] = Image.open(f).convert("RGB")
+            return opened[f]
+
+        dest = rdir / f"pushin_{seg_i}.mov"
+        part = dest.with_name(dest.stem + ".part" + dest.suffix)
+        cmd = [detect_ffmpeg()[0], "-loglevel", "error", "-y", "-f", "rawvideo",
+               "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(fps), "-i", "-",
+               "-c:v", "libx264", "-preset", "medium", "-crf", "12",
+               "-pix_fmt", "yuv444p", "-f", "mov", str(part)]
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        try:
+            for k in range(n):
+                src = _src(k)
+                # his layer is drawn at his own rate, the room at the video's
+                x0, y0, x1, y1 = windows[min(int(k * dfps / fps), len(windows) - 1)]
+                sw, sh = src.size
+                frame = src.resize((W, H), Image.LANCZOS,
+                                   box=(x0 * sw, y0 * sh, x1 * sw, y1 * sh))
+                proc.stdin.write(frame.tobytes())
+            proc.stdin.close()
+            if proc.wait() != 0:
+                raise RenderError(f"the push-in's room for segment {seg_i} did not encode")
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+        os.replace(part, dest)
+        return dest
+
     # THE 3D DENNIS (item 47): one Blender process for the render, asked for
     # each shot he stands in a 3D room. None draws the kit's Dennis, and so
     # does a kit with any drawn room left in it: he is 3D in every shot of a
@@ -1908,6 +2035,11 @@ def _render_long(
         # Blender worker running until the garbage collector closed its pipes.
         _closers.append(performer.close)
     dennis3d_meta: list[dict] = []
+    # His 3D layer on each solo beat, so the cards that ride his beats (the
+    # lower third) can be kept off him: design's anchors kept the strip clear
+    # of the drawn poses, but a 3D camera puts him where it puts him, and the
+    # turn to the screen stands his head right where the strip goes.
+    his_layers: dict[int, Path] = {}
 
     def _pose_3d(seg_i: int, seg, room, pose: str | None) -> tuple[str, bool]:
         """(the kit pose the 3D Dennis plays on a beat, whether it is the
@@ -1964,7 +2096,8 @@ def _render_long(
             return (
                 f"[{idx}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
                 f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
-                f"trim=0:{seg_len:.4f},scale={W}:{H}{tail}"
+                f"trim=0:{seg_len:.4f},scale={W}:{H}:force_original_aspect_ratio="
+                f"increase,crop={W}:{H}{tail}"
             )
 
         def _clip_input(visual) -> int:
@@ -1986,12 +2119,13 @@ def _render_long(
 
             On the chapter's first shot of a room with the monitor in shot,
             once the frame is clear of the bumper: a second of the chart going
-            on, then the room's loop. As (room, front) ffconcat listings: the
-            draw-in clip, then the loop as many times as the beat needs, read
-            as one input, so nothing downstream knows it is two clips. None
-            when this is not that shot or it is too short to draw in.
+            on, then the room's loop, or a second of the room held still. As
+            (room, front) ffconcat listings: the draw-in clip, then the tail
+            as many times as the beat needs, read as one input, so nothing
+            downstream knows it is two clips. None when this is not that shot
+            or it is too short to draw in.
             """
-            from pipeline.room_dressing import BLINK_FPS, REVEAL_FRAMES, reveal_frames
+            from pipeline.room_dressing import REVEAL_FPS, REVEAL_FRAMES, reveal_frames
 
             if room is None or "screen" not in (getattr(room, "writable", None) or {}):
                 return None
@@ -1999,18 +2133,24 @@ def _render_long(
             if pick is None or pick.chapter in screen_intro_done:
                 return None
             delay = max(_cleared(seg.start, covers) - seg.start, 0.0)
-            reveal_s = REVEAL_FRAMES / BLINK_FPS
+            reveal_s = REVEAL_FRAMES / REVEAL_FPS
             if delay + reveal_s > seg_len - 0.2:
                 return None
-            loop, front_loop = _room_loop(room), _front_loop(room)
             frames = reveal_frames(room, _screen_dressing(seg.start),
                                    settings.fonts_dir, (W, H))
-            if not frames or loop is None:
+            if not frames:
                 return None
+            loop, front_loop = _room_loop(room), _front_loop(room)
+            if loop is None:
+                loop = _held(_room_file(room), "RGB", f"room-{room.key}")
+            if front_loop is None and frames[0][1] is not None:
+                still = _front_file(room)
+                front_loop = (_held(still, "RGBA", f"front-{room.key}")
+                              if still is not None else None)
             screen_intro_done.add(pick.chapter)
             screen_intro_end[i] = delay + reveal_s
             idx = ([0] * int(round(delay * fps))
-                   + [min(int(j / fps * BLINK_FPS), len(frames) - 1)
+                   + [min(int(j / fps * REVEAL_FPS), len(frames) - 1)
                       for j in range(int(round(reveal_s * fps)))])
             passes = int(seg_len - delay - reveal_s) + 2
 
@@ -2234,6 +2374,14 @@ def _render_long(
                 room = (cold_room if i == cold_i and cold_room is not None
                         else _room_plate("talk",
                                          seed=f"{script.ticker}|{variant % 3}"))
+            wide = _his_height(room) < WIDE_SHARE
+            if wide and i not in opens_chapter:
+                room, wide = _closer(room, i, variant), False
+                if scene and scene.get("pose"):
+                    from pipeline.scenes import talks
+                    if not talks(reg, scene["pose"]):
+                        # walking out of the doorway is no line at the desk
+                        scene = {**scene, "pose": ""}
             pose, alone = _scene_pose(scene, room, i)
             stance3d, close3d = None, False
             if performer is not None and not alone and dennis3d.angle_of(room):
@@ -2245,7 +2393,16 @@ def _render_long(
                     room = _room_plate("talk", seed=f"{script.ticker}|{variant % 3}")
                     if not dennis3d.angle_of(room):
                         stance3d = None
-            bg_i = _room_input(room)
+            # THE PUSH-IN: a chapter's wide shot goes in to him, once the
+            # frame is clear of whatever covers its start.
+            push3d = None
+            if stance3d is not None and not close3d and wide and seg_len >= PUSH_MIN_BEAT_S:
+                z = min(max(PUSH_TO_SHARE / max(_his_height(room), 1e-3), 1.0), PUSH_MAX_Z)
+                p0 = min(max(_cleared(seg.start, covers) - seg.start, 0.0) + 0.2,
+                         max(seg_len - 1.0, 0.0))
+                if z > 1.05:
+                    push3d = {"z": z, "t0": p0, "t1": min(p0 + PUSH_IN_S, seg_len)}
+            bg_i = None if push3d else _room_input(room)
             layer, window = None, None
             if stance3d is not None:
                 # His own layer: frame-sized, the desk already in front of
@@ -2254,16 +2411,22 @@ def _render_long(
                 # the room's own picture.
                 layer = performer.shot(room, _words_in(seg), seg.start, seg_len, (W, H),
                                        seed=f"{script.ticker}|{i}", stance=stance3d,
-                                       close=close3d)
+                                       close=close3d, push=push3d)
                 window = performer.window(layer) if close3d else None
+                if push3d:
+                    bg_i = _add_input(["-i", str(_pushed_room(room, dennis3d.pushed(layer)
+                                                              or [], i, seg_len))])
+                    _screen_seen(seg.start)
+                his_layers[i] = layer
                 host = (_add_input(["-i", str(layer)]), 0, 0, W, H, None)
                 _count_3d(i, stance3d, close_up=close3d)
                 dennis3d_meta.append({"segment": i, "room": room.key, "stance": stance3d,
-                                      "close_up": close3d})
+                                      "close_up": close3d,
+                                      **({"push_in": round(push3d["z"], 2)} if push3d else {})})
             else:
                 host = (None if alone
                         else _host_input(i, seg, seg_len, room=room, pose=pose))
-            push = ("" if window else
+            push = ("" if window or push3d else
                     _monitor_push(room, None if host is None else host[1:5], clip=layer))
             if host is None:
                 chain = _still_chain(bg_i, seg, seg_len, i, push + tail)
@@ -2275,45 +2438,27 @@ def _render_long(
                                               seg_len, push + tail, front_i=front_i,
                                               window=window)
         elif seg.kind == "clip":
-            # Footage plays inside a frames/ plate rather than edge to edge.
-            # Raw and full-frame it destroys the drawn surface the rest of the
-            # video is built on: thirty minutes of ink, then a 4K stock shot,
-            # then back — two videos cut together.
+            # FOOTAGE FILLS THE SCREEN (Valentin, 10-10): b-roll, memes and
+            # filing pages, everything taken from outside, play edge to edge.
+            # They used to sit inside a taped paper frame on the drawn
+            # surface, which read as a clip held up to the camera.
             visual = content.resolve_clip(value, _take(seg, value))
-            frame_plate = _frame_plate(CueKind.CLIP)
-            clip_i = _clip_input(visual)
-            if frame_plate is None:
-                chain = _clip_motion(clip_i)
-            else:
-                bg, (ax, ay, aw, ah) = _frame_bg(frame_plate, seg, i)
-                bg_i = _still_input(bg)
-                chain = _scaled_overlay_chain(bg_i, clip_i, ax, ay, aw, ah,
-                                              seg_len, tail)
+            chain = _clip_motion(_clip_input(visual))
         elif seg.kind == "filing":
             if value not in shot_cache:
                 shot_cache[value] = prepare_screenshot(
                     workspace / value, rdir / f"shot_{Path(value).stem}.png", settings
                 )
             visual = None
-            still_i = _still_input(
-                _framed_media(seg, i, shot_cache[value], CueKind.FILING))
+            still_i = _still_input(_full_media(i, shot_cache[value], document=True))
             chain = _still_chain(still_i, seg, seg_len, i, tail)
         elif seg.kind == "screengrab":
             # operator-supplied capture — image or short clip, framed either way
             visual = content.resolve_screengrab(value)
             if visual.is_video:
-                clip_i = _clip_input(visual)
-                frame_plate = _frame_plate(CueKind.SCREENGRAB)
-                if frame_plate is None:
-                    chain = _clip_motion(clip_i)
-                else:
-                    bg, (ax, ay, aw, ah) = _frame_bg(frame_plate, seg, i)
-                    bg_i = _still_input(bg)
-                    chain = _scaled_overlay_chain(bg_i, clip_i, ax, ay, aw, ah,
-                                                  seg_len, tail)
+                chain = _clip_motion(_clip_input(visual))
             else:
-                still_i = _still_input(
-                    _framed_media(seg, i, visual.path, CueKind.SCREENGRAB))
+                still_i = _still_input(_full_media(i, visual.path, document=True))
                 chain = _still_chain(still_i, seg, seg_len, i, tail)
         elif seg.kind in ("plate", "chapter"):
             # The plate the DIRECTOR named, with the text they wrote in it.
@@ -2397,18 +2542,17 @@ def _render_long(
                     dest = rdir / f"meme_frame_{len(meme_frame_cache)}.png"
                     cover_fill_frame(visual.path, W, H, keep_min=1.1,
                                      ground=role(settings, "ground"),
-                                     line=role(settings, "structure")).save(dest)
+                                     line=role(settings, "structure"),
+                                     border=False).save(dest)
                     meme_frame_cache[visual.key] = dest
                 still = meme_frame_cache[visual.key]
             # A chart is a PLATE with a path drawn in it: it fills the frame,
             # or stands beside Dennis talking where the writer asked
-            # (`with=`). Photographs and memes are foreign media and go
-            # inside a frames/ plate instead.
+            # (`with=`). Photographs fill the screen as footage does; a meme
+            # was composed full-frame above.
             chain = None
-            if seg.kind in ("img", "meme"):
-                still = _framed_media(
-                    seg, i, still,
-                    CueKind.IMG if seg.kind == "img" else CueKind.MEME)
+            if seg.kind == "img":
+                still = _full_media(i, still)
             elif seg.payload.get("layout") == "two-shot" and not _annotated(seg):
                 with Image.open(still) as probe:
                     chain = _two_shot_chain("still", still, probe.size)
@@ -2571,10 +2715,18 @@ def _render_long(
     transition_meta: list[dict] = []
     wipe_layers: list[OverlayLayer] = []
 
+    # Every wipe here has a paper card on one side of its cut: the opening
+    # title, a chapter bumper, the close. Drawn at the episode's hour, a
+    # night video wiped navy into and out of the paper, the dark-light flip
+    # the one ground was chosen to end; drawn at the hour whose ground is the
+    # bumper's, it is paper like the cards it brings in.
+    _paper = reg.get(reg.aspect_key("structure/chapter-bumper", aspect) or "")
+
     def _wipe_at(cut: float, name: str, why: str) -> None:
         """A wipe with its full cover on `cut` (item 23), recorded."""
         clip = wipe_clip(reg, rdir / f"{name}_{len(transition_meta)}.mov",
-                         name=name, aspect=aspect, cut=cut, size=(W, H))
+                         name=name, aspect=aspect, cut=cut, size=(W, H),
+                         ground=_paper)
         if clip is None or clip.end > duration:
             return
         # On top of everything, the bumper it opens on included: a wipe
@@ -2599,6 +2751,8 @@ def _render_long(
         _wipe_at(end_cut, _pair[1], "end")
     for k, ((target, title, ctype), t) in enumerate(zip(chapters, chapter_cuts), start=1):
         if t is None:
+            if k == 1 and _on_the_title(target, intro_dur):
+                continue      # the opening title is its opener
             log.warning("chapters: %r at %.0fs has no cut to land on — skipped",
                         title, target)
             continue
@@ -2609,9 +2763,10 @@ def _render_long(
         # publishes, with the blinds closing over the cut into it (item 23).
         # Its number is counted off the script's own chapter list, so a
         # chapter moved or cut renumbers the rest; nothing is baked.
-        # The first chapter keeps the room with its title in the slot: the
-        # kit places the bumper between chapters, and the cold open has none.
-        # Nothing fades in either, as design's rule 2 has it.
+        # A first chapter that starts after the opening title keeps the room
+        # with its title in the slot: the kit places the bumper between
+        # chapters. One that starts under the title has no opener at all (see
+        # `_chapter_cuts`). Nothing fades in either, as design's rule 2 has it.
         bumper = None
         if k > 1:
             bumper = bumper_clip(
@@ -2717,15 +2872,39 @@ def _render_long(
                 return (bx, by, bw, bh)
         return box
 
-    def _target_box(t: float, target: str,
-                    style: str = "") -> tuple[int, int, int, int] | None:
-        """The frame box holding `target` at time `t`, or None."""
+    def _carrier(t: float, target: str, style: str = ""):
+        """(when, until, box) for a mark said at `t`: the plate beat carrying
+        `target` then, or else the next one to carry it before the chapter
+        ends, which is the plate the mark was written on, put up late because
+        the one before it was still being read. None when no plate does.
+
+        A MARK WITH NOTHING UNDER IT IS NOT DRAWN. It used to be centred over
+        whatever was up: a strike meant for the ladder's "212" was a red
+        cross across the middle of the revenue chart before it, meaning
+        nothing."""
+        for beat in plate_beats:
+            if beat[2] is not None and beat[0] <= t < beat[1]:
+                got = _box_on(beat, target, style)
+                if got is not None:
+                    return t, beat[1], got
+        ends = [x for x in chapter_cuts if x is not None] + [c[0] for c in chapters]
+        ends = min((x for x in ends if x > t + 0.05), default=duration)
+        for beat in sorted(plate_beats, key=lambda b: b[0]):
+            if beat[2] is None or not (t < beat[0] < ends):
+                continue
+            got = _box_on(beat, target, style)
+            if got is not None:
+                # once the plate is up and its data has drawn on
+                at = min(_cleared(beat[0] + MARK_AFTER_PLATE_S, covers), beat[1])
+                return at, beat[1], got
+        return None
+
+    def _box_on(beat, target: str, style: str = "") -> tuple[int, int, int, int] | None:
+        """The frame box holding `target` on one plate beat, or None."""
         want = " ".join(str(target).split()).lower()
         if not want:
             return None
-        for start, end, plate, values, rect in plate_beats:
-            if plate is None or not (start <= t < end):
-                continue
+        for start, end, plate, values, rect in (beat,):
             rx, ry, rw, rh = rect
             kx = rw / max(plate.delivered[0], 1)
             ky = rh / max(plate.delivered[1], 1)
@@ -2767,7 +2946,28 @@ def _render_long(
 
         placed = None
         drawn_style = style.value
-        box = _target_box(c.t, target, style.value)
+        carrier = _carrier(c.t, target, style.value)
+        if carrier is None:
+            log.warning("scribble %r: no plate around %.1fs carries it — not drawn",
+                        target, c.t)
+            mark_solves.append({
+                "t": round(float(c.t), 2), "style": style.value,
+                "target": target, "on_screen": False, "warnings": [],
+                "skipped": "no plate in its chapter carries it"})
+            moves_skipped.append(f"[SCRIBBLE: {style.value} -> {target}] at "
+                                 f"{c.t:.1f}s: no plate in its chapter carries "
+                                 f"{target!r}, so it is not drawn")
+            continue
+        at, until, box = carrier
+        if until - at < MARK_MIN_S:
+            mark_solves.append({
+                "t": round(float(c.t), 2), "style": style.value,
+                "target": target, "on_screen": False, "warnings": [],
+                "skipped": f"its plate is up {until - at:.1f}s after it"})
+            moves_skipped.append(f"[SCRIBBLE: {style.value} -> {target}] at "
+                                 f"{c.t:.1f}s: its plate cuts {until - at:.1f}s "
+                                 f"after the mark could go up, so it is not drawn")
+            continue
         if box is not None:
             fitted: dict = {}
             solved = solve_mark(settings, style.value, box, report=fitted)
@@ -2781,6 +2981,7 @@ def _render_long(
                 mark_solves.append({
                     "t": round(float(c.t), 2), "style": drawn_style,
                     "asked": style.value, "target": target, "on_screen": True,
+                    "at": round(at, 2),
                     "fitted": fitted.get("swapped", ""),
                     "warnings": list(mark_warnings)})
                 # A mark draws outside what it wraps, so a solved canvas larger
@@ -2790,15 +2991,13 @@ def _render_long(
                 if 0 < mw <= W * 3 and 0 < mh <= H * 3:
                     placed = (mx, my, mw, mh)
         if placed is None:
-            if box is None:
-                log.info("scribble %r: nothing on screen carries it — centred",
-                         target)
-                mark_solves.append({
-                    "t": round(float(c.t), 2), "style": style.value,
-                    "target": target, "on_screen": False, "warnings": []})
-            placed = (int((W - px(700)) / 2), int((H - px(460)) / 2),
-                      px(700), px(460))
+            log.warning("scribble %r: the mark did not solve round its box — "
+                        "not drawn", target)
+            moves_skipped.append(f"[SCRIBBLE: {style.value} -> {target}] at "
+                                 f"{c.t:.1f}s: the mark would not fit round it")
+            continue
         mx, my, sw, sh = placed
+        hold = min(hold, max(until - at - 0.5, MARK_MIN_S))
 
         # The mark draws itself on, in attention, over the current frame.
         frames = mark_frames(settings, sw, sh, style=drawn_style, fps=fps,
@@ -2811,7 +3010,7 @@ def _render_long(
         clip = frames_to_alpha_clip(frames, fps, rdir / f"scribble_{k}.mov")
         layers.append(OverlayLayer(
             path=clip, x=mx, y=my,
-            t_start=c.t, t_end=min(c.t + hold + 0.5, duration),
+            t_start=at, t_end=min(at + hold + 0.5, until, duration),
             is_video=True, hold=True, name=f"scribble_{k}",
         ))
 
@@ -2848,7 +3047,12 @@ def _render_long(
                                    x=lt_x, y=lt_y, size=lt_size, reg=reg)
         lt_still = rdir / "lower_third.png"
         lt_img.resize(lt_size, Image.LANCZOS).save(lt_still)
-        for n, (a, b) in enumerate(_on_him(segments, covers)):
+        # Not on a beat where it would sit on him: on the turn to the screen
+        # the strip covered his face for the whole shot.
+        lt_rect = (lt_x, lt_y, lt_x + lt_size[0], lt_y + lt_size[1])
+        on_him = {i for i, layer in his_layers.items()
+                  if dennis3d.under(layer, (W, H), lt_rect, margin=px(16))}
+        for n, (a, b) in enumerate(_on_him(segments, covers, skip=on_him)):
             first = n == 0
             layers.append(OverlayLayer(
                 path=lt_clip.path if first else lt_still,
@@ -2877,6 +3081,20 @@ def _render_long(
         path=disc_path, x=px(36), y=H - px(44),
         t_start=0.0, t_end=duration, name="disclaimer",
     ))
+    # Over the room it runs across the lit window frame and the radiator, and
+    # light grey on a light strip lost its "Not": "Opinion / entertainment.
+    # financial advice." On his beats the same line goes over it with a dark
+    # rim, which the paper never sees.
+    rim = px(3)
+    disc_rim = simple_text(settings, settings.disclaimer_text, font_size=px(26),
+                           fill=(*role(settings, "neutral-data"), 235),
+                           stroke_width=rim, stroke_fill=DISCLAIMER_RIM)
+    disc_rim_path = rdir / "disclaimer_rim.png"
+    disc_rim.save(disc_rim_path)
+    for a, b in _on_him(segments, covers, min_s=0.0):
+        layers.append(OverlayLayer(
+            path=disc_rim_path, x=px(36) - rim, y=H - px(44) - rim,
+            t_start=a, t_end=b, name="disclaimer_rim"))
 
     # ---------------------------------------------------------- captions
     # NONE ARE BURNED IN. A long viewer has the sound on, and the bot already

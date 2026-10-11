@@ -529,17 +529,21 @@ def week52(data, script=None) -> dict[str, str] | None:
         return None
     if hi <= lo:
         return None
+    from pipeline.chart import _price_text
+
     pos = (now - lo) / (hi - lo)
     off = (now / hi - 1.0) * 100.0
+    # The cents go before a digit does: cut to length, $1,234.56 read
+    # "$1,234.5" and $12,345.67 "$12,345.".
     return {
         "kicker": f"{_ticker(data, script)} · the last 52 weeks",
         "label-high": "52-week high",
-        "figure-high": f"${hi:,.2f}"[:8],
+        "figure-high": f"${_price_text(hi, 7)}",
         "label-now": (f"now, {abs(off):.0f}% below the high" if off <= -1
                       else "now, at the high"),
-        "now": f"${now:,.2f}"[:9],
+        "now": f"${_price_text(now, 8)}",
         "label-low": "52-week low",
-        "figure-low": f"${lo:,.2f}"[:8],
+        "figure-low": f"${_price_text(lo, 7)}",
         "band": "0,1",
         "marker": f"{min(max(pos, 0.0), 1.0):.3f}",
     }
@@ -552,9 +556,9 @@ SHORT_INTEREST_CARD = 0.10
 def short_interest_share(data) -> float | None:
     """Short interest as a FRACTION of the float, or None.
 
-    The template divides the add-in's percentage by 100 (`Snapshot!D49`); the
-    committed fixture still carries it as a percentage. A value over 1 is read
-    as the percentage it plainly is.
+    The template divides the add-in's percentage by 100 (`Snapshot!D49`), and
+    the committed fixture carries it the same way. A value over 1 is still read
+    as the percentage it plainly is, for a sheet filled in by hand.
     """
     if data is None:
         return None

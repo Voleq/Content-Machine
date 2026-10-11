@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from pipeline.audio_assets import ROOM_TONE_GAIN_DB, ROOM_TONE_NAME
-from pipeline.render_common import AudioTrack, mix_under_picture, run_ffmpeg
+from pipeline.render_common import AudioTrack, ffprobe_duration, mix_under_picture, run_ffmpeg
 from pipeline.sound import (CUT_KEY, CUT_LEAD_S, DROP_S, MOVE_CUES, MOVE_GAP_S, RATE_SPREAD,
                             TRIM_SPREAD_DB, WIPE_CUT_S, WIPE_S, Cut, Move,
                             Voicing, bed_track, manifest_rows, move_cues,
@@ -586,3 +586,44 @@ def test_a_rendered_short_carries_its_mix(settings, tmp_path, short_valid_json):
     sound = manifest["provenance"]["sound"]
     assert sound["effects"] == len(cues) + 1 + len(heard)
     assert sound["placeholders"] > 0, "the shipped effects are oscillators"
+
+
+def test_a_room_tone_with_no_length_is_left_out_not_looped_for_ever(tmp_path):
+    # `-stream_loop -1` on a zero-second wav spins for ever: the render hung
+    # with no error. The empty room is dropped and the mix still finishes.
+    picture = _picture(tmp_path / "p.mp4", 2.0)
+    voice = _voice(tmp_path / "v.m4a", "sine=f=220:d=2")
+    empty = tmp_path / "room_tone.wav"
+    run_ffmpeg(["-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "0",
+                "-c:a", "pcm_s16le", str(empty)])
+    out = tmp_path / "o.mp4"
+    tracks = [AudioTrack(path=voice, voice=True, name="voice"),
+              AudioTrack(path=empty, loop=True, gain_db=-30.0, name="room_tone")]
+    mix_under_picture(picture, tracks, out, duration=2.0, audio_bitrate="128k",
+                      normalise=False, graph_path=tmp_path / "g.txt")
+    assert str(empty) not in (tmp_path / "g.txt").read_text(encoding="utf-8")
+    assert abs(float(_streams(out)["audio"]["duration"]) - 2.0) < 0.1
+
+
+def test_the_fetched_room_tone_keeps_its_quiet(tmp_path):
+    # A still room can sit under -50 dB from end to end, and the one-shot
+    # lead trim removed every sample of it: a zero-length room_tone.wav.
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_fetch_sfx", Path(__file__).resolve().parents[1] / "scripts" / "fetch_sfx.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    quiet = tmp_path / "raw.wav"
+    run_ffmpeg(["-f", "lavfi", "-i", "anoisesrc=d=3:a=0.0005:c=pink",
+                "-ar", "44100", "-c:a", "pcm_s16le", str(quiet)])
+    room = tmp_path / "room_tone.wav"
+    assert mod.normalise(quiet, room, trim_lead=False)
+    assert ffprobe_duration(room) > 2.5
+
+    # and a cue the trim does empty is a failure that keeps what was there
+    cue = tmp_path / "knock.wav"
+    cue.write_bytes(b"placeholder")
+    assert not mod.normalise(quiet, cue)
+    assert cue.read_bytes() == b"placeholder"

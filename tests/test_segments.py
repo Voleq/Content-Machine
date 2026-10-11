@@ -344,6 +344,19 @@ def test_concat_preserves_total_duration(tmp_path, settings):
     assert ffprobe_duration(joined) == pytest.approx(1.5, abs=0.25)
 
 
+def test_concat_reads_a_folder_with_a_quote_in_its_name(tmp_path, settings):
+    """A home folder like /home/o'brien: the listing's quote rule has to
+    hold, or ffmpeg reads the path as ending at the apostrophe."""
+    set_render_politeness(settings)
+    profile = encode_profile(settings, "long", draft=True)
+    root = tmp_path / "o'brien"
+    specs = [_spec(root, index=i, duration=0.5, colour=c)
+             for i, c in enumerate(("red", "blue"))]
+    run = encode_segments(specs, root / "c", profile, total_threads=2)
+    joined = concat_clips(run.clips(), root / "joined.mp4")
+    assert ffprobe_duration(joined) == pytest.approx(1.0, abs=0.25)
+
+
 def test_concat_refuses_an_empty_list(tmp_path):
     with pytest.raises(RenderError):
         concat_clips([], tmp_path / "x.mp4")
