@@ -42,7 +42,7 @@ import re
 import threading
 import unicodedata
 from concurrent.futures import Future
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Callable
 
@@ -539,13 +539,22 @@ def save_brief(workspace: Path, brief: FilingBrief,
     ws = Path(workspace)
     ws.mkdir(parents=True, exist_ok=True)
     dest = ws / BRIEF_FILE
-    payload = json.dumps(brief.to_json(), indent=2)
-    dest.write_text(payload, encoding="utf-8")
+    dest.write_text(json.dumps(brief.to_json(), indent=2), encoding="utf-8")
     if settings is not None and brief.accessions and brief.body:
         cache = cache_path(brief.accessions, settings)
         cache.parent.mkdir(parents=True, exist_ok=True)
-        cache.write_text(payload, encoding="utf-8")
+        cache.write_text(json.dumps(_reading_only(brief).to_json(), indent=2),
+                         encoding="utf-8")
     return dest
+
+
+def _reading_only(brief: FilingBrief) -> FilingBrief:
+    """The brief as the filings alone make it. The cross-check is against
+    THIS workspace's workbook and the grading against THIS ticker's last
+    claim; cached under the filings' accessions, the next video on the same
+    filings was shown the last one's contradictions whenever its own
+    cross-check did not answer, and a long showed an update's grading."""
+    return replace(brief, contradictions="", grading="", unbacked=0)
 
 
 # --------------------------------------------------------------------------
@@ -733,7 +742,8 @@ def _to_cache(brief: FilingBrief, settings: Settings) -> None:
     try:
         dest = cache_path(brief.accessions, settings)
         dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(json.dumps(brief.to_json(), indent=2), encoding="utf-8")
+        dest.write_text(json.dumps(_reading_only(brief).to_json(), indent=2),
+                        encoding="utf-8")
     except OSError as e:
         log.warning("filing brief: could not cache (%s)", e)
 
@@ -744,7 +754,7 @@ def _from_cache(accessions: list[str], settings: Settings) -> FilingBrief | None
                           .read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return None
-    brief = FilingBrief.from_json(data)
+    brief = _reading_only(FilingBrief.from_json(data))
     return brief if brief.body else None
 
 
