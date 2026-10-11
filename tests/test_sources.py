@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 
 from pipeline.sources import (
     FRED_SERIES,
@@ -209,6 +210,57 @@ def test_an_edgar_miss_is_unavailable_with_a_reason(settings, monkeypatch):
         got = fn("NOSUCH", live)
         assert got["status"] == UNAVAILABLE
         assert got.get("reason"), fn.__name__
+
+
+class _SecResp:
+    def __init__(self, data):
+        self._data = data
+
+    def json(self):
+        return self._data
+
+
+def _sec_answering(forms, asked):
+    """A stand-in for `filings._sec_get`: the ticker map, and a submissions
+    list holding only `forms`."""
+    def get(url, settings):
+        asked.append(url)
+        if url.endswith("company_tickers.json"):
+            return _SecResp({"0": {"ticker": "EXMPL", "cik_str": 1234, "title": "Example"}})
+        return _SecResp({"filings": {"recent": {
+            "form": forms, "accessionNumber": ["0001234-26-000001"] * len(forms),
+            "primaryDocument": ["a.htm"] * len(forms),
+            "filingDate": ["2026-07-21"] * len(forms)}}})
+    return get
+
+
+@pytest.mark.parametrize("fn, kind", [(latest_8k, "8k"), (insider_transactions, "form4")])
+def test_an_sec_that_could_not_be_read_is_not_cached_as_one_with_nothing_on_file(
+        settings, monkeypatch, fn, kind):
+    """"No recent 8-K on file" is a fact about the company. The SEC being
+    down is not, and was stored as the same fact: the next ask, a retry
+    minutes later, was told it from the cache without the SEC being asked."""
+    from pipeline import filings
+
+    live = settings.model_copy(update={"mock_mode": False})
+    asked: list = []
+    monkeypatch.setattr(filings, "_sec_get", lambda url, s: asked.append(url))
+
+    got = fn("EXMPL", live)
+    assert got["status"] == UNAVAILABLE and got.get("reason")
+    assert cached(live, kind, "EXMPL") is None
+    fn("EXMPL", live)
+    assert len(asked) == 2, "the second ask was answered from the cache"
+
+    # A SEC that answered, and has no such filing, is a fact and is kept.
+    asked.clear()
+    monkeypatch.setattr(filings, "_sec_get", _sec_answering(["10-K"], asked))
+    got = fn("EXMPL", live)
+    assert got["status"] == UNAVAILABLE and got.get("reason")
+    assert cached(live, kind, "EXMPL") == got
+    n = len(asked)
+    fn("EXMPL", live)
+    assert len(asked) == n
 
 
 # --------------------------------------------------------------------------
