@@ -750,7 +750,20 @@ def plan_long_segments(
         host_i += 1
 
     def _undirected(a: float, b: float) -> None:
-        """Beats of him the writer left to the bot: even parts, as ever."""
+        """Beats of him the writer left to the bot: even parts, as ever.
+
+        A chapter that starts inside the stretch gets its cut, as one inside
+        a scene does: the card lands on the first cut at or after its time,
+        and even parts across the boundary put it up to a part late."""
+        edges = [a]
+        for t in sorted(x for x in starts if a + MIN_HOST_BEAT_S < x < b - MIN_HOST_BEAT_S):
+            if t - edges[-1] >= MIN_HOST_BEAT_S:
+                edges.append(t)
+        edges.append(b)
+        for p0, p1 in zip(edges, edges[1:]):
+            _even_parts(p0, p1)
+
+    def _even_parts(a: float, b: float) -> None:
         nonlocal host_i
         span = b - a
         if span > HOST_GAP_WARN_S:

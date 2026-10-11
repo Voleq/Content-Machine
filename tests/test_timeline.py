@@ -220,6 +220,25 @@ def test_a_long_untagged_stretch_is_named_in_the_warnings():
     assert any("95s" in w or "0s to 95s" in w for w in warnings), warnings
 
 
+def test_a_chapter_that_starts_inside_an_untagged_stretch_gets_its_cut():
+    """The stretch was cut into even parts and a chapter that began inside
+    one had its card on the next cut: up to a whole part late, 4 s here and
+    nearly 12 s at the longest. A chapter starts on a cut."""
+    from pipeline.timeline import MIN_HOST_BEAT_S
+
+    segments, _ = plan_long_segments([], 60.0, chapter_starts=[0.0, 20.0])
+    _tiled(segments, 60.0)
+    assert any(s.start == pytest.approx(20.0) for s in segments), \
+        [round(s.start, 2) for s in segments]
+    # Even parts either side of it, all of them still Dennis.
+    assert {s.kind for s in segments} == {"host"}
+    # A chapter a breath from another's start, or from the end, makes no sliver.
+    segments, _ = plan_long_segments([], 60.0, chapter_starts=[0.0, 20.0, 20.5, 59.5])
+    _tiled(segments, 60.0)
+    assert min(s.length for s in segments) >= MIN_HOST_BEAT_S - 1e-6
+    assert any(s.start == pytest.approx(20.0) for s in segments)
+
+
 def test_a_short_gap_is_not_split():
     from pipeline.timeline import MAX_HOST_BEAT_S
 
