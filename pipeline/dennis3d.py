@@ -254,13 +254,16 @@ class Performer:
     # ------------------------------------------------------------------ shots
     def shot(self, room, words, start: float, duration: float, size: tuple[int, int],
              *, seed: str, stance: str = "", plate: tuple[float, float] | None = None,
-             close: bool = False) -> Path:
+             close: bool = False, push: dict | None = None) -> Path:
         """His layer for one shot in `room`: an RGBA .mov, `size` big, at
         `dennis_3d_fps`. `words` carry `.word`, `.start`, `.end` on the
         programme clock; `start` is the shot's start on it. `stance` is the
         kit pose he plays; `plate` is where a two-shot's evidence sits in the
         frame (0-1 from the top left), for him to show; `close` is the
-        close-up, whose background is `window(layer)` of the room's picture.
+        close-up, whose background is `window(layer)` of the room's picture;
+        `push` the push-in on a chapter's wide shot (`{"z", "t0", "t1"}`: how
+        many times closer it ends, between which seconds of the shot), whose
+        background is `pushed(layer)`, a piece of the room for every frame.
         A draft performer's layer is half `size`; whoever lays it in scales
         it to the frame."""
         where = angle_of(room)
@@ -275,6 +278,8 @@ class Performer:
                "seed": seed, "stance": stance, "duration": round(float(duration), 4),
                **({"plate": [round(float(c), 4) for c in plate]} if plate else {}),
                **({"close": True} if close else {}),
+               **({"push": {k: round(float(v), 3) for k, v in push.items()}}
+                  if push else {}),
                "words": [{"word": w.word, "start": round(w.start - start, 3),
                           "end": round(w.end - start, 3)} for w in words]}
         key = hashlib.sha256(json.dumps({**job, "v": LOOK_VERSION},
@@ -293,6 +298,8 @@ class Performer:
                     "-c:v", "png", "-pix_fmt", "rgba", "-f", "mov", str(part)])
         if reply.get("window"):
             (folder / "window.json").write_text(json.dumps(reply["window"]), encoding="utf-8")
+        if reply.get("push"):
+            (folder / "push.json").write_text(json.dumps(reply["push"]), encoding="utf-8")
         part.replace(layer)
         self.shots.append({"angle": angle, "aspect": aspect, "frames": reply.get("frames"),
                            "seconds": reply.get("seconds"), "device": reply.get("device")})
@@ -350,6 +357,15 @@ class Performer:
             return None
         x0, y0, x1, y1 = json.loads(f.read_text(encoding="utf-8"))
         return float(x0), float(y0), float(x1), float(y1)
+
+
+def pushed(layer: Path) -> list[tuple[float, float, float, float]] | None:
+    """For a push-in's layer, the piece of the room's picture behind him on
+    every frame (x0, y0, x1, y1, 0-1 from the top left); None otherwise."""
+    f = Path(layer).parent / "push.json"
+    if not f.exists():
+        return None
+    return [tuple(float(c) for c in w) for w in json.loads(f.read_text(encoding="utf-8"))]
 
 
 def _presence(layer: Path, size: tuple[int, int]):

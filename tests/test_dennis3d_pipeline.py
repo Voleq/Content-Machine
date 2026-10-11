@@ -97,8 +97,13 @@ FAKE = textwrap.dedent('''
         (Path(job["out"]).parent / "calls").open("a").write(json.dumps(job.get("words")) + "\\n")
         (Path(job["out"]).parent / "job.json").write_text(json.dumps(job))
         window = [0.25, 0.1, 0.5, 0.35] if job.get("close") else None
+        push = None
+        if job.get("push"):
+            hs = [1 - (1 - 1 / job["push"]["z"]) * i / max(n - 1, 1) for i in range(n)]
+            push = [[0.5 - h / 2, 0.5 - h / 2, 0.5 + h / 2, 0.5 + h / 2] for h in hs]
         print("@@" + json.dumps({"ok": True, "frames": n, "out": str(out), "seconds": 0.1,
-                                 "device": "CPU", "window": window}), flush=True)
+                                 "device": "CPU", "window": window, "push": push}),
+              flush=True)
 ''')
 
 
@@ -125,7 +130,8 @@ def test_a_shot_comes_back_as_his_layer_and_is_drawn_once(performer, tmp_path):
     info = ffprobe_json(layer)["streams"][0]
     assert (info["width"], info["height"]) == (320, 180)
     assert info["pix_fmt"] in ("rgba", "argb"), "he is a layer, the room shows round him"
-    assert int(info["nb_frames"]) == 24, "two seconds at twelve drawings a second"
+    assert int(info["nb_frames"]) == 2 * performer.settings.dennis_3d_fps, \
+        "two seconds at his drawing rate"
     calls = list((tmp_path / "cache").glob("*/calls"))
     assert len(calls) == 1
     assert '"start": 0.2' in calls[0].read_text(encoding="utf-8"), "words go over on the shot's own clock"
@@ -182,6 +188,23 @@ def test_a_close_up_says_what_of_the_room_is_behind_him(performer):
     assert performer.window(close) == (0.25, 0.1, 0.5, 0.35)
 
 
+def test_a_push_in_says_what_of_the_room_is_behind_him_on_every_frame(performer):
+    room = _room("room/desk-wide-16x9")
+    still = performer.shot(room, [], 0.0, 1.0, (320, 180), seed="x")
+    assert dennis3d.pushed(still) is None
+    push = {"z": 1.9, "t0": 0.2, "t1": 0.9}
+    layer = performer.shot(room, [], 0.0, 1.0, (320, 180), seed="x", push=push)
+    assert layer != still, "the push-in is its own shot"
+    got = dennis3d.pushed(layer)
+    assert got is not None and len(got) == performer.settings.dennis_3d_fps
+    assert got[0] == (0.0, 0.0, 1.0, 1.0) and got[-1][2] - got[-1][0] < 0.6
+    job = json.loads((layer.parent / "job.json").read_text(encoding="utf-8"))
+    assert job["push"] == push
+    # remembered with the shot
+    assert performer.shot(room, [], 0.0, 1.0, (320, 180), seed="x", push=push) == layer
+    assert dennis3d.pushed(layer) == got
+
+
 def test_a_two_shot_tells_him_where_the_evidence_is(performer):
     import json
 
@@ -194,8 +217,9 @@ def test_a_two_shot_tells_him_where_the_evidence_is(performer):
 def test_his_extent_is_every_pixel_of_him_over_the_shot(performer):
     layer = performer.shot(_room("room/desk-front-16x9"), [], 0.0, 1.0, (320, 180), seed="x")
     x0, y0, x1, y1 = dennis3d.extent(layer, (320, 180))
-    # the stand-in draws a box from x=80+i over twelve frames, rows 45..176
-    assert abs(x0 - 80) <= 8 and abs(x1 - (160 + 11)) <= 8
+    # the stand-in draws a box from x=80+i over a second of frames, rows 45..176
+    n = performer.settings.dennis_3d_fps
+    assert abs(x0 - 80) <= 8 and abs(x1 - (160 + n - 1)) <= 8
     assert abs(y0 - 45) <= 8 and abs(y1 - 176) <= 8
 
 
@@ -333,7 +357,8 @@ def test_his_frames_come_back_from_the_layer_when_the_folder_went(performer):
     n = len(list(folder.glob("d_*.png")))
     shutil.rmtree(folder)
     again = dennis3d.Performer.frames(layer)
-    assert again == folder and len(list(again.glob("d_*.png"))) == n == 12
+    assert again == folder and len(list(again.glob("d_*.png"))) == n \
+        == performer.settings.dennis_3d_fps
     assert (again / "d_0000.png").exists()
 
 
@@ -476,6 +501,17 @@ def test_a_3d_long_draws_every_shot_of_him_in_3d_and_none_drawn(long_3d):
             for f in (settings.cache_dir / "dennis3d").glob("*/job.json")]
     assert len(jobs) == len(shots) and all(j["size"] == [640, 360] for j in jobs)
     assert any("plate" in j for j in jobs), "the two-shot told him where the evidence is"
+    # THE WIDE ROOMS OPEN A CHAPTER, and go in to him there.
+    from pipeline.plates import load_plates
+    from pipeline.render_long import WIDE_SHARE
+
+    reg = load_plates(settings.assets_dir)
+    desk = reg.get("room/desk-front-16x9").slot("host-anchor").h
+    wide = [s for s in shots
+            if reg.get(s["room"]).slot("host-anchor").h < WIDE_SHARE * desk]
+    assert wide, "the cold open is a wide room"
+    assert all(s.get("push_in") for s in wide if not s.get("two_shot")), wide
+    assert len(wide) <= len(manifest.get("chapters") or []) + 1, wide
     info = ffprobe_json(out)
     assert abs(float(info["format"]["duration"]) - tts.duration_s) < 1.0
 

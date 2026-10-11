@@ -374,10 +374,13 @@ How to use them:
 - OPEN the video with a [SCENE] before the first word. The wide rooms and a
   to-camera pose make an opening; a pose that looks up from the desk makes a
   cold open that starts mid-thought.
-- CLOSE it with one too. The exit is drawn: the doorway, walking out of frame,
-  is the end of the video and nothing else. Head-in-hands is the one beat in a
-  video where the numbers beat him; it has no mouth, so give it a few words or
-  a [BEAT] and nothing more.
+- THE WIDE ROOMS (desk-wide, window-wide, board-wide, the doorway) are for
+  the first shot of him in a chapter: the camera starts on the whole room and
+  goes in to him. Named anywhere else in a chapter, the bot shoots the closer
+  angle of the same place (the desk, the window wall, the board's side).
+- CLOSE it with one too: a sign-off at the desk, to camera. Head-in-hands is
+  the one beat in a video where the numbers beat him; it has no mouth, so
+  give it a few words or a [BEAT] and nothing more.
 - READ in the reading rooms. When he reads a filing, a quote or a figure off a
   page, put him where design drew reading: at the side of the desk, close on
   the page, or turned to the screen. Argue on the board when the chapter is

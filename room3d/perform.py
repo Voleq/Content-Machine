@@ -18,6 +18,8 @@ reads one JSON job per line on stdin:
 
 and, for a two-shot, `"plate": [u, v]`, where the evidence sits in the frame
 (0-1 from the top left), so he can show it; for the close-up, `"close": true`;
+for the push-in on a chapter's wide shot, `"push": {"z": 1.9, "t0": 0.4,
+"t1": 3.9}`: the camera goes in `z` times between those seconds of the shot;
 for a cover, `"still": true` and no words: one frame of him mid-sentence, to
 the camera, with nothing of the room drawn (no shadow, nothing in front of
 him), so the cover can stand him where its type leaves room; with
@@ -30,7 +32,8 @@ It renders `out/d_0000.png` ... and answers with one line that starts with
        "window": null}
 
 where `window` is, for a close-up, the piece of the room's picture that is
-behind him ([x0, y0, x1, y1], 0-1 from the top left), blown up to the frame.
+behind him ([x0, y0, x1, y1], 0-1 from the top left), blown up to the frame;
+for a push-in the answer carries `"push"` instead, that piece for every frame.
 
 An empty line or `{"op": "quit"}` ends it. A frame already on disk is not
 drawn again, so a render that stopped picks up where it was.
@@ -95,6 +98,8 @@ class Stage:
         self.device = "CPU"
         self.size: tuple[int, int] | None = None
         self.samples = 0
+        self._pushes: list[tuple[float, float, float]] = []
+        self._lens0 = 0.0
         self._looks: dict[tuple, dict] = {}
 
     def build(self, season: str) -> None:
@@ -287,6 +292,52 @@ class Stage:
         return [round(cx - half, 5), round(1 - (cy + half), 5),
                 round(cx + half, 5), round(1 - (cy - half), 5)]
 
+    def push_in(self, push: dict, fps: int, frames: int) -> list[list[float]]:
+        """THE WIDE SHOT GOES IN TO HIM (10 Oct 2026): from the whole room to
+        a piece of it `push["z"]` times smaller, with his head near its top,
+        between `t0` and `t1` seconds, eased at both ends. The same camera
+        with a longer lens and its frame shifted, as the close-up is, so what
+        is behind him is exactly a piece of the room's picture. Returns that
+        piece for every frame, [x0, y0, x1, y1], 0-1 from the top left; the
+        camera is set per frame by `_aim`."""
+        from bpy_extras.object_utils import world_to_camera_view
+
+        scn = bpy.context.scene
+        cam = scn.camera
+        self.rest()
+        head = self.rig.joints["head"].matrix_world.translation
+        top = world_to_camera_view(scn, cam, head + Vector((0.0, 0.0, 0.36)))
+        h1 = 1.0 / min(max(float(push.get("z", 1.0)), 1.0), 4.0)
+        # his hair a little under the top of the last piece, centred on him
+        c1 = (min(max(top.x, h1 / 2), 1 - h1 / 2),
+              min(max(top.y - 0.42 * h1, h1 / 2), 1 - h1 / 2))   # y from the bottom
+        t0 = float(push.get("t0", 0.0))
+        t1 = max(float(push.get("t1", t0 + 1.0)), t0 + 1e-3)
+        self._lens0 = cam.data.lens
+        self._pushes = []
+        out = []
+        for i in range(frames):
+            e = min(max((i / fps - t0) / (t1 - t0), 0.0), 1.0)
+            e = e * e * e * (e * (e * 6 - 15) + 10)
+            # the size goes in evenly to the eye; the centre goes with it
+            h = h1 ** e
+            g = (1 - h) / (1 - h1) if h1 < 1 else 0.0
+            cx, cy = 0.5 + (c1[0] - 0.5) * g, 0.5 + (c1[1] - 0.5) * g
+            self._pushes.append((h, cx, cy))
+            out.append([round(cx - h / 2, 6), round(1 - (cy + h / 2), 6),
+                        round(cx + h / 2, 6), round(1 - (cy - h / 2), 6)])
+        return out
+
+    def _aim(self, i: int) -> None:
+        """The camera at frame `i` of a push-in."""
+        h, cx, cy = self._pushes[min(i, len(self._pushes) - 1)]
+        cam = bpy.context.scene.camera
+        W, H = bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y
+        big = max(W, H)
+        cam.data.lens = self._lens0 / h
+        cam.data.shift_x = (cx - 0.5) / h * W / big
+        cam.data.shift_y = (cy - 0.5) / h * H / big
+
     def fit(self, st: motion.Stance) -> motion.Stance:
         """The stance as it can play on this spot. A hand meant for the desk
         top that would miss it (no desk in front of him, or the monitor in
@@ -365,14 +416,18 @@ class Stage:
             perf = motion.perform(words, float(job["duration"]), fps=fps,
                                   seed=str(job.get("seed", "")), looks=looks, stance=st)
             frames = range(perf.frames)
+        self._pushes = []
+        pushes = (self.push_in(job["push"], fps, perf.frames)
+                  if job.get("push") and not still and window is None else None)
         self.rig.hold(st.prop, st.prop_side)
         self._bare(still and not job.get("in_room"))
         try:
-            return self._render(job, perf, frames, fps, window, t0)
+            return self._render(job, perf, frames, fps, window, t0, pushes)
         finally:
             self._bare(False)
 
-    def _render(self, job: dict, perf, frames, fps: int, window, t0: float) -> dict:
+    def _render(self, job: dict, perf, frames, fps: int, window, t0: float,
+                pushes=None) -> dict:
         out = Path(job["out"])
         out.mkdir(parents=True, exist_ok=True)
         scn = bpy.context.scene
@@ -383,6 +438,8 @@ class Stage:
             if f.exists():
                 continue
             self.rig.apply(perf.at(i))
+            if self._pushes:
+                self._aim(i)
             bpy.context.view_layer.update()
             # Only round him and the shadow he throws is drawn.
             mn, mx = bounds(self.rig)
@@ -402,10 +459,11 @@ class Stage:
                       min(p.y for p in pts), max(p.y for p in pts)))
             f.with_suffix(".part.png").replace(f)
         meta = {"fps": fps, "frames": len(frames), "duration": perf.frames / fps,
-                "device": self.device, "window": window}
+                "device": self.device, "window": window, "push": pushes}
         (out / "perf.json").write_text(json.dumps(meta), encoding="utf-8")
         return {"ok": True, "frames": len(frames), "out": str(out), "window": window,
-                "seconds": round(time.monotonic() - t0, 1), "device": self.device}
+                "push": pushes, "seconds": round(time.monotonic() - t0, 1),
+                "device": self.device}
 
 
 def _feather(png: Path, border, body) -> None:

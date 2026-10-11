@@ -327,7 +327,40 @@ COLD_OPEN_PREFERRED = "room/window-wide"
 # and missing here is a drawing every long puts on screen that the audit
 # reports as having no route to one.
 LONG_ROOM_ROLES = ("talk", "panel")          # and the opener, `opener_role`
+
+# THE WIDE ROOMS OPEN A CHAPTER (Valentin, 10 Oct 2026: "he is way too small
+# for the angle ... maybe we could use that only when we're restarting a
+# chapter"). A room is wide where he stands under this share of his height
+# at the desk; the first beat of him in a chapter may be one, and the camera
+# goes in to him there, and anywhere else the beat is shot from the closer
+# angle of the same place.
+WIDE_SHARE = 0.65
+CLOSER_ROOM = {"room/desk-wide": "room/desk-front", "room/window-wide": "room/window-wall",
+               "room/board-wide": "room/board-side", "room/doorway": "room/desk-front",
+               "room/doorway-wide": "room/desk-front"}
+# How close the push-in goes: to this share of his size at the desk, and
+# never more than this many times in (the room's picture is drawn at twice
+# the frame, so the room stays sharp all the way); over how long, once the
+# frame is clear of any cover; and the shortest beat worth pushing on.
+PUSH_TO_SHARE = 0.8
+PUSH_MAX_Z = 2.0
+PUSH_IN_S = 3.5
+PUSH_MIN_BEAT_S = 1.5
 LONG_HOST_ROLES = ("beat", "panel", "rests-on")
+
+
+def chapter_openers(segments, chapters, duration: float,
+                    cold_i: int | None = None) -> set[int]:
+    """The segments that are the first beat of him in a chapter, and the cold
+    open's first shot of him: the beats a wide room may be used on."""
+    out = {cold_i} if cold_i is not None else set()
+    bounds = [t for t, _title, _type in chapters] + [duration + 1.0]
+    for a, b in zip(bounds, bounds[1:]):
+        inside = [i for i, sg in enumerate(segments)
+                  if sg.kind == "host" and a <= sg.start < b]
+        if inside:
+            out.add(inside[0])
+    return out
 
 
 def opener_role(reg) -> str:
@@ -418,7 +451,9 @@ def cold_open_segment(segments, duration: float,
 
 
 # NOTHING PANS OR ZOOMS. Dennis carries the motion — the mouth flap, the boil
-# pairs, the cuts and real video footage. Everything else holds dead still.
+# pairs, the cuts and real video footage. Everything else holds dead still,
+# but for three camera moves that are a lens, not a drift: his close-up, the
+# push into his monitor (item 60) and the push-in on a chapter's wide shot.
 #
 # The old engine drifted every still because nothing else on screen moved;
 # once the host arrived that stopped being true, and a drifting frame is both
@@ -1372,6 +1407,30 @@ def _render_long(
                   if sg.kind == "host" and _a <= sg.start < _b]
         if inside:
             lands_a_chapter.add(inside[-1])
+    # And the first beat of him in a chapter is the one that may be wide.
+    opens_chapter = chapter_openers(segments, chapters, duration, cold_i)
+
+    _desk = reg.get(reg.aspect_key("room/desk-front", aspect) or "")
+    _desk_anchor = _desk.slot("host-anchor") if _desk is not None else None
+
+    def _his_height(room) -> float:
+        """His height in `room` over his height at the desk; 1 where unknown."""
+        a = room.slot("host-anchor") if room is not None else None
+        if a is None or _desk_anchor is None or not _desk_anchor.h:
+            return 1.0
+        return float(a.h) / float(_desk_anchor.h)
+
+    def _closer(room, seg_i: int, variant: int):
+        """The closer angle of a wide room's place, for a beat that does not
+        open a chapter; the bot's talking room where the kit has none."""
+        stem = next((v for k, v in CLOSER_ROOM.items()
+                     if reg.base_key(room.key).startswith(k + "-")), None)
+        got = _scene_room({"room": stem}) if stem else None
+        if got is None:
+            got = _room_plate("talk", seed=f"{script.ticker}|{variant % 3}")
+        log.info("rooms: %s is a wide room on a beat inside a chapter (%.1fs) — "
+                 "shot from %s", room.key, segments[seg_i].start, got.key)
+        return got
 
     # THE CLOSE, as far as casting him goes: the last beat of the final
     # chapter he STANDS in. The line the chapter rests on is the close-up
@@ -1893,6 +1952,68 @@ def _render_long(
     screen_intro_end: dict[int, float] = {}
     push_meta: list[dict] = []
 
+    def _screen_seen(t: float) -> None:
+        """The chapter's picture counts as seen on the monitor at `t`: a
+        push-in shows it already up (its room is drawn from the written
+        picture), so it does not draw itself in on a later shot."""
+        pick = pick_at(screen_picks, t)
+        if pick is not None:
+            screen_intro_done.add(pick.chapter)
+
+    def _pushed_room(room, windows: list, seg_i: int, seg_len: float) -> Path:
+        """The room behind a push-in, as a clip: on each frame the piece of
+        the room's picture the camera sees (`windows`, 0-1 from the top
+        left), cut out of the written room at its full size and brought down
+        to the frame, so it is sharp from the first frame to the last.
+
+        Streamed to the encoder a frame at a time: a shot is a few hundred
+        frames, and holding them would be gigabytes.
+        """
+        import subprocess
+
+        from config import detect_ffmpeg
+        from pipeline.plate_frames import frame_indices
+
+        plates_used.add(room.key)
+        room = _written(room)
+        n = max(int(round(seg_len * fps)), 1)
+        windows = list(windows) or [(0.0, 0.0, 1.0, 1.0)]
+        dfps = int(getattr(settings, "dennis_3d_fps", 0) or fps)
+        files = room.frame_paths() if room.animated and not room.plays_once else []
+        idx = frame_indices(room, seg_len, fps) if files else [0] * n
+        opened: dict[Path, Image.Image] = {}
+
+        def _src(k: int) -> Image.Image:
+            f = files[idx[min(k, len(idx) - 1)] % len(files)] if files else room.path
+            if f not in opened:
+                opened[f] = Image.open(f).convert("RGB")
+            return opened[f]
+
+        dest = rdir / f"pushin_{seg_i}.mov"
+        part = dest.with_name(dest.stem + ".part" + dest.suffix)
+        cmd = [detect_ffmpeg()[0], "-loglevel", "error", "-y", "-f", "rawvideo",
+               "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(fps), "-i", "-",
+               "-c:v", "libx264", "-preset", "medium", "-crf", "12",
+               "-pix_fmt", "yuv444p", "-f", "mov", str(part)]
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        try:
+            for k in range(n):
+                src = _src(k)
+                # his layer is drawn at his own rate, the room at the video's
+                x0, y0, x1, y1 = windows[min(int(k * dfps / fps), len(windows) - 1)]
+                sw, sh = src.size
+                frame = src.resize((W, H), Image.LANCZOS,
+                                   box=(x0 * sw, y0 * sh, x1 * sw, y1 * sh))
+                proc.stdin.write(frame.tobytes())
+            proc.stdin.close()
+            if proc.wait() != 0:
+                raise RenderError(f"the push-in's room for segment {seg_i} did not encode")
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+        os.replace(part, dest)
+        return dest
+
     # THE 3D DENNIS (item 47): one Blender process for the render, asked for
     # each shot he stands in a 3D room. None draws the kit's Dennis, and so
     # does a kit with any drawn room left in it: he is 3D in every shot of a
@@ -2245,6 +2366,14 @@ def _render_long(
                 room = (cold_room if i == cold_i and cold_room is not None
                         else _room_plate("talk",
                                          seed=f"{script.ticker}|{variant % 3}"))
+            wide = _his_height(room) < WIDE_SHARE
+            if wide and i not in opens_chapter:
+                room, wide = _closer(room, i, variant), False
+                if scene and scene.get("pose"):
+                    from pipeline.scenes import talks
+                    if not talks(reg, scene["pose"]):
+                        # walking out of the doorway is no line at the desk
+                        scene = {**scene, "pose": ""}
             pose, alone = _scene_pose(scene, room, i)
             stance3d, close3d = None, False
             if performer is not None and not alone and dennis3d.angle_of(room):
@@ -2256,7 +2385,16 @@ def _render_long(
                     room = _room_plate("talk", seed=f"{script.ticker}|{variant % 3}")
                     if not dennis3d.angle_of(room):
                         stance3d = None
-            bg_i = _room_input(room)
+            # THE PUSH-IN: a chapter's wide shot goes in to him, once the
+            # frame is clear of whatever covers its start.
+            push3d = None
+            if stance3d is not None and not close3d and wide and seg_len >= PUSH_MIN_BEAT_S:
+                z = min(max(PUSH_TO_SHARE / max(_his_height(room), 1e-3), 1.0), PUSH_MAX_Z)
+                p0 = min(max(_cleared(seg.start, covers) - seg.start, 0.0) + 0.2,
+                         max(seg_len - 1.0, 0.0))
+                if z > 1.05:
+                    push3d = {"z": z, "t0": p0, "t1": min(p0 + PUSH_IN_S, seg_len)}
+            bg_i = None if push3d else _room_input(room)
             layer, window = None, None
             if stance3d is not None:
                 # His own layer: frame-sized, the desk already in front of
@@ -2265,17 +2403,22 @@ def _render_long(
                 # the room's own picture.
                 layer = performer.shot(room, _words_in(seg), seg.start, seg_len, (W, H),
                                        seed=f"{script.ticker}|{i}", stance=stance3d,
-                                       close=close3d)
+                                       close=close3d, push=push3d)
                 window = performer.window(layer) if close3d else None
+                if push3d:
+                    bg_i = _add_input(["-i", str(_pushed_room(room, dennis3d.pushed(layer)
+                                                              or [], i, seg_len))])
+                    _screen_seen(seg.start)
                 his_layers[i] = layer
                 host = (_add_input(["-i", str(layer)]), 0, 0, W, H, None)
                 _count_3d(i, stance3d, close_up=close3d)
                 dennis3d_meta.append({"segment": i, "room": room.key, "stance": stance3d,
-                                      "close_up": close3d})
+                                      "close_up": close3d,
+                                      **({"push_in": round(push3d["z"], 2)} if push3d else {})})
             else:
                 host = (None if alone
                         else _host_input(i, seg, seg_len, room=room, pose=pose))
-            push = ("" if window else
+            push = ("" if window or push3d else
                     _monitor_push(room, None if host is None else host[1:5], clip=layer))
             if host is None:
                 chain = _still_chain(bg_i, seg, seg_len, i, push + tail)

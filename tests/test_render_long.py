@@ -1304,3 +1304,49 @@ def test_the_strip_leaves_out_a_beat_it_would_sit_on_him_in():
     assert _on_him(segs, [(0.0, 1.0)], skip={0}) == [(4.0, 8.0)]
     # the disclaimer's rim takes every stretch of him, however short
     assert _on_him(segs, [], min_s=0.0) == [(0.0, 8.0), (10.0, 11.0)]
+
+
+# ------------------------------------------------- the wide rooms (10 Oct)
+def test_a_wide_room_is_for_the_first_beat_of_him_in_a_chapter():
+    from types import SimpleNamespace as NS
+
+    from pipeline.render_long import chapter_openers
+
+    segs = [NS(kind="host", start=0.0), NS(kind="plate", start=3.0),
+            NS(kind="host", start=6.0), NS(kind="host", start=12.0),
+            NS(kind="plate", start=15.0), NS(kind="host", start=18.0)]
+    chapters = [(0.0, "a", "x"), (12.0, "b", "y")]
+    assert chapter_openers(segs, chapters, 20.0) == {0, 3}
+    # the cold open's first shot of him is one too, under the title or not
+    assert chapter_openers(segs, chapters, 20.0, cold_i=2) == {0, 2, 3}
+
+
+def test_every_wide_room_has_a_closer_angle_he_can_stand_in(settings):
+    from pipeline.plates import load_plates
+    from pipeline.render_long import CLOSER_ROOM, WIDE_SHARE
+
+    reg = load_plates(settings.assets_dir)
+    desk = reg.get(reg.aspect_key("room/desk-front", "16x9") or "")
+    if desk is None or desk.slot("host-anchor") is None:
+        pytest.skip("the kit is not ingested")
+    desk_h = desk.slot("host-anchor").h
+
+    def height(key):
+        a = reg.get(key).slot("host-anchor")
+        return a.h if a is not None else None
+
+    wide = set()
+    for key in reg.all_plates():
+        p = reg.get(key)
+        if p is None or p.family != "room" or p.aspect != "16x9" or p.refuses_host:
+            continue
+        h = height(key)
+        if h is not None and h < WIDE_SHARE * desk_h:
+            wide.add(reg.base_key(key))
+    assert wide, "the kit has wide rooms"
+    for base in wide:
+        stem = next((k for k in CLOSER_ROOM if base.startswith(k + "-")), None)
+        assert stem, f"{base} is wide and has no closer angle"
+        closer = reg.aspect_key(CLOSER_ROOM[stem], "16x9")
+        assert closer is not None, f"{CLOSER_ROOM[stem]} is not in the kit"
+        assert height(closer) >= WIDE_SHARE * desk_h, f"{closer} is wide too"
