@@ -213,6 +213,28 @@ def test_chart_price_uses_price_feed(manager):
 def test_chart_unknown_metric_falls_back(manager):
     chart = manager.resolve_chart("mystery_metric", ticker="EXMPL", company_data=None)
     assert chart.source == "filler"
+
+
+def test_a_small_figure_keeps_its_decimals_on_the_axis():
+    """EPS runs 0.3 to 2.1: rounded to whole numbers its five gridlines read
+    0, 1, 1, 2, 2, and the scale the chart reads back off those labels
+    (`axis_domain`) is not the one it was drawn on."""
+    from pipeline.broll import _compact
+    from pipeline.series import figure
+    from pipeline.short_data import axis_ticks
+
+    assert [_compact(v) for v in (0.3, 1.5, 12.5, 0.0, 600.0, -0.25, 999.99)] == \
+        ["0.3", "1.5", "12.5", "0", "600", "-0.25", "999.99"]
+    assert _compact(-0.001) == "0"
+    ticks = axis_ticks([0.3, 0.9, 1.5, 2.1])
+    labels = [_compact(t) for t in ticks]
+    assert labels == ["0", "0.6", "1.2", "1.8", "2.4"]
+    assert [figure(x) for x in labels] == pytest.approx(ticks)
+    # nothing above a thousand changes
+    assert [_compact(v) for v in (1500, 2.4e6, 3.1e9, -8.9e7)] == \
+        ["1.5K", "2.4M", "3.1B", "-89M"]
+
+
 def test_screengrab_image_pad_fits(manager, settings):
     from PIL import Image
 

@@ -51,6 +51,10 @@ def _compact(value: float) -> str:
     over it the line collides with rules drawn in ink. A raw `{:,.0f}` on a
     revenue figure is eleven characters against a seven-character axis label,
     which is how a chart came out with every gridline overset.
+
+    Under a thousand the figure keeps its cents: EPS gridlines at 0.6, 1.2,
+    1.8 rounded to whole numbers read 1, 1, 2, and the scale the chart reads
+    back off its own labels is not the one it was drawn on.
     """
     n = float(value)
     for cut, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")):
@@ -58,7 +62,8 @@ def _compact(value: float) -> str:
             scaled = n / cut
             return (f"{scaled:.0f}{suffix}" if abs(scaled) >= 10
                     else f"{scaled:.1f}{suffix}".replace(".0", ""))
-    return f"{n:,.0f}"
+    # `+ 0.0` so a tiny negative reads 0, not -0.
+    return f"{round(n, 2) + 0.0:,.2f}".rstrip("0").rstrip(".")
 
 # ---------------------------------------------------------------------------
 # The vetted palette: key -> pre-tested Pexels video query. The preferred
