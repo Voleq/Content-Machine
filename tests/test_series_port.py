@@ -155,6 +155,28 @@ def test_a_range_behind_a_line_is_painted_before_it():
     assert any(n["tag"] == "path" for n in nodes[1:])
 
 
+def test_a_missing_period_breaks_the_line_instead_of_crashing_the_render():
+    """A plate written with one figure left blank hands the line a hole. It
+    is NO DATA, as `chart.draw_line` has it: the line breaks there rather
+    than running across, no dot sits on the gap, and the other periods keep
+    the columns they were given."""
+    slots = {"plot-area": dict(_PLOT)}
+    nodes = S.data_layer(slots, {"series": [10, 12, None, 16, 18, 20]}, _INK)
+    lines = [n for n in nodes if n["tag"] == "path"]
+    dots = [n for n in nodes if n["tag"] == "circle"]
+    assert len(lines) == 2, "one run either side of the hole"
+    assert [n["attrs"]["cx"] for n in dots] == [100, 260, 580, 740, 900]
+    # A run of one is a dot and no stroke; a series of nothing draws nothing.
+    lone = S.data_layer(slots, {"series": [10, None, 16, None, 20]}, _INK)
+    assert [n["tag"] for n in lone] == ["circle"] * 3
+    assert S.data_layer(slots, {"series": [None, None]}, _INK) == []
+    # The accent is on the last period that has a figure.
+    accented = S.line_path(_PLOT, [10, 12, 14, None], _INK, accent_last=True)
+    assert accented["nodes"][-1]["attrs"]["fill"] == "#A"
+    assert accented["nodes"][-1]["attrs"]["cx"] == 633.3, "the third of four columns"
+    assert len(accented["returns"]["points"]) == 3
+
+
 def test_a_mark_is_drawn_in_the_ink_its_slot_publishes():
     """The event calendar's first date is attention and the rest subject; the
     sector ranking's market line is quiet. Attention only when unsaid."""
@@ -599,6 +621,21 @@ def test_a_line_accents_only_its_last_point(reg):
     base = {"series": "6,5,4,3,2,1,1,1"}
     assert S.plate_data(plate, base | {"accent": "last"}).data.get("accentLast") is True
     assert S.plate_data(plate, base | {"accent": "3"}).problems
+
+
+def test_a_plate_written_with_a_blank_period_draws_the_rest(reg, settings):
+    """`[PLATE: line-6y | value-2= | …]` hands the line a hole, and the render
+    died on it (`None - float`) rather than drawing the other five years."""
+    from pipeline.chart import declared_layer
+
+    night = reg.at("night")
+    plate = night.get("charts/line-6y-16x9")
+    values = {"value-1": "400", "value-2": "", "value-3": "480", "value-4": "500",
+              "value-5": "520", "value-6": "560",
+              **{f"y-{i + 1}": str(y) for i, y in enumerate((0, 200, 400, 600, 800))}}
+    assert S.plate_data(plate, values).data["series"][1] is None
+    layer = declared_layer(night, plate, values, settings=settings)
+    assert layer is not None and layer.getbbox() is not None
 
 
 def test_a_rail_plate_takes_the_row_the_script_is_about(reg):
