@@ -97,12 +97,15 @@ def test_host_anchored_structure_with_all_kinds(rendered):
     assert {"clip", "img", "chart", "filing", "meme", "host"} <= kinds
 
     # deliberate pacing: nothing flashes by, and every gap is ONE held host
-    # beat rather than a run of chopped filler
+    # beat rather than a run of chopped filler. Two host beats meet only where
+    # a chapter starts: that is the cut its card lands on.
     for s in segs:
         assert s["end"] - s["start"] >= 1.0, f"{s['kind']} flashes by"
+    chapter_times = [c["t"] for c in manifest["chapters"]]
     for a, b in zip(segs, segs[1:]):
-        assert not (a["kind"] == "host" and b["kind"] == "host"), \
-            "consecutive host beats mean the gap was chopped"
+        if a["kind"] == "host" and b["kind"] == "host":
+            assert any(abs(b["start"] - t) < 0.05 for t in chapter_times), \
+                "consecutive host beats mean the gap was chopped"
 
     # visual segments start on their cue's anchor-word time, or later when a
     # data visual before them was still being read
@@ -112,6 +115,17 @@ def test_host_anchored_structure_with_all_kinds(rendered):
         if seg["kind"] == "host":
             continue
         assert any(seg["start"] >= t - 1e-3 for t in cue_times)
+
+
+def test_every_chapter_has_a_cut_on_its_own_time(rendered):
+    """A chapter's card lands on the first cut at or after its time. With a
+    stretch of him held across the chapter's start that cut was the next
+    visual's, as much as five seconds late."""
+    settings, script, tts, out, manifest = rendered
+    starts = [s["start"] for s in manifest["segments"]]
+    for c in manifest["chapters"][1:]:
+        assert any(abs(t - c["t"]) < 0.05 for t in starts), \
+            f"{c['title']!r} at {c['t']}s has no cut on it: {starts}"
 
 
 def test_cue_times_reached_the_filtergraph(rendered):
