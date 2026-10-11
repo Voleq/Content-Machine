@@ -67,6 +67,13 @@ def test_decimals_are_read_digit_by_digit():
     ("−12.5%", "minus twelve point five percent"),
     ("1,400", "one thousand four hundred"),
     ("£2.50", "two pounds and fifty pence"),
+    # A scale letter is its word, and a multiple is "times": "$4.2B" was
+    # suggested back as "four point two dollars", the B dropped.
+    ("$4.2B", "four point two billion dollars"),
+    ("$310M", "three hundred and ten million dollars"),
+    ("-$15M", "minus fifteen million dollars"),
+    ("1.1tn", "one point one trillion"),
+    ("12x", "twelve times"),
 ])
 def test_a_typed_figure_becomes_a_spoken_one(raw, said):
     assert spoken_number(raw) == said
@@ -91,6 +98,9 @@ def test_only_the_four_things_a_voice_gets_wrong_are_flagged():
         "Revenue was $1,234.56, down 59.6%, across 1,400 stores in 2024."))
     assert set(found) == {"$1,234.56", "59.6%", "1,400"}
     assert found["1,400"] == "one thousand four hundred"
+    # "3M" is a company before it is three million; with a symbol it is money.
+    assert eye_written_figures("3M makes tape over 5 months.") == []
+    assert dict(eye_written_figures("It trades at 30x.")) == {"30x": "thirty times"}
 
 
 @pytest.mark.parametrize("raw,said", [

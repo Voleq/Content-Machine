@@ -213,6 +213,25 @@ def test_valuation_wacc_and_reverse_dcf_keys(workspace):
     assert len(val["scenarios"]) == 3
 
 
+def test_a_scenario_names_its_metric_not_its_figure(workspace):
+    """The real template's scenario rows carry the per-share figure in B
+    (`=B6`, the LTM EPS) and its name in C. Read as text first, B gave the
+    writer "metric=4.25"."""
+    from openpyxl import load_workbook
+
+    xlsx = workspace / "dennis_data.xlsx"
+    assert [s["metric"] for s in load_company_data(workspace).valuation["scenarios"]] \
+        == ["P/S"] * 3                          # the fixture's older layout
+    wb = load_workbook(xlsx)
+    ws = wb["Valuation"]
+    for row in ws.iter_rows():
+        if str(row[0].value or "").strip() in ("Bear", "Base", "Bull"):
+            row[1].value, row[2].value = 4.25, "EPS"
+    wb.save(xlsx)
+    got = load_company_data(workspace).valuation["scenarios"]
+    assert [(s["metric"], s["per_share"]) for s in got] == [("EPS", 4.25)] * 3
+
+
 def test_missing_news_sheet_degrades(workspace):
     # dropping the OPTIONAL News sheet must degrade (news == []), never raise
     from openpyxl import load_workbook

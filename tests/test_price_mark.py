@@ -87,3 +87,19 @@ def test_the_last_close_is_never_set_on_the_line_itself(reg, settings):
     line = bare[..., 3] > 0
     y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
     assert not line[y0:y1, x0:x1].any(), "the label is set on the line"
+
+
+def test_a_macro_headline_names_its_series_by_whole_words():
+    """"Stocks slide on market turmoil" is not a story about crude: "oil"
+    was found inside "turmoil" and the macro short charted WTI."""
+    from types import SimpleNamespace as NS
+
+    from pipeline.macro_series import pick
+
+    def said(text):
+        return NS(headlines=[text], move_summary="", hook_text="")
+
+    assert pick(said("Stocks slide on market turmoil")) is None
+    assert pick(said("Oil jumps 4% as supply tightens")).fred_id == "MCOILWTICO"
+    assert pick(said("The Fed holds rates")).fred_id == "FEDFUNDS"
+    assert pick(said("Core CPI cools")).fred_id == "CPILFESL"

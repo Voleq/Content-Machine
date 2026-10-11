@@ -786,9 +786,15 @@ def _read_valuation(ws) -> dict:
             name = _cell_text(row[0]) if row else ""
             if name.lower() not in ("bear", "base", "bull"):
                 continue
+            # The template's B column is the per-share figure itself (`=B6`,
+            # the LTM EPS) and C its name ("EPS"); older sheets name the
+            # multiple in B. Read as text first, B gave "metric=4.25".
+            pair = list(row[1:3])
             scenarios.append({
                 "scenario": name,
-                "metric": _cell_text(row[1]) or _cell_text(row[2]) if len(row) > 2 else "",
+                "metric": next((_cell_text(c) for c in pair
+                                if _cell_text(c) and _num(c) is None), ""),
+                "per_share": next((_num(c) for c in pair if _num(c) is not None), None),
                 "exit_multiple": _num(row[3]) if len(row) > 3 else None,
                 "implied_price": _num(row[4]) if len(row) > 4 else None,
                 "upside_pct": _num(row[5]) if len(row) > 5 else None,

@@ -47,16 +47,20 @@ _CURRENCY = {
 
 # A figure as a writer types it: an optional sign, an optional currency
 # symbol, digits (grouped or not), optional decimals, an optional scale word
-# the writer already spelled out, and an optional percent sign.
+# the writer already spelled out or its letter ("$4.2B", "$310M", "1.1tn"),
+# and an optional percent sign or multiple ("12x").
 FIGURE_RE = re.compile(
     r"(?P<sign>[-−])?"
     r"(?P<currency>[$£€])?"
     r"(?P<digits>\d{1,3}(?:,\d{3})+|\d+)"
     r"(?:\.(?P<frac>\d+))?"
-    r"(?:\s+(?P<scale>trillion|billion|million|thousand))?"
-    r"\s*(?P<pct>%)?",
+    r"(?:\s+(?P<scale>trillion|billion|million|thousand)"
+    r"|(?P<abbr>tn|bn|[kmbt])(?![a-z]))?"
+    r"\s*(?:(?P<pct>%)|(?P<times>[x×])(?![a-z]))?",
     re.I,
 )
+_SCALE_LETTER = {"k": "thousand", "m": "million", "b": "billion", "bn": "billion",
+                 "t": "trillion", "tn": "trillion"}
 
 
 def _under_hundred(n: int) -> str:
@@ -119,7 +123,7 @@ def spoken_number(raw: str) -> str:
 def _spoken(m: "re.Match[str]") -> str:
     digits = m.group("digits").replace(",", "")
     frac = m.group("frac") or ""
-    scale = (m.group("scale") or "").lower()
+    scale = (m.group("scale") or _SCALE_LETTER.get((m.group("abbr") or "").lower(), "")).lower()
     symbol = m.group("currency") or ""
     whole = int(digits)
 
@@ -152,6 +156,8 @@ def _finish(said: str, m: "re.Match[str]") -> str:
         said = f"minus {said}"
     if m.group("pct"):
         said += " percent"
+    if m.group("times"):
+        said += " times"
     return said
 
 
@@ -165,7 +171,9 @@ def eye_written_figures(text: str) -> list[tuple[str, str]]:
     """
     out: list[tuple[str, str]] = []
     for m in FIGURE_RE.finditer(text):
-        if not (m.group("currency") or m.group("pct")
+        # A scale letter alone is not flagged: "3M" is a company before it
+        # is three million. With a currency symbol or decimals it is a figure.
+        if not (m.group("currency") or m.group("pct") or m.group("times")
                 or "," in m.group("digits") or m.group("frac")):
             continue
         out.append((m.group(0).strip(), _spoken(m)))

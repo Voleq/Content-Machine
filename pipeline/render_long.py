@@ -913,7 +913,7 @@ def _render_long(
     # under one holds its moves until it lifts.
     intro_dur = min(INTRO_CARD_S, duration * 0.5)
     chapter_cuts = _chapter_cuts(chapters, [s.start for s in segments],
-                                 intro_dur=intro_dur, duration=duration)
+                                 intro_dur=intro_dur, duration=duration, fps=fps)
     end_cut = max((s.start for s in segments if s.start > intro_dur + 2.0),
                   default=None)
     _bumper = reg.get(reg.aspect_key("structure/chapter-bumper", aspect) or "")

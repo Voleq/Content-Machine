@@ -423,3 +423,18 @@ def test_a_row_of_figures_is_set_at_one_size(kit):
     assert drawn_box(bars, unit, "Revenue", s, kit)[3] > drawn_box(
         bars, unit, "Revenue", Settings(_env_file=None, short_type_grow=1.0), kit)[3]
 
+
+
+def test_a_52_week_price_over_a_thousand_loses_cents_not_digits():
+    """Cut to eight characters, $1,234.56 read "$1,234.5" and $12,345.67
+    "$12,345." on the year's card: different prices."""
+    from pipeline.short_data import week52
+
+    got = week52({"week52_high": 12345.67, "week52_low": 1234.56, "price": 4567.89,
+                  "ticker": "BKNG"})
+    assert got["figure-high"] == "$12,346"
+    assert got["figure-low"] == "$1,234.6"
+    assert got["now"] == "$4,567.89"
+    small = week52({"week52_high": 21.5, "week52_low": 9.25, "price": 15.42})
+    assert (small["figure-high"], small["now"], small["figure-low"]) == (
+        "$21.50", "$15.42", "$9.25")
