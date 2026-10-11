@@ -1004,12 +1004,15 @@ def fact_check(narration: str, data, *,
                 pos, end = num.start, num.end
                 if num.is_percent and price_move.search(low[:pos]):
                     continue
-                if num.is_percent and _SHARE_OF_RE.match(low[end:]):
-                    continue
                 if _counts_things(low, num):
                     continue
                 metric = _owner_of(pos, end, low[end:], named, low)
                 if metric is None:
+                    continue
+                # A margin IS a share of revenue; only a level's growth is
+                # not what "three percent of revenue" says.
+                if (num.is_percent and metric not in _RATE_METRICS
+                        and _SHARE_OF_RE.match(low[end:])):
                     continue
 
                 series = known[metric]
