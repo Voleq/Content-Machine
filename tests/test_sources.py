@@ -362,3 +362,21 @@ def test_the_ir_site_never_gets_the_sec_contact(settings, monkeypatch):
     ir_feed("https://ir.example.com/rss", live)
     assert "@" not in seen.get("User-Agent", "")
     assert "someone" not in seen.get("User-Agent", "").lower()
+
+
+def test_a_page_that_is_not_a_feed_is_no_feed(settings, monkeypatch):
+    """A site that answers /rss with its home page: a 200 with no items. Said
+    as found, the news merge stopped there and never tried /feed."""
+    import httpx
+
+    class Resp:
+        text = "<!doctype html><html><body>Welcome</body></html>"
+
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(httpx, "get", lambda url, **kw: Resp())
+    live = settings.model_copy(update={"mock_mode": False})
+    got = ir_feed("https://ir.example.com/rss", live)
+    assert got["status"] == UNAVAILABLE
+    assert cached(live, "rss", "https://ir.example.com/rss") is None

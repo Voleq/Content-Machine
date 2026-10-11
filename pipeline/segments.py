@@ -405,8 +405,10 @@ def concat_clips(clips: Sequence[Path], out_path: Path) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     listing = out_path.with_suffix(".concat.txt")
     listing.write_text("".join(
-        # the demuxer's own quoting rule: single quotes doubled
-        f"file '{Path(c).resolve().as_posix()}'\n" for c in clips
+        # the demuxer's own quoting rule: inside single quotes a quote is
+        # closed, escaped and reopened ('\'')
+        "file '" + Path(c).resolve().as_posix().replace("'", "'\\''") + "'\n"
+        for c in clips
     ), encoding="utf-8")
     run_ffmpeg([
         "-f", "concat", "-safe", "0", "-i", str(listing),

@@ -389,6 +389,11 @@ def ir_feed(url: str, settings: Settings, limit: int = 10) -> dict:
     except Exception as e:  # noqa: BLE001
         log.warning("IR feed %s failed: %s", url, e)
         return {"status": UNAVAILABLE, "url": url, "reason": str(e)[:120]}
+    if not items:
+        # Many sites answer any address with their home page: a 200 that is
+        # no feed. Said as found, the caller stopped there and never tried
+        # the site's next feed address.
+        return {"status": UNAVAILABLE, "url": url, "reason": "no feed at this address"}
     return store(settings, "rss", url,
                  {"status": "ok", "url": url,
                   "items": [i.to_json() for i in items]})

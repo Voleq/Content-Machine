@@ -689,3 +689,19 @@ def test_a_rewrite_that_looks_wrong_falls_back_to_the_raw_subject(
         "pipeline.llm.chat",
         lambda *a, **k: "Sure! Here is a query for you: desert mesa.")
     assert m._clip_query("a plateau in a costume") == "a plateau in a costume"
+
+
+def test_a_query_the_model_never_answered_is_asked_again(settings, tmp_path, monkeypatch):
+    """With the local model off, the raw subject was cached as its own
+    rewrite, and the rewrite never happened after the model came back."""
+    import pipeline.llm as llm
+
+    s = settings.model_copy(update={"broll_rewrite_offpalette": True,
+                                    "cache_dir": tmp_path / "cache"})
+    m = ContentManager(s, library_dir=tmp_path / "library")
+    monkeypatch.setattr(llm, "chat", lambda *a, **k: "")
+    assert m._stock_query("a plateau in a costume") == "a plateau in a costume"
+    monkeypatch.setattr(llm, "chat", lambda *a, **k: "flat desert mesa landscape wide")
+    assert m._stock_query("a plateau in a costume") == "flat desert mesa landscape wide"
+    monkeypatch.setattr(llm, "chat", lambda *a, **k: pytest.fail("asked twice"))
+    assert m._stock_query("a plateau in a costume") == "flat desert mesa landscape wide"

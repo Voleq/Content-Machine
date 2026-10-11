@@ -712,6 +712,10 @@ class ContentManager:
                 log.info("broll query rewrite for %r looked wrong (%r) — "
                          "using the raw subject", subject, out)
             query = subject
+        if not str(out or "").strip():
+            # No answer is the model being off, not a verdict on the subject:
+            # cached, the raw text stood in forever after the model came back.
+            return query
         store[subject] = query
         try:
             cache.parent.mkdir(parents=True, exist_ok=True)

@@ -949,7 +949,7 @@ COMMANDS: tuple[Command, ...] = (
     Command("search", "", "<question>",
             "the local AI answers from everything the bot has saved", c_ask,
             aliases=("ask",), ack="🔎 reading the records…",
-            example="what did voice cost in September", doc=(
+            example="how much did voice cost in September", doc=(
                 "The local model answers from the bot's own records, citing "
                 "what it read, or says it has nothing on file. Counts and "
                 "totals are worked out by code and never reach the model.")),

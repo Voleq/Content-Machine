@@ -645,3 +645,23 @@ def test_the_bot_opens_a_scope_around_every_path_that_can_reach_an_llm(settings)
                  "_start_filing_read", "_approval_blockers"):
         src = inspect.getsource(getattr(BotCore, name))
         assert "llm_scope" in src, f"BotCore.{name} tallies against nothing"
+
+
+def test_the_record_names_the_voice_model_not_its_tier(settings, tmp_path):
+    """The audio line promises which ElevenLabs model spoke; it said "paid"."""
+    from pipeline.models import TTSResult
+    from pipeline.provenance import build
+
+    def voice(tier):
+        return TTSResult(audio_path=tmp_path / "a.mp3", words=[], duration_s=1.0,
+                         chars=10, cached=False, cost_usd=0.1, tier=tier)
+
+    s = settings.model_copy(update={"eleven_model_id": "eleven_v3",
+                                    "local_tts_model": "/v/en_US-ryan-high.onnx"})
+    paid = build(ticker="E", fmt="long", workdate="d", duration_s=1.0,
+                 tts=voice("paid"), settings=s)
+    assert paid.audio["model"] == "eleven_v3"
+    assert "chunks" not in paid.audio
+    local = build(ticker="E", fmt="long", workdate="d", duration_s=1.0,
+                  tts=voice("local"), settings=s)
+    assert local.audio["model"] == "piper en_US-ryan-high"
