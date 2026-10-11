@@ -715,3 +715,52 @@ def test_a_chart_of_what_a_chart_plate_just_drew_is_dropped():
     assert [(r["what"], r["cue"].t) for r in report] == [("dropped", 12.0)]
     assert "already charts revenue" in report[0]["why"]
     assert any("[CHART: revenue] dropped" in w for w in warnings)
+
+
+def test_a_chart_long_after_the_plate_is_a_second_look_not_a_twin():
+    """The twin rule is for two revenue charts five seconds apart. Ninety
+    seconds on, in a chapter that runs a good deal longer, the plate is long
+    gone and the viewer has had a minute and a half of other things: the
+    chart is the writer's own second look, and it goes up."""
+    from pipeline.models import Cue
+    from pipeline.timeline import SAME_FIGURE_WINDOW_S
+
+    line = Cue(t=5.0, kind=CueKind.PLATE, payload={
+        "value": "charts/line-6y-16x9", "order": 0,
+        "values": {"unit": "Revenue, $M", "value-1": "400"}})
+
+    def chart(t, order):
+        return Cue(t=t, kind=CueKind.CHART, payload={"value": "revenue", "order": order})
+
+    for t, kept in ((5.0 + SAME_FIGURE_WINDOW_S, False), (95.0, True)):
+        report: list = []
+        segments, _ = plan_long_segments([line, chart(t, 1)], 300.0,
+                                         chapter_starts=[0.0, 200.0], report=report)
+        _tiled(segments, 300.0)
+        shown = [s.payload.get("value") for s in segments if s.kind == "chart"]
+        assert shown == (["revenue"] if kept else []), (t, shown)
+        assert [r["what"] for r in report] == ([] if kept else ["dropped"]), t
+
+
+def test_a_chart_of_one_row_is_not_dropped_for_a_plate_that_names_it_inside_another():
+    """`cash` is the balance sheet's row and "free cash flow" is another one.
+    A free cash flow plate ahead of a [CHART: cash] said "cash", and the chart
+    went, for a picture of a different figure."""
+    from pipeline.models import Cue
+
+    fcf = Cue(t=5.0, kind=CueKind.PLATE, payload={
+        "value": "charts/line-6y-16x9", "order": 0,
+        "values": {"unit": "Free cash flow, $M", "value-1": "400"}})
+
+    def chart(t, metric, order):
+        return Cue(t=t, kind=CueKind.CHART, payload={"value": metric, "order": order})
+
+    report: list = []
+    segments, _ = plan_long_segments(
+        [fcf, chart(12.0, "cash", 1), chart(20.0, "fcf", 2)], 60.0,
+        chapter_starts=[0.0, 30.0], report=report)
+    _tiled(segments, 60.0)
+    shown = [(s.kind, s.payload.get("value")) for s in segments if s.kind != "host"]
+    assert shown == [("plate", "charts/line-6y-16x9"), ("chart", "cash")], shown
+    # the plate's own row is still the twin
+    assert [(r["what"], r["cue"].payload["value"]) for r in report] == [("dropped", "fcf")]
