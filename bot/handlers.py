@@ -1711,9 +1711,13 @@ class BotCore:
         mode = (self.settings.dennis_3d or "off").strip().lower()
         if mode in ("", "off", "0", "false", "no"):
             return ""
+        from pipeline import dennis3d
+
+        # Blender's own Python, not the bot's: the bench needs bpy.
+        python = " ".join(dennis3d._python(self.settings))
         return ("\n🧊 DENNIS_3D is on: each second of him is rendered in "
                 "Blender, so this can run for hours and holds the queue. "
-                "`python room3d/perform.py --bench` times a frame on this box.")
+                f"`{python} room3d/perform.py --bench` times a frame on this box.")
 
     def repurpose_request(self, ticker: str) -> tuple[JobKind | None, str, Workspace | None]:
         """SHORT-from-LONG: free (no TTS, no fetches), so no approval gate."""

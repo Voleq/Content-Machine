@@ -280,6 +280,7 @@ class Performer:
                **({"close": True} if close else {}),
                **({"push": {k: round(float(v), 3) for k, v in push.items()}}
                   if push else {}),
+               **self._line_style(),
                "words": [{"word": w.word, "start": round(w.start - start, 3),
                           "end": round(w.end - start, 3)} for w in words]}
         key = hashlib.sha256(json.dumps({**job, "v": LOOK_VERSION},
@@ -321,7 +322,7 @@ class Performer:
                "fps": int(self.settings.dennis_3d_fps),
                "samples": max(int(self.settings.dennis_3d_samples), 16),
                "seed": seed, "stance": stance, "still": True,
-               **({"in_room": True} if in_room else {})}
+               **({"in_room": True} if in_room else {}), **self._line_style()}
         key = hashlib.sha256(json.dumps({**job, "v": LOOK_VERSION},
                                         sort_keys=True).encode()).hexdigest()[:20]
         folder = self.cache / key
@@ -336,6 +337,12 @@ class Performer:
         self.shots.append({"angle": angle, "aspect": aspect, "still": True,
                            "seconds": reply.get("seconds"), "device": reply.get("device")})
         return out
+
+    def _line_style(self) -> dict:
+        """How his lines are drawn, in the job only when it is not Freestyle,
+        so every shot drawn before the choice keeps its cache."""
+        how = str(getattr(self.settings, "dennis_3d_lines", "freestyle") or "freestyle")
+        return {"lines": how} if how != "freestyle" else {}
 
     @staticmethod
     def frames(layer: Path) -> Path:
