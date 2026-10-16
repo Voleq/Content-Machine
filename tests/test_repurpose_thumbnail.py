@@ -193,7 +193,7 @@ def test_delivery_local_with_attribution(settings, tmp_path):
 
 
 def test_delivery_telegram_size_gate(settings, tmp_path):
-    from pipeline.delivery import DeliveryError, deliver
+    from pipeline.delivery import deliver
 
     live = settings.model_copy(update={
         "mock_mode": False, "delivery_backend": "telegram",
@@ -201,8 +201,28 @@ def test_delivery_telegram_size_gate(settings, tmp_path):
     })
     artifact = tmp_path / "big.mp4"
     artifact.write_bytes(b"x" * 2_000_000)
-    with pytest.raises(DeliveryError, match="cap"):
-        deliver(artifact, "EXMPL", "2026-07-01", live)
+    # Over the cap, the finished video is kept on the box and the note says
+    # why it did not go, rather than the whole render failing after the fact.
+    result = deliver(artifact, "EXMPL", "2026-07-01", live)
+    assert result.backend == "local" and result.send_file is None
+    assert "cap" in result.note and "render box" in result.note
+    assert (live.workspace_dir / "_delivered" / "EXMPL" / "2026-07-01"
+            / "big.mp4").exists()
+
+
+def test_delivery_with_no_drive_credentials_keeps_the_video(settings, tmp_path):
+    from pipeline.delivery import deliver
+
+    live = settings.model_copy(update={
+        "mock_mode": False, "delivery_backend": "gdrive",
+        "gdrive_credentials": ""})
+    artifact = tmp_path / "final.mp4"
+    artifact.write_bytes(b"x" * 1000)
+    result = deliver(artifact, "EXMPL", "2026-07-02", live,
+                     attributions=["Video by A on Pexels"])
+    assert result.backend == "local"
+    assert "GDRIVE_CREDENTIALS" in result.note
+    assert "Video by A on Pexels" in result.note
 
 
 def test_repurpose_request_gate(settings, tmp_path):

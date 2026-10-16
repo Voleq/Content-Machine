@@ -232,7 +232,7 @@ pipeline/
   youtube.py             upload (private/scheduled, never public) + retention
   retention_notes.py     the weekly note to the writer: which sentences lost
                          viewers, what they share, into the next prompt
-  delivery.py            gdrive (default) / s3 / telegram / local
+  delivery.py            gdrive / s3 / telegram / local (default)
   repurpose.py           best ~58s of a LONG -> 9:16 SHORT (free)
   thumbnail.py           the cover — a frame from the video
   frame_checks.py        golden-frame compare + held-composition measurement
@@ -1044,7 +1044,7 @@ number, which is exactly the case the gate exists to catch.
 | `ELEVEN_MODEL_ID` | unset | the ElevenLabs model, by name. `eleven_turbo_v2_5` (default), `eleven_multilingual_v2`, `eleven_v3`. **v3 is the only model that performs delivery** — eight of the ten direction tags do something only there — and it is twice turbo's price; the tags are what that buys. `eleven_v3_conversational` is a *different*, cheaper model for the Agents Platform, not a v3 variant. See *Delivery direction* below |
 | `ELEVEN_USE_PREMIUM` | false | **deprecated** — picks between turbo and multilingual_v2, and only when `ELEVEN_MODEL_ID` is unset. Prefer naming the model |
 | `GIPHY_API_KEY` / `TENOR_API_KEY` | — | optional [MEME] fallbacks (library first) |
-| `DELIVERY_BACKEND` | gdrive | gdrive · s3 · telegram · local |
+| `DELIVERY_BACKEND` | local | gdrive · s3 · telegram · local. A backend that cannot take the file (no Drive credentials, a long over Telegram's 50 MB) keeps the video on the render box and says why |
 | `GDRIVE_CREDENTIALS` / `GDRIVE_ROOT_FOLDER_ID` | — | Drive delivery |
 | `LOCAL_TTS_ENABLED` / `LOCAL_TTS_MODEL` | true / — | free draft voice (Piper .onnx); drafts fall back to mock, never to paid |
 | `RETENTION_DAYS` | 14 | cleanup horizon for workspaces. **`cache/tts` holds audio that was paid for and is never deleted** — see *Never delete `cache/tts`* below |

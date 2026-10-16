@@ -1,6 +1,10 @@
-"""Pluggable delivery (§9.4): gdrive (default) | s3 | telegram | local.
+"""Pluggable delivery (§9.4): gdrive | s3 | telegram | local (the default).
 
-Google Drive is the recommended default: organized dated archive
+A backend that cannot take the file (no Drive credentials, a long final over
+Telegram's cap) no longer fails the finished render: the video is kept on the
+render box, as `local` keeps it, and the note says why it did not go.
+
+Google Drive is the recommended backend: organized dated archive
 (/Dennis/<TICKER>/<date>/), shareable link, no bot upload cap,
 and it stages files for later YouTube/TikTok upload. Implemented with
 google-auth (service account or OAuth refresh-token JSON) + plain httpx
@@ -74,20 +78,28 @@ def deliver(
     if attributions:
         note = "Credits:\n" + "\n".join(f"- {a}" for a in attributions)
 
-    if backend == "gdrive":
-        result = GDriveBackend(settings).upload(artifact, ticker, workdate, extra_files)
-    elif backend == "s3":
-        result = S3Backend(settings).upload(artifact, ticker, workdate, extra_files)
-    elif backend == "telegram":
-        size_mb = artifact.stat().st_size / 1e6
-        if size_mb > settings.telegram_upload_limit_mb and not settings.telegram_api_base_url:
-            raise DeliveryError(
-                f"{artifact.name} is {size_mb:.0f} MB — over the {settings.telegram_upload_limit_mb} MB "
-                f"cloud-bot cap. Use DELIVERY_BACKEND=gdrive (or a self-hosted Bot API server)."
-            )
-        result = DeliveryResult(backend="telegram", link="(sent in chat)", send_file=artifact)
-    else:
+    try:
+        if backend == "gdrive":
+            result = GDriveBackend(settings).upload(artifact, ticker, workdate, extra_files)
+        elif backend == "s3":
+            result = S3Backend(settings).upload(artifact, ticker, workdate, extra_files)
+        elif backend == "telegram":
+            size_mb = artifact.stat().st_size / 1e6
+            if size_mb > settings.telegram_upload_limit_mb and not settings.telegram_api_base_url:
+                raise DeliveryError(
+                    f"{artifact.name} is {size_mb:.0f} MB — over the {settings.telegram_upload_limit_mb} MB "
+                    f"cloud-bot cap. Use DELIVERY_BACKEND=gdrive (or a self-hosted Bot API server)."
+                )
+            result = DeliveryResult(backend="telegram", link="(sent in chat)", send_file=artifact)
+        else:
+            result = _local_deliver(artifact, ticker, workdate, settings, extra_files)
+    except DeliveryError as e:
+        # The render is finished and paid for; a backend that cannot take it
+        # used to fail the whole job after it. Keep it here and say why.
+        log.warning("%s delivery failed (%s) — kept on the render box", backend, e)
         result = _local_deliver(artifact, ticker, workdate, settings, extra_files)
+        result.note = (f"⚠️ {backend} delivery failed: {e}\n"
+                       f"The video is on the render box: {result.link}")
 
     # APPENDED, not assigned. No backend sets a note today, so this was
     # harmless — and it is the kind of harmless that stops being true the

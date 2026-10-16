@@ -201,14 +201,16 @@ def main() -> None:
                 log.warning("web panel not started (%s:%d): %s",
                             settings.panel_host, settings.panel_port, e)
 
-        try:  # scheduled screener digest (§14) — degrades silently if absent
+        try:  # scheduled screener digest (§14)
             from pipeline.screener import schedule_alerts, schedule_digest
             schedule_digest(application, core)
             # Intraday watch (3b): the digest covers the value lane, this
             # covers short-form, which goes stale in hours.
             schedule_alerts(application, core)
-        except ImportError:
-            log.info("screener module not present; digest not scheduled")
+        except Exception as e:  # noqa: BLE001 - the bot still runs without them
+            # A SCREEN_TIMEZONE or SCREEN_DIGEST_CRON the clock cannot read
+            # used to raise out of start-up after the queue had started.
+            log.warning("screener digest/alerts not scheduled: %s", e)
         # The overnight window: what `/batch` queued runs in it unattended.
         schedule_batch(application, core)
         # Weekly: the sentences viewers left on, into the next writing prompt.

@@ -128,7 +128,23 @@ def looks_like_ticker(token: str) -> bool:
 
 
 def _has_workspace(core: BotCore, token: str) -> bool:
-    if not looks_like_ticker(token):
+    if not (looks_like_ticker(token) or _keyword_ticker(core, token)):
+        return False
+    ticker, _ = Workspace.split_arg(token)
+    return bool(Workspace.dates_for(core.settings, ticker))
+
+
+def _keyword_ticker(core: BotCore, token: str) -> bool:
+    """A keyword typed in capitals that is also a video on disk.
+
+    NOW, ON, ALL, RUN, AMC and BMO are real tickers. As keywords they used to
+    make the active video jump in front of them, so with XYZ active,
+    `/render NOW` rendered XYZ. Capitals and a workspace for it make it the
+    ticker; `/render now` is still the keyword.
+    """
+    head = token.split("@")[0]
+    if (not head or head.lower() not in KEYWORDS or head != head.upper()
+            or not _TICKER_RE.match(token.upper())):
         return False
     ticker, _ = Workspace.split_arg(token)
     return bool(Workspace.dates_for(core.settings, ticker))
@@ -1046,7 +1062,7 @@ def _fill_ticker(c: Call, cmd: Command) -> str | None:
     if mode == "text":
         if first and _has_workspace(c.core, first):
             return None
-    elif first and looks_like_ticker(first):
+    elif first and (looks_like_ticker(first) or _keyword_ticker(c.core, first)):
         return None
     ws = c.core.context.get(c.chat_id)
     if ws is None:

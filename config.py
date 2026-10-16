@@ -511,6 +511,9 @@ class Settings(BaseSettings):
     # `on` renders the 3D one in Blender for every shot he is in (and fails the
     # render if Blender cannot), `auto` does so when `bpy` imports. One switch
     # for all of him: a video that mixes the two shows two different people.
+    # Only the 3D one is used for real videos (10-05), so `.env.example`
+    # ships `on`; the code default stays `off` so a box or a test without
+    # Blender still renders rather than stopping.
     # `DENNIS_3D_PYTHON` is the Python that has `bpy` (default: this one).
     dennis_3d: str = Field(default="off", alias="DENNIS_3D")
     dennis_3d_python: str = Field(default="", alias="DENNIS_3D_PYTHON")
@@ -818,6 +821,37 @@ class Settings(BaseSettings):
             raise ValueError(f"DELIVERY_BACKEND must be one of {sorted(allowed)}")
         return v
 
+    @field_validator("inbox_hour", "alert_start_hour", "batch_start_hour",
+                     "publish_hour")
+    @classmethod
+    def _check_hour(cls, v: int, info) -> int:
+        # INBOX_HOUR=30 used to load and then never send.
+        if not 0 <= v <= 23:
+            raise ValueError(f"{info.field_name.upper()} must be an hour, 0-23")
+        return v
+
+    @field_validator("alert_end_hour", "batch_end_hour")
+    @classmethod
+    def _check_end_hour(cls, v: int, info) -> int:
+        # An end may be 24, the midnight that closes the day.
+        if not 0 <= v <= 24:
+            raise ValueError(f"{info.field_name.upper()} must be an hour, 0-24")
+        return v
+
+    @field_validator("publish_minute")
+    @classmethod
+    def _check_minute(cls, v: int) -> int:
+        if not 0 <= v <= 59:
+            raise ValueError("PUBLISH_MINUTE must be 0-59")
+        return v
+
+    @field_validator("alert_poll_minutes")
+    @classmethod
+    def _check_poll(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("ALERT_POLL_MINUTES must be at least 1")
+        return v
+
     @field_validator("dennis_3d_lines")
     @classmethod
     def _check_lines(cls, v: str) -> str:
@@ -876,7 +910,11 @@ class Settings(BaseSettings):
         are true and cheap to act on.
         """
         out: list[str] = []
-        if not self.mock_mode and not self.sec_user_agent.strip():
+        agent = self.sec_user_agent.strip()
+        # `.env.example`'s own placeholder is no contact either, and SEC
+        # refuses it the same way (`scripts/check_preflight.py` agrees).
+        if not self.mock_mode and (not agent or agent == "Your Name your@email"
+                                   or "@" not in agent):
             # The SEC requires a real name and email in the User-Agent and
             # rate-limits or 403s generic ones. Every caller falls back to a
             # literal and every SEC-backed feature degrades SILENTLY by
@@ -884,7 +922,8 @@ class Settings(BaseSettings):
             # [SHOW FILING] screenshots all return nothing rather than
             # raising. So three features go missing and nothing says why.
             out.append(
-                "SEC_USER_AGENT is empty — SEC EDGAR requires a real name "
+                "SEC_USER_AGENT is empty or a placeholder — SEC EDGAR "
+                "requires a real name "
                 "and email and rate-limits or 403s generic agents. The "
                 "filing brief, the 8-K news source and [SHOW FILING] "
                 "screenshots will degrade to nothing, quietly and by "

@@ -377,7 +377,15 @@ class ShortResolver:
             return None
         v = self._picture(rest[0])
         if rest[1] == "source":
-            return self._PICTURE_SOURCES.get(v.source, "Photo: " + v.source)
+            who = v.provider or v.source
+            if who in self._PICTURE_SOURCES:
+                return self._PICTURE_SOURCES[who]
+            # A provider this table does not know: its own credit line, never
+            # the cache's word for where the file sat. The slot is required,
+            # so a picture with no record at all still says something true.
+            if v.attribution:
+                return "Photo: " + v.attribution
+            return "Photo: " + who if who != "cache" else "Photo: see the credits"
         if rest[1] == "caption" and self.data is not None:
             name = str(self.data.get("company_name") or "").strip()
             what = str(self.data.get("industry") or "").strip().lower()

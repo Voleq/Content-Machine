@@ -994,6 +994,26 @@ def beat_order_block(ctx: "_Ctx") -> str:
     return "\n".join(lines)
 
 
+def angle_number(chosen: str) -> int | None:
+    """The angle picked by number ("2", "Angle 2" from a tap), or None when
+    the operator typed the angle's words. The angles are written in the
+    operator's own chat, so a number is a choice the bot holds no words for."""
+    n = re.fullmatch(r"(?i)(?:angle\s*)?#?(\d+)\.?", (chosen or "").strip())
+    return int(n.group(1)) if n else None
+
+
+def _angle_block(chosen: str) -> str:
+    """{{chosen_angle}}: the angle's words, or which of the chat's own
+    ranked angles was picked when only its number was."""
+    a = (chosen or "").strip()
+    if not a:
+        return "(operator did not specify — use your ★recommended angle)"
+    n = angle_number(a)
+    if n is not None:
+        return f"Angle {n} from the ranked angles you gave in Step 1 — write that one."
+    return a
+
+
 PAYLOAD: tuple[PayloadBlock, ...] = (
     # --- subject
     PayloadBlock("{{ticker}}", _ALL, lambda c: c.ticker.upper()),
@@ -1043,8 +1063,7 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                      "recorded from a previous video. Write this as a "
                      "first-time take instead: /long TICKER.)")),
     PayloadBlock("{{chosen_angle}}", ("long_write",),
-                 lambda c: c.chosen_angle.strip() or
-                 "(operator did not specify — use your ★recommended angle)"),
+                 lambda c: _angle_block(c.chosen_angle)),
 
     # --- source material
     #

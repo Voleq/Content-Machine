@@ -196,6 +196,10 @@ class Visual:
     # looping source that freezes for the back half is the same failure as a
     # frozen gif, arriving later.
     loops: bool = False
+    # Who the file came from (pexels, wikimedia, company_site, giphy, ...).
+    # On a cache hit `source` says "cache"; this keeps the provider its meta
+    # file recorded, so a credit line never reads "Photo: cache".
+    provider: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -765,16 +769,18 @@ class ContentManager:
             meta = cdir / f"meta_{choice}.json"
             if not norm.exists():
                 continue
-            attribution, loops = "", False
+            attribution, loops, provider = "", False, ""
             if meta.exists():
                 m = json.loads(meta.read_text(encoding="utf-8"))
                 attribution = m.get("attribution", "")
+                provider = m.get("provider", "")
                 # A gif that loops has to keep looping out of the cache, or
                 # the second render of the same script freezes where the first
                 # one moved.
                 loops = bool(m.get("loops", False))
             return Visual(key=key, kind="clip", path=norm, is_video=True,
-                          source="cache", attribution=attribution, loops=loops)
+                          source="cache", attribution=attribution, loops=loops,
+                          provider=provider)
         return None
 
     def _fetch_clip(self, key: str, choice: int, portrait: bool) -> Visual | None:
@@ -917,11 +923,14 @@ class ContentManager:
             norm = cdir / f"normalized_{choice}.png"
             meta = cdir / f"meta_{choice}.json"
             if norm.exists():
-                attribution = ""
+                attribution, provider = "", ""
                 if meta.exists():
-                    attribution = json.loads(meta.read_text(encoding="utf-8")).get("attribution", "")
+                    m = json.loads(meta.read_text(encoding="utf-8"))
+                    attribution = m.get("attribution", "")
+                    provider = m.get("provider", "")
                 return Visual(key=query, kind=kind, path=norm, is_video=False,
-                              source="cache", attribution=attribution)
+                              source="cache", attribution=attribution,
+                              provider=provider)
 
             results = self.image_client.search(query)
             source = "wikimedia" if not self.settings.mock_mode else "mock"
@@ -949,7 +958,8 @@ class ContentManager:
                 "attribution": pick.get("attribution", ""),
             }, indent=2), encoding="utf-8")
             return Visual(key=query, kind=kind, path=norm, is_video=False,
-                          source=source, attribution=pick.get("attribution", ""))
+                          source=source, attribution=pick.get("attribution", ""),
+                          provider=source)
         except (httpx.HTTPError, OSError, KeyError, json.JSONDecodeError) as e:
             log.warning("image %r failed (%s) — filler", query, e)
             return self.filler_image(query, kind)
