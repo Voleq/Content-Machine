@@ -37,7 +37,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from config import Settings
-from pipeline.models import RATE_FIELDS
+from pipeline.models import RATE_FIELDS, VENDOR_WORDS
 from pipeline.spoken import eye_written_figures, eye_written_terms
 
 log = logging.getLogger(__name__)
@@ -1075,8 +1075,7 @@ _HYPE = ("massive", "insane", "incredible", "unbelievable", "skyrocket",
          "guaranteed", "no-brainer", "must-buy", "slam dunk", "epic")
 _CALLS = ("buy now", "you should buy", "you should sell", "price target",
           "strong buy", "table pounding")
-_VENDORS = ("refinitiv", "lseg", "eikon", "bloomberg terminal", "capital iq",
-            "factset")
+_VENDORS = VENDOR_WORDS
 
 
 # --------------------------------------------------------------------------

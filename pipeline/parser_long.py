@@ -49,6 +49,7 @@ from pipeline.models import (
     VISUAL_TAG_TYPES,
     Chapter,
     LongScript,
+    VENDOR_WORDS,
     TagEvent,
     TagType,
     parse_scribble_payload,
@@ -71,7 +72,6 @@ from pipeline.tagging import (parse_chart_payload, parse_hold, pop_field,
 
 log = logging.getLogger(__name__)
 
-VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "capital iq")
 
 
 class LongScriptError(Exception):

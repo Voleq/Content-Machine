@@ -27,6 +27,12 @@ from pipeline.plates import PERIOD_COUNT
 # August CPI". Both lanes' writers are held to it before anything is drawn.
 SOURCE_MAX_CHARS = 40
 
+# The data vendors whose names never reach the screen or the voice (§3):
+# on screen everything is "from the 10-K". One list, so the short's block,
+# the long's block and the narration lint cannot disagree about a name.
+VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "capital iq", "factset",
+                "bloomberg terminal")
+
 # Fixed SFX taxonomy (assets/sfx/<key>.wav). Unknown keys are skipped+warned.
 SFX_KEYS = (
     "windows_error",

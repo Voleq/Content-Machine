@@ -24,6 +24,7 @@ from pipeline.models import (
     HOLDABLE_TAG_TYPES,
     SHORT_TAG_TYPES,
     ShortScript,
+    VENDOR_WORDS,
     TagEvent,
     TagType,
     parse_scribble_payload,
@@ -35,7 +36,6 @@ from pipeline.tagging import parse_hold, tokenize_tags
 
 log = logging.getLogger(__name__)
 
-VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "workspace.refinitiv", "capital iq")
 
 # The spoken length a SHORT is written to: 140–160 words, which is 45–55
 # seconds at the short voice's pace. It was 180–210 for a 60–75 second short.
@@ -156,6 +156,15 @@ def vendor_name_hits(script: ShortScript) -> list[str]:
         "numbers_comment": script.numbers_comment,
         "conclusion": script.conclusion,
     }
+    # Every other field a shot draws: the cards bind these too, and only
+    # the five above used to be checked.
+    for name in ("cheap_or_trap", "turn_line", "verdict", "guidance",
+                 "expected", "reported", "payoff_row"):
+        if getattr(script, name, None):
+            surfaces[name] = str(getattr(script, name))
+    for name in ("mechanism", "consequences", "years"):
+        for i, text in enumerate(getattr(script, name, None) or []):
+            surfaces[f"{name}[{i}]"] = str(text)
     for i, h in enumerate(script.headlines):
         surfaces[f"headlines[{i}]"] = f"{h.text} {h.meaning}"
     for i, row in enumerate(script.numbers):

@@ -817,15 +817,22 @@ def _legible(series):
     """The same series, thinned so its SHAPE is what reads.
 
     Drawn, not resampled cleverly: every nth close, with the last one kept so
-    the line still ends where the move ended.
+    the line still ends where the move ended, and the highest and lowest
+    kept so the line reaches the figures its high and low marks print
+    (those are read off the full series, and every nth close lost one or
+    the other in about half of all 120-day charts).
     """
     closes = list(series.closes)
     if len(closes) <= CHART_MAX_POINTS:
         return series
     from dataclasses import replace
     step = len(closes) / CHART_MAX_POINTS
+    real = [i for i, c in enumerate(closes) if c is not None]
+    extremes = ({max(real, key=lambda i: closes[i]),
+                 min(real, key=lambda i: closes[i])} if real else set())
     idx = sorted({min(int(i * step), len(closes) - 1)
-                  for i in range(CHART_MAX_POINTS)} | {len(closes) - 1})
+                  for i in range(CHART_MAX_POINTS)}
+                 | {len(closes) - 1} | extremes)
     return replace(series, closes=[closes[i] for i in idx],
                    dates=[series.dates[i] for i in idx])
 
