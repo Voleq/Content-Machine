@@ -160,3 +160,33 @@ def test_the_shipped_sec_placeholder_is_warned_about(settings, agent, warned):
                                        "sec_user_agent": agent})
     said = any("SEC_USER_AGENT" in w for w in live.deployment_warnings())
     assert said is warned
+
+
+def test_a_new_video_card_survives_the_prune(settings):
+    """Past 200 videos the alphabetically first keys used to go, so a new
+    AAA card was dropped by the call that stored it."""
+    from bot import commands as cmds
+    from bot.handlers import BotCore
+
+    board = cmds.CardBoard(BotCore(settings))
+    for i in range(200):
+        board.remember(f"Z{i:03d}@2026-10-01", 1, i)
+    board.remember("AAA@2026-10-16", 1, 999)
+    assert board.cards("AAA@2026-10-16") == [(1, 999)]
+    assert board.cards("Z000@2026-10-01") == []          # the oldest went
+    # A video shown again counts as recent.
+    board.remember("Z001@2026-10-01", 1, 1000)
+    board.remember("BBB@2026-10-16", 1, 1001)
+    assert board.cards("Z001@2026-10-01") == [(1, 1000)]
+    assert board.cards("Z002@2026-10-01") == []
+
+
+def test_cost_says_when_a_lane_passes_the_weekly_mark(settings):
+    from bot.handlers import BotCore
+
+    core = BotCore(settings.model_copy(update={"weekly_spend_warn_usd": 5.0}))
+    assert "weekly mark" not in core.cost_text()
+    core.ledger.record_tts(6.0, lane="long", ticker="XYZ")
+    text = core.cost_text()
+    assert "on the long lane, past the $5.00 weekly mark" in text
+    assert "short lane" not in text

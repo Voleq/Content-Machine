@@ -62,10 +62,6 @@ class Call:
     say: Say | None = None
     filled: str = ""       # "TICKER YYYY-MM-DD" when the active video stood in
 
-    async def tell(self, text: str) -> None:
-        if self.say is not None:
-            await self.say(Reply(text))
-
 
 @dataclass(frozen=True)
 class Family:
@@ -750,9 +746,9 @@ COMMANDS: tuple[Command, ...] = (
             aliases=("headline",), example="{T} beats on margins", doc=(
                 "A SHORT about one specific headline. `/new headline macro "
                 "<text>` for an index/macro take. Mode is detected (company "
-                "/ earnings / macro) and can be forced with a leading `a:`, "
-                "`b:` or `c:`. The mode sets the lane and picks the shot "
-                "template."),
+                "/ earnings / macro) and can be forced with a leading "
+                "`[company]`, `[earnings]` or `[macro]` (or `[a]`/`[b]`/`[c]`). "
+                "The mode sets the lane and picks the shot template."),
             ack="⏳ reading the headline…"),
     # /script
     Command("script", "", "", "the stored script, numbered", c_script, doc=(
@@ -1466,11 +1462,13 @@ class CardBoard:
 
     def remember(self, key: str, chat_id: int, message_id: int) -> None:
         data = self._load()
-        rows = [r for r in data.get(key, []) if r[0] != chat_id]
+        rows = [r for r in data.pop(key, []) if r[0] != chat_id]
         rows.append([chat_id, message_id])
-        data[key] = rows[-self.KEEP_PER_VIDEO:]
+        data[key] = rows[-self.KEEP_PER_VIDEO:]     # newest last
         if len(data) > 200:                # old videos stop being edited
-            for old in sorted(data)[:len(data) - 200]:
+            # The least recently shown go, not the alphabetically first:
+            # sorting the keys dropped a new AAPL card the moment it was kept.
+            for old in list(data)[:len(data) - 200]:
                 data.pop(old, None)
         _write(self.path, json.dumps(data))
 

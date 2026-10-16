@@ -243,8 +243,8 @@ class Settings(BaseSettings):
     # A SOFT WEEKLY CEILING, PER LANE (12). The monthly cap is a hard stop
     # that reports the problem once the month is already spent; a busy first
     # week can eat it and the only notice is a refusal in week three. This
-    # warns instead — on the approval card, while there is still time to
-    # change the plan. Zero switches it off.
+    # warns instead — on /cost, per lane, for the calendar week from Monday,
+    # while there is still time to change the plan. Zero switches it off.
     weekly_spend_warn_usd: float = Field(default=15.0,
                                          alias="WEEKLY_SPEND_WARN")
 
@@ -410,7 +410,8 @@ class Settings(BaseSettings):
     # Inside the cooldown, a repeat needs to be this much bigger to speak.
     alert_escalation_factor: float = Field(default=1.75, alias="ALERT_ESCALATION_FACTOR")
     alert_max_per_poll: int = Field(default=4, alias="ALERT_MAX_PER_POLL")
-    # The hours alerts ARE allowed, local time (may cross midnight).
+    # The hours alerts ARE allowed, in `screen_timezone` rather than the
+    # box's clock (may cross midnight).
     alert_start_hour: int = Field(default=9, alias="ALERT_START_HOUR")
     alert_end_hour: int = Field(default=17, alias="ALERT_END_HOUR")
     alert_weekends: bool = Field(default=False, alias="ALERT_WEEKENDS")
@@ -542,10 +543,9 @@ class Settings(BaseSettings):
     # the frames, not the manifest, because a filter graph that "has the right
     # arguments" is exactly what produced a 12.5-second still.
     #
-    # Defaulted from the format's own spec rather than picked: timeline's
-    # SHORT_DATA_HOLD_S tops out at 8s, so a composition holding longer than
-    # the longest legitimate DATA hold is not being read, it is being waited
-    # out — in a format whose spec is fast cuts.
+    # Eight seconds is the longest a data card is meant to be read for, so a
+    # composition holding longer than that is not being read, it is being
+    # waited out — in a format whose spec is fast cuts.
     short_max_hold_s: float = 8.0
     # host on each side of a chapter boundary, so chapters bookend on his face
     long_chapter_host_s: float = 2.5
@@ -1132,12 +1132,11 @@ _SETTING_EXAMPLES: dict[str, str] = {
     "MOCK_TTS": "MOCK_TTS=true       (true | false; unset follows MOCK_MODE)",
     "MOCK_PRICES": "MOCK_PRICES=false   (true | false; unset follows MOCK_MODE)",
     "MOCK_SCREENER": "MOCK_SCREENER=false (true | false; unset follows MOCK_MODE)",
-    "DELIVERY_BACKEND": "DELIVERY_BACKEND=gdrive   (gdrive | s3 | telegram | local)",
+    "DELIVERY_BACKEND": "DELIVERY_BACKEND=telegram   (gdrive | s3 | telegram | local)",
     "MONTHLY_SPEND_CAP": "MONTHLY_SPEND_CAP=50.0",
     "WEEKLY_SPEND_WARN": "WEEKLY_SPEND_WARN=15.0  (0 disables the weekly warning)",
     "SHORT_MAX_CHARS": "SHORT_MAX_CHARS=1100",
     "LONG_MAX_CHARS": "LONG_MAX_CHARS=36000",
-    "OPERATOR_CHAT_ID": 'OPERATOR_CHAT_IDS=["123456789"]   (note the S)',
     # The SEC refuses a generic agent, so a placeholder here is worse than
     # nothing: it looks set and behaves as if it is not.
     "SEC_USER_AGENT": "SEC_USER_AGENT=Your Name your@email",

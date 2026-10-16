@@ -203,8 +203,9 @@ def telegram_send_kind(path: Path, settings: Settings) -> str:
         raise ValueError(
             f"{p.name} is {size / 1e6:.0f} MB — over the "
             f"{settings.telegram_upload_limit_mb} MB the cloud Bot API "
-            f"accepts. Use DELIVERY_BACKEND=gdrive, or a self-hosted Bot API "
-            f"server (TELEGRAM_API_BASE_URL).")
+            f"accepts. Watch it from the web panel (/admin panel); a "
+            f"self-hosted Bot API server (TELEGRAM_API_BASE_URL) lifts the "
+            f"limit.")
     suffix = p.suffix.lower()
     if suffix in (".mp4", ".mov", ".mkv", ".webm"):
         return "video"
@@ -1401,7 +1402,6 @@ class BotCore:
             (v_blocking if f.severity == "block" else v_warnings).append(f.render())
         ws.save_long(script, raw)
         ws.clear_awaiting_angle()  # a script is on file — past the angle stage
-        prompt_files: list = []
         plan = self.content.plan(script, company_data=data,
                                  overrides=ws.broll_overrides())
         filing_count = len({e.payload for e in script.events_of(TagType.SHOW_FILING)})
@@ -1418,7 +1418,6 @@ class BotCore:
             keyboard=approval_keyboard("long", ws.ticker, ws.workdate,
                                        report.script_sha, report.approvable, bool(plan)),
             photo=sheet,
-            files=prompt_files,
         )
 
     def _contact_sheet(self, ws: Workspace, plan) -> Path | None:
@@ -3158,6 +3157,10 @@ class BotCore:
             # the provenance record: the failure mode is nobody looking, so
             # the number that matters carries its own age.
             f"{self.ledger.reconciled_line()}\n"
+            # WEEKLY_SPEND_WARN, per lane: documented here and read only by
+            # `/admin cost explain`, all lanes together, until now.
+            + "".join(f"⚠️ {w}\n" for w in (self.ledger.weekly_warning(lane)
+                                            for lane in ("short", "long")) if w)
             + self._mock_status_line()
         )
 

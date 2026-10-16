@@ -747,7 +747,7 @@ and checks every name the bot registers against them in both directions.
 | `/new short TICKER` | Opens a SHORT (9:16, 45–55s), pulls a live quote for the move context, and asks for the refreshed workbook. `prompt_short.md` follows the upload. |
 | `/new long TICKER` | Opens a LONG (16:9 deep dive) **and starts reading the filings immediately** — the latest 10-K, the prior year's and the quarterly pair, in parallel with you refreshing the workbook. Two steps: Step 1 returns ranked angles (pick one with its button, or reply with a tweak), Step 2 is the writing prompt. |
 | `/new update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Gets the same filing brief, additionally **graded against what the last video claimed**. Refuses (and points at `/new long`) when no thesis is on file. |
-| `/new headline TICKER <text or URL>` | A SHORT about one specific headline. `/new headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `a:`, `b:` or `c:`. The mode sets the lane and picks the shot template. |
+| `/new headline TICKER <text or URL>` | A SHORT about one specific headline. `/new headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `[company]`, `[earnings]` or `[macro]` (or `[a]`/`[b]`/`[c]`). The mode sets the lane and picks the shot template. |
 
 ### /script — Reviewing and editing the script
 
