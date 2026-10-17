@@ -23,12 +23,23 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 
+# The install runs this suite in /opt/dennis, beside the operator's own .env
+# (DENNIS_3D=on, telegram delivery, his keys), and every script reads it: the
+# installer's fresh copy of .env.example turned three of these red. They are
+# about the defaults, so the scripts run with no .env at all, as the
+# `settings` fixture does in-process.
+_NO_DOTENV = ("import runpy, sys, config; "
+              "config.Settings.model_config['env_file'] = None; "
+              "del sys.argv[0]; "
+              "runpy.run_path(sys.argv[0], run_name='__main__')")
+
 
 def _run(script: str, *args: str, **env_extra: str) -> subprocess.CompletedProcess:
     env = {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT),
            "MOCK_MODE": "true"}
     env.update(env_extra)
-    return subprocess.run([sys.executable, str(SCRIPTS / script), *args],
+    return subprocess.run([sys.executable, "-c", _NO_DOTENV,
+                           str(SCRIPTS / script), *args],
                           capture_output=True, text=True, env=env, cwd=ROOT,
                           timeout=180)
 

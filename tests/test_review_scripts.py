@@ -7,25 +7,17 @@ throwaway tree. Nothing here touches the network or spends.
 from __future__ import annotations
 
 import importlib.util
-import os
 import shutil
 import stat
-import subprocess
 import sys
 import tarfile
 from pathlib import Path
 
+# Run without the box's own .env, as the preflight scripts' tests are.
+from tests.test_preflight_scripts import _run
+
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-
-
-def _run(script: str, *args: str, **env_extra: str) -> subprocess.CompletedProcess:
-    env = {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT),
-           "MOCK_MODE": "true"}
-    env.update(env_extra)
-    return subprocess.run([sys.executable, str(SCRIPTS / script), *args],
-                          capture_output=True, text=True, env=env, cwd=ROOT,
-                          timeout=180)
 
 
 def test_regenerating_placeholders_keeps_a_fetched_sound(tmp_path,
