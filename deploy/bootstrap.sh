@@ -493,12 +493,28 @@ command -v node >/dev/null 2>&1 || die \
 The design kit is JavaScript and is rendered to PNGs at ingest. Without node
 there is no artwork, and the renderer has nothing to load."
 
+# Ubuntu packages npm separately from nodejs, so its nodejs on its own lands
+# here, and a fresh Ubuntu 24.04 lands here every time: the apt step above put
+# in Node 18.19 and no npm. That used to stop the install with a message asking
+# for `apt-get install npm`, which is a step this script can take itself.
+#
+# --no-remove is what makes that safe. NodeSource's nodejs declares
+# `Conflicts: npm`, and on a box carrying it apt would otherwise solve this by
+# REMOVING node. That box has npm bundled and never reaches here, but if it
+# somehow does, apt refuses rather than uninstalling anything, and the message
+# below says what to do.
+if ! command -v npm >/dev/null 2>&1; then
+  info "npm missing (Ubuntu ships it apart from nodejs) - installing it"
+  apt-get install -y -q --no-remove npm || warn "apt-get could not install npm"
+fi
+
 command -v npm >/dev/null 2>&1 || die \
 "npm is missing, and the kit build runs 'npm ci'.
 
-Ubuntu packages npm separately from nodejs, so its nodejs on its own lands
-exactly here. NodeSource's bundles npm instead, which is why the apt step above
-asks for nodejs and leaves npm to this check:
+Ubuntu packages npm separately from nodejs, and installing it here failed;
+the apt output above says why. If it said packages would have to be removed,
+your nodejs is NodeSource's, which bundles npm: reinstall it and npm comes
+back with it. Otherwise:
 
     sudo apt-get install -y npm
 
