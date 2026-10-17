@@ -804,16 +804,6 @@ def _through_windows(start: float, end: float,
 
 
 # --------------------------------------------------------------------------
-# Motion layer.
-#
-# Every one of these takes a finished still and returns the frames that bring
-# it on. They are deliberately transforms rather than bespoke animations: the
-# artwork is already drawn, and the motion is how it ARRIVES. Nothing here
-# pans or zooms a held frame — the movement is entry only, and then it stops.
-# --------------------------------------------------------------------------
-
-
-# --------------------------------------------------------------------------
 # The drawn primitives.
 #
 # The kit is a pen on paper: every border in it is a stroke, not a geometric

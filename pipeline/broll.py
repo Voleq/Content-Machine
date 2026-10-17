@@ -552,7 +552,8 @@ def normalize_clip(src: Path, dest: Path, settings: Settings,
     return dest
 
 
-def normalize_image(src: Path, dest: Path, settings: Settings) -> Path:
+def normalize_image(src: Path, dest: Path, settings: Settings, *,
+                    keep_min: float = 0.72) -> Path:
     """Compose the image to FILL the LONG frame (§editing: media is the
     background). Real photos cover the frame edge-to-edge; logos and tall
     grabs are contained sharp over a blurred, brand-tinted cover of
@@ -566,7 +567,8 @@ def normalize_image(src: Path, dest: Path, settings: Settings) -> Path:
     # No drawn outline: the long plays every picture full screen (10-10), and
     # an outline baked into the cached file round a letterboxed photo is one
     # no later pass can take off.
-    frame = cover_fill_frame(src, W, H, ground=role(settings, "ground"),
+    frame = cover_fill_frame(src, W, H, keep_min=keep_min,
+                             ground=role(settings, "ground"),
                              line=role(settings, "structure"), border=False)
     dest.parent.mkdir(parents=True, exist_ok=True)
     frame.save(dest, format="PNG")
@@ -659,10 +661,18 @@ class ContentManager:
         button re-resolves with choice+1). `portrait` normalizes to 9:16
         for SHORT cutaways (cached separately).
         """
+        # The owned takes come first in the swap order and the provider takes
+        # after them, as `alternates_count` counts them. Clamping `choice` to
+        # the last owned clip used to answer every later take with that same
+        # clip, so "take 3/6" on a key with one owned clip never reached
+        # Pexels at all.
+        owned = len(self._library_candidates(key))
         try:
-            local = self._from_library(key, choice, portrait)
-            if local:
-                return local
+            if choice < owned:
+                local = self._from_library(key, choice, portrait)
+                if local:
+                    return local
+            choice = max(choice - owned, 0)
             cached = self._clip_from_cache(key, choice, portrait)
             if cached:
                 return cached
@@ -802,8 +812,17 @@ class ContentManager:
             if not norm.exists():
                 continue
             attribution, loops, provider = "", False, ""
-            if meta.exists():
+            try:
                 m = json.loads(meta.read_text(encoding="utf-8"))
+            except FileNotFoundError:
+                m = {}
+            except (OSError, ValueError) as e:
+                # A meta file cut short by a kill mid-write used to abort
+                # every later render of this key; the clip itself is whole
+                # (it is written before its meta), only the credit is lost.
+                log.warning("clip cache meta %s unreadable (%s)", meta, e)
+                m = {}
+            if isinstance(m, dict):
                 attribution = m.get("attribution", "")
                 provider = m.get("provider", "")
                 # A gif that loops has to keep looping out of the cache, or
@@ -857,8 +876,8 @@ class ContentManager:
         Whatever comes back goes through `normalize_clip`, so it arrives in
         the same shape Pexels footage does: a short mp4 at the project's
         resolution and fps, audio stripped, capped in length. The renderer
-        does not need to know which chain produced it and plays it inside the
-        same frames/ plate either way.
+        does not need to know which chain produced it and plays it full
+        screen either way.
 
         WORTH DECIDING DELIBERATELY, and not a legal opinion: Giphy and Tenor
         content is user-uploaded and frequently copyrighted — sports
@@ -1168,9 +1187,13 @@ class ContentManager:
         if images:
             src = images[0]
             stamp = hashlib.sha256(src.read_bytes()).hexdigest()[:20]
-            norm = self.settings.cache_dir / "custom" / f"grab_{slug}_{stamp}.png"
+            # Shown whole: a screenshot is mostly text, and a cover-crop to
+            # 16:9 cut through it. Composed once here for the frame, so the
+            # render uses it as it is.
+            norm = (self.settings.cache_dir / "custom"
+                    / f"grab_{slug}_{stamp}_whole.png")
             if not norm.exists():
-                normalize_image(src, norm, self.settings)
+                normalize_image(src, norm, self.settings, keep_min=1.01)
             return Visual(key=slug, kind="screengrab", path=norm, is_video=False,
                           source="local", attribution="")
         log.warning("screengrab %r missing at render time — filler", slug)
@@ -1287,15 +1310,11 @@ class ContentManager:
         swap can reach and a sixth tap would land on the fifth clip anyway.
         Where a key has already been fetched more widely than that, the
         cached takes win — those are known to exist.
-
-        A key with no provider chain at all (every client removed) counts
-        only what is owned, which is the honest answer there.
         """
         n = len(self._library_candidates(key))
-        reachable = len(self._cached_provider_takes(key))
-        if self.clip_client is not None or self.gif_clients:
-            reachable = max(reachable, self.SWAP_PROVIDER_TAKES)
-        return max(n + reachable, 1)
+        reachable = max(len(self._cached_provider_takes(key)),
+                        self.SWAP_PROVIDER_TAKES)
+        return n + reachable
 
     def _cached_provider_takes(self, key: str) -> list[Path]:
         """Provider takes already fetched for this key, from the clip cache.

@@ -1354,6 +1354,8 @@ def voice_lint(narration: str) -> list[Finding]:
 # it exactly as the lowercase spelling does, and an uppercase tag cannot reach
 # this text at all.
 _SPOKEN_TAG_RE = re.compile(r"\[([A-Za-z][A-Za-z ]{1,30})\]")
+# The opening of a tag with a payload the tokenizer left behind.
+_LEFTOVER_TAG_RE = re.compile(r"\[[A-Z][A-Z -]*:")
 
 # A shouted word used for emphasis. v3 reads capitalisation as emphasis, which
 # makes it live formatting rather than typography — but the captions use the
@@ -1428,6 +1430,20 @@ def direction_lint(script) -> list[Finding]:
                              f"{reason}. Written in lowercase it is not a tag "
                              f"at all: it would be read out and captioned"),
                     excerpt=line.strip()[:140]))
+
+    # 1a. A tag the tokenizer could not read ("[PLATE: …" never closed, or
+    #     broken by a blank line) is still in the text: the voice would read
+    #     its slot syntax out and the captions would print it.
+    for lineno, line in enumerate(narration.splitlines(), 1):
+        m = _LEFTOVER_TAG_RE.search(line)
+        if m:
+            findings.append(Finding(
+                gate="direction", severity="block", line=lineno,
+                message=(f"“{m.group(0)}…” is still in the spoken text — the "
+                         f"tag is not closed on its own lines, so it would "
+                         f"be read out and captioned. Close it with ] before "
+                         f"any blank line"),
+                excerpt=line.strip()[:140]))
 
     # 1b. A shouted word. On v3 capitalisation is live formatting — the docs
     #     say it increases emphasis — so this is no longer only typography.
@@ -2423,7 +2439,8 @@ def kit_doctor(script, settings: Settings, *,
     """
     from pipeline.models import TagType
     from pipeline.plate_tags import check_bound
-    from pipeline.plates import PlateError, load_plates, load_variant_ledger
+    from pipeline.plates import PlateError, load_plates
+    from pipeline.reach import plates_by_render
 
     findings: list[Finding] = []
     try:
@@ -2465,13 +2482,14 @@ def kit_doctor(script, settings: Settings, *,
             unfilled.append(w)
             findings.append(Finding(gate="kit", severity="warn", message=w))
 
-    ledger = load_variant_ledger(settings)
+    # What the renders on disk put on screen, off their manifests.
+    rendered = plates_by_render(settings)
     # By the drawing: a render at dusk reached `cards/definition-dusk-16x9`,
     # which is `cards/definition-16x9` drawn at another hour and not a
     # different plate.
-    ever_used = reg.base_keys(used | ledger.all_used())
+    ever_used = reg.base_keys(used.union(*rendered))
     never_used = [k for k in reg.keys() if k not in ever_used]
-    renders_seen = len(ledger.recent("render"))
+    renders_seen = len(rendered)
 
     # WHAT NOTHING CAN REACH, which is a different question from what nothing
     # HAS reached: an empty ledger makes the list above the whole library,
@@ -2582,9 +2600,8 @@ def kit_doctor_text(settings: Settings, script=None) -> str:
     lines.append(f"Never reached in a recent render ({len(never)} of "
                  f"{stats['kit_size']}):")
     if not seen:
-        lines.append("  (the render ledger is empty — nothing has been "
-                     "recorded yet, so this list is the whole library rather "
-                     "than a gap)")
+        lines.append("  (no render on disk recorded its plates yet, so this "
+                     "list is the whole library rather than a gap)")
     if never:
         by_family: dict[str, int] = {}
         for key in never:

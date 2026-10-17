@@ -257,10 +257,18 @@ def budget(plate: Plate, slot: Slot, value: str = "") -> dict:
 
 
 def _positive(value: str) -> bool:
-    """Whether a written figure reads as a rise. Unparseable is not a rise."""
+    """Whether a written figure reads as a rise. Unparseable is not a rise.
+
+    A fall can be written with the true minus (U+2212), an en dash or in
+    accountant's parentheses, as the rest of the pipeline accepts; each of
+    those used to have its sign stripped here and drew in the rise ink.
+    """
     text = str(value or "").strip()
     if not text:
         return False
+    text = text.replace("−", "-").replace("–", "-")
+    if text.startswith("(") and text.rstrip("%").endswith(")"):
+        text = "-" + text
     cleaned = "".join(c for c in text if c.isdigit() or c in ".-+")
     try:
         return float(cleaned) > 0

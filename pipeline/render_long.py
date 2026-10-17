@@ -1363,6 +1363,12 @@ def _render_long(
         """
         dest = rdir / f"full_{seg_i}.png"
         try:
+            # Already composed for this frame (a normalised grab or photo):
+            # as it is. Composing it again took an exact 16:9 file for "not
+            # quite the frame's shape" and shrank it inside a blurred margin.
+            with Image.open(media_path) as probe:
+                if probe.size == (W, H):
+                    return media_path
             cover_fill_frame(media_path, W, H, keep_min=1.01 if document else 0.72,
                              ground=role(settings, "ground"),
                              line=role(settings, "structure"),
@@ -3006,16 +3012,38 @@ def _render_long(
             is_video=True, hold=True, name=f"scribble_{k}",
         ))
 
+    # THE TWO LINES THAT RUN THE WHOLE VIDEO, the corner bug and the
+    # disclaimer, are set for the paper most of it is: the kit's ink with a
+    # halo of the kit's paper, which vanishes on a plate and holds the line
+    # off a photograph. They took the episode hour's inks, and the hour is
+    # night, whose `structure` is the pale ink of the night wall: on every
+    # paper plate the "as of" date was 1.3:1. On his beats, in the room, the
+    # same line goes over them in the night ink with a dark rim.
+    from pipeline.rasters import caption_colours
+
+    paper_ink, paper = caption_colours(settings)
+    rim = px(3)
+
+    def standing(text: str, size: int, name: str, at) -> None:
+        on_paper = simple_text(settings, text, font_size=size,
+                               fill=(*paper_ink, 235), stroke_width=rim,
+                               stroke_fill=(*paper, 200))
+        in_room = simple_text(settings, text, font_size=size,
+                              fill=(*role(settings, "structure"), 255),
+                              stroke_width=rim, stroke_fill=DISCLAIMER_RIM)
+        x, y = at(on_paper)
+        on_paper.save(rdir / f"{name}.png")
+        in_room.save(rdir / f"{name}_rim.png")
+        layers.append(OverlayLayer(path=rdir / f"{name}.png", x=x, y=y,
+                                   t_start=0.0, t_end=duration, name=name))
+        for a, b in _on_him(segments, covers, min_s=0.0):
+            layers.append(OverlayLayer(path=rdir / f"{name}_rim.png", x=x, y=y,
+                                       t_start=a, t_end=b, name=f"{name}_rim"))
+
     # corner bug: ticker + as-of date (top-right; the as-of stays visible)
     bug_text = script.ticker + (f" · as of {as_of}" if as_of else "")
-    bug = simple_text(settings, bug_text, font_size=px(34),
-                      fill=(*role(settings, "structure"), 220), stroke_width=0)
-    bug_path = rdir / "corner_bug.png"
-    bug.save(bug_path)
-    layers.append(OverlayLayer(
-        path=bug_path, x=W - bug.width - px(36), y=px(30),
-        t_start=0.0, t_end=duration, name="corner_bug",
-    ))
+    standing(bug_text, px(34), "corner_bug",
+             lambda img: (W - img.width - px(36) + rim, px(30) - rim))
 
     # THE LOWER THIRD: design's strip, the ticker and the channel's line in
     # its slots, TOP-left where the plain-type strip used to run. It is a
@@ -3064,29 +3092,11 @@ def _render_long(
             t_start=0.0, t_end=duration, name="lower_third",
         ))
 
-    disc = simple_text(settings, settings.disclaimer_text, font_size=px(26),
-                       fill=(*role(settings, "neutral-data"), 235),
-                       stroke_width=0)
-    disc_path = rdir / "disclaimer.png"
-    disc.save(disc_path)
-    layers.append(OverlayLayer(
-        path=disc_path, x=px(36), y=H - px(44),
-        t_start=0.0, t_end=duration, name="disclaimer",
-    ))
-    # Over the room it runs across the lit window frame and the radiator, and
-    # light grey on a light strip lost its "Not": "Opinion / entertainment.
-    # financial advice." On his beats the same line goes over it with a dark
-    # rim, which the paper never sees.
-    rim = px(3)
-    disc_rim = simple_text(settings, settings.disclaimer_text, font_size=px(26),
-                           fill=(*role(settings, "neutral-data"), 235),
-                           stroke_width=rim, stroke_fill=DISCLAIMER_RIM)
-    disc_rim_path = rdir / "disclaimer_rim.png"
-    disc_rim.save(disc_rim_path)
-    for a, b in _on_him(segments, covers, min_s=0.0):
-        layers.append(OverlayLayer(
-            path=disc_rim_path, x=px(36) - rim, y=H - px(44) - rim,
-            t_start=a, t_end=b, name="disclaimer_rim"))
+    # Over the room the disclaimer runs across the lit window frame and the
+    # radiator, and light grey on a light strip lost its "Not": "Opinion /
+    # entertainment. financial advice." Hence the rim on his beats.
+    standing(settings.disclaimer_text, px(26), "disclaimer",
+             lambda img: (px(36) - rim, H - px(44) - rim))
 
     # ---------------------------------------------------------- captions
     # NONE ARE BURNED IN. A long viewer has the sound on, and the bot already

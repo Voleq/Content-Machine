@@ -413,25 +413,35 @@ class MemeManager:
             if norm.exists():
                 attribution = ""
                 source = "cache"
-                if meta.exists():
-                    m = json.loads(meta.read_text(encoding="utf-8"))
-                    attribution = m.get("attribution", "")
+                try:
+                    attribution = json.loads(meta.read_text(
+                        encoding="utf-8")).get("attribution", "")
+                except FileNotFoundError:
+                    pass
+                except (OSError, ValueError, AttributeError) as e:
+                    # A meta cut short mid-write loses the credit, not the
+                    # meme: it used to send a cached meme to the filler card.
+                    log.warning("meme cache meta %s unreadable (%s)", meta, e)
                 return MemeAsset(key=key, path=norm, source=source,
                                  attribution=attribution)
 
             query = key.replace("-", " ").replace("_", " ")
             for provider in self.providers:
+                # The whole fetch is the provider's turn, not just the search:
+                # a Giphy hit whose download 404'd used to drop the meme to
+                # the filler card with Tenor never asked, which
+                # `broll._fetch_gif_clip` already guards against for clips.
                 try:
                     url = provider.search(query)
-                except (httpx.HTTPError, OSError) as e:
+                    if not url:
+                        continue
+                    raw = cdir / "raw.bin"
+                    provider.download(url, raw)
+                    normalize_meme(raw, norm)
+                    raw.unlink(missing_ok=True)
+                except (httpx.HTTPError, OSError, ValueError) as e:
                     log.warning("meme provider %s failed (%s)", provider.name, e)
                     continue
-                if not url:
-                    continue
-                raw = cdir / "raw.bin"
-                provider.download(url, raw)
-                normalize_meme(raw, norm)
-                raw.unlink(missing_ok=True)
                 attribution = f"meme via {provider.name} ({url})"
                 cdir.mkdir(parents=True, exist_ok=True)
                 meta.write_text(json.dumps({
