@@ -118,12 +118,15 @@ def _sfx(settings, report: Report) -> None:
 
 
 def _sec_agent(settings, report: Report, live: bool) -> None:
+    from config import SEC_AGENT_PLACEHOLDERS
+
     agent = settings.sec_user_agent.strip()
-    if agent == "Your Name your@email" or (agent and "@" not in agent):
+    if agent in SEC_AGENT_PLACEHOLDERS or (agent and "@" not in agent):
         # `.env.example`'s own text passed as set; SEC wants a real contact
         # and refuses requests that do not carry one
         report.add(FAIL if live else SKIP, "SEC_USER_AGENT",
-                   f"{agent!r} is not a contact — your name and email address")
+                   f"{agent!r} is not a contact — a name and a contact "
+                   f"address (a channel or role mailbox, not a personal one)")
     elif settings.sec_user_agent.strip():
         report.add(PASS, "SEC_USER_AGENT", settings.sec_user_agent.strip())
     elif live:

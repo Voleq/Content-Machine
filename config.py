@@ -70,6 +70,14 @@ ELEVEN_USD_PER_1K_CHARS: dict[str, float] = {
 }
 
 
+# What SEC_USER_AGENT should look like: a name and a contact address. Every
+# SEC request carries it, so a channel or role mailbox, never a personal one.
+SEC_AGENT_EXAMPLE = "YourChannel contact@your-channel-domain.com"
+# Placeholders that read as set and are no contact (the first is what
+# `.env.example` used to ship).
+SEC_AGENT_PLACEHOLDERS = ("Your Name your@email", SEC_AGENT_EXAMPLE)
+
+
 class UnknownModelPriceError(RuntimeError):
     """No list price for the selected model, and no override to stand in.
 
@@ -292,7 +300,7 @@ class Settings(BaseSettings):
     # All network is skipped in MOCK_MODE (fixtures, $0); a failed pull never
     # blocks a render. SEC requires a declared User-Agent for live pulls.
     filings_enabled: bool = Field(default=True, alias="FILINGS_ENABLED")  # per-run kill switch
-    sec_user_agent: str = Field(default="", alias="SEC_USER_AGENT")  # "Name email" — REQUIRED live
+    sec_user_agent: str = Field(default="", alias="SEC_USER_AGENT")  # "Name contact@" — REQUIRED live
     sec_base_url: str = "https://www.sec.gov"
     sec_data_base_url: str = "https://data.sec.gov"
     sec_min_interval_s: float = 0.11        # SEC fair-access: keep well under 10 req/s
@@ -641,7 +649,7 @@ class Settings(BaseSettings):
     # `keyboard_clack`, `paper_rustle` and `ding` remain the quieter options.
     chapter_cue_sfx: str = Field(default="impact", alias="CHAPTER_CUE_SFX")
 
-    # The loop under a SHORT: one of the owned score's `bed-*.wav`, dipped
+    # The loop under a SHORT: one of the owned score's `bed-*.m4a`, dipped
     # under the voice whenever he speaks (`pipeline/sound.py`). Nothing plays
     # until `scripts/make_score.py` has made the loops. The long never gets
     # one under its voice; its music is the theme, as intro and outro.
@@ -913,7 +921,7 @@ class Settings(BaseSettings):
         agent = self.sec_user_agent.strip()
         # `.env.example`'s own placeholder is no contact either, and SEC
         # refuses it the same way (`scripts/check_preflight.py` agrees).
-        if not self.mock_mode and (not agent or agent == "Your Name your@email"
+        if not self.mock_mode and (not agent or agent in SEC_AGENT_PLACEHOLDERS
                                    or "@" not in agent):
             # The SEC requires a real name and email in the User-Agent and
             # rate-limits or 403s generic ones. Every caller falls back to a
@@ -923,11 +931,12 @@ class Settings(BaseSettings):
             # raising. So three features go missing and nothing says why.
             out.append(
                 "SEC_USER_AGENT is empty or a placeholder — SEC EDGAR "
-                "requires a real name "
-                "and email and rate-limits or 403s generic agents. The "
-                "filing brief, the 8-K news source and [SHOW FILING] "
-                "screenshots will degrade to nothing, quietly and by "
-                "design. Set SEC_USER_AGENT='Your Name your@email'.")
+                "requires a name and a contact address and rate-limits or "
+                "403s generic agents. The filing brief, the 8-K news source "
+                "and [SHOW FILING] screenshots will degrade to nothing, "
+                "quietly and by design. Every SEC request carries it, so use "
+                "a channel or role mailbox rather than a personal address: "
+                f"SEC_USER_AGENT='{SEC_AGENT_EXAMPLE}'.")
         if self.broll_library_size() == 0:
             # THE OWNED LIBRARY IS THE FIRST LINK IN THE VISUAL CHAIN, and
             # the whole of H3's mitigation. Design: owned library → stock
@@ -1139,7 +1148,7 @@ _SETTING_EXAMPLES: dict[str, str] = {
     "LONG_MAX_CHARS": "LONG_MAX_CHARS=36000",
     # The SEC refuses a generic agent, so a placeholder here is worse than
     # nothing: it looks set and behaves as if it is not.
-    "SEC_USER_AGENT": "SEC_USER_AGENT=Your Name your@email",
+    "SEC_USER_AGENT": f"SEC_USER_AGENT={SEC_AGENT_EXAMPLE}",
 }
 
 

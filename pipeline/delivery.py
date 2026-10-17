@@ -93,10 +93,14 @@ def deliver(
             result = DeliveryResult(backend="telegram", link="(sent in chat)", send_file=artifact)
         else:
             result = _local_deliver(artifact, ticker, workdate, settings, extra_files)
-    except DeliveryError as e:
+    except Exception as e:  # noqa: BLE001 - the render is already paid for
         # The render is finished and paid for; a backend that cannot take it
-        # used to fail the whole job after it. Keep it here and say why.
-        log.warning("%s delivery failed (%s) — kept on the render box", backend, e)
+        # used to fail the whole job after it. Keep it here and say why. Not
+        # only DeliveryError: Drive and S3 fail with httpx, google-auth and
+        # botocore errors and a missing credentials file, and each of those
+        # used to escape and fail the job.
+        log.warning("%s delivery failed (%s: %s) — kept on the render box",
+                    backend, type(e).__name__, e)
         result = _local_deliver(artifact, ticker, workdate, settings, extra_files)
         result.note = (f"⚠️ {backend} delivery failed: {e}\n"
                        f"The video is on the render box: {result.link}")

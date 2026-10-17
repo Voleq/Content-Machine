@@ -1344,6 +1344,9 @@ async def handle_callback(core: BotCore, chat_id: int, data: str,
         lane = CODE_LANES.get(parts[1])
         if not lane:
             return Reply("Unknown lane on that button.")
+        if lane == "update":
+            return await asyncio.to_thread(core.start_lane, chat_id, "long",
+                                           parts[2], update=True)
         return await asyncio.to_thread(core.start_lane, chat_id, lane, parts[2])
     if op == "e" and n == 3:
         core.context.set(chat_id, parts[1], parts[2])

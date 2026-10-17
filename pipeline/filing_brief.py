@@ -278,6 +278,13 @@ def find_sentence(section: str, quote: str) -> str | None:
         s0 = before[-1] if before else 0
         after = _SENTENCE_END.search(text, end)
         s1 = after.end() if after else len(text)
+        # A line break ends a sentence too: the packed text opens each
+        # section on its "## Title" line, and the first sentence came back
+        # with the heading glued on, shown to the writer as the filing's.
+        s0 = max(s0, text.rfind("\n", 0, start) + 1)
+        nl = text.find("\n", end)
+        if nl != -1:
+            s1 = min(s1, nl)
         whole = text[s0:s1].strip()
         if len(whole) > _MAX_SENTENCE_CHARS:
             whole = text[start:end].strip()

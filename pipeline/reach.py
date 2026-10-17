@@ -37,8 +37,9 @@ def _events(script) -> list:
 def _is_beat_family(family: str) -> bool:
     """True for a family whose plates carry a figure as their whole point.
 
-    Read off the registry's own families rather than a list of folder names, so
-    a kit that adds one counts it the day it lands.
+    A fixed list of the kit's folder names: a kit that adds a data family
+    has to be added here too, or its plates do not count as data plates on
+    the approval line.
     """
     return family in ("figures", "tables", "charts", "cycles", "peers")
 

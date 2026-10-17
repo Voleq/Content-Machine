@@ -29,7 +29,9 @@ _WEIGHTS = {
     "meme": 3.0,
     "filing": 2.5,
     "chart": 2.0,
-    "asset": 2.0,
+    # A kit plate: the LONG's main visual cue. Keyed "asset", which no cue
+    # kind is, it fell to the default with everything unlisted.
+    "plate": 2.0,
     "clip": 1.5,
     "img": 1.5,
     "sound": 1.0,

@@ -316,6 +316,9 @@ class YouTubeClient:
                                  body)
                 time.sleep(min(2 ** attempts, 30))
                 continue
+            # The retries are per chunk: counted across the whole upload, a
+            # multi-GB file aborted on its third hiccup an hour apart.
+            attempts = 0
             if status:
                 log.info("youtube upload %d%%", int(status.progress() * 100))
                 if session is not None:
@@ -931,7 +934,7 @@ def pin_correction(ticker: str, text: str, settings: Settings, *,
                    now: datetime | None = None) -> str:
     """Correct a figure on a video that has already shipped.
 
-    Twelve gates stop a wrong number before it goes out. None of them covers
+    The gates stop a wrong number before it goes out. None of them covers
     the figure that was right on Tuesday and restated on Friday, and a finance
     channel lives or dies on what it does next. So: a comment on the video, a
     line appended to the description, and a row on the record — because a
@@ -969,8 +972,11 @@ def pin_correction(ticker: str, text: str, settings: Settings, *,
     rows.append({"at": stamp, "text": text.strip()})
     record.corrections = rows
     log_.record(record)
-    return (f"Correction pinned on {record.title or record.video_id} "
-            f"({record.url()}).\n  {body}")
+    # Posted, not pinned: the API cannot pin a comment (the upload reply
+    # says the same), and this used to tell the operator it had.
+    return (f"Correction posted on {record.title or record.video_id} "
+            f"({record.url()}) as a comment and in the description — pin "
+            f"the comment in YouTube Studio; the API cannot pin.\n  {body}")
 
 
 def corrections_text(settings: Settings) -> str:

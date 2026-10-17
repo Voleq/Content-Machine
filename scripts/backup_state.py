@@ -7,7 +7,7 @@
     this month, and therefore the only thing enforcing `MONTHLY_SPEND_CAP`.
     Lose it and the cap resets to zero silently, which is the one failure in
     this system that costs money rather than time.
-  * `thesis.json` / `confessions.json` / `idea_queue.json` — the standing
+  * `theses.json` / `confessions.json` / `idea_queue.json` — the standing
     state `/update` grades against and the confession ledger the voice gate
     reads. Lose it and every ticker becomes a first-time take.
   * `published.json` — what has gone to YouTube, so `/upload` does not
@@ -16,6 +16,8 @@
     re-enqueue.
   * `last_digest.json`, `alerts.json`, `earnings_calendar.json` — the
     scheduler's memory of what it has already sent.
+  * `youtube.json` — the channel's refresh token, which is why the archive
+    is written readable by its owner only.
 
 None of it is large and none of it is reconstructible.
 
@@ -97,8 +99,15 @@ def main(argv: list[str] | None = None) -> int:
     dest = out / f"state-{stamp}.tar.gz"
     try:
         out.mkdir(parents=True, exist_ok=True)
+        # Owner-only before a byte is written: the archive holds the channel's
+        # refresh token (state/youtube.json is 0600), and the umask left it
+        # readable by every user on the box.
+        dest.touch(mode=0o600, exist_ok=False)
+        dest.chmod(0o600)
         with tarfile.open(dest, "w:gz") as tar:
-            tar.add(state, arcname="state")
+            # Under the directory's own name, so the restore line below puts
+            # it back where it came from whatever STATE_DIR is called.
+            tar.add(state, arcname=state.name)
     except OSError as e:
         print(f"Could not write {dest}: {e}", file=sys.stderr)
         return 1

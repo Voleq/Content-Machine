@@ -168,32 +168,48 @@ def latest_8k(ticker: str, settings: Settings) -> dict:
     f = filings[0]
     payload = {"status": "ok", **f.to_json(), "exhibit_url": "", "exhibit_text": ""}
     exhibit = _find_exhibit(f, settings)
+    if exhibit is _EXHIBIT_UNREAD:
+        # Not cached: the SEC failing to answer is not "this 8-K has no
+        # press release", and stored, a retry a minute later was served the
+        # empty exhibit for the whole TTL.
+        return payload
     if exhibit:
         payload["exhibit_url"] = exhibit["url"]
         payload["exhibit_text"] = exhibit["text"][:20000]
     return store(settings, "8k", key, payload)
 
 
+# `_find_exhibit` when the SEC did not answer, as against an 8-K that has no
+# EX-99.1 at all (None).
+_EXHIBIT_UNREAD: dict = {}
+
+
 def _find_exhibit(filing: Filing, settings: Settings) -> dict | None:
-    """The EX-99.1 press release inside an 8-K's filing index."""
+    """The EX-99.1 press release inside an 8-K's filing index.
+
+    None when the filing has none; `_EXHIBIT_UNREAD` when the index or the
+    exhibit could not be read, which the caller must not cache.
+    """
     from pipeline.filings import _sec_get
 
     base = filing.url.rsplit("/", 1)[0]
     resp = _sec_get(f"{base}/index.json", settings)
     if resp is None:
-        return None
+        return _EXHIBIT_UNREAD
     try:
         items = resp.json()["directory"]["item"]
     except (KeyError, ValueError, TypeError):
-        return None
+        return _EXHIBIT_UNREAD
+    unread = False
     for item in items:
         name = str(item.get("name", "")).lower()
         if "ex99" in name.replace("-", "").replace("_", "") or "ex-99" in name:
             doc = _sec_get(f"{base}/{item['name']}", settings)
             if doc is None:
+                unread = True
                 continue
             return {"url": f"{base}/{item['name']}", "text": _strip_html(doc.text)}
-    return None
+    return _EXHIBIT_UNREAD if unread else None
 
 
 def _strip_html(html: str) -> str:
@@ -204,25 +220,14 @@ def _strip_html(html: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-# Form 4 transaction codes worth distinguishing. P is an open-market purchase
-# — the one that actually means something, since sales are mostly scheduled.
-_CODE_MEANING = {
-    "P": "open-market purchase",
-    "S": "open-market sale",
-    "A": "grant/award",
-    "M": "option exercise",
-    "F": "shares withheld for tax",
-    "D": "disposition to the issuer",
-}
-
-
 def insider_transactions(ticker: str, settings: Settings,
                          limit: int = 8) -> dict:
-    """Recent Form 4s. Pairs with the `insider-selling` kit asset.
+    """Recent Form 4 filings: when and how many, not what they were.
 
-    The read that matters is P versus everything else: routine grants,
-    exercises and tax withholding dominate the feed and mean very little,
-    while an open-market purchase is somebody spending their own money.
+    The transactions themselves are not parsed. The read that matters is an
+    open-market purchase (code P) against everything else — grants,
+    exercises and tax withholding dominate the feed and mean very little —
+    and that read is the operator's, from the filings this lists.
     """
     key = ticker.upper()
     hit = cached(settings, "form4", key)
@@ -301,8 +306,12 @@ def fred_series(name: str, settings: Settings, *, limit: int = 13) -> dict:
         resp.raise_for_status()
         rows = resp.json().get("observations", [])
     except Exception as e:  # noqa: BLE001 - degrade, never raise
-        log.warning("FRED %s failed: %s", series_id, e)
-        return {"status": UNAVAILABLE, "series": series_id, "reason": str(e)[:120]}
+        # Not str(e): httpx puts the request URL in it, and the URL carries
+        # FRED_API_KEY, which went to the log and into the payload.
+        status = getattr(getattr(e, "response", None), "status_code", None)
+        reason = f"{type(e).__name__}{f' {status}' if status else ''}"
+        log.warning("FRED %s failed: %s", series_id, reason)
+        return {"status": UNAVAILABLE, "series": series_id, "reason": reason}
 
     obs = [{"date": r.get("date"), "value": _fnum(r.get("value"))}
            for r in reversed(rows) if _fnum(r.get("value")) is not None]

@@ -35,7 +35,7 @@ Until this script has run, the block is what an operator sees.
 
 The room bed is ON by default (`--room-tone` is `store_true, default=True`),
 so passing it explicitly changes nothing. It is also not the whole job: the
-audio gate is PER FILE, so fixing room tone alone leaves the other fourteen
+audio gate is PER FILE, so fixing room tone alone leaves every other file
 blocking. This script exits non-zero until every audio file in the target
 directory carries provenance.
 
@@ -184,10 +184,12 @@ def search_many(query: str, token: str, *, max_s: float, min_s: float = 0.1,
             "filter": flt,
             "fields": "id,name,username,license,previews,duration",
             "page_size": 30,
-            "token": token,
         }
         try:
-            r = httpx.get(f"{API}/search/text/", params=params, timeout=30)
+            # In a header, not a `token=` parameter: httpx's error text
+            # carries the URL, and it was printed with the key in it.
+            r = httpx.get(f"{API}/search/text/", params=params, timeout=30,
+                          headers={"Authorization": f"Token {token}"})
             r.raise_for_status()
             results = (r.json() or {}).get("results") or []
         except Exception as exc:  # noqa: BLE001 — one failed key is not fatal
@@ -199,7 +201,10 @@ def search_many(query: str, token: str, *, max_s: float, min_s: float = 0.1,
         if hits:
             return hits[:n]
     if len(failures) == 2:
-        print(f"  search failed: {failures[-1]}", file=sys.stderr)
+        exc = failures[-1]
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        print(f"  search failed: {type(exc).__name__}"
+              f"{f' {status}' if status else ''}", file=sys.stderr)
     return []
 
 

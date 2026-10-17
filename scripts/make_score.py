@@ -197,9 +197,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"\n  {p.name} ({p.length_ms / 1000:.0f}s) -> "
                   f"{', '.join(p.files)}\n    {p.prompt}")
         return 0
-    if settings.mock_mode:
-        print("\nMOCK_MODE is on, so nothing is generated. Set MOCK_MODE=false "
-              "for this run to spend.", file=sys.stderr)
+    if settings.mock_mode or settings.mocking_tts:
+        # MOCK_TTS=true is "live everywhere except ElevenLabs"; the music is
+        # ElevenLabs too, and it was still paid for under it.
+        print("\nMOCK_MODE or MOCK_TTS is on, so nothing is generated. Set "
+              "MOCK_MODE=false and MOCK_TTS=false for this run to spend.",
+              file=sys.stderr)
         return 2
     if not settings.elevenlabs_api_key:
         print("\nELEVENLABS_API_KEY is not set.", file=sys.stderr)

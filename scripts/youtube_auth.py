@@ -44,8 +44,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=ROOT / "state" / "youtube.json",
                     help="where to write the authorized-user JSON")
     ap.add_argument("--no-browser", action="store_true",
-                    help="print the URL instead of opening a browser "
-                         "(a headless box: open it anywhere, paste the code)")
+                    help="print the URL instead of opening a browser. The "
+                         "sign-in still returns to this machine's localhost: "
+                         "on a headless box pick a --port and forward it "
+                         "(ssh -L PORT:localhost:PORT box), then open the "
+                         "URL on your own computer. Under WSL, Windows "
+                         "reaches it directly")
+    ap.add_argument("--port", type=int, default=0,
+                    help="the localhost port the sign-in returns to "
+                         "(default: any free one)")
     args = ap.parse_args(argv)
 
     try:
@@ -60,7 +67,8 @@ def main(argv: list[str] | None = None) -> int:
 
     flow = InstalledAppFlow.from_client_secrets_file(str(args.client_secret),
                                                      list(SCOPES))
-    creds = flow.run_local_server(port=0, open_browser=not args.no_browser,
+    creds = flow.run_local_server(port=args.port,
+                                  open_browser=not args.no_browser,
                                   prompt="consent", access_type="offline")
     if not creds.refresh_token:
         print("Google returned no refresh token — revoke the app's access at "

@@ -656,12 +656,14 @@ def _provenance(script, settings, workspace: Path, duration: float,
     # five top-level keys as five shots and then walked them as dicts, so a
     # workspace with any auto-pulled filing crashed this on `str.get`, after
     # the encode and the paid voice were already spent.
-    shots = load_manifest(workspace).get("shots", []) or []
+    manifest = load_manifest(workspace)
+    shots = manifest.get("shots", []) or []
     filings = {"shots": len(shots)} if shots else {}
-    refs = sorted({str(s.get("accession") or "") for s in shots
-                   if s.get("accession")})
-    if refs:
-        filings["refs"] = [f"10-K {r}" for r in refs]
+    # The accession is the manifest's, not each shot's: read off the shots,
+    # the receipt never named the filing it cited.
+    if shots and manifest.get("accession"):
+        filings["refs"] = [f"{manifest.get('form') or '10-K'} "
+                           f"{manifest['accession']}"]
     brief = _filing_brief_provenance(workspace)
     if brief:
         filings["brief"] = brief

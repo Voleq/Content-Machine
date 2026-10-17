@@ -3127,13 +3127,17 @@ class BotCore:
         ticker = args[0].upper()
         when_date = args[1]
         try:
-            date.fromisoformat(when_date)
+            day = date.fromisoformat(when_date)
         except ValueError:
             return Reply(f"⛔ {when_date!r} isn't a date — use YYYY-MM-DD.")
         slot = args[2].lower() if len(args) > 2 else ""
         if slot and slot not in ("bmo", "amc"):
             return Reply("⛔ the third argument is bmo (before open) or amc "
                          "(after close).")
+        if day < date.today():
+            # A past date fired "the numbers are out" on the next poll.
+            return Reply(f"⛔ {when_date} has passed — /earnings takes the "
+                         f"next report date.")
         EarningsCalendar(self.settings).set(ticker, when_date, slot)
         return Reply(f"📊 {ticker} reports {when_date}"
                      f"{' ' + slot if slot else ''}. I'll flag it before and after.")

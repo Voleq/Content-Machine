@@ -77,7 +77,20 @@ def main(argv: list[str]) -> int:
 
     print(f"workbook      : {src}")
     try:
-        data = load_company_data(src.parent)
+        # The file named, not whichever export sits beside it: staged under
+        # the name the loader looks for, so a browser's
+        # "dennis_data (1).xlsx" is read, and an older dennis_data.xlsx in
+        # the same folder is not what the verdict is about.
+        import shutil
+        import tempfile
+
+        from pipeline.company_data import EXPORT_NAMES
+
+        with tempfile.TemporaryDirectory(prefix="freshness_") as td:
+            name = (EXPORT_NAMES[-1] if src.suffix.lower() == ".csv"
+                    else EXPORT_NAMES[0])
+            shutil.copy(src, Path(td) / name)
+            data = load_company_data(Path(td))
     except Exception as e:  # noqa: BLE001 — this script IS the diagnostic
         print(f"\nUNREADABLE — {type(e).__name__}: {e}", file=sys.stderr)
         return 1

@@ -42,7 +42,7 @@ Excel; the refresh happens on the operator's own machine.)
 |---|---|
 | `MOCK_MODE=true` by default; no paid/live API during dev & tests | `config.py`, mock TTS/Pexels/images/memes/prices/delivery, pytest network guard |
 | One paid TTS per approved script; unchanged content ⇒ **zero** calls | `pipeline/tts.py` sha256(voice·model·settings·text) cache |
-| Character budgets (`SHORT_MAX_CHARS=800`, `LONG_MAX_CHARS=22000`) rejected **before** any spend | parsers + `TTSEngine` |
+| Character budgets (`SHORT_MAX_CHARS=1100`, `LONG_MAX_CHARS=36000`) rejected **before** any spend | parsers + `TTSEngine` |
 | Nothing paid before the operator taps **Approve** on the cost report | `bot/handlers.py` approval gate; approvals pin the script sha |
 | Monthly cap (`MONTHLY_SPEND_CAP=50`) blocks paid calls in code | `pipeline/cost.py` SpendLedger, checked inside `TTSEngine` |
 | The cap holds across PROCESSES, not just threads — a script run by hand while the bot is up cannot claim headroom the bot already reserved | `pipeline/cost.py` `_ProcessLock`, an advisory `flock` on `state/spend.lock` around every read-modify-write |
@@ -85,7 +85,7 @@ Excel; the refresh happens on the operator's own machine.)
 
 ## What the bot checks before you approve
 
-Twelve gates run unprompted between the script landing and any spend,
+Sixteen gates run unprompted between the script landing and any spend,
 **on both lanes**. Silence means proceed; every finding carries a line
 reference. They are notes and blocks, never rewrites — the writer decides.
 
@@ -1036,9 +1036,9 @@ number, which is exactly the case the gate exists to catch.
 | `TELEGRAM_BOT_TOKEN` | — | from @BotFather (free; required even in mock) |
 | `OPERATOR_CHAT_IDS` | — | allow-list; empty denies all. `["123456789"]`, `123456789` and `123,456` all parse |
 | `BRAND_HANDLE` | `@dennisreads` | signed on the SHORT's closing card |
-| `CHAPTER_CUE_SFX` | `keyboard_clack` | the sound a LONG's chapter opener fires, 0.15s ahead of the picture so it announces the opener rather than reacting to it. A key from the sfx taxonomy; blank turns the cue off. It is a signpost, not atmosphere — `keyboard_clack` reads as one because it is diegetic (he is typing the chapter title), where a `ding` reads as a notification. `paper_rustle` and `ding` are the alternatives worth auditioning; the choice can only be made by listening, which is why it is a setting |
+| `CHAPTER_CUE_SFX` | `impact` | the sound a LONG's chapter opener fires: the hit a short lands on its first frame, chosen over chapter music, and it fires ON the cut. A key from the sfx taxonomy; blank turns the cue off. `keyboard_clack`, `paper_rustle` and `ding` are the quieter alternatives; those diegetic keys fire just ahead of the picture, so they announce the opener rather than react to it. The choice can only be made by listening, which is why it is a setting |
 | `ELEVEN_VOICE_ID_SHORT/LONG` | — | **placeholder** — the Dennis voice is a one-line change (shortlist in `config.py`) |
-| `SHORT_MAX_CHARS` / `LONG_MAX_CHARS` | 800 / 22000 | TTS budgets, rejected pre-spend |
+| `SHORT_MAX_CHARS` / `LONG_MAX_CHARS` | 1100 / 36000 | TTS budgets, rejected pre-spend |
 | `USD_PER_1K_CHARS` | unset | **override only.** Unset means the selected model's list price (`config.ELEVEN_USD_PER_1K_CHARS`): turbo/flash and v3-conversational $0.05, v3 and multilingual_v2 $0.10. Lookup is **exact** and a model the table does not know **raises** rather than defaulting — a guessed rate is how a spend cap comes to meter at the wrong speed. Set this when a price moves or a model is newer than the table. Not a display figure: `SpendLedger` meters `MONTHLY_SPEND_CAP` with it |
 | `MONTHLY_SPEND_CAP` | 50.0 | hard code-level gate |
 | `ELEVEN_MODEL_ID` | unset | the ElevenLabs model, by name. `eleven_turbo_v2_5` (default), `eleven_multilingual_v2`, `eleven_v3`. **v3 is the only model that performs delivery** — eight of the ten direction tags do something only there — and it is twice turbo's price; the tags are what that buys. `eleven_v3_conversational` is a *different*, cheaper model for the Agents Platform, not a v3 variant. See *Delivery direction* below |
@@ -1226,8 +1226,9 @@ env var, case-insensitive).
   replaced.
 - **Placeholder AUDIO cannot be published.** Every wav in `assets/sfx` is an
   ffmpeg oscillator until `scripts/fetch_sfx.py` replaces it — that script
-  pulls CC0 effects for all 14 cue keys plus the room bed, normalises each to
-  one peak, and records source/licence/author per file in
+  pulls CC0 effects for every cue key (three takes each), the room loops and
+  room tone, normalises each to one peak, and records source/licence/author
+  per file in
   `assets/sfx/SOURCES.json`. CC0 only, because a monetised channel cannot
   play a NonCommercial sound and no upload carries the credit an Attribution
   one owes. A file with no provenance entry counts as generated. Both
@@ -1242,8 +1243,8 @@ env var, case-insensitive).
   call; after that, drafts and re-renders are free from cache.
 - **`/repurpose` needs no approval** — it cuts the already-rendered LONG;
   zero new spend by construction.
-- **Fixture LONG script is ~370 words** so the committed sample renders in
-  ~1 minute; the engine itself is length-agnostic (budget 22k chars).
+- **Fixture LONG script is about six hundred words** so the committed sample
+  renders quickly; the engine itself is length-agnostic (budget 36k chars).
 - **yfinance/yahooquery/StockTwits are unofficial** — every call is
   wrapped, cached, rate-limited and allowed to fail into a labelled,
   degraded lane. The screener can never block or spend.
@@ -1266,7 +1267,7 @@ python scripts/check_preflight.py --live   # also the production-only settings
 | 2 | `/kit doctor` | Immediately after the ingest, while the kit change is fresh — a stale plate found three fixes later looks like a regression in something else. |
 | 3 | `export FREESOUND_API_KEY=…`, then `scripts/fetch_sfx.py`, then commit `assets/sfx/` | `assets/sfx/` ships twenty-seven ffmpeg oscillators and no `SOURCES.json`, so `check_audio` blocks **every** final render. The gate is per file: room tone alone leaves twenty-six. Committed, the real files clear it for every checkout, CI included. The music is separate and optional: `MOCK_MODE=false python scripts/make_score.py --confirm` makes the theme and the six loops once (about $1.19), and without it nothing blocks, the shorts just play no loop and the long no theme. |
 | 4 | `python scripts/check_sfx.py` | Must report zero placeholders. Anything listed still blocks. |
-| 5 | `SEC_USER_AGENT="Your Name your@email"` | The SEC 403s generic agents. Nothing blocks — you just quietly lose the filing brief, the 8-K source and `[SHOW FILING]`. The bot warns at startup when `MOCK_MODE` is off. |
+| 5 | `SEC_USER_AGENT="YourChannel contact@your-channel-domain.com"` (a channel or role mailbox, not a personal one: every SEC request carries it) | The SEC 403s generic agents. Nothing blocks — you just quietly lose the filing brief, the 8-K source and `[SHOW FILING]`. The bot warns at startup when `MOCK_MODE` is off. |
 | 6 | `python scripts/check_freshness.py TICKER DATE` | Against the **real** workbook. `DATA_STALE_BLOCKS` defaults on and an unreadable date blocks too; your sheet's as-of format is whatever Capital IQ wrote under your locale. |
 | 7 | `python scripts/check_llm_context.py` | Needs a live Ollama. Proves the marker survives a 24k-character prompt, so filing briefs are not silently built from half a section. |
 | 8 | `MOCK_MODE=true`, full flow on one ticker, both lanes | The whole loop with nothing at stake. |
@@ -1324,7 +1325,7 @@ reconstructible:
 | file | what is lost with it |
 |---|---|
 | `spend.json` | the spend ledger — **the only record of what has been spent**, and therefore the only thing enforcing `MONTHLY_SPEND_CAP`. It resets to zero silently. |
-| `thesis.json`, `confessions.json`, `idea_queue.json` | what `/update` grades against and what the voice gate reads. Every ticker becomes a first-time take. |
+| `theses.json`, `confessions.json`, `idea_queue.json` | what `/update` grades against and what the voice gate reads. Every ticker becomes a first-time take. |
 | `published.json` | what has already gone to YouTube, so `/upload` does not send it twice. |
 | `jobs/` | the queue, including anything QUEUED that a restart would otherwise re-enqueue. |
 | `last_digest.json`, `alerts.json`, `earnings_calendar.json` | the scheduler's memory of what it has already sent. |

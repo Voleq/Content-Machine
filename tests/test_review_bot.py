@@ -153,6 +153,7 @@ def test_an_end_hour_of_24_is_midnight(monkeypatch):
 
 @pytest.mark.parametrize("agent, warned", [
     ("", True), ("Your Name your@email", True), ("Dennis channel", True),
+    ("YourChannel contact@your-channel-domain.com", True),
     ("Dennis Desk desk@example.org", False),
 ])
 def test_the_shipped_sec_placeholder_is_warned_about(settings, agent, warned):

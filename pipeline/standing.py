@@ -376,14 +376,20 @@ class ThesisBook:
 def _status_for(moves: Sequence[Move]) -> str:
     """intact / cracking / broken, from what actually moved.
 
-    Deliberately crude: two material moves, or one big one, is "cracking";
-    it takes a lot to call a thesis broken automatically. The operator makes
-    the real call — this only decides whether to interrupt them.
+    Deliberately crude: any material move is "cracking"; three of them, or
+    any one of 50% or more, is "broken". Either direction counts, because the
+    book does not record which way the thesis leaned — a stock that doubled
+    under a bearish call is as much news as one that halved under a bullish
+    one. Price and market cap move together and count once, or one price
+    move was two. The operator makes the real call — this only decides
+    whether to interrupt them.
     """
     if not moves:
         return "intact"
     worst = max(abs(m.change) for m in moves)
-    if len(moves) >= 3 or worst >= 0.5:
+    distinct = {"price" if m.field == "market_cap" else m.field
+                for m in moves}
+    if len(distinct) >= 3 or worst >= 0.5:
         return "broken"
     return "cracking"
 

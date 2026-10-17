@@ -12,6 +12,13 @@ MOCK_MODE render must never be silent, and nothing here has a drawn equivalent.
 
 Run from the repo root:  .venv/bin/python scripts/gen_assets.py
 
+A FILE THAT EXISTS IS KEPT, unless `--force`. `deploy/bootstrap.sh` runs this
+on every update, after the committed files are in place, and it used to write
+every file again: a real effect fetched by `scripts/fetch_sfx.py` and
+recorded as real in SOURCES.json was replaced by an oscillator the record
+still called real, so every audio check passed and a final published the
+sine sweep.
+
 Everything here is procedural (ffmpeg lavfi), seeded and deterministic — no
 downloads, no licences to clear. The real sfx drop over the same filenames.
 
@@ -37,9 +44,18 @@ sys.path.insert(0, str(ROOT))
 
 ASSETS = ROOT / "assets"
 FONTS = ASSETS / "fonts"
+FORCE = "--force" in sys.argv[1:]
+WRITTEN: list[str] = []
+KEPT: list[str] = []
+
+
 def _lavfi(out: Path, *args: str) -> None:
+    if out.exists() and not FORCE:
+        KEPT.append(out.name)
+        return
     cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", *args, str(out)]
     subprocess.run(cmd, check=True, capture_output=True)
+    WRITTEN.append(out.name)
 
 
 def gen_sfx() -> None:
@@ -126,7 +142,6 @@ def gen_sfx() -> None:
            "-f", "lavfi", "-i", "anoisesrc=d=0.45:color=pink:seed=6",
            "-af", "lowpass=f=1100,afade=t=in:st=0:d=0.12,afade=t=out:st=0.2:d=0.25,volume=0.7",
            *wav)
-    print("sfx: 13 written")
 def gen_dennis_sfx() -> None:
     """Kit stings: beat-transition riser + zoom-punch pop."""
     out = ASSETS / "sfx"
@@ -144,7 +159,6 @@ def gen_dennis_sfx() -> None:
            "[0]volume=0.7[a];[1]highpass=f=1200,volume=0.5[b];"
            "[a][b]amix=inputs=2:normalize=0,afade=t=in:st=0:d=0.004,afade=t=out:st=0.04:d=0.05",
            *wav)
-    print("dennis sfx: 2 written")
 
 
 def gen_room_tone() -> None:
@@ -167,7 +181,6 @@ def gen_room_tone() -> None:
            "tremolo=f=0.12:d=0.22,"
            "afade=t=in:st=0:d=1.5,afade=t=out:st=28.5:d=1.5",
            "-c:a", "pcm_s16le", "-ar", "44100")
-    print("room tone: 1 written")
 
 
 def gen_machine_sfx() -> None:
@@ -218,7 +231,6 @@ def gen_machine_sfx() -> None:
            "-af", "bandpass=f=1500:width_type=h:w=900,volume=0.7,"
                   "afade=t=out:st=0.02:d=0.07",
            *wav)
-    print("machine sfx: 7 written")
 
 
 def gen_ambience() -> None:
@@ -257,7 +269,6 @@ def gen_ambience() -> None:
            f"[0]volume=0.3[a];[1]volume=0.15[b];"
            f"[a][b]amix=inputs=2:normalize=0,{fade}",
            *wav)
-    print("ambience: 5 written")
 
 
 if __name__ == "__main__":
@@ -266,3 +277,5 @@ if __name__ == "__main__":
     gen_room_tone()
     gen_machine_sfx()
     gen_ambience()
+    print(f"sfx: {len(WRITTEN)} written, {len(KEPT)} already there and kept"
+          f"{'' if FORCE else ' (--force rewrites them)'}")

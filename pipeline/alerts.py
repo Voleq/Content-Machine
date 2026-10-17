@@ -56,6 +56,9 @@ class Alert:
     detail: str = ""
     magnitude: float = 0.0     # |pct| or the volume multiple — used for repeats
     at: str = ""
+    # The event itself, for one that must be said once and never again (a
+    # filing's accession). Empty for a move, which may honestly recur.
+    ident: str = ""
 
     def render(self) -> str:
         icon = {"move": "📈", "volume": "🔊", "earnings": "📊",
@@ -173,6 +176,10 @@ class Watchlist:
 # --------------------------------------------------------------------------
 
 
+# How many once-only events (filings) are remembered per ticker.
+SAID_KEPT = 30
+
+
 class AlertLog:
     """What has already been said, so it isn't said again."""
 
@@ -203,6 +210,8 @@ class AlertLog:
         prev = self._all().get(alert.ticker)
         if not prev:
             return True
+        if alert.ident and alert.ident in (prev.get("said") or []):
+            return False
         try:
             when = datetime.fromisoformat(str(prev.get("at")))
         except ValueError:
@@ -220,6 +229,12 @@ class AlertLog:
         rows = self._all()
         stamped = alert.to_json()
         stamped["at"] = (now or datetime.now(timezone.utc)).isoformat()
+        prev = rows.get(alert.ticker)
+        said = list(prev.get("said") or []) if isinstance(prev, dict) else []
+        if alert.ident and alert.ident not in said:
+            said.append(alert.ident)
+        if said:
+            stamped["said"] = said[-SAID_KEPT:]
         rows[alert.ticker] = stamped
         self._save(rows)
 
@@ -268,7 +283,11 @@ def in_quiet_hours(settings: Settings, now: datetime | None = None) -> bool:
     start = time(hour=settings.alert_start_hour % 24)
     end = time(hour=settings.alert_end_hour % 24)
     t = current.time()
-    awake = (start <= t < end) if start <= end else (t >= start or t < end)
+    if start == end:
+        # 0 to 24 (or any h to h): never quiet, as `in_batch_window` reads it.
+        # Read as an empty window, alerts never fired at any hour.
+        return False
+    awake = (start <= t < end) if start < end else (t >= start or t < end)
     return not awake
 
 
@@ -279,6 +298,9 @@ def in_quiet_hours(settings: Settings, now: datetime | None = None) -> bool:
 
 # When the numbers a `bmo` name puts out are public. US regular session.
 MARKET_OPEN = time(hour=9, minute=30)
+
+# How many days after a print the reaction alert may still fire.
+STALE_PRINT_DAYS = 2
 
 # The reaction alert's headline, which is also how `mark_sent` tells it from
 # the setup.
@@ -402,6 +424,11 @@ class EarningsCalendar:
             except (TypeError, ValueError):
                 continue
             delta = (d - today).days
+            if delta < -STALE_PRINT_DAYS:
+                # Not news any more: a print days gone (a bot that slept
+                # through it, or a date typed in the past) announced itself
+                # as "the numbers are out" on the next poll.
+                continue
             when = str(row.get("when") or "")
             # A `bmo` print is out by the open; everything else is out the
             # next day. The setup alert only makes sense while the print is
@@ -509,9 +536,10 @@ def fetch_filings(settings: Settings, tickers: Sequence[str]) -> list[Alert]:
     """Form 4s and 8-Ks landing on watched names (P3.4 feeding 3b).
 
     Cached and rate-limited by `sources`, and silent on anything unavailable —
-    a filing feed that is down produces no alerts, not an error. Only the
-    filing DATE is compared, so a name that filed today alerts once and the
-    AlertLog handles the rest.
+    a filing feed that is down produces no alerts, not an error. Each alert
+    carries its filings' accession numbers, so a name that filed today
+    alerts once: the alert is rebuilt on every poll, and the cooldown alone
+    let it out again three hours later.
     """
     if not tickers:
         return []
@@ -533,7 +561,8 @@ def fetch_filings(settings: Settings, tickers: Sequence[str]) -> list[Alert]:
                 out.append(Alert(ticker=ticker, kind="filing",
                                  headline=f"filed an 8-K{tail}",
                                  detail="something they had to disclose",
-                                 magnitude=2.0))
+                                 magnitude=2.0,
+                                 ident=f"8k:{eightk.get('accession') or today}"))
             form4 = insider_transactions(ticker, settings)
             if form4.get("status") == "ok":
                 fresh = [f for f in form4.get("filings", [])
@@ -543,7 +572,9 @@ def fetch_filings(settings: Settings, tickers: Sequence[str]) -> list[Alert]:
                         ticker=ticker, kind="filing",
                         headline=f"{len(fresh)} insider transaction(s) filed today",
                         detail="Form 4 — worth reading which way",
-                        magnitude=1.5))
+                        magnitude=1.5,
+                        ident="form4:" + ",".join(sorted(
+                            str(f.get("accession") or "") for f in fresh))))
         except Exception as e:  # noqa: BLE001 - one bad ticker, not the pass
             log.debug("filing watch for %s failed: %s", ticker, e)
     return out
