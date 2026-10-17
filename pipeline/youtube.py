@@ -723,19 +723,35 @@ class VideoLog:
         rewritten when its time comes, so one whose `publish_at` has passed
         is published, not queued."""
         now = now or datetime.now(timezone.utc)
-
-        def pending(v: VideoRecord) -> bool:
-            try:
-                when = datetime.fromisoformat(v.publish_at.replace("Z", "+00:00"))
-            except (ValueError, AttributeError):
-                return True               # unreadable: show it rather than hide it
-            if when.tzinfo is None:
-                when = when.replace(tzinfo=timezone.utc)
-            return when > now
-
-        return sorted((v for v in self.all()
-                       if v.privacy == "scheduled" and pending(v)),
+        return sorted((v for v in self.all() if still_scheduled(v, now)),
                       key=lambda v: v.publish_at)
+
+
+def still_scheduled(v: VideoRecord, now: datetime) -> bool:
+    """A scheduled upload whose time has not come. The row is never rewritten
+    when it goes public, so a passed `publish_at` means published."""
+    if v.privacy != "scheduled" or not v.publish_at:
+        return False
+    when = _instant(v.publish_at)
+    return when is None or when > now     # unreadable: show it, not hide it
+
+
+def public_since(v: VideoRecord) -> str:
+    """When viewers could first see it: the upload, or its scheduled time
+    when that came later. Retention is read from here, not from the upload."""
+    if v.privacy == "scheduled" and v.publish_at:
+        up, pub = _instant(v.uploaded_at), _instant(v.publish_at)
+        if pub is not None and (up is None or pub > up):
+            return v.publish_at
+    return v.uploaded_at
+
+
+def _instant(iso: str) -> datetime | None:
+    try:
+        when = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
 
 
 # --------------------------------------------------------------------------

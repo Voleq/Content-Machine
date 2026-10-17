@@ -200,6 +200,14 @@ def main() -> None:
             except OSError as e:
                 log.warning("web panel not started (%s:%d): %s",
                             settings.panel_host, settings.panel_port, e)
+        # The read-only status page (STATUS_PAGE_ENABLED). It was documented
+        # and configurable, and nothing ever started it.
+        try:
+            from pipeline.status_page import serve
+            serve(settings)
+        except OSError as e:
+            log.warning("status page not started (127.0.0.1:%d): %s",
+                        settings.status_page_port, e)
 
         try:  # scheduled screener digest (§14)
             from pipeline.screener import schedule_alerts, schedule_digest

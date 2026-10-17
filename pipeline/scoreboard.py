@@ -45,7 +45,8 @@ def quarter_of(when: date) -> str:
 
 
 def quarter_bounds(quarter: str) -> tuple[date, date]:
-    """First and last day of a `YYYY-Qn` string."""
+    """First day of a `YYYY-Qn` string and the first day of the quarter
+    after it: a half-open span, `start <= day < end`."""
     year_s, _, q_s = quarter.partition("-Q")
     year, q = int(year_s), int(q_s)
     start = date(year, 3 * (q - 1) + 1, 1)

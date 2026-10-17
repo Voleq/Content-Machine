@@ -556,7 +556,12 @@ class TTSEngine:
             # authorised for is held against the cap until the generation is
             # over, so a second job cannot be authorised against money this
             # one is about to spend.
-            _est, reservation = self.ledger.reserve_tts_spend(len(text))
+            # Only what is still to be paid: the chunks an earlier attempt
+            # already paid for are in the ledger's spend, and claiming them
+            # again refused a resume near the cap that had the money for it.
+            owed = sum(len(c) for i, c in enumerate(chunks)
+                       if self._resumable(cdir, i, c) is None)
+            _est, reservation = self.ledger.reserve_tts_spend(owed)
             try:
                 chunk_files, chunk_words, cost_usd = self._generate_real(
                     chunks, voice_id, model_id, vsettings, cdir,
@@ -689,6 +694,34 @@ class TTSEngine:
         return files, words
 
     # ------------------------------------------------------------------ real
+    @classmethod
+    def _resumable(cls, cdir: Path, i: int, chunk: str, *,
+                   say: bool = False) -> list[WordTimestamp] | None:
+        """Chunk `i`'s words when an earlier attempt already paid for it and
+        its audio and alignment both survived for THIS text, else None."""
+        f, wf = cls._chunk_paths(cdir, i)
+        if not (f.exists() and f.stat().st_size > 0 and wf.exists()):
+            return None
+        try:
+            cached = [WordTimestamp(**w) for w in
+                      json.loads(wf.read_text(encoding="utf-8"))]
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            # A half-written sidecar is not evidence of anything; re-request
+            # rather than stitch against garbage.
+            if say:
+                log.warning("chunk %d sidecar unreadable (%s) — "
+                            "regenerating", i, e)
+            return None
+        if not _same_words(cached, chunk):
+            # Chunk i of an earlier attempt is not chunk i now
+            # (TTS_CHUNK_CHARS changed in between): stitching it would put
+            # the wrong audio here.
+            if say:
+                log.warning("chunk %d on disk was cut from other text — "
+                            "regenerating", i)
+            return None
+        return cached
+
     @staticmethod
     def _chunk_paths(cdir: Path, i: int) -> tuple[Path, Path]:
         """Audio and its word-timing sidecar for chunk `i`.
@@ -746,31 +779,13 @@ class TTSEngine:
         try:
             for i, chunk in enumerate(chunks):
                 f, wf = self._chunk_paths(cdir, i)
-                cached: list[WordTimestamp] | None = None
-                if f.exists() and f.stat().st_size > 0 and wf.exists():
-                    try:
-                        cached = [WordTimestamp(**w) for w in
-                                  json.loads(wf.read_text(encoding="utf-8"))]
-                    except (json.JSONDecodeError, TypeError, ValueError) as e:
-                        # A half-written sidecar is not evidence of anything;
-                        # re-request rather than stitch against garbage.
-                        log.warning("chunk %d sidecar unreadable (%s) — "
-                                    "regenerating", i, e)
-                        cached = None
-                    else:
-                        cached = cached if _same_words(cached, chunk) else None
-                        if cached is None:
-                            # Chunk i of an earlier attempt is not chunk i
-                            # now (TTS_CHUNK_CHARS changed in between):
-                            # stitching it would put the wrong audio here.
-                            log.warning("chunk %d on disk was cut from other "
-                                        "text — regenerating", i)
-                    if cached is not None:
-                        log.info("TTS chunk %d/%d already generated — resuming, "
-                                 "not re-paying", i + 1, len(chunks))
-                        files.append(f)
-                        words.append(cached)
-                        continue
+                cached = self._resumable(cdir, i, chunk, say=True)
+                if cached is not None:
+                    log.info("TTS chunk %d/%d already generated — resuming, "
+                             "not re-paying", i + 1, len(chunks))
+                    files.append(f)
+                    words.append(cached)
+                    continue
 
                 url = (
                     f"{self.settings.eleven_base_url}/v1/text-to-speech/"
