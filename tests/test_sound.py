@@ -530,7 +530,8 @@ def test_the_delivery_line_says_what_the_mix_did():
 # ------------------------------------------------------------- a real render
 
 
-def test_a_rendered_short_carries_its_mix(settings, tmp_path, short_valid_json):
+def test_a_rendered_short_carries_its_mix(settings, tmp_path, short_valid_json,
+                                          unfetched_sounds):
     """End to end, on the mock voice: the manifest says what was mixed, the
     cues sit on the cuts the render actually made, and the file has a sound
     floor under the whole cut."""

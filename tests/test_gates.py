@@ -496,7 +496,8 @@ def test_the_skeptic_never_runs_offline_and_says_so(settings, long_valid_text):
     assert why == "mock"
 
 
-def test_the_battery_carries_the_audio_gate(settings, data, long_valid_text):
+def test_the_battery_carries_the_audio_gate(settings, data, long_valid_text,
+                                            unfetched_sounds):
     """`run_gates` is where the LONG's report gets its findings from.
 
     The banner at the top of a render was the entire defence against
