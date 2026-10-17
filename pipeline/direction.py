@@ -14,10 +14,10 @@ register that the bible, this linter and the fact-check gate exist to keep it
 out of.
 
 ONE TABLE, TWO TIERS. Every script tag has a v3 emission (what v4 is given
-too) and a pre-v3 fallback, so a model switch is never a content change. A fallback of "" means
-emit nothing: on a model that cannot perform the direction, silence is correct
-and the bracket text is not — an unsupported tag is READ ALOUD, which is the
-failure this table exists to make impossible.
+too) and a pre-v3 fallback, so a model switch is never a content change. A
+fallback of "" means emit nothing: on a model that cannot perform the
+direction, silence is correct and the bracket text is not — an unsupported tag
+is READ ALOUD, which is the failure this table exists to make impossible.
 """
 
 from __future__ import annotations
