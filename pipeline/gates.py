@@ -1357,7 +1357,7 @@ _SPOKEN_TAG_RE = re.compile(r"\[([A-Za-z][A-Za-z ]{1,30})\]")
 # The opening of a tag with a payload the tokenizer left behind.
 _LEFTOVER_TAG_RE = re.compile(r"\[[A-Z][A-Z -]*:")
 
-# A shouted word used for emphasis. v3 reads capitalisation as emphasis, which
+# A shouted word used for emphasis. v3 and v4 read capitals as emphasis, which
 # makes it live formatting rather than typography — but the captions use the
 # CLEAN text, so it also reaches the screen shouting. The bible already bans
 # the exclamation mark for this exact reason.
@@ -1445,7 +1445,7 @@ def direction_lint(script) -> list[Finding]:
                          f"any blank line"),
                 excerpt=line.strip()[:140]))
 
-    # 1b. A shouted word. On v3 capitalisation is live formatting — the docs
+    # 1b. A shouted word. On v3 and v4 capitals are live formatting — the docs
     #     say it increases emphasis — so this is no longer only typography.
     #     It is also NOT only an audio decision: captions are built from the
     #     clean text, so an emphasised word reaches the screen shouting too.
@@ -1462,7 +1462,7 @@ def direction_lint(script) -> list[Finding]:
                 continue
             findings.append(Finding(
                 gate="direction", severity="warn", line=lineno,
-                message=(f"“{word}” is shouted. v3 reads capitalisation as "
+                message=(f"“{word}” is shouted. The voice reads capitals as "
                          f"emphasis, and the captions are built from this same "
                          f"text — so it is heard AND seen leaning on the word. "
                          f"The bible bans the exclamation mark for this; write "

@@ -13,8 +13,8 @@ the one the voice bible sets, and it would put a model in charge of the
 register that the bible, this linter and the fact-check gate exist to keep it
 out of.
 
-ONE TABLE, TWO TIERS. Every script tag has a v3 emission and a pre-v3
-fallback, so a model switch is never a content change. A fallback of "" means
+ONE TABLE, TWO TIERS. Every script tag has a v3 emission (what v4 is given
+too) and a pre-v3 fallback, so a model switch is never a content change. A fallback of "" means
 emit nothing: on a model that cannot perform the direction, silence is correct
 and the bracket text is not — an unsupported tag is READ ALOUD, which is the
 failure this table exists to make impossible.
@@ -26,16 +26,35 @@ from dataclasses import dataclass
 
 from pipeline.models import TagType
 
-# Models that perform audio tags inline rather than reading them out.
+# Models that perform audio tags inline rather than reading them out: v3, and
+# v4, whose prompting guide lists every tag this table emits ([sighs],
+# [exhales], [sarcastic], [curious], [snorts], [whispers]).
 #
 # Substring-matched, because ElevenLabs ships dated and suffixed variants of a
 # model id and a new one must not silently lose the tags.
-V3_MODELS = ("eleven_v3",)
+V3_MODELS = ("eleven_v3", "eleven_v4")
 
 
 def performs_audio_tags(model_id: str) -> bool:
     """Whether this model performs bracket tags instead of speaking them."""
     return any(m in (model_id or "") for m in V3_MODELS)
+
+
+# Models that take two voice settings and no others. The v4 page: "Both
+# variants use two voice settings: Stability and Similarity ... Style and Speed
+# sliders are not available in Eleven v4". The cast register's style and each
+# lane's speed are therefore not sent to it, rather than sent and left to
+# whatever the API does with a setting the model does not have. Pace on v4
+# comes from the voice and the writing.
+TWO_SETTING_MODELS = ("eleven_v4",)
+_TWO_SETTINGS = ("stability", "similarity_boost")
+
+
+def request_settings(voice_settings: dict, model_id: str) -> dict:
+    """The voice settings `model_id` is actually sent."""
+    if any(m in (model_id or "") for m in TWO_SETTING_MODELS):
+        return {k: v for k, v in voice_settings.items() if k in _TWO_SETTINGS}
+    return dict(voice_settings)
 
 
 @dataclass(frozen=True)

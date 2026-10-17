@@ -36,8 +36,8 @@ BASE_DIR = Path(__file__).resolve().parent
 # about $16.67 of real spend. Annoying, and not dangerous.
 #
 # It was then corrected to 0.05 for `eleven_v3`, which erred the other way and
-# is much worse. `eleven_v3` is $0.10; it is `eleven_v3_conversational` that is
-# $0.05, and they are separate models with separate included-character
+# is much worse. `eleven_v3` was $0.10; it was `eleven_v3_conversational` that
+# was $0.05, and they are separate models with separate included-character
 # allowances (220,000 vs 440,000 on Creator). Pricing v3 at half its rate makes
 # SpendLedger meter at half speed, so the same $50 cap would wave through
 # roughly $100 of real spend. The cap is the only hard stop in this system and
@@ -54,19 +54,30 @@ BASE_DIR = Path(__file__).resolve().parent
 # and a wrong one are indistinguishable at runtime, and the guess is what caused
 # the harm both times. USD_PER_1K_CHARS is the escape hatch when a price moves
 # or a model is newer than this table.
+#
+# Read off https://elevenlabs.io/pricing/api on 2026-10-17, when every rate
+# here had come down a fifth (v3 and multilingual_v2 from $0.10, the cheap
+# tier from $0.05). The old figures overstated, which errs safe, but the
+# Render button showed a price a quarter too high.
 ELEVEN_USD_PER_1K_CHARS: dict[str, float] = {
-    "eleven_turbo_v2_5": 0.05,
-    "eleven_flash_v2_5": 0.05,
-    # The narration model, and the one this pipeline chose: the selection guide
-    # puts narration here. Twice turbo's price, and the audio tags are what the
+    "eleven_turbo_v2_5": 0.04,
+    "eleven_flash_v2_5": 0.04,
+    # The narration model. The model guide puts "video narration" here, it
+    # performs the same audio tags v3 did, and it is v3's price exactly, so
+    # nothing is paid for the upgrade. Twice turbo, and the tags are what the
     # difference buys.
-    "eleven_v3": 0.10,
+    "eleven_v4": 0.08,
+    # The real-time variant, half the price, the same trap as v3's below:
+    # tuned for ~100ms latency, which an unattended batch render does not need.
+    "eleven_v4_turbo": 0.04,
+    # The previous narration model.
+    "eleven_v3": 0.08,
     # NOT the same model, and not interchangeable with it. This is the Agents
     # Platform model, tuned for ~280ms latency — which buys an unattended batch
     # render exactly nothing. Recorded so the distinction stays recorded rather
     # than being rediscovered by a cap that failed open.
-    "eleven_v3_conversational": 0.05,
-    "eleven_multilingual_v2": 0.10,
+    "eleven_v3_conversational": 0.04,
+    "eleven_multilingual_v2": 0.08,
 }
 
 
@@ -184,14 +195,17 @@ class Settings(BaseSettings):
     # two hardcoded ids. The field would have taken any id, but nothing said
     # so - not .env.example, not the README - and the boolean quietly decided
     # between the other two regardless, so `eleven_v3` was unreachable in
-    # practice. v3 is the only model that honours [SIGH] instead of having it
-    # read aloud (see pipeline/tts.py), so what that cost was the register the
-    # voice bible is built on.
+    # practice. v3 and v4 are the only models that honour [SIGH] instead of
+    # having it read aloud (see pipeline/direction.py), so what that cost was
+    # the register the voice bible is built on.
     #
-    # It is NOT free: v3 is $0.10/1k against turbo's $0.05, and the audio tags
-    # are what the difference buys. `eleven_v3_conversational` is the $0.05
-    # one, and it is a different model — the Agents Platform's, tuned for
-    # ~280ms latency, which is worth nothing to an unattended batch render.
+    # `eleven_v4` is the one to name. It is NOT free: $0.08/1k against turbo's
+    # $0.04, and the audio tags are what the difference buys. v4 takes only
+    # stability and similarity, so the style and speed below are not sent to
+    # it (direction.request_settings). `eleven_v4_turbo` and
+    # `eleven_v3_conversational` are the $0.04 ones, and they are different
+    # models, tuned for real-time latency, which is worth nothing to an
+    # unattended batch render.
     eleven_model_id: str = Field(default="", alias="ELEVEN_MODEL_ID")
     # The two tier defaults, and DEPRECATED with the boolean that picks between
     # them. Kept, rather than folded into constants, so an .env that already

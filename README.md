@@ -1039,9 +1039,9 @@ number, which is exactly the case the gate exists to catch.
 | `CHAPTER_CUE_SFX` | `impact` | the sound a LONG's chapter opener fires: the hit a short lands on its first frame, chosen over chapter music, and it fires ON the cut. A key from the sfx taxonomy; blank turns the cue off. `keyboard_clack`, `paper_rustle` and `ding` are the quieter alternatives; those diegetic keys fire just ahead of the picture, so they announce the opener rather than react to it. The choice can only be made by listening, which is why it is a setting |
 | `ELEVEN_VOICE_ID_SHORT/LONG` | — | **placeholder** — the Dennis voice is a one-line change (shortlist in `config.py`) |
 | `SHORT_MAX_CHARS` / `LONG_MAX_CHARS` | 1100 / 36000 | TTS budgets, rejected pre-spend |
-| `USD_PER_1K_CHARS` | unset | **override only.** Unset means the selected model's list price (`config.ELEVEN_USD_PER_1K_CHARS`): turbo/flash and v3-conversational $0.05, v3 and multilingual_v2 $0.10. Lookup is **exact** and a model the table does not know **raises** rather than defaulting — a guessed rate is how a spend cap comes to meter at the wrong speed. Set this when a price moves or a model is newer than the table. Not a display figure: `SpendLedger` meters `MONTHLY_SPEND_CAP` with it |
+| `USD_PER_1K_CHARS` | unset | **override only.** Unset means the selected model's list price (`config.ELEVEN_USD_PER_1K_CHARS`): turbo/flash, v4-turbo and v3-conversational $0.04; v4, v3 and multilingual_v2 $0.08 (list rates on 2026-10-17). Lookup is **exact** and a model the table does not know **raises** rather than defaulting — a guessed rate is how a spend cap comes to meter at the wrong speed. Set this when a price moves or a model is newer than the table. Not a display figure: `SpendLedger` meters `MONTHLY_SPEND_CAP` with it |
 | `MONTHLY_SPEND_CAP` | 50.0 | hard code-level gate |
-| `ELEVEN_MODEL_ID` | unset | the ElevenLabs model, by name. `eleven_turbo_v2_5` (default), `eleven_multilingual_v2`, `eleven_v3`. **v3 is the only model that performs delivery** — eight of the ten direction tags do something only there — and it is twice turbo's price; the tags are what that buys. `eleven_v3_conversational` is a *different*, cheaper model for the Agents Platform, not a v3 variant. See *Delivery direction* below |
+| `ELEVEN_MODEL_ID` | `eleven_v4` in `.env.example` | the ElevenLabs model, by name; blank means `eleven_turbo_v2_5`. Also `eleven_v3`, `eleven_multilingual_v2`. **v4 and v3 are the only models that perform delivery** — eight of the ten direction tags do something only there — and they are twice turbo's price; the tags are what that buys. v4 costs what v3 does and takes only stability and similarity, so the configured style and speed are not sent to it. `eleven_v4_turbo` and `eleven_v3_conversational` are *different*, cheaper real-time models, not variants. See *Delivery direction* below |
 | `ELEVEN_USE_PREMIUM` | false | **deprecated** — picks between turbo and multilingual_v2, and only when `ELEVEN_MODEL_ID` is unset. Prefer naming the model |
 | `GIPHY_API_KEY` / `TENOR_API_KEY` | — | optional [MEME] fallbacks (library first) |
 | `DELIVERY_BACKEND` | local | gdrive · s3 · telegram · local. A backend that cannot take the file (no Drive credentials, a long over Telegram's 50 MB) keeps the video on the render box and says why |
@@ -1201,7 +1201,7 @@ env var, case-insensitive).
 - **Delivery direction is declared, never inferred.** The writer places
   `[BEAT]`, `[CURIOUS]`, `[SIGH]` and the rest inline; nothing downstream reads
   a sentence and decides it wants one. `pipeline/direction.py` is the single
-  table — what each tag becomes on `eleven_v3`, what it falls back to on an
+  table — what each tag becomes on `eleven_v4` and `eleven_v3`, what it falls back to on an
   older model, the ceiling on each, and the ones refused by name — and the
   writing prompts are **generated** from it, so the list a writer is handed is
   the list the pipeline performs. ElevenLabs' "Enhance" pass is deliberately

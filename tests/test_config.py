@@ -169,18 +169,22 @@ def test_the_audio_tag_path_turns_itself_on_with_the_model(monkeypatch):
 def test_the_tts_rate_follows_the_model(monkeypatch):
     """The rate is metered against by SpendLedger, not merely displayed: at a
     flat 0.15 a $50 cap stopped paid calls after about $16.67 of real spend."""
-    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.05
+    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.04
 
     monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_multilingual_v2")
-    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.10
+    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.08
 
-    # v3 is TWICE turbo, and the audio tags are what the difference buys.
-    # `eleven_v3_conversational` is the $0.05 one and is a different model.
+    # v4 and v3 are TWICE turbo, and the audio tags are what the difference
+    # buys. `eleven_v3_conversational` and `eleven_v4_turbo` are the $0.04
+    # ones and are different models.
+    monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_v4")
+    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.08
+
     monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_v3")
-    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.10
+    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.08
 
     monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_v3_conversational")
-    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.05
+    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.04
 
 
 def test_the_shipped_dotenv_example_actually_loads():
