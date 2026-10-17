@@ -200,6 +200,10 @@ class Visual:
     # On a cache hit `source` says "cache"; this keeps the provider its meta
     # file recorded, so a credit line never reads "Photo: cache".
     provider: str = ""
+    # A picture's own pixels before they were fitted to the long's 16:9
+    # frame, or None. The SHORT fills a 9:16 frame from it: cut out of the
+    # 1920x1080 file a portrait crop is 607 px wide, blown up 2.4x.
+    master: Path | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -559,11 +563,39 @@ def normalize_image(src: Path, dest: Path, settings: Settings) -> Path:
     W, H = settings.long_resolution
     from pipeline.rasters import role
 
+    # No drawn outline: the long plays every picture full screen (10-10), and
+    # an outline baked into the cached file round a letterboxed photo is one
+    # no later pass can take off.
     frame = cover_fill_frame(src, W, H, ground=role(settings, "ground"),
-                             line=role(settings, "structure"))
+                             line=role(settings, "structure"), border=False)
     dest.parent.mkdir(parents=True, exist_ok=True)
     frame.save(dest, format="PNG")
     return dest
+
+
+# The longest side a kept master may have. The short's frame is delivered at
+# 1440x2560; anything past this is bytes on disk and nothing on screen.
+MASTER_MAX_SIDE = 4096
+
+
+def keep_master(raw: Path, dest: Path) -> Path | None:
+    """The fetched picture as it came, capped at MASTER_MAX_SIDE, or None
+    when it does not open as an image. Never enlarged."""
+    from PIL import Image
+
+    try:
+        with Image.open(raw) as im:
+            im = im.convert("RGB")
+            im.thumbnail((MASTER_MAX_SIDE, MASTER_MAX_SIDE))
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            im.save(dest, format="JPEG", quality=92)
+        return dest
+    except Exception as e:                          # noqa: BLE001
+        # The master is optional (the short falls back to the normalised
+        # file), so nothing about it may cost the picture: a decompression
+        # bomb guard or an odd mode is a log line, not a failed fetch.
+        log.warning("could not keep %s whole (%s)", raw.name, e)
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -922,6 +954,7 @@ class ContentManager:
             cdir = self.settings.cache_dir / "images" / content_cache_key(query, "img")
             norm = cdir / f"normalized_{choice}.png"
             meta = cdir / f"meta_{choice}.json"
+            master = cdir / f"master_{choice}.jpg"
             if norm.exists():
                 attribution, provider = "", ""
                 if meta.exists():
@@ -930,7 +963,8 @@ class ContentManager:
                     provider = m.get("provider", "")
                 return Visual(key=query, kind=kind, path=norm, is_video=False,
                               source="cache", attribution=attribution,
-                              provider=provider)
+                              provider=provider,
+                              master=master if master.exists() else None)
 
             results = self.image_client.search(query)
             source = "wikimedia" if not self.settings.mock_mode else "mock"
@@ -952,6 +986,7 @@ class ContentManager:
             client = self.image_client if source != "company_site" else self.site_client
             client.download(pick["url"], raw)
             normalize_image(raw, norm, self.settings)
+            kept = keep_master(raw, master)
             raw.unlink(missing_ok=True)
             meta.write_text(json.dumps({
                 "query": query, "provider": source, "url": pick["url"],
@@ -959,7 +994,7 @@ class ContentManager:
             }, indent=2), encoding="utf-8")
             return Visual(key=query, kind=kind, path=norm, is_video=False,
                           source=source, attribution=pick.get("attribution", ""),
-                          provider=source)
+                          provider=source, master=kept)
         except (httpx.HTTPError, OSError, KeyError, json.JSONDecodeError) as e:
             log.warning("image %r failed (%s) — filler", query, e)
             return self.filler_image(query, kind)

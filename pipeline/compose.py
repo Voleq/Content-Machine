@@ -173,11 +173,13 @@ class Layer:
     slot: str = ""
     text: str = ""                      # code-drawn type, bare-ground shots only
     size_fh: float = 0.0
-    reveal_s: float = 0.0
     max_lines: int = 3
     halign: str = "center"
-    lit: bool = True
+    # Text: set on a strip of paper (`TextSpec.panel`).
     panel: bool = False
+    # Media: the picture fills the frame, held still as the long holds its
+    # stills, cut from the picture's own full-size pixels where it has them.
+    bleed: bool = False
     z: int = 0
     # A close-up's piece of the plate (x0, y0, x1, y1, 0-1 from the top left),
     # blown up to the box and softened: what is behind the 3D Dennis when the
@@ -947,21 +949,6 @@ def _cuts_a_filled_slot(plate: Plate, values: dict,
     return False
 
 
-def _arrange(n: int, how: str, frame: tuple[int, int],
-             box: tuple[int, int, int, int] | None = None
-             ) -> list[tuple[int, int, int, int]]:
-    """`n` equal boxes down a column or across a row, inside `box`."""
-    fw, fh = frame
-    x0, y0, w, h = box or (0, 0, fw, fh)
-    if n <= 0:
-        return []
-    if how == "row":
-        step = w // n
-        return [(x0 + i * step, y0, step, h) for i in range(n)]
-    step = h // n
-    return [(x0, y0 + i * step, w, step) for i in range(n)]
-
-
 # ---------------------------------------------------------------------------
 # Building the layer list
 # ---------------------------------------------------------------------------
@@ -1214,10 +1201,11 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                     loops=nested.animated and not nested.plays_once, z=20))
                 continue
 
-            # Foreign media. It never lands on the ground bare — a photograph
-            # full-frame destroys the drawn surface everything else is built
-            # on — so the template binds it into a slot, and where it has none
-            # the renderer puts it in a frames/ plate.
+            # Foreign media. On a shot with NO plate it fills the screen
+            # (Valentin, 10-10 and 10-17: what is taken from the net plays
+            # full screen, the short's company photo with it); in a plate it
+            # goes in the slot the template binds it to, and a plate without
+            # that slot gives it a box in the upper half.
             path = resolver.image_for(src[len(MEDIA_PREFIX):])
             if path is None:
                 if not optional:
@@ -1225,17 +1213,15 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 else:
                     skipped.append(f"{shot.id}.{slot_name} <- {src}")
                 continue
-            bx = box or (int(fw * 0.08), int(fh * 0.22),
-                         int(fw * 0.84), int(fh * 0.46))
+            bleed = plate is None
+            bx = ((0, 0, fw, fh) if bleed else
+                  box or (int(fw * 0.08), int(fh * 0.22),
+                          int(fw * 0.84), int(fh * 0.46)))
             layers.append(Layer(
                 name=f"{shot.id}:media:{slot_name}", kind="media",
-                shot_id=shot.id, t_start=enter_at, t_end=t1,
+                shot_id=shot.id, t_start=t0 if bleed else enter_at, t_end=t1,
                 x=bx[0], y=bx[1], w=bx[2], h=bx[3], slot=slot_name,
-                path=path, z=20))
-
-        # -- a repeated row: one box per item, down the slot the template names
-        if shot.repeat is not None:
-            layers += _repeat_layers(shot, plate, placed, frame, resolver, t0, t1)
+                path=path, bleed=bleed, z=20))
 
         # -- the host
         if shot.host:
@@ -1266,9 +1252,9 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 name=f"{shot.id}:text:{spec.name}", kind="text",
                 shot_id=shot.id, t_start=t0, t_end=t1,
                 x=bx[0], y=bx[1], w=bx[2], h=bx[3],
-                size_fh=spec.size_fh, text=body, reveal_s=spec.draw_on_s,
+                size_fh=spec.size_fh, text=body,
                 slot=spec.color, halign=spec.halign,
-                max_lines=spec.max_lines, z=60))
+                max_lines=spec.max_lines, panel=spec.panel, z=60))
 
         # -- marks land after the thing they mark. The template grammar is
         #    `kind` and `target` (`shots.MarkSpec`); this read `style` and
@@ -1398,10 +1384,10 @@ def _meme_frame(reg: Registry, aspect: str, *, seed: str,
                 avoid: "Collection[str]") -> Plate | None:
     """Which media frame the meme sits in, rotating off recent videos.
 
-    A still from the library is foreign media, and foreign media never lands
-    on the ground bare (`media_frames`). The three treatments rotate the way
-    they do in a long, one step per video rather than per clip, because a
-    short carries one meme at most.
+    In a short, a still from the library sits in a media frame
+    (`media_frames`); the company photo no longer does, it fills the screen.
+    The three treatments rotate one step per video, because a short carries
+    one meme at most.
     """
     import random
 
@@ -1605,39 +1591,15 @@ def _bound_values(shot: Shot, plate: Plate, resolver: Resolver,
     return fill.values, unfilled, skipped
 
 
-def _repeat_layers(shot: Shot, plate: Plate | None,
-                   placed: tuple[int, int, int, int] | None,
-                   frame: tuple[int, int], resolver: Resolver,
-                   t0: float, t1: float) -> list[Layer]:
-    """One box per item of a repeated list, arranged down its slot."""
-    rep = shot.repeat
-    items = resolver.list_for(rep.src) or []
-    if not items:
-        return []
-    box = None
-    if plate is not None and rep.into and plate.slot(rep.into) is not None:
-        box = _slot_in_frame(plate, rep.into, placed or (0, 0, *frame))
-    boxes = _arrange(len(items), rep.arrange, frame, box)
-    out: list[Layer] = []
-    for idx, (value, bx) in enumerate(zip(items, boxes)):
-        enter_at = min(t0 + idx * (rep.stagger_s or shot.stagger_s),
-                       max(t1 - 0.3, t0))
-        out.append(Layer(
-            name=f"{shot.id}:repeat:{rep.into or 'frame'}:{idx}", kind="text",
-            shot_id=shot.id, t_start=enter_at, t_end=t1,
-            x=bx[0], y=bx[1], w=bx[2], h=bx[3],
-            size_fh=rep.size_fh, text=str(value), max_lines=1, z=25))
-    return out
-
-
 def _text_box(spec, frame: tuple[int, int]) -> tuple[int, int, int, int]:
     """Where a code-drawn line sits when there is no plate to put it in."""
-    from pipeline.marks import block_height, face_for
+    from pipeline.marks import block_height, face_for, panel_height
 
     fw, fh = frame
     size_px = int(round(spec.size_fh * fh))
     bw = int(fw * 0.84)
-    bh = block_height(face_for(spec.size_fh), size_px, spec.max_lines)
+    bh = (panel_height if spec.panel else block_height)(
+        face_for(spec.size_fh), size_px, spec.max_lines)
     if spec.align == "top":
         by = int(fh * 0.06)
     elif spec.align == "center":
@@ -1890,6 +1852,10 @@ def caption_obstacles(reg: Registry, shot_layers: Sequence[Layer]
                 if filled or ink:
                     out.append((name, _canvas_in_frame(plate, ink, box) if ink
                                 else _slot_in_frame(plate, name, box)))
+        elif l.kind == "media" and l.bleed:
+            # A picture that fills the screen is the ground the caption sits
+            # on, as footage is; held off it, the caption has nowhere to go.
+            continue
         elif l.kind in ("fill", "media", "text", "mark"):
             out.append((l.name.split(":", 1)[-1], box))
         elif l.kind == "host":

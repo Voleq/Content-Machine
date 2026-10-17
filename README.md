@@ -157,7 +157,7 @@ pipeline/
                          host-anchor, or the close-up FRAMING placed on its
                          eye line; the talk, idle and blink strips
   marks.py               type fitting for the shorts' free-placed type
-  media_frames.py        foreign media gets a frame (`frames/` family)
+  media_frames.py        the short's photo/meme frame treatments (`frames/`)
   chart.py               the data path for a declared chart region, and the
                          range marks on a multiples strip — nothing else; the
                          plate draws the furniture
@@ -1141,7 +1141,7 @@ env var, case-insensitive).
 - **`[MEME]` is still, `[CLIP]` moves.** A meme is normalised to a frozen PNG
   because the freeze is the joke's timing. A clip is illustration — the visual
   that proves the claim — so an animated source resolved through the clip path
-  normalises to a short looping mp4 and plays inside a frames/ plate exactly as
+  normalises to a short looping mp4 and plays full screen exactly as
   footage does. Its chain is owned library → cache → Pexels → Giphy → Tenor →
   filler: Pexels is a STOCK library and will never have a specific film or
   sports moment, which used to mean `[CLIP: lebron three pointer]` silently drew

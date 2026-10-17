@@ -44,9 +44,9 @@ log = logging.getLogger(__name__)
 SHORT_WORDS_MIN = 130
 SHORT_WORDS_MAX = 170
 
-# Rows a short's numbers sheet draws. Every short template binds four
-# (`numbers.label.0`–`.3`); a fifth or sixth row validates and reaches no
-# frame.
+# Rows a short's numbers sheet draws. Every short template steps through
+# four (`repeat.max` on the numbers sequence, `numbers.title.$n-1`); a fifth
+# or sixth row validates and reaches no frame.
 SHEET_ROWS = 4
 
 
@@ -532,10 +532,10 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             f"audio_script is {script.word_count} words (target ~140–160 for "
             f"45–55s) — pacing may be off"
         )
-    # Every row is six wide — the model enforces that — so what matters here is
-    # how many of those six carry a FIGURE. An empty cell means NO DATA and is
-    # legitimate; three empty cells in a row of six is a series too short to
-    # show direction, which is a different thing and worth saying.
+    # A row carries two to six cells, matched to `years` when it is given, so
+    # what matters here is how many carry a FIGURE. An empty cell means NO
+    # DATA and is legitimate; a row with under three figures is a series too
+    # short to show direction, which is a different thing and worth saying.
     year_counts = {sum(1 for v in row.values if str(v).strip())
                    for row in script.numbers}
     if any(c < 3 for c in year_counts):

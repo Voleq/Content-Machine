@@ -30,8 +30,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from pipeline import marks as mk
-from pipeline.compose import (MEME_SRC, BuildResult, Layer, build_layers,
-                              check_budgets, check_invariants,
+from pipeline.compose import (MEDIA_PREFIX, MEME_SRC, BuildResult, Layer,
+                              build_layers, check_budgets, check_invariants,
                               held_layer_spans, placed_meme, plan_variants,
                               punch_in_slot)
 from pipeline.plates import at_episode_hour, load_plates
@@ -47,10 +47,6 @@ from pipeline.shots import (Format, apply_order, beat_keys, choose_order,
 log = logging.getLogger(__name__)
 
 FPS = 30
-# The kit boils a data plate through three drawings at 3fps. Code-drawn
-# artwork is drawn three times too, and plays at the rate of the plate it
-# stands in for.
-BOIL_FRAMES = 3
 # THE HOST IS IN ONE VERTICAL SHOT, AND IT IS THE TURN.
 #
 # He was in three — the cold open, the payoff and the close — all at full
@@ -61,14 +57,10 @@ BOIL_FRAMES = 3
 #
 # Which shots those are is a property of the TEMPLATE, not of this module —
 # three formats put him in three different places — so this is read off the
-# format rather than written down twice. tests/test_short_shots.py asserts the
-# two agree.
+# format rather than written down twice.
 def host_shots(fmt) -> tuple[str, ...]:
     """The ids of the shots this format puts the host in."""
     return tuple(sh.id for sh in fmt.shots if sh.host)
-
-
-HOST_SHOTS = ("the-turn",)
 
 _FIGURE = re.compile(r"^(-?)([$€£]?)([\d.,]+)([KMBT]?)(%?)$")
 
@@ -726,15 +718,18 @@ class ShortResolver:
         if src in self._images:
             return self._images[src]
         out = None
-        if src == "chart.price":
-            out = self._chart()
-        elif src == MEME_SRC:
+        if src == MEME_SRC:
             out = self.meme().path
         elif src.startswith("plate."):
             out = None       # nested plates resolve through the kit, not here
         elif src.startswith("photo."):
+            # Its full-size master where the fetch kept one: the short crops
+            # a 9:16 frame out of it, and out of the long's 16:9 file that
+            # crop is a third of the width blown up.
             v = self._picture(src.split(".", 1)[1])
-            out = Path(v.path) if v is not None else None
+            out = (None if v is None else
+                   Path(v.master) if getattr(v, "master", None)
+                   and Path(v.master).exists() else Path(v.path))
         self._images[src] = out
         return out
 
@@ -778,33 +773,6 @@ class ShortResolver:
         from pipeline.chart import price_labels
 
         return price_labels(self.prices)
-
-    def _chart(self) -> list[Path] | None:
-        """The chart, drawn three times.
-
-        A full-bleed chart covers the plate behind it, so if the chart is one
-        still PNG the shot stops boiling and becomes a photograph with a live
-        plate hidden underneath. Three seeds is the kit's own answer: the
-        drawing is made again rather than transformed.
-        """
-        if self.prices is None:
-            return None
-        from pipeline.chart import render_price_plate
-        from pipeline.plates import load_plates
-
-        reg = load_plates(self.settings.assets_dir)
-        paths = []
-        try:
-            for i in range(BOIL_FRAMES):
-                out = self.workdir / f"chart_price_f{i + 1:02d}.png"
-                path, _meta = render_price_plate(
-                    reg, _legible(self.prices), out, self.settings,
-                    aspect="9x16", seed=f"boil{i}",
-                    slot_values=self._chart_labels())
-                paths.append(path)
-        except Exception:                                    # noqa: BLE001
-            return None
-        return paths
 
 
 # A 66-second chart showing every daily close reads as an audio waveform, not
@@ -871,23 +839,20 @@ def build_anchors(script: ShortScript) -> dict[str, str]:
     if script.conclusion:
         out["conclusion"] = script.conclusion
     # EARNINGS and MACRO listen for their own beats. A key with no field
-    # behind it simply never anchors, and its shot interpolates.
-    if script.verdict:
-        out["verdict"] = script.verdict
+    # behind it simply never anchors, and its shot interpolates. Only keys a
+    # template anchors on are built: `verdict`, `print`, `statement` and
+    # `priced` were, for shots that listen for none of them, while the-print
+    # listens for `reported` and had nothing.
+    if script.reported:
+        out["reported"] = script.reported
     if script.guidance:
         out["guidance"] = script.guidance
     if script.expected:
         out["expected"] = script.expected
-    if script.numbers:
-        out["print"] = script.numbers[0].label
     if script.mechanism:
         out["mechanism"] = script.mechanism[0]
     if script.consequences:
         out["consequences"] = script.consequences[0]
-    if script.headlines:
-        out["statement"] = script.headlines[0].text
-    if script.cheap_or_trap:
-        out["priced"] = script.cheap_or_trap
     # A MARKED BEAT LISTENS FOR THE WORDS SPOKEN RIGHT AFTER ITS MARKER. A
     # field is what goes ON the plate, and the writer rarely says it aloud
     # word for word — `move_summary` is "+29% today · 5x average volume",
@@ -964,12 +929,6 @@ def _part_fields(shot) -> dict:
     return out
 
 
-def resolver_probe(script: ShortScript, settings) -> "ShortResolver":
-    """A resolver used only to ask whether a shot has anything to say."""
-    return ShortResolver(script=script, workdir=Path("."), settings=settings,
-                         handle=getattr(settings, "brand_handle", "") or "")
-
-
 def prune_empty_shots(fmt: Format, probe: "ShortResolver") -> tuple[Format, list[str]]:
     """Drop every shot with no plate and no text the script can fill.
 
@@ -988,6 +947,15 @@ def prune_empty_shots(fmt: Format, probe: "ShortResolver") -> tuple[Format, list
             if src and not probe.text_for(src):
                 dropped.append(shot.id)
                 continue
+        # A full-screen picture with no picture is nothing but its credit
+        # strip. With a plate, `drop_unfillable` asks this of the drawing; a
+        # shot with no plate never reaches that test.
+        if not shot.plate and any(
+                src.startswith(MEDIA_PREFIX)
+                and probe.image_for(src[len(MEDIA_PREFIX):]) is None
+                for src in shot.bind.values()):
+            dropped.append(shot.id)
+            continue
         if shot.plate or shot.bind:
             keep.append(shot)
             continue
@@ -1113,6 +1081,17 @@ class _Cache:
             return frame_i
         return plate.frames[frame_i].png
 
+    def cover(self, path: Path, w: int, h: int) -> Image.Image:
+        """A picture cropped to fill w x h, made once: it used to be opened
+        and cropped again on every one of the shot's frames."""
+        key = ("cover", str(path), 0, (), w, h)
+        hit = self._sized.get(key)
+        if hit is None:
+            from pipeline.plate_frames import cover_into
+            src = Image.open(path).convert("RGBA")
+            self._sized[key] = hit = cover_into(src, w, h)
+        return hit
+
     def file(self, path: Path, w: int, h: int) -> Image.Image:
         key = ("file", str(path), 0, (), w, h)
         hit = self._sized.get(key)
@@ -1191,9 +1170,7 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
     if layer.kind == "media":
         if layer.path is None or not Path(layer.path).exists():
             return
-        from pipeline.plate_frames import cover_into
-        src = Image.open(layer.path).convert("RGBA")
-        canvas.alpha_composite(cover_into(src, layer.w, layer.h),
+        canvas.alpha_composite(cache.cover(Path(layer.path), layer.w, layer.h),
                                (layer.x, layer.y))
         return
 
@@ -1224,13 +1201,20 @@ def _draw_text(canvas: Image.Image, layer: Layer, settings, reg,
     """
     draw = ImageDraw.Draw(canvas)
     want = max(int(round(layer.size_fh * canvas.height)), _type_floor(canvas))
-    lines, font, size = mk.fit_lines(
+    if layer.panel:
+        missing = _draw_panel(draw, layer, want, settings, _type_floor(canvas))
+        if missing:
+            lost[layer.name] = missing
+        return
+    ink = (*reg.colour("structure"), 255)
+    # `fit_lines` hands back the characters it lost, not a size: read as
+    # one, it made the line step 0 and stacked every line on the first.
+    lines, font, _lost = mk.fit_lines(
         draw, layer.text, mk.face_for(layer.size_fh),
-        max(layer.w, 1), max(layer.h, 1),
+        layer.w, max(layer.h, 1),
         size_px=want, max_lines=layer.max_lines,
         min_px=_type_floor(canvas))
-    ink = (*reg.colour("structure"), 255)
-    step = int(size * mk.LINE_LEADING)
+    step = max(int(sum(font.getmetrics()) * mk.LINE_LEADING), 1)
     y = layer.y + max((layer.h - step * len(lines)) // 2, 0)
     for line in lines:
         w = draw.textlength(line, font=font)
@@ -1245,6 +1229,60 @@ def _draw_text(canvas: Image.Image, layer: Layer, settings, reg,
     shown = " ".join(lines)
     if len(shown) < len(layer.text.strip()):
         lost[layer.name] = len(layer.text.strip()) - len(shown)
+
+
+def _draw_panel(draw, layer: Layer, want: int, settings,
+                floor: int) -> int:
+    """Words on a strip of paper over a picture; returns how many characters
+    did not fit.
+
+    The strip is the kit's paper cut to the words: as wide as the longest
+    line, and one line shorter per line the words do not need, its foot kept
+    on the box's foot so stacked strips stay joined. The lines sit by their
+    capitals and baselines (`marks.panel_lines`), so the paper above and
+    below the words looks even. The ink is the one drawn for that paper, the
+    captions' own pair (`rasters.caption_colours`), not the episode hour's,
+    whose `structure` is the night wall's pale ink.
+    """
+    from pipeline.rasters import caption_colours
+
+    pad = int(round(want * mk.PANEL_PAD))
+    # No height limit to the fit: the strip is sized from the lines, and
+    # `max_lines` is the limit.
+    lines, font, missing = mk.fit_lines(
+        draw, layer.text, mk.face_for(layer.size_fh),
+        max(layer.w - 2 * pad, 1), 1 << 20,
+        size_px=want, max_lines=layer.max_lines, min_px=floor)
+    if not lines:
+        return missing
+    # A name and what it does ("The Procter & Gamble Company · household
+    # products") that needs two lines breaks at its dot, not before it: a
+    # line ending on the dot reads as a stray mark.
+    head, dot, rest = layer.text.partition(" · ")
+    if (len(lines) > 1 and dot and layer.max_lines >= 2
+            and max(draw.textlength(head, font=font),
+                    draw.textlength(rest, font=font)) <= layer.w - 2 * pad):
+        lines, missing = [head, rest], 0
+    cap, step, tail = mk.panel_lines(font)
+    height = max(layer.h - step * (layer.max_lines - len(lines)), 1)
+    top = layer.y + layer.h - height
+    widest = max(draw.textlength(line, font=font) for line in lines)
+    pw = min(int(round(widest)) + 2 * pad, layer.w)
+    px = (layer.x if layer.halign == "left" else
+          layer.x + layer.w - pw if layer.halign == "right" else
+          layer.x + (layer.w - pw) // 2)
+    on, paper = caption_colours(settings)
+    draw.rectangle((px, top, px + pw - 1, layer.y + layer.h - 1),
+                   fill=(*paper, 255))
+    base = top + (height - (cap + step * (len(lines) - 1) + tail)) // 2 + cap
+    for i, line in enumerate(lines):
+        w = draw.textlength(line, font=font)
+        x = (px + pad if layer.halign == "left" else
+             px + pw - pad - w if layer.halign == "right" else
+             px + (pw - w) / 2)
+        draw.text((x, base + i * step), line, font=font, fill=(*on, 255),
+                  anchor="ls")
+    return missing
 
 
 def _type_floor(canvas: Image.Image) -> int:
@@ -1333,7 +1371,8 @@ def final_encode(src: Path, out: Path, settings, *, captions: Path | None = None
     `short_final_preset`.
 
     `-tune animation` and `aq-mode=3` are for what the short is: flat colour
-    on a dark ground, where x264's defaults starve the dark and band it.
+    and thin ink on a flat paper ground, where x264's defaults band the flat
+    fields and smear the lines.
     """
     vf = []
     if captions is not None:
@@ -1547,9 +1586,9 @@ def render_frames(result: BuildResult, resolver, duration: float,
         shot = host_shot(reg, l.entry_key)
         if shot is None:
             continue
-        plan, did = face_plan(shot, list(words), l.t_start, l.t_end, FPS,
-                              seed=l.name)
-        faces[l.name] = (int(round(l.t_start * FPS)), plan)
+        strip, did = face_plan(shot, list(words), l.t_start, l.t_end, FPS,
+                               seed=l.name)
+        faces[l.name] = (int(round(l.t_start * FPS)), strip)
         face_reports[l.name] = did
 
     # Through the configured ffmpeg, capped and niced like every other
@@ -1567,8 +1606,14 @@ def render_frames(result: BuildResult, resolver, duration: float,
     # fill and stall ffmpeg while this side is still writing frames.
     err_file = out_video.with_suffix(".ffmpeg.log")
     err_fh = open(err_file, "w+b")
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
-                            stderr=err_fh)
+    try:
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                                stdout=subprocess.DEVNULL, stderr=err_fh)
+    except OSError as e:
+        # No ffmpeg to start: the log handle and its empty file go too.
+        err_fh.close()
+        err_file.unlink(missing_ok=True)
+        raise RenderError(f"could not start ffmpeg: {e}") from e
     _deprioritise(proc)
     if proc.stdin is None:
         raise RenderError("could not open the frame pipe to ffmpeg")
@@ -1875,7 +1920,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # empty frame, which is the exact failure this rewrite exists to remove.
     # A sequence repeat becomes one shot per item BEFORE anything is timed:
     # how many numbers beats a video has is a fact about its script.
-    probe = resolver if resolver is not None else resolver_probe(script, settings)
+    probe = resolver
 
     # WHICH SEQUENCE THIS VIDEO IS CUT IN (03). Before anything is expanded or
     # pruned, because an order names the shots the template was AUTHORED with
@@ -1955,8 +2000,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
     present = {sp.shot.id for sp in spans}
     problems = check_invariants(
         fmt, result,
-        host_shots=[sh.id for sh in fmt.shots
-                    if sh.host and sh.id in present])
+        host_shots=[sid for sid in host_shots(fmt) if sid in present])
     if problems:
         raise RenderError(
             "the composition breaks its own invariants:\n  "

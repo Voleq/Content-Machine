@@ -60,7 +60,7 @@ ALT_KEYS = frozenset({"plate", "bind", "lit", "focus", "notes", "prefer",
                       "captions"})
 ORDER_KEYS = frozenset({"name", "shots", "notes"})
 TEXT_KEYS = frozenset({"name", "src", "size_fh", "align", "halign",
-                       "max_lines", "draw_on_s", "color", "slot"})
+                       "max_lines", "color", "slot", "panel"})
 MARK_KEYS = frozenset({"kind", "target", "name", "after_s"})
 # `meme` marks the ONE place in a format where a still from the owned meme
 # library may go. `at` says which end of the shot's span it takes; nothing
@@ -68,8 +68,7 @@ MARK_KEYS = frozenset({"kind", "target", "name", "after_s"})
 # holds is the compositor's. See `MemeSpec`.
 MEME_KEYS = frozenset({"at", "notes"})
 MEME_AT = ("start", "end")
-REPEAT_KEYS = frozenset({"concept", "src", "max", "bind", "arrange",
-                         "stagger_s", "lit", "connector", "within",
+REPEAT_KEYS = frozenset({"src", "max", "bind", "arrange", "stagger_s", "lit",
                          "focus", "anchor"})
 
 
@@ -96,10 +95,12 @@ class TextSpec:
     align: str = "center"          # top | center | bottom, or a slot name
     halign: str = "center"         # left | center | right
     max_lines: int = 3
-    draw_on_s: float = 0.0         # type draws on over this many seconds
     color: str = "ink"             # a palette key
     slot: str | None = None        # place inside this plate slot
     name: str = ""
+    # Set on a strip of paper the width of its box: words over a full-screen
+    # picture, where ink straight on the photograph cannot be read.
+    panel: bool = False
 
     def __post_init__(self) -> None:
         if self.size_fh < MIN_TYPE_FH:
@@ -126,41 +127,26 @@ class MarkSpec:
 
 @dataclass(frozen=True)
 class RepeatSpec:
-    """One shot that places a LIST rather than a single plate.
+    """One shot that steps through a LIST, one shot per item, in time.
 
-    Every other shot in every format names one plate and fills its slots.
-    MACRO's "who it hits" is four to five consequence cards in one beat, and
-    the SHORT's four numbers shots are the same idea written out longhand.
-    So this is a general capability, not a macro affordance: N instances of
-    one concept, arranged, each entering on its own beat.
+    The SHORT's numbers beats are one sheet with the lit row advancing, and
+    MACRO's "who it hits" is one consequence per step: N shots of the shot's
+    own plate, each with `$n` in its binds, lit slot and focus.
 
-    The stagger is load-bearing. Cards arriving one at a time is something
-    provably entering, which is what lets a seven-second beat clear the hold
-    ceiling honestly rather than by exemption.
+    ONLY `arrange: "sequence"`. Cards placed side by side in ONE shot (grid,
+    row, column, a `concept` card per item) were declared here and never
+    built: the compositor read fields this spec never had and raised on the
+    first such template. Three cards in a 9:16 column also measure under the
+    readability floor, which is why every shipped list is told over time.
+    `parse_format` refuses the rest by name.
     """
 
     src: str
-    concept: str | None = None     # spatial only; a sequence reuses the plate
     max: int = 5
     bind: dict[str, str] = field(default_factory=dict)
-    # grid | row | column place N cards in ONE shot.
-    # sequence expands the shot into N shots in TIME, one per item — which is
-    # what the SHORT's numbers beats are: one sheet, the lit row advancing.
-    arrange: str = "grid"
+    arrange: str = "sequence"
     stagger_s: float = 0.5
-    lit: str | None = None         # sequence only: which slot each step lights
-    # A mark drawn in the GAP between consecutive cards. The arrows are what
-    # make a chain read as a chain rather than as unrelated notes.
-    connector: str | None = None
-    # Arrange inside this slot of the shot's own plate rather than across the
-    # bare frame. Cards on the desk are in the room; cards centred on paper
-    # are nowhere.
-    within: str | None = None
-    # Set by expansion, never authored: which single item of the list this
-    # expanded shot places. A sequence of CARDS is one card per beat, full
-    # size — three in a column measure 33px type, under the readability
-    # floor, so a chain of three at 9:16 has to be told over time.
-    only: int | None = None
+    lit: str | None = None         # which slot each step lights
     # Which slot each step moves in on. Four steps that differ only by which
     # row carries a box are one shot with extra runtime — the composition has
     # to change, not just the highlight.
@@ -170,10 +156,6 @@ class RepeatSpec:
     # still finds it; step two of `numbers.$n-1` listens for `numbers.1`, the
     # second row's own words, and a card lands as its row is read.
     anchor: str | None = None
-
-    @property
-    def spatial(self) -> bool:
-        return self.arrange in ("grid", "row", "column")
 
 
 @dataclass(frozen=True)
@@ -355,11 +337,6 @@ class Format:
     # Alternate cut orders. The authored sequence is always available under
     # AS_AUTHORED and is never listed here.
     orders: tuple[ShotOrder, ...] = ()
-    # Whether the room advances across the runtime — light, clutter, the
-    # wall, the clock. Declared by the template, because it is a property of
-    # the format and not of the frame: a future 16:9 format that is ninety
-    # seconds long has nowhere to travel, and guessing from the aspect ratio
-    # would switch four devices on for it in silence.
     # THE ROWS A PHONE SHOWS CLEAR, `(top, bottom)` in frame pixels, or None.
     # A short's words stay inside it (item 27): YouTube lays its title,
     # channel name and buttons over the bottom of a Short and its search bar
@@ -391,9 +368,9 @@ def _text_specs(raw: Any, where: str) -> tuple[TextSpec, ...]:
                 align=t.get("align", "center"),
                 halign=t.get("halign", "center"),
                 max_lines=int(t.get("max_lines", 3)),
-                draw_on_s=float(t.get("draw_on_s", 0.0)),
                 color=t.get("color", "ink"), slot=t.get("slot"),
-                name=t.get("name", t.get("src", f"text{i}"))))
+                name=t.get("name", t.get("src", f"text{i}")),
+                panel=bool(t.get("panel", False))))
         except KeyError as exc:
             raise TemplateError(f"{where}: text #{i} missing {exc}") from exc
     return tuple(out)
@@ -475,25 +452,21 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
             _reject_unknown(rep_raw, REPEAT_KEYS, f"{where} repeat")
             try:
                 repeat = RepeatSpec(
-                    src=rep_raw["src"], concept=rep_raw.get("concept"),
+                    src=rep_raw["src"],
                     max=int(rep_raw.get("max", 5)),
                     bind=dict(rep_raw.get("bind") or {}),
-                    arrange=rep_raw.get("arrange", "grid"),
+                    arrange=rep_raw.get("arrange", "sequence"),
                     stagger_s=float(rep_raw.get("stagger_s", 0.5)),
                     lit=rep_raw.get("lit"),
-                    connector=rep_raw.get("connector"),
-                    within=rep_raw.get("within"),
                     focus=rep_raw.get("focus"),
                     anchor=rep_raw.get("anchor"))
             except KeyError as exc:
                 raise TemplateError(f"{where} repeat missing {exc}") from exc
-            if repeat.spatial and not repeat.concept:
+            if repeat.arrange != "sequence":
                 raise TemplateError(
-                    f"{where} repeat: a {repeat.arrange} repeat places cards "
-                    f"and needs a concept")
-            if not repeat.spatial and repeat.arrange != "sequence":
-                raise TemplateError(
-                    f"{where} repeat: unknown arrange {repeat.arrange!r}")
+                    f"{where} repeat: arrange {repeat.arrange!r} is not "
+                    f"built — a list is told over time, one shot per item "
+                    f"(\"sequence\")")
         alts: list[Variant] = []
         for j, a in enumerate(s.get("alts") or ()):
             if isinstance(a, str):
@@ -556,7 +529,7 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
         if not 0 <= safe[0] < safe[1] <= frame[1]:
             raise TemplateError(f"{name}: `safe` {safe} is not a band inside "
                                 f"the {frame[1]} px frame")
-    fmt = Format(name=name, aspect=raw.get("aspect", "9:16"), frame=frame,
+    fmt = Format(name=name, aspect=raw.get("aspect", "9x16"), frame=frame,
                  shots=tuple(shots), source=source,
                  orders=_parse_orders(raw.get("orders"), name, tuple(shots)),
                  safe=safe)
@@ -850,27 +823,23 @@ def expand_sequences(fmt: Format, items_for) -> Format:
     from dataclasses import replace
     for shot in fmt.shots:
         rep = shot.repeat
-        if rep is None or rep.spatial:
+        if rep is None:
             out.append(shot)
             continue
         items = list(items_for(rep.src) or [])[:max(rep.max, 1)]
         if not items:
-            # Nothing to step through. The repeat comes OFF — left on, it
-            # reaches the compositor as an unexpanded sequence and is taken
-            # for a spatial one. The shot keeps its plate; the caller's prune
-            # drops it if that leaves nothing.
+            # Nothing to step through. The repeat comes OFF, so no later
+            # step mistakes the shot for an unexpanded list. The shot keeps
+            # its plate; the caller's prune drops it if that leaves nothing.
             out.append(replace(shot, repeat=None))
             continue
         for i in range(1, len(items) + 1):
-            # A sequence that names a concept places that card, one per step.
-            # A sequence that does not reuses the shot's own plate and only
-            # advances which slot is lit.
-            step = (replace(rep, arrange="grid", only=i - 1)
-                    if rep.concept else None)
+            # Each step reuses the shot's own plate and advances which slot
+            # is lit and what its binds name.
             out.append(replace(
                 shot,
                 id=f"{shot.id}-{i}",
-                repeat=step,
+                repeat=None,
                 lit=_sub(rep.lit, i),
                 focus=_sub(rep.focus, i),
                 # THE BINDS STEP TOO. A sequence that reuses the plate and
@@ -1034,17 +1003,21 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
         spans.append(Span(shot=s, start=start, end=end,
                           anchored=at[i] is not None))
 
-    # Repair any overlap the minimum introduced, then pin the tail to the
-    # audio: a shot that outlives the narration is a frame with no reason to
-    # be there.
-    for i in range(len(spans) - 1):
-        if spans[i].end > spans[i + 1].start:
-            spans[i] = Span(spans[i].shot, spans[i].start,
-                            spans[i + 1].start, spans[i].anchored)
+    # Pin the tail to the audio — a shot that outlives the narration is a
+    # frame with no reason to be there — then repair any overlap the minimum
+    # or the pin introduced. The pin used to come after the repair, so a
+    # last beat on the last words was moved back over the span before it and
+    # both plates were drawn at once.
     if spans:
         spans[-1] = Span(spans[-1].shot,
                          min(spans[-1].start, duration - MIN_SHOT_S),
                          duration, spans[-1].anchored)
+    for i in range(len(spans) - 1):
+        if spans[i].end > spans[i + 1].start:
+            spans[i] = Span(spans[i].shot, spans[i].start,
+                            spans[i + 1].start, spans[i].anchored)
+    # A span the pin swallowed whole has no instant left to be drawn in.
+    spans = [sp for sp in spans if sp.end > sp.start]
 
     # max_hold_s is a CEILING ON THE SPAN, for every shot — and it is no
     # longer met by starting the next shot early.
@@ -1238,13 +1211,17 @@ def _split_long_beats(spans: list[Span], words: Sequence[Any],
             out.append(sp)
             continue
         cut = _split_point(sp, words)
-        wide = replace(sh, part=1)
-        # Part 2 is a cut, not an entrance: whatever part 1 drew on, staggered
-        # in or landed is already on screen, so none of it starts again.
+        # The meme place names one END of the beat, and only one part owns
+        # it: kept on both, the compositor took part 1's and an "end" meme
+        # landed mid-beat, at the cut.
+        at = sh.meme.at if sh.meme else ""
+        wide = replace(sh, part=1, meme=sh.meme if at == "start" else None)
+        # Part 2 is a cut, not an entrance: whatever part 1 staggered in or
+        # landed is already on screen, so none of it starts again.
         close = replace(
             sh, id=f"{sh.id}-in", part=2, part_of=sh.id, focus=slot,
             anchor=None, enter=None, stagger_s=0.0,
-            text=tuple(replace(t, draw_on_s=0.0) for t in sh.text),
+            meme=sh.meme if at == "end" else None,
             marks=tuple(replace(m, after_s=0.0) for m in sh.marks))
         out.append(Span(wide, sp.start, cut, sp.anchored))
         out.append(Span(close, cut, sp.end, False))

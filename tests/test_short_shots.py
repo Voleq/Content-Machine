@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from pipeline.compose import build_layers, check_invariants, held_layer_spans
-from pipeline.render_short import HOST_SHOTS
+from pipeline.render_short import host_shots
 from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, expand_sequences,
                             load_format, parse_format, resolve_spans,
                             TemplateError)
@@ -223,7 +223,7 @@ def test_the_host_appears_in_exactly_the_shots_they_are_in(fmt, reg):
     _spans, result = _build(fmt, reg)
     got = {l.shot_id for l in result.layers if l.kind == "host"}
     assert got == SPEC_HOST_SHOTS
-    assert set(HOST_SHOTS) == SPEC_HOST_SHOTS
+    assert set(host_shots(fmt)) == SPEC_HOST_SHOTS
 
 
 def test_large_type_and_the_caption_band_never_share_a_shot(fmt, reg):

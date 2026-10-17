@@ -176,8 +176,10 @@ def _sig(x: float) -> str:
 
 def money(v: float, *, currency: str = "$") -> str:
     """`496000000` -> `$496M`; `-89000000` -> `-$89M`; `1.23e9` -> `$1.23B`."""
-    a = abs(v)
-    sign = "-" if v < 0 else ""
+    # Rounded to the three figures it prints BEFORE the suffix is chosen:
+    # $999.6M used to print as "$1000M".
+    a = float(f"{abs(v):.3g}")
+    sign = "-" if v < 0 and a else ""
     for div, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")):
         if a >= div:
             return f"{sign}{currency}{_sig(a / div)}{suffix}"
@@ -191,7 +193,12 @@ def count(v: float) -> str:
 
 def rate(v: float) -> str:
     """A percentage the workbook holds as a percent: `58.0` -> `58%`."""
-    return f"{v:.1f}%" if abs(v) < 10 and v != int(v) else f"{v:.0f}%"
+    # Rounded first, so -0.04 is "0%" rather than "-0.0%" and 9.96 is "10%"
+    # rather than "10.0%".
+    r = round(v, 1)
+    if r == 0:
+        return "0%"
+    return f"{r:.1f}%" if abs(r) < 10 and r != int(r) else f"{r:.0f}%"
 
 
 def per_share(v: float) -> str:
@@ -267,8 +274,6 @@ def year_labels(data, script_years: list[str] | None = None) -> list[str]:
         m = _RELATIVE_FY.match(h.strip())
         if m and year is not None:
             out.append(f"FY{(year - 1 - int(m.group(1))) % 100:02d}")
-        elif h.strip().upper() == "FY-0" and year is not None:
-            out.append(f"FY{(year - 1) % 100:02d}")
         else:
             out.append(h)
     return out

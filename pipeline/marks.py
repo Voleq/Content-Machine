@@ -157,7 +157,8 @@ def fit_lines(draw, text: str, font_name: str, box_w: int, box_h: int,
               ) -> tuple[list[str], ImageFont.FreeTypeFont, int]:
     """Wrap `text` into at most `max_lines`, shrinking until it fits.
 
-    Returns the lines and the font that holds them. The caller passes the size
+    Returns the lines, the font that holds them and how many characters did
+    not fit (0 unless the type hit the floor). The caller passes the size
     it WANTS — a fraction of frame height turned into pixels — and gets back
     the largest size at or below it that actually fits the box. Type that
     silently overflows its box is how a disclaimer ends up printed twice.
@@ -210,6 +211,33 @@ def fit_lines(draw, text: str, font_name: str, box_w: int, box_h: int,
     lines = full[:keep]
     lost = sum(len(ln) for ln in full[keep:])
     return lines, font, lost
+
+
+# WORDS ON A STRIP OF PAPER over a picture (the short's company photo). The
+# strip, not white space, is what holds them off what is behind, so they sit
+# closer than free-placed type: these are fractions of the type's size. The
+# compositor sizes the strip with `panel_height` and the renderer sets the
+# lines with `panel_lines`, so the box placed is the box drawn.
+PANEL_PAD = 0.42          # off the strip's left and right edges
+PANEL_VPAD = 0.30         # above the capitals and below the baseline
+PANEL_LEADING = 1.12      # baseline to baseline
+
+
+def panel_lines(font: ImageFont.FreeTypeFont) -> tuple[int, int, int]:
+    """(capital height, line step, room under the last baseline) for words
+    set on a strip, at this font's size."""
+    cap = -font.getbbox("H", anchor="ls")[1]
+    step = max(int(round(font.size * PANEL_LEADING)), 1)
+    tail = int(round(font.getmetrics()[1] * 0.45))
+    return cap, step, tail
+
+
+def panel_height(font_name: str, size_px: int, lines: int) -> int:
+    """How tall a strip holding `lines` lines of this face and size is."""
+    size = max(int(size_px), 1)
+    cap, step, tail = panel_lines(load_font(font_name, size))
+    return (2 * int(round(size * PANEL_VPAD)) + cap
+            + step * (max(lines, 1) - 1) + tail)
 
 
 def block_height(font_name: str, size_px: int, lines: int) -> int:
