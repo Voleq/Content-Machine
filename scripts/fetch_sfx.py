@@ -51,6 +51,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
+from collections.abc import Collection, Sequence
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,36 +73,45 @@ from pipeline.sound import EFFECT_KEYS, variant_names  # noqa: E402
 
 API = "https://freesound.org/apiv2"
 
-# What to ask for, per key. The search terms matter: "buzzer" alone returns
-# klaxons, and the deadpan set is meant to be the room rather than a
-# punchline, so those ask for quiet and dry.
-QUERIES: dict[str, str] = {
-    "windows_error": "windows error beep alert chime",
-    "cash_register": "cash register ka-ching receipt",
-    "record_scratch": "vinyl record scratch stop",
-    "sad_trombone": "sad trombone wah wah fail",
-    "camera_shutter": "camera shutter click dslr",
-    "vine_boom": "boom impact bass hit short",
-    "coffee_slurp": "coffee sip slurp mug quiet",
-    "keyboard_clack": "mechanical keyboard single keypress dry",
-    "paper_rustle": "paper page turn rustle quiet",
-    "buzzer": "buzzer wrong answer short dry",
-    "ding": "small bell ding single soft",
+# What to ask for, per key, most specific first. Freesound treats every word
+# of a query as mandatory, so one query of five words only finds a sound
+# tagged with all five: "windows error beep alert chime" found nothing, and
+# the first real run came back with 10 of its 33 files. Each key now steps
+# down to shorter wording until it has a take for every file it fills. The
+# wording still matters, so a bare word is only ever the last resort:
+# "buzzer" alone returns klaxons.
+QUERIES: dict[str, tuple[str, ...]] = {
+    "windows_error": ("windows error", "computer error beep", "error beep"),
+    "cash_register": ("cash register ka-ching", "cash register", "cash till"),
+    "record_scratch": ("vinyl record scratch stop", "record scratch",
+                       "vinyl scratch"),
+    "sad_trombone": ("sad trombone", "trombone fail", "trombone"),
+    "camera_shutter": ("camera shutter click dslr", "camera shutter",
+                       "shutter click"),
+    "vine_boom": ("boom impact bass", "bass boom", "boom hit"),
+    "coffee_slurp": ("coffee slurp", "slurp", "coffee sip"),
+    "keyboard_clack": ("mechanical keyboard keypress", "mechanical keyboard",
+                       "keyboard key"),
+    "paper_rustle": ("paper page turn", "page turn", "paper rustle"),
+    "buzzer": ("buzzer wrong answer", "wrong buzzer", "game show buzzer",
+               "buzzer"),
+    "ding": ("small bell ding", "bell ding", "ding"),
     # not in SFX_KEYS: the machine fires these off structure
     # (`pipeline/sound.py`). The swish on every cut, and the hit on a short's
     # first frame, its payoff and every chapter change of the long.
-    "whoosh": "whoosh transition swish short",
-    "impact": "cinematic impact hit low punch short",
+    "whoosh": ("whoosh transition swish short", "whoosh transition", "whoosh",
+               "swish"),
+    "impact": ("cinematic impact hit", "impact hit", "impact"),
     # One per design move, fetched now so this one run gets everything; the
     # renderer plays them once the moves are wired (`sound.MOVE_CUES`).
-    "tick_roll": "fast mechanical ratchet ticking counter short",
-    "marker_draw": "marker pen writing on paper stroke short",
-    "marker_circle": "marker pen circling scribble on paper",
-    "knock": "soft single knock wood tap dry",
-    "pin_tap": "push pin into cork board tap",
-    "flip": "flip clock card flap mechanical single",
-    "sting": "short musical sting accent",
-    "pop": "pop bubble click short",
+    "tick_roll": ("ratchet ticking", "ratchet", "mechanical ticking"),
+    "marker_draw": ("marker pen writing", "marker writing", "marker pen"),
+    "marker_circle": ("marker scribble", "pen scribble", "scribble"),
+    "knock": ("single knock wood", "knock wood", "knock"),
+    "pin_tap": ("push pin cork board", "push pin", "thumbtack"),
+    "flip": ("flip clock", "card flip", "flap mechanical"),
+    "sting": ("musical sting", "music stinger", "stinger"),
+    "pop": ("pop bubble click short", "pop click", "pop"),
 }
 
 # Every effect the renderers fire gets this many takes: `key.wav`, `key-2.wav`,
@@ -110,19 +121,33 @@ VARIANTS = 3
 
 # The room bed. Not an effect — a continuous low hum that runs under the whole
 # video, so the audio between words is a room rather than digital silence.
-ROOM_QUERY = "room tone ambience quiet office hum"
+# It loops, so it is cut and seamed like the ambience below.
+ROOM_QUERIES: tuple[str, ...] = ("room tone office", "office room tone",
+                                 "room tone", "office ambience")
 
 # The room at each hour, and what plays under a shot that shows rain, snow or
 # a flickering screen (`sound.ROOM_BY_HOUR`, `sound.SET_LAYERS`). Loops, so a
 # take has to be long enough to loop without the seam being the loudest thing
 # in it.
-AMBIENCE_QUERIES: dict[str, str] = {
-    "room_night": "quiet room at night ambience radiator hum",
-    "room_dusk": "quiet room evening ambience distant city traffic window",
-    "rain_window": "rain on window glass indoor ambience",
-    "winter_room": "quiet winter indoor ambience wind outside muffled",
-    "screen_buzz": "crt monitor electrical hum faint",
+AMBIENCE_QUERIES: dict[str, tuple[str, ...]] = {
+    "room_night": ("night room ambience radiator", "night room ambience",
+                   "night interior", "night ambience"),
+    "room_dusk": ("evening room ambience traffic", "evening room ambience",
+                  "distant traffic window", "evening ambience"),
+    "rain_window": ("rain window indoor", "rain window", "rain glass",
+                    "rain indoor"),
+    "winter_room": ("winter wind indoor", "wind outside window",
+                    "wind indoor", "wind window"),
+    "screen_buzz": ("crt monitor hum", "crt hum", "electrical hum"),
 }
+
+# Freesound allows 60 API requests a minute (and 2000 a day). Every rung of a
+# ladder can cost two (the CC0 filter, then once without it), so the searches
+# are spaced to stay under it rather than turning into 429s halfway through.
+# The previews come from Freesound's CDN, which is not counted.
+REQUEST_GAP_S = 1.1
+THROTTLED_WAIT_S = 65.0
+DOWNLOAD_TRIES = 3
 
 # CC0 only (see the module docstring). The filter takes the licence's NAME,
 # but the `license` field of a result is its deed URL — the API serialises
@@ -140,18 +165,21 @@ LOOP_SECONDS = 30.0          # what a loop is cut to, seam crossfaded
 LOOP_SEAM_SECONDS = 1.0
 
 
-def wanted() -> list[tuple[str, str, str, float, bool]]:
-    """Every file this fetch fills: `(file, key, query, max_s, loop)`.
+Wanted = tuple[str, str, tuple[str, ...], float, bool]
+
+
+def wanted() -> list[Wanted]:
+    """Every file this fetch fills: `(file, key, queries, max_s, loop)`.
 
     The room tone is not here; `--room-tone` owns it, as it always has.
     """
-    out: list[tuple[str, str, str, float, bool]] = []
-    for key, query in QUERIES.items():
+    out: list[Wanted] = []
+    for key, queries in QUERIES.items():
         n = VARIANTS if key in EFFECT_KEYS else 1
         for name in variant_names(key, n):
-            out.append((name, key, query, MAX_SECONDS, False))
-    for key, query in AMBIENCE_QUERIES.items():
-        out.append((f"{key}.wav", key, query, ROOM_MAX_SECONDS, True))
+            out.append((name, key, queries, MAX_SECONDS, False))
+    for key, queries in AMBIENCE_QUERIES.items():
+        out.append((f"{key}.wav", key, queries, ROOM_MAX_SECONDS, True))
     return out
 
 
@@ -159,24 +187,61 @@ def _key() -> str | None:
     return os.environ.get("FREESOUND_API_KEY") or os.environ.get("FREESOUND_TOKEN")
 
 
-def search(query: str, token: str, *, max_s: float,
+def page_url(hit: dict) -> str:
+    """The sound's own page: what SOURCES.json records as its source."""
+    return f"https://freesound.org/s/{hit.get('id')}/"
+
+
+def search(queries: str | Sequence[str], token: str, *, max_s: float,
            min_s: float = 0.1) -> dict | None:
-    """The most relevant CC0 hit for `query`, or None."""
-    hits = search_many(query, token, max_s=max_s, min_s=min_s, n=1)
+    """The most relevant CC0 hit for `queries`, or None."""
+    hits = search_many(queries, token, max_s=max_s, min_s=min_s, n=1)
     return hits[0] if hits else None
 
 
-def search_many(query: str, token: str, *, max_s: float, min_s: float = 0.1,
-                n: int = 1) -> list[dict]:
-    """Up to `n` CC0 hits for `query`, most relevant first.
+def search_many(queries: str | Sequence[str], token: str, *, max_s: float,
+                min_s: float = 0.1, n: int = 1,
+                skip: Collection[str] = ()) -> list[dict]:
+    """CC0 hits enough for `n` files, most relevant first.
 
-    Asks for CC0 outright, then, if that filter is refused or turns up nothing,
-    once more without it, picking CC0 out of the answer here. So a filter the
-    API reads differently costs one request rather than every sound.
+    The queries are asked in turn, most specific first, until `n` hits are in
+    hand. Freesound needs every word of a query to match, so a long one finds
+    exactly the sound or nothing, and a shorter one behind it finds the rest.
+    A later query's hits come after an earlier one's and never repeat them,
+    nor a sound in `skip` (page URLs another file already plays). All of the
+    last answer is kept, so a failed download has a spare behind it.
+
+    Each query asks for CC0 outright, then, if that filter is refused or
+    turns up nothing, once more without it, picking CC0 out of the answer
+    here. So a filter the API reads differently costs one request rather than
+    every sound.
     """
-    import httpx
-
+    if isinstance(queries, str):
+        queries = (queries,)
     duration = f"duration:[{min_s} TO {max_s}]"
+    seen = set(skip)
+    out: list[dict] = []
+    for query in queries:
+        hits, failures = _cc0_hits(query, duration, token)
+        if len(failures) == 2:
+            exc = failures[-1]
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            print(f"  search failed: {type(exc).__name__}"
+                  f"{f' {status}' if status else ''}", file=sys.stderr)
+            # A refused search is not one that shorter words would answer.
+            break
+        for hit in hits:
+            if page_url(hit) not in seen:
+                seen.add(page_url(hit))
+                out.append(hit)
+        if len(out) >= n:
+            break
+    return out
+
+
+def _cc0_hits(query: str, duration: str,
+              token: str) -> tuple[list[dict], list[Exception]]:
+    """One query's CC0 hits in Freesound's relevance order, and what failed."""
     failures: list[Exception] = []
     for flt in (f"{duration} {CC0_FILTER}", duration):
         params = {
@@ -186,12 +251,7 @@ def search_many(query: str, token: str, *, max_s: float, min_s: float = 0.1,
             "page_size": 30,
         }
         try:
-            # In a header, not a `token=` parameter: httpx's error text
-            # carries the URL, and it was printed with the key in it.
-            r = httpx.get(f"{API}/search/text/", params=params, timeout=30,
-                          headers={"Authorization": f"Token {token}"})
-            r.raise_for_status()
-            results = (r.json() or {}).get("results") or []
+            results = _ask(params, token)
         except Exception as exc:  # noqa: BLE001 — one failed key is not fatal
             failures.append(exc)
             continue
@@ -199,12 +259,35 @@ def search_many(query: str, token: str, *, max_s: float, min_s: float = 0.1,
         # record scratch or sad trombone under the cap is a fragment of one.
         hits = [h for h in results if is_cc0(h.get("license", ""))]
         if hits:
-            return hits[:n]
-    if len(failures) == 2:
-        exc = failures[-1]
-        status = getattr(getattr(exc, "response", None), "status_code", None)
-        print(f"  search failed: {type(exc).__name__}"
-              f"{f' {status}' if status else ''}", file=sys.stderr)
+            return hits, failures
+    return [], failures
+
+
+_last_ask = 0.0
+
+
+def _ask(params: dict, token: str) -> list[dict]:
+    """One text search, spaced under the rate limit. Throttled anyway, it
+    waits once for the minute to pass and asks again."""
+    import httpx
+
+    global _last_ask
+    for attempt in (1, 2):
+        wait = _last_ask + REQUEST_GAP_S - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        _last_ask = time.monotonic()
+        # In a header, not a `token=` parameter: httpx's error text carries
+        # the URL, and it was printed with the key in it.
+        r = httpx.get(f"{API}/search/text/", params=params, timeout=30,
+                      headers={"Authorization": f"Token {token}"})
+        if r.status_code == 429 and attempt == 1:
+            print(f"  Freesound says slow down; waiting "
+                  f"{THROTTLED_WAIT_S:.0f}s", file=sys.stderr)
+            time.sleep(THROTTLED_WAIT_S)
+            continue
+        r.raise_for_status()
+        return (r.json() or {}).get("results") or []
     return []
 
 
@@ -304,8 +387,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.force or rt is None or rt.generated:
             print(f"room tone   : {ROOM_TONE_NAME} will be fetched")
     if args.dry_run:
-        for name, _k, query, _max_s, _loop in todo:
-            print(f"  would fetch {name:20s} <- {query!r}")
+        for name, _k, queries, _max_s, _loop in todo:
+            print(f"  would fetch {name:20s} <- {' / '.join(queries)}")
         return 0
 
     token = _key()
@@ -328,40 +411,34 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     fetched = 0
+    # A sound plays under one name only. The takes already on disk, under
+    # this key or any other, are never fetched again as a new one.
+    refetch = {w[0] for w in todo} | ({ROOM_TONE_NAME} if args.force else set())
+    held = {s.source for name, s in known.items()
+            if s.real and name not in refetch}
     # One search per KEY, however many of its takes are missing: the takes
-    # are the next most relevant CC0 hits, never one already on disk.
-    by_key: dict[str, list[tuple[str, str, str, float, bool]]] = {}
+    # are its next most relevant CC0 hits.
+    by_key: dict[str, list[Wanted]] = {}
     for w in todo:
         by_key.setdefault(w[1], []).append(w)
     for key, need in by_key.items():
-        _name, _k, query, max_s, loop = need[0]
-        takes = sum(1 for w in files if w[1] == key)
-        hits = search_many(query, token, max_s=max_s, n=takes + len(need),
-                           min_s=AMBIENCE_MIN_SECONDS if loop else 0.1)
-        held = {known[w[0]].source for w in files
-                if w[1] == key and w not in need and known.get(w[0])}
-        hits = [h for h in hits
-                if f"https://freesound.org/s/{h.get('id')}/" not in held]
+        _name, _k, queries, max_s, loop = need[0]
+        hits = search_many(queries, token, max_s=max_s, n=len(need),
+                           min_s=AMBIENCE_MIN_SECONDS if loop else 0.1,
+                           skip=held)
+        found = len(hits)
         for name, *_ in need:
             print(f"  {name} ...", end=" ", flush=True)
             if not hits:
-                print("no CC0 result")
+                print("no CC0 result for " + " / ".join(map(repr, queries))
+                      if not found else f"no take left of the {found} found")
                 continue
-            hit = hits.pop(0)
-            dest = out / name
-            backup = dest.with_suffix(".wav.placeholder")
-            if dest.exists() and not backup.exists():
-                shutil.copy2(dest, backup)      # keep the offline fallback
-            if not download(hit, dest, loop=loop):
+            hit = _fetch_into(out / name, hits, loop=loop)
+            if hit is None:
                 print("failed")
                 continue
-            known[dest.name] = AudioSource(
-                name=dest.name,
-                source=f"https://freesound.org/s/{hit.get('id')}/",
-                licence=str(hit.get("license", "")),
-                author=str(hit.get("username", "")),
-                generated=False,
-            )
+            known[name] = _source(name, hit)
+            held.add(page_url(hit))
             fetched += 1
             print(f"ok  ({hit.get('license', '?')}, {hit.get('username', '?')})")
 
@@ -369,16 +446,14 @@ def main(argv: list[str] | None = None) -> int:
         rt = known.get(ROOM_TONE_NAME)
         if args.force or rt is None or rt.generated:
             print(f"  {ROOM_TONE_NAME} ...", end=" ", flush=True)
-            hit = search(ROOM_QUERY, token, max_s=ROOM_MAX_SECONDS)
-            if hit is not None and download(hit, out / ROOM_TONE_NAME,
-                                            trim_lead=False):
-                known[ROOM_TONE_NAME] = AudioSource(
-                    name=ROOM_TONE_NAME,
-                    source=f"https://freesound.org/s/{hit.get('id')}/",
-                    licence=str(hit.get("license", "")),
-                    author=str(hit.get("username", "")),
-                    generated=False,
-                )
+            # It loops under the whole video, so it is cut and seamed like
+            # the ambience: a two-second room repeats audibly.
+            hits = search_many(ROOM_QUERIES, token, max_s=ROOM_MAX_SECONDS,
+                               min_s=AMBIENCE_MIN_SECONDS, skip=held)
+            hit = _fetch_into(out / ROOM_TONE_NAME, hits, loop=True)
+            if hit is not None:
+                known[ROOM_TONE_NAME] = _source(ROOM_TONE_NAME, hit)
+                held.add(page_url(hit))
                 fetched += 1
                 print("ok")
             else:
@@ -424,6 +499,33 @@ def main(argv: list[str] | None = None) -> int:
           "still an oscillator — that defeats the gate rather than passing it.",
           file=sys.stderr)
     return 1
+
+
+def _fetch_into(dest: Path, hits: list[dict], *, loop: bool) -> dict | None:
+    """The first of `hits` that downloads into `dest`, taken off the list.
+
+    A few tries at most, so a download that cannot work at all does not use
+    up every take the other files of the key were going to have. The
+    placeholder already there is set aside first, as the offline fallback,
+    and stays in place until a download succeeds.
+    """
+    backup = dest.with_suffix(".wav.placeholder")
+    for _ in range(DOWNLOAD_TRIES):
+        if not hits:
+            break
+        hit = hits.pop(0)
+        if dest.exists() and not backup.exists():
+            shutil.copy2(dest, backup)      # keep the offline fallback
+        if download(hit, dest, loop=loop):
+            return hit
+    return None
+
+
+def _source(name: str, hit: dict) -> AudioSource:
+    return AudioSource(name=name, source=page_url(hit),
+                       licence=str(hit.get("license", "")),
+                       author=str(hit.get("username", "")),
+                       generated=False)
 
 
 def _unattributed(directory: Path, known: dict) -> list[str]:

@@ -83,6 +83,17 @@ def workspace(settings: Settings) -> Path:
     return ws
 
 
+@pytest.fixture()
+def unfetched_sounds(monkeypatch):
+    """The shipped sounds as a fresh checkout has them: every one a
+    placeholder. The install runs this suite in /opt/dennis, where the
+    operator has fetched the real ones, so a test about the placeholders
+    sets them up rather than assuming them."""
+    from pipeline import audio_assets
+
+    monkeypatch.setattr(audio_assets, "load_sources", lambda directory: {})
+
+
 @pytest.fixture(autouse=True)
 def _no_network(monkeypatch):
     """Fail any test that tries to open a real socket connection."""

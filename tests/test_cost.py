@@ -153,7 +153,8 @@ def test_a_corrupt_ledger_fails_closed_and_is_never_overwritten(settings):
     assert ledger.path.read_text(encoding="utf-8") == "{corrupt"
 
 
-def test_the_short_report_blocks_on_placeholder_audio(settings, short_valid_json):
+def test_the_short_report_blocks_on_placeholder_audio(settings, short_valid_json,
+                                                       unfetched_sounds):
     """The operator sees it before tapping Approve, not after the upload.
 
     The SHORT lane has no gate battery — the LONG runs `run_gates` at intake
