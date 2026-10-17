@@ -7,15 +7,13 @@ segment plans produced here and never invent their own timings.
 Anchor resolution rules:
   * anchor word/phrase  -> start time of the first case/punctuation-
                            insensitive match in the word stream
-  * anchor not found    -> proportional fallback position, cue flagged
-                           `fallback=True` (callers log the warning)
+  * anchor not found    -> None; the caller decides (a SHORT shot shares the
+                           time between its anchored neighbours, `shots`)
   * LONG char_offset    -> the word containing that clean-text offset,
                            else the first word starting after it
 
-SHORT beats (Noise or signal?): Hook -> Why (headlines ON the chart) ->
-Gut check (multi-year numbers sheet) -> Payoff (deadpan conclusion).
-Beat boundaries scale with the real audio duration and are refined by the
-script's own anchors — no scene time is ever hardcoded in a renderer.
+The SHORT's beats are timed by its template (`shots.resolve_spans`), off the
+same word stream; no scene time is ever hardcoded in a renderer.
 """
 
 from __future__ import annotations
@@ -704,7 +702,6 @@ def plan_long_segments(
         the writer directed is one shot however long it runs: the room and the
         pose are his, and splitting it would cut his picture against itself.
         """
-        nonlocal host_i
         span = b - a
         if span <= 0:
             return
@@ -996,20 +993,28 @@ def estimate_dennis_alone(script, settings) -> float | None:
 # --------------------------------------------------------------------------
 
 
-def chapter_windows(chapters, duration: float) -> list[tuple[float, float]]:
+def chapter_windows(chapters, duration: float, *,
+                    words: "list[WordTimestamp] | None" = None,
+                    narration: str = "") -> list[tuple[float, float]]:
     """`(start, end)` seconds per chapter of `script.chapter_list`.
 
     The same placement render_long's chapter plan draws its openers at: a
     trailer timestamp where the writer gave one, else the chapter's even share
-    of the runtime, because the ORDER is still information. The first window
-    opens at zero so the cold open owns everything before the first boundary.
-    Empty when there are no chapters.
+    of the runtime, because the ORDER is still information. With the voice's
+    `words` (and the script's `narration`) those guesses are moved onto the
+    audio (`measured_chapter_times`), as the render moves them; without, they
+    stay guesses. The first window opens at zero so the cold open owns
+    everything before the first boundary. Empty when there are no chapters.
     """
     n = len(chapters)
     starts: list[float] = []
     for i, ch in enumerate(chapters):
         start_s = float(getattr(ch, "start_s", 0.0) or 0.0)
         starts.append(start_s if start_s or i == 0 else duration * i / max(n, 1))
+    if starts:
+        starts[0] = 0.0
+    if starts and words:
+        starts = measured_chapter_times(starts, narration, list(words), duration)
     if starts:
         starts[0] = 0.0
     out: list[tuple[float, float]] = []
@@ -1145,7 +1150,10 @@ def plan_writer_moves(
                     f"{where}: the video already has {PEN_CIRCLES_PER_VIDEO} "
                     f"pen-circles — skipped")
                 continue
-            if circles_chapter.get(ch, 0) >= PEN_CIRCLES_PER_CHAPTER:
+            # With no chapters there is no "one a chapter" to keep to: the
+            # whole video was taken for one chapter and kept a single circle
+            # of the three it allows.
+            if starts and circles_chapter.get(ch, 0) >= PEN_CIRCLES_PER_CHAPTER:
                 warnings.append(
                     f"{where}: chapter {ch + 1} already has its pen-circle "
                     f"— skipped")

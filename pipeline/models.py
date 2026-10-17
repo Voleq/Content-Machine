@@ -338,9 +338,19 @@ class MetricKind(str, Enum):
 # Order matters: "free cash flow" contains "cash" and is emphatically a
 # flow, so the flow words are checked first.
 _FLOW_HINTS = ("revenue", "sales", "income", "profit", "loss", "margin",
-               "ebitda", "eps", "flow", "capex", "opex", "spend", "buyback")
+               "ebitda", "eps", "flow", "capex", "opex", "spend", "buyback",
+               # A rate of change is a series even of a balance: "Share
+               # Count YoY %" was read as the share count and drew one figure.
+               "%", "yoy", "change", "growth")
 _STOCK_HINTS = ("shares", "share count", "debt", "cash", "book value",
-                "equity", "assets", "inventory", "backlog", "headcount")
+                "equity", "assets", "inventory", "backlog", "headcount",
+                "invested capital")
+# The workbook rows that are a reading on one day; every other History row
+# is measured over the period. Where a row names its `field`, that decides,
+# not the label.
+_STOCK_FIELDS = frozenset({"cash", "total_debt", "net_debt", "total_equity",
+                           "total_assets", "invested_capital", "bvps",
+                           "diluted_shares"})
 
 
 class NumberRow(BaseModel):
@@ -364,6 +374,10 @@ class NumberRow(BaseModel):
     def measured(self) -> MetricKind:
         if self.kind is not None:
             return self.kind
+        if self.field in _STOCK_FIELDS:
+            return MetricKind.STOCK
+        if self.field in HISTORY_FIELDS:
+            return MetricKind.FLOW
         lab = self.label.lower()
         if any(h in lab for h in _FLOW_HINTS):
             return MetricKind.FLOW
@@ -821,8 +835,6 @@ class Cue(BaseModel):
     t: float = Field(ge=0)
     kind: CueKind
     payload: dict = Field(default_factory=dict)
-    # True when the anchor word was not found and a fallback position was used
-    fallback: bool = False
 
 
 # --------------------------------------------------------------------------
@@ -836,8 +848,11 @@ class Cue(BaseModel):
 
 # Snapshot field_keys, grouped by the sheet's Section column.
 DATA_FIELDS: dict[str, list[str]] = {
+    # `website` is optional and quiet when absent: it is what the IR news
+    # feed and the company-site photo search start from, and both were
+    # unreachable while no field carried it.
     "identity": ["company_name", "ticker", "exchange", "sector", "industry",
-                 "country", "currency", "as_of_date"],
+                 "country", "currency", "as_of_date", "website"],
     # `shares_dill_out` (diluted) arrived with the v3.1 template; the basic
     # count stays the required one, and the dilution gap between them is the
     # interesting number.
@@ -861,7 +876,10 @@ DATA_REQUIRED: list[str] = ["company_name", "ticker", "as_of_date", "price",
 
 ALL_DATA_FIELDS: list[str] = [f for group in DATA_FIELDS.values() for f in group]
 _STRING_FIELDS = {"company_name", "ticker", "exchange", "sector", "industry",
-                  "country", "currency", "as_of_date"}
+                  "country", "currency", "as_of_date", "website"}
+# Optional fields not listed as missing on upload: nothing on screen needs
+# them, so their absence is not worth a line in every upload's reply.
+QUIET_OPTIONAL = {"website"}
 
 # History sheet field_keys (col A). Period columns (FY-4..FY-0, LTM) are
 # read dynamically from the header row — never hardcoded here.
@@ -1052,7 +1070,8 @@ class CompanyData(BaseModel):
     @property
     def warning_missing(self) -> list[str]:
         blocking = set(self.blocking_missing)
-        return [f for f in self.missing if f not in blocking]
+        return [f for f in self.missing
+                if f not in blocking and f not in QUIET_OPTIONAL]
 
     @property
     def has_history(self) -> bool:

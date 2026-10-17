@@ -574,13 +574,6 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
                 if p.end - p.start > 1.2 and rng.random() < 0.35:
                     gaze.go(p.start + (p.end - p.start) * 0.65 + 0.35,
                             {"yaw": 0.0, "pitch": 0.0}, 0.35)
-            elif reading and st.reads >= 0.75:
-                # reading it, not us: down through the sentence, up at the end
-                # only now and then
-                gaze.go(p.start + 0.1, {"pitch": st.glance, "yaw": rng.uniform(-4, 4),
-                                        "roll": rng.uniform(-3, 3)}, 0.3)
-                if rng.random() < 0.35:
-                    gaze.go(p.end + 0.25, {"pitch": 0.0, "yaw": 0.0, "roll": 0.0}, 0.35)
             else:
                 # with something in his hand, now and then he reads it
                 look_up = p.start

@@ -351,10 +351,12 @@ def _heard(words: Sequence, forms: list[list[str]], lo: float, hi: float) -> flo
         for form in forms:
             n = len(form)
             got = [t for t, _ in toks[i:i + n]]
-            # A spoken "twenty-nine%" or "29%," normalises to the form's first
-            # token; a figure's digits may carry their own unit ("29%").
-            if got == form or (n and got[:1] == form[:1] and
-                               re.sub(r"[^\d.]", "", tok) == form[0]):
+            # A figure's digits may carry their own unit or sign ("29%",
+            # "$3.1"): the token's digits match the form's, and whatever the
+            # form says after them must follow. The old test also asked the
+            # whole token to equal the digits, so it could never pass.
+            if got == form or (n and re.sub(r"[^\d.]", "", tok) == form[0]
+                               and got[1:] == form[1:]):
                 return at
     return None
 

@@ -486,7 +486,7 @@ class Stage:
             looks = {**looks, "plate": self.look(self.beside(job["plate"]))}
         window = self.close_up() if job.get("close") else None
         still = bool(job.get("still"))
-        fps = int(job.get("fps", 12))
+        fps = int(job.get("fps", FPS))
         st = self.fit(motion.stance_of(str(job.get("stance", ""))))
         if still:
             st, looks = self._still_stance(st), {}

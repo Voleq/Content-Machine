@@ -78,7 +78,7 @@ ASPECTS = ("16x9", "9x16")
 CANVASES = {"16x9": (1920, 1080), "9x16": (1080, 1920)}
 FULLS = {"16x9": (2560, 1440), "9x16": (1440, 2560)}
 PREVIEWS = {"16x9": (640, 360), "9x16": (360, 640)}
-CANVAS, FULL, PREVIEW = CANVASES["16x9"], FULLS["16x9"], PREVIEWS["16x9"]
+FULL = FULLS["16x9"]
 
 # Dennis's standing figure box is 720 units from its top to his floor line and
 # his crown sits 11 units under the top (host/to-camera's alpha), so a 1.78 m
@@ -527,7 +527,6 @@ def build_room(season: str) -> None:
     thing("backwall", fixed=True)
     wall = box("backwall", (RIGHT - LEFT, 0.12, HEIGHT), (0, BACK + 0.06, HEIGHT / 2), WALL)
     x0, x1, z0, z1 = WINDOW
-    cut = bpy.data.objects.new("cut", bpy.data.meshes.new("cut"))
     bpy.ops.mesh.primitive_cube_add(size=1, location=((x0 + x1) / 2, BACK + 0.06, (z0 + z1) / 2))
     cut = bpy.context.object
     cut.scale = (x1 - x0, 0.6, z1 - z0)

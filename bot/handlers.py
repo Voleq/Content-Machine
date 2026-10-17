@@ -2110,7 +2110,7 @@ class BotCore:
                 segments, tts.words, ws.path / "storyboard.png", self.settings,
                 content=self.content, ticker=job.ticker, company_data=data,
                 workspace=ws.path, title=f"{job.ticker} — LONG",
-                chapters=script.chapter_list,
+                chapters=script.chapter_list, narration=script.narration,
                 overrides=ws.broll_overrides(),
                 slots=swap_slots(script.events),
             )
@@ -2119,7 +2119,9 @@ class BotCore:
             # the writer's call.
             shares = host_share_lines(segments, script.chapter_list,
                                       tts.duration_s,
-                                      flag=self.settings.long_dennis_alone_max)
+                                      flag=self.settings.long_dennis_alone_max,
+                                      words=tts.words,
+                                      narration=script.narration)
         except JobCancelled:
             # A cancel is not a storyboard failure. Swallowing it here would
             # answer the operator's cancel with "rendering anyway" and then

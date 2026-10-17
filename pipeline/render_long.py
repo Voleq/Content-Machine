@@ -32,9 +32,9 @@ Segment kinds:
   plate       the kit plate the writer named, with the words they wrote in its
               slots, filling the frame; beside the host only on `with=`
   chapter     a chapter's plate, the same way
-  clip        stock footage, played inside a kit frames/ plate
-  screengrab  an operator-dropped capture, framed the same way
-  filing      the filing screenshot, framed, with design's source tag
+  clip        stock footage, full screen
+  screengrab  an operator-dropped capture, full screen the same way
+  filing      the filing screenshot, full screen, with design's source tag
   img         real operations/product imagery, full-frame and held still
   chart       an auto-generated chart, filling the frame; beside him on `with=`
   meme        a freeze-frame from the owned library, full-frame
@@ -84,7 +84,7 @@ from pipeline.models import (
 from pipeline.bumper import bumper_clip, tick_start, wipe_clip
 from pipeline.plate_frames import drawn_box, frame_indices, playback_seconds
 from pipeline.plates import _prefer_unused, at_episode_hour, load_plates
-from pipeline.sound import (DEFAULT_LEAD_S, EFFECT_KEYS, Cut, Move, Voicing,
+from pipeline.sound import (EFFECT_KEYS, Cut, Move, Voicing,
                             cue_lead_s, manifest_rows, measure_lufs,
                             move_cues, placeholders_played, room_track,
                             sound_summary, theme_tracks, wipe_cues)
@@ -473,14 +473,6 @@ def cold_open_segment(segments, duration: float,
 
 _INPUT_LABEL_RE = re.compile(r"\[(\d+):v\]")
 
-# How far AHEAD of the chapter opener a diegetic cue fires. Audio leading the
-# visual makes a cue ANNOUNCE the image rather than react to it — the same
-# reasoning as the record-scratch pre-roll on the first meme, which lands
-# 0.35s before the freeze it is rewinding into. A hit lands on the frame
-# instead; `sound.cue_lead_s` says which is which.
-CHAPTER_CUE_LEAD_S = DEFAULT_LEAD_S
-
-
 def _globalise(chain: str, offset: int, index: int) -> str:
     """A locally-indexed segment chain, re-numbered for the single graph.
 
@@ -543,8 +535,8 @@ def _chapter_cues(stingers: list[dict], settings: Settings,
 
     The default is `impact`, the hit a short lands on its first frame, which
     the operator chose over chapter music (2026-09-25). A hit fires ON the
-    cut; the diegetic keys fire `CHAPTER_CUE_LEAD_S` ahead of it
-    (`sound.cue_lead_s`). With a `voicing` each opener plays a different
+    cut; the diegetic keys fire ahead of it, so the sound announces the image
+    rather than reacting to it (`sound.cue_lead_s`). With a `voicing` each opener plays a different
     variant; the gain stays the staged one.
 
     Gain matches the meme boom (`sfx_gain_db + 2`). That number was chosen to
@@ -811,7 +803,7 @@ def _render_long(
     # whole pipeline trusts that clock. Enforced here rather than left to
     # discipline, because the failure is invisible: it renders fine, it is
     # just subtly out of sync.
-    if not (draft or proof) and getattr(tts, "draft", False):
+    if not (draft or preview or proof) and getattr(tts, "draft", False):
         raise RenderError(
             f"refusing to make a FINAL render from {tts.tier} draft audio — "
             f"its word timings are interpolated inside each sentence. Approve "
@@ -1359,10 +1351,9 @@ def _render_long(
         frames_to_alpha_clip(frames, max(plate.fps or 2, 1), dest)
         return dest, True, (W, H), tuple(plan), plate.key
 
-    # ------------------------------------------------ foreign media, framed
-    # [CLIP], [IMG], [SHOW FILING] and [SCREENGRAB] land INSIDE a frames/
-    # plate. Raw and full-frame they destroy the drawn surface the rest of the
-    # video is built on, and the treatments rotate so consecutive ones differ.
+    # ------------------------------------------- foreign media, full screen
+    # [CLIP], [IMG], [SHOW FILING] and [SCREENGRAB] fill the screen (10-10);
+    # they used to sit inside a taped frames/ plate.
     def _full_media(seg_i: int, media_path: Path, *, document: bool = False) -> Path:
         """A still from outside, filling the screen.
 
@@ -2453,7 +2444,8 @@ def _render_long(
             still_i = _still_input(_full_media(i, shot_cache[value], document=True))
             chain = _still_chain(still_i, seg, seg_len, i, tail)
         elif seg.kind == "screengrab":
-            # operator-supplied capture — image or short clip, framed either way
+            # operator-supplied capture — image or short clip, full screen
+            # either way
             visual = content.resolve_screengrab(value)
             if visual.is_video:
                 chain = _clip_motion(_clip_input(visual))
@@ -3199,7 +3191,9 @@ def _render_long(
                              or getattr(tts, "draft", False)),
         out_size=delivery_size(settings, (W, H)) if final else None,
     )
-    out_path = workspace / ("long_draft.mp4" if draft
+    # Every pass its own name: a preview used to be written as the final.
+    out_path = workspace / ("long_preview.mp4" if preview
+                            else "long_draft.mp4" if draft
                             else "long_proof.mp4" if proof
                             else "long_final.mp4")
     # Render beside the target, validate, then `os.replace` into position
@@ -3228,7 +3222,8 @@ def _render_long(
     if part_filter.exists():
         os.replace(part_filter, out_path.with_suffix(".filter.txt"))
 
-    manifest_path = workspace / ("render_long_draft_manifest.json" if draft
+    manifest_path = workspace / ("render_long_preview_manifest.json" if preview
+                                 else "render_long_draft_manifest.json" if draft
                                  else "render_long_proof_manifest.json" if proof
                                  else "render_long_manifest.json")
     attributions = sorted({m["attribution"] for m in seg_meta
