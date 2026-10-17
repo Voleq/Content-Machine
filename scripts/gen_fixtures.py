@@ -530,8 +530,15 @@ def main() -> None:
 
     gen_alignment_fixture(adir / "alignment_sample.json")
 
-    from pipeline.prices import synthetic_series
-    (pdir / "EXMPL.json").write_text(synthetic_series("EXMPL", 120).to_json(), encoding="utf-8")
+    # The short's months end on the long's five years' last close. The walk
+    # dates itself back from today, and the install runs this on every box,
+    # so the short moved off the committed five-year fixture (which nothing
+    # regenerates) a day at a time: its dates are taken from that fixture.
+    from pipeline.prices import PriceSeries, synthetic_series
+    short = synthetic_series("EXMPL", 120)
+    five_years = PriceSeries.from_json((pdir / "EXMPL_5y.json").read_text(encoding="utf-8"))
+    short.dates = five_years.dates[-len(short.closes):]
+    (pdir / "EXMPL.json").write_text(short.to_json(), encoding="utf-8")
     print("fixtures written")
 
 

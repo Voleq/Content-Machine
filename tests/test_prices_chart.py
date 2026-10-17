@@ -537,6 +537,43 @@ def test_the_mock_long_chart_has_five_years_ending_on_the_short_s_closes(setting
     assert long_.dates[-1] == short.dates[-1]
 
 
+def test_regenerating_the_fixtures_on_another_day_keeps_the_short_on_the_long(
+        tmp_path, monkeypatch):
+    """The install runs gen_fixtures.py, and the short's walk dated itself
+    from today: on 17 Oct it ended on 15 Oct, five weeks past the five-year
+    fixture nothing regenerates, and the test above went red on his box."""
+    import datetime as dt
+    import importlib.util
+    import shutil
+    from pathlib import Path
+
+    import pipeline.prices as prices
+
+    root = Path(__file__).resolve().parents[1]
+    (tmp_path / "fixtures" / "prices").mkdir(parents=True)
+    shutil.copy(root / "fixtures" / "prices" / "EXMPL_5y.json",
+                tmp_path / "fixtures" / "prices")
+
+    class _Later(dt.date):
+        @classmethod
+        def today(cls):
+            return cls(2027, 3, 3)
+
+    monkeypatch.setattr(prices, "date", _Later)
+    spec = importlib.util.spec_from_file_location(
+        "_gen_fixtures_dates", root / "scripts" / "gen_fixtures.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.ROOT = tmp_path
+    mod.main()
+
+    made = prices.PriceSeries.from_json(
+        (tmp_path / "fixtures" / "prices" / "EXMPL.json").read_text(encoding="utf-8"))
+    shipped = prices.PriceSeries.from_json(
+        (root / "fixtures" / "prices" / "EXMPL.json").read_text(encoding="utf-8"))
+    assert made.dates == shipped.dates and made.closes == shipped.closes
+
+
 def test_a_chart_over_years_heads_its_periods_with_month_and_year():
     from pipeline.chart import month_year, price_labels
     from pipeline.prices import PriceSeries
