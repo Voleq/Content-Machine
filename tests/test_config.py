@@ -292,7 +292,9 @@ def test_an_empty_sec_user_agent_is_a_startup_warning_when_live():
     # missing features.
     assert "filing brief" in said
     assert "SHOW FILING" in said
-    assert "Your Name your@email" in said, "it does not say what to set"
+    from config import SEC_AGENT_EXAMPLE
+    assert SEC_AGENT_EXAMPLE in said, "it does not say what to set"
+    assert "personal" in said
 
 
 def test_a_real_sec_user_agent_says_nothing():

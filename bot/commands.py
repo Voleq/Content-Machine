@@ -62,10 +62,6 @@ class Call:
     say: Say | None = None
     filled: str = ""       # "TICKER YYYY-MM-DD" when the active video stood in
 
-    async def tell(self, text: str) -> None:
-        if self.say is not None:
-            await self.say(Reply(text))
-
 
 @dataclass(frozen=True)
 class Family:
@@ -128,7 +124,23 @@ def looks_like_ticker(token: str) -> bool:
 
 
 def _has_workspace(core: BotCore, token: str) -> bool:
-    if not looks_like_ticker(token):
+    if not (looks_like_ticker(token) or _keyword_ticker(core, token)):
+        return False
+    ticker, _ = Workspace.split_arg(token)
+    return bool(Workspace.dates_for(core.settings, ticker))
+
+
+def _keyword_ticker(core: BotCore, token: str) -> bool:
+    """A keyword typed in capitals that is also a video on disk.
+
+    NOW, ON, ALL, RUN, AMC and BMO are real tickers. As keywords they used to
+    make the active video jump in front of them, so with XYZ active,
+    `/render NOW` rendered XYZ. Capitals and a workspace for it make it the
+    ticker; `/render now` is still the keyword.
+    """
+    head = token.split("@")[0]
+    if (not head or head.lower() not in KEYWORDS or head != head.upper()
+            or not _TICKER_RE.match(token.upper())):
         return False
     ticker, _ = Workspace.split_arg(token)
     return bool(Workspace.dates_for(core.settings, ticker))
@@ -734,9 +746,9 @@ COMMANDS: tuple[Command, ...] = (
             aliases=("headline",), example="{T} beats on margins", doc=(
                 "A SHORT about one specific headline. `/new headline macro "
                 "<text>` for an index/macro take. Mode is detected (company "
-                "/ earnings / macro) and can be forced with a leading `a:`, "
-                "`b:` or `c:`. The mode sets the lane and picks the shot "
-                "template."),
+                "/ earnings / macro) and can be forced with a leading "
+                "`[company]`, `[earnings]` or `[macro]` (or `[a]`/`[b]`/`[c]`). "
+                "The mode sets the lane and picks the shot template."),
             ack="⏳ reading the headline…"),
     # /script
     Command("script", "", "", "the stored script, numbered", c_script, doc=(
@@ -1046,7 +1058,7 @@ def _fill_ticker(c: Call, cmd: Command) -> str | None:
     if mode == "text":
         if first and _has_workspace(c.core, first):
             return None
-    elif first and looks_like_ticker(first):
+    elif first and (looks_like_ticker(first) or _keyword_ticker(c.core, first)):
         return None
     ws = c.core.context.get(c.chat_id)
     if ws is None:
@@ -1332,6 +1344,9 @@ async def handle_callback(core: BotCore, chat_id: int, data: str,
         lane = CODE_LANES.get(parts[1])
         if not lane:
             return Reply("Unknown lane on that button.")
+        if lane == "update":
+            return await asyncio.to_thread(core.start_lane, chat_id, "long",
+                                           parts[2], update=True)
         return await asyncio.to_thread(core.start_lane, chat_id, lane, parts[2])
     if op == "e" and n == 3:
         core.context.set(chat_id, parts[1], parts[2])
@@ -1450,11 +1465,13 @@ class CardBoard:
 
     def remember(self, key: str, chat_id: int, message_id: int) -> None:
         data = self._load()
-        rows = [r for r in data.get(key, []) if r[0] != chat_id]
+        rows = [r for r in data.pop(key, []) if r[0] != chat_id]
         rows.append([chat_id, message_id])
-        data[key] = rows[-self.KEEP_PER_VIDEO:]
+        data[key] = rows[-self.KEEP_PER_VIDEO:]     # newest last
         if len(data) > 200:                # old videos stop being edited
-            for old in sorted(data)[:len(data) - 200]:
+            # The least recently shown go, not the alphabetically first:
+            # sorting the keys dropped a new AAPL card the moment it was kept.
+            for old in list(data)[:len(data) - 200]:
                 data.pop(old, None)
         _write(self.path, json.dumps(data))
 

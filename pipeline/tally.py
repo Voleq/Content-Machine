@@ -106,7 +106,16 @@ def parse_period(text: str, today: date | None = None) -> Period | None:
         month = _MONTHS[name]
         y = int(year) if year else (today.year if month <= today.month
                                     else today.year - 1)
+        if prep == "since":
+            # "since august" runs to today; it used to answer August alone.
+            start = date(y, month, 1)
+            return Period(start, today,
+                          f"since {calendar.month_name[month]} {y}")
         return _month(y, month)
+    m = re.search(r"\bsince (20\d\d)\b", t)
+    if m:
+        y = int(m.group(1))
+        return Period(date(y, 1, 1), today, f"since {y}")
     m = re.search(r"\b(?:in|during|for) (20\d\d)\b", t)
     if m:
         y = int(m.group(1))
@@ -309,6 +318,15 @@ def _video_lines(settings: Settings, period: Period, ticker: str,
                      f"{_plural(looks['draft'], 'draft')}.")
     up = uploads(settings, period, ticker=ticker)
     lines.append(f"Uploaded to YouTube in that time: {len(up)}.")
+    # Finished jobs are the count, and the cleanup deletes job records after
+    # JOBS_RETENTION_DAYS: a period reaching back past that is short by
+    # whatever went before, and says so.
+    days = settings.jobs_retention_days
+    kept_from = date.today() - timedelta(days=max(days, 0))
+    if days > 0 and (period.start is None or period.start < kept_from):
+        lines.append(f"Finished renders are kept {days} "
+                     f"days, so nothing finished before {kept_from} is counted; "
+                     f"the upload count has no such limit.")
     return lines
 
 

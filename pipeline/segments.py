@@ -328,6 +328,11 @@ def encode_segments(
             if not (use.is_hardware and software_profile is not None):
                 raise
 
+        # The CPU retry runs FIRST. A beat whose asset is bad fails on the
+        # CPU too, and that says nothing about the GPU: the flag used to be
+        # set before the retry, so one bad clip moved every later beat of a
+        # final off the encoder that was working.
+        _encode_one(spec, dest, software_profile, threads)
         with hardware_lock:
             announce = not hardware_dead
             hardware_dead = True
@@ -335,7 +340,6 @@ def encode_segments(
             log.warning("segments: %s failed on segment %d — falling back to "
                         "libx264 for the rest of this render",
                         use.vcodec, spec.index)
-        _encode_one(spec, dest, software_profile, threads)
 
     def work(spec: SegmentSpec) -> SegmentResult:
         # Keyed on the profile that was ASKED for, not the one that ran. A

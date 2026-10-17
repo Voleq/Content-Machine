@@ -12,6 +12,7 @@ whose content hash still matches that approval.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import re
@@ -73,7 +74,7 @@ from bot.keyboards import (
     undo_cancel_keyboard,
     uploaded_keyboard,
 )
-from bot.prompts import fill_prompt
+from bot.prompts import angle_number, fill_prompt
 
 log = logging.getLogger(__name__)
 
@@ -154,12 +155,19 @@ def detect_headline_mode(symbol: str, headline: str) -> str:
     for macro (an index or 'macro'); otherwise keywords decide, defaulting to
     company news."""
     sym = symbol.strip().upper()
-    low = f" {headline.lower()} "
-    if sym in _MACRO_SYMS or any(k in low for k in _MACRO_KW):
+    low = headline.lower()
+    # Whole words (a plural allowed): as substrings "ppi" matched shopping
+    # and shipping, "pce" and "gdp" much else, so "Walmart tops holiday
+    # shopping forecasts" was framed as macro and charted against SPY.
+    if sym in _MACRO_SYMS or any(_has_word(low, k) for k in _MACRO_KW):
         return "macro"
-    if any(f" {k} " in low or low.strip().startswith(k) for k in _EARNINGS_KW):
+    if any(_has_word(low, k) for k in _EARNINGS_KW):
         return "earnings"
     return "company"
+
+
+def _has_word(text: str, phrase: str) -> bool:
+    return re.search(rf"\b{re.escape(phrase)}(?:e?s)?\b", text) is not None
 
 
 def _macro_index_for(symbol: str) -> str:
@@ -195,8 +203,9 @@ def telegram_send_kind(path: Path, settings: Settings) -> str:
         raise ValueError(
             f"{p.name} is {size / 1e6:.0f} MB — over the "
             f"{settings.telegram_upload_limit_mb} MB the cloud Bot API "
-            f"accepts. Use DELIVERY_BACKEND=gdrive, or a self-hosted Bot API "
-            f"server (TELEGRAM_API_BASE_URL).")
+            f"accepts. Watch it from the web panel (/admin panel); a "
+            f"self-hosted Bot API server (TELEGRAM_API_BASE_URL) lifts the "
+            f"limit.")
     suffix = p.suffix.lower()
     if suffix in (".mp4", ".mov", ".mkv", ".webm"):
         return "video"
@@ -1088,7 +1097,9 @@ class BotCore:
         if data is None:
             return Reply("⛔ No data export on file — upload dennis_data.xlsx first.")
         ws.set_chosen_angle(text)
-        self._auto_filings(ws, text)  # best-effort; never blocks the flow
+        # An "Angle 2" tap (or a typed 2) names an angle only the writing
+        # chat can see; the quote flagger used to get "2" as the thesis.
+        self._auto_filings(ws, angle_words(text))  # best-effort; never blocks
         return self._long_write_reply(ws, header=f"✅ Angle locked for {ws.ticker}.")
 
     # ------------------------------------------------ the pre-angle brief
@@ -1140,6 +1151,12 @@ class BotCore:
         """
         if not (self.settings.filings_enabled
                 and self.settings.filing_brief_enabled):
+            return ""
+        # Only a LONG has a filing brief. A short's upload used to land in the
+        # "nothing was ever queued" branch below, start a full reading for a
+        # prompt that has no place for it, and hold the reply for up to
+        # `filing_brief_wait_s`.
+        if ws.lane() and ws.lane() != "long":
             return ""
         from pipeline.filing_brief import (
             cross_check,
@@ -1385,7 +1402,6 @@ class BotCore:
             (v_blocking if f.severity == "block" else v_warnings).append(f.render())
         ws.save_long(script, raw)
         ws.clear_awaiting_angle()  # a script is on file — past the angle stage
-        prompt_files: list = []
         plan = self.content.plan(script, company_data=data,
                                  overrides=ws.broll_overrides())
         filing_count = len({e.payload for e in script.events_of(TagType.SHOW_FILING)})
@@ -1402,7 +1418,6 @@ class BotCore:
             keyboard=approval_keyboard("long", ws.ticker, ws.workdate,
                                        report.script_sha, report.approvable, bool(plan)),
             photo=sheet,
-            files=prompt_files,
         )
 
     def _contact_sheet(self, ws: Workspace, plan) -> Path | None:
@@ -2095,7 +2110,7 @@ class BotCore:
                 segments, tts.words, ws.path / "storyboard.png", self.settings,
                 content=self.content, ticker=job.ticker, company_data=data,
                 workspace=ws.path, title=f"{job.ticker} — LONG",
-                chapters=script.chapter_list,
+                chapters=script.chapter_list, narration=script.narration,
                 overrides=ws.broll_overrides(),
                 slots=swap_slots(script.events),
             )
@@ -2104,7 +2119,9 @@ class BotCore:
             # the writer's call.
             shares = host_share_lines(segments, script.chapter_list,
                                       tts.duration_s,
-                                      flag=self.settings.long_dennis_alone_max)
+                                      flag=self.settings.long_dennis_alone_max,
+                                      words=tts.words,
+                                      narration=script.narration)
         except JobCancelled:
             # A cancel is not a storyboard failure. Swallowing it here would
             # answer the operator's cancel with "rendering anyway" and then
@@ -2275,7 +2292,7 @@ class BotCore:
                 return
             fmt = "short" if job.kind is JobKind.RENDER_SHORT else "long"
             script = ws.load_short() if fmt == "short" else ws.load_long()
-            summary = ws.chosen_angle() or ""
+            summary = angle_words(ws.chosen_angle() or "")
             if not summary:
                 summary = (getattr(script, "title", "")
                            or getattr(script, "hook_text", "") or "")
@@ -3110,13 +3127,17 @@ class BotCore:
         ticker = args[0].upper()
         when_date = args[1]
         try:
-            date.fromisoformat(when_date)
+            day = date.fromisoformat(when_date)
         except ValueError:
             return Reply(f"⛔ {when_date!r} isn't a date — use YYYY-MM-DD.")
         slot = args[2].lower() if len(args) > 2 else ""
         if slot and slot not in ("bmo", "amc"):
             return Reply("⛔ the third argument is bmo (before open) or amc "
                          "(after close).")
+        if day < date.today():
+            # A past date fired "the numbers are out" on the next poll.
+            return Reply(f"⛔ {when_date} has passed — /earnings takes the "
+                         f"next report date.")
         EarningsCalendar(self.settings).set(ticker, when_date, slot)
         return Reply(f"📊 {ticker} reports {when_date}"
                      f"{' ' + slot if slot else ''}. I'll flag it before and after.")
@@ -3142,6 +3163,10 @@ class BotCore:
             # the provenance record: the failure mode is nobody looking, so
             # the number that matters carries its own age.
             f"{self.ledger.reconciled_line()}\n"
+            # WEEKLY_SPEND_WARN, per lane: documented here and read only by
+            # `/admin cost explain`, all lanes together, until now.
+            + "".join(f"⚠️ {w}\n" for w in (self.ledger.weekly_warning(lane)
+                                            for lane in ("short", "long")) if w)
             + self._mock_status_line()
         )
 
@@ -3755,6 +3780,68 @@ async def _send(update, reply: Reply | str):
         lambda f, filename=None: msg.reply_document(f, filename=filename))
 
 
+def angle_words(angle: str) -> str:
+    """The chosen angle as words, or "" when it is only a pick by number:
+    "2" is a choice, not a thesis to flag quotes against or to file."""
+    a = (angle or "").strip()
+    return "" if angle_number(a) is not None else a
+
+
+# The commands that must answer while something slow holds the chat: the
+# queue's view and its cancel. Everything else keeps arrival order.
+_CONTROL_COMMANDS = frozenset({"jobs", "status", "cancel"})
+
+
+def is_queue_control(update) -> bool:
+    """Whether `update` is /jobs, /status, /cancel or a Cancel button.
+
+    Those skip the line in `control_first_processor`: an upload waiting out a
+    filing reading used to hold every update behind it, so a runaway render
+    could not be cancelled until the wait ended.
+    """
+    q = getattr(update, "callback_query", None)
+    if q is not None:
+        return str(getattr(q, "data", "") or "").startswith("x|")
+    msg = getattr(update, "message", None) or getattr(update, "edited_message", None)
+    text = str(getattr(msg, "text", "") or "").strip()
+    if not text.startswith("/"):
+        return False
+    name = text[1:].split(maxsplit=1)[0].split("@", 1)[0].lower() if text[1:] else ""
+    return name in _CONTROL_COMMANDS
+
+
+def control_first_processor(max_concurrent_updates: int = 64):
+    """PTB update processor: one update at a time, as before, except the
+    queue controls (`is_queue_control`), which never wait behind it.
+
+    The bound is generous on purpose: an update holds a slot while it waits
+    its turn, so a small one would let a pile of ordinary updates take every
+    slot and keep the cancel waiting after all."""
+    from telegram.ext import BaseUpdateProcessor
+
+    class ControlFirst(BaseUpdateProcessor):
+        def __init__(self, n: int):
+            super().__init__(n)
+            self._order: asyncio.Lock | None = None
+
+        async def do_process_update(self, update, coroutine) -> None:
+            if is_queue_control(update):
+                await coroutine
+                return
+            if self._order is None:
+                self._order = asyncio.Lock()
+            async with self._order:   # FIFO: arrival order is kept
+                await coroutine
+
+        async def initialize(self) -> None:
+            pass
+
+        async def shutdown(self) -> None:
+            pass
+
+    return ControlFirst(max_concurrent_updates)
+
+
 def build_application(settings: Settings, core: BotCore):
     """Wire PTB. Import here so BotCore stays importable without a token.
 
@@ -3891,7 +3978,8 @@ def build_application(settings: Settings, core: BotCore):
                                            q.data or "", say=await _say(update))
         await deliver(update, reply)
 
-    builder = Application.builder().token(settings.telegram_bot_token)
+    builder = (Application.builder().token(settings.telegram_bot_token)
+               .concurrent_updates(control_first_processor()))
     if settings.telegram_api_base_url:
         builder = builder.base_url(f"{settings.telegram_api_base_url}/bot")
     app = builder.build()

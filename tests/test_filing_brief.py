@@ -410,6 +410,22 @@ def test_starting_a_long_lane_queues_the_reading_immediately(settings,
     assert started == []
 
 
+def test_a_short_upload_starts_no_reading(settings, fixtures_dir, monkeypatch):
+    """The workbook landing in a SHORT used to fall into "nothing was ever
+    queued", start a whole 10-K reading and hold the reply for it."""
+    from bot.handlers import BotCore
+
+    started: list[str] = []
+    core = BotCore(settings)
+    monkeypatch.setattr(core, "_start_filing_read",
+                        lambda ws: started.append(ws.ticker))
+    core.start_lane(4242, "short", "EXMPL")
+    xlsx = (fixtures_dir / "company_data" / "dennis_data.xlsx").read_bytes()
+    reply = core.handle_upload(4242, "dennis_data.xlsx", xlsx)
+    assert "saved" in reply.text
+    assert started == []
+
+
 def test_the_reading_runs_off_the_calling_thread(settings):
     """It must not block the reply. `/long` answers with the template while
     the SEC pull is still going."""

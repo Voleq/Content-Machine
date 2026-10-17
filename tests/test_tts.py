@@ -431,6 +431,44 @@ def test_a_retry_resumes_instead_of_re_paying_for_finished_chunks(
         ledger.mtd_spend_usd() - spent_first)
 
 
+def test_a_retry_near_the_cap_claims_only_what_is_left_to_pay(
+        settings, alignment_sample, tmp_path):
+    """The resume claimed the WHOLE script against the cap although the
+    chunks it had already paid for were in the month's spend too, so a retry
+    with the money for its last chunks was refused as over the cap."""
+    from pipeline.cost import estimate_tts_usd
+
+    audio_b64 = _tiny_mp3_b64(tmp_path)
+    alignment = alignment_sample["alignment"]
+    live = _live(settings)
+    text = _multi_chunk_text()
+    chunks = chunk_text(text, live.tts_chunk_chars)
+
+    calls: list = []
+    ledger = SpendLedger(live)
+    engine = TTSEngine(live, ledger=ledger, client=httpx.Client(
+        transport=httpx.MockTransport(
+            _handler_failing_at(audio_b64, alignment, 2, calls))))
+    with pytest.raises(Exception):
+        engine.synthesize(text, "long")
+    spent = ledger.mtd_spend_usd()
+    left = estimate_tts_usd(sum(len(c) for c in chunks[2:]), live)
+    # Room for what is left, not for the whole script again.
+    assert spent + estimate_tts_usd(len(text), live) > spent + left
+    tight = live.model_copy(update={
+        "monthly_spend_cap_usd": round(spent + left + 0.0005, 4)})
+
+    def ok(request):
+        calls.append(request)
+        return httpx.Response(200, json={"audio_base64": audio_b64,
+                                         "alignment": alignment})
+
+    result = TTSEngine(tight, ledger=SpendLedger(tight), client=httpx.Client(
+        transport=httpx.MockTransport(ok))).synthesize(text, "long")
+    assert result.audio_path.exists()
+    assert len(calls) - 3 == len(chunks) - 2
+
+
 def test_a_fully_resumed_generation_costs_nothing_more(
         settings, alignment_sample, tmp_path):
     audio_b64 = _tiny_mp3_b64(tmp_path)

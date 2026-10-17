@@ -32,9 +32,9 @@ Segment kinds:
   plate       the kit plate the writer named, with the words they wrote in its
               slots, filling the frame; beside the host only on `with=`
   chapter     a chapter's plate, the same way
-  clip        stock footage, played inside a kit frames/ plate
-  screengrab  an operator-dropped capture, framed the same way
-  filing      the filing screenshot, framed, with design's source tag
+  clip        stock footage, full screen
+  screengrab  an operator-dropped capture, full screen the same way
+  filing      the filing screenshot, full screen, with design's source tag
   img         real operations/product imagery, full-frame and held still
   chart       an auto-generated chart, filling the frame; beside him on `with=`
   meme        a freeze-frame from the owned library, full-frame
@@ -84,7 +84,7 @@ from pipeline.models import (
 from pipeline.bumper import bumper_clip, tick_start, wipe_clip
 from pipeline.plate_frames import drawn_box, frame_indices, playback_seconds
 from pipeline.plates import _prefer_unused, at_episode_hour, load_plates
-from pipeline.sound import (DEFAULT_LEAD_S, EFFECT_KEYS, Cut, Move, Voicing,
+from pipeline.sound import (EFFECT_KEYS, Cut, Move, Voicing,
                             cue_lead_s, manifest_rows, measure_lufs,
                             move_cues, placeholders_played, room_track,
                             sound_summary, theme_tracks, wipe_cues)
@@ -473,14 +473,6 @@ def cold_open_segment(segments, duration: float,
 
 _INPUT_LABEL_RE = re.compile(r"\[(\d+):v\]")
 
-# How far AHEAD of the chapter opener a diegetic cue fires. Audio leading the
-# visual makes a cue ANNOUNCE the image rather than react to it — the same
-# reasoning as the record-scratch pre-roll on the first meme, which lands
-# 0.35s before the freeze it is rewinding into. A hit lands on the frame
-# instead; `sound.cue_lead_s` says which is which.
-CHAPTER_CUE_LEAD_S = DEFAULT_LEAD_S
-
-
 def _globalise(chain: str, offset: int, index: int) -> str:
     """A locally-indexed segment chain, re-numbered for the single graph.
 
@@ -543,8 +535,8 @@ def _chapter_cues(stingers: list[dict], settings: Settings,
 
     The default is `impact`, the hit a short lands on its first frame, which
     the operator chose over chapter music (2026-09-25). A hit fires ON the
-    cut; the diegetic keys fire `CHAPTER_CUE_LEAD_S` ahead of it
-    (`sound.cue_lead_s`). With a `voicing` each opener plays a different
+    cut; the diegetic keys fire ahead of it, so the sound announces the image
+    rather than reacting to it (`sound.cue_lead_s`). With a `voicing` each opener plays a different
     variant; the gain stays the staged one.
 
     Gain matches the meme boom (`sfx_gain_db + 2`). That number was chosen to
@@ -664,12 +656,14 @@ def _provenance(script, settings, workspace: Path, duration: float,
     # five top-level keys as five shots and then walked them as dicts, so a
     # workspace with any auto-pulled filing crashed this on `str.get`, after
     # the encode and the paid voice were already spent.
-    shots = load_manifest(workspace).get("shots", []) or []
+    manifest = load_manifest(workspace)
+    shots = manifest.get("shots", []) or []
     filings = {"shots": len(shots)} if shots else {}
-    refs = sorted({str(s.get("accession") or "") for s in shots
-                   if s.get("accession")})
-    if refs:
-        filings["refs"] = [f"10-K {r}" for r in refs]
+    # The accession is the manifest's, not each shot's: read off the shots,
+    # the receipt never named the filing it cited.
+    if shots and manifest.get("accession"):
+        filings["refs"] = [f"{manifest.get('form') or '10-K'} "
+                           f"{manifest['accession']}"]
     brief = _filing_brief_provenance(workspace)
     if brief:
         filings["brief"] = brief
@@ -811,7 +805,7 @@ def _render_long(
     # whole pipeline trusts that clock. Enforced here rather than left to
     # discipline, because the failure is invisible: it renders fine, it is
     # just subtly out of sync.
-    if not (draft or proof) and getattr(tts, "draft", False):
+    if not (draft or preview or proof) and getattr(tts, "draft", False):
         raise RenderError(
             f"refusing to make a FINAL render from {tts.tier} draft audio — "
             f"its word timings are interpolated inside each sentence. Approve "
@@ -1359,10 +1353,9 @@ def _render_long(
         frames_to_alpha_clip(frames, max(plate.fps or 2, 1), dest)
         return dest, True, (W, H), tuple(plan), plate.key
 
-    # ------------------------------------------------ foreign media, framed
-    # [CLIP], [IMG], [SHOW FILING] and [SCREENGRAB] land INSIDE a frames/
-    # plate. Raw and full-frame they destroy the drawn surface the rest of the
-    # video is built on, and the treatments rotate so consecutive ones differ.
+    # ------------------------------------------- foreign media, full screen
+    # [CLIP], [IMG], [SHOW FILING] and [SCREENGRAB] fill the screen (10-10);
+    # they used to sit inside a taped frames/ plate.
     def _full_media(seg_i: int, media_path: Path, *, document: bool = False) -> Path:
         """A still from outside, filling the screen.
 
@@ -1372,6 +1365,12 @@ def _render_long(
         """
         dest = rdir / f"full_{seg_i}.png"
         try:
+            # Already composed for this frame (a normalised grab or photo):
+            # as it is. Composing it again took an exact 16:9 file for "not
+            # quite the frame's shape" and shrank it inside a blurred margin.
+            with Image.open(media_path) as probe:
+                if probe.size == (W, H):
+                    return media_path
             cover_fill_frame(media_path, W, H, keep_min=1.01 if document else 0.72,
                              ground=role(settings, "ground"),
                              line=role(settings, "structure"),
@@ -2453,7 +2452,8 @@ def _render_long(
             still_i = _still_input(_full_media(i, shot_cache[value], document=True))
             chain = _still_chain(still_i, seg, seg_len, i, tail)
         elif seg.kind == "screengrab":
-            # operator-supplied capture — image or short clip, framed either way
+            # operator-supplied capture — image or short clip, full screen
+            # either way
             visual = content.resolve_screengrab(value)
             if visual.is_video:
                 chain = _clip_motion(_clip_input(visual))
@@ -3014,16 +3014,38 @@ def _render_long(
             is_video=True, hold=True, name=f"scribble_{k}",
         ))
 
+    # THE TWO LINES THAT RUN THE WHOLE VIDEO, the corner bug and the
+    # disclaimer, are set for the paper most of it is: the kit's ink with a
+    # halo of the kit's paper, which vanishes on a plate and holds the line
+    # off a photograph. They took the episode hour's inks, and the hour is
+    # night, whose `structure` is the pale ink of the night wall: on every
+    # paper plate the "as of" date was 1.3:1. On his beats, in the room, the
+    # same line goes over them in the night ink with a dark rim.
+    from pipeline.rasters import caption_colours
+
+    paper_ink, paper = caption_colours(settings)
+    rim = px(3)
+
+    def standing(text: str, size: int, name: str, at) -> None:
+        on_paper = simple_text(settings, text, font_size=size,
+                               fill=(*paper_ink, 235), stroke_width=rim,
+                               stroke_fill=(*paper, 200))
+        in_room = simple_text(settings, text, font_size=size,
+                              fill=(*role(settings, "structure"), 255),
+                              stroke_width=rim, stroke_fill=DISCLAIMER_RIM)
+        x, y = at(on_paper)
+        on_paper.save(rdir / f"{name}.png")
+        in_room.save(rdir / f"{name}_rim.png")
+        layers.append(OverlayLayer(path=rdir / f"{name}.png", x=x, y=y,
+                                   t_start=0.0, t_end=duration, name=name))
+        for a, b in _on_him(segments, covers, min_s=0.0):
+            layers.append(OverlayLayer(path=rdir / f"{name}_rim.png", x=x, y=y,
+                                       t_start=a, t_end=b, name=f"{name}_rim"))
+
     # corner bug: ticker + as-of date (top-right; the as-of stays visible)
     bug_text = script.ticker + (f" · as of {as_of}" if as_of else "")
-    bug = simple_text(settings, bug_text, font_size=px(34),
-                      fill=(*role(settings, "structure"), 220), stroke_width=0)
-    bug_path = rdir / "corner_bug.png"
-    bug.save(bug_path)
-    layers.append(OverlayLayer(
-        path=bug_path, x=W - bug.width - px(36), y=px(30),
-        t_start=0.0, t_end=duration, name="corner_bug",
-    ))
+    standing(bug_text, px(34), "corner_bug",
+             lambda img: (W - img.width - px(36) + rim, px(30) - rim))
 
     # THE LOWER THIRD: design's strip, the ticker and the channel's line in
     # its slots, TOP-left where the plain-type strip used to run. It is a
@@ -3072,29 +3094,11 @@ def _render_long(
             t_start=0.0, t_end=duration, name="lower_third",
         ))
 
-    disc = simple_text(settings, settings.disclaimer_text, font_size=px(26),
-                       fill=(*role(settings, "neutral-data"), 235),
-                       stroke_width=0)
-    disc_path = rdir / "disclaimer.png"
-    disc.save(disc_path)
-    layers.append(OverlayLayer(
-        path=disc_path, x=px(36), y=H - px(44),
-        t_start=0.0, t_end=duration, name="disclaimer",
-    ))
-    # Over the room it runs across the lit window frame and the radiator, and
-    # light grey on a light strip lost its "Not": "Opinion / entertainment.
-    # financial advice." On his beats the same line goes over it with a dark
-    # rim, which the paper never sees.
-    rim = px(3)
-    disc_rim = simple_text(settings, settings.disclaimer_text, font_size=px(26),
-                           fill=(*role(settings, "neutral-data"), 235),
-                           stroke_width=rim, stroke_fill=DISCLAIMER_RIM)
-    disc_rim_path = rdir / "disclaimer_rim.png"
-    disc_rim.save(disc_rim_path)
-    for a, b in _on_him(segments, covers, min_s=0.0):
-        layers.append(OverlayLayer(
-            path=disc_rim_path, x=px(36) - rim, y=H - px(44) - rim,
-            t_start=a, t_end=b, name="disclaimer_rim"))
+    # Over the room the disclaimer runs across the lit window frame and the
+    # radiator, and light grey on a light strip lost its "Not": "Opinion /
+    # entertainment. financial advice." Hence the rim on his beats.
+    standing(settings.disclaimer_text, px(26), "disclaimer",
+             lambda img: (px(36) - rim, H - px(44) - rim))
 
     # ---------------------------------------------------------- captions
     # NONE ARE BURNED IN. A long viewer has the sound on, and the bot already
@@ -3199,7 +3203,9 @@ def _render_long(
                              or getattr(tts, "draft", False)),
         out_size=delivery_size(settings, (W, H)) if final else None,
     )
-    out_path = workspace / ("long_draft.mp4" if draft
+    # Every pass its own name: a preview used to be written as the final.
+    out_path = workspace / ("long_preview.mp4" if preview
+                            else "long_draft.mp4" if draft
                             else "long_proof.mp4" if proof
                             else "long_final.mp4")
     # Render beside the target, validate, then `os.replace` into position
@@ -3228,7 +3234,8 @@ def _render_long(
     if part_filter.exists():
         os.replace(part_filter, out_path.with_suffix(".filter.txt"))
 
-    manifest_path = workspace / ("render_long_draft_manifest.json" if draft
+    manifest_path = workspace / ("render_long_preview_manifest.json" if preview
+                                 else "render_long_draft_manifest.json" if draft
                                  else "render_long_proof_manifest.json" if proof
                                  else "render_long_manifest.json")
     attributions = sorted({m["attribution"] for m in seg_meta

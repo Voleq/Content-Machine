@@ -623,15 +623,23 @@ def _candidate_lanes(result: dict) -> list[tuple[str, str]]:
     beaten-down one is LONG material — so it lives here, next to the screens
     that produce it, rather than being re-derived at the button.
     """
-    lane_for = {"trending": "short", "value": "long", "update": "long"}
+    lane_for = {"trending": "short", "value": "long"}
     out: list[tuple[str, str]] = []
     seen: set[str] = set()
-    for screen_lane in ("trending", "value", "update"):
+    for screen_lane in ("trending", "value"):
         for c in result.get(screen_lane, []) or []:
             if c.ticker in seen:
                 continue
             seen.add(c.ticker)
             out.append((c.ticker, lane_for[screen_lane]))
+    # A thesis that moved is an UPDATE, opened with /update rather than
+    # /long. The lane is stored as "updates", a list of tickers, and this
+    # read "update" for candidates, so those names never got a button.
+    for ticker in result.get("updates", []) or []:
+        ticker = str(ticker)
+        if ticker and ticker not in seen:
+            seen.add(ticker)
+            out.append((ticker, "update"))
     return out
 
 

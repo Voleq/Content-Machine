@@ -585,3 +585,5 @@ def test_the_telegram_glue_registers_every_name_from_the_registry(core):
     # "did you mean…" is the last word on any command nothing else took
     assert isinstance(handlers[-1], MessageHandler)
     assert isinstance(core.cards, cmds.CardBoard) and core.send_to is not None
+    # /jobs cancel never waits behind a slow update (see test_review_bot).
+    assert type(app.update_processor).__name__ == "ControlFirst"

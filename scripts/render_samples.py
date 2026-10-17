@@ -1,6 +1,11 @@
 """Render the sample MP4s from fixtures (MOCK_MODE, zero network).
 
-Usage:  .venv/bin/python scripts/render_samples.py [short|long|all]
+Usage:  .venv/bin/python scripts/render_samples.py
+            [short|earnings|macro|vertical|long|long-full|all]
+
+`.env` is not read, so nothing in it can turn a sample live; the process
+environment is. 3D Dennis is off by default here as everywhere, so the
+samples draw him only with `DENNIS_3D=on` in the environment of this command.
 
 Outputs to samples/ at the repo root: full-spec Dennis renders driven
 end-to-end by mock TTS timestamps — the SHORT "Noise or signal?"
@@ -145,7 +150,6 @@ def _long_inputs(fixture: str = "long_sample"):
     from pipeline.parser_long import parse_long_script
 
     settings = _settings()
-    # a denser, purpose-built deep-dive that showcases the kit (charts,
     # The sample and the parser fixture are the same script now. They diverged
     # so the sample could exercise tags the parser fixture did not carry, and
     # then the sample kept exercising tags that no longer exist — which is how
@@ -221,6 +225,11 @@ def render_long_sample(fixture: str = "long_sample") -> Path:
 
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
+    known = {*VERTICAL_SAMPLES, "vertical", "long", "long-full", "all"}
+    if what not in known:
+        # An unknown word rendered nothing and exited 0.
+        raise SystemExit(f"unknown sample {what!r}: one of "
+                         f"{', '.join(sorted(known))}")
     for name in VERTICAL_SAMPLES:
         if what in (name, "vertical", "all"):
             print(f"{name.upper()} sample:")

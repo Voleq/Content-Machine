@@ -332,12 +332,20 @@ def _same_quarter_a_year_earlier(ref: FilingRef,
         if other.accession != ref.accession and other.period == want:
             return other
     # A fiscal calendar that shifted by a few days still means the same
-    # quarter, so fall back to the nearest report date in the prior year.
+    # quarter, so fall back to the nearest report date in the prior year —
+    # within a fortnight. Without the limit a year with no Q3 on file gave
+    # Q2 as "the same quarter a year earlier".
     prior = [r for r in refs if r.period[:4] == f"{int(year) - 1:04d}"
-             and r.accession != ref.accession]
+             and r.accession != ref.accession
+             and abs(_days_apart(r.period[5:], stem)) <= _SAME_QUARTER_DAYS]
     if not prior:
         return None
     return min(prior, key=lambda r: abs(_days_apart(r.period[5:], stem)))
+
+
+# How far apart two report dates may be and still be the same quarter: a
+# 52/53-week fiscal year moves its quarter end by about a week.
+_SAME_QUARTER_DAYS = 15
 
 
 def _days_apart(a: str, b: str) -> int:
@@ -496,8 +504,14 @@ def segment_filing(html: str) -> list[dict]:
     # inline XBRL (most 10-Ks now) has no <p> at all: its prose is spans in a
     # div with nothing block-level inside, and that div is a text block too,
     # once it is longer than a page number or a running head.
+    # Text inside an element already taken is taken: a <td><p>, an <li><p>
+    # or an iXBRL <td><div> was read twice, spending the brief's section
+    # budget on duplicates and stating a figure twice.
+    counted: set[int] = set()
     for el in soup.find_all(["h1", "h2", "h3", "h4", "h5", "div", "b", "strong",
                              "p", "li", "td"]):
+        if counted and any(id(up) in counted for up in el.parents):
+            continue
         txt = _norm(el.get_text(" "))
         if not txt:
             continue
@@ -510,6 +524,7 @@ def segment_filing(html: str) -> list[dict]:
                 el.name == "div" and len(txt) >= _DIV_PROSE_CHARS
                 and el.find(_BLOCKS) is None):
             sections.setdefault(current, []).append(txt)
+            counted.add(id(el))
     return [{"title": name, "text": " ".join(chunks)}
             for name, chunks in sections.items() if chunks]
 
@@ -849,6 +864,15 @@ def auto_filings(ticker: str, angle: str, workspace: Path, settings: Settings,
     if not settings.filings_enabled:
         return []
     cap = settings.filings_max_shots if max_shots is None else max_shots
+    # The last run's shots go first. A re-picked angle that found fewer left
+    # the old angle's filing_02/03.png behind: out of the manifest and the
+    # veto buttons, but still offered to [SHOW FILING] and passed by
+    # validation, so a crop of a different quote could reach the screen.
+    for old in workspace.glob("filing_[0-9][0-9].png"):
+        try:
+            old.unlink()
+        except OSError as e:
+            log.warning("filings: could not clear %s (%s)", old.name, e)
     try:
         ref = resolve_filing(ticker, settings)
         if ref is None:

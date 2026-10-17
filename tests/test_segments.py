@@ -636,3 +636,39 @@ def test_the_quantised_plan_still_tiles_the_whole_duration():
         assert seg.length > 0, "a segment must never round away to nothing"
         assert abs(seg.length * fps - round(seg.length * fps)) < 1e-6, \
             "every segment is a whole number of frames"
+
+
+def test_a_bad_asset_that_fails_on_the_cpu_too_leaves_the_gpu_in_use(
+        tmp_path, settings, monkeypatch):
+    """A clip that fails on both encoders is a bad clip, not a dead GPU: the
+    beats after it still go to the GPU."""
+    from pipeline import segments as seg_mod
+    from pipeline.render_common import EncodeProfile
+
+    gpu = EncodeProfile(vcodec="h264_nvenc", preset="p4", crf=32)
+    cpu = gpu.software_equivalent(settings)
+    used: list[tuple[int, str]] = []
+
+    def fake_encode(spec, dest, profile, threads):
+        used.append((spec.index, profile.vcodec))
+        if spec.kind == "img":                 # the bad asset: fails anywhere
+            raise RenderError("no such file")
+        dest.write_bytes(b"x")
+
+    monkeypatch.setattr(seg_mod, "_encode_one", fake_encode)
+    monkeypatch.setattr(seg_mod, "ffprobe_duration", lambda p: 0.4)
+    bad = SegmentSpec(index=0, kind="img", duration=0.4, width=64, height=64,
+                      fps=15, inputs=(), filter_chain="")
+    later = _spec(tmp_path, index=1)
+
+    def fallback(spec):
+        return SegmentSpec(index=spec.index, kind="host", duration=spec.duration,
+                           width=64, height=64, fps=15, inputs=(),
+                           filter_chain="", extra_identity=("fallback",))
+
+    run = encode_segments([bad, later], tmp_path / "c", gpu, total_threads=1,
+                          software_profile=cpu, fallback=fallback)
+
+    assert len(run.failures) == 1
+    assert (1, "h264_nvenc") in used, used
+    assert (1, cpu.vcodec) not in used, used

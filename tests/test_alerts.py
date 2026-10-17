@@ -365,7 +365,8 @@ def test_watch_can_drop_a_pin(core):
 
 def test_the_listing_shows_upcoming_prints(core, settings):
     core.watch_command(["EXMPL"])
-    core.earnings_command(["EXMPL", "2026-12-01", "amc"])
+    core.earnings_command(["EXMPL", (date.today() + timedelta(days=45))
+                           .isoformat(), "amc"])
     EarningsCalendar(settings).set("EXMPL", date.today().isoformat(), "amc")
     text = core.watch_command([]).text
     assert "Reporting soon" in text
@@ -377,8 +378,9 @@ def test_earnings_rejects_a_bad_date(core):
 
 
 def test_earnings_records_both_the_date_and_the_slot(core, settings):
-    reply = core.earnings_command(["exmpl", "2026-07-29", "amc"])
-    assert "2026-07-29" in reply.text
+    ahead = (date.today() + timedelta(days=20)).isoformat()
+    reply = core.earnings_command(["exmpl", ahead, "amc"])
+    assert ahead in reply.text
     entry = EarningsCalendar(settings).get("EXMPL")
     assert entry is not None and entry.when == "amc"
 

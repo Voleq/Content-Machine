@@ -139,13 +139,15 @@ def _read_script(path: Path) -> dict | None:
 
 
 def _video_index(settings: Settings) -> dict[str, dict]:
-    """What the video log knows, keyed on `TICKER/workdate`.
+    """What the video log knows, keyed on `TICKER/workdate/format`. A SHORT
+    and a LONG of one day are two videos; keyed on the day alone, each got
+    the other's upload and an abandoned LONG counted as shipped.
 
     Read through a try: a corpus that cannot be built because nothing has ever
     been uploaded is a corpus of scripts, which is still useful.
     """
     try:
-        from pipeline.youtube import VideoLog, retention_rows
+        from pipeline.youtube import VideoLog, record_format, retention_rows
 
         records = VideoLog(settings).all()
     except Exception as e:  # noqa: BLE001 — the scripts are the point
@@ -156,7 +158,7 @@ def _video_index(settings: Settings) -> dict[str, dict]:
         if not rec.workdate:
             continue
         ratios = [r["watch_ratio"] for r in retention_rows(rec.retention)]
-        out[f"{rec.ticker}/{rec.workdate}"] = {
+        out[f"{rec.ticker}/{rec.workdate}/{record_format(rec)}"] = {
             "video_id": rec.video_id,
             "title": rec.title,
             "uploaded_at": rec.uploaded_at,
@@ -187,7 +189,8 @@ def build_index(settings: Settings) -> list[ScriptEntry]:
                 if not narration.strip():
                     continue
                 said = sentences(narration)
-                meta = videos.get(f"{ticker_dir.name}/{date_dir.name}", {})
+                meta = videos.get(
+                    f"{ticker_dir.name}/{date_dir.name}/{fmt}", {})
                 finals = (("render_long_manifest.json", "long_final.manifest.json")
                           if fmt == "long" else ("short_final.manifest.json",))
                 shipped = (bool(meta.get("video_id"))

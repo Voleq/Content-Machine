@@ -41,22 +41,6 @@ def set_render_politeness(settings) -> None:
              _POLITENESS["threads"], _POLITENESS["below_normal"])
 
 
-def _politeness_args(threads: int | None = None) -> list[str]:
-    """ffmpeg flags that cap CPU use. The filter graph — not the encode — is
-    the bottleneck here, so the filter thread pools are capped too.
-
-    `threads` overrides the process-wide cap, which is how the parallel
-    segment encoder stays polite: several workers each take a slice of the
-    budget rather than each taking the whole thing.
-    """
-    n = threads if threads else _POLITENESS["threads"]
-    if not n:
-        return []
-    return ["-threads", str(n),
-            "-filter_threads", str(n),
-            "-filter_complex_threads", str(n)]
-
-
 def _with_politeness(args: list[str], threads: int | None = None) -> list[str]:
     """`args` with the politeness flags where ffmpeg READS them.
 

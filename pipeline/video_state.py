@@ -115,7 +115,7 @@ class VideoState:
         up = self.uploaded
         if up is None:
             return ("upload it to YouTube (private or scheduled)", "upload")
-        if up["privacy"] == "scheduled" and up["publish_at"]:
+        if up["pending"]:
             return (f"scheduled for {up['publish_at'][:16].replace('T', ' ')}",
                     "")
         if up["age_h"] < RETENTION_READY_H:
@@ -246,7 +246,7 @@ def video_state(settings: Settings, ws: Workspace, jobs: list | None = None,
     if videos is None:
         from pipeline.youtube import VideoLog
         videos = VideoLog(settings).for_ticker(ws.ticker)
-    from pipeline.youtube import record_format
+    from pipeline.youtube import public_since, record_format, still_scheduled
     for v in videos:
         if v.ticker != ws.ticker or v.workdate != ws.workdate:
             continue
@@ -254,7 +254,10 @@ def video_state(settings: Settings, ws: Workspace, jobs: list | None = None,
             "video_id": v.video_id, "url": v.url(), "title": v.title,
             "fmt": record_format(v), "privacy": v.privacy,
             "publish_at": v.publish_at, "uploaded_at": v.uploaded_at,
-            "age_h": round(_age_hours(v.uploaded_at, now), 1),
+            # A scheduled row is never rewritten when it goes public: past
+            # its time it is published, and its age runs from then.
+            "pending": still_scheduled(v, now),
+            "age_h": round(_age_hours(public_since(v), now), 1),
             "retention": bool(v.retention)})
     return st
 
@@ -368,7 +371,7 @@ def card_text(st: VideoState) -> str:
     up = st.uploaded
     if up is None:
         lines.append("upload    —")
-    elif up["privacy"] == "scheduled" and up["publish_at"]:
+    elif up.get("pending"):
         lines.append(f"upload    📅 {up['publish_at'][:16].replace('T', ' ')}"
                      f" · {up['url']}")
     else:
@@ -409,7 +412,7 @@ def inbox(settings: Settings, now: datetime | None = None,
           states: list[VideoState] | None = None) -> list[InboxItem]:
     """Everything waiting on the operator, in the order it should be done."""
     from pipeline.standing import BatchQueue
-    from pipeline.youtube import VideoLog
+    from pipeline.youtube import VideoLog, public_since, still_scheduled
 
     now = now or datetime.now(timezone.utc)
     states = states if states is not None else all_states(settings, now=now)
@@ -453,11 +456,11 @@ def inbox(settings: Settings, now: datetime | None = None,
                                    f"{v.publish_at[:16].replace('T', ' ')} — "
                                    f"{v.title[:50]}"))
     for v in log_.all():
-        age = _age_hours(v.uploaded_at, now)
+        if still_scheduled(v, now):
+            continue                     # not public yet: nothing to read
+        age = _age_hours(public_since(v), now)
         if v.retention or not (RETENTION_READY_H <= age <= 24 * 14):
             continue
-        if v.privacy == "scheduled" and v.publish_at:
-            continue                     # not public yet: nothing to read
         items.append(InboxItem("retention", v.ticker, v.workdate,
                                f"{v.title[:50]} ({age / 24:.0f} days up)",
                                "retention"))

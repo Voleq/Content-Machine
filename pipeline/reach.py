@@ -37,8 +37,9 @@ def _events(script) -> list:
 def _is_beat_family(family: str) -> bool:
     """True for a family whose plates carry a figure as their whole point.
 
-    Read off the registry's own families rather than a list of folder names, so
-    a kit that adds one counts it the day it lands.
+    A fixed list of the kit's folder names: a kit that adds a data family
+    has to be added here too, or its plates do not count as data plates on
+    the approval line.
     """
     return family in ("figures", "tables", "charts", "cycles", "peers")
 
@@ -166,12 +167,27 @@ def recent_plates(settings, *, window: int = ROTATION_WINDOW,
     cache, makes a resumed render redraw beats it already had, and makes a
     proof no longer a proof of the thing that shipped.
     """
+    out: set[str] = set()
+    for used in plates_by_render(settings, exclude=exclude)[:window]:
+        out |= used
+    return out
+
+
+def plates_by_render(settings, *,
+                     exclude: "Path | str | None" = None) -> list[set[str]]:
+    """The plates each render on disk put on screen, newest first.
+
+    One set per manifest that recorded `plates_used`, with the forgiveness
+    `recent_plates` describes. `/kit doctor` reads every one of them for
+    "drawn and never reached"; it used to read a ledger nothing ever wrote,
+    so it called the whole library unreached however many videos had shipped.
+    """
     import json
     from pathlib import Path
 
     base = Path(settings.workspace_dir)
     if not base.is_dir():
-        return set()
+        return []
     skip = Path(exclude).resolve() if exclude else None
     found: list[tuple[float, set[str]]] = []
     for manifest in base.glob("*/*/*manifest*.json"):
@@ -184,13 +200,10 @@ def recent_plates(settings, *, window: int = ROTATION_WINDOW,
                 continue
             found.append((manifest.stat().st_mtime,
                           {str(k) for k in used}))
-        except (OSError, json.JSONDecodeError, ValueError):
+        except (OSError, json.JSONDecodeError, ValueError, AttributeError):
             continue
     found.sort(key=lambda row: row[0], reverse=True)
-    out: set[str] = set()
-    for _, used in found[:window]:
-        out |= used
-    return out
+    return [used for _, used in found]
 
 
 def recent_orders(settings, *, window: int = ROTATION_WINDOW,

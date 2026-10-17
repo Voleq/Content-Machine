@@ -141,9 +141,14 @@ def cleanup(settings: Settings, dry_run: bool = False) -> dict:
     freed = 0
 
     for ddir in _old_date_dirs(settings.workspace_dir, cutoff):
+        # Each file is counted once: a video inside a pruned directory is
+        # taken by the file pass, and a dry run (which deletes nothing) used
+        # to count it again in the directory's total.
+        counted: set[Path] = set()
         for path in list(ddir.rglob("*")):
             if path.is_file() and path.suffix.lower() in PRUNE_FILE_SUFFIXES:
                 freed += path.stat().st_size
+                counted.add(path)
                 removed_files += 1
                 log.info("prune file %s", path)
                 if not dry_run:
@@ -151,7 +156,8 @@ def cleanup(settings: Settings, dry_run: bool = False) -> dict:
         for name in PRUNE_DIR_NAMES:
             sub = ddir / name
             if sub.is_dir():
-                freed += sum(p.stat().st_size for p in sub.rglob("*") if p.is_file())
+                freed += sum(p.stat().st_size for p in sub.rglob("*")
+                             if p.is_file() and p not in counted)
                 removed_dirs += 1
                 log.info("prune dir %s", sub)
                 if not dry_run:

@@ -24,6 +24,35 @@ from bot.handlers import (BotCore, build_application, schedule_batch,
 log = logging.getLogger("dennis")
 
 
+async def send_file_to_chats(bot, chat_ids, path, kind: str,
+                             caption: str = "") -> None:
+    """Send one file to every operator chat; raise if any of them missed it.
+
+    Each chat is tried, as `notify` tries each: one chat that fails (blocked
+    the bot, left the group) used to stop every chat after it from getting
+    the proof. The first failure is raised once all have been tried, so
+    `BotCore.push_file` still tells the operator where the file is.
+    """
+    failed: list[Exception] = []
+    for chat_id in chat_ids:
+        try:
+            with open(path, "rb") as fh:
+                if kind == "video":
+                    await bot.send_video(chat_id, fh, caption=caption[:1024],
+                                         supports_streaming=True)
+                elif kind == "photo":
+                    await bot.send_photo(chat_id, fh, caption=caption[:1024])
+                else:
+                    await bot.send_document(chat_id, fh,
+                                            caption=caption[:1024])
+        except Exception as e:  # noqa: BLE001 - the next chat still gets it
+            log.warning("could not send %s to chat %s: %s",
+                        getattr(path, "name", path), chat_id, e)
+            failed.append(e)
+    if failed:
+        raise failed[0]
+
+
 def main() -> None:
     settings = get_settings()
     logging.basicConfig(
@@ -125,21 +154,9 @@ def main() -> None:
             core.feed.add("file", caption, files=[p])
             kind = telegram_send_kind(p, settings)   # raises if unsendable
 
-            async def _send() -> None:
-                for chat_id in settings.operator_chat_ids:
-                    with open(p, "rb") as fh:
-                        if kind == "video":
-                            await application.bot.send_video(
-                                chat_id, fh, caption=caption[:1024],
-                                supports_streaming=True)
-                        elif kind == "photo":
-                            await application.bot.send_photo(
-                                chat_id, fh, caption=caption[:1024])
-                        else:
-                            await application.bot.send_document(
-                                chat_id, fh, caption=caption[:1024])
-
-            fut = asyncio.run_coroutine_threadsafe(_send(), loop)
+            fut = asyncio.run_coroutine_threadsafe(
+                send_file_to_chats(application.bot, settings.operator_chat_ids,
+                                   p, kind, caption), loop)
             try:
                 on_loop = asyncio.get_running_loop() is loop
             except RuntimeError:
@@ -148,7 +165,7 @@ def main() -> None:
                 # Waiting here would deadlock the loop the send runs on; the
                 # failure is still logged rather than lost.
                 fut.add_done_callback(
-                    lambda f: f.exception() and log.error(
+                    lambda f: not f.cancelled() and f.exception() and log.error(
                         "could not send %s: %s", p.name, f.exception()))
                 return
             fut.result(timeout=settings.telegram_send_timeout_s)
@@ -183,15 +200,25 @@ def main() -> None:
             except OSError as e:
                 log.warning("web panel not started (%s:%d): %s",
                             settings.panel_host, settings.panel_port, e)
+        # The read-only status page (STATUS_PAGE_ENABLED). It was documented
+        # and configurable, and nothing ever started it.
+        try:
+            from pipeline.status_page import serve
+            serve(settings)
+        except OSError as e:
+            log.warning("status page not started (127.0.0.1:%d): %s",
+                        settings.status_page_port, e)
 
-        try:  # scheduled screener digest (§14) — degrades silently if absent
+        try:  # scheduled screener digest (§14)
             from pipeline.screener import schedule_alerts, schedule_digest
             schedule_digest(application, core)
             # Intraday watch (3b): the digest covers the value lane, this
             # covers short-form, which goes stale in hours.
             schedule_alerts(application, core)
-        except ImportError:
-            log.info("screener module not present; digest not scheduled")
+        except Exception as e:  # noqa: BLE001 - the bot still runs without them
+            # A SCREEN_TIMEZONE or SCREEN_DIGEST_CRON the clock cannot read
+            # used to raise out of start-up after the queue had started.
+            log.warning("screener digest/alerts not scheduled: %s", e)
         # The overnight window: what `/batch` queued runs in it unattended.
         schedule_batch(application, core)
         # Weekly: the sentences viewers left on, into the next writing prompt.

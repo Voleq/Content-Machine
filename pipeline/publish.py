@@ -157,6 +157,13 @@ def group_cues(words: list[WordTimestamp]) -> list[tuple[float, float, str]]:
                 or span >= MAX_CUE_S:
             flush()
     flush()
+    # The 0.9 s floor is stretched into silence only: a one-word sentence
+    # stretched past the next cue's start put both lines on screen at once.
+    for n in range(len(cues) - 1):
+        start, end, text = cues[n]
+        nxt = cues[n + 1][0]
+        if end > nxt:
+            cues[n] = (start, max(nxt, start + 0.05), text)
     return cues
 
 
@@ -346,8 +353,9 @@ def build_package(script, settings, *, ticker: str = "",
     body += [
         settings.disclaimer_text,
         "",
-        "Everything on screen is from the filings. No sponsor, no position "
-        "unless stated, no price targets.",
+        "The figures are from the company's filings and market data; "
+        "footage and images are credited where they appear. No sponsor, "
+        "no position unless stated, no price targets.",
     ]
 
     # The transcript last, and only if the whole description still fits.

@@ -87,19 +87,23 @@ class ChapterShare:
 
 
 def host_share(segments, chapters, duration: float, *,
-               flag: float = HOST_SHARE_FLAG) -> list[ChapterShare]:
+               flag: float = HOST_SHARE_FLAG, words=None,
+               narration: str = "") -> list[ChapterShare]:
     """Host seconds per chapter, off the segment plan.
 
     HOST MEANS THE `host` BEATS: Dennis talking with nothing else in frame. A
     two-shot has him beside the evidence and is counted as evidence, because
     the question is how much of the chapter shows the viewer something other
     than his face. Chapters sit where the render draws their openers
-    (`timeline.chapter_windows`); a script with no trailer is one chapter.
+    (`timeline.chapter_windows`): measured onto the voice when its `words`
+    and the script's `narration` are given, as the segment plan was, else the
+    trailer's guesses. A script with no trailer is one chapter.
     """
     from pipeline.timeline import chapter_windows
 
-    windows = chapter_windows(chapters, duration) if chapters else \
-        [(0.0, duration)]
+    windows = (chapter_windows(chapters, duration, words=words,
+                               narration=narration)
+               if chapters else [(0.0, duration)])
     named = list(chapters) or [None]
     out: list[ChapterShare] = []
     for ch, (a, b) in zip(named, windows):
@@ -113,9 +117,11 @@ def host_share(segments, chapters, duration: float, *,
 
 
 def host_share_lines(segments, chapters, duration: float, *,
-                     flag: float = HOST_SHARE_FLAG) -> list[str]:
+                     flag: float = HOST_SHARE_FLAG, words=None,
+                     narration: str = "") -> list[str]:
     """The host share as report lines: the video, then one per chapter."""
-    shares = host_share(segments, chapters, duration, flag=flag)
+    shares = host_share(segments, chapters, duration, flag=flag, words=words,
+                        narration=narration)
     host_beats = [s for s in segments if s.kind == "host"]
     total = sum(s.length for s in host_beats)
     mean = total / len(host_beats) if host_beats else 0.0
@@ -260,8 +266,13 @@ def _thumbnail_for(seg, settings: Settings, content, tmp: Path, idx: int,
 
         # The take the swap menu chose: the sheet is the last look before
         # the encode, and it has to show the clip the render will play.
+        # With the company's site, as the render asks: without it an [IMG]
+        # that only the site answers showed the filler card here and the
+        # site's picture in the video.
         visual = content.resolve_visual(
             kind, value, ticker=ticker, company_data=company_data,
+            website=str(company_data.get("website") or "")
+            if company_data is not None else "",
             style=seg.payload.get("style", "clean"), choice=take,
         )
         label = f"{kind}: {visual.key} ({visual.source})"
@@ -355,6 +366,7 @@ def build_storyboard(
     title: str = "",
     cols: int = COLS,
     chapters=None,
+    narration: str = "",
     overrides: dict | None = None,
     slots: dict | None = None,
 ) -> tuple[Path, list[str]]:
@@ -374,7 +386,8 @@ def build_storyboard(
     rows = (len(segments) + cols - 1) // cols
     header_h = 78
     total = sum(s.length for s in segments)
-    shares = host_share(segments, chapters, total) if chapters else []
+    shares = (host_share(segments, chapters, total, words=words,
+                         narration=narration) if chapters else [])
     share_rows = (len(shares) + cols - 1) // cols
     header_h += share_rows * 24 + (12 if shares else 0)
     sheet = Image.new("RGBA", (cols * TILE_W, header_h + rows * TILE_H),

@@ -35,7 +35,7 @@ REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
-LOOK_VERSION = "47-64-7"
+LOOK_VERSION = "47-64-8"      # 8: the held mug's colour (2d87a89)
 
 
 @functools.cache
@@ -45,12 +45,17 @@ def _lines_digest() -> str:
     return hashlib.sha256((REPO / "room3d" / "lines.py").read_bytes()).hexdigest()[:12]
 
 # How long one shot may take before the worker is taken for hung: a fixed
-# allowance for Blender to come up, and a generous one per frame (a Cycles
-# frame on a CPU is seconds to a minute; ten times that is not a slow frame).
-# Without it a wedged Blender held the render worker — and the whole queue —
-# for ever, past any /cancel.
+# allowance for Blender to come up, and a generous one per frame (a frame is
+# seconds on the GPU line pass and up to ~45 s on a CPU at 1080p; three times
+# that is not a slow frame). Without it a wedged Blender held the render
+# worker — and the whole queue — for ever, past any /cancel. It was 300 s a
+# frame, sized for 12 drawings a second: at 30 a ten-second shot was allowed
+# twenty-five hours before anyone noticed.
 SHOT_BASE_TIMEOUT_S = 600.0
-FRAME_TIMEOUT_S = 300.0
+FRAME_TIMEOUT_S = 120.0
+# The drawing rate a job without one is rendered at: Settings.dennis_3d_fps's
+# default, and what perform.py assumes for a hand-made job.
+DEFAULT_FPS = 30
 
 
 def _python(settings) -> list[str]:
@@ -115,7 +120,10 @@ def angle_of(plate) -> tuple[str, str, str] | None:
     """(angle, season, aspect) of a 3D room, or None for a drawn one."""
     if plate is None or getattr(plate, "author", "") != ROOM3D_AUTHOR:
         return None
-    name = plate.key.rsplit("/", 1)[-1]
+    # The BASE key: the same angle at every hour. Read off `plate.key`, a
+    # room seen at dusk sent "desk-front-dusk" to the worker, which has no
+    # such camera, and lost its season.
+    name = (getattr(plate, "base_key", "") or plate.key).rsplit("/", 1)[-1]
     aspect = "9x16" if name.endswith("-9x16") else "16x9"
     stem = name.rsplit("-", 1)[0] if name.endswith(("-9x16", "-16x9")) else name
     season = "plain"
@@ -199,7 +207,7 @@ class Performer:
     def _ask(self, job: dict) -> dict:
         proc = self._start()
         frames = 1 if job.get("still") else (
-            float(job.get("duration") or 0) * float(job.get("fps") or 12) + 1)
+            float(job.get("duration") or 0) * float(job.get("fps") or DEFAULT_FPS) + 1)
         deadline = time.monotonic() + SHOT_BASE_TIMEOUT_S + frames * FRAME_TIMEOUT_S
         try:
             proc.stdin.write(json.dumps(job) + "\n")

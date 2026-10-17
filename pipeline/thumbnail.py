@@ -8,8 +8,8 @@ with every string carrying a six-pixel black outline because that is what type
 needs to survive on a photograph. The video it was selling is ink on paper.
 
 So it is drawn the way the frames are drawn: a kit paper background, Dennis
-as a real kit figure, the ticker in Shantell, the leading figure in Space
-Mono, and a border that is a pen stroke rather than a rectangle primitive. Red
+as a real kit figure, the ticker in Archivo, the leading figure in Courier
+bold, and a border that is a pen stroke rather than a rectangle primitive. Red
 means the number is bad, green is reserved for an up-move, and everything else
 is ink — the same rule the charts follow, so colour still means one thing
 across the channel.
@@ -127,6 +127,10 @@ def shock_metric(data: CompanyData) -> str:
 _FIGURE_RE = re.compile(r"[-+]?\$?\d[\d,]*\.?\d*\s*(?:%|x|bn|b|m|k)?", re.I)
 
 
+def _fold_minus(text: str) -> str:
+    return text.replace("\u2212", "-").replace("\u2013", "-")
+
+
 def split_metric(metric: str) -> tuple[str, str]:
     """`"Net margin: -12%"` -> `("NET MARGIN", "-12%")`.
 
@@ -141,6 +145,9 @@ def split_metric(metric: str) -> tuple[str, str]:
     at all — so the leading number is pulled out and the rest becomes the
     label.
     """
+    # The writer types a true minus (U+2212) or an en dash as often as a
+    # hyphen; read as no sign, a fall became the whole line in the rise ink.
+    metric = _fold_minus(metric)
     label, sep, value = metric.partition(":")
     if sep:
         return label.strip().upper(), value.strip()
@@ -166,6 +173,7 @@ def metric_colour(settings: Settings, value: str, *,
     either never appears — and the rule is decoration — or it appears on any
     positive figure, and it stops meaning direction.
     """
+    value = _fold_minus(value)
     m = re.search(r"-?\d+(?:\.\d+)?", value)
     if m is None:
         return role(settings, "structure")

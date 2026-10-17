@@ -25,7 +25,13 @@ from pipeline.models import RETIRED_TAG_TYPES, TagType
 
 # A broad net so unknown tag types are stripped rather than spoken. The
 # payload is optional: delivery directives ([BEAT], [SIGH]) carry none.
-_ANY_TAG_RE = re.compile(r"\[([A-Z][A-Z -]*?)(?::\s*([^\]\n]+))?\]")
+#
+# A payload may run over lines, as the writer prompt's own numbers-sheet
+# example is written, but never over a blank line. Stopping at the first
+# newline left a wrapped [PLATE] in the narration for the voice to read out,
+# slot syntax and all, with its plate dropped.
+_ANY_TAG_RE = re.compile(
+    r"\[([A-Z][A-Z -]*?)(?::\s*((?:[^\]\[\n]|\n(?![ \t]*\n))+))?\]")
 _KNOWN_TYPES = {t.value: t for t in TagType}
 
 # [CHART: revenue style=marker] — optional trailing style token.
@@ -63,7 +69,7 @@ def tokenize_tags(
         last = m.end()
 
         type_str = m.group(1).strip()
-        payload = (m.group(2) or "").strip()
+        payload = re.sub(r"\s*\n\s*", " ", m.group(2) or "").strip()
         tag_type = _KNOWN_TYPES.get(type_str)
         if tag_type is None:
             # A tag the voice bible refuses is named as refused. Stripped

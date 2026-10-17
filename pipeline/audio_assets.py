@@ -7,11 +7,10 @@ network, and it is the wrong thing to publish, and until now nothing
 distinguished the two. The taxonomy, the gain staging and every cue that fires
 them were already correct; only the files were fake.
 
-``assets/sfx/`` is the WHOLE scan. It used to be two directories, and the
-second one held a synthesised bed that has since been deleted — so the effects
-are now the only thing standing between a placeholder and an upload, and
-``scripts/fetch_sfx.py`` is the only thing that clears the gate for a final
-render.
+The scan covers ``assets/sfx/`` and ``assets/score/`` (``AUDIO_DIRS``): the
+effects, which ``scripts/fetch_sfx.py`` replaces with recorded ones, and the
+owned music ``scripts/make_score.py`` writes. A file in either with no record
+of where it came from blocks a final render.
 
 So a sidecar records provenance. ``scripts/fetch_sfx.py`` writes it when it
 pulls real CC0 effects; anything without an entry is assumed generated,

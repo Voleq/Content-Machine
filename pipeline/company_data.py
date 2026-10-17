@@ -170,6 +170,9 @@ def _coerce(field: str, raw) -> str | float | None:
     text = str(raw).strip()
     if _is_na(text):
         return None
+    if field == "website" and "://" not in text:
+        # Exports write `www.example.com`; every reader fetches a URL.
+        return "https://" + text.lstrip("/")
     if field in _STRING_FIELDS:
         return text
     val = _num(raw)
@@ -309,7 +312,7 @@ def check_export(
         # company overwrites the right one just as thoroughly.
         try:
             pairs = _read_csv_pairs(src)
-        except OSError as e:
+        except (OSError, csv.Error) as e:
             check.problems.append(ExportProblem(
                 kind="unreadable",
                 message=f"{src.name} could not be read ({e})."))
@@ -384,12 +387,21 @@ def check_export(
 
 
 def _read_csv_pairs(src: Path) -> dict[str, object]:
-    """`field_key,value` rows from a CSV export. utf-8-sig: Excel writes a BOM."""
+    """`field_key,value` rows from a CSV export.
+
+    utf-8-sig first: Excel's "CSV UTF-8" writes a BOM. Then cp1252, which is
+    what Excel's plain "CSV (Comma delimited)" writes on Windows: one accented
+    company name in it used to raise UnicodeDecodeError out of the upload.
+    """
+    raw = Path(src).read_bytes()
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = raw.decode("cp1252", errors="replace")
     pairs: dict[str, object] = {}
-    with open(src, newline="", encoding="utf-8-sig") as f:
-        for row in csv.reader(f):
-            if len(row) >= 2 and row[0].strip() and row[0].strip() not in ("field", "field_key"):
-                pairs[row[0].strip()] = row[1]
+    for row in csv.reader(text.splitlines()):
+        if len(row) >= 2 and row[0].strip() and row[0].strip() not in ("field", "field_key"):
+            pairs[row[0].strip()] = row[1]
     return pairs
 
 
@@ -1060,7 +1072,10 @@ def load_company_data(workspace: Path) -> CompanyData:
             log.warning("export has no News sheet — recent-headlines flow unavailable")
         wb.close()
     else:
-        pairs = _read_csv_pairs(src)
+        try:
+            pairs = _read_csv_pairs(src)
+        except (OSError, csv.Error) as e:
+            raise CompanyDataError(f"{src.name} could not be read ({e})") from e
         log.warning("CSV export carries the snapshot only — no history/dashboard")
 
     unknown = [k for k in pairs if k not in ALL_DATA_FIELDS]

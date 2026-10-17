@@ -49,6 +49,7 @@ from pipeline.models import (
     VISUAL_TAG_TYPES,
     Chapter,
     LongScript,
+    VENDOR_WORDS,
     TagEvent,
     TagType,
     parse_scribble_payload,
@@ -71,7 +72,6 @@ from pipeline.tagging import (parse_chart_payload, parse_hold, pop_field,
 
 log = logging.getLogger(__name__)
 
-VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "capital iq")
 
 
 class LongScriptError(Exception):
@@ -95,12 +95,25 @@ _HOOK_MARKER_RE = re.compile(r"^\s*=+\s*HOOK OPTIONS\s*=+\s*$",
 _CHOSEN_RE = re.compile(r"^\s*chosen\b[^\n]*$", re.IGNORECASE | re.MULTILINE)
 
 
+# One numbered option of the menu: `1. "<hook>"`.
+_HOOK_OPTION_RE = re.compile(r"[ \t]*(?:\d+[.)][^\n]*)?(?:\n|$)")
+
+
 def _strip_hook_options(raw: str) -> str:
     m = _HOOK_MARKER_RE.search(raw)
     if not m:
         return raw
     chosen = _CHOSEN_RE.search(raw, m.end())
-    cut = chosen.end() if chosen else m.end()
+    if chosen:
+        return raw[chosen.end():].lstrip("\n ")
+    # No `Chosen:` line: the numbered menu still goes. Only the marker used
+    # to be cut, so "1. ... 2. ... 3. ..." was spoken and captioned.
+    cut = m.end()
+    while cut < len(raw):
+        line = _HOOK_OPTION_RE.match(raw, cut)
+        if not line or line.end() == cut:
+            break
+        cut = line.end()
     return raw[cut:].lstrip("\n ")
 
 # metrics [CHART: metric] may reference: the history sheet + the price feed
@@ -766,6 +779,10 @@ def move_problems(script: LongScript, reg, settings: Settings
             f"on. Cut {len(circles) - PEN_CIRCLES_PER_VIDEO} (the ones past "
             f"the limit are before {extra}), keeping the three the argument "
             f"needs most.")
+    if not starts:
+        # No chapters, no "one a chapter": the video's three is the limit,
+        # as the render keeps it (`timeline.plan_writer_moves`).
+        return warnings, blocking
     per_chapter: dict[int, list[tuple[TagEvent, float]]] = {}
     for e, t in circles:
         per_chapter.setdefault(chapter_at(t, starts), []).append((e, t))
@@ -800,8 +817,6 @@ def move_problems(script: LongScript, reg, settings: Settings
 # [SOURCE] — where the figure on screen comes from (item 14).
 # ---------------------------------------------------------------------------
 
-# Design's tag holds about this much in its source slot at its drawn size; a
-# longer line would be cut by the slot. A source is a citation, not a caption.
 def source_problems(script: LongScript, reg, settings: Settings
                     ) -> tuple[list[str], list[str]]:
     """Every [SOURCE] checked against the plate it goes under.

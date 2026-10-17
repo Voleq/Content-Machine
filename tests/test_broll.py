@@ -165,6 +165,15 @@ def test_image_cache_hit(manager):
     assert second.path == first.path
     assert len(client.search_calls) == n
     assert "Wikimedia Commons" in second.attribution
+    # The provider survives the cache, so a credit never reads "cache".
+    assert second.provider == first.provider == first.source != "cache"
+
+
+def test_clip_cache_hit_keeps_its_provider(manager):
+    first = manager.resolve_clip("dumpster_fire")
+    second = manager.resolve_clip("dumpster_fire")
+    assert second.source == "cache"
+    assert second.provider == "pexels" == first.source
 
 
 def test_image_failure_degrades_to_filler(settings, tmp_path):

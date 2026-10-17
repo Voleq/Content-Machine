@@ -48,9 +48,11 @@ _CURRENCY = {
 # A figure as a writer types it: an optional sign, an optional currency
 # symbol, digits (grouped or not), optional decimals, an optional scale word
 # the writer already spelled out or its letter ("$4.2B", "$310M", "1.1tn"),
-# and an optional percent sign or multiple ("12x").
+# and an optional percent sign or multiple ("12x"). A hyphen straight after a
+# figure is a range, not a sign: "5-10%" is five to ten percent, and reading
+# it as minus ten told the writer to put a negative in the narration.
 FIGURE_RE = re.compile(
-    r"(?P<sign>[-−])?"
+    r"(?P<sign>(?<![\w%.])[-−])?"
     r"(?P<currency>[$£€])?"
     r"(?P<digits>\d{1,3}(?:,\d{3})+|\d+)"
     r"(?:\.(?P<frac>\d+))?"

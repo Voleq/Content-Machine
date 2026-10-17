@@ -56,7 +56,7 @@ def test_a_correction_lands_on_the_record(settings):
     record = VideoLog(settings).get("v1")
     assert len(record.corrections) == 1
     assert "41%" in record.corrections[0]["text"]
-    assert "Correction pinned" in out
+    assert "Correction posted" in out and "Studio" in out
 
 
 def test_a_correction_needs_a_video_that_was_uploaded(settings):

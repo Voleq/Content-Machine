@@ -196,6 +196,14 @@ class Visual:
     # looping source that freezes for the back half is the same failure as a
     # frozen gif, arriving later.
     loops: bool = False
+    # Who the file came from (pexels, wikimedia, company_site, giphy, ...).
+    # On a cache hit `source` says "cache"; this keeps the provider its meta
+    # file recorded, so a credit line never reads "Photo: cache".
+    provider: str = ""
+    # A picture's own pixels before they were fitted to the long's 16:9
+    # frame, or None. The SHORT fills a 9:16 frame from it: cut out of the
+    # 1920x1080 file a portrait crop is 607 px wide, blown up 2.4x.
+    master: Path | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -544,7 +552,8 @@ def normalize_clip(src: Path, dest: Path, settings: Settings,
     return dest
 
 
-def normalize_image(src: Path, dest: Path, settings: Settings) -> Path:
+def normalize_image(src: Path, dest: Path, settings: Settings, *,
+                    keep_min: float = 0.72) -> Path:
     """Compose the image to FILL the LONG frame (§editing: media is the
     background). Real photos cover the frame edge-to-edge; logos and tall
     grabs are contained sharp over a blurred, brand-tinted cover of
@@ -555,11 +564,40 @@ def normalize_image(src: Path, dest: Path, settings: Settings) -> Path:
     W, H = settings.long_resolution
     from pipeline.rasters import role
 
-    frame = cover_fill_frame(src, W, H, ground=role(settings, "ground"),
-                             line=role(settings, "structure"))
+    # No drawn outline: the long plays every picture full screen (10-10), and
+    # an outline baked into the cached file round a letterboxed photo is one
+    # no later pass can take off.
+    frame = cover_fill_frame(src, W, H, keep_min=keep_min,
+                             ground=role(settings, "ground"),
+                             line=role(settings, "structure"), border=False)
     dest.parent.mkdir(parents=True, exist_ok=True)
     frame.save(dest, format="PNG")
     return dest
+
+
+# The longest side a kept master may have. The short's frame is delivered at
+# 1440x2560; anything past this is bytes on disk and nothing on screen.
+MASTER_MAX_SIDE = 4096
+
+
+def keep_master(raw: Path, dest: Path) -> Path | None:
+    """The fetched picture as it came, capped at MASTER_MAX_SIDE, or None
+    when it does not open as an image. Never enlarged."""
+    from PIL import Image
+
+    try:
+        with Image.open(raw) as im:
+            im = im.convert("RGB")
+            im.thumbnail((MASTER_MAX_SIDE, MASTER_MAX_SIDE))
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            im.save(dest, format="JPEG", quality=92)
+        return dest
+    except Exception as e:                          # noqa: BLE001
+        # The master is optional (the short falls back to the normalised
+        # file), so nothing about it may cost the picture: a decompression
+        # bomb guard or an odd mode is a log line, not a failed fetch.
+        log.warning("could not keep %s whole (%s)", raw.name, e)
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -623,10 +661,18 @@ class ContentManager:
         button re-resolves with choice+1). `portrait` normalizes to 9:16
         for SHORT cutaways (cached separately).
         """
+        # The owned takes come first in the swap order and the provider takes
+        # after them, as `alternates_count` counts them. Clamping `choice` to
+        # the last owned clip used to answer every later take with that same
+        # clip, so "take 3/6" on a key with one owned clip never reached
+        # Pexels at all.
+        owned = len(self._library_candidates(key))
         try:
-            local = self._from_library(key, choice, portrait)
-            if local:
-                return local
+            if choice < owned:
+                local = self._from_library(key, choice, portrait)
+                if local:
+                    return local
+            choice = max(choice - owned, 0)
             cached = self._clip_from_cache(key, choice, portrait)
             if cached:
                 return cached
@@ -765,16 +811,27 @@ class ContentManager:
             meta = cdir / f"meta_{choice}.json"
             if not norm.exists():
                 continue
-            attribution, loops = "", False
-            if meta.exists():
+            attribution, loops, provider = "", False, ""
+            try:
                 m = json.loads(meta.read_text(encoding="utf-8"))
+            except FileNotFoundError:
+                m = {}
+            except (OSError, ValueError) as e:
+                # A meta file cut short by a kill mid-write used to abort
+                # every later render of this key; the clip itself is whole
+                # (it is written before its meta), only the credit is lost.
+                log.warning("clip cache meta %s unreadable (%s)", meta, e)
+                m = {}
+            if isinstance(m, dict):
                 attribution = m.get("attribution", "")
+                provider = m.get("provider", "")
                 # A gif that loops has to keep looping out of the cache, or
                 # the second render of the same script freezes where the first
                 # one moved.
                 loops = bool(m.get("loops", False))
             return Visual(key=key, kind="clip", path=norm, is_video=True,
-                          source="cache", attribution=attribution, loops=loops)
+                          source="cache", attribution=attribution, loops=loops,
+                          provider=provider)
         return None
 
     def _fetch_clip(self, key: str, choice: int, portrait: bool) -> Visual | None:
@@ -819,8 +876,8 @@ class ContentManager:
         Whatever comes back goes through `normalize_clip`, so it arrives in
         the same shape Pexels footage does: a short mp4 at the project's
         resolution and fps, audio stripped, capped in length. The renderer
-        does not need to know which chain produced it and plays it inside the
-        same frames/ plate either way.
+        does not need to know which chain produced it and plays it full
+        screen either way.
 
         WORTH DECIDING DELIBERATELY, and not a legal opinion: Giphy and Tenor
         content is user-uploaded and frequently copyrighted — sports
@@ -916,12 +973,17 @@ class ContentManager:
             cdir = self.settings.cache_dir / "images" / content_cache_key(query, "img")
             norm = cdir / f"normalized_{choice}.png"
             meta = cdir / f"meta_{choice}.json"
+            master = cdir / f"master_{choice}.jpg"
             if norm.exists():
-                attribution = ""
+                attribution, provider = "", ""
                 if meta.exists():
-                    attribution = json.loads(meta.read_text(encoding="utf-8")).get("attribution", "")
+                    m = json.loads(meta.read_text(encoding="utf-8"))
+                    attribution = m.get("attribution", "")
+                    provider = m.get("provider", "")
                 return Visual(key=query, kind=kind, path=norm, is_video=False,
-                              source="cache", attribution=attribution)
+                              source="cache", attribution=attribution,
+                              provider=provider,
+                              master=master if master.exists() else None)
 
             results = self.image_client.search(query)
             source = "wikimedia" if not self.settings.mock_mode else "mock"
@@ -943,13 +1005,15 @@ class ContentManager:
             client = self.image_client if source != "company_site" else self.site_client
             client.download(pick["url"], raw)
             normalize_image(raw, norm, self.settings)
+            kept = keep_master(raw, master)
             raw.unlink(missing_ok=True)
             meta.write_text(json.dumps({
                 "query": query, "provider": source, "url": pick["url"],
                 "attribution": pick.get("attribution", ""),
             }, indent=2), encoding="utf-8")
             return Visual(key=query, kind=kind, path=norm, is_video=False,
-                          source=source, attribution=pick.get("attribution", ""))
+                          source=source, attribution=pick.get("attribution", ""),
+                          provider=source, master=kept)
         except (httpx.HTTPError, OSError, KeyError, json.JSONDecodeError) as e:
             log.warning("image %r failed (%s) — filler", query, e)
             return self.filler_image(query, kind)
@@ -1123,9 +1187,13 @@ class ContentManager:
         if images:
             src = images[0]
             stamp = hashlib.sha256(src.read_bytes()).hexdigest()[:20]
-            norm = self.settings.cache_dir / "custom" / f"grab_{slug}_{stamp}.png"
+            # Shown whole: a screenshot is mostly text, and a cover-crop to
+            # 16:9 cut through it. Composed once here for the frame, so the
+            # render uses it as it is.
+            norm = (self.settings.cache_dir / "custom"
+                    / f"grab_{slug}_{stamp}_whole.png")
             if not norm.exists():
-                normalize_image(src, norm, self.settings)
+                normalize_image(src, norm, self.settings, keep_min=1.01)
             return Visual(key=slug, kind="screengrab", path=norm, is_video=False,
                           source="local", attribution="")
         log.warning("screengrab %r missing at render time — filler", slug)
@@ -1242,15 +1310,11 @@ class ContentManager:
         swap can reach and a sixth tap would land on the fifth clip anyway.
         Where a key has already been fetched more widely than that, the
         cached takes win — those are known to exist.
-
-        A key with no provider chain at all (every client removed) counts
-        only what is owned, which is the honest answer there.
         """
         n = len(self._library_candidates(key))
-        reachable = len(self._cached_provider_takes(key))
-        if self.clip_client is not None or self.gif_clients:
-            reachable = max(reachable, self.SWAP_PROVIDER_TAKES)
-        return max(n + reachable, 1)
+        reachable = max(len(self._cached_provider_takes(key)),
+                        self.SWAP_PROVIDER_TAKES)
+        return n + reachable
 
     def _cached_provider_takes(self, key: str) -> list[Path]:
         """Provider takes already fetched for this key, from the clip cache.

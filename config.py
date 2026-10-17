@@ -70,6 +70,14 @@ ELEVEN_USD_PER_1K_CHARS: dict[str, float] = {
 }
 
 
+# What SEC_USER_AGENT should look like: a name and a contact address. Every
+# SEC request carries it, so a channel or role mailbox, never a personal one.
+SEC_AGENT_EXAMPLE = "YourChannel contact@your-channel-domain.com"
+# Placeholders that read as set and are no contact (the first is what
+# `.env.example` used to ship).
+SEC_AGENT_PLACEHOLDERS = ("Your Name your@email", SEC_AGENT_EXAMPLE)
+
+
 class UnknownModelPriceError(RuntimeError):
     """No list price for the selected model, and no override to stand in.
 
@@ -243,8 +251,8 @@ class Settings(BaseSettings):
     # A SOFT WEEKLY CEILING, PER LANE (12). The monthly cap is a hard stop
     # that reports the problem once the month is already spent; a busy first
     # week can eat it and the only notice is a refusal in week three. This
-    # warns instead — on the approval card, while there is still time to
-    # change the plan. Zero switches it off.
+    # warns instead — on /cost, per lane, for the calendar week from Monday,
+    # while there is still time to change the plan. Zero switches it off.
     weekly_spend_warn_usd: float = Field(default=15.0,
                                          alias="WEEKLY_SPEND_WARN")
 
@@ -292,7 +300,7 @@ class Settings(BaseSettings):
     # All network is skipped in MOCK_MODE (fixtures, $0); a failed pull never
     # blocks a render. SEC requires a declared User-Agent for live pulls.
     filings_enabled: bool = Field(default=True, alias="FILINGS_ENABLED")  # per-run kill switch
-    sec_user_agent: str = Field(default="", alias="SEC_USER_AGENT")  # "Name email" — REQUIRED live
+    sec_user_agent: str = Field(default="", alias="SEC_USER_AGENT")  # "Name contact@" — REQUIRED live
     sec_base_url: str = "https://www.sec.gov"
     sec_data_base_url: str = "https://data.sec.gov"
     sec_min_interval_s: float = 0.11        # SEC fair-access: keep well under 10 req/s
@@ -410,7 +418,8 @@ class Settings(BaseSettings):
     # Inside the cooldown, a repeat needs to be this much bigger to speak.
     alert_escalation_factor: float = Field(default=1.75, alias="ALERT_ESCALATION_FACTOR")
     alert_max_per_poll: int = Field(default=4, alias="ALERT_MAX_PER_POLL")
-    # The hours alerts ARE allowed, local time (may cross midnight).
+    # The hours alerts ARE allowed, in `screen_timezone` rather than the
+    # box's clock (may cross midnight).
     alert_start_hour: int = Field(default=9, alias="ALERT_START_HOUR")
     alert_end_hour: int = Field(default=17, alias="ALERT_END_HOUR")
     alert_weekends: bool = Field(default=False, alias="ALERT_WEEKENDS")
@@ -511,6 +520,9 @@ class Settings(BaseSettings):
     # `on` renders the 3D one in Blender for every shot he is in (and fails the
     # render if Blender cannot), `auto` does so when `bpy` imports. One switch
     # for all of him: a video that mixes the two shows two different people.
+    # Only the 3D one is used for real videos (10-05), so `.env.example`
+    # ships `on`; the code default stays `off` so a box or a test without
+    # Blender still renders rather than stopping.
     # `DENNIS_3D_PYTHON` is the Python that has `bpy` (default: this one).
     dennis_3d: str = Field(default="off", alias="DENNIS_3D")
     dennis_3d_python: str = Field(default="", alias="DENNIS_3D_PYTHON")
@@ -539,10 +551,9 @@ class Settings(BaseSettings):
     # the frames, not the manifest, because a filter graph that "has the right
     # arguments" is exactly what produced a 12.5-second still.
     #
-    # Defaulted from the format's own spec rather than picked: timeline's
-    # SHORT_DATA_HOLD_S tops out at 8s, so a composition holding longer than
-    # the longest legitimate DATA hold is not being read, it is being waited
-    # out — in a format whose spec is fast cuts.
+    # Eight seconds is the longest a data card is meant to be read for, so a
+    # composition holding longer than that is not being read, it is being
+    # waited out — in a format whose spec is fast cuts.
     short_max_hold_s: float = 8.0
     # host on each side of a chapter boundary, so chapters bookend on his face
     long_chapter_host_s: float = 2.5
@@ -638,7 +649,7 @@ class Settings(BaseSettings):
     # `keyboard_clack`, `paper_rustle` and `ding` remain the quieter options.
     chapter_cue_sfx: str = Field(default="impact", alias="CHAPTER_CUE_SFX")
 
-    # The loop under a SHORT: one of the owned score's `bed-*.wav`, dipped
+    # The loop under a SHORT: one of the owned score's `bed-*.m4a`, dipped
     # under the voice whenever he speaks (`pipeline/sound.py`). Nothing plays
     # until `scripts/make_score.py` has made the loops. The long never gets
     # one under its voice; its music is the theme, as intro and outro.
@@ -818,6 +829,37 @@ class Settings(BaseSettings):
             raise ValueError(f"DELIVERY_BACKEND must be one of {sorted(allowed)}")
         return v
 
+    @field_validator("inbox_hour", "alert_start_hour", "batch_start_hour",
+                     "publish_hour")
+    @classmethod
+    def _check_hour(cls, v: int, info) -> int:
+        # INBOX_HOUR=30 used to load and then never send.
+        if not 0 <= v <= 23:
+            raise ValueError(f"{info.field_name.upper()} must be an hour, 0-23")
+        return v
+
+    @field_validator("alert_end_hour", "batch_end_hour")
+    @classmethod
+    def _check_end_hour(cls, v: int, info) -> int:
+        # An end may be 24, the midnight that closes the day.
+        if not 0 <= v <= 24:
+            raise ValueError(f"{info.field_name.upper()} must be an hour, 0-24")
+        return v
+
+    @field_validator("publish_minute")
+    @classmethod
+    def _check_minute(cls, v: int) -> int:
+        if not 0 <= v <= 59:
+            raise ValueError("PUBLISH_MINUTE must be 0-59")
+        return v
+
+    @field_validator("alert_poll_minutes")
+    @classmethod
+    def _check_poll(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("ALERT_POLL_MINUTES must be at least 1")
+        return v
+
     @field_validator("dennis_3d_lines")
     @classmethod
     def _check_lines(cls, v: str) -> str:
@@ -876,7 +918,11 @@ class Settings(BaseSettings):
         are true and cheap to act on.
         """
         out: list[str] = []
-        if not self.mock_mode and not self.sec_user_agent.strip():
+        agent = self.sec_user_agent.strip()
+        # `.env.example`'s own placeholder is no contact either, and SEC
+        # refuses it the same way (`scripts/check_preflight.py` agrees).
+        if not self.mock_mode and (not agent or agent in SEC_AGENT_PLACEHOLDERS
+                                   or "@" not in agent):
             # The SEC requires a real name and email in the User-Agent and
             # rate-limits or 403s generic ones. Every caller falls back to a
             # literal and every SEC-backed feature degrades SILENTLY by
@@ -884,11 +930,13 @@ class Settings(BaseSettings):
             # [SHOW FILING] screenshots all return nothing rather than
             # raising. So three features go missing and nothing says why.
             out.append(
-                "SEC_USER_AGENT is empty — SEC EDGAR requires a real name "
-                "and email and rate-limits or 403s generic agents. The "
-                "filing brief, the 8-K news source and [SHOW FILING] "
-                "screenshots will degrade to nothing, quietly and by "
-                "design. Set SEC_USER_AGENT='Your Name your@email'.")
+                "SEC_USER_AGENT is empty or a placeholder — SEC EDGAR "
+                "requires a name and a contact address and rate-limits or "
+                "403s generic agents. The filing brief, the 8-K news source "
+                "and [SHOW FILING] screenshots will degrade to nothing, "
+                "quietly and by design. Every SEC request carries it, so use "
+                "a channel or role mailbox rather than a personal address: "
+                f"SEC_USER_AGENT='{SEC_AGENT_EXAMPLE}'.")
         if self.broll_library_size() == 0:
             # THE OWNED LIBRARY IS THE FIRST LINK IN THE VISUAL CHAIN, and
             # the whole of H3's mitigation. Design: owned library → stock
@@ -1093,15 +1141,14 @@ _SETTING_EXAMPLES: dict[str, str] = {
     "MOCK_TTS": "MOCK_TTS=true       (true | false; unset follows MOCK_MODE)",
     "MOCK_PRICES": "MOCK_PRICES=false   (true | false; unset follows MOCK_MODE)",
     "MOCK_SCREENER": "MOCK_SCREENER=false (true | false; unset follows MOCK_MODE)",
-    "DELIVERY_BACKEND": "DELIVERY_BACKEND=gdrive   (gdrive | s3 | telegram | local)",
+    "DELIVERY_BACKEND": "DELIVERY_BACKEND=telegram   (gdrive | s3 | telegram | local)",
     "MONTHLY_SPEND_CAP": "MONTHLY_SPEND_CAP=50.0",
     "WEEKLY_SPEND_WARN": "WEEKLY_SPEND_WARN=15.0  (0 disables the weekly warning)",
     "SHORT_MAX_CHARS": "SHORT_MAX_CHARS=1100",
     "LONG_MAX_CHARS": "LONG_MAX_CHARS=36000",
-    "OPERATOR_CHAT_ID": 'OPERATOR_CHAT_IDS=["123456789"]   (note the S)',
     # The SEC refuses a generic agent, so a placeholder here is worse than
     # nothing: it looks set and behaves as if it is not.
-    "SEC_USER_AGENT": "SEC_USER_AGENT=Your Name your@email",
+    "SEC_USER_AGENT": f"SEC_USER_AGENT={SEC_AGENT_EXAMPLE}",
 }
 
 

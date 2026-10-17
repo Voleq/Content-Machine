@@ -10,9 +10,10 @@ fault in this rebuild that mattered was found by LOOKING. So the long gets a
 contact sheet every 5 seconds — 38 cells — and the sheet is the artefact that
 gets reviewed, not a handful of stills chosen after the fact.
 
-Each cell carries its timestamp, the shot it falls in (read from the render
-manifest when one sits beside the video), and a mark when the frame is inside
-a measured hold. A cell that looks identical to its neighbour is the thing to
+Each cell carries its timestamp, the shot it falls in (read from a SHORT's
+`<video>.manifest.json` when one sits beside it; a LONG's manifest records
+segments, not shots, so its cells carry no shot name), and a mark when the
+frame is inside a measured hold. A cell that looks identical to its neighbour is the thing to
 find, so neighbours are put next to each other rather than sampled at random.
 """
 

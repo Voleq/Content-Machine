@@ -270,7 +270,7 @@ def filing_veto_keyboard(ticker: str, workdate: str,
 # inputs to the format-resolution mess in Group C. So the lane rides in the
 # callback data and the handler routes to `start_lane`, not to a lane-less
 # alias that has to guess.
-LANE_CODES = {"short": "s", "long": "l"}
+LANE_CODES = {"short": "s", "long": "l", "update": "u"}
 CODE_LANES = {v: k for k, v in LANE_CODES.items()}
 
 
@@ -279,15 +279,15 @@ def candidates_keyboard(
 ) -> InlineKeyboardMarkup:
     """One button per candidate, as `(ticker, lane)` pairs.
 
-    `lane` is "short" or "long"; anything else is treated as "short", which
-    is what a trending candidate is and the cheaper mistake of the two.
+    `lane` is "short", "long" or "update"; anything else is treated as
+    "short", which is what a trending candidate is and the cheaper mistake.
     """
     rows = []
     for i in range(0, len(candidates), 3):
         row = []
         for ticker, lane in candidates[i:i + 3]:
             code = LANE_CODES.get(lane, "s")
-            cmd = "short" if code == "s" else "long"
+            cmd = CODE_LANES[code]
             row.append(InlineKeyboardButton(
                 f"/{cmd} {ticker}", callback_data=f"n|{code}|{ticker}"))
         rows.append(row)

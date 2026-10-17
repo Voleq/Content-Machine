@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import threading
 import uuid
 from datetime import datetime, timezone
@@ -369,7 +370,14 @@ class SpendLedger:
         """Spend this week, optionally for one lane only."""
         week = week or week_key()
         with self._lock:
-            events = self._month(self._load()).get("events", [])
+            data = self._load()
+        # Every month's events, not this month's: an ISO week that began in
+        # the last days of the month before is still this week.
+        events = [e for key, month in data.items()
+                  if re.fullmatch(r"\d{4}-\d{2}", str(key))
+                  and isinstance(month, dict)
+                  for e in month.get("events") or []
+                  if isinstance(e, dict)]
         return round(sum(float(e.get("usd", 0.0) or 0.0) for e in events
                          if e.get("week") == week
                          and (not lane or e.get("lane") == lane)), 4)

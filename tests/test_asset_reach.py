@@ -449,7 +449,10 @@ def _answer(asked: list, *pages):
 
     replies = list(pages)
 
-    def get(url, params=None, timeout=None):
+    def get(url, params=None, timeout=None, headers=None):
+        # The key rides in a header: in the URL, httpx's error text printed it.
+        assert "token" not in params
+        assert (headers or {}).get("Authorization", "").startswith("Token ")
         asked.append(params["filter"])
         page = replies.pop(0)
         request = httpx.Request("GET", url)

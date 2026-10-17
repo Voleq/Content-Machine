@@ -80,22 +80,16 @@
     },
     {
       "id": "the-picture",
-      "plate": "frames/media-frame-t1-9x16",
+      "plate": null,
       "max_hold_s": 6,
       "bind": {
-        "media": "media.photo.company",
-        "caption": "?pic.company.caption",
-        "source": "pic.company.source"
+        "media": "media.photo.company"
       },
-      "notes": "A REAL PICTURE (item 34). Every frame of a short was drawn type on the dark ground; this is the company itself, a photograph of its stores or its building off the same chain the long searches (cache, Wikimedia Commons, the company's site), in design's media frame. With no picture found the shot is dropped: a frame round \"imagery unavailable\" is not a picture. The credit goes out with the video's other credits.",
-      "alts": [
-        {
-          "plate": "frames/media-frame-t2-9x16"
-        },
-        {
-          "plate": "frames/media-frame-t3-9x16"
-        }
-      ]
+      "text": [
+        {"name": "caption", "src": "pic.company.caption", "size_fh": 0.04, "max_lines": 2, "align": "0.61016", "halign": "left", "panel": true},
+        {"name": "credit", "src": "pic.company.source", "size_fh": 0.035, "max_lines": 1, "align": "0.6862", "halign": "left", "panel": true}
+      ],
+      "notes": "A REAL PICTURE (item 34). Every other frame of a short is drawn type on the paper ground; this is the company itself, a photograph of its stores or its building off the same chain the long searches (cache, Wikimedia Commons, the company's site). It plays FULL SCREEN, held still, like everything the long takes from the net (Valentin, 10-17: \"Full screen\"), cropped from the full-size copy kept at fetch so a landscape picture is not blown up. The name and the credit sit on two strips of paper cut to their words, low on the picture, with the caption in its usual place under them. With no picture found the shot is dropped: a strip round \"imagery unavailable\" is not a picture. The credit also goes out with the video's other credits."
     },
     {
       "id": "the-move",

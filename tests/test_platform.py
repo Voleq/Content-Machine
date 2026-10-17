@@ -26,8 +26,8 @@ import pytest
 from config import Settings
 from pipeline.render_common import (
     _deprioritise,
-    _politeness_args,
     _POLITENESS,
+    _with_politeness,
     set_render_politeness,
 )
 
@@ -94,15 +94,26 @@ def test_politeness_caps_the_filter_pools_too(eight_cores):
     """The filter graph is the bottleneck, not the encode — capping only
     -threads would leave zoompan/overlay running wide open."""
     set_render_politeness(Settings(render_threads=4, _env_file=None))
-    args = _politeness_args()
+    args = _with_politeness(["-i", "in.mp4", "-c:v", "libx264", "out.mp4"])
     assert args.count("4") == 3
     for flag in ("-threads", "-filter_threads", "-filter_complex_threads"):
         assert flag in args
+    # -threads in front of an -i is that input's decoder option; it has to
+    # sit right before the output path to cap the encoder.
+    assert args[-3:] == ["-threads", "4", "out.mp4"]
+    assert args.index("-threads") > args.index("-i")
+
+
+def test_a_worker_slice_overrides_the_process_cap(eight_cores):
+    set_render_politeness(Settings(render_threads=4, _env_file=None))
+    args = _with_politeness(["-i", "a.mp4", "b.mp4"], threads=2)
+    assert args[-3:] == ["-threads", "2", "b.mp4"]
+    assert "4" not in args
 
 
 def test_no_flags_when_politeness_is_unset():
     _POLITENESS.update({"threads": 0, "below_normal": False})
-    assert _politeness_args() == []
+    assert _with_politeness(["-i", "a.mp4", "b.mp4"]) == ["-i", "a.mp4", "b.mp4"]
 
 
 def test_below_normal_priority_renices_the_spawned_child():
