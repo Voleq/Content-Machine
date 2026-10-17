@@ -495,7 +495,6 @@ def bridge(box, columns, steps, ink, *, open=0, close=0, open_column=None,  # no
 
 # ── export.js dataLayer ───────────────────────────────────────────────────────
 
-_INDEX = re.compile(r"-(\d+)$")
 _NUMBERED = re.compile(r"^(.+)-(\d+)$")
 
 
@@ -744,6 +743,14 @@ def paint(img, nodes: list[dict], scale: float = 1.0, *, supersample: int | None
     k = scale * ss
     layer = Image.new("RGBA", (img.width * ss, img.height * ss), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
+
+    def box(x0, y0, x1, y1):
+        # Pillow refuses a box whose far corner is before its near one, and a
+        # bar a pixel or less across (a small figure beside big ones) is just
+        # that: the far edge is clamped to the near one, so it draws a
+        # hairline instead of killing the render.
+        return [x0, y0, builtin_max(x1, x0), builtin_max(y1, y0)]
+
     for n in nodes:
         a = n["attrs"]
         # A filled shape's stroke (the paper contour) straddles its edge, as
@@ -753,13 +760,16 @@ def paint(img, nodes: list[dict], scale: float = 1.0, *, supersample: int | None
             x, y = a["x"] * k, a["y"] * k
             w, h = a["width"] * k, a["height"] * k
             if w > 0 and h > 0:
+                # The fill inside the contour needs a pixel of its own.
                 if sw:
                     o = sw / 2
-                    d.rectangle([x - o, y - o, x + w - 1 + o, y + h - 1 + o], fill=_rgba(a["stroke"]))
-                    if w > sw and h > sw:
-                        d.rectangle([x + o, y + o, x + w - 1 - o, y + h - 1 - o], fill=_rgba(a["fill"]))
+                    d.rectangle(box(x - o, y - o, x + w - 1 + o, y + h - 1 + o),
+                                fill=_rgba(a["stroke"]))
+                    if w >= sw + 1 and h >= sw + 1:
+                        d.rectangle([x + o, y + o, x + w - 1 - o, y + h - 1 - o],
+                                    fill=_rgba(a["fill"]))
                 else:
-                    d.rectangle([x, y, x + w - 1, y + h - 1], fill=_rgba(a["fill"]))
+                    d.rectangle(box(x, y, x + w - 1, y + h - 1), fill=_rgba(a["fill"]))
         elif n["tag"] == "circle":
             cx, cy, r = a["cx"] * k, a["cy"] * k, a["r"] * k
             if sw:

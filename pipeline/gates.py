@@ -180,6 +180,14 @@ def _words_to_number(tokens: list[str]) -> float | None:
             continue
         if t in _UNITS:
             value = _UNITS[t]
+            # "one nineteen" -> 119, the same shorthand with a teen; it was
+            # summed to twenty.
+            if (1 <= value <= 9 and i + 1 < len(tokens)
+                    and 10 <= _UNITS.get(tokens[i + 1], 0) <= 19):
+                current += value * 100 + _UNITS[tokens[i + 1]]
+                seen = True
+                i += 2
+                continue
             # "four ninety six" -> 4 * 100 + 96
             if (1 <= value <= 9 and i + 1 < len(tokens)
                     and tokens[i + 1] in _TENS):
@@ -295,8 +303,13 @@ def extract_numbers(sentence: str) -> list[SpokenNumber]:
         if tokens[i] not in _NUMBER_WORDS or tokens[i] in ("and", "a", "point"):
             i += 1
             continue
-        j = i
-        while j < len(tokens) and tokens[j] in _NUMBER_WORDS:
+        j = i + 1
+        # A run is words joined by spaces or hyphens only. Across a comma it
+        # is two figures: "four hundred ninety one million, one percent below
+        # plan" was read as 491,000,001 percent.
+        while (j < len(tokens) and tokens[j] in _NUMBER_WORDS
+               and re.fullmatch(r"[\s-]*",
+                                low[words[j - 1].end():words[j].start()])):
             j += 1
         run = tokens[i:j]
         value = _words_to_number(run)
@@ -750,6 +763,27 @@ _DIGIT_YEAR_RE = re.compile(
     r"(?:\b(?:in|since|by|during|through|until|from)\s+)((?:19|20)\d{2})\b",
     re.IGNORECASE)
 
+# NAMES WRITTEN IN DIGITS. The writer prompt says "the 10-K shows", and a
+# page, note or item number, a bare year ("fiscal 2023", "from 2019 to 2023")
+# or a day of a month ("March 3") is a name or a date, never a figure. Each
+# was read as one and blocked against whatever metric the sentence named.
+_FORM_NAME_RE = re.compile(r"\b(?:\d{1,2}-[kqf]|[sf]-\d)\b", re.IGNORECASE)
+_NUMBERED_RE = re.compile(
+    r"\b(?:page|pages|p\.|note|notes|item|items|section|exhibit|form|part|"
+    r"chapter|slide|footnote|table|schedule)\s+(\d+[a-z]?(?:\.\d+)?)\b",
+    re.IGNORECASE)
+_BARE_YEAR_RE = re.compile(
+    r"(?<![\d$£€.,])((?:19|20)\d{2})(?![\d,]|\.\d|\s*(?:%|percent\b|"
+    r"thousand\b|million\b|billion\b|trillion\b|bn\b|[kmbt]\b))",
+    re.IGNORECASE)
+_MONTHS_RE = (r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|"
+              r"june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|"
+              r"nov(?:ember)?|dec(?:ember)?)")
+_DAY_OF_MONTH_RE = re.compile(
+    rf"\b{_MONTHS_RE}\.?\s+(\d{{1,2}})(?:st|nd|rd|th)?\b"
+    rf"|\b(\d{{1,2}})(?:st|nd|rd|th)?\s+(?:of\s+)?{_MONTHS_RE}\b",
+    re.IGNORECASE)
+
 # "Eleven times earnings" is a MULTIPLE, not an earnings figure. The metric
 # word is there and the number is not a claim about it.
 _MULTIPLE_RE = re.compile(r"^\s*(?:x|times)\b", re.IGNORECASE)
@@ -823,9 +857,19 @@ def _mask_labels(sentence: str, labels: list[str]) -> str:
             out = re.sub(re.escape(lab), _blank, out, flags=re.IGNORECASE)
     out = _PERIOD_TOKEN_RE.sub(_blank, out)
     out = _SPOKEN_YEAR_RE.sub(_blank, out)
-    return _DIGIT_YEAR_RE.sub(
-        lambda m: m.group(0)[:m.start(1) - m.start(0)] + "·" * len(m.group(1)),
-        out)
+    out = _FORM_NAME_RE.sub(_blank, out)
+    for rx in (_DIGIT_YEAR_RE, _NUMBERED_RE, _BARE_YEAR_RE, _DAY_OF_MONTH_RE):
+        out = rx.sub(_blank_groups, out)
+    return out
+
+
+def _blank_groups(m) -> str:
+    """The match with only its captured digits blanked."""
+    text, at = list(m.group(0)), m.start(0)
+    for g in range(1, (m.re.groups or 0) + 1):
+        if m.start(g) >= 0:
+            text[m.start(g) - at:m.end(g) - at] = "·" * (m.end(g) - m.start(g))
+    return "".join(text)
 
 
 def _history_labels(data) -> list[str]:
@@ -935,7 +979,20 @@ def _owner_of(number_start: int, number_end: int, tail: str,
         if not owners:
             return None          # attached to something the export has no row for
         return owners[0]
-    return min(named, key=lambda m: _gap(named[m], number_start, number_end))
+    # 3. Inside its own clause first. "Revenue sat at four hundred ninety
+    #    six million, free cash flow at negative fifteen million": the 496 is
+    #    nearer "free cash flow" by characters and is still revenue's.
+    cuts = list(_CLAUSE_CUT_RE.finditer(low))
+    lo = max((c.end() for c in cuts if c.end() <= number_start), default=0)
+    hi = min((c.start() for c in cuts if c.start() >= number_end),
+             default=len(low))
+    mine = {m: at for m, at in named.items() if lo <= at[0] and at[1] <= hi}
+    pool = mine or named
+    return min(pool, key=lambda m: _gap(pool[m], number_start, number_end))
+
+
+# Where one clause of a recital ends and the next begins.
+_CLAUSE_CUT_RE = re.compile(r"[,;:]|\s(?:and|but|while|whereas)\s")
 
 
 def fact_check(narration: str, data, *,
@@ -997,7 +1054,9 @@ def fact_check(narration: str, data, *,
             # a 2 that `extract_numbers` reads as a number, and the old
             # magnitude floor hid it — dropping the floor exposed it, so the
             # labels are masked out before anything is extracted.
-            for num in extract_numbers(_mask_labels(sentence, labels)):
+            # Figures only: "there is one reason revenue stalled" states no
+            # revenue of one (`spoken_figures`).
+            for num in spoken_figures(_mask_labels(sentence, labels)):
                 # The span the extractor recorded, never a re-`find`: a
                 # hyphenated spoken run does not appear verbatim in the
                 # sentence and used to collapse to position 0.
@@ -1034,13 +1093,10 @@ def fact_check(narration: str, data, *,
 
                 is_rate = metric in _RATE_METRICS
                 if num.is_percent and not is_rate:
-                    candidates = _growth_rates(
-                        [v * _unit_scale(series) for v in series])
+                    candidates = _growth_rates(series)
                     shown = ", ".join(f"{v:+,.1f}%" for v in candidates[:6])
                     kind = f"{metric} growth"
-                elif num.is_percent or is_rate:
-                    if not is_rate:
-                        continue
+                elif is_rate:
                     candidates = _comparison_values(series, rate=True)
                     shown = ", ".join(f"{v:,.1f}%" for v in series[:6])
                     kind = metric
@@ -1141,7 +1197,8 @@ def _unbroken_runs(narration: str) -> list[tuple[int, float, str]]:
     runs: list[tuple[int, float, str]] = []
     for lineno, line in enumerate(narration.splitlines(), 1):
         run: list[str] = []
-        for word in line.split():
+        # A tag is one token: "[LONG BEAT]" split on its space was never seen.
+        for word in re.findall(r"\[[^\]]*\]|\S+", line):
             run.append(word)
             if not _TURN.search(word):
                 continue
@@ -1173,7 +1230,9 @@ def delivery_text(script) -> str:
     from pipeline.models import DELIVERY_TAG_TYPES
 
     marks = {t.value for t in DELIVERY_TAG_TYPES}
-    events = [e for e in (getattr(script, "events", None) or [])
+    # A SHORT keeps its tags in `inline_events`, as `_delivery_events` reads.
+    events = [e for e in (getattr(script, "events", None)
+                          or getattr(script, "inline_events", None) or [])
               if str(getattr(getattr(e, "type", None), "value", "")).upper() in marks]
     if not events:
         return narration
@@ -1580,9 +1639,14 @@ def _cell_value(raw: str) -> float | None:
     cleaned = (text.replace(",", "").replace("$", "").replace("%", "")
                    .replace("\u2212", "-").replace("\u2013", "-").strip())
     mult = 1.0
-    if cleaned[-1:].lower() in "kmbt":
-        mult = {"k": 1e3, "m": 1e6, "b": 1e9, "t": 1e12}[cleaned[-1].lower()]
-        cleaned = cleaned[:-1]
+    # "0.9bn", "900mm", "$3.1bn" (the prompt's own example) as well as the
+    # single letters. A cell of only "$" or "%" used to test "" against
+    # "kmbt", which is True, and the index that followed crashed the battery.
+    unit = re.search(r"(bn|mm|mn|[kmbt])$", cleaned, re.IGNORECASE)
+    if unit and unit.start() > 0:
+        mult = {"k": 1e3, "m": 1e6, "mm": 1e6, "mn": 1e6, "b": 1e9,
+                "bn": 1e9, "t": 1e12}[unit.group(1).lower()]
+        cleaned = cleaned[:unit.start()].strip()
     if cleaned.startswith("(") and cleaned.endswith(")"):
         cleaned = "-" + cleaned[1:-1]   # accountants' parentheses are a minus
     try:
@@ -2060,9 +2124,13 @@ def _reaches_a_price_chart(script, format_name: str = "") -> bool:
     A SHORT does when its shot template draws one: the plain short's move
     beat is a price line, filled whether or not the writer asked, and the
     `earnings` and `macro` templates draw no prices at all. With no
-    `format_name` a SHORT is assumed to. A LONG only does when it carries
-    `[CHART: price]`. Anything else never touches the feed, and a gate that
-    fired on it would be reporting on data the video does not contain.
+    `format_name` a SHORT is assumed to.
+
+    A LONG always does. `[CHART: price]` draws one, and so does the room:
+    the monitor shows the price's run for `[SCREEN: price]` and for every
+    chapter with no plate of its own to show (`room_screen.PRICE`). Only
+    `[CHART: price]` used to count, so a mocked price line went out on the
+    monitor of a final with nothing said.
     """
     fmt = (getattr(script, "format", "") or "").lower()
     if fmt == "short" or type(script).__name__ == "ShortScript":
@@ -2074,11 +2142,7 @@ def _reaches_a_price_chart(script, format_name: str = "") -> bool:
             return draws_prices(load_format(format_name))
         except TemplateError:
             return True
-    for event in getattr(script, "events", []) or []:
-        if getattr(getattr(event, "type", None), "value", "") == "CHART" \
-                and str(getattr(event, "payload", "")).strip().lower() == "price":
-            return True
-    return False
+    return True
 
 
 def check_prices(script, settings: Settings, *, final: bool = True,
@@ -2334,8 +2398,16 @@ def reachable_plates(reg) -> dict[str, set[str]]:
     return {"template": by_template, "tag": by_tag, "code": by_code}
 
 
-def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
+def kit_doctor(script, settings: Settings, *,
+               library: bool = True) -> tuple[list[Finding], dict]:
     """What the kit could not answer, and what it is never asked for.
+
+    `library=False` asks only about this script (question 1 and 3). The
+    library-wide audit reads every template and renderer, about twelve
+    seconds, and its findings are the same for every video: inside each
+    script's gates it put a dozen standing "[kit] … can put it on screen"
+    lines on every approval screen, at intake and on every Approve tap.
+    `/kit doctor` still asks the whole of it.
 
     Three questions, and the gap list is the input to the next design batch:
 
@@ -2404,10 +2476,13 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
     # WHAT NOTHING CAN REACH, which is a different question from what nothing
     # HAS reached: an empty ledger makes the list above the whole library,
     # and this one is true on a fresh checkout with no renders behind it.
-    routes = reachable_plates(reg)
+    routes = (reachable_plates(reg) if library
+              else {"template": set(), "tag": set(), "code": set()})
     reached = routes["template"] | routes["tag"] | routes["code"]
-    unreachable = sorted(k for k in reg.keys() if k not in reached)
-    no_template = sorted(k for k in reg.keys() if k not in routes["template"])
+    unreachable = (sorted(k for k in reg.keys() if k not in reached)
+                   if library else [])
+    no_template = (sorted(k for k in reg.keys() if k not in routes["template"])
+                   if library else [])
     for key in unreachable:
         findings.append(Finding(
             gate="kit", severity="warn",
@@ -2416,7 +2491,8 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
     # AN HOUR IS REACHABLE OR NOT AS A WHOLE. The kit draws every plate at
     # every hour it lights, and an hour no episode is drawn at is a full copy
     # of the library with no way to the screen — one line, not two hundred.
-    for hour in sorted(set(reg.hour_suffixes) - set(reg.hour_rotation)):
+    for hour in (sorted(set(reg.hour_suffixes) - set(reg.hour_rotation))
+                 if library else []):
         findings.append(Finding(
             gate="kit", severity="warn",
             message=f"the kit draws every plate at {hour} and no episode is "
@@ -2625,16 +2701,17 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     # workbook as-of date blocked every macro short under the production
     # default (`DATA_STALE_BLOCKS=true`) — the suite turns blocking off
     # globally, which is how that hid.
-    no_workbook_needed = format_name == "macro" and data is None
-    report.findings += report.record(
-        "freshness", [] if no_workbook_needed
-        else check_freshness(as_of, settings, workspace=workspace))
+    if format_name == "macro" and data is None:
+        report.skipped("freshness", "a macro short has no workbook")
+    else:
+        report.findings += report.record(
+            "freshness", check_freshness(as_of, settings, workspace=workspace))
     report.findings += report.record("audio",
                                      check_audio(settings, final=final))
     report.findings += report.record(
         "prices", check_prices(script, settings, final=final,
                                format_name=format_name))
-    kit_findings, kit_stats = kit_doctor(script, settings)
+    kit_findings, kit_stats = kit_doctor(script, settings, library=False)
     report.findings += report.record("kit", kit_findings)
     # THE FOUR THAT ARE ABOUT WATCHABILITY, not truth (01, 30, 31, 35).
     # Every gate above asks whether this video is right or affordable. These
