@@ -568,9 +568,9 @@ def test_regenerating_the_fixtures_on_another_day_keeps_the_short_on_the_long(
     mod.main()
 
     made = prices.PriceSeries.from_json(
-        (tmp_path / "fixtures" / "prices" / "EXMPL.json").read_text())
+        (tmp_path / "fixtures" / "prices" / "EXMPL.json").read_text(encoding="utf-8"))
     shipped = prices.PriceSeries.from_json(
-        (root / "fixtures" / "prices" / "EXMPL.json").read_text())
+        (root / "fixtures" / "prices" / "EXMPL.json").read_text(encoding="utf-8"))
     assert made.dates == shipped.dates and made.closes == shipped.closes
 
 
