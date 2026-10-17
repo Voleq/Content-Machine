@@ -432,6 +432,7 @@ def _fetch_script(name: str):
         name, ROOT / "scripts" / "fetch_sfx.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    mod.REQUEST_GAP_S = 0.0     # the stand-in Freesound has no rate limit
     return mod
 
 
@@ -533,6 +534,145 @@ def test_a_refused_licence_filter_costs_a_request_not_the_sound(monkeypatch, cap
     monkeypatch.setattr(httpx, "get", _answer([], 400, 500))
     assert mod.search("pop", "key", max_s=4.0) is None
     assert "search failed" in capsys.readouterr().err
+
+
+class _Freesound:
+    """A stand-in for Freesound's text search that reads a query the way it
+    does: every word mandatory, matched against a sound's tags, inside the
+    duration filter, CC0 only when the filter asks for it."""
+
+    def __init__(self, sounds: list[dict]):
+        self.sounds = sounds
+        self.asked: list[str] = []
+
+    def get(self, url, params=None, timeout=None, headers=None):
+        import re
+
+        import httpx
+
+        self.asked.append(params["query"])
+        lo, hi = map(float, re.search(r"duration:\[(\S+) TO (\S+)\]",
+                                      params["filter"]).groups())
+        words = params["query"].split()
+        page = [h for h in self.sounds
+                if all(w in h["tags"] for w in words)
+                and lo <= h["duration"] <= hi
+                and ("license:" not in params["filter"]
+                     or h["license"] == _CC0_URL)]
+        page = [{k: v for k, v in h.items() if k != "tags"}
+                for h in page[:params["page_size"]]]
+        return httpx.Response(200, json={"results": page},
+                              request=httpx.Request("GET", url))
+
+
+def test_every_sound_is_found_when_the_long_wording_finds_nothing(
+        tmp_path, monkeypatch):
+    """Freesound needs every word of a query to match. With one five-word
+    query per key, the first real run found 10 of its 33 files and left 23
+    blocking every final render. Each key steps down to shorter wording, and
+    the sounds already fetched stay as they are and are never taken twice."""
+    import httpx
+
+    from pipeline.audio_assets import AudioSource, load_sources, save_sources
+
+    mod = _fetch_script("_fetch_sfx_ladder")
+    names = [w[0] for w in mod.wanted()] + ["room_tone.wav"]
+    # Every sound is tagged only with its key's broadest wording, so nothing
+    # but the last rung of each ladder finds it.
+    ladders = {**mod.QUERIES, **mod.AMBIENCE_QUERIES,
+               "room_tone": mod.ROOM_QUERIES}
+    sounds, i = [], 0
+    for key, queries in ladders.items():
+        long = key in mod.AMBIENCE_QUERIES or key == "room_tone"
+        for _ in range(4):
+            i += 1
+            sounds.append(dict(_hit(i, _CC0_URL, 20.0 if long else 1.0),
+                               tags=set(queries[-1].split())))
+    # Nothing matches the first wording of any key: the run that found 10.
+    for key, queries in ladders.items():
+        assert not any(set(queries[0].split()) <= h["tags"] for h in sounds), key
+    fake = _Freesound(sounds)
+    monkeypatch.setattr(httpx, "get", fake.get)
+
+    # One preview will not download; the take behind it fills that file.
+    broken = sounds[4]["id"]
+
+    def download(hit, dest, *, loop=False, trim_lead=True):
+        if hit["id"] == broken:
+            return False
+        dest.write_bytes(f"sound {hit['id']}".encode())
+        return True
+
+    monkeypatch.setattr(mod, "download", download)
+    monkeypatch.setenv("FREESOUND_API_KEY", "key")
+
+    sfx = tmp_path / "sfx"
+    sfx.mkdir()
+    for name in names:
+        (sfx / name).write_bytes(b"oscillator")
+    # What his first run left: four keys, ten files, already real.
+    first = {name: 900 + n for n, name in enumerate(
+        ["record_scratch.wav", "record_scratch-2.wav", "record_scratch-3.wav",
+         "camera_shutter.wav", "camera_shutter-2.wav", "camera_shutter-3.wav",
+         "whoosh.wav", "whoosh-2.wav", "whoosh-3.wav", "pop.wav"])}
+    for name, sid in first.items():
+        (sfx / name).write_bytes(b"fetched before")
+    # One of the sounds this run would find is already played as another
+    # file, so it must not be fetched a second time under a new name.
+    first["pop.wav"] = sounds[0]["id"]
+    save_sources(sfx, {
+        name: AudioSource(name=name, source=f"https://freesound.org/s/{sid}/",
+                          licence=_CC0_URL, author="someone", generated=False)
+        for name, sid in first.items()})
+
+    assert mod.main(["--out", str(sfx)]) == 0
+
+    known = load_sources(sfx)
+    assert all(known[n].real for n in names), [n for n in names
+                                                if not known[n].real]
+    for name in first:
+        assert (sfx / name).read_bytes() == b"fetched before", name
+    sources = [known[n].source for n in names]
+    assert len(set(sources)) == len(sources), "one sound under two names"
+    assert f"https://freesound.org/s/{broken}/" not in sources
+    # The long wording is still asked first, so a sound that matches it wins.
+    assert fake.asked.index(mod.QUERIES["windows_error"][0]) \
+        < fake.asked.index(mod.QUERIES["windows_error"][-1])
+
+
+def test_the_searches_stay_under_freesound_s_rate_limit(monkeypatch, capsys):
+    """Freesound allows 60 requests a minute, and the ladders can ask for
+    more than that in one run. The searches are spaced out, and a 429 waits
+    for the minute to pass and asks once more instead of losing the key."""
+    import httpx
+
+    mod = _fetch_script("_fetch_sfx_pacing")
+    mod.REQUEST_GAP_S = 1.1
+    clock = [100.0]
+    slept: list[float] = []
+
+    def sleep(s):
+        slept.append(round(s, 2))
+        clock[0] += s
+
+    monkeypatch.setattr(mod.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(mod.time, "sleep", sleep)
+    replies = [200, 200, 429, 200]
+
+    def get(url, params=None, timeout=None, headers=None):
+        status = replies.pop(0)
+        return httpx.Response(status, json={"results": [_hit(1, _CC0_URL)]},
+                              request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(httpx, "get", get)
+    params = {"query": "ding", "filter": "", "fields": "", "page_size": 30}
+    assert mod._ask(params, "key") and mod._ask(params, "key")
+    assert slept == [1.1]
+    assert mod._ask(params, "key")
+    # the wait itself spaced the retry, so it goes straight out
+    assert slept == [1.1, 1.1, mod.THROTTLED_WAIT_S]
+    assert not replies
+    assert "slow down" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("licence, cc0", [

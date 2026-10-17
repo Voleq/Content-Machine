@@ -663,6 +663,34 @@ if [ "$SRC" != "$DEST" ]; then
   PROTECT="$(mktemp)"
   { grep -vE '^[[:space:]]*(#|$)' "$SRC/.gitignore" | sed 's/^/P /'
     echo 'P assets/score/'; } > "$PROTECT"
+  # The real sounds scripts/fetch_sfx.py fetched into $DEST are not in the
+  # checkout, which carries the oscillators: every re-run copied a
+  # placeholder back over each one, and --delete took SOURCES.json and the
+  # extra takes with it. So every file $DEST's SOURCES.json calls real is
+  # left as it is, and SOURCES.json with them, unless the checkout carries a
+  # SOURCES.json of its own (sounds committed to the repo), which wins.
+  # All or nothing: a SOURCES.json kept over a placeholder would call an
+  # oscillator real, so if any entry can't be kept, none is.
+  SFX_SOURCES="$DEST/assets/sfx/SOURCES.json"
+  if [ -f "$SFX_SOURCES" ] && [ ! -f "$SRC/assets/sfx/SOURCES.json" ]; then
+    if SFX_KEEP="$("${PY:-python3}" - "$SFX_SOURCES" <<'PYEOF'
+import json, sys
+files = json.load(open(sys.argv[1], encoding="utf-8")).get("files") or {}
+for name, entry in files.items():
+    if entry.get("generated", False):
+        continue
+    if set(name) & set("/[]*?\\\n"):
+        sys.exit(f"unusual file name {name!r}")
+    print(f"- /assets/sfx/{name}")
+print("- /assets/sfx/SOURCES.json")
+PYEOF
+    )"; then
+      printf '%s\n' "$SFX_KEEP" >> "$PROTECT"
+    else
+      warn "could not read $SFX_SOURCES, so this copy replaces the fetched"
+      warn "sounds with placeholders: run scripts/fetch_sfx.py again after it"
+    fi
+  fi
   rsync -a --delete \
     --exclude '.venv' --exclude 'workspace' --exclude 'cache' \
     --exclude 'state' --exclude '.git' --filter="merge $PROTECT" \
@@ -1056,10 +1084,9 @@ fi
 ok "suite green"
 if ! sudo -u "$SERVICE_USER" .venv/bin/python scripts/check_sfx.py >/dev/null 2>&1; then
   warn "the sound effects are still placeholders, and every final render is"
-  warn "blocked until they are not. In the clone, with your Freesound key:"
-  warn "    cd $SRC && export FREESOUND_API_KEY=..."
-  warn "    $DEST/.venv/bin/python scripts/fetch_sfx.py"
-  warn "then commit assets/sfx/ and run this script again."
+  warn "blocked until they are not. With your Freesound key:"
+  warn "    sudo -u $SERVICE_USER -H bash -c 'cd $DEST && FREESOUND_API_KEY=<key> .venv/bin/python scripts/fetch_sfx.py'"
+  warn "Running this script again later keeps the sounds it fetched."
 fi
 
 # --------------------------------------------------------------------------

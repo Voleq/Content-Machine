@@ -19,6 +19,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -849,6 +850,79 @@ def test_a_rerun_after_a_pull_keeps_what_only_the_install_has(tmp_path):
     subprocess.run(["bash", "-c", command], check=True,
                    env={"PATH": os.environ["PATH"], "SRC": str(src), "DEST": str(dest)})
     assert (dest / ".env").read_text(encoding="utf-8") == "from the clone"
+
+
+def test_a_rerun_keeps_the_sounds_fetched_into_the_install(tmp_path):
+    """The guide fetches the real sounds into /opt/dennis, which the checkout
+    never sees. Every re-run copied the checkout's oscillators back over them
+    and deleted SOURCES.json and the extra takes, so an update threw the
+    fetch away. A checkout with sounds committed still wins, and a
+    SOURCES.json that cannot be read keeps nothing rather than calling an
+    oscillator real."""
+    import json
+    import shutil
+    import subprocess
+
+    if shutil.which("rsync") is None:
+        pytest.skip("rsync is not installed here")
+    lines = (ROOT / "deploy" / "bootstrap.sh").read_text(encoding="utf-8").splitlines()
+    start = next(i for i, ln in enumerate(lines) if ln.strip().startswith('PROTECT="$(mktemp)"'))
+    end = next(i for i in range(start, len(lines)) if lines[i].strip() == 'rm -f "$PROTECT"')
+    command = "warn() { echo \"$1\" >&2; }\n" + "\n".join(lines[start:end + 1])
+    src, dest = tmp_path / "src", tmp_path / "dest"
+
+    def install(sources: str | None) -> None:
+        shutil.rmtree(src, ignore_errors=True)
+        shutil.rmtree(dest, ignore_errors=True)
+        (src / "assets" / "sfx").mkdir(parents=True)
+        (dest / "assets" / "sfx").mkdir(parents=True)
+        shutil.copy(ROOT / ".gitignore", src / ".gitignore")
+        for name in ("whoosh.wav", "ding.wav"):
+            (src / "assets" / "sfx" / name).write_text("oscillator", encoding="utf-8")
+        for name in ("whoosh.wav", "whoosh-2.wav", "ding.wav"):
+            (dest / "assets" / "sfx" / name).write_text("fetched", encoding="utf-8")
+        (dest / "assets" / "sfx" / "ding.wav").write_text("old oscillator",
+                                                          encoding="utf-8")
+        if sources is not None:
+            (dest / "assets" / "sfx" / "SOURCES.json").write_text(sources,
+                                                                  encoding="utf-8")
+        subprocess.run(["bash", "-c", command], check=True, env={
+            "PATH": os.environ["PATH"], "SRC": str(src), "DEST": str(dest),
+            "PY": sys.executable})
+
+    def real(name: str) -> dict:
+        return {"source": "https://freesound.org/s/1/", "licence": "CC0",
+                "author": "a", "generated": False}
+
+    sfx = dest / "assets" / "sfx"
+    install(json.dumps({"files": {
+        "whoosh.wav": real("whoosh.wav"), "whoosh-2.wav": real("whoosh-2.wav"),
+        "ding.wav": {"generated": True}}}))
+    assert (sfx / "whoosh.wav").read_text(encoding="utf-8") == "fetched"
+    assert (sfx / "whoosh-2.wav").exists()
+    assert (sfx / "SOURCES.json").exists()
+    # a file still a placeholder takes the checkout's, as before
+    assert (sfx / "ding.wav").read_text(encoding="utf-8") == "oscillator"
+
+    install("{not json")
+    assert not (sfx / "SOURCES.json").exists(), \
+        "kept over the checkout's oscillators, it would call them real"
+    assert (sfx / "whoosh.wav").read_text(encoding="utf-8") == "oscillator"
+
+    # sounds committed to the checkout win over the install's own
+    shutil.rmtree(src, ignore_errors=True)
+    (src / "assets" / "sfx").mkdir(parents=True)
+    (src / "assets" / "sfx" / "SOURCES.json").write_text("{}", encoding="utf-8")
+    (src / "assets" / "sfx" / "whoosh.wav").write_text("committed", encoding="utf-8")
+    shutil.copy(ROOT / ".gitignore", src / ".gitignore")
+    (sfx / "SOURCES.json").write_text(json.dumps(
+        {"files": {"whoosh.wav": real("whoosh.wav")}}), encoding="utf-8")
+    (sfx / "whoosh.wav").write_text("fetched", encoding="utf-8")
+    subprocess.run(["bash", "-c", command], check=True, env={
+        "PATH": os.environ["PATH"], "SRC": str(src), "DEST": str(dest),
+        "PY": sys.executable})
+    assert (sfx / "whoosh.wav").read_text(encoding="utf-8") == "committed"
+    assert (sfx / "SOURCES.json").read_text(encoding="utf-8") == "{}"
 
 
 def test_the_install_does_not_die_on_the_sound_gate():
