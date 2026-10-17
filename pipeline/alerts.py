@@ -299,8 +299,9 @@ def in_quiet_hours(settings: Settings, now: datetime | None = None) -> bool:
 # When the numbers a `bmo` name puts out are public. US regular session.
 MARKET_OPEN = time(hour=9, minute=30)
 
-# How many days after a print the reaction alert may still fire.
-STALE_PRINT_DAYS = 2
+# How many days after a print the reaction alert may still fire: a Friday
+# print is still news on the Tuesday after a long weekend.
+STALE_PRINT_DAYS = 4
 
 # The reaction alert's headline, which is also how `mark_sent` tells it from
 # the setup.

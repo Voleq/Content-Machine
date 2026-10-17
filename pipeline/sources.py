@@ -306,10 +306,13 @@ def fred_series(name: str, settings: Settings, *, limit: int = 13) -> dict:
         resp.raise_for_status()
         rows = resp.json().get("observations", [])
     except Exception as e:  # noqa: BLE001 - degrade, never raise
-        # Not str(e): httpx puts the request URL in it, and the URL carries
-        # FRED_API_KEY, which went to the log and into the payload.
-        status = getattr(getattr(e, "response", None), "status_code", None)
-        reason = f"{type(e).__name__}{f' {status}' if status else ''}"
+        # The key scrubbed out: httpx puts the request URL in its message,
+        # and the URL carries FRED_API_KEY, which went to the log and into
+        # the payload.
+        reason = str(e)
+        if settings.fred_api_key:
+            reason = reason.replace(settings.fred_api_key, "***")
+        reason = reason[:120]
         log.warning("FRED %s failed: %s", series_id, reason)
         return {"status": UNAVAILABLE, "series": series_id, "reason": reason}
 

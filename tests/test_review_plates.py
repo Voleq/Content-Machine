@@ -119,7 +119,8 @@ def test_a_cut_short_clip_credit_does_not_stop_the_render(settings, tmp_path):
     cdir = manager._clip_cache_dir("dumpster_fire")
     cdir.mkdir(parents=True, exist_ok=True)
     (cdir / "normalized_0.mp4").write_bytes(b"clip")
-    (cdir / "meta_0.json").write_text('{"attribution": "Video by', "utf-8")
+    (cdir / "meta_0.json").write_text('{"attribution": "Video by',
+                                      encoding="utf-8")
     clip = manager.resolve_clip("dumpster_fire")
     assert clip.source == "cache"
     assert clip.path == cdir / "normalized_0.mp4"

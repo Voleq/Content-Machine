@@ -138,7 +138,10 @@ def test_a_record_holding_a_count_reads_as_no_curve(settings):
     assert retention_rows(old.retention) == []
     assert holds_for_video(settings, old, NARRATION) == []
     assert hook_bench(settings) == []
-    assert _video_index(settings)[f"AAPL/{old.workdate}"]["hold"] is None
+    from pipeline.youtube import record_format
+
+    assert _video_index(settings)[
+        f"AAPL/{old.workdate}/{record_format(old)}"]["hold"] is None
     experiments(settings)
 
 

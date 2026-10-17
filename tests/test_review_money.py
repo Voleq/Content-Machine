@@ -85,7 +85,8 @@ def test_the_status_page_is_started_with_the_bot():
     """STATUS_PAGE_ENABLED was documented and nothing ever called `serve`."""
     from pathlib import Path
 
-    main = (Path(__file__).resolve().parents[1] / "main.py").read_text()
+    main = (Path(__file__).resolve().parents[1] / "main.py").read_text(
+        encoding="utf-8")
     assert "from pipeline.status_page import serve" in main
     assert "serve(settings)" in main
 

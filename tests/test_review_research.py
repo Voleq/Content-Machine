@@ -217,7 +217,7 @@ def test_a_failing_fred_call_does_not_leak_its_key(settings, monkeypatch):
     got = sources.fred_series("UNRATE", _live(settings, fred_api_key=key))
     assert got["status"] != "ok"
     assert key[:3] not in got["reason"]
-    assert "400" in got["reason"]
+    assert "400" in got["reason"] and "***" in got["reason"]
 
 
 def test_a_failed_exhibit_read_is_not_cached(settings, monkeypatch):
