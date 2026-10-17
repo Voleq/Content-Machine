@@ -11,7 +11,9 @@ from pipeline.cost import (
 def test_estimate_math(settings):
     rate = settings.tts_usd_per_1k_chars
     assert estimate_tts_usd(1000, settings) == rate
-    assert estimate_tts_usd(784, settings) == pytest.approx(784 / 1000 * rate)
+    # Rounded to a hundredth of a cent, which is all a ledger row keeps.
+    assert estimate_tts_usd(784, settings) == pytest.approx(784 / 1000 * rate,
+                                                            abs=5e-5)
 
 
 def test_the_rate_is_the_selected_model_s_rate(settings):
@@ -63,8 +65,8 @@ def test_the_price_lookup_is_exact_and_not_a_prefix(settings):
     v3 = settings.model_copy(update={"eleven_model_id": "eleven_v3"})
     conv = settings.model_copy(
         update={"eleven_model_id": "eleven_v3_conversational"})
-    assert v3.tts_usd_per_1k_chars == 0.10
-    assert conv.tts_usd_per_1k_chars == 0.05
+    assert v3.tts_usd_per_1k_chars == 0.08
+    assert conv.tts_usd_per_1k_chars == 0.04
     assert v3.tts_usd_per_1k_chars == 2 * conv.tts_usd_per_1k_chars
     assert ELEVEN_USD_PER_1K_CHARS["eleven_v3"] > \
         ELEVEN_USD_PER_1K_CHARS["eleven_v3_conversational"]
@@ -82,7 +84,7 @@ def test_the_cap_is_never_metered_slower_than_the_real_rate(settings):
     assert live.tts_usd_per_1k_chars == ELEVEN_USD_PER_1K_CHARS["eleven_v3"]
 
     ledger = SpendLedger(live)
-    # 10,000 characters of v3 is $1.00 exactly — the cap, not a penny under.
+    # 10,000 characters of v3 is $0.80, and $0.50 is already spent.
     ledger.record_tts(0.50)
     with pytest.raises(SpendCapExceededError):
         ledger.guard_tts_spend(10_000)
@@ -110,7 +112,7 @@ def test_guard_blocks_over_cap(settings):
     ledger = SpendLedger(tight)
     ledger.record_tts(0.09)
     with pytest.raises(SpendCapExceededError, match="monthly"):
-        ledger.guard_tts_spend(1000)  # ~$0.05 at turbo > remaining $0.01
+        ledger.guard_tts_spend(1000)  # ~$0.04 at turbo > remaining $0.01
     # a tiny job that fits still passes
     assert ledger.guard_tts_spend(50) > 0
 
@@ -239,7 +241,7 @@ def test_a_blank_rate_in_a_dotenv_is_not_a_crash(tmp_path):
     s = Settings(_env_file=env)
     assert s.usd_per_1k_chars is None
     assert s.active_eleven_model == "eleven_turbo_v2_5"
-    assert s.tts_usd_per_1k_chars == 0.05
+    assert s.tts_usd_per_1k_chars == 0.04
 
 
 def test_the_refusal_reaches_the_approval_screen(settings, short_valid_json):

@@ -29,7 +29,7 @@ import httpx
 from config import Settings
 from pipeline.cost import BudgetExceededError, SpendLedger, estimate_tts_usd
 from pipeline.direction import (V3_MODELS, emission, performs_audio_tags,
-                                setting_overrides)
+                                request_settings, setting_overrides)
 from pipeline.models import TTSResult, WordTimestamp
 from pipeline.render_common import concat_audio, ffprobe_duration, run_ffmpeg
 
@@ -226,7 +226,7 @@ def expand_delivery(clean_text: str, events, model_id: str,
         cursor = offset
 
         # The register tags ([FLAT], [DRY]) are the only ones that can move the
-        # sliders, and on v3 they must not — see direction.Register.
+        # sliders, and on v3 and v4 they must not — see direction.Register.
         overrides.update(setting_overrides(e.type, model_id))
 
         emitted = emission(e.type, model_id)
@@ -440,6 +440,9 @@ class TTSEngine:
         req_text, overrides, spans = expand_delivery(text, events, model_id,
                                                      tier=tier)
         vsettings.update(overrides)
+        # What this model takes, before the key: on v4 that drops style and
+        # speed, so a request is never keyed on a setting it did not carry.
+        vsettings = request_settings(vsettings, model_id)
         keyed = dict(vsettings)
         fingerprint = delivery_fingerprint(events)
         if fingerprint:
