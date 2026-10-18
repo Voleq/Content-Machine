@@ -523,3 +523,25 @@ def test_the_push_in_reads_his_pixels_not_his_rectangle(tmp_path):
         "his arm reaches into the picture at frame 6"
     # Past the clip's end the beat holds his last frame, arm out.
     assert _host_covers_picture(clip, box, quad, 3.0, 0.5, (640, 360))
+
+
+def test_the_pull_back_starts_on_the_chart_and_ends_on_the_room():
+    """18 Oct 2026: a chapter ending on a full-screen chart backs out of it,
+    from the plate filling the frame to the room with it on the monitor."""
+    room = Image.new("RGB", (800, 450), (30, 34, 60))
+    quad = [(400.0, 100.0), (640.0, 110.0), (630.0, 250.0), (405.0, 240.0)]
+    from PIL import ImageDraw
+
+    ImageDraw.Draw(room).polygon(quad, fill=(200, 200, 190))
+    pic = Image.new("RGB", (320, 180), PAPER)
+    ImageDraw.Draw(pic).rectangle([40, 60, 120, 170], fill=(40, 60, 154))
+    frames = rd.pull_back_frames(room, quad, pic, (320, 180), 30)
+    assert len(frames) == round(rd.PULL_S * 30) + round(rd.PULL_HOLD_S * 30)
+    first, last = np.asarray(frames[0], float), np.asarray(frames[-1], float)
+    assert np.abs(first - np.asarray(pic, float)).mean() < 6, "it does not start on the chart"
+    assert np.abs(last - np.asarray(room.resize((320, 180)), float)).mean() < 6
+    # the room comes up round the chart: more of the room's ink each frame
+    dark = [(np.asarray(f, float).mean(axis=2) < 80).mean() for f in frames]
+    n = round(rd.PULL_S * 30)
+    assert all(b >= a - 1e-3 for a, b in zip(dark[:n], dark[1:n]))
+    assert frames[n - 1].tobytes() == frames[-1].tobytes()

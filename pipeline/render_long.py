@@ -57,6 +57,7 @@ the video ends on whatever deadpan line the script wrote.
 
 from __future__ import annotations
 
+import bisect
 import json
 import logging
 import math
@@ -929,6 +930,26 @@ def _render_long(
                        if _bumper is not None else 0.0)
         covers.append((t - _wipe_on, t + hold))
 
+    # BACK OUT OF THE MONITOR (transitions, 18 Oct 2026): a chapter that ends
+    # on a full-screen chart pulls back out of it into the room, the chart
+    # shrinking onto his monitor, before the chapter break. Which beats, by
+    # their index: the full-frame plate the break cuts away from, long enough
+    # to be read first. Covered from the pull on, as the bumper is.
+    from pipeline.room_dressing import PULL_HOLD_S, PULL_S
+
+    pull_from: dict[int, float] = {}
+    _seg_at = {round(s.start, 4): j for j, s in enumerate(segments)}
+    for k, t in enumerate(chapter_cuts, start=1):
+        j = _seg_at.get(round(t, 4) if t is not None else -1, 0) - 1
+        if k < 2 or j < 0:
+            continue
+        last = segments[j]
+        if (last.kind == "plate" and last.payload.get("value")
+                and last.payload.get("layout") != "two-shot"
+                and last.length >= PULL_S + PULL_HOLD_S + 1.5):
+            pull_from[j] = t
+            covers.append((t - PULL_S - PULL_HOLD_S, t))
+
     # WHAT HIS MONITOR SHOWS, CHAPTER BY CHAPTER (items 49, 56): a plate the
     # chapter puts on screen, the writer's [SCREEN] where there is one, else
     # the bot's pick, else the price's run. A chapter's window opens on the
@@ -1088,16 +1109,15 @@ def _render_long(
         """The episode's dressing with the board ticked off up to the chapter
         `at` is in. Its chapters open on the cut, as the monitor's do, so the
         board in the shot after a chapter break is the board the break left."""
-        import bisect
-
         n = bisect.bisect_right(_starts, at)
         if n not in chapter_dressings:
             chapter_dressings[n] = _dressing().in_chapter(n)
         return chapter_dressings[n]
 
-    def _screen_picture(pick) -> Path | None:
+    def _screen_picture(pick, tag: str = "") -> Path | None:
         """The plate the chapter's monitor carries, drawn with the beat's own
-        figures the way the beat draws it; None for the price's run."""
+        figures the way the beat draws it; None for the price's run. `tag`
+        names the file when it is not the chapter's own pick."""
         from pipeline.plate_frames import render_frame, render_still
 
         if pick is None or pick.seg_index is None:
@@ -1122,7 +1142,7 @@ def _render_long(
                         "shows the price", pick.chapter + 1, plate.key, e)
             return None
         img.thumbnail((1600, 900), Image.LANCZOS)
-        dest = rdir / f"screen_{pick.chapter}_{plate.name[:32]}.png"
+        dest = rdir / f"screen_{tag or pick.chapter}_{plate.name[:32]}.png"
         img.save(dest)
         return dest
 
@@ -2797,6 +2817,51 @@ def _render_long(
         return _played_clip(idx, lambda i: frames[i][0], fps,
                             rdir / f"board_break_{k}.mov", reuse=False)
 
+    def _pull_back(j: int, t: float) -> Path | None:
+        """THE PULL BACK OUT OF THE MONITOR at the end of beat `j`, a full-frame
+        chart the chapter break at `t` cuts away from: the chart on his
+        monitor in a room with the whole monitor in shot (`room_dressing.
+        pull_back_frames`), as a clip PULL_S + PULL_HOLD_S long ending on
+        the break. None where no room has the monitor whole in the frame."""
+        from pipeline.plates import PlateError
+        from pipeline.room_dressing import picture_quad, pull_back_frames, written_room
+        from pipeline.room_screen import ScreenPick
+
+        seg = segments[j]
+        n = bisect.bisect_right(_starts, seg.start) - 1
+        pick = ScreenPick(max(n, 0), seg.start, t, j, seg.payload["value"])
+        pic = _screen_picture(pick, tag=f"pull{j}")
+        if pic is None:
+            return None
+        title = chapters[n][1] if 0 <= n < len(chapters) else ""
+        d = _chapter_dressing(seg.start).showing(pic, title)
+        for attempt in range(8):
+            role_name = ("read", "talk")[attempt % 2]
+            try:
+                plate = _room_plate(role_name, seed=f"{script.ticker}|pull|{j}|{attempt}")
+            except PlateError:
+                continue
+            rw, rh = plate.delivered
+            q = picture_quad(plate, d, (rw, rh))
+            if q is None:
+                continue
+            xs, ys = [x for x, _ in q], [y for _, y in q]
+            share = ((max(xs) - min(xs)) / rw + (max(ys) - min(ys)) / rh) / 2
+            if (min(xs) >= 0.02 * rw and max(xs) <= 0.98 * rw and min(ys) >= 0.02 * rh
+                    and max(ys) <= 0.98 * rh and 0.15 <= share <= 0.6):
+                break
+        else:
+            return None
+        plates_used.add(plate.key)
+        room = written_room(plate, d, rdir / "written", settings.fonts_dir)
+        frames = pull_back_frames(Image.open(room.path).convert("RGB"), q,
+                                  Image.open(pic).convert("RGB"), (W, H), fps)
+        pull_meta.append({"segment": j, "chapter": n + 1, "room": plate.key,
+                          "start": round(t - len(frames) / fps, 3)})
+        return _played_clip(list(range(len(frames))), lambda i: frames[i], fps,
+                            rdir / f"pullback_{j}.mov", reuse=False)
+
+    pull_meta: list[dict] = []
     for k, ((target, title, ctype), t) in enumerate(zip(chapters, chapter_cuts), start=1):
         if t is None:
             if k == 1 and _on_the_title(target, intro_dur):
@@ -2822,6 +2887,16 @@ def _render_long(
         # paper card between chapters. The bumper stays the break where the
         # kit has no board angle to draw it on.
         bumper = board = None
+        j = next((j for j, at in pull_from.items() if at == t), None)
+        pulled = _pull_back(j, t) if j is not None else None
+        if pulled is not None:
+            # Over everything, as a wipe is: the beat's marks and its source
+            # tag end where the camera leaves the chart.
+            start = t - PULL_S - PULL_HOLD_S
+            wipe_layers.append(OverlayLayer(path=pulled, x=0, y=0, t_start=start,
+                                            t_end=t, is_video=True, name=f"pullback_{k}"))
+            long_moves.append({"move": "zoom-to-slot", "start": round(start, 3),
+                               "shot_id": f"segment_{j}", "slot": "screen"})
         if k > 1:
             board = _board_break(k, t)
         if k > 1 and board is None:
@@ -3400,6 +3475,7 @@ def _render_long(
         "monitor_draw_ins": screen_meta,
         # Where the camera pushed into the monitor and cut to its plate (60).
         "monitor_push_ins": push_meta,
+        "monitor_pull_backs": pull_meta,
         "move_warnings": move_warnings,
         # The wide room the cold open's first shot was in, as a base key.
         # The next video reads it to take its turn on the other one, and the

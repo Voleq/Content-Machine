@@ -733,6 +733,70 @@ def picture_quad(plate, d: Dressing, size: tuple[int, int]):
     return [at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1)]
 
 
+# BACK OUT OF THE MONITOR (transitions, 18 Oct 2026): a chapter that ends on
+# a full-screen chart pulls back out of it, the chart shrinking onto his
+# monitor and the room coming up round it, the reverse of the push-in (item
+# 60). The pull, then the room held a moment before the chapter break.
+PULL_S, PULL_HOLD_S = 0.7, 0.3
+# How much of the pull the chart is the plate's own sharp picture before it
+# is the monitor's: at the start the camera is inside the glass, where the
+# room's few hundred pixels of monitor would be a blur.
+PULL_SHARP = 0.45
+
+
+def pull_back_frames(room, quad, pic, size: tuple[int, int], fps: int) -> list:
+    """The pull back out of the monitor as RGB frames `size` big, at `fps`.
+
+    `room` is the written room with the chart on its monitor, `quad` where
+    the chart is in it (top left, top right, bottom right, bottom left, in
+    `room`'s pixels) and `pic` the chart. The first frame is `pic` filling
+    the frame, the last the whole room. The camera's way out is the push-in's
+    way in, its corners carried from the frame's to the picture's; its pace
+    eases in and out by the picture's size, so the room does not lurch.
+    """
+    import numpy as np
+    from PIL import Image
+
+    W, H = size
+    rw, rh = room.size
+    full = [(0.0, 0.0), (rw, 0.0), (rw, rh), (0.0, rh)]
+    out_corners = [(0.0, 0.0), (W, 0.0), (W, H), (0.0, H)]
+    xs, ys = [p[0] for p in quad], [p[1] for p in quad]
+    r = min(max(((max(xs) - min(xs)) / rw + (max(ys) - min(ys)) / rh) / 2, 0.05), 0.95)
+    n = max(round(PULL_S * fps), 2)
+    frames = []
+    for f in range(n + round(PULL_HOLD_S * fps)):
+        p = min(f / (n - 1), 1.0)
+        ease = p * p * (3 - 2 * p)
+        e = (1 - r ** (1 - ease)) / (1 - r)       # 1: inside the glass, 0: out
+        window = [(fx + (qx - fx) * e, fy + (qy - fy) * e)
+                  for (fx, fy), (qx, qy) in zip(full, quad)]
+        h = _homography(out_corners, window)
+        frame = room.transform((W, H), Image.PERSPECTIVE,
+                               tuple(float(c) for c in (h / h[2, 2]).flatten()[:8]),
+                               Image.BICUBIC)
+        sharp = 1.0 - min(p / PULL_SHARP, 1.0)
+        sharp = sharp * sharp * (3 - 2 * sharp)
+        if sharp > 0:
+            back = _homography(window, out_corners)
+
+            def at(x, y, m=back):
+                u, v, w = m @ (x, y, 1.0)
+                return (float(u / w), float(v / w))
+
+            warped = _warp(pic, [at(x, y) for x, y in quad], (W, H))
+            if warped is not None:
+                px, (x0, y0) = warped
+                arr = np.asarray(frame, dtype=np.float32) / 255.0
+                ph, pw = px.shape[:2]
+                a = px[..., 3:4] * sharp
+                region = arr[y0:y0 + ph, x0:x0 + pw]
+                region[:] = region * (1 - a) + px[..., :3] * a
+                frame = Image.fromarray((arr * 255 + 0.5).astype(np.uint8))
+        frames.append(frame.convert("RGB"))
+    return frames
+
+
 # --------------------------------------------------------------- the warp
 def _homography(src, dst):
     """The 3x3 that takes the four `src` points to the four `dst` points."""
