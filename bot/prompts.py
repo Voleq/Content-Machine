@@ -1033,6 +1033,12 @@ def _angle_block(chosen: str) -> str:
     return a
 
 
+def _memory(name: str, settings: Settings) -> str:
+    from pipeline import channel_memory
+
+    return getattr(channel_memory, name)(settings)
+
+
 PAYLOAD: tuple[PayloadBlock, ...] = (
     # --- subject
     PayloadBlock("{{ticker}}", _ALL, lambda c: c.ticker.upper()),
@@ -1101,6 +1107,14 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     # --- voice
     PayloadBlock("{{voice_bible}}", _WRITING,
                  lambda c: voice_bible(c.settings)),
+    # Who Dennis is, what he has said about himself, and the jokes the
+    # channel has already used (S8, S3). Remembered at ship time.
+    PayloadBlock("{{dennis_story}}", _WRITING,
+                 lambda c: _memory("dennis_story_block", c.settings)),
+    PayloadBlock("{{dennis_facts}}", _WRITING,
+                 lambda c: _memory("dennis_facts_block", c.settings)),
+    PayloadBlock("{{used_jokes}}", _WRITING,
+                 lambda c: _memory("used_jokes_block", c.settings)),
     PayloadBlock("{{confession_ledger}}", _LONG_FORM,
                  lambda c: confession_ledger(c.settings)),
     PayloadBlock("{{retention}}", _LONG_FORM,

@@ -47,6 +47,11 @@ PURPOSES: dict[str, str] = {
                           "new filings, for /update",
     "filings": "picks verbatim quotes from a 10-K to screenshot, and "
                "summarises news articles",
+    "jokes": "lists the jokes, analogies and callbacks a shipped script "
+             "used, so later scripts do not reuse them (local model only)",
+    "dennis-facts": "lists the new facts Dennis said about himself in a "
+                    "shipped script, so later ones never contradict them "
+                    "(local model only)",
     "skeptic": "reads a script as a hostile investor and names its weakest "
                "claims (advisory, never blocks)",
     "broll query": "turns a visual cue in a script into a stock-footage "

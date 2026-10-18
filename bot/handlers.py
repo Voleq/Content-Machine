@@ -2229,6 +2229,34 @@ class BotCore:
                      job.ticker)
         else:
             self._record_thesis(job)
+            self._remember_writing(job)
+
+    def _remember_writing(self, job: JobRecord) -> None:
+        """The jokes it used and what Dennis said about himself (S3, S8).
+
+        Beside the thesis and the confession, at ship time, for the same
+        reason: this is when the words became public. Best-effort — a
+        bookkeeping failure must never fail a delivered video.
+        """
+        if job.kind not in (JobKind.RENDER_LONG, JobKind.RENDER_SHORT):
+            return
+        try:
+            from pipeline.channel_memory import remember_video
+
+            ws = Workspace(self.settings, job.ticker, job.workdate)
+            fmt = "short" if job.kind is JobKind.RENDER_SHORT else "long"
+            script = ws.load_short() if fmt == "short" else ws.load_long()
+            if script is None:
+                return
+            with llm_scope(self._llm_scope(ws)):
+                added = remember_video(self.settings, job.ticker,
+                                       job.workdate, fmt, script)
+            journal.note(self.settings, "memory",
+                         f"remembered {added['jokes']} joke(s) and "
+                         f"{added['facts']} fact(s) from the {fmt.upper()}",
+                         ticker=job.ticker, workdate=job.workdate, fmt=fmt)
+        except Exception as e:  # noqa: BLE001 - never fail a shipped video
+            log.warning("writing memory failed for %s: %s", job.ticker, e)
 
     def _provenance_text(self, job: JobRecord) -> str:
         """The record, read back off the manifest the render just wrote.

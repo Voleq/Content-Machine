@@ -58,6 +58,8 @@ KINDS: dict[str, str] = {
     "asked": "the operator asked the bot a question with /ask",
     "lessons": "the weekly note to the writer on where viewers left was "
                "rewritten",
+    "memory": "a shipped video's jokes and Dennis's new facts were "
+              "remembered for the next prompts",
 }
 
 _LOCK = threading.Lock()

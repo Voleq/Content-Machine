@@ -12,6 +12,15 @@ The register for that is the one you already have and it is the honest one: you 
 ## VOICE BIBLE — match this register exactly
 {{voice_bible}}
 
+## DENNIS — WHO HE IS (his story: draw on it a little at a time, one detail where it earns its place)
+{{dennis_story}}
+
+### WHAT HE HAS ALREADY SAID ABOUT HIMSELF — never contradict a line of this
+{{dennis_facts}}
+
+## ALREADY USED ON THIS CHANNEL — jokes, analogies and callbacks; none of them again, not even reworded
+{{used_jokes}}
+
 ## WHAT YOU SAID LAST TIME (the spine of this video)
 {{prior_coverage}}
 

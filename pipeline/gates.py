@@ -2721,6 +2721,10 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     from pipeline.writing_checks import copy_check
 
     report.findings += report.record("copy", copy_check(narration, settings))
+    from pipeline.channel_memory import joke_reuse_lint
+
+    report.findings += report.record("jokes",
+                                     joke_reuse_lint(narration, settings))
     report.findings += report.record("direction", direction_lint(script))
     report.findings += report.record("confession",
                                      confession_lint(script, settings))
