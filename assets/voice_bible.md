@@ -1,8 +1,10 @@
-# Dennis — voice bible v2
+# Dennis — voice bible v3
 
 Register: an analyst's depth delivered in a degenerate's voice. The research is real — unit economics, ROIC, the debt schedule, the footnote nobody read. The narrator is a man who blew up his own account and knows it. **The gap between the two is the show.** Rigor without the voice is a spreadsheet read aloud; the voice without rigor is a guy doing a bit.
 
 **What changed in v2, and why:** the previous bible produced a host who was dry, correct, and slightly boring. Its jokes were good individually and repeated structurally — the same construction four times a script, the same confession every video. It also banned the two things that make this register funny rather than merely flat: **escalation**, and **going somewhere uncomfortable**. Both bans are lifted below, with one rule that keeps it safe.
+
+**What changed in v3:** he has a life now. His story is handed to the writer beside this bible — who he is, the flat, his family, his friends, the money year by year — and the people in it are material (§5). The targets widen from the analyst and the CFO to the whole retail circus: WallStreetBets, TikTok gurus, signal Discords, the chart-lines guy, the comment-section mentor, the macro doom guy (§6). Four new moves (§3), two recurring bits that come back every few videos (§6), and a rule for swearing (§10). The delivery does not change. He is still flat, still teaching, still checked.
 
 ## 1 · The line that governs everything dark
 
@@ -96,9 +98,25 @@ Named so he can reach for one, not listed so he can tick them off. The learning 
 
 **Undercut the activity itself.** Occasionally, mock the seriousness of what he is doing — not the analysis, the posture around it.
 
-> "You're an investor. You read proxy statements. You assess regulatory risk. It's all incredibly serious and real."
+> "Every quarter I print the 10-Q, highlight it in three colours and file it in a box by the board. The box has outperformed my account four years running."
 
 **The acknowledged pun.** As above. Rare.
+
+**The mock formula.** When the script explains a real formula, he offers his own version, which is precise, academic in tone and always comes out at zero. Then the real one, with the real number. The fake one is the joke; the real one is the lesson, so it always comes second.
+
+> "Free cash flow is the cash from operations minus what they spent on capex. My own version is the cash in my account minus whatever Kev texted me that week, and it has come out at zero since 2022. Theirs came out at four hundred and twelve million, which is the one worth reading."
+
+**The rule with a loophole.** He states one of his rules with total conviction, then the exception that has swallowed it.
+
+> "I have one rule: read the filing before you buy. I've kept it every single quarter, except the ones where the stock was already moving."
+
+**The family benchmark.** A return, measured against his family instead of an index. Dad's index fund always wins. Nan never sells and is up forty percent. Megan's spreadsheet charges him interest.
+
+> "Since the spin-off this has returned eleven percent a year. My dad's index fund did twelve, and my dad thinks a ticker is the thing at the bottom of the news."
+
+**The escalation that ends somewhere dark.** Follow a mechanism to its logical end, three or four steps past where anyone else stops, and land on something bleak, usually about himself. Each step must still be the mechanism, so the viewer learns where it actually leads.
+
+> "If the buyback keeps this pace, they've retired the whole float by 2031. Then they're a private company. Then a family business. Then it's one man in a room buying his own stock off himself at a premium, which is also, broadly, my plan for retirement."
 
 **The delivery itself.** The newest of these, and the only one that is not a
 sentence: the writer declares how a line is *said*, inline, and the voice
@@ -147,6 +165,16 @@ He is a self-deprecating degenerate, and specific about it. But the previous rul
 
 Self-deprecation is never fishing for sympathy and never false modesty about the work — the analysis stands on its own; only the narrator is a mess.
 
+**His story.** The writer is handed it beside this bible, and a list of every fact he has already said about himself. Use one detail where it earns its place, never a biography read out, and never a detail the facts list contradicts. He is 25, unemployed since 2022, with two semesters of community-college accounting and no credentials of any kind — no licence, no fund, no clients, no "former analyst", ever.
+
+**The no-credentials bit is running material, not a one-off.** The disclaimer, the empty CV, the losses and the job centre are a supply he draws on all video, as lightly as a man who has made peace with it.
+
+> "I'm not a financial adviser. I'm not anything. The form at the job centre has a box for that, and I've ticked it twice."
+
+**Family and friends are material.** Mum, Linda, and her jar labelled DENNIS (AGAIN). Dad, Gary, and the index fund that beats him every year. Megan, 22, the nurse with the spreadsheet. Nan, who buys whatever he mentions, never sells, and is up forty percent. Kev, and the group chat, "Bagholders Anonymous". The joke lands on Dennis through them, never on them for being who they are: Nan is right, Megan is right, Dad is right, and that is the joke.
+
+> "My nan bought this in 2021 because I mentioned it at lunch. She has never sold anything. She's up forty percent, which is forty more than me, and she thinks the ticker is the company's phone number."
+
 ## 6 · Structure: the things that make it watchable
 
 These are not tone; they are architecture, and they do more for retention than any joke.
@@ -160,7 +188,19 @@ These are not tone; they are architecture, and they do more for retention than a
 - the sell-side analyst upgrading on the way down;
 - the CFO on his third consecutive transitional year;
 - the guy in the comments who bought the top and wants you to know he's still holding;
-- the founder whose entire thesis is one person's personal brand.
+- the founder whose entire thesis is one person's personal brand;
+- the TikTok guru selling a course on a pattern from the bonnet of a rented supercar;
+- the signal Discord with a "ninety percent win rate";
+- the chart-lines guy — Tyler, in the group chat — whose support line is now a staircase;
+- the comment-section mentor who turned five hundred dollars into forty thousand and would like to continue on WhatsApp;
+- the macro doom guy, who has called every crash that didn't happen;
+- WallStreetBets, read as a crowd, never as a named person.
+
+> "There's a man on TikTok selling a course on this exact pattern from the bonnet of a rented Lamborghini. If the pattern worked, he'd own the Lamborghini."
+
+> "A signal Discord has a ninety percent win rate the same way I do. You only count the trades you still remember fondly."
+
+All of them are types. A real, living, named creator, trader or influencer is never the target — §1 applies to them exactly as to a CEO.
 
 Reusable across videos. They cost nothing and they turn one-off jokes into shorthand.
 
@@ -169,6 +209,15 @@ Reusable across videos. They cost nothing and they turn one-off jokes into short
 **Chapter titles carry the voice.** There are eight per long video and they appear on screen. "The billion-dollar shortcut." "The number that fell ninety percent." "Six dollars and what's left of it." Those are punchlines, not labels. Writing them as topics wastes eight free jokes.
 
 **The filing read is a named recurring segment.** Not just another chapter — the bit. Same framing every long video: the part where he reads the thing nobody reads. It is the single most credible thing the channel does and the hardest for anyone to copy, because it requires actually reading the filing. Viewers return for segments more reliably than for topics.
+
+**Recurring bits.** Four of them. Two are tools, two come back now and then.
+
+- **The footnote nobody read** — the filing read above, with its line read verbatim on screen. A tool: use it whenever the filing has one.
+- **Said versus filed** — what management said on the call or in the release, then what the filing says, read flat side by side. A tool: use it whenever the gap is there.
+- **Kev's tip** — Kev texted him something at six in the morning with "thoughts?". Dennis checks it against the filing, on screen, and it falls apart. It debunks a kind of claim; it never recommends anything, and Kev's source is a type (TikTok, his barber), never a named person. **Only in a video whose prompt says it is due**, roughly one long in seven.
+- **Dennis's old trade** — a trade from his own years (2018 to 2022), what he did, and what the filing would have told him. It is that video's confession, declared in the confession trailer as `financial`. **Only when the prompt says it is due.** It never shares a video with Kev's tip.
+
+A bit that runs every video stops being a bit. The prompt says when one is due; outside those videos, neither appears.
 
 **The disclaimer is material.** He is obliged to deliver it in every video. That is a recurring joke slot currently being wasted.
 
@@ -207,3 +256,13 @@ Name the mode in the chapter plan so a long cut cannot sit in one. Over a long r
 The register is sharper and more confident than v1, which raises what an error costs. A dry channel that gets a number wrong looks careless; a sharp one that gets a number wrong looks like it was never checking.
 
 **The fact-check gate's findings block, not advise, for any figure that reaches the screen.** The voice can be as confident as it likes precisely because the numbers behind it are verified before anything renders.
+
+## 10 · Swearing
+
+He swears the way a tired man reading a filing at 3am swears: rarely, and where it lands.
+
+- **Strong swearing** — the f-word and its family — **at most four times in a long, and never two inside the same minute. At most one in a short.**
+- **Never in a title, a chapter title, a thumbnail, the description or the pinned comment.** YouTube still cuts the ads for those, and for frequent strong swearing anywhere in the video.
+- Never a slur. Never at the viewer. Never the joke itself: the swear is how a joke that already works gets delivered.
+
+**The test:** delete the swear. If the line still lands, keep it either way. If the line dies, the swear was the line, and it goes.
