@@ -268,3 +268,83 @@ def copy_check(narration: str, settings: Settings) -> list[Finding]:
                          f"“{hit[1][:90]}”"),
                 excerpt=_excerpt(line)))
     return findings
+
+
+# --------------------------------------------------------------------------
+# S9 — chapters in the order one of the last three longs ran them.
+# --------------------------------------------------------------------------
+
+CHAPTER_ORDER_WINDOW = 3
+# A run of this many chapter types in the same order is the same video's
+# skeleton, even when the rest of the order differs.
+CHAPTER_RUN = 5
+
+
+def _types_on_file(path: Path) -> list[str]:
+    import json
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    rows = payload.get("chapter_list") if isinstance(payload, dict) else None
+    return [str(r.get("type", "")) for r in rows or [] if isinstance(r, dict)]
+
+
+def recent_chapter_orders(settings: Settings, n: int = CHAPTER_ORDER_WINDOW,
+                          exclude: Path | None = None
+                          ) -> list[tuple[str, list[str]]]:
+    """(`TICKER workdate`, its chapter types) for the last n shipped longs."""
+    from pipeline.corpus import Corpus
+
+    try:
+        rows = [e for e in Corpus(settings).recent(0, fmt="long") if e.shipped]
+    except Exception:                              # noqa: BLE001
+        return []
+    out: list[tuple[str, list[str]]] = []
+    for e in reversed(rows):
+        folder = settings.workspace_dir / e.ticker / e.workdate
+        if exclude is not None and Path(exclude).resolve() == folder.resolve():
+            continue
+        types = _types_on_file(folder / "script_long.json")
+        if types:
+            out.append((f"{e.ticker} {e.workdate}", types))
+        if len(out) >= n:
+            break
+    return out
+
+
+def _shared_run(a: list[str], b: list[str]) -> int:
+    """The longest run of chapter types the two share in the same order."""
+    sm = difflib.SequenceMatcher(None, a, b, autojunk=False)
+    return max((m.size for m in sm.get_matching_blocks()), default=0)
+
+
+def chapter_order_lint(script, settings: Settings,
+                       workspace: Path | None = None) -> list[Finding]:
+    types = [c.type for c in getattr(script, "chapter_list", None) or []]
+    if len(types) < 3:
+        return []
+    for where, theirs in recent_chapter_orders(settings, exclude=workspace):
+        run = _shared_run(types, theirs)
+        if types == theirs or run >= min(CHAPTER_RUN, len(types)):
+            what = ("the same chapter order" if types == theirs else
+                    f"{run} chapters in a row in the same order")
+            return [Finding(
+                gate="chapters", severity="warn",
+                message=(f"{what} as {where} — move a chapter, or open on a "
+                         f"different one, so the two do not share a "
+                         f"skeleton"),
+                excerpt=" → ".join(types)[:140])]
+    return []
+
+
+def chapter_orders_block(settings: Settings, workspace: Path | None = None) -> str:
+    """{{recent_chapter_orders}}: what the last longs did, so this one differs."""
+    rows = recent_chapter_orders(settings, exclude=workspace)
+    if not rows:
+        return "(no long on record yet — any order the material wants)"
+    lines = ["Your last longs ran their chapters in these orders. Do not "
+             f"repeat one, or {CHAPTER_RUN} of them in a row:"]
+    lines += [f"  - {where}: {' → '.join(types)}" for where, types in rows]
+    return "\n".join(lines)

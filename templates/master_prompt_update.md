@@ -165,6 +165,9 @@ An update is the format where a confession is most likely to be earned — "I wa
 
 {{recurring_bits}}
 
+### THE LAST LONGS' CHAPTER ORDERS — this one runs differently
+{{recent_chapter_orders}}
+
 ### WHAT THE CHANNEL ALREADY KNOWS ABOUT CHAPTER TYPES
 Measured, not guessed: YouTube's own retention for every video published so
 far, averaged per chapter TYPE. It is the only data that should influence the

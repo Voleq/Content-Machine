@@ -2728,6 +2728,10 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     from pipeline.recurring_bits import bits_lint
 
     report.findings += report.record("bits", bits_lint(script, settings))
+    from pipeline.writing_checks import chapter_order_lint
+
+    report.findings += report.record("chapters", chapter_order_lint(
+        script, settings, workspace=workspace))
     report.findings += report.record("direction", direction_lint(script))
     report.findings += report.record("confession",
                                      confession_lint(script, settings))

@@ -1040,6 +1040,12 @@ def _angle_block(chosen: str) -> str:
     return a
 
 
+def _orders(ctx: "_Ctx") -> str:
+    from pipeline.writing_checks import chapter_orders_block
+
+    return chapter_orders_block(ctx.settings, ctx.workspace)
+
+
 def _hook(ctx: "_Ctx") -> str:
     from pipeline.hook_types import hook_type_block
 
@@ -1170,6 +1176,9 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                  lambda c: scribble_styles(c.settings)),
     PayloadBlock("{{chapter_title_max}}", _LONG_FORM,
                  lambda c: chapter_title_max(c.settings)),
+    # The chapter orders of the last three longs, so this one differs (S9).
+    PayloadBlock("{{recent_chapter_orders}}", _LONG_FORM,
+                 lambda c: _orders(c)),
     PayloadBlock("{{chapter_types}}", _LONG_FORM,
                  lambda c: chapter_type_catalogue(c.settings, fmt=c.fmt,
                                                   sector=_sector(c))),

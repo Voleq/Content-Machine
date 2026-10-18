@@ -115,3 +115,58 @@ def test_same_topic_different_words_passes(settings):
 
 def test_copy_empty(settings):
     assert wc.copy_check("", settings) == []
+
+
+# --------------------------------------------------------------- S9 chapters
+def _shipped_long(settings, ticker, workdate, types):
+    import json
+
+    folder = settings.workspace_dir / ticker / workdate
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "script_long.json").write_text(json.dumps({
+        "narration": "Words here.",
+        "chapter_list": [{"type": t, "title": t} for t in types]}))
+    (folder / "approval_long.json").write_text("{}")
+
+
+def _script(types):
+    from types import SimpleNamespace
+    return SimpleNamespace(chapter_list=[SimpleNamespace(type=t) for t in types])
+
+
+ORDER = ["cold-open", "the-business", "the-numbers", "the-filing",
+         "valuation", "resigned-close"]
+
+
+def test_same_order_warns(settings):
+    _shipped_long(settings, "ABC", "2026-07-01", ORDER)
+    found = wc.chapter_order_lint(_script(ORDER), settings)
+    assert found and found[0].gate == "chapters" and "ABC" in found[0].message
+
+
+def test_five_in_a_row_warns(settings):
+    _shipped_long(settings, "ABC", "2026-07-01", ORDER)
+    mine = ["the-filing"] + ORDER[:2] + ORDER[2:3] + ["valuation",
+                                                     "resigned-close"]
+    found = wc.chapter_order_lint(_script(["x"] + ORDER[:5]), settings)
+    assert found and "5 chapters in a row" in found[0].message
+    assert mine  # the order below shares fewer than five in a row
+    assert wc.chapter_order_lint(_script(list(reversed(ORDER))), settings) == []
+
+
+def test_different_order_passes(settings):
+    _shipped_long(settings, "ABC", "2026-07-01", ORDER)
+    assert wc.chapter_order_lint(
+        _script([ORDER[0], ORDER[3], ORDER[1], ORDER[4], ORDER[2], ORDER[5]]),
+        settings) == []
+
+
+def test_no_chapters_no_findings(settings):
+    assert wc.chapter_order_lint(_script([]), settings) == []
+    assert "no long on record" in wc.chapter_orders_block(settings)
+
+
+def test_block_lists_the_orders(settings):
+    _shipped_long(settings, "ABC", "2026-07-01", ORDER)
+    assert "ABC 2026-07-01: cold-open → the-business" in \
+        wc.chapter_orders_block(settings)

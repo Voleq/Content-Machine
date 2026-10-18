@@ -99,6 +99,9 @@ OPTIONAL CHAPTERS — insert between the numbers beat and the valuation beat, ON
 
 Sequence the chapters so the stakes ESCALATE toward the close.
 
+### THE LAST LONGS' CHAPTER ORDERS — this one runs differently
+{{recent_chapter_orders}}
+
 ### WHAT THE CHANNEL ALREADY KNOWS ABOUT CHAPTER TYPES
 Measured, not guessed: YouTube's own retention for every video published so far,
 averaged per chapter TYPE. It is the only data that should influence the plan
