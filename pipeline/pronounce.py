@@ -71,9 +71,9 @@ def _pattern(word: str) -> re.Pattern[str]:
 
 
 def _rewrite(settings: Settings, word: str, said: str | None) -> bool:
-    from pipeline.writing_files import read_text, write_text
+    from pipeline.writing_files import read_file, write_file
 
-    lines = read_text(settings, FILE).splitlines()
+    lines = read_file(settings, FILE).splitlines()
     kept, found = [], False
     for line in lines:
         bare = line.strip()
@@ -86,7 +86,7 @@ def _rewrite(settings: Settings, word: str, said: str | None) -> bool:
         kept.append(f"{word} {_ARROW} {said}")
     elif not found:
         return False
-    write_text(settings, FILE, "\n".join(kept).rstrip("\n") + "\n")
+    write_file(settings, FILE, "\n".join(kept).rstrip("\n") + "\n")
     return True
 
 

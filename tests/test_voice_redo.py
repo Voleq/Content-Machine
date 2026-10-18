@@ -64,7 +64,7 @@ def test_redo_splices_and_keeps_the_original(settings, voiced, index):
     assert (cdir / "audio.orig.m4a").exists()
     after = ffprobe_duration(cdir / "audio.m4a")
     assert after == pytest.approx(res.new_s) and before == pytest.approx(res.old_s)
-    words = json.loads((cdir / "words.json").read_text())
+    words = json.loads((cdir / "words.json").read_text(encoding="utf-8"))
     assert [w["word"] for w in words] == TEXT.split()
     starts = [w["start"] for w in words]
     assert starts == sorted(starts)
@@ -84,7 +84,7 @@ def test_a_second_redo_is_a_new_take(settings, voiced):
 def test_cap_of_ten(settings, voiced):
     engine, ws = voiced
     (ws / "voice_redos_long.json").write_text(json.dumps(
-        [{"index": 1, "text": "x"}] * MAX_REDOS))
+        [{"index": 1, "text": "x"}] * MAX_REDOS), encoding="utf-8")
     with pytest.raises(RedoRefused, match="all 10"):
         redo_sentence(engine, settings, text=TEXT, fmt="long", events=None,
                       index=1, ticker="EXMPL", ws_path=ws)
