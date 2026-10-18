@@ -1203,16 +1203,20 @@ def tick_frames(plate, d: Dressing, fonts: Path, size: tuple[int, int]):
     return out
 
 
-# THE CLOCK JUMP (transitions, 18 Oct 2026): between two scenes inside a
-# chapter, a cut to the wall clock close, its hands running on half an hour:
-# it is late and he is still reading. The close-up is the room's own render
-# (room3d/build.py `clock`, its face lettered blank), read from the committed
-# pictures rather than the kit, which has no such room. Held, swept, held.
+# THE CLOCK JUMP (transitions, 18 Oct 2026): the cut into a long video's
+# last beat goes by the wall clock, close, its hands running on half an hour:
+# it is late and he is still reading. Only on a video of CLOCK_MIN_VIDEO_S or
+# more (his call: a half hour gone in a shorter one is a lie). The close-up
+# is the room's own render (room3d/build.py `clock`, its face rendered bare),
+# read from the committed pictures rather than the kit, which has no such
+# room. Held, swept, held.
 CLOCK_ANGLE = "clock"
 CLOCK_HOLD_S, CLOCK_SWEEP_S, CLOCK_AFTER_S = 0.35, 0.45, 0.4
 CLOCK_S = CLOCK_HOLD_S + CLOCK_SWEEP_S + CLOCK_AFTER_S
-# How far each jump runs the hands on, in minutes.
+# How far the jump runs the hands on, in minutes, and the shortest video
+# that may show it.
 CLOCK_JUMP_MIN = 30
+CLOCK_MIN_VIDEO_S = 33 * 60
 ROOM3D_RENDERS = Path(__file__).resolve().parents[1] / "room3d" / "renders"
 
 
@@ -1269,53 +1273,6 @@ def clock_jump_frames(shot: _Shot, fonts: Path, size: tuple[int, int], fps: int,
                                             only=frozenset({"labels"})))
         out.append(drawn[at])
     return out
-
-
-# THE LIGHTS DIP (transitions, 18 Oct 2026): at a cut between two scenes
-# inside a chapter, the room's lights sag for a breath, an old building's
-# power, and the next shot comes up as they flicker back on. A layer of the
-# room's night over the whole frame, a little lighter in the middle where
-# his screen still glows. Down, held across the cut, back with one flicker.
-DIP_IN_S, DIP_HOLD_S, DIP_OUT_S = 0.22, 0.12, 0.42
-DIP_DEPTH = 0.96
-_DIP_INK = (6, 9, 20)
-# The way back on, as (share of the way, how dark): it catches, drops
-# again, then comes up for good.
-_DIP_BACK = ((0.0, 1.0), (0.14, 0.35), (0.26, 0.8), (0.4, 0.55), (1.0, 0.0))
-DIP_BEFORE_S = DIP_IN_S + DIP_HOLD_S / 2
-DIP_AFTER_S = DIP_HOLD_S / 2 + DIP_OUT_S
-
-
-def _dip_level(p: float) -> float:
-    for (p0, a0), (p1, a1) in itertools.pairwise(_DIP_BACK):
-        if p <= p1:
-            u = (p - p0) / (p1 - p0) if p1 > p0 else 1.0
-            if p1 == 1.0:
-                u = 1 - (1 - u) ** 2
-            return a0 + (a1 - a0) * u
-    return 0.0
-
-
-def dip_frames(size: tuple[int, int], fps: int) -> tuple[list, int]:
-    """The dip as RGBA frames `size` big at `fps`, and how many of them come
-    before the cut it straddles."""
-    import numpy as np
-    from PIL import Image
-
-    W, H = size
-    n_in, n_hold, n_out = (max(round(x * fps), 1) for x in (DIP_IN_S, DIP_HOLD_S, DIP_OUT_S))
-    levels = [((f + 1) / n_in) ** 2 for f in range(n_in)] + [1.0] * n_hold
-    levels += [_dip_level((f + 1) / n_out) for f in range(n_out)]
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    r2 = ((xx - W / 2) / (W / 2)) ** 2 + ((yy - H / 2) / (H / 2)) ** 2
-    shade = np.clip(0.9 + 0.1 * r2 / 2, 0.0, 1.0)
-    ink = np.empty((H, W, 3), dtype=np.uint8)
-    ink[:] = _DIP_INK
-    out = []
-    for lv in levels:
-        a = (np.clip(shade * DIP_DEPTH * lv, 0.0, 1.0) * 255 + 0.5).astype(np.uint8)
-        out.append(Image.fromarray(np.dstack([ink, a]), "RGBA"))
-    return out, n_in + n_hold // 2
 
 
 def reveal_frames(plate, d: Dressing, fonts: Path, size: tuple[int, int], *,

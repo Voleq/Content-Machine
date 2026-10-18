@@ -546,10 +546,8 @@ def test_the_underline_never_runs_through_or_above_the_words(reg, settings, key,
     assert foot <= line.y + line.h <= foot + 8
 
 
-@pytest.mark.parametrize("name, frames", [("wipe-sweep", 8), ("wipe-page", 8),
-                                          ("wipe-blinds", 8),
+@pytest.mark.parametrize("name, frames", [("wipe-sweep", 8), ("wipe-blinds", 8),
                                           ("wipe-sweep-short", 4),
-                                          ("wipe-page-short", 4),
                                           ("wipe-blinds-short", 4)])
 def test_a_wipe_covers_the_whole_frame_on_the_cut(reg, settings, name, frames):
     """Design made the cut frame fully opaque (rebuild-40): the two shots are
@@ -713,7 +711,7 @@ def test_a_wipe_between_paper_cards_is_paper_at_every_hour(reg, hour):
     at = reg.at(hour)
     card = at.get(at.aspect_key("cards/quote-pull", "9x16"))
     assert card.ground == "paper"
-    for name in ("wipe-sweep", "wipe-page"):
+    for name in ("wipe-sweep", "wipe-blinds"):
         wipe = wipe_for_ground(at, wipe_plate(at, name, "9x16"), card)
         ground = _rgb(at.inks(wipe)["ground"])
         assert sum(ground) / 3 > 180, (hour, wipe.key, ground)

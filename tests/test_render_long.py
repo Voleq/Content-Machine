@@ -402,9 +402,10 @@ def test_later_chapters_break_on_the_board(rendered):
         assert tick["slot"] == "num"
         assert bumper["t_start"] < tick["start"] < bumper["t_end"]
         assert any(abs(w["cut"] - bumper["t_start"]) < 1e-3 for w in blinds)
-    # The cold open and the end are wiped with a sweep or a page.
+    # The cold open is swept, and so is the end of a video too short for the
+    # clock; the page wipe is gone (18 Oct 2026).
     others = [w["transition"] for w in record["wipes"] if w["transition"] != "wipe-blinds"]
-    assert others and set(others) <= {"wipe-sweep", "wipe-page"}
+    assert others and set(others) == {"wipe-sweep"}
     # Every wipe is the last layer over its cut, the bumper included.
     names = [l["name"] for l in manifest["layers"]]
     wipes = [n for n in names if n.startswith("wipe-")]
@@ -412,36 +413,20 @@ def test_later_chapters_break_on_the_board(rendered):
 
 
 
-def test_a_clock_jump_or_a_dip_sits_on_its_cut_over_everything(rendered):
-    """18 Oct 2026, transitions 4 and 5: the clock close-up starts on its
-    cut and is heard as the hands sweep; the dip straddles its cut. Neither
-    is on a chapter's cut, and both are above every layer but the wipes."""
+
+def test_only_a_long_video_ends_by_the_clock(rendered):
+    """18 Oct 2026: the cut into the last beat goes by the wall clock, its
+    hands running on half an hour, only on a video of 33 minutes or more; a
+    shorter one is swept there, as this one is."""
+    from pipeline.room_dressing import CLOCK_MIN_VIDEO_S
+
     settings, script, tts, out, manifest = rendered
-    names = [lay["name"] for lay in manifest["layers"]]
-    layers = {lay["name"]: lay for lay in manifest["layers"]}
-    rows = manifest["moves"]["moves"]
-    clocks = [w for w in manifest["transitions"] if "clock" in w]
-    dips = [w for w in manifest["transitions"] if "dip" in w]
-    assert len(clocks) <= 2 and len(dips) <= 1
-    chapter_cuts = {round(s["t"], 2) for s in manifest["stingers"]}
-    for n, w in enumerate(clocks):
-        lay = layers[f"clock_{n}"]
-        assert abs(lay["t_start"] - w["cut"]) < 1e-3
-        sweep = [r for r in rows if r["shot_id"] == f"clock_{n}"]
-        assert [r["move"] for r in sweep] == ["count-up"]
-        assert lay["t_start"] < sweep[0]["start"] < lay["t_end"]
-    for n, w in enumerate(dips):
-        lay = layers[f"dip_{n}"]
-        assert lay["t_start"] < w["cut"] < lay["t_end"]
-    for w in clocks + dips:
-        assert round(w["cut"], 2) not in chapter_cuts
-    tops = [n for n in names if n.startswith(("clock_", "dip_"))]
-    wipes = [n for n in names if n.startswith("wipe-")]
-    if tops:
-        assert names.index(tops[0]) > max(i for i, n in enumerate(names)
-                                          if not n.startswith(("clock_", "dip_", "wipe-",
-                                                               "pullback_")))
-        assert all(names.index(t) < names.index(w) for t in tops for w in wipes)
+    assert CLOCK_MIN_VIDEO_S == 33 * 60
+    assert manifest["duration"] < CLOCK_MIN_VIDEO_S
+    assert not [w for w in manifest["transitions"] if "clock" in w]
+    assert not [lay for lay in manifest["layers"] if lay["name"].startswith("clock")]
+    ends = [w for w in manifest["transitions"] if w.get("at") == "end"]
+    assert [w["transition"] for w in ends] == ["wipe-sweep"]
 
 # --------------------------------------------------------------------------
 # The mix reacts to structure: a cue on every opener, and a bed that leaves.
@@ -1410,25 +1395,3 @@ def test_every_wide_room_has_a_closer_angle_he_can_stand_in(settings):
         assert closer is not None, f"{CLOSER_ROOM[stem]} is not in the kit"
         assert height(closer) >= WIDE_SHARE * desk_h, f"{closer} is wide too"
 
-
-def test_the_clock_and_the_dip_take_a_cut_between_two_scenes_inside_a_chapter():
-    """18 Oct 2026, transitions 4 and 5: only a cut from one beat of him to
-    the next, inside one chapter, with room either side and nothing
-    covering it, and never two close together."""
-    from pipeline.render_long import _scene_cuts
-    from pipeline.timeline import Segment
-
-    segs = [Segment(0, 10, "host"), Segment(10, 20, "host"),      # 10: inside chapter 1
-            Segment(20, 30, "plate"), Segment(30, 40, "host"),    # 20, 30: a plate's
-            Segment(40, 50, "host"),                              # 40: a chapter break
-            Segment(50, 60, "host"), Segment(60, 61.5, "host"),   # 50 fine; 60 too short after
-            Segment(61.5, 75, "host"), Segment(75, 90, "host")]   # 61.5 covered; 75 fine
-    kw = {"before": 0.5, "after": 1.2, "apart": 5.0, "seed": "x"}
-    cover = [(62.0, 63.0)]
-    assert _scene_cuts(segs, [0.0, 40.0], cover, n=5, **kw) == [10, 50, 75]
-    assert _scene_cuts(segs, [0.0, 40.0], cover, n=5, avoid=(12.0,), **kw) == [50, 75]
-    assert _scene_cuts(segs, [0.0, 40.0], cover, n=5, **{**kw, "apart": 30.0}) in (
-        [10, 50], [10, 75])
-    assert len(_scene_cuts(segs, [0.0, 40.0], [], n=1, **kw)) == 1
-    assert _scene_cuts(segs, [0.0, 40.0], [], n=1, **kw) == \
-        _scene_cuts(segs, [0.0, 40.0], [], n=1, **kw)

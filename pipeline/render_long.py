@@ -58,7 +58,6 @@ the video ends on whatever deadpan line the script wrote.
 from __future__ import annotations
 
 import bisect
-import itertools
 import json
 import logging
 import math
@@ -265,35 +264,6 @@ def _cleared(t: float, covers: list[tuple[float, float]]) -> float:
         if a <= t + 1e-6 < b:
             t = b
     return t
-
-
-def _scene_cuts(segments, breaks: list[float], covers: list[tuple[float, float]], *,
-                n: int, before: float, after: float, apart: float, seed: str,
-                avoid: tuple[float, ...] = ()) -> list[float]:
-    """Up to `n` cuts from one beat of him to the next inside one chapter
-    (`breaks` are the chapters' edges), each with `before` seconds of the
-    beat it leaves and `after` of the one it enters clear of every cover,
-    `apart` seconds from each other and from `avoid`, picked in a shuffle
-    fixed by `seed`."""
-    import random as _random
-
-    found = []
-    for a, b in itertools.pairwise(segments):
-        c = b.start
-        if (a.kind != "host" or b.kind != "host" or a.length < before + 1.0
-                or b.length < after + 1.5
-                or bisect.bisect_right(breaks, a.start) != bisect.bisect_right(breaks, c)
-                or any(x < c + after + 0.5 and y > c - before - 0.5 for x, y in covers)):
-            continue
-        found.append(c)
-    _random.Random(seed).shuffle(found)
-    out: list[float] = []
-    for c in found:
-        if len(out) == n:
-            break
-        if all(abs(c - o) >= apart for o in (*out, *avoid)):
-            out.append(c)
-    return sorted(out)
 
 
 # How long the opening title holds over the first frames. It is opaque, so
@@ -946,7 +916,18 @@ def _render_long(
     _bumper = reg.get(reg.aspect_key("structure/chapter-bumper", aspect) or "")
     _wipe_on, _wipe_off = 3 / 12, 4 / 12      # design's cut is under frame 4 of 8
     covers: list[tuple[float, float]] = [(0.0, intro_dur + _wipe_off)]
-    if end_cut is not None:
+    # THE END GOES BY THE CLOCK on a video of CLOCK_MIN_VIDEO_S or more
+    # (transitions, 18 Oct 2026): the cut into its last beat is the wall
+    # clock close, its hands running on half an hour, where a shorter video
+    # is wiped. Covered, so nothing slides in under it and he does not turn
+    # toward a camera the cut never reaches.
+    from pipeline.room_dressing import CLOCK_MIN_VIDEO_S, CLOCK_S, clock_shot
+
+    _clock = (clock_shot() if duration >= CLOCK_MIN_VIDEO_S and end_cut is not None
+              and end_cut + CLOCK_S < duration - 1.0 else None)
+    if _clock is not None:
+        covers.append((end_cut, end_cut + CLOCK_S))
+    elif end_cut is not None:
         covers.append((end_cut - _wipe_on, end_cut + _wipe_off))
     from pipeline.room_dressing import TICK_CLIP_S
 
@@ -981,31 +962,6 @@ def _render_long(
                 and last.length >= PULL_S + PULL_HOLD_S + 1.5):
             pull_from[j] = t
             covers.append((t - PULL_S - PULL_HOLD_S, t))
-
-    # THE CLOCK JUMP AND THE LIGHTS DIP (transitions 4 and 5, 18 Oct 2026):
-    # now and then a cut between two beats of him inside a chapter goes by
-    # the wall clock, its hands running on half an hour, or through the
-    # room's lights sagging and flickering back. Sparingly: one clock, a
-    # second in a long of eight minutes or more, and one dip, each a minute
-    # or more from the others, and none where a cover is.
-    # The clock covers its cut, so nothing slides in under it; the dip only
-    # darkens what is there, so the strip and the line under him stay up
-    # through it. He turns toward the next camera at neither (`_cut_to`).
-    from pipeline.room_dressing import CLOCK_S, DIP_AFTER_S, DIP_BEFORE_S, clock_shot
-
-    _breaks = sorted({*(c for c in chapter_cuts if c is not None),
-                      *(t for t, _ti, _ty in chapters)})
-    _apart = max(60.0, duration / 6)
-    _clock = clock_shot()
-    clock_cuts = _scene_cuts(
-        segments, _breaks, covers, n=2 if duration >= 480 else 1, before=0.5,
-        after=CLOCK_S, apart=_apart, seed=f"clock|{script.ticker}|{duration:.1f}",
-    ) if _clock is not None else []
-    covers += [(c, c + CLOCK_S) for c in clock_cuts]
-    dip_cuts = _scene_cuts(
-        segments, _breaks, covers, n=1, before=DIP_BEFORE_S,
-        after=DIP_AFTER_S, apart=_apart, seed=f"dip|{script.ticker}|{duration:.1f}",
-        avoid=tuple(clock_cuts))
 
     # WHAT HIS MONITOR SHOWS, CHAPTER BY CHAPTER (items 49, 56): a plate the
     # chapter puts on screen, the writer's [SCREEN] where there is one, else
@@ -1569,12 +1525,12 @@ def _render_long(
     def _cut_to(seg_i: int):
         """The room the cut at the end of host beat `seg_i` goes to, when it
         is a straight cut to him in another room: what he turns to as the
-        beat ends. None at a chapter break, a dip or a wipe, or onto a chart."""
+        beat ends. None at a chapter break or a wipe, or onto a chart."""
         nxt = seg_i + 1
         if nxt >= len(segments) or segments[nxt].kind != "host":
             return None
         cut = segments[nxt].start
-        if any(c is not None and abs(c - cut) < 1e-3 for c in (*chapter_cuts, *dip_cuts)) \
+        if any(c is not None and abs(c - cut) < 1e-3 for c in chapter_cuts) \
                 or any(a - 1e-3 <= cut < b for a, b in covers):
             return None
         try:
@@ -2864,18 +2820,13 @@ def _render_long(
         transition_meta.append({"transition": name, "cut": round(cut, 3),
                                 "start": round(clip.start, 3), "at": why})
 
-    # THE COLD OPEN AND THE END ARE WIPED, sweep or page (item 23): the cut
-    # off the opening title, and the cut into the video's last beat. Which of
-    # the two is seeded per video, so the pair is not the same every time.
-    import random as _random
-
-    _pair = ["wipe-sweep", "wipe-page"]
-    if _random.Random(f"wipes|{script.ticker}|{duration:.1f}").random() < 0.5:
-        _pair.reverse()
+    # THE COLD OPEN AND THE END ARE SWEPT (item 23): the cut off the opening
+    # title, and the cut into the video's last beat where the clock is not.
+    # The page wipe is gone (18 Oct 2026, his call: it read as poorly done).
     if intro_dur < duration - 1.0:
-        _wipe_at(intro_dur, _pair[0], "cold open")
-    if end_cut is not None and end_cut < duration - 1.0:
-        _wipe_at(end_cut, _pair[1], "end")
+        _wipe_at(intro_dur, "wipe-sweep", "cold open")
+    if _clock is None and end_cut is not None and end_cut < duration - 1.0:
+        _wipe_at(end_cut, "wipe-sweep", "end")
 
     def _board_break(k: int, t: float) -> Path | None:
         """THE CHAPTER BREAK ON THE BOARD (transitions, 18 Oct 2026): the
@@ -3020,41 +2971,30 @@ def _render_long(
         stinger_meta.append({"type": ctype, "title": title,
                              "script_t": round(target, 2), "t": round(t, 2)})
 
-    # THE CLOCK JUMPS AND THE DIP, on the cuts picked with the covers above,
-    # over everything as a wipe is. The clock's sweep is heard as the
-    # count-up's tick roll; the dip is silent.
-    from pipeline.room_dressing import (
-        CLOCK_HOLD_S,
-        CLOCK_JUMP_MIN,
-        clock_jump_frames,
-        clock_minutes,
-        clock_text,
-        dip_frames,
-    )
-    from pipeline.room_writing import CLOCK
+    # THE CLOCK ON THE END CUT, over everything as a wipe is, its sweep heard
+    # as the count-up's tick roll.
+    if _clock is not None:
+        from pipeline.room_dressing import (
+            CLOCK_HOLD_S,
+            CLOCK_JUMP_MIN,
+            clock_jump_frames,
+            clock_minutes,
+            clock_text,
+        )
+        from pipeline.room_writing import CLOCK
 
-    _hands_at = clock_minutes(CLOCK) or 185.0
-    for n, c in enumerate(clock_cuts):
-        a, b = _hands_at + n * CLOCK_JUMP_MIN, _hands_at + (n + 1) * CLOCK_JUMP_MIN
+        a = clock_minutes(CLOCK) or 185.0
+        b = a + CLOCK_JUMP_MIN
         frames = clock_jump_frames(_clock, settings.fonts_dir, (W, H), fps, a, b)
-        clip = _played_clip(list(range(len(frames))), lambda i, f=frames: f[i], fps,
-                            rdir / f"clock_{n}.mov", reuse=False)
-        wipe_layers.append(OverlayLayer(path=clip, x=0, y=0, t_start=c,
-                                        t_end=min(c + len(frames) / fps, duration),
-                                        is_video=True, name=f"clock_{n}"))
-        long_moves.append({"move": "count-up", "start": round(c + CLOCK_HOLD_S, 3),
-                           "shot_id": f"clock_{n}", "slot": "hands"})
-        transition_meta.append({"clock": f"{clock_text(a)}-{clock_text(b)}", "cut": round(c, 3)})
-    if dip_cuts:
-        frames, ahead = dip_frames((W, H), fps)
         clip = _played_clip(list(range(len(frames))), lambda i: frames[i], fps,
-                            rdir / "dip.mov", reuse=False)
-        for n, c in enumerate(dip_cuts):
-            start = c - ahead / fps
-            wipe_layers.append(OverlayLayer(path=clip, x=0, y=0, t_start=start,
-                                            t_end=min(start + len(frames) / fps, duration),
-                                            is_video=True, name=f"dip_{n}"))
-            transition_meta.append({"dip": "lights", "cut": round(c, 3)})
+                            rdir / "clock_end.mov", reuse=False)
+        wipe_layers.append(OverlayLayer(path=clip, x=0, y=0, t_start=end_cut,
+                                        t_end=min(end_cut + len(frames) / fps, duration),
+                                        is_video=True, name="clock_end"))
+        long_moves.append({"move": "count-up", "start": round(end_cut + CLOCK_HOLD_S, 3),
+                           "shot_id": "clock_end", "slot": "hands"})
+        transition_meta.append({"clock": f"{clock_text(a)}-{clock_text(b)}",
+                                "cut": round(end_cut, 3), "at": "end"})
 
     # THE SOURCE SLIDES IN UNDER THE FIGURE (item 14): design's tag, off the
     # frame's left edge with its small overshoot, where the writer's

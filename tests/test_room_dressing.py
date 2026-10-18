@@ -544,7 +544,7 @@ def test_the_pull_back_starts_on_the_chart_and_ends_on_the_room():
     # the room comes up round the chart: more of the room's ink each frame
     dark = [(np.asarray(f, float).mean(axis=2) < 80).mean() for f in frames]
     n = round(rd.PULL_S * 30)
-    assert all(b >= a - 1e-3 for a, b in zip(dark[:n], dark[1:n]))
+    assert all(b >= a - 1e-3 for a, b in itertools.pairwise(dark[:n]))
     assert frames[n - 1].tobytes() == frames[-1].tobytes()
 
 
@@ -582,9 +582,9 @@ def _ink_along(img, minutes: float, *, size=(640, 360), reach=0.3) -> float:
 
 
 def test_the_clock_jump_runs_the_hands_on_half_an_hour(tmp_path):
-    """18 Oct 2026, transition 4: between two scenes the wall clock, close,
-    its hands running on half an hour. The face is rendered bare; the hands
-    are the bot's."""
+    """18 Oct 2026, transition 4: into a long video's last beat, the wall
+    clock close, its hands running on half an hour. The face is rendered
+    bare; the hands are the bot's."""
     assert rd.clock_minutes("3:05") == 185 and rd.clock_text(215) == "3:35"
     assert rd.clock_text(rd.clock_minutes("12:40")) == "12:40"
     shot = rd.clock_shot(_clock_room(tmp_path))
@@ -603,19 +603,3 @@ def test_the_clock_jump_runs_the_hands_on_half_an_hour(tmp_path):
     assert frames[-1].tobytes() == frames[-2].tobytes()
     assert len({f.tobytes() for f in frames}) > 8
 
-
-def test_the_lights_dip_over_the_cut_and_flicker_back():
-    """18 Oct 2026, transition 5: the room goes dark across a cut and the
-    next shot comes up as the lights catch, drop and come on."""
-    frames, ahead = rd.dip_frames((320, 180), 30)
-    dark = [float(np.asarray(f)[..., 3].mean()) / 255 for f in frames]
-    assert ahead == round(rd.DIP_IN_S * 30) + round(rd.DIP_HOLD_S * 30) // 2
-    down = round(rd.DIP_IN_S * 30)
-    assert all(b > a for a, b in itertools.pairwise(dark[:down])), "it does not go down"
-    assert dark[down - 1] == dark[ahead], "it does not hold across the cut"
-    assert dark[ahead] > 0.8, "the cut is not under the dark"
-    back = dark[ahead:]
-    assert any(b > a + 0.1 for a, b in itertools.pairwise(back)), "no flicker on the way back"
-    assert dark[-1] == 0.0
-    a = np.asarray(frames[ahead])[..., 3]
-    assert a[90, 160] < a[2, 2], "the middle is no lighter than the corners"

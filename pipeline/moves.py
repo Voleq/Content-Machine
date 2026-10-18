@@ -1086,13 +1086,14 @@ def plan_wipes(fmt, result, reg, *, seed: str = "", max_wipes: int = 3) -> list[
     """A wipe on each cut the template marks as a change of subject.
 
     A shot says `"enter": "wipe"` to be wiped in; the wipe alternates sweep
-    and page so two in one short are not the same move, `"wipe-sweep"`,
-    `"wipe-page"` or `"wipe-blinds"` name one. Every other cut stays a hard
-    cut: a wipe is a signpost, and a signpost on every cut is none.
+    and blinds so two in one short are not the same move, `"wipe-sweep"` or
+    `"wipe-blinds"` name one. Every other cut stays a hard cut: a wipe is a
+    signpost, and a signpost on every cut is none. The page wipe is not used
+    (18 Oct 2026, his call: it read as poorly done).
     """
     aspect = getattr(fmt, "aspect", "") or ""
     spans = list(result.spans)
-    order = ["wipe-sweep", "wipe-page"]
+    order = ["wipe-sweep", "wipe-blinds"]
     if random.Random(f"wipes|{seed}").random() < 0.5:
         order.reverse()
     got: list[Wipe] = []

@@ -611,7 +611,7 @@ def test_a_pose_the_words_cast_and_a_wipe_are_not_gaps(settings):
     routes = reachable_plates(reg)
     for key in ("host/shrug", "host/counting-on-fingers-talk",
                 "host/gesturing-at-plate", "overlays/wipe-sweep-16x9",
-                "overlays/wipe-page-short-9x16", "overlays/wipe-blinds-16x9"):
+                "overlays/wipe-blinds-short-9x16", "overlays/wipe-blinds-16x9"):
         assert key in routes["code"], f"{key} reads as unreachable"
 
 
