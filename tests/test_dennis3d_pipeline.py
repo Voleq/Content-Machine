@@ -315,7 +315,8 @@ def test_the_short_s_close_up_is_his_3d_layer_over_a_blown_up_room(short_3d):
     assert job["size"] == [1440, 2560], "drawn at the file's size, not the layout's"
     assert [w["word"] for w in job["words"]] == ["Plus", "squeeze."], "only his own line"
     assert did == [{"shot": "the-turn", "room": "room/desk-front-b-9x16",
-                    "stance": "host/close-up", "close_up": True, "frames": 24}]
+                    "stance": "host/close-up", "close_up": True, "frames": 24,
+                    "start": 10.0, "events": []}]
 
 
 def test_a_drawn_room_in_the_kit_keeps_the_drawn_dennis_in_every_shot(short_3d, monkeypatch):

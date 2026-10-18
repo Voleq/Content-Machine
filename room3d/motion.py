@@ -716,5 +716,66 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
     return Performance(fps=fps, frames=n, channels=ch)
 
 
+# HIS BODY, HEARD (A10, 18 Oct 2026). His clothes make a sound when he moves
+# enough to move them: a sleeve when an arm comes up or goes down, the shirt
+# when he turns. He stands where the shot puts him and never walks, so there
+# are no steps, and his lean on the desk is set at the cut, under the cut's
+# own sound. A move counts when it is this big inside BODY_WITHIN_S: the
+# turn is head, neck, chest and hips together; an arm is its shoulder (all
+# three ways) and its elbow summed. A sentence's new gesture is about 60.
+BODY_WITHIN_S = 0.35
+BODY_TURN_DEG = 20.0
+BODY_ARM_DEG = 50.0
+BODY_GAP_S = 2.0             # never two sounds closer than this
+BODY_SETTLE_S = 0.25         # the first frames of a shot are the cut's
+_YAW = ("hips.z", "chest.z", "neck.z", "head.z")
+_ARM = (("shoulder", "x"), ("shoulder", "y"), ("shoulder", "z"), ("elbow", "x"))
+
+
+def body_events(perf: Performance) -> list[dict]:
+    """The moves of his body big enough to be heard, as `{"kind": "turn" or
+    "arm", "t": seconds from the start of the shot}`, each on the frame its
+    move starts (never ahead of the picture): none in the first
+    `BODY_SETTLE_S`, never two inside `BODY_GAP_S`. A move counts again only
+    once it has stopped (fallen under half its size), so one long swing is
+    one sound."""
+    fps, n, ch = perf.fps, perf.frames, perf.channels
+    w = max(int(round(BODY_WITHIN_S * fps)), 1)
+    if n <= w:
+        return []
+
+    def col(name: str) -> list[float]:
+        return ch.get(name) or [0.0] * n
+
+    yaw = [sum(v) for v in zip(*(col(k) for k in _YAW))]
+    tracks = [("turn", [yaw], BODY_TURN_DEG)]
+    tracks += [("arm", [col(f"{j}.{side}.{a}") for j, a in _ARM], BODY_ARM_DEG)
+               for side in "LR"]
+    found: list[tuple[int, str]] = []
+    for kind, cols, size in tracks:
+        armed = True
+        for i in range(n - w):
+            d = sum(abs(c[i + w] - c[i]) for c in cols)
+            if d < size / 2:
+                armed = True
+            elif d >= size and armed:
+                # where in the window it set off: a tenth of the way along
+                start = next(j for j in range(i, i + w + 1)
+                             if sum(abs(c[j] - c[i]) for c in cols) >= size / 10)
+                found.append((start, kind))
+                armed = False
+    out: list[dict] = []
+    last = float("-inf")
+    # a turn and an arm starting together are one sound, the turn's
+    for i, kind in sorted(found, key=lambda f: (f[0], f[1] != "turn")):
+        t = i / fps
+        if t < BODY_SETTLE_S or t - last < BODY_GAP_S:
+            continue
+        out.append({"kind": kind, "t": round(t, 3)})
+        last = t
+    return out
+
+
 __all__ = ["perform", "Performance", "Look", "phrases", "stressed", "MOUTHS", "FPS", "CUE_S",
-           "Stance", "STANCES", "stance_of", "mirrored", "lean_channels", "arm_channels"]
+           "Stance", "STANCES", "stance_of", "mirrored", "lean_channels", "arm_channels",
+           "body_events"]

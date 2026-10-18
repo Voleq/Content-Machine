@@ -322,6 +322,8 @@ class Performer:
             (folder / "window.json").write_text(json.dumps(reply["window"]), encoding="utf-8")
         if reply.get("push"):
             (folder / "push.json").write_text(json.dumps(reply["push"]), encoding="utf-8")
+        if reply.get("events"):
+            (folder / "events.json").write_text(json.dumps(reply["events"]), encoding="utf-8")
         part.replace(layer)
         self.shots.append({"angle": angle, "aspect": aspect, "frames": reply.get("frames"),
                            "seconds": reply.get("seconds"), "device": reply.get("device")})
@@ -388,6 +390,21 @@ class Performer:
             return None
         x0, y0, x1, y1 = json.loads(f.read_text(encoding="utf-8"))
         return float(x0), float(y0), float(x1), float(y1)
+
+    @staticmethod
+    def events(layer: Path) -> list[dict]:
+        """The moves of his body in this shot the mix gives a sound to
+        (`motion.body_events`): `{"kind", "t"}`, seconds from the shot's
+        start. Nothing for a shot drawn before they were recorded."""
+        f = Path(layer).parent / "events.json"
+        if not f.exists():
+            return []
+        try:
+            got = json.loads(f.read_text(encoding="utf-8"))
+        except ValueError:
+            return []
+        return [{"kind": str(e.get("kind", "arm")), "t": float(e["t"])}
+                for e in got if isinstance(e, dict) and "t" in e]
 
 
 def pushed(layer: Path) -> list[tuple[float, float, float, float]] | None:

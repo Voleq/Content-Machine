@@ -558,12 +558,14 @@ class Stage:
                      (min(p.x for p in pts), max(p.x for p in pts),
                       min(p.y for p in pts), max(p.y for p in pts)))
             f.with_suffix(".part.png").replace(f)
+        # what of his moving the mix gives a sound to (A10)
+        events = [] if job.get("still") else motion.body_events(perf)
         meta = {"fps": fps, "frames": len(frames), "duration": perf.frames / fps,
-                "device": self.device, "window": window, "push": pushes}
+                "device": self.device, "window": window, "push": pushes, "events": events}
         (out / "perf.json").write_text(json.dumps(meta), encoding="utf-8")
         return {"ok": True, "frames": len(frames), "out": str(out), "window": window,
-                "push": pushes, "seconds": round(time.monotonic() - t0, 1),
-                "device": self.device}
+                "push": pushes, "events": events,
+                "seconds": round(time.monotonic() - t0, 1), "device": self.device}
 
 
 def _feather(png: Path, border, body) -> None:

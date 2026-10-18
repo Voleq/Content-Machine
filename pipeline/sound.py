@@ -32,7 +32,9 @@ ratchet under a count-up that stops on the final figure, a marker under a
 draw, a knock on the last bar. Timed to the render's own record of which
 moves it played and when (`manifest["moves"]`), in both lanes. A wiped cut's
 swish runs with the wipe and lands on the cut under its cover; the punch-in
-half of a split beat is one subject and makes no sound of its own.
+half of a split beat is one subject and makes no sound of its own. The 3D
+Dennis's body gets a quiet rustle of his clothes when he turns or moves an
+arm (`body_cues`), off the moves the Blender worker recorded.
 
 NO EFFECT PLAYS THE SAME WAY TWICE. Each firing picks one of the key's
 variants, never the one it picked last time, a few percent off in speed and a
@@ -108,6 +110,13 @@ MACHINE_KEYS: tuple[str, ...] = tuple(dict.fromkeys(
 # one gets variants from the fetch.
 EFFECT_KEYS: tuple[str, ...] = tuple(dict.fromkeys((*SFX_KEYS, *MACHINE_KEYS)))
 
+# HIS BODY (A10): a rustle of his clothes when he turns or moves an arm
+# enough to be heard (`room3d/motion.body_events`). Not an EFFECT_KEY, so no
+# placeholder is made for it: until the fetch brings its takes it plays
+# nothing and holds nothing back. Three takes, like every effect.
+BODY_KEY = "cloth_rustle"
+BODY_KEYS: tuple[str, ...] = (BODY_KEY,)
+
 # The room at each hour the set is drawn at. `room_tone.wav` stays the floor
 # when an hour has no file of its own.
 ROOM_BY_HOUR: dict[str, str] = {"night": "room_night", "dusk": "room_dusk"}
@@ -169,6 +178,15 @@ PAYOFF_SHOTS = frozenset({"payoff", "so-what"})
 MOVE_GAIN_REL_DB = -12.0
 MOVE_CLEAR_S = 0.30
 MOVE_GAP_S = 0.60
+
+# His body is the quietest thing in the mix, under a move's sound; a turn
+# moves more cloth than an arm. A rustle is cut off short and kept off the
+# cuts (the cut has its own sound) and out of the payoff's silence.
+BODY_GAIN_REL_DB = -16.0
+BODY_TURN_DB = 3.0
+BODY_MAX_S = {"arm": 0.5, "turn": 0.8}
+BODY_CLEAR_S = 0.30
+BODY_GAP_S = 1.0
 
 # How far one firing may wander from the staged sound.
 RATE_SPREAD = 0.04          # about two thirds of a semitone
@@ -503,6 +521,50 @@ def move_cues(moves: Sequence[Move], settings, voicing: Voicing, *,
     return tracks
 
 
+@dataclass(frozen=True)
+class BodyMove:
+    """One move of his body the mix hears: `"turn"` or `"arm"`, at
+    programme seconds."""
+    kind: str
+    t: float
+
+
+def body_moves(shots: Iterable[tuple[float, Sequence[dict]]]) -> list[BodyMove]:
+    """Each 3D shot's body events (`Performer.events`, seconds from the
+    shot's start) put on the programme clock, given each shot's start."""
+    return sorted((BodyMove(str(e.get("kind", "arm")), round(start + float(e["t"]), 3))
+                   for start, events in shots for e in (events or ()) if "t" in e),
+                  key=lambda m: m.t)
+
+
+def body_cues(moves: Sequence[BodyMove], settings, seed: str = "", *,
+              clear_of: Sequence[float] = (),
+              drops: Sequence[tuple[float, float]] = ()) -> list[AudioTrack]:
+    """A rustle on each move of his body, quiet, none on a cut or in the
+    payoff's silence. Its own voicing, so turning it on changes no other
+    effect's take."""
+    voicing = Voicing(settings.assets_dir / "sfx", f"{seed}|body")
+    level = settings.sfx_gain_db + BODY_GAIN_REL_DB
+    tracks: list[AudioTrack] = []
+    last = float("-inf")
+    for mv in sorted(moves, key=lambda m: m.t):
+        long = BODY_MAX_S.get(mv.kind, BODY_MAX_S["arm"])
+        if any(abs(mv.t - c) < BODY_CLEAR_S for c in clear_of):
+            continue
+        if any(a < mv.t + long and mv.t < b for a, b in drops):
+            continue
+        if mv.t - last < BODY_GAP_S:
+            continue
+        tr = voicing.fire(BODY_KEY, mv.t,
+                          level + (BODY_TURN_DB if mv.kind == "turn" else 0.0),
+                          max_s=long, name=f"body:{mv.kind}@{mv.t:.2f}")
+        if tr is None:
+            return []
+        tracks.append(tr)
+        last = mv.t
+    return tracks
+
+
 def voice_track(path: Path, settings, *,
                 wide: Sequence[tuple[float, float]] = ()) -> AudioTrack:
     """The voice as the mix takes it, with the room and the de-esser as the
@@ -517,7 +579,8 @@ def short_mix(tts, settings, *, cuts: Sequence[Cut] = (), hour: str = "",
               seed: str = "",
               workspace: "Path | str | None" = None,
               moves: Sequence[Move] = (),
-              wide: Sequence[tuple[float, float]] = ()) -> list[AudioTrack]:
+              wide: Sequence[tuple[float, float]] = (),
+              body: Sequence[BodyMove] = ()) -> list[AudioTrack]:
     """Every track under a shots-engine render, or none when there is no voice.
 
     No voice file means no mix at all, the same as before: a proof run on a
@@ -540,6 +603,8 @@ def short_mix(tts, settings, *, cuts: Sequence[Cut] = (), hour: str = "",
     voicing = Voicing(settings.assets_dir / "sfx", seed)
     cues, drops = structure_cues(cuts, settings, voicing)
     cues += move_cues(moves, settings, voicing, cuts=cuts, drops=drops)
+    cues += body_cues(body, settings, seed, clear_of=[c.start for c in cuts],
+                      drops=drops)
     # The drop silences everything that is not the voice and not the hit.
     for tr in loops + layers:
         tr.gaps = tuple(drops)

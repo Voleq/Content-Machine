@@ -69,7 +69,7 @@ from pipeline.audio_assets import (  # noqa: E402
     load_sources,
     save_sources,
 )
-from pipeline.sound import EFFECT_KEYS, variant_names  # noqa: E402
+from pipeline.sound import BODY_KEYS, EFFECT_KEYS, variant_names  # noqa: E402
 
 API = "https://freesound.org/apiv2"
 
@@ -112,6 +112,9 @@ QUERIES: dict[str, tuple[str, ...]] = {
     "flip": ("flip clock", "card flip", "flap mechanical"),
     "sting": ("musical sting", "music stinger", "stinger"),
     "pop": ("pop bubble click short", "pop click", "pop"),
+    # His clothes when the 3D Dennis turns or moves an arm (`sound.body_cues`).
+    "cloth_rustle": ("cloth movement foley", "clothes rustle", "cloth rustle",
+                     "fabric rustle"),
 }
 
 # Every effect the renderers fire gets this many takes: `key.wav`, `key-2.wav`,
@@ -175,7 +178,7 @@ def wanted() -> list[Wanted]:
     """
     out: list[Wanted] = []
     for key, queries in QUERIES.items():
-        n = VARIANTS if key in EFFECT_KEYS else 1
+        n = VARIANTS if key in EFFECT_KEYS or key in BODY_KEYS else 1
         for name in variant_names(key, n):
             out.append((name, key, queries, MAX_SECONDS, False))
     for key, queries in AMBIENCE_QUERIES.items():
