@@ -921,6 +921,8 @@ def validate_long_script(
       SOUND key unknown               -> warning (skipped)
       MEME count over the cap         -> BLOCKING (information-first, 1–2 max)
       MEME key not in owned library   -> warning (fallback providers / filler)
+      MEME shown in a recent video    -> BLOCKING (the last few videos, both
+                                         lanes: see memes.recent_memes)
       CHART metric unknown            -> warning (skipped)
       SCRIBBLE mark not in the kit     -> warning (skipped at render)
       SCREENGRAB file missing         -> BLOCKING (operator drops it in custom/)
@@ -941,11 +943,14 @@ def validate_long_script(
     catching it is free.
     """
     from pipeline.timeline import unrenderable_long_tags
-    from pipeline.memes import MemeLibrary
+    from pipeline.memes import MEME_ROTATION_WINDOW, MemeLibrary, recent_memes
 
     palette = set(palette_keys)
     present_metrics = set(data_metrics) if data_metrics is not None else None
     meme_lib = MemeLibrary(settings)
+    # Read once, and only when there is a meme to check it against.
+    recent = (recent_memes(settings, exclude=workspace)
+              if script.meme_count() else set())
     warnings: list[str] = []
     blocking: list[str] = []
 
@@ -987,10 +992,20 @@ def validate_long_script(
             if e.payload not in SFX_KEYS:
                 warnings.append(f'sound "{e.payload}" not in the sfx library — skipped')
         elif e.type is TagType.MEME:
-            if meme_lib.match(e.payload) is None:
+            stem = meme_lib.match(e.payload)
+            if stem is None:
                 warnings.append(
                     f'meme "{e.payload}" not in the owned library — will try '
                     f"fallback providers (filler if none configured)"
+                )
+            elif stem in recent:
+                # The same joke two videos running is a rerun to anyone who
+                # watches both. The prompt's catalogue already leaves these
+                # off, so this only fires on a meme written in by hand.
+                blocking.append(
+                    f'meme "{e.payload}" ({stem}) was on screen in one of the '
+                    f"last {MEME_ROTATION_WINDOW} videos — pick another or "
+                    f"cut it"
                 )
         elif e.type is TagType.CHART:
             if e.payload not in CHART_METRICS:

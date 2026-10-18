@@ -2,10 +2,12 @@
 only on a miss, filler floor, cached, offline."""
 
 import json
+from pathlib import Path
 
+from pipeline import memes
 from pipeline.memes import MemeLibrary, MemeManager, MockMemeClient
 
-ROOT_INDEX_KEYS = 32  # the committed library ships 32 indexed memes
+ROOT_INDEX_KEYS = 36  # the committed library ships 36 indexed memes
 
 
 def test_committed_index_shape(settings):
@@ -88,3 +90,67 @@ def test_index_json_is_committed_and_valid():
     f = Path(__file__).resolve().parents[1] / "assets" / "meme_library" / "meme_index.json"
     index = json.loads(f.read_text(encoding="utf-8"))
     assert len(index) == ROOT_INDEX_KEYS
+
+
+# ---------------------------------------------------------------------------
+# A long does not retell a recent joke
+# ---------------------------------------------------------------------------
+
+BAGHOLDER = "harold-quick-flip-became-bagholder"
+
+
+def _long_showed(settings, stem: str, ticker: str = "OLD") -> Path:
+    """A rendered LONG that froze the library meme `stem`."""
+    ws = Path(settings.workspace_dir) / ticker / "2026-10-01"
+    ws.mkdir(parents=True, exist_ok=True)
+    (ws / "long_final.manifest.json").write_text(json.dumps({
+        "plates_used": [],
+        "segments": [{"kind": "meme", "attribution":
+                      memes.LIBRARY_ATTRIBUTION.format(stem=stem)}],
+    }), encoding="utf-8")
+    return ws
+
+
+def test_the_writer_is_not_offered_a_meme_a_recent_video_showed(settings):
+    from bot.prompts import meme_catalog
+
+    assert f"  - {BAGHOLDER} — " in meme_catalog(settings)
+    shown = _long_showed(settings, BAGHOLDER)
+    listed = meme_catalog(settings)
+    assert f"  - {BAGHOLDER}" not in listed
+    assert "1 more left off" in listed
+    # Rewriting the video that showed it is not a rerun of it.
+    assert f"  - {BAGHOLDER} — " in meme_catalog(settings, shown)
+
+
+def test_with_every_meme_recent_the_writer_is_told_to_write_none(
+        settings, monkeypatch):
+    import bot.prompts as prompts
+
+    every = set(MemeLibrary(settings).keys())
+    monkeypatch.setattr(prompts, "recent_memes",
+                        lambda _settings, exclude=None: every)
+    listed = prompts.meme_catalog(settings)
+    assert "Write this one without a meme" in listed
+    assert not any(f"  - {stem}" in listed for stem in every)
+
+
+def test_approval_blocks_a_meme_a_recent_video_showed(settings):
+    from pipeline.broll import PALETTE
+    from pipeline.parser_long import parse_long_script, validate_long_script
+
+    settings = settings.model_copy(update={"long_min_chars": 0})
+    script, _ = parse_long_script("One. [MEME: bagholder] Fine.", "EXMPL",
+                                  settings)
+    here = Path(settings.workspace_dir) / "EXMPL" / "2026-10-18"
+    here.mkdir(parents=True)
+    _, blocking = validate_long_script(script, PALETTE, here, settings)
+    assert blocking == []
+
+    shown = _long_showed(settings, BAGHOLDER)
+    _, blocking = validate_long_script(script, PALETTE, here, settings)
+    window = f"last {memes.MEME_ROTATION_WINDOW} videos"
+    assert any(BAGHOLDER in b and window in b for b in blocking)
+    # The video that showed it can be approved again with it.
+    _, blocking = validate_long_script(script, PALETTE, shown, settings)
+    assert blocking == []

@@ -69,7 +69,7 @@ Excel; the refresh happens on the operator's own machine.)
 | The angle prompt is built with the filings already read, not blind to them; a brief built from a section that overflowed the model's context says so in its own first line | `pipeline/filing_brief.py` `context_held`; `scripts/check_llm_context.py` proves `num_ctx` is in force |
 | Every point in the filing brief carries the filing sentence it came from; a point whose sentence is not in the filing is dropped, and the angle and update prompts have the writer check each surviving point against its sentence before building on it | `pipeline/filing_brief.py` `find_sentence`, `Point`; "CHECK THE BRIEF FIRST" in `master_prompt_long_angle.md` and `master_prompt_update.md` |
 | Two filings downloaded into one workspace never collide | `pipeline/filings.py` `filing_path` — keyed on the accession, which is also the per-accession cache |
-| 1–2 memes max per LONG (information-first) | `validate_long_script` meme cap |
+| Memes are optional on a LONG: at most 2, and never one a recent video showed (the writer is not offered it, approval blocks it) | `validate_long_script` meme cap and rotation, `bot.prompts.meme_catalog` |
 | GIF-provider visuals are counted, reported and capped per video | `CostReport.visual_counts`, `gif_ceiling_warnings`, `GIF_MAX_PER_VIDEO` |
 | Every file under `assets/` is loadable by some code path, or reported | `tests/test_asset_reach.py`; the same idea as `reachable_plates`, for non-kit art |
 | Audio timestamps are the master clock (`ffprobe` + ElevenLabs alignment) | `pipeline/timeline.py` (pure, exhaustively tested) |
@@ -1135,9 +1135,11 @@ env var, case-insensitive).
   authored narrow (≤ ~22 chars/line) so the 9:16 repurpose crop keeps
   them intact.
 - **Owned meme library first**: `assets/meme_library/meme_index.json`
-  maps 16 descriptively-named memes to tags + a one-line "use when";
+  maps 36 descriptively-named memes to tags + a one-line "use when";
   `[MEME: key]` matches by stem or tag. Giphy/Tenor/imgflip are only
-  consulted on a miss, and only when configured.
+  consulted on a miss, and only when configured. A meme on screen in one of
+  the last six videos (either lane) is left off the writer's list and blocked
+  at approval, so the same joke is never told two videos running.
 - **`[MEME]` is still, `[CLIP]` moves.** A meme is normalised to a frozen PNG
   because the freeze is the joke's timing. A clip is illustration — the visual
   that proves the claim — so an animated source resolved through the clip path

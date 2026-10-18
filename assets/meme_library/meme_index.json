@@ -59,6 +59,17 @@
   ],
   "use_when": "someone rationalizes averaging down into a falling stock"
  },
+ "chart-brain-mountains-look-like-a-crash": {
+  "tags": [
+   "chart-brain",
+   "round-trip",
+   "peak",
+   "lower-highs",
+   "scarred",
+   "cant-unsee"
+  ],
+  "use_when": "someone who held through the top can no longer look at a peak without seeing the slide that came after it"
+ },
  "chart-double-top-mcdonalds-arches": {
   "tags": [
    "double-top",
@@ -100,6 +111,18 @@
    "earnings-before"
   ],
   "use_when": "management adds back everything to reach a flattering EBITDA"
+ },
+ "fold-phone-portfolio-down-99-mcdonalds-apply": {
+  "tags": [
+   "mcdonalds-job",
+   "apply-now",
+   "account-wiped",
+   "down-99-8",
+   "career-change",
+   "rock-bottom"
+  ],
+  "use_when": "the account is down 99.8% and the other half of the screen is a McDonald's job application",
+  "shorts": false
  },
  "fomo-stages-wish-i-bought-doodle": {
   "tags": [
@@ -320,6 +343,17 @@
   ],
   "use_when": "a policy or macro shock cutting the portfolio in half"
  },
+ "warsh-all-eyez-on-fomc": {
+  "tags": [
+   "warsh",
+   "fomc",
+   "fed-day",
+   "fed-chair",
+   "rate-decision",
+   "all-eyes-on-the-fed"
+  ],
+  "use_when": "an FOMC decision where the whole market is waiting on what Warsh says"
+ },
  "wolverine-shown-photo-of-powell": {
   "tags": [
    "powell",
@@ -330,5 +364,16 @@
    "trauma"
   ],
   "use_when": "the Fed / Powell triggering a fresh round of rate-cut trauma"
+ },
+ "zuckerberg-drip-glow-up": {
+  "tags": [
+   "zuckerberg",
+   "meta",
+   "glow-up",
+   "rebrand",
+   "comeback",
+   "founder-ceo"
+  ],
+  "use_when": "Meta or a founder CEO after a reinvention: new image, and the question is whether the business changed too"
  }
 }
