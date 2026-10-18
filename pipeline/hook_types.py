@@ -32,7 +32,7 @@ DEFINITIONS = {
     "withheld": "describe the thing completely — what it sells, how fast it "
                 "grew, who buys it — and name it last",
     "confession": "Dennis admits something specific about himself and this "
-                  "company (it counts as the video's confession)",
+                  "company, and it counts as the video's confession",
     "contradiction": "two true facts side by side that cannot both feel "
                      "right",
 }
