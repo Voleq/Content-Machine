@@ -59,7 +59,7 @@ import addon_utils
 import bmesh
 import numpy as np
 from bpy_extras.object_utils import world_to_camera_view
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -99,6 +99,8 @@ SLATE = (-0.86, 0.58, 1.42, 2.14)        # the slate a chapter title is chalked 
 DOOR = (-1.36, -0.44, 2.08)              # on the left wall: y0, y1, height
 DESK = (2.05, 0.86, 1.62, 0.76, 1.04)    # centre x, centre y, width, depth, top z
 SCREEN_ROT = -25                         # the screen turned to the room: its chart reads
+MONITOR_GLASS = (0.78, 0.78 * 9 / 16)    # the glass, 16:9 like the plates it shows
+MONITOR_TILT = 6                         # degrees it leans back
 
 # ------------------------------------------------------------------- the angles
 # Every angle the kit drew at 16:9, under its own name, each with its job:
@@ -816,25 +818,38 @@ def build_room(season: str) -> None:
     cyl("pen", 0.006, 0.14, (dx - 0.58, dy - 0.15, dz + 0.016), mat("pen", "#283C9A", 0.4),
         rot=(0, math.radians(90), math.radians(30)))
 
-    # the screen, turned to face where he stands: it is his key light
+    # the screen, turned to face where he stands: it is his key light. Built
+    # here, not Kenney's, so the glass the bot writes on IS the screen: a
+    # 16:9 pane flush in a thin bezel, leaned back a little, its picture
+    # edge to edge, and nothing of it a sheet floating in front of a bigger
+    # dark screen (which is how a chapter's plate on it read before).
     thing("monitor")
-    smn, smx = kenney("computerScreen", (dx + 0.48, dy + 0.08, dz), rot=SCREEN_ROT, scale=2.2,
-                      recolor={k: "#262C36" for k in KENNEY})
-    sw = math.hypot(smx.x - smn.x, smx.y - smn.y)
-    scr = plane("screenface", (sw * 0.80, (smx.z - smn.z) * 0.60),
-                ((smn.x + smx.x) / 2, (smn.y + smx.y) / 2, smn.z + (smx.z - smn.z) * 0.60),
-                (math.radians(90), 0, math.radians(SCREEN_ROT)), screen_mat(), group="screen")
-    # a hair in front of the glass. Kenney's screen faces (sin r, -cos r):
-    # into the room, so the chart on it is what the camera reads.
-    n = Vector((math.sin(math.radians(SCREEN_ROT)), -math.cos(math.radians(SCREEN_ROT)), 0))
-    scr.location += n * 0.045
-    bpy.context.view_layer.update()
-    lo = Vector([min(c[i] for c in scr.bound_box) for i in range(3)])
-    hi = Vector([max(c[i] for c in scr.bound_box) for i in range(3)])
-    for k, (u, v, roll) in enumerate(((0.03, 0.93, 6), (0.95, 0.10, -8), (0.06, 0.08, 4))):
-        p = scr.matrix_world @ Vector((lo.x + u * (hi.x - lo.x), lo.y + v * (hi.y - lo.y), 0))
-        plane(f"note{k}", (0.075, 0.075), p + n * 0.006,
-              (math.radians(90), math.radians(roll), math.radians(SCREEN_ROT)),
+    r, t = math.radians(SCREEN_ROT), math.radians(MONITOR_TILT)
+    facing = Vector((math.sin(r), -math.cos(r), 0))
+    right = Vector((math.cos(r), math.sin(r), 0))
+    up = Vector((0, 0, 1))
+    n = facing * math.cos(t) + up * math.sin(t)          # out of the glass
+    gup = up * math.cos(t) - facing * math.sin(t)        # up the glass
+    turn = Matrix((right, gup, n)).transposed().to_euler()
+    gw, gh = MONITOR_GLASS
+    side, top, chin, deep = 0.018, 0.018, 0.05, 0.035
+    cx, cy = dx + 0.48, dy + 0.08
+    gc = Vector((cx, cy, dz + 0.10 + chin + gh / 2))     # the glass's centre
+    HOUSING = mat("monitorbody", "#262C36", 0.45)
+    box("monitor-housing", (gw + 2 * side, gh + top + chin, deep),
+        gc + gup * ((top - chin) / 2) - n * (deep / 2), HOUSING, rot=turn)
+    box("monitor-back", (gw * 0.55, gh * 0.55, 0.03), gc - n * (deep + 0.015), HOUSING, rot=turn)
+    box("monitor-neck", (0.07, 0.035, gc.z - dz - 0.04),
+        Vector((cx, cy, (gc.z + dz - 0.04) / 2)) - facing * (deep + 0.035), HOUSING, rot=(0, 0, r))
+    box("monitor-foot", (0.30, 0.20, 0.014), Vector((cx, cy, dz + 0.007)) - facing * 0.05, HOUSING,
+        rot=(0, 0, r))
+    scr = plane("screenface", (gw, gh), gc + n * 0.0015, turn, screen_mat(), group="screen")
+    # the notes are stuck to the frame where they half cover the corner of
+    # the picture, the way notes on a screen are; not on the picture itself
+    for k, (u, v, roll) in enumerate(((0.02, 0.97, 6), (1.012, 0.24, -8), (0.13, -0.11, 4))):
+        p = gc + right * ((u - 0.5) * gw) + gup * ((v - 0.5) * gh) + n * 0.004
+        plane(f"note{k}", (0.075, 0.075), p, (Matrix((right, gup, n)).transposed()
+                                               @ Matrix.Rotation(math.radians(roll), 3, "Z")).to_euler(),
               mat(f"note{k}", "#F2D45C", 0.9, image=f"note{k}.png"))
 
     # the desk lamp: the warm fill
