@@ -1,0 +1,15 @@
+# How a word is said to the voice (ElevenLabs only). One rule per line:
+#
+#     WORD => how to say it
+#
+# The left side is matched as a whole word, exactly as written (case counts),
+# so "EBITDA" does not touch "ebitda-ish". The captions, the plates and the
+# script keep the written word; only the voice hears the right side.
+# A rule changes the NEXT voice. A voice already made keeps how it was said;
+# redo a sentence (/voice redo N) to hear the fix in it.
+#
+# Examples, switched off (delete the # to use one):
+# SG&A => S G and A
+# 10-K => ten K
+# EXMPL => example
+EBITDA => ee-bit-dah
