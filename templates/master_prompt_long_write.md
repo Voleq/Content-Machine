@@ -171,6 +171,10 @@ I genuinely do not understand") is the one the channel has never used.
 Self-deprecation is never fishing for sympathy and never false modesty about
 the work: the analysis stands on its own, only the narrator is a mess.
 
+## THE OPENER — WHICH KIND THIS ONE IS
+{{hook_type}}
+Your first hook option is that kind; the others may be any kind.
+
 ## STEP A — HOOK OPTIONS FIRST (free; text only, no tags)
 Before the script, give the operator 2–3 hook options for the cold open — muted-safe, open-loop, in the register above. Format:
 === HOOK OPTIONS ===

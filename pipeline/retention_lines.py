@@ -358,6 +358,13 @@ def hook_bench_text(settings: Settings, *, fmt: str = "short",
     if len(bench) > n:
         lines.append("  ── worst ──")
         lines += [h.line() for h in bench[-min(2, len(bench) - n):]]
+    # By KIND of opener (S11): the prompt rotates the kinds, and this is
+    # where it becomes visible which kinds actually hold people.
+    from pipeline.hook_types import bench_by_type
+
+    lines.append("  ── by kind ──")
+    lines += [f"  {hold * 100:5.1f}%  {kind:<13} (n={n})"
+              for kind, hold, n in bench_by_type(bench)]
     if len(bench) < EVIDENCE_FLOOR:
         lines.append(f"  Fewer than {EVIDENCE_FLOOR} videos: read this as a "
                      f"list, not as evidence.")

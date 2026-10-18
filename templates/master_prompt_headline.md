@@ -63,6 +63,9 @@ Chartable metrics present in THIS data — every company/earnings `numbers` row 
 4. CHEAP OR TRAP — **also held ~4–5 seconds**. company/earnings: is the multiple a bargain or a trap after this news? Name it, then say what would have to be true for it to be cheap. macro: what the release would have to keep doing for the market's reaction to make sense. Goes in `cheap_or_trap`.
 5. PAYOFF — the deadpan verdict: priced in · nothingburger · actually matters (macro: what it does to your holdings), spoken over the closing beats; the sign-off card then prints it. Free text. NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
 
+## THE OPENER — WHICH KIND THIS ONE IS
+{{hook_type}}
+
 ## THE CUT — THIS VIDEO'S BEATS, IN ORDER, AND WHERE EACH STARTS
 {{beat_order}}
 

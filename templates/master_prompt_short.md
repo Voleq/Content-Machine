@@ -65,6 +65,9 @@ A trending stock gets ~45–55 seconds. **The video opens on the hook card — y
 4. CHEAP OR TRAP — the value-trap beat, **also held ~4–5 seconds**. Is the multiple a bargain or a trap? Name the multiple, then say what would have to be true for it to be cheap. Cheap and trapped look identical from the front; this is the beat that separates them. Goes in `cheap_or_trap`.
 5. PAYOFF — noise (just market activity) or signal (actually one to watch). Deadpan free text, spoken over the payoff figure; the sign-off card then prints it. There is NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
 
+## THE OPENER — WHICH KIND THIS ONE IS
+{{hook_type}}
+
 ## THE CUT — THIS VIDEO'S BEATS, IN ORDER, AND WHERE EACH STARTS
 {{beat_order}}
 

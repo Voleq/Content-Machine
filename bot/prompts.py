@@ -1040,6 +1040,12 @@ def _angle_block(chosen: str) -> str:
     return a
 
 
+def _hook(ctx: "_Ctx") -> str:
+    from pipeline.hook_types import hook_type_block
+
+    return hook_type_block(ctx.settings, ctx.fmt)
+
+
 def _bits(name: str, settings: Settings) -> str:
     from pipeline import recurring_bits
 
@@ -1167,6 +1173,10 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{chapter_types}}", _LONG_FORM,
                  lambda c: chapter_type_catalogue(c.settings, fmt=c.fmt,
                                                   sector=_sector(c))),
+
+    # --- the opener's kind, rotated so no viewer learns to skip it (S11)
+    PayloadBlock("{{hook_type}}", ("short", "long_write", "update", "headline"),
+                 lambda c: _hook(c)),
 
     # --- the cut: which beats, in which order, marked where
     PayloadBlock("{{beat_order}}", ("short", "headline"), beat_order_block),

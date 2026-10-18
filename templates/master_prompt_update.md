@@ -124,6 +124,10 @@ The evidence carries the explaining; Dennis sets up, jokes and lands. **Untagged
 - NEVER name any data vendor, terminal or data product.
 - Close resigned, not conclusive.
 
+## THE OPENER — WHICH KIND THIS ONE IS
+{{hook_type}}
+Movement 1 still opens on what you said last time; say it in this kind of line.
+
 ## OUTPUT
 
 ### HOW TO HAND IT BACK — AS A FILE, NOT A PASTE
