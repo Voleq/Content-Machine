@@ -270,7 +270,7 @@ class Performer:
     # ------------------------------------------------------------------ shots
     def shot(self, room, words, start: float, duration: float, size: tuple[int, int],
              *, seed: str, stance: str = "", plate: tuple[float, float] | None = None,
-             close: bool = False, push: dict | None = None) -> Path:
+             close: bool = False, push: dict | None = None, then=None) -> Path:
         """His layer for one shot in `room`: an RGBA .mov, `size` big, at
         `dennis_3d_fps`. `words` carry `.word`, `.start`, `.end` on the
         programme clock; `start` is the shot's start on it. `stance` is the
@@ -280,12 +280,16 @@ class Performer:
         `push` the push-in on a chapter's wide shot (`{"z", "t0", "t1"}`: how
         many times closer it ends, between which seconds of the shot), whose
         background is `pushed(layer)`, a piece of the room for every frame.
+        `then` is the room the next shot cuts to: he turns his head toward
+        its camera as this one ends (the cut on his look).
         A draft performer's layer is half `size`; whoever lays it in scales
         it to the frame."""
         where = angle_of(room)
         if where is None:
             raise RenderError(f"{getattr(room, 'key', room)} is not a 3D room")
         angle, season, aspect = where
+        nxt = angle_of(then) if then is not None else None
+        cue = nxt[0] if nxt is not None and nxt[2] == aspect and nxt[0] != angle else ""
         if self.draft:
             size = (max(size[0] // 4 * 2, 2), max(size[1] // 4 * 2, 2))
         fps = int(self.settings.dennis_3d_fps)
@@ -296,6 +300,7 @@ class Performer:
                **({"close": True} if close else {}),
                **({"push": {k: round(float(v), 3) for k, v in push.items()}}
                   if push else {}),
+               **({"next": cue} if cue else {}),
                **self._line_style(),
                "words": [{"word": w.word, "start": round(w.start - start, 3),
                           "end": round(w.end - start, 3)} for w in words]}

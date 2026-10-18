@@ -293,6 +293,20 @@ def _smooth(x: float) -> float:
     return x * x * x * (x * (6 * x - 15) + 10)
 
 
+# THE CUT ON HIS LOOK (transitions, 18 Oct 2026): just before a cut to
+# another angle he turns his head toward where that camera is, so the cut
+# follows his eyes instead of jumping. He starts turning this long before the
+# end of the shot and is there this much later, the head going this share of
+# the way; a camera nearly where this one is gets no turn (nothing to see),
+# one behind him none either (he would have to turn round), and the head
+# goes no further than a man glancing.
+CUE_S = 0.55
+CUE_TURN_S = 0.4
+CUE_SHARE = 0.75
+CUE_MIN_YAW, CUE_MAX_YAW, CUE_HEAD_MAX = 15.0, 110.0, 60.0
+CUE_MIN_SHOT_S = 2.0
+
+
 def _letters(w: str) -> str:
     return re.sub(r"[^a-z0-9]", "", w.lower())
 
@@ -433,11 +447,13 @@ def _bump(t: float, at: float, rise: float = 0.09, fall: float = 0.32) -> float:
 
 
 def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
-            looks: dict[str, Look] | None = None, stance: str | Stance = "") -> Performance:
+            looks: dict[str, Look] | None = None, stance: str | Stance = "",
+            cue: Look | None = None) -> Performance:
     """His performance of a line: `words` carry `.word`, `.start` and `.end`
     in seconds from the start of the shot. `stance` is the kit pose the
     writer put him in (a `STANCES` key or a `Stance`); none is talking to the
-    camera."""
+    camera. `cue` is where the next shot's camera is from him: he turns to it
+    as the shot ends (`CUE_S`)."""
     from pipeline.host import blink_intervals, mouth_track
 
     st = stance if isinstance(stance, Stance) else stance_of(stance)
@@ -620,6 +636,14 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
                 out[m] = max(out[m], w)
         return out
 
+    # where the cut goes, if he can look there
+    turn_to = None
+    if (cue is not None and not st.lens and duration >= CUE_MIN_SHOT_S
+            and CUE_MIN_YAW <= abs(cue.yaw) <= CUE_MAX_YAW):
+        turn_to = (max(min(cue.yaw * CUE_SHARE, CUE_HEAD_MAX), -CUE_HEAD_MAX),
+                   max(min(cue.pitch * CUE_SHARE * 0.7, 12.0), -12.0))
+    cue_at = duration - CUE_S
+
     ch: dict[str, list[float]] = {}
 
     def put(name: str, v: float) -> None:
@@ -633,6 +657,10 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
         if up:
             a.update(_hand_channels(count_side, ("one", "two", "three", "four", "five")[up - 1]))
         g = gaze.sample(t)
+        if turn_to is not None and t > cue_at:
+            a_ = _smooth((t - cue_at) / CUE_TURN_S)
+            g["yaw"] += (turn_to[0] - g["yaw"]) * a_
+            g["pitch"] += (turn_to[1] - g["pitch"]) * a_
         nod = sum(_bump(t, w.start + 0.03) for w in accents)
         # Deadpan: the brows barely move on the words he leans on, and a
         # question raises ONE of them. Both up is eager; one is "really?".
@@ -688,5 +716,5 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
     return Performance(fps=fps, frames=n, channels=ch)
 
 
-__all__ = ["perform", "Performance", "Look", "phrases", "stressed", "MOUTHS", "FPS",
+__all__ = ["perform", "Performance", "Look", "phrases", "stressed", "MOUTHS", "FPS", "CUE_S",
            "Stance", "STANCES", "stance_of", "mirrored", "lean_channels", "arm_channels"]

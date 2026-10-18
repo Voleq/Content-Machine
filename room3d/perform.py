@@ -315,6 +315,16 @@ class Stage:
                              dh * 0.6 - back * 0.8)
         return motion.Look(yaw=yaw, pitch=pitch, side=side, point=point, present=present)
 
+    def aim(self, target) -> motion.Look:
+        """Only where `target` is from him standing straight: yaw and pitch,
+        no arm (he turns his head to it, he does not reach)."""
+        self.rest()
+        root, head = self.rig.joints["root"], self.rig.joints["head"]
+        loc = root.matrix_world.to_3x3().inverted() @ (
+            Vector(target) - head.matrix_world.translation)
+        return motion.Look(yaw=math.degrees(math.atan2(loc.x, -loc.y)),
+                           pitch=math.degrees(math.atan2(loc.z, math.hypot(loc.x, loc.y))))
+
     def looks(self, angle: str, aspect: str) -> dict:
         """Where the screen and the board are from his spot, and the arm
         angles that reach for each (solved once per angle). Not once per
@@ -497,8 +507,12 @@ class Stage:
             frames = [min(int(self.STILL_AT_S * fps), perf.frames - 1)]
         else:
             words = [type("W", (), w) for w in job["words"]]
+            # the cut on his look: the next shot's camera, from where he stands
+            cue = (self.aim(room.view(job["next"], aspect)["cam"][0])
+                   if job.get("next") and window is None else None)
             perf = motion.perform(words, float(job["duration"]), fps=fps,
-                                  seed=str(job.get("seed", "")), looks=looks, stance=st)
+                                  seed=str(job.get("seed", "")), looks=looks, stance=st,
+                                  cue=cue)
             frames = range(perf.frames)
         self._pushes = []
         pushes = (self.push_in(job["push"], fps, perf.frames)

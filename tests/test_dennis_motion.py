@@ -242,3 +242,22 @@ def test_a_move_called_on_the_heels_of_another_still_eases():
     steps = [tr.sample(1.0 + k / 30)["a"] for k in range(30)]
     assert max(abs(b - a) for a, b in zip(steps, steps[1:])) < 12.0
     assert tr.sample(3.0)["a"] == 0.0
+
+
+def test_he_turns_to_the_next_camera_as_the_shot_ends():
+    """18 Oct 2026: the cut on his look. Only the last moments change, the
+    head heading for where the next camera is; a camera behind him or
+    nearly where this one is gets no turn, nor does a close-up."""
+    plain = _perf()
+    cued = _perf(cue=motion.Look(yaw=45.0, pitch=-5.0))
+    n = plain.frames
+    start = n - round(motion.CUE_S * 12) - 1
+    for name, v in plain.channels.items():
+        assert cued.channels[name][:start] == v[:start], name
+    total = lambda p, i: sum(p.channels[c][i] for c in ("head.z", "neck.z", "chest.z"))
+    assert total(cued, n - 1) - total(plain, n - 1) > 20
+    for yaw in (150.0, 8.0):
+        assert _perf(cue=motion.Look(yaw=yaw, pitch=0.0)).channels == plain.channels
+    lens = motion.Stance(lens=True)
+    assert (_perf(stance=lens, cue=motion.Look(yaw=45.0, pitch=0.0)).channels
+            == _perf(stance=lens).channels)

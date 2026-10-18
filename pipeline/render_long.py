@@ -1472,7 +1472,7 @@ def _render_long(
             return 1.0
         return float(a.h) / float(_desk_anchor.h)
 
-    def _closer(room, seg_i: int, variant: int):
+    def _closer(room, seg_i: int, variant: int, *, quiet: bool = False):
         """The closer angle of a wide room's place, for a beat that does not
         open a chapter; the bot's talking room where the kit has none."""
         stem = next((v for k, v in CLOSER_ROOM.items()
@@ -1480,9 +1480,51 @@ def _render_long(
         got = _scene_room({"room": stem}) if stem else None
         if got is None:
             got = _room_plate("talk", seed=f"{script.ticker}|{variant % 3}")
-        log.info("rooms: %s is a wide room on a beat inside a chapter (%.1fs) — "
-                 "shot from %s", room.key, segments[seg_i].start, got.key)
+        if not quiet:
+            log.info("rooms: %s is a wide room on a beat inside a chapter (%.1fs) — "
+                     "shot from %s", room.key, segments[seg_i].start, got.key)
         return got
+
+    def _beat_room(seg_i: int, *, quiet: bool = False):
+        """ONE ROOM FOR A HOST BEAT, as (room, scene, wide): the one drawn
+        behind him is the one he is placed on, and the one whose desk is
+        drawn in front of him. THE WRITER'S, where a [SCENE] directs the
+        beat; the bot's rotation only where none does. Asked again for the
+        beat after this one, it is the same room (the cut on his look)."""
+        sg = segments[seg_i]
+        variant = sg.payload.get("variant", 0)
+        scene = sg.payload.get("scene") or None
+        room = _scene_room(scene) if scene else None
+        if room is None:
+            scene = None
+            room = (cold_room if seg_i == cold_i and cold_room is not None
+                    else _room_plate("talk", seed=f"{script.ticker}|{variant % 3}"))
+        wide = _his_height(room) < WIDE_SHARE
+        if wide and seg_i not in opens_chapter:
+            room, wide = _closer(room, seg_i, variant, quiet=quiet), False
+            if scene and scene.get("pose"):
+                from pipeline.scenes import talks
+                if not talks(reg, scene["pose"]):
+                    # walking out of the doorway is no line at the desk
+                    scene = {**scene, "pose": ""}
+        return room, scene, wide
+
+    def _cut_to(seg_i: int):
+        """The room the cut at the end of host beat `seg_i` goes to, when it
+        is a straight cut to him in another room: what he turns to as the
+        beat ends. None at a chapter break or a wipe, or onto a chart."""
+        nxt = seg_i + 1
+        if nxt >= len(segments) or segments[nxt].kind != "host":
+            return None
+        cut = segments[nxt].start
+        if any(c is not None and abs(c - cut) < 1e-3 for c in chapter_cuts) \
+                or any(a - 1e-3 <= cut < b for a, b in covers):
+            return None
+        try:
+            return _beat_room(nxt, quiet=True)[0]
+        except Exception as e:  # noqa: BLE001 — a glance is never worth a render
+            log.warning("rooms: no look ahead from beat %d (%s)", seg_i, e)
+            return None
 
     # THE CLOSE, as far as casting him goes: the last beat of the final
     # chapter he STANDS in. The line the chapter rests on is the close-up
@@ -2407,25 +2449,7 @@ def _render_long(
             # lip-synced to this segment's slice of the voice-over.
             visual = None
             variant = seg.payload.get("variant", 0)
-            # ONE ROOM FOR THE BEAT: the one drawn behind him is the one he is
-            # placed on, and the one whose desk is drawn in front of him.
-            # THE WRITER'S, where a [SCENE] directs this beat; the bot's
-            # rotation only where none does.
-            scene = seg.payload.get("scene") or None
-            room = _scene_room(scene) if scene else None
-            if room is None:
-                scene = None
-                room = (cold_room if i == cold_i and cold_room is not None
-                        else _room_plate("talk",
-                                         seed=f"{script.ticker}|{variant % 3}"))
-            wide = _his_height(room) < WIDE_SHARE
-            if wide and i not in opens_chapter:
-                room, wide = _closer(room, i, variant), False
-                if scene and scene.get("pose"):
-                    from pipeline.scenes import talks
-                    if not talks(reg, scene["pose"]):
-                        # walking out of the doorway is no line at the desk
-                        scene = {**scene, "pose": ""}
+            room, scene, wide = _beat_room(i)
             pose, alone = _scene_pose(scene, room, i)
             stance3d, close3d = None, False
             if performer is not None and not alone and dennis3d.angle_of(room):
@@ -2455,7 +2479,8 @@ def _render_long(
                 # the room's own picture.
                 layer = performer.shot(room, _words_in(seg), seg.start, seg_len, (W, H),
                                        seed=f"{script.ticker}|{i}", stance=stance3d,
-                                       close=close3d, push=push3d)
+                                       close=close3d, push=push3d,
+                                       then=None if close3d else _cut_to(i))
                 window = performer.window(layer) if close3d else None
                 if push3d:
                     bg_i = _add_input(["-i", str(_pushed_room(room, dennis3d.pushed(layer)
