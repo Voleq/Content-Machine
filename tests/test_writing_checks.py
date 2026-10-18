@@ -89,3 +89,29 @@ def test_run_gates_records_phrasing_and_swearing(settings):
     report = run_gates(_Script(), settings, skeptic=False)
     assert "phrasing" in report.ran and "swearing" in report.ran
     assert any(f.gate == "phrasing" for f in report.findings)
+
+
+# --------------------------------------------------------------- S2 copy
+def test_bible_line_reused_warns(settings):
+    text = ("Revenue grew.\nPut a dollar in. Get three and a half cents back "
+            "a year.")
+    found = wc.copy_check(text, settings)
+    assert found and found[0].gate == "copy" and found[0].line == 2
+    assert "bible" in found[0].message
+
+
+def test_style_reference_reworded_slightly_warns(settings):
+    text = ("If you draw enough horizontal lines on a chart, the stock is "
+            "eventually going to bounce off one of them.")
+    found = wc.copy_check(text, settings)
+    assert found and "style reference" in found[0].message
+
+
+def test_same_topic_different_words_passes(settings):
+    text = ("Tyler has drawn support at forty dollars, at thirty-five and at "
+            "thirty. It is not a support line any more, it is a staircase.")
+    assert wc.copy_check(text, settings) == []
+
+
+def test_copy_empty(settings):
+    assert wc.copy_check("", settings) == []

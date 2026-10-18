@@ -166,3 +166,105 @@ def chapter_title_swears(script) -> list[Finding]:
     titles = {f"chapter title {n}": getattr(c, "title", "")
               for n, c in enumerate(getattr(script, "chapter_list", None) or [], 1)}
     return package_swears(titles)
+
+
+# --------------------------------------------------------------------------
+# S2 — a bible example or a style reference, said again.
+# --------------------------------------------------------------------------
+
+# Below this many words a sentence is a phrase, and phrases repeat honestly.
+COPY_MIN_WORDS = 6
+# Word-level similarity at which a sentence is the reference said again.
+COPY_RATIO = 0.75
+# A cheap gate before the expensive one: share this much vocabulary first.
+_COPY_PREFILTER = 0.4
+
+_WORDS_RE = re.compile(r"[a-z0-9']+")
+_SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def _words(text: str) -> list[str]:
+    return _WORDS_RE.findall(text.lower().replace("’", "'"))
+
+
+def reference_lines(settings: Settings) -> list[tuple[str, str]]:
+    """(where it is from, the sentence) for everything Dennis must not
+    repeat: the bible's quoted examples and the style references."""
+    from pipeline.writing_files import list_lines
+
+    out: list[tuple[str, str]] = []
+    bible = settings.assets_dir / "voice_bible.md"
+    try:
+        text = bible.read_text(encoding="utf-8")
+    except OSError:
+        text = ""
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith(">"):
+            continue
+        body = line.lstrip("> ").strip()
+        # An example is usually `context: "the line"`; the line is the quote.
+        quoted = re.findall(r"[\"“]([^\"”]+)[\"”]", body)
+        for chunk in quoted or [body]:
+            out += [("bible", s) for s in _SENTENCE_RE.split(chunk) if s.strip()]
+    for ref in list_lines(settings, "style_references"):
+        out += [("style reference", s) for s in _SENTENCE_RE.split(ref)
+                if s.strip()]
+    return out
+
+
+# A clause lifted out of a longer reference: the shorter side is this much
+# inside the longer one, in order. Only past a length where that is no
+# accident — ten words in the same order is a quotation.
+LIFT_RATIO = 0.85
+LIFT_MIN_WORDS = 10
+
+
+def _lifted(sm: difflib.SequenceMatcher, a: int, b: int) -> bool:
+    shorter = min(a, b)
+    if shorter < LIFT_MIN_WORDS:
+        return False
+    matched = sum(block.size for block in sm.get_matching_blocks())
+    return matched / shorter >= LIFT_RATIO
+
+
+def copy_check(narration: str, settings: Settings) -> list[Finding]:
+    """A spoken sentence that is a reference sentence said again.
+
+    Two references in a row can make one long sentence of Dennis's, and one
+    reference can be split over two of his, so a reference is compared with
+    each sentence and with each pair of neighbouring sentences.
+    """
+    refs = [(src, _words(s)) for src, s in reference_lines(settings)]
+    refs = [(src, w) for src, w in refs if len(w) >= COPY_MIN_WORDS]
+    if not refs:
+        return []
+    findings: list[Finding] = []
+    for lineno, line in enumerate(narration.splitlines(), 1):
+        said = [s for s in _SENTENCE_RE.split(_TAG_RE.sub(" ", line)) if s.strip()]
+        spans = said + [f"{a} {b}" for a, b in zip(said, said[1:])]
+        hit = None
+        for span in spans:
+            words = _words(span)
+            if len(words) < COPY_MIN_WORDS:
+                continue
+            have = set(words)
+            for src, ref in refs:
+                shared = len(have & set(ref)) / max(1, len(set(ref)))
+                if shared < _COPY_PREFILTER:
+                    continue
+                sm = difflib.SequenceMatcher(None, words, ref, autojunk=False)
+                if (sm.ratio() >= COPY_RATIO
+                        or _lifted(sm, len(words), len(ref))):
+                    hit = (src, " ".join(ref))
+                    break
+            if hit:
+                break
+        if hit:
+            findings.append(Finding(
+                gate="copy", severity="warn", line=lineno,
+                message=(f"repeats a {hit[0]} line almost word for word — the "
+                         f"move is his to reuse, the sentence never: "
+                         f"“{hit[1][:90]}”"),
+                excerpt=_excerpt(line)))
+    return findings

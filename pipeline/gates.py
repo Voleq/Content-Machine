@@ -2717,6 +2717,10 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     report.findings += report.record("swearing", swear_lint(
         narration, "long" if hasattr(script, "chapter_list") else "short")
         + chapter_title_swears(script))
+    # A bible example or another creator's line, said again (S2).
+    from pipeline.writing_checks import copy_check
+
+    report.findings += report.record("copy", copy_check(narration, settings))
     report.findings += report.record("direction", direction_lint(script))
     report.findings += report.record("confession",
                                      confession_lint(script, settings))
