@@ -56,7 +56,7 @@ def is_edited(settings: Settings, name: str) -> bool:
     return edited_path(settings, name).exists()
 
 
-def read_text(settings: Settings, name: str) -> str:
+def read_file(settings: Settings, name: str) -> str:
     """His copy when he has one, else the shipped default, else ""."""
     for path in (edited_path(settings, name), default_path(settings, name)):
         try:
@@ -68,7 +68,7 @@ def read_text(settings: Settings, name: str) -> str:
     return ""
 
 
-def write_text(settings: Settings, name: str, text: str) -> Path:
+def write_file(settings: Settings, name: str, text: str) -> Path:
     """Save his edit. Never touches the shipped default."""
     path = edited_path(settings, name)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -91,7 +91,7 @@ def reset(settings: Settings, name: str) -> bool:
 def list_lines(settings: Settings, name: str) -> list[str]:
     """The file as a list: stripped, without blanks or `#` comments."""
     out = []
-    for line in read_text(settings, name).splitlines():
+    for line in read_file(settings, name).splitlines():
         line = line.strip()
         if line and not line.startswith("#"):
             out.append(line)

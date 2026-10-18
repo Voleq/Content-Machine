@@ -29,7 +29,7 @@ def test_phrasing_empty(settings):
 
 
 def test_his_edited_list_is_the_one_checked(settings):
-    writing_files.write_text(settings, "ai_phrases", "frankly\n")
+    writing_files.write_file(settings, "ai_phrases", "frankly\n")
     found = wc.phrasing_lint("Frankly, the debt is the story.", settings)
     assert len(found) == 1
 
@@ -125,8 +125,8 @@ def _shipped_long(settings, ticker, workdate, types):
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "script_long.json").write_text(json.dumps({
         "narration": "Words here.",
-        "chapter_list": [{"type": t, "title": t} for t in types]}))
-    (folder / "approval_long.json").write_text("{}")
+        "chapter_list": [{"type": t, "title": t} for t in types]}), encoding="utf-8")
+    (folder / "approval_long.json").write_text("{}", encoding="utf-8")
 
 
 def _script(types):

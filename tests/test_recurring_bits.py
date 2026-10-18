@@ -89,6 +89,6 @@ def test_note_long_is_idempotent(settings):
 
 
 def test_junk_ledger(settings):
-    (settings.state_dir / rb.BITS_FILE).write_text("{oops")
+    (settings.state_dir / rb.BITS_FILE).write_text("{oops", encoding="utf-8")
     assert rb.due_bit(settings) == ""
     assert "No recurring bit is due" in rb.bits_block(settings)

@@ -567,7 +567,7 @@ def _clock_room(tmp: Path) -> Path:
         "angle": "clock", "aspect": "16x9", "season": "plain",
         "states": [{"png": "clock.jpg", "tag": ""}],
         "masks": {"labels": "clock_mask_labels.png"},
-        "surfaces": {"labels": {"items": [item]}}}}))
+        "surfaces": {"labels": {"items": [item]}}}}), encoding="utf-8")
     return tmp
 
 

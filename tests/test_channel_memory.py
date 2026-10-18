@@ -67,8 +67,8 @@ def test_reworded_joke_is_flagged(settings):
 
 
 def test_junk_ledger(settings):
-    (settings.state_dir / cm.JOKES_FILE).write_text(json.dumps({"no": 1}))
-    (settings.state_dir / cm.FACTS_FILE).write_text("not json")
+    (settings.state_dir / cm.JOKES_FILE).write_text(json.dumps({"no": 1}), encoding="utf-8")
+    (settings.state_dir / cm.FACTS_FILE).write_text("not json", encoding="utf-8")
     assert cm.used_jokes_block(settings).startswith("(none yet")
     assert cm.dennis_facts_block(settings).startswith("(none yet")
     assert cm.joke_reuse_lint("anything at all here", settings) == []
