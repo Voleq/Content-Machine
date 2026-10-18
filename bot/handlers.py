@@ -1799,6 +1799,7 @@ class BotCore:
             tts = self.tts.synthesize(script.audio_script, "short",
                                       events=script.inline_events,
                                       ticker=job.ticker)
+            self._announce_voice(job, tts, "short")
             checkpoint("render")
             out, manifest = render_short(
                 script, tts, ws.path, self.settings, content=self.content,
@@ -1833,6 +1834,7 @@ class BotCore:
             tts = self.tts.synthesize(script.narration, "long",
                                       events=script.events, draft=draft,
                                       ticker=job.ticker)
+            self._announce_voice(job, tts, "long")
             if tts.draft:
                 checkpoint(f"draft audio ({tts.tier}) — not the real voice")
             data = self._company_data(ws)
@@ -3577,6 +3579,117 @@ class BotCore:
         lines.append(f"\n{gaps} day(s) with nothing going out. "
                      f"/publish TICKER YYYY-MM-DD HH:MM schedules one.")
         return Reply("\n".join(lines))
+
+    # -- the voice (A5, A6, A7) ---------------------------------------------
+
+    def _announce_voice(self, job, tts, fmt: str) -> None:
+        """A freshly paid voice goes to the operator as soon as it lands (A6).
+        The render has already been told to start: he listens while it runs
+        and stops it if the voice is wrong."""
+        if tts.cached or tts.tier != "paid":
+            return
+        self.push_file(tts.audio_path, (
+            f"🎙 {job.ticker} {fmt} — the voice is in and the render has "
+            f"started. Listen now: /cancel {job.ticker} stops the render, "
+            f"/voice redo N says one sentence again."))
+
+    def _voice_of(self, ws: Workspace, fmt: str):
+        """(script, clean text, events, cache dir of its voice or None)."""
+        script = ws.load_short() if fmt == "short" else ws.load_long()
+        if script is None:
+            return None, "", None, None
+        if fmt == "short":
+            text, events = script.audio_script, script.inline_events
+        else:
+            text, events = script.narration, script.events
+        return script, text, events, self.tts.voice_dir(text, fmt,
+                                                        events=events)
+
+    def _voice_sentences(self, cdir: Path, text: str):
+        import json
+
+        from pipeline.models import WordTimestamp
+        from pipeline.voice_redo import sentences
+
+        words = [WordTimestamp(**w) for w in json.loads(
+            (cdir / "words.json").read_text(encoding="utf-8"))]
+        return sentences(words, text)
+
+    def voice_listing(self, chat_id: int) -> Reply:
+        """`/voice`: the voice file, and its sentences numbered with times."""
+        from pipeline.voice_redo import MAX_REDOS, clock
+
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active video — /new short or /new long first.")
+        fmt = ws.current_format()
+        script, text, _events, cdir = (self._voice_of(ws, fmt) if fmt
+                                       else (None, "", None, None))
+        if script is None:
+            return Reply("No script on file yet — paste one first.")
+        if cdir is None:
+            return Reply(f"No voice yet for {ws.ticker} {fmt.upper()}: it is "
+                         f"made when the render starts (/render). Nothing has "
+                         f"been spent on it.")
+        rows = self._voice_sentences(cdir, text)
+        listing = "\n".join(f"{r.index} · {clock(r.start)} · {r.text}"
+                            for r in rows)
+        f = ws.path / f"voice_sentences_{fmt}.txt"
+        f.write_text(listing + "\n", encoding="utf-8")
+        head = (f"🎙 {ws.ticker} {fmt.upper()} voice — {len(rows)} sentences. "
+                f"`/voice redo N` says one again with the same words "
+                f"({MAX_REDOS} per video); `/voice say WORD => how` fixes how "
+                f"a word is said.")
+        if len(listing) <= 3000:
+            return Reply(f"{head}\n\n{listing}", files=[cdir / "audio.m4a"])
+        return Reply(head, files=[cdir / "audio.m4a", f])
+
+    def say_command(self, chat_id: int, raw: str = "") -> Reply:
+        """`/voice say [WORD => how to say it]`: list the rules, or add one."""
+        from pipeline.pronounce import _pattern, add_rule, load_rules
+
+        raw = (raw or "").strip()
+        if not raw:
+            rules = load_rules(self.settings)
+            if not rules:
+                return Reply("No pronunciations yet. `/voice say EBITDA => "
+                             "ee-bit-dah` adds one.")
+            return Reply("How words are said to the voice (captions keep the "
+                         "written word):\n" + "\n".join(
+                             f"• {r.word} → {r.said}" for r in rules))
+        if "=>" not in raw:
+            return Reply("usage: /voice say WORD => how to say it")
+        word, said = (p.strip() for p in raw.split("=>", 1))
+        try:
+            rule = add_rule(self.settings, word, said)
+        except ValueError as e:
+            return Reply(f"⛔ {e}")
+        msg = (f"✅ {rule.word} is said “{rule.said}” from the next voice on. "
+               f"A voice already made keeps how it said it.")
+        ws = self._active_ws(chat_id)
+        fmt = ws.current_format() if ws else ""
+        if ws and fmt:
+            _script, text, _ev, cdir = self._voice_of(ws, fmt)
+            if cdir is not None:
+                hits = [r.index for r in self._voice_sentences(cdir, text)
+                        if _pattern(rule.word).search(r.text)]
+                if hits:
+                    msg += (f"\nIn {ws.ticker} {fmt.upper()} it is in sentence"
+                            f"{'s' if len(hits) > 1 else ''} "
+                            f"{', '.join(map(str, hits))}: `/voice redo "
+                            f"{hits[0]}` says one again with the fix.")
+        return Reply(msg)
+
+    def unsay_command(self, args: list[str]) -> Reply:
+        from pipeline.pronounce import remove_rule
+
+        word = " ".join(args).strip()
+        if not word:
+            return Reply("usage: /voice unsay WORD")
+        if remove_rule(self.settings, word):
+            return Reply(f"✅ {word} is said as written again, from the next "
+                         f"voice on.")
+        return Reply(f"No rule for {word}. /voice say lists them.")
 
     def claims_text(self, chat_id: int) -> Reply:
         """`/script claims`: the sentences no gate can check, by line."""

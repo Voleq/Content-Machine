@@ -783,6 +783,16 @@ An edit that does not parse never lands. Every edit that does re-runs the gates,
 
 **A pasted script routes by the lane too**, never by whether it starts with a brace. A paste that looks cut off — a JSON body that never closes, or a message sitting exactly on Telegram's 4,096-character split point — is refused with "send it as a .txt file" rather than saved as half a script.
 
+### /voice — The voice
+
+| command | what it does |
+|---|---|
+| `/voice` | The active video's finished voice as a file, and its sentences numbered with their times — the numbers `/voice redo` takes. Nothing is generated: no voice yet says so. |
+| `/voice say [WORD => how to say it]` | Adds or replaces a pronunciation: the left side as written (case counts, whole words), the right side as the voice should say it. Names the sentences of the active video's voice that contain the word, to redo with the fix. |
+| `/voice unsay WORD` | Removes the rule; the word is said as written again. |
+
+The paid voice goes to the chat the moment it lands, and the render has already started: listen while it runs. A pronunciation reaches the voice only — the captions, the plates and the script keep the written word — and it applies from the next voice on, never re-buying one already made.
+
 ### /publish — Publishing
 
 | command | what it does |
@@ -894,6 +904,7 @@ Every name the bot answered before the families still works, as a hidden alias o
 | `/rules` | `/stats rules` |
 | `/runtime` | `/stats runtime` |
 | `/said` | `/search said` |
+| `/say` | `/voice say` |
 | `/scheduled` | `/publish scheduled` |
 | `/scoreboard` | `/stats scoreboard` |
 | `/screen` | `/ideas screen` |

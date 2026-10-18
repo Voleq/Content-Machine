@@ -471,6 +471,18 @@ def c_correct(c: Call):
     return c.core.correct_command(c.args)
 
 
+def c_voice(c: Call):
+    return c.core.voice_listing(c.chat_id)
+
+
+def c_say(c: Call):
+    return c.core.say_command(c.chat_id, c.raw or " ".join(c.args))
+
+
+def c_unsay(c: Call):
+    return c.core.unsay_command(c.args)
+
+
 def c_mark(c: Call):
     return c.core.mark_upload(c.args)
 
@@ -685,6 +697,14 @@ FAMILIES: tuple[Family, ...] = (
                "Telegram's 4,096-character split point — is refused with "
                "\"send it as a .txt file\" rather than saved as half a "
                "script.")),
+    Family("voice", "The voice",
+           "hear the voice, redo a sentence, fix how a word is said",
+           notes=(
+               "The paid voice goes to the chat the moment it lands, and the "
+               "render has already started: listen while it runs. A "
+               "pronunciation reaches the voice only — the captions, the "
+               "plates and the script keep the written word — and it applies "
+               "from the next voice on, never re-buying one already made.")),
     Family("publish", "Publishing", "YouTube: upload, schedule, probe, "
            "calendar, correct"),
     Family("jobs", "The render queue", "the render queue: status, cancel, "
@@ -810,6 +830,21 @@ COMMANDS: tuple[Command, ...] = (
                 "Why this one is worth making, in your own words. Prints "
                 "above Approve and rides the description. With no sentence "
                 "it reads back what is recorded.")),
+    # /voice
+    Command("voice", "", "", "the voice file and its sentences, numbered",
+            c_voice, doc=(
+                "The active video's finished voice as a file, and its "
+                "sentences numbered with their times — the numbers `/voice "
+                "redo` takes. Nothing is generated: no voice yet says so.")),
+    Command("voice", "say", "[WORD => how to say it]",
+            "how a word is said to the voice; no rule lists them", c_say,
+            aliases=("say",), example="EBITDA => ee-bit-dah", doc=(
+                "Adds or replaces a pronunciation: the left side as written "
+                "(case counts, whole words), the right side as the voice "
+                "should say it. Names the sentences of the active video's "
+                "voice that contain the word, to redo with the fix.")),
+    Command("voice", "unsay", "WORD", "drop a pronunciation", c_unsay,
+            doc="Removes the rule; the word is said as written again."),
     # /render
     Command("render", "", "[TICKER] [short|long]",
             "render the approved script (this is where money is spent)",
