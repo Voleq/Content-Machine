@@ -18,6 +18,9 @@ his things are this video's, laid on by `pipeline/room_dressing.py`:
   so a re-render of the same script letters the same things.
 - THE STITCHED SIGN SAYS NOT FINANCIAL ADVICE, every video (his call, 18 Oct
   2026: "keep this one not financial advice everytime").
+- THE WALL CLOCK SAYS FIVE PAST THREE, the hour the room was always set at;
+  its hands are lettered too, so the clock jump between scenes can run them
+  on (`room_dressing.clock_jump_frames`).
 - THE REST IS FROM A LIST he can edit (`assets/room_writing.json`): the notes
   and cards whenever the model is not running or wrote nothing usable. Each
   video takes different lines from it than the video before.
@@ -41,6 +44,8 @@ log = logging.getLogger(__name__)
 POOL_FILE = "room_writing.json"
 # The stitched sign on his wall, the same in every video.
 SIGN = "NOT\nFINANCIAL\nADVICE"
+# The wall clock's hands, "H:MM", before any clock jump runs them on.
+CLOCK = "3:05"
 CACHE_FILE = "room_writing.json"
 # How much the model is asked for, and how long each piece may be: what
 # fits a 7.5 cm note and an index card at the back of the room.
@@ -256,4 +261,5 @@ def props(script, *, ticker: str, workdate: str, episode: int, settings,
     for i, c in enumerate(cards):
         out[f"card{i}"] = c
     out["cs"] = SIGN
+    out["clockface"] = CLOCK
     return tuple(sorted(out.items()))

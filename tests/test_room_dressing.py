@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import json
 from pathlib import Path
 
@@ -545,3 +546,76 @@ def test_the_pull_back_starts_on_the_chart_and_ends_on_the_room():
     n = round(rd.PULL_S * 30)
     assert all(b >= a - 1e-3 for a, b in zip(dark[:n], dark[1:n]))
     assert frames[n - 1].tobytes() == frames[-1].tobytes()
+
+
+def _clock_room(tmp: Path) -> Path:
+    """A committed-renders folder with a clock close-up: the face a pale disc
+    at the middle of a 640x360 picture, its hands left to the bot."""
+    from PIL import ImageDraw
+
+    face = (234, 232, 224)
+    pic = Image.new("RGB", (1920, 1080), (40, 50, 90))
+    ImageDraw.Draw(pic).ellipse([660, 240, 1260, 840], fill=face)
+    pic.save(tmp / "clock.jpg")
+    mask = Image.new("L", (1920, 1080), 0)
+    ImageDraw.Draw(mask).ellipse([660, 240, 1260, 840], fill=255)
+    mask.save(tmp / "clock_mask_labels.png")
+    item = {"id": "clockface", "kind": "clock", "paper": list(face), "tex": [600, 600],
+            "box": [0, 0, 600, 600], "depth": 1.0,
+            "quad": [[660, 240], [1260, 240], [1260, 840], [660, 840]]}
+    (tmp / "rooms.json").write_text(json.dumps({"clock": {
+        "angle": "clock", "aspect": "16x9", "season": "plain",
+        "states": [{"png": "clock.jpg", "tag": ""}],
+        "masks": {"labels": "clock_mask_labels.png"},
+        "surfaces": {"labels": {"items": [item]}}}}))
+    return tmp
+
+
+def _ink_along(img, minutes: float, *, size=(640, 360), reach=0.3) -> float:
+    """How dark the face is `reach` of its radius out along `minutes`' hand."""
+    import math
+
+    a = minutes / 60 * 2 * math.pi
+    cx, cy, r = size[0] / 2, size[1] / 2, size[1] * 300 / 1080
+    x, y = cx + reach * r * math.sin(a), cy - reach * r * math.cos(a)
+    return float(np.asarray(img.convert("L"))[int(y) - 1:int(y) + 2, int(x) - 1:int(x) + 2].mean())
+
+
+def test_the_clock_jump_runs_the_hands_on_half_an_hour(tmp_path):
+    """18 Oct 2026, transition 4: between two scenes the wall clock, close,
+    its hands running on half an hour. The face is rendered bare; the hands
+    are the bot's."""
+    assert rd.clock_minutes("3:05") == 185 and rd.clock_text(215) == "3:35"
+    assert rd.clock_text(rd.clock_minutes("12:40")) == "12:40"
+    shot = rd.clock_shot(_clock_room(tmp_path))
+    assert shot is not None
+    assert rd.clock_shot(tmp_path / "nowhere") is None
+    frames = rd.clock_jump_frames(shot, FONTS, (640, 360), 30, 185, 215)
+    assert len(frames) == sum(round(x * 30) for x in (rd.CLOCK_HOLD_S, rd.CLOCK_SWEEP_S,
+                                                      rd.CLOCK_AFTER_S))
+    first, last = frames[0], frames[-1]
+    # the minute hand on the one at 3:05, on the seven at 3:35
+    assert _ink_along(first, 5) < 120 < _ink_along(first, 35)
+    assert _ink_along(last, 35) < 120 < _ink_along(last, 5)
+    # it holds, sweeps, holds
+    hold = round(rd.CLOCK_HOLD_S * 30)
+    assert frames[0].tobytes() == frames[hold - 1].tobytes()
+    assert frames[-1].tobytes() == frames[-2].tobytes()
+    assert len({f.tobytes() for f in frames}) > 8
+
+
+def test_the_lights_dip_over_the_cut_and_flicker_back():
+    """18 Oct 2026, transition 5: the room goes dark across a cut and the
+    next shot comes up as the lights catch, drop and come on."""
+    frames, ahead = rd.dip_frames((320, 180), 30)
+    dark = [float(np.asarray(f)[..., 3].mean()) / 255 for f in frames]
+    assert ahead == round(rd.DIP_IN_S * 30) + round(rd.DIP_HOLD_S * 30) // 2
+    down = round(rd.DIP_IN_S * 30)
+    assert all(b > a for a, b in itertools.pairwise(dark[:down])), "it does not go down"
+    assert dark[down - 1] == dark[ahead], "it does not hold across the cut"
+    assert dark[ahead] > 0.8, "the cut is not under the dark"
+    back = dark[ahead:]
+    assert any(b > a + 0.1 for a, b in itertools.pairwise(back)), "no flicker on the way back"
+    assert dark[-1] == 0.0
+    a = np.asarray(frames[ahead])[..., 3]
+    assert a[90, 160] < a[2, 2], "the middle is no lighter than the corners"

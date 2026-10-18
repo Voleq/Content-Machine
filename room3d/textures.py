@@ -60,6 +60,8 @@ LABELS = {
     "note": ((400, 400), None, (26, 30, 374, 370)),
     "card": ((600, 400), None, (30, 14, 570, 386)),
     "stitch": ((900, 900), (236, 230, 214), (56, 98, 844, 802)),
+    # the wall clock's face: its hands are the video's time (the clock jump)
+    "clock": ((600, 600), (234, 232, 224), (0, 0, 600, 600)),
     "box": ((900, 500), (176, 140, 96), (40, 50, 860, 450)),
     "cover": ((850, 1100), (238, 238, 234), (70, 60, 790, 280)),
     "report": ((850, 1100), (240, 238, 230), (70, 60, 790, 440)),
@@ -184,7 +186,9 @@ def filing() -> None:
 
 
 def clock() -> None:
-    im = Image.new("RGB", (600, 600), (234, 232, 224))
+    """The wall clock's face with no hands: the bot sets them to the video's
+    time (`LABELS["clock"]`, pipeline/room_dressing.py)."""
+    im = Image.new("RGB", (600, 600), LABELS["clock"][1])
     d = ImageDraw.Draw(im)
     for k in range(12):
         a = k / 12 * 2 * math.pi
@@ -192,11 +196,7 @@ def clock() -> None:
         d.line([(300 + r0 * math.sin(a), 300 - r0 * math.cos(a)),
                 (300 + r1 * math.sin(a), 300 - r1 * math.cos(a))],
                fill=(30, 30, 36), width=16 if k % 3 == 0 else 8)
-    # three in the morning, a little after
-    for a, r, w in ((3 / 12 * 2 * math.pi + 0.05, 150, 20), (0.25, 230, 12)):
-        d.line([(300, 300), (300 + r * math.sin(a), 300 - r * math.cos(a))], fill=(30, 30, 36), width=w)
-    d.ellipse([284, 284, 316, 316], fill=RED)
-    im.save(OUT / "clock.png")
+    im.save(OUT / "clock_face.png")
 
 
 def night(snow: bool = False) -> None:

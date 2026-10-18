@@ -58,6 +58,7 @@ the video ends on whatever deadpan line the script wrote.
 from __future__ import annotations
 
 import bisect
+import itertools
 import json
 import logging
 import math
@@ -264,6 +265,35 @@ def _cleared(t: float, covers: list[tuple[float, float]]) -> float:
         if a <= t + 1e-6 < b:
             t = b
     return t
+
+
+def _scene_cuts(segments, breaks: list[float], covers: list[tuple[float, float]], *,
+                n: int, before: float, after: float, apart: float, seed: str,
+                avoid: tuple[float, ...] = ()) -> list[float]:
+    """Up to `n` cuts from one beat of him to the next inside one chapter
+    (`breaks` are the chapters' edges), each with `before` seconds of the
+    beat it leaves and `after` of the one it enters clear of every cover,
+    `apart` seconds from each other and from `avoid`, picked in a shuffle
+    fixed by `seed`."""
+    import random as _random
+
+    found = []
+    for a, b in itertools.pairwise(segments):
+        c = b.start
+        if (a.kind != "host" or b.kind != "host" or a.length < before + 1.0
+                or b.length < after + 1.5
+                or bisect.bisect_right(breaks, a.start) != bisect.bisect_right(breaks, c)
+                or any(x < c + after + 0.5 and y > c - before - 0.5 for x, y in covers)):
+            continue
+        found.append(c)
+    _random.Random(seed).shuffle(found)
+    out: list[float] = []
+    for c in found:
+        if len(out) == n:
+            break
+        if all(abs(c - o) >= apart for o in (*out, *avoid)):
+            out.append(c)
+    return sorted(out)
 
 
 # How long the opening title holds over the first frames. It is opaque, so
@@ -949,6 +979,31 @@ def _render_long(
                 and last.length >= PULL_S + PULL_HOLD_S + 1.5):
             pull_from[j] = t
             covers.append((t - PULL_S - PULL_HOLD_S, t))
+
+    # THE CLOCK JUMP AND THE LIGHTS DIP (transitions 4 and 5, 18 Oct 2026):
+    # now and then a cut between two beats of him inside a chapter goes by
+    # the wall clock, its hands running on half an hour, or through the
+    # room's lights sagging and flickering back. Sparingly: one clock, a
+    # second in a long of eight minutes or more, and one dip, each a minute
+    # or more from the others, and none where a cover is.
+    # Both cover their cut, so nothing slides in under them and he does not
+    # turn toward a camera the cut never reaches.
+    from pipeline.room_dressing import CLOCK_S, DIP_AFTER_S, DIP_BEFORE_S, clock_shot
+
+    _breaks = sorted({*(c for c in chapter_cuts if c is not None),
+                      *(t for t, _ti, _ty in chapters)})
+    _apart = max(60.0, duration / 6)
+    _clock = clock_shot()
+    clock_cuts = _scene_cuts(
+        segments, _breaks, covers, n=2 if duration >= 480 else 1, before=0.5,
+        after=CLOCK_S, apart=_apart, seed=f"clock|{script.ticker}|{duration:.1f}",
+    ) if _clock is not None else []
+    covers += [(c, c + CLOCK_S) for c in clock_cuts]
+    dip_cuts = _scene_cuts(
+        segments, _breaks, covers, n=1, before=DIP_BEFORE_S,
+        after=DIP_AFTER_S, apart=_apart, seed=f"dip|{script.ticker}|{duration:.1f}",
+        avoid=tuple(clock_cuts))
+    covers += [(c - DIP_BEFORE_S, c + DIP_AFTER_S) for c in dip_cuts]
 
     # WHAT HIS MONITOR SHOWS, CHAPTER BY CHAPTER (items 49, 56): a plate the
     # chapter puts on screen, the writer's [SCREEN] where there is one, else
@@ -2963,6 +3018,42 @@ def _render_long(
         stinger_meta.append({"type": ctype, "title": title,
                              "script_t": round(target, 2), "t": round(t, 2)})
 
+    # THE CLOCK JUMPS AND THE DIP, on the cuts picked with the covers above,
+    # over everything as a wipe is. The clock's sweep is heard as the
+    # count-up's tick roll; the dip is silent.
+    from pipeline.room_dressing import (
+        CLOCK_HOLD_S,
+        CLOCK_JUMP_MIN,
+        clock_jump_frames,
+        clock_minutes,
+        clock_text,
+        dip_frames,
+    )
+    from pipeline.room_writing import CLOCK
+
+    _hands_at = clock_minutes(CLOCK) or 185.0
+    for n, c in enumerate(clock_cuts):
+        a, b = _hands_at + n * CLOCK_JUMP_MIN, _hands_at + (n + 1) * CLOCK_JUMP_MIN
+        frames = clock_jump_frames(_clock, settings.fonts_dir, (W, H), fps, a, b)
+        clip = _played_clip(list(range(len(frames))), lambda i, f=frames: f[i], fps,
+                            rdir / f"clock_{n}.mov", reuse=False)
+        wipe_layers.append(OverlayLayer(path=clip, x=0, y=0, t_start=c,
+                                        t_end=min(c + len(frames) / fps, duration),
+                                        is_video=True, name=f"clock_{n}"))
+        long_moves.append({"move": "count-up", "start": round(c + CLOCK_HOLD_S, 3),
+                           "shot_id": f"clock_{n}", "slot": "hands"})
+        transition_meta.append({"clock": f"{clock_text(a)}-{clock_text(b)}", "cut": round(c, 3)})
+    if dip_cuts:
+        frames, ahead = dip_frames((W, H), fps)
+        clip = _played_clip(list(range(len(frames))), lambda i: frames[i], fps,
+                            rdir / "dip.mov", reuse=False)
+        for n, c in enumerate(dip_cuts):
+            start = c - ahead / fps
+            wipe_layers.append(OverlayLayer(path=clip, x=0, y=0, t_start=start,
+                                            t_end=min(start + len(frames) / fps, duration),
+                                            is_video=True, name=f"dip_{n}"))
+            transition_meta.append({"dip": "lights", "cut": round(c, 3)})
+
     # THE SOURCE SLIDES IN UNDER THE FIGURE (item 14): design's tag, off the
     # frame's left edge with its small overshoot, where the writer's
     # [SOURCE] says, once the beat's moves have landed and nothing covers
@@ -3355,7 +3446,9 @@ def _render_long(
     # the operator put a hit on the chapter change instead of music.
     audio += theme_tracks(settings, duration)
 
-    layers += wipe_layers
+    # The wipes last of all: the pull back out of the monitor runs into the
+    # blinds' cover, and a wipe another layer cut across shows two shots.
+    layers += sorted(wipe_layers, key=lambda lay: lay.name.startswith("wipe-"))
 
     # ------------------------------------------------------------ encode
     spec = CompositeSpec(

@@ -525,6 +525,37 @@ def _stitches(img, text: str, fonts: Path, k: float) -> None:
             dr.line([(x0 + step - 2 * k, y0 + k), (x0 + k, y0 + step - 2 * k)], fill=c, width=w)
 
 
+def clock_minutes(text: str) -> float | None:
+    """Minutes past twelve of "H:MM" (or "H:MM.5", a hand between two)."""
+    try:
+        h, m = str(text).strip().split(":")
+        return (int(h) % 12) * 60 + float(m)
+    except ValueError:
+        return None
+
+
+def clock_text(minutes: float) -> str:
+    """`minutes` past twelve as the clock's "H:MM", fractions kept."""
+    minutes %= 720
+    h, m = divmod(minutes, 60)
+    return f"{int(h) or 12}:{m:05.2f}" if m % 1 else f"{int(h) or 12}:{int(m):02d}"
+
+
+def _hands(dr, text: str, cx: float, cy: float, k: float) -> None:
+    """The clock's hands at "H:MM", on its face's picture (textures.clock:
+    600 across, the hour hand 150 long, the minute hand 230, a red pin)."""
+    m = clock_minutes(text)
+    if m is None:
+        return
+    ink = (30, 30, 36, 255)
+    for turn, length, width in ((m / 720, 150, 20), (m % 60 / 60, 230, 12)):
+        a = turn * 2 * math.pi
+        dr.line([(cx, cy), (cx + length * k * math.sin(a), cy - length * k * math.cos(a))],
+                fill=ink, width=max(int(width * k), 1))
+    r = 16 * k
+    dr.ellipse([cx - r, cy - r, cx + r, cy + r], fill=_INK["red"] + (255,))
+
+
 def label_ink(item: dict, text: str, fonts: Path, size: tuple[int, int]):
     """The words on one of his things, on a clear layer `size` big (its
     picture's shape): marker on a spine, a note or a box, a hand on a card,
@@ -582,6 +613,8 @@ def label_ink(item: dict, text: str, fonts: Path, size: tuple[int, int]):
                     width=max(int(6 * k), 1), joint="curve")
     elif kind == "stitch":
         _stitches(img, text, fonts, k)
+    elif kind == "clock":
+        _hands(dr, text, (x0 + x1) / 2, (y0 + y1) / 2, k)
     elif kind in ("cover", "report"):
         title, *rest = text.split("\n")
         y = y0
@@ -1168,6 +1201,121 @@ def tick_frames(plate, d: Dressing, fonts: Path, size: tuple[int, int]):
         fr = dress(_open(front, "RGBA"), lay) if front else None
         out.append((room, fr))
     return out
+
+
+# THE CLOCK JUMP (transitions, 18 Oct 2026): between two scenes inside a
+# chapter, a cut to the wall clock close, its hands running on half an hour:
+# it is late and he is still reading. The close-up is the room's own render
+# (room3d/build.py `clock`, its face lettered blank), read from the committed
+# pictures rather than the kit, which has no such room. Held, swept, held.
+CLOCK_ANGLE = "clock"
+CLOCK_HOLD_S, CLOCK_SWEEP_S, CLOCK_AFTER_S = 0.35, 0.45, 0.4
+CLOCK_S = CLOCK_HOLD_S + CLOCK_SWEEP_S + CLOCK_AFTER_S
+# How far each jump runs the hands on, in minutes.
+CLOCK_JUMP_MIN = 30
+ROOM3D_RENDERS = Path(__file__).resolve().parents[1] / "room3d" / "renders"
+
+
+class _Shot:
+    """One committed 3D render as the little of a plate the lettering reads."""
+
+    def __init__(self, renders: Path, entry: dict):
+        self.renders = renders
+        self.entry = entry
+        self.canvas = (1920, 1080) if entry.get("aspect", "16x9") == "16x9" else (1080, 1920)
+        self.writable = {k: dict(v, mask=(entry.get("masks") or {}).get(k, ""))
+                         for k, v in (entry.get("surfaces") or {}).items()
+                         if (entry.get("masks") or {}).get(k)}
+
+    def writable_mask(self, which: str) -> Path | None:
+        m = (self.entry.get("masks") or {}).get(which)
+        return self.renders / m if m else None
+
+    @property
+    def picture(self) -> Path:
+        return self.renders / self.entry["states"][0]["png"]
+
+
+def clock_shot(renders: Path = ROOM3D_RENDERS) -> _Shot | None:
+    """The clock close-up, or None where the room was rendered without one."""
+    try:
+        entry = json.loads((renders / "rooms.json").read_text(encoding="utf-8"))[CLOCK_ANGLE]
+    except (OSError, ValueError, KeyError):
+        return None
+    shot = _Shot(renders, entry)
+    items = (shot.writable.get("labels") or {}).get("items") or []
+    if not shot.picture.exists() or not any(i.get("kind") == "clock" for i in items):
+        return None
+    return shot
+
+
+def clock_jump_frames(shot: _Shot, fonts: Path, size: tuple[int, int], fps: int,
+                      start: float, end: float) -> list:
+    """The clock close, its hands going from `start` to `end` (minutes past
+    twelve), as RGB frames `size` big at `fps`: held, swept, held."""
+    from PIL import Image
+
+    face = next(i for i in shot.writable["labels"]["items"] if i.get("kind") == "clock")
+    base = Image.open(shot.picture).convert("RGB").resize(size, Image.LANCZOS)
+    hold, sweep, after = (max(round(x * fps), 1) for x in
+                          (CLOCK_HOLD_S, CLOCK_SWEEP_S, CLOCK_AFTER_S))
+    out, drawn = [], {}
+    for f in range(hold + sweep + after):
+        p = min(max((f - hold + 1) / sweep, 0.0), 1.0)
+        at = round(start + (end - start) * p * p * (3 - 2 * p), 2)
+        if at not in drawn:
+            d = Dressing(episode=0, ticker="", props=((face["id"], clock_text(at)),))
+            drawn[at] = dress(base, _layers(shot, d, fonts, size=size,
+                                            only=frozenset({"labels"})))
+        out.append(drawn[at])
+    return out
+
+
+# THE LIGHTS DIP (transitions, 18 Oct 2026): at a cut between two scenes
+# inside a chapter, the room's lights sag for a breath, an old building's
+# power, and the next shot comes up as they flicker back on. A layer of the
+# room's night over the whole frame, a little lighter in the middle where
+# his screen still glows. Down, held across the cut, back with one flicker.
+DIP_IN_S, DIP_HOLD_S, DIP_OUT_S = 0.22, 0.12, 0.42
+DIP_DEPTH = 0.96
+_DIP_INK = (6, 9, 20)
+# The way back on, as (share of the way, how dark): it catches, drops
+# again, then comes up for good.
+_DIP_BACK = ((0.0, 1.0), (0.14, 0.35), (0.26, 0.8), (0.4, 0.55), (1.0, 0.0))
+DIP_BEFORE_S = DIP_IN_S + DIP_HOLD_S / 2
+DIP_AFTER_S = DIP_HOLD_S / 2 + DIP_OUT_S
+
+
+def _dip_level(p: float) -> float:
+    for (p0, a0), (p1, a1) in itertools.pairwise(_DIP_BACK):
+        if p <= p1:
+            u = (p - p0) / (p1 - p0) if p1 > p0 else 1.0
+            if p1 == 1.0:
+                u = 1 - (1 - u) ** 2
+            return a0 + (a1 - a0) * u
+    return 0.0
+
+
+def dip_frames(size: tuple[int, int], fps: int) -> tuple[list, int]:
+    """The dip as RGBA frames `size` big at `fps`, and how many of them come
+    before the cut it straddles."""
+    import numpy as np
+    from PIL import Image
+
+    W, H = size
+    n_in, n_hold, n_out = (max(round(x * fps), 1) for x in (DIP_IN_S, DIP_HOLD_S, DIP_OUT_S))
+    levels = [((f + 1) / n_in) ** 2 for f in range(n_in)] + [1.0] * n_hold
+    levels += [_dip_level((f + 1) / n_out) for f in range(n_out)]
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    r2 = ((xx - W / 2) / (W / 2)) ** 2 + ((yy - H / 2) / (H / 2)) ** 2
+    shade = np.clip(0.9 + 0.1 * r2 / 2, 0.0, 1.0)
+    ink = np.empty((H, W, 3), dtype=np.uint8)
+    ink[:] = _DIP_INK
+    out = []
+    for lv in levels:
+        a = (np.clip(shade * DIP_DEPTH * lv, 0.0, 1.0) * 255 + 0.5).astype(np.uint8)
+        out.append(Image.fromarray(np.dstack([ink, a]), "RGBA"))
+    return out, n_in + n_hold // 2
 
 
 def reveal_frames(plate, d: Dressing, fonts: Path, size: tuple[int, int], *,

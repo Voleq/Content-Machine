@@ -129,6 +129,8 @@ CAMERAS: dict[str, dict] = {
                        "spot": (1.25, 1.38)},
     # the board: the receipts close, him beside it, and the wide
     "board": {"cam": ((-1.95, -0.25, 1.47), (-1.95, 2.0, 1.47), 33), "spot": None},
+    # the wall clock, close: the clock jump between scenes (the long only)
+    "clock": {"cam": ((-1.27, 0.55, 2.33), (-1.25, 2.0, 2.42), 58), "spot": None},
     "board-side": {"cam": ((-3.00, -0.55, 1.55), (-1.40, 2.0, 1.38), 28),
                    "spot": (-2.25, 1.30)},
     "board-wide": {"cam": ((-1.45, -3.20, 1.60), (-1.10, 2.0, 1.36), 24),
@@ -316,8 +318,12 @@ _current = {"thing": None}
 LETTERED: dict[str, dict] = {}
 
 
-def lettered(o: bpy.types.Object, kind: str, paper=None) -> bpy.types.Object:
-    LETTERED[o.name] = {"kind": kind, "paper": list(paper or LABELS[kind][1])}
+def lettered(o: bpy.types.Object, kind: str, paper=None,
+             half: tuple[float, float] = (0.5, 0.5)) -> bpy.types.Object:
+    """`o` lettered by the bot; `half` its half width and height in its own
+    units (a unit plane's 0.5, the clock face's radius)."""
+    LETTERED[o.name] = {"kind": kind, "paper": list(paper or LABELS[kind][1]),
+                        "half": list(half)}
     return o
 
 
@@ -730,18 +736,21 @@ def build_room(season: str) -> None:
         cyl(f"chalk{k}", 0.008, 0.07, (sx0 + dx, BACK - 0.065, sz0 - 0.032), PALE,
             rot=(0, math.radians(90), math.radians(8 * k)))
 
-    # ---- the wall clock, at three in the morning
+    # ---- the wall clock, at three in the morning: its hands are the bot's
+    # (the clock jump between scenes), so the face is rendered without them
     thing("clock", fixed=True)
     cyl("clockrim", 0.19, 0.05, (-1.25, BACK - 0.03, 2.42), mat("rim", "#1C2230"),
         rot=(math.radians(90), 0, 0), verts=40)
     bpy.ops.mesh.primitive_circle_add(radius=0.165, fill_type="NGON", vertices=40,
                                       location=(-1.25, BACK - 0.058, 2.42), rotation=(math.radians(90), 0, 0))
     face = bpy.context.object
-    face.data.materials.append(mat("clockface", "#E8E6DE", image="clock.png"))
+    face.name = "clockface"
+    face.data.materials.append(mat("clockface", "#E8E6DE", image="clock_face.png"))
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.uv.cube_project(cube_size=0.33)
     bpy.ops.object.mode_set(mode="OBJECT")
     own(face)
+    lettered(face, "clock", half=(0.165, 0.165))
 
     # ---- the low cabinet under the slate, and what sits on it
     thing("credenza")
@@ -1200,8 +1209,9 @@ def surfaces() -> dict:
         o = bpy.data.objects.get(name)
         if o is None or o.hide_render:
             continue
+        hx, hy = spec.get("half", (0.5, 0.5))
         pts = [to_canvas(o.matrix_world @ Vector(c))
-               for c in ((-0.5, 0.5, 0), (0.5, 0.5, 0), (0.5, -0.5, 0), (-0.5, -0.5, 0))]
+               for c in ((-hx, hy, 0), (hx, hy, 0), (hx, -hy, 0), (-hx, -hy, 0))]
         if min(p[2] for p in pts) <= 0.05:
             continue
         tex, _, box_ = LABELS[spec["kind"]]
@@ -1651,6 +1661,8 @@ def main(argv: list[str]) -> int:
             setup_render(size, samples)
             for name in names:
                 if season == "christmas" and name not in CHRISTMAS:
+                    continue
+                if aspect == "9x16" and name not in PORTRAIT:
                     continue
                 print(f"[room3d] {name} {season} {aspect}", flush=True)
                 t0 = time.monotonic()

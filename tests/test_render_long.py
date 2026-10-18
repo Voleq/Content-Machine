@@ -1377,3 +1377,26 @@ def test_every_wide_room_has_a_closer_angle_he_can_stand_in(settings):
         closer = reg.aspect_key(CLOSER_ROOM[stem], "16x9")
         assert closer is not None, f"{CLOSER_ROOM[stem]} is not in the kit"
         assert height(closer) >= WIDE_SHARE * desk_h, f"{closer} is wide too"
+
+
+def test_the_clock_and_the_dip_take_a_cut_between_two_scenes_inside_a_chapter():
+    """18 Oct 2026, transitions 4 and 5: only a cut from one beat of him to
+    the next, inside one chapter, with room either side and nothing
+    covering it, and never two close together."""
+    from pipeline.render_long import _scene_cuts
+    from pipeline.timeline import Segment
+
+    segs = [Segment(0, 10, "host"), Segment(10, 20, "host"),      # 10: inside chapter 1
+            Segment(20, 30, "plate"), Segment(30, 40, "host"),    # 20, 30: a plate's
+            Segment(40, 50, "host"),                              # 40: a chapter break
+            Segment(50, 60, "host"), Segment(60, 61.5, "host"),   # 50 fine; 60 too short after
+            Segment(61.5, 75, "host"), Segment(75, 90, "host")]   # 61.5 covered; 75 fine
+    kw = dict(before=0.5, after=1.2, apart=5.0, seed="x")
+    cover = [(62.0, 63.0)]
+    assert _scene_cuts(segs, [0.0, 40.0], cover, n=5, **kw) == [10, 50, 75]
+    assert _scene_cuts(segs, [0.0, 40.0], cover, n=5, avoid=(12.0,), **kw) == [50, 75]
+    assert _scene_cuts(segs, [0.0, 40.0], cover, n=5, **{**kw, "apart": 30.0}) in (
+        [10, 50], [10, 75])
+    assert len(_scene_cuts(segs, [0.0, 40.0], [], n=1, **kw)) == 1
+    assert _scene_cuts(segs, [0.0, 40.0], [], n=1, **kw) == \
+        _scene_cuts(segs, [0.0, 40.0], [], n=1, **kw)
