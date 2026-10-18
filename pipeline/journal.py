@@ -58,6 +58,7 @@ KINDS: dict[str, str] = {
     "asked": "the operator asked the bot a question with /ask",
     "lessons": "the weekly note to the writer on where viewers left was "
                "rewritten",
+    "voice": "a sentence of a voice was said again and cut in",
     "memory": "a shipped video's jokes and Dennis's new facts were "
               "remembered for the next prompts",
 }

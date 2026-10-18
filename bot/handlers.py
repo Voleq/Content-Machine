@@ -3680,6 +3680,68 @@ class BotCore:
                             f"{hits[0]}` says one again with the fix.")
         return Reply(msg)
 
+    def redo_command(self, chat_id: int, args: list[str]):
+        """`/voice redo N`: sentence N said again and cut into the voice (A7).
+        Returns the reply and the renders to queue again (the caller is
+        async; the queue is)."""
+        from pipeline.cost import SpendCapExceededError
+        from pipeline.voice_redo import RedoRefused, redo_sentence
+
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active video — /new short or /new long first."), []
+        if not args or not args[0].isdigit():
+            return Reply("usage: /voice redo N — /voice numbers the "
+                         "sentences"), []
+        fmt = ws.current_format()
+        script, text, events, _cdir = (self._voice_of(ws, fmt) if fmt
+                                       else (None, "", None, None))
+        if script is None:
+            return Reply("No script on file yet — paste one first."), []
+        try:
+            res = redo_sentence(self.tts, self.settings, text=text, fmt=fmt,
+                                events=events, index=int(args[0]),
+                                ticker=ws.ticker, ws_path=ws.path)
+        except RedoRefused as e:
+            return Reply(f"⛔ {e}"), []
+        except SpendCapExceededError as e:
+            return Reply(f"⛔ {e}"), []
+        journal.note(self.settings, "voice",
+                     f"sentence {res.index} said again "
+                     f"(${res.cost_usd:.2f}): {res.text[:80]}",
+                     ticker=ws.ticker, workdate=ws.workdate)
+        restart = self._stop_renders_of(ws, fmt)
+        cdir = self.tts.voice_dir(text, fmt, events=events)
+        msg = (f"🎙 Sentence {res.index} said again "
+               f"(${res.cost_usd:.2f}); the voice is now "
+               f"{res.new_s:.1f}s (was {res.old_s:.1f}s). {res.left} redo"
+               f"{'s' if res.left != 1 else ''} left for this video.")
+        return Reply(msg, files=[cdir / "audio.m4a"] if cdir else []), restart
+
+    def _stop_renders_of(self, ws: Workspace, fmt: str) -> list:
+        """Cancel this video's queued or running final render in `fmt`, so it
+        can start again on the new voice. Returns what to queue again."""
+        from pipeline.models import JobStatus
+
+        if self.queue is None:
+            return []
+        kinds = {"short": {JobKind.RENDER_SHORT},
+                 "long": {JobKind.RENDER_LONG}}.get(fmt, set())
+        out = []
+        for job in self.queue.store.all():
+            if (job.ticker != ws.ticker or job.workdate != ws.workdate
+                    or job.kind not in kinds or job.status not in (
+                        JobStatus.QUEUED, JobStatus.RUNNING)):
+                continue
+
+            def _stop(j) -> None:
+                j.status = JobStatus.CANCELLED
+                j.detail = "restarting on the redone voice"
+
+            if self.queue.store.update(job.id, _stop) is not None:
+                out.append((job.kind, job.ticker, job.workdate))
+        return out
+
     def unsay_command(self, args: list[str]) -> Reply:
         from pipeline.pronounce import remove_rule
 

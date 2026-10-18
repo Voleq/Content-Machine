@@ -483,6 +483,23 @@ def c_unsay(c: Call):
     return c.core.unsay_command(c.args)
 
 
+async def c_redo(c: Call):
+    reply, restart = await asyncio.to_thread(c.core.redo_command, c.chat_id,
+                                             c.args)
+    queued = 0
+    for kind, ticker, workdate in restart:
+        if c.core.queue is None:
+            break
+        try:
+            await c.core.queue.submit(kind, ticker, workdate)
+            queued += 1
+        except ValueError:
+            continue
+    if queued:
+        reply.text += "\nThe render was stopped and has started again on it."
+    return reply
+
+
 def c_mark(c: Call):
     return c.core.mark_upload(c.args)
 
@@ -843,6 +860,16 @@ COMMANDS: tuple[Command, ...] = (
                 "(case counts, whole words), the right side as the voice "
                 "should say it. Names the sentences of the active video's "
                 "voice that contain the word, to redo with the fix.")),
+    Command("voice", "redo", "N", "say sentence N again, same words",
+            c_redo, aliases=("redo",), example="3", ack="⏳ saying it again…",
+            doc=(
+                "Voices sentence N (as `/voice` numbers them) again on its "
+                "own and cuts the new take into the voice in the pause "
+                "either side, so nothing around it moves. Same words — "
+                "changing them is a script edit and a fresh approval. A paid "
+                "take of one sentence (cents), through the monthly cap, ten "
+                "per video. A render of this video already running is "
+                "stopped and started again on the new voice.")),
     Command("voice", "unsay", "WORD", "drop a pronunciation", c_unsay,
             doc="Removes the rule; the word is said as written again."),
     # /render
