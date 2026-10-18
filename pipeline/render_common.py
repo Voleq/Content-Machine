@@ -425,6 +425,9 @@ class AudioTrack:
     room: bool = False
     wide: tuple[tuple[float, float], ...] = ()
     deess: bool = False
+    # For measuring a mix (A11, `phone_check`): the voice still pushes the
+    # music down, but is not in what comes out.
+    key_only: bool = False
 
 
 # The room on the voice (A8): two reflections 18 and 31 ms late at a tenth
@@ -565,7 +568,10 @@ def audio_graph(spec: CompositeSpec, first_input: int) -> tuple[list[str], list[
                          f"{ROOM_WARMTH}{post}{out}")
         else:
             lines.append(f"[{idx}:a]{chain}{post}{out}")
-        a_labels.append(f"[a{j}]")
+        if track.key_only:
+            lines.append(f"[a{j}]anullsink")
+        else:
+            a_labels.append(f"[a{j}]")
         idx += 1
     if duckers:
         # The voice keys every music track: one copy to the mix, one per

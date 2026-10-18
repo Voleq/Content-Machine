@@ -2148,6 +2148,10 @@ def _render_short(script, tts, workspace: Path, settings, *,
     provenance.sound = sound_summary(
         audio_rows, lufs=measure_lufs(out) if tracks else None,
         placeholders=placeholders_played(settings, tracks))
+    # …and through a phone's speaker, on a real voice only (A11).
+    if tracks and normalises(settings, tts):
+        from pipeline.phone_check import phone_report
+        provenance.phone = phone_report(tracks, duration, workdir)
 
     manifest_path = Path(workspace) / f"{Path(out_name).stem}.manifest.json"
     manifest_path.write_text(json.dumps({

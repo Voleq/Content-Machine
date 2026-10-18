@@ -3469,6 +3469,10 @@ def _render_long(
     provenance.sound = sound_summary(
         audio_rows, lufs=None if draft else measure_lufs(out_path),
         placeholders=placeholders_played(settings, audio))
+    # …and through a phone's speaker, on a real voice only (A11).
+    if spec.normalise_audio:
+        from pipeline.phone_check import phone_report
+        provenance.phone = phone_report(audio, duration, workspace)
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "draft": draft,

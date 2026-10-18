@@ -76,6 +76,9 @@ class Provenance:
     # voice; this is everything under it. A short shipped voice-only for six
     # weeks with nothing anywhere that would have said so.
     sound: dict = field(default_factory=dict)
+    # THE MIX THROUGH A PHONE (A11, `pipeline.phone_check`): the seconds he
+    # is buried in, and the effects a phone's speaker does not play.
+    phone: dict = field(default_factory=dict)
     llm: dict = field(default_factory=dict)
     gates: str = ""
 
@@ -87,7 +90,7 @@ class Provenance:
             "render": self.render,
             "prices": self.prices, "visuals": self.visuals,
             "filings": self.filings, "audio": self.audio,
-            "sound": self.sound,
+            "sound": self.sound, "phone": self.phone,
             "llm": self.llm, "gates": self.gates,
         }
 
@@ -104,6 +107,7 @@ class Provenance:
             filings=dict(data.get("filings") or {}),
             audio=dict(data.get("audio") or {}),
             sound=dict(data.get("sound") or {}),
+            phone=dict(data.get("phone") or {}),
             llm=dict(data.get("llm") or {}),
             gates=str(data.get("gates") or ""),
         )
@@ -126,6 +130,7 @@ class Provenance:
                             ("filings", self._filings_line()),
                             ("audio", self._audio_line()),
                             ("sound", self._sound_line()),
+                            ("phone", self._phone_line()),
                             ("llm", self._llm_line()),
                             ("gates", self.gates)):
             if body:
@@ -231,6 +236,11 @@ class Provenance:
         bits.append(f"{n} PLACEHOLDER SOUND{'S' if n != 1 else ''}" if n
                     else "all sounds real")
         return " · ".join(bits)
+
+    def _phone_line(self) -> str:
+        from pipeline.phone_check import phone_line
+
+        return phone_line(self.phone)
 
     def _llm_line(self) -> str:
         m = self.llm or {}
