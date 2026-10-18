@@ -1461,6 +1461,9 @@ class CostReport(BaseModel):
     dennis_alone_max: float = 0.35
     warnings: list[str] = Field(default_factory=list)
     blocking: list[str] = Field(default_factory=list)
+    # Sentences no gate can verify — dates, deals, departures — for a human
+    # to check before the voice is paid for (S6). "L{n}: text (why)".
+    claims: list[str] = Field(default_factory=list)
     script_sha: str = ""
     # Which subsystems produced invented data for this run. The report is the
     # artifact an operator reads before spending money and approving a render;
@@ -1549,4 +1552,7 @@ class CostReport(BaseModel):
             lines.append(f"⚠️ {w}")
         for b in self.blocking:
             lines.append(f"⛔ {b}")
+        if self.claims:
+            lines.append("Claims to check yourself (not workbook numbers):")
+            lines.extend(f"  • {c}" for c in self.claims)
         return "\n".join(lines)

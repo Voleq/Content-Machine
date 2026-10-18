@@ -758,6 +758,7 @@ and checks every name the bot registers against them in both directions.
 | `/script replace old => new` | Fixes a figure or a phrase by its own words. `all:` prefix replaces every occurrence. |
 | `/script undo` | Steps back one revision. A revert that fails validation costs nothing — the revision it took is put back. |
 | `/script report` | The validation and cost report on file, with its Approve / Swap / Edit buttons — without re-running the intake. |
+| `/script claims` | The sentences no gate can verify — a date, a deal, a departure, a fine — by line, so `/edit N` fixes one. The same list prints at the bottom of the report. |
 | `/script swap` | One button per swappable visual in the LONG; each tap rotates that beat to its next take and re-prices the report. |
 | `/script prompts` | Re-sends the active video's pre-filled prompt. |
 | `/script why [TICKER] [<your sentence>]` | Why this one is worth making, in your own words. Prints above Approve and rides the description. With no sentence it reads back what is recorded. |
@@ -864,6 +865,7 @@ Every name the bot answered before the families still works, as a hidden alias o
 | `/ask` | `/search` |
 | `/batch` | `/jobs batch` |
 | `/cancel` | `/jobs cancel` |
+| `/claims` | `/script claims` |
 | `/correct` | `/publish correct` |
 | `/cost` | `/admin cost` |
 | `/draft` | `/render draft` |

@@ -93,6 +93,17 @@ class Reply:
     card: str = ""
 
 
+def _claims(script, ticker: str, raw: str) -> list[str]:
+    """The report's claims to check (S6); a failure lists none."""
+    try:
+        from pipeline.claims import script_claims
+
+        return script_claims(script, ticker, raw)
+    except Exception as e:                         # noqa: BLE001
+        log.warning("claims list failed: %s", e)
+        return []
+
+
 def _save_report_json(ws: Workspace, fmt: str, report) -> None:
     """The report as data, beside the text one: the video card, the inbox
     and the panel read the price and the findings off it rather than out of
@@ -1376,6 +1387,7 @@ class BotCore:
                           format_name=fmt_name)
         report = build_short_report(script, warnings, self.settings,
                                     self.ledger, self.tts, gate_report=gates)
+        report.claims = _claims(script, ws.ticker, raw)
         (ws.path / "report_short.txt").write_text(report.render_text(), encoding="utf-8")
         _save_report_json(ws, "short", report)
         _journal_script(self.settings, ws, "short", report)
@@ -1409,6 +1421,7 @@ class BotCore:
             script, warnings, v_warnings, v_blocking,
             self.settings, self.ledger, self.tts, plan, filing_count,
         )
+        report.claims = _claims(script, ws.ticker, raw)
         (ws.path / "report_long.txt").write_text(report.render_text(), encoding="utf-8")
         _save_report_json(ws, "long", report)
         _journal_script(self.settings, ws, "long", report)
@@ -3507,6 +3520,25 @@ class BotCore:
         lines.append(f"\n{gaps} day(s) with nothing going out. "
                      f"/publish TICKER YYYY-MM-DD HH:MM schedules one.")
         return Reply("\n".join(lines))
+
+    def claims_text(self, chat_id: int) -> Reply:
+        """`/script claims`: the sentences no gate can check, by line."""
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active video — /new short or /new long first.")
+        fmt = ws.current_format()
+        script = (ws.load_short() if fmt == "short" else
+                  ws.load_long() if fmt else None)
+        if script is None:
+            return Reply("No script on file yet — paste one first.")
+        claims = _claims(script, ws.ticker, ws.raw_script(fmt) or "")
+        if not claims:
+            return Reply(f"{ws.ticker} {fmt.upper()}: no dates, deals or "
+                         f"departures to check — every figure is the "
+                         f"workbook's, and the gates read those.")
+        return Reply(f"{ws.ticker} {fmt.upper()} — {len(claims)} claim(s) to "
+                     f"check yourself (not workbook numbers). `/edit N` "
+                     f"fixes a line.\n\n" + "\n".join(f"• {c}" for c in claims))
 
     def show_report(self, chat_id: int, ticker: str = "",
                     workdate: str = "") -> Reply:

@@ -384,6 +384,10 @@ def c_report(c: Call):
     return c.core.show_report(c.chat_id)
 
 
+def c_claims(c: Call):
+    return c.core.claims_text(c.chat_id)
+
+
 def c_swap(c: Call):
     ws = c.core.context.get(c.chat_id)
     if ws is None:
@@ -771,6 +775,11 @@ COMMANDS: tuple[Command, ...] = (
             c_report, doc=(
                 "The validation and cost report on file, with its Approve / "
                 "Swap / Edit buttons — without re-running the intake.")),
+    Command("script", "claims", "", "dates, deals and names to check yourself",
+            c_claims, aliases=("claims",), doc=(
+                "The sentences no gate can verify — a date, a deal, a "
+                "departure, a fine — by line, so `/edit N` fixes one. The "
+                "same list prints at the bottom of the report.")),
     Command("script", "swap", "", "the swap-clip menu (LONG)", c_swap, doc=(
         "One button per swappable visual in the LONG; each tap rotates that "
         "beat to its next take and re-prices the report.")),
