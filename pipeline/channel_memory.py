@@ -322,6 +322,10 @@ def remember_video(settings: Settings, ticker: str, workdate: str, fmt: str,
         added["facts"] = facts.add(
             key, extract_facts(narration, settings, known),
             ticker=ticker, workdate=workdate, fmt=fmt)
+    if fmt == "long":
+        from pipeline.recurring_bits import note_long
+
+        added["bit"] = note_long(settings, key, ticker, workdate, script)
     return added
 
 

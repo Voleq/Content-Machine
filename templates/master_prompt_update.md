@@ -157,6 +157,10 @@ An update is the format where a confession is most likely to be earned — "I wa
 
 {{confession_ledger}}
 
+### THE RECURRING BITS — two tools, two bits that come back now and then
+
+{{recurring_bits}}
+
 ### WHAT THE CHANNEL ALREADY KNOWS ABOUT CHAPTER TYPES
 Measured, not guessed: YouTube's own retention for every video published so
 far, averaged per chapter TYPE. It is the only data that should influence the

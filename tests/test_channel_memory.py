@@ -41,7 +41,7 @@ def test_remember_is_idempotent(settings):
     again = cm.remember_video(settings, "EXMPL", "2026-07-01", "long",
                               _script(NARRATION))
     assert first["facts"] == 1
-    assert again == {"jokes": 0, "facts": 0}
+    assert again["jokes"] == 0 and again["facts"] == 0
     assert len(cm.FactBook(settings).all()) == 1
 
 

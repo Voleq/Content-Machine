@@ -153,6 +153,10 @@ These are architecture, not tone, and they do more for retention than any joke.
   guidance for you, not a rule the pipeline enforces — nothing downstream reads
   a chapter's mode and inserts a tag. You place them or they do not exist.
 
+## THE RECURRING BITS — two tools, two bits that come back now and then
+
+{{recurring_bits}}
+
 ## THE CONFESSION — roughly one video in three
 
 {{confession_ledger}}

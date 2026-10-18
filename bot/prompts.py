@@ -76,6 +76,13 @@ def confession_ledger(settings: Settings) -> str:
             lines.append(f"    - [{c.kind}] ({where}) {c.text}")
     lines.append("  Declare it in a `=== CONFESSION ===` trailer as "
                  "`kind | the admission`, once, or leave the block out.")
+    # The old trade is a confession by construction, so when it is due it
+    # is THIS video's one (S10) and the two can never stack.
+    from pipeline.recurring_bits import old_trade_line
+
+    trade = old_trade_line(settings)
+    if trade:
+        lines.append(trade)
     return "\n".join(lines)
 
 
@@ -1033,6 +1040,12 @@ def _angle_block(chosen: str) -> str:
     return a
 
 
+def _bits(name: str, settings: Settings) -> str:
+    from pipeline import recurring_bits
+
+    return getattr(recurring_bits, name)(settings)
+
+
 def _memory(name: str, settings: Settings) -> str:
     from pipeline import channel_memory
 
@@ -1115,6 +1128,9 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                  lambda c: _memory("dennis_facts_block", c.settings)),
     PayloadBlock("{{used_jokes}}", _WRITING,
                  lambda c: _memory("used_jokes_block", c.settings)),
+    # Kev's tip and the old trade come back every six to eight longs (S10).
+    PayloadBlock("{{recurring_bits}}", _LONG_FORM,
+                 lambda c: _bits("bits_block", c.settings)),
     PayloadBlock("{{confession_ledger}}", _LONG_FORM,
                  lambda c: confession_ledger(c.settings)),
     PayloadBlock("{{retention}}", _LONG_FORM,
