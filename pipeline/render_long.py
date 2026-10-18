@@ -915,11 +915,18 @@ def _render_long(
     covers: list[tuple[float, float]] = [(0.0, intro_dur + _wipe_off)]
     if end_cut is not None:
         covers.append((end_cut - _wipe_on, end_cut + _wipe_off))
+    from pipeline.room_dressing import TICK_CLIP_S
+
     for k, t in enumerate(chapter_cuts, start=1):
         if t is None:
             continue
-        hold = (float(_bumper.hold_s or 2.0) if k > 1 and _bumper is not None
-                else CHAPTER_OPENER_S)
+        if k == 1:
+            hold = CHAPTER_OPENER_S
+        else:
+            # the board's chapter break where the kit has the board's angle,
+            # design's bumper where not: both cover the cut's first seconds
+            hold = max(TICK_CLIP_S, float(_bumper.hold_s or 2.0)
+                       if _bumper is not None else 0.0)
         covers.append((t - _wipe_on, t + hold))
 
     # WHAT HIS MONITOR SHOWS, CHAPTER BY CHAPTER (items 49, 56): a plate the
@@ -1075,6 +1082,18 @@ def _render_long(
     # once per chapter picture, so the time says which one.
     room_now = [0.0]
     screen_dressings: dict[int, object] = {}
+    chapter_dressings: dict[int, object] = {}
+
+    def _chapter_dressing(at: float):
+        """The episode's dressing with the board ticked off up to the chapter
+        `at` is in. Its chapters open on the cut, as the monitor's do, so the
+        board in the shot after a chapter break is the board the break left."""
+        import bisect
+
+        n = bisect.bisect_right(_starts, at)
+        if n not in chapter_dressings:
+            chapter_dressings[n] = _dressing().in_chapter(n)
+        return chapter_dressings[n]
 
     def _screen_picture(pick) -> Path | None:
         """The plate the chapter's monitor carries, drawn with the beat's own
@@ -1108,7 +1127,7 @@ def _render_long(
         return dest
 
     def _screen_dressing(at: float):
-        base = _dressing()
+        base = _chapter_dressing(at)
         pick = pick_at(screen_picks, at)
         if pick is None:
             return base
@@ -1123,6 +1142,7 @@ def _render_long(
         if plate is None or not getattr(plate, "writable", None):
             return plate
         d = (_screen_dressing(room_now[0]) if "screen" in plate.writable
+             else _chapter_dressing(room_now[0]) if "board" in plate.writable
              else _dressing())
         k = (plate.key, plate.weather, d.fingerprint)
         if k not in written_rooms:
@@ -2754,6 +2774,29 @@ def _render_long(
         _wipe_at(intro_dur, _pair[0], "cold open")
     if end_cut is not None and end_cut < duration - 1.0:
         _wipe_at(end_cut, _pair[1], "end")
+
+    def _board_break(k: int, t: float) -> Path | None:
+        """THE CHAPTER BREAK ON THE BOARD (transitions, 18 Oct 2026): the
+        board's own angle, the chapter just finished ticked off and chapter
+        `k`'s number circled (`room_dressing.tick_frames`), as a clip
+        TICK_CLIP_S long. None where the kit has no board angle to do it on
+        or the chapter is not on the board: the bumper is the break there."""
+        from pipeline.plates import PlateError
+        from pipeline.room_dressing import REVEAL_FPS, tick_frames
+
+        try:
+            plate = _room_plate("receipts", seed=f"{script.ticker}|board")
+        except PlateError:
+            return None
+        frames = tick_frames(plate, _chapter_dressing(t), settings.fonts_dir, (W, H))
+        if not frames:
+            return None
+        plates_used.add(plate.key)
+        idx = [min(int(j / fps * REVEAL_FPS), len(frames) - 1)
+               for j in range(round(TICK_CLIP_S * fps))]
+        return _played_clip(idx, lambda i: frames[i][0], fps,
+                            rdir / f"board_break_{k}.mov", reuse=False)
+
     for k, ((target, title, ctype), t) in enumerate(zip(chapters, chapter_cuts), start=1):
         if t is None:
             if k == 1 and _on_the_title(target, intro_dur):
@@ -2772,14 +2815,34 @@ def _render_long(
         # with its title in the slot: the kit places the bumper between
         # chapters. One that starts under the title has no opener at all (see
         # `_chapter_cuts`). Nothing fades in either, as design's rule 2 has it.
-        bumper = None
+        # SINCE 18 OCT 2026 THE BREAK IS THE BOARD: a cut to the whiteboard,
+        # where the chapter just finished is ticked off and this one's number
+        # circled, each with its marker sound (`highlight`, `pen-circle`) and
+        # the chapter's hit on the cut. He asked for something other than the
+        # paper card between chapters. The bumper stays the break where the
+        # kit has no board angle to draw it on.
+        bumper = board = None
         if k > 1:
+            board = _board_break(k, t)
+        if k > 1 and board is None:
             bumper = bumper_clip(
                 reg, settings, rdir / f"bumper_{k}.mov", aspect=aspect, at=t,
                 n=k, total=len(chapters), title=title,
                 episode=f"{script.ticker.upper()} · {settings.brand_tagline.upper()}",
                 size=(W, H))
-        if bumper is not None:
+        if board is not None:
+            from pipeline.room_dressing import REVEAL_FPS, RING_AT, TICK_AT
+
+            layers.append(OverlayLayer(
+                path=board, x=0, y=0, t_start=t,
+                t_end=min(t + TICK_CLIP_S, duration), is_video=True, hold=True,
+                name=f"chapter_{k}"))
+            long_moves.append({"move": "highlight", "start": round(t + TICK_AT / REVEAL_FPS, 3),
+                               "shot_id": f"chapter_{k}", "slot": "tick"})
+            long_moves.append({"move": "pen-circle", "start": round(t + RING_AT / REVEAL_FPS, 3),
+                               "shot_id": f"chapter_{k}", "slot": "ring"})
+            transition_meta.append({"board": "ticked", "chapter": k, "cut": round(t, 3)})
+        elif bumper is not None:
             layers.append(OverlayLayer(
                 path=bumper.path, x=0, y=0, t_start=t,
                 t_end=min(bumper.end, duration), is_video=True, hold=True,

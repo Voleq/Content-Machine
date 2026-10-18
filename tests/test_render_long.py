@@ -370,9 +370,12 @@ def test_a_chapter_opener_is_the_room_with_the_title_in_its_slot(rendered):
     assert manifest["chapter_warnings"] == []
 
 
-def test_later_chapters_open_on_the_bumper_under_the_blinds(rendered):
-    """Items 22 and 23: the count turns over on every chapter after the first,
-    the blinds' full cover sits on its cut, and both are in the move record."""
+def test_later_chapters_break_on_the_board(rendered):
+    """Every chapter after the first opens on the board (18 Oct 2026): the
+    chapter just finished ticked off and this one's number circled, each
+    heard as a marker. Where the kit has no board angle to draw that on, the
+    break is design's bumper (items 22, 23): the count turns over and the
+    blinds' full cover sits on its cut. Both are in the move record."""
     settings, script, tts, out, manifest = rendered
     layers = {l["name"]: l for l in manifest["layers"]}
     record = manifest["moves"]
@@ -380,9 +383,19 @@ def test_later_chapters_open_on_the_bumper_under_the_blinds(rendered):
     rows = record["moves"]
     assert rows == sorted(rows, key=lambda r: (r["start"], r["move"]))
     assert all(set(r) == {"move", "start", "shot_id", "slot"} for r in rows)
+    boards = [w for w in manifest["transitions"] if "board" in w]
     ticks = {r["shot_id"]: r for r in rows if r["move"] == "tick-over"}
     blinds = [w for w in record["wipes"] if w["transition"] == "wipe-blinds"]
-    assert ticks, "no chapter opened on the bumper"
+    assert boards or ticks, "no chapter after the first had a break"
+    for b in boards:
+        shot = f"chapter_{b['chapter']}"
+        layer = layers[shot]
+        assert abs(layer["t_start"] - b["cut"]) < 1e-3
+        marks = [r for r in rows if r["shot_id"] == shot]
+        assert [(r["move"], r["slot"]) for r in marks] == [("highlight", "tick"),
+                                                           ("pen-circle", "ring")]
+        assert all(layer["t_start"] < r["start"] < layer["t_end"] for r in marks)
+        assert not any(abs(w["cut"] - b["cut"]) < 1e-3 for w in blinds)
     assert len(blinds) == len(ticks)
     for shot, tick in ticks.items():
         bumper = layers[shot]

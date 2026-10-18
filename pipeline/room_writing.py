@@ -16,10 +16,11 @@ his things are this video's, laid on by `pipeline/room_dressing.py`:
   A number it writes must be in the script word for word, and anything too
   long, odd or advising is thrown out. Its answer is kept in the workspace,
   so a re-render of the same script letters the same things.
-- THE REST IS FROM A LIST he can edit (`assets/room_writing.json`): the
-  stitched sign every time, and the notes and cards whenever the model is not
-  running or wrote nothing usable. Each video takes different lines from it
-  than the video before.
+- THE STITCHED SIGN SAYS NOT FINANCIAL ADVICE, every video (his call, 18 Oct
+  2026: "keep this one not financial advice everytime").
+- THE REST IS FROM A LIST he can edit (`assets/room_writing.json`): the notes
+  and cards whenever the model is not running or wrote nothing usable. Each
+  video takes different lines from it than the video before.
 
 NOTHING HERE COMPUTES A FIGURE. The years are the calendar's; every other
 number on his things is the list's or the script's own.
@@ -38,6 +39,8 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 POOL_FILE = "room_writing.json"
+# The stitched sign on his wall, the same in every video.
+SIGN = "NOT\nFINANCIAL\nADVICE"
 CACHE_FILE = "room_writing.json"
 # How much the model is asked for, and how long each piece may be: what
 # fits a 7.5 cm note and an index card at the back of the room.
@@ -113,8 +116,8 @@ def load_pool(assets_dir: Path) -> dict[str, list[str]]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as e:
-        log.warning("room writing: %s unreadable (%s) — the notes, cards and "
-                    "sign go up blank", path, e)
+        log.warning("room writing: %s unreadable (%s) — the notes and cards "
+                    "go up blank", path, e)
         return {}
     return {k: [str(x) for x in v if str(x).strip()]
             for k, v in raw.items() if isinstance(v, list)}
@@ -252,7 +255,5 @@ def props(script, *, ticker: str, workdate: str, episode: int, settings,
         out[f"note{i}"] = n
     for i, c in enumerate(cards):
         out[f"card{i}"] = c
-    sign = take(pool.get("stitches", []), 1, at, "stitches")
-    if sign:
-        out["cs"] = sign[0]
+    out["cs"] = SIGN
     return tuple(sorted(out.items()))

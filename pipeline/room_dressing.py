@@ -41,6 +41,7 @@ not drawn at all when the feed failed and the series was made up.
 from __future__ import annotations
 
 import hashlib
+import itertools
 import json
 import logging
 import math
@@ -52,14 +53,16 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 # Bumped when the drawing changes, so a workspace's written rooms are redone.
-VERSION = "5"
+VERSION = "6"
 
 # What the board asks when the writer's script sets no [BOARD].
 BOARD_DEFAULT_QUESTION = "what are we paying for?"
 # A [BOARD] is the line a man writes on a whiteboard, not a paragraph.
 BOARD_MAX_CHARS = 48
-# The chapters the board lists: more than this is a smudge at any angle.
-BOARD_MAX_CHAPTERS = 6
+# The chapters the board lists. Every one, since each is ticked off on it
+# as the video goes (`tick_frames`): ten is the longest the writer's menu
+# runs, and still a line a man could read from the board's own angle.
+BOARD_MAX_CHAPTERS = 10
 
 # Marker colours, as they read on the board's paper.
 _INK = {"black": (34, 38, 48), "blue": (30, 58, 132), "red": (176, 34, 40)}
@@ -129,14 +132,31 @@ class Dressing:
     # THE WRITING ON HIS THINGS, as (id, text) pairs (`room_writing.props`):
     # an id the room letters and this does not name goes up blank.
     props: tuple[tuple[str, str], ...] = ()
+    # THE CHAPTER THE VIDEO IS IN, counted from one (0: none, a short or a
+    # cover). The board circles its number and every one before it, and
+    # ticks off the ones before it, so a wide shot in chapter four shows the
+    # board as the last chapter break left it.
+    chapter: int = 0
 
     @property
     def fingerprint(self) -> str:
         raw = json.dumps([VERSION, self.episode, self.ticker, self.question,
                           list(self.chapters), [round(c, 4) for c in self.closes],
                           self.span, self.screen_stamp, self.screen_label,
-                          [list(p) for p in self.props]])
+                          [list(p) for p in self.props], self.chapter])
         return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+    @property
+    def board_seed(self) -> str:
+        """What the board's hand is seeded by: the episode, never the chapter
+        or the monitor, so the box and the underline are the same strokes all
+        video long and only the marks are added."""
+        return replace(self, screen="", screen_stamp="", screen_label="",
+                       chapter=0).fingerprint
+
+    def in_chapter(self, n: int) -> Dressing:
+        """This dressing with the board ticked off up to chapter `n`."""
+        return replace(self, chapter=max(int(n), 0))
 
     def showing(self, picture: Path | None, label: str = "") -> "Dressing":
         """This dressing with `picture` on the monitor; the price's run if None."""
@@ -263,20 +283,26 @@ def _path(closes, box, points: int = 0) -> list[tuple[float, float]]:
             for i, v in enumerate(vals)]
 
 
-def board_ink(d: Dressing, fonts: Path, size: tuple[int, int]):
+def board_ink(d: Dressing, fonts: Path, size: tuple[int, int], *,
+              tick: float = 1.0, ring: float = 1.0):
     """The board's writing, as marker on a clear layer `size` big.
 
     Top left the episode in a box (none on a short), beside it the ticker; under them the
-    question, underlined; the chapters down the left; the price's run as a
+    question, underlined; the chapters down the left, ticked off up to the
+    one the video is in and their numbers circled; the price's run as a
     red line on two ruled axes in the corner, marked with its span and no
     value.
+
+    `tick` and `ring` are how much of the newest marks is drawn: the tick on
+    the chapter just finished and the ring on the one starting, as the
+    chapter break draws them (`tick_frames`).
     """
     from PIL import Image, ImageDraw
 
     W, H = size
     img = Image.new("RGBA", size, (0, 0, 0, 0))
     dr = ImageDraw.Draw(img)
-    rnd = random.Random(d.fingerprint)
+    rnd = random.Random(d.board_seed)
     pad = 0.04 * W
     stroke = max(int(0.006 * W), 2)
 
@@ -293,12 +319,12 @@ def board_ink(d: Dressing, fonts: Path, size: tuple[int, int]):
     else:
         bx1 = pad - 0.05 * W        # a short has no number: the ticker leads
 
-    tick = _font(fonts, "PermanentMarker.ttf", 0.15 * H)
+    tf = _font(fonts, "PermanentMarker.ttf", 0.15 * H)
     tx = bx1 + 0.05 * W
     ticker = f"${d.ticker}"
-    while dr.textlength(ticker, font=tick) > W - pad - tx and tick.size > 12:
-        tick = _font(fonts, "PermanentMarker.ttf", tick.size * 0.9)
-    dr.text((tx, by0 - 0.02 * H), ticker, font=tick, fill=_INK["black"] + (255,))
+    while dr.textlength(ticker, font=tf) > W - pad - tx and tf.size > 12:
+        tf = _font(fonts, "PermanentMarker.ttf", tf.size * 0.9)
+    dr.text((tx, by0 - 0.02 * H), ticker, font=tf, fill=_INK["black"] + (255,))
 
     qy = by1 + 0.06 * H
     qfont, qlines = _fit_lines(dr, d.question, fonts, "PermanentMarker.ttf",
@@ -320,10 +346,16 @@ def board_ink(d: Dressing, fonts: Path, size: tuple[int, int]):
         cf = _font(fonts, "Kalam.ttf", min(0.07 * H, room * 0.82))
         y = top
         for i, title in enumerate(chapters, 1):
-            text = f"{i}. {title}"
+            text = f"{i}.  {title}"       # room for the ring round the number
             while dr.textlength(text, font=cf) > chap_w and len(text) > 6:
                 text = text[:-2].rstrip() + "…"
             dr.text((pad, y), text, font=cf, fill=_INK["black"] + (255,))
+            if i < d.chapter:
+                _tick(dr, cf, pad + dr.textlength(text, font=cf), y,
+                      tick if i == d.chapter - 1 else 1.0, f"{d.board_seed}|tick{i}", stroke)
+            if i <= d.chapter:
+                _ring(dr, dr.textbbox((pad, y), f"{i}.", font=cf), cf,
+                      ring if i == d.chapter else 1.0, f"{d.board_seed}|ring{i}", stroke)
             y += room
 
     gx0, gy0, gx1, gy1 = 0.60 * W, top + 0.02 * H, W - pad, H - pad
@@ -339,6 +371,70 @@ def board_ink(d: Dressing, fonts: Path, size: tuple[int, int]):
             pts = [(x, y + rnd.uniform(-0.002, 0.002) * H) for x, y in pts]
             dr.line(pts, fill=_INK["red"] + (255,), width=int(stroke * 1.2), joint="curve")
     return img
+
+
+# THE CHAPTER MARKS: red marker, a tick after a finished chapter's title and
+# a ring round each started chapter's number, drawn as a hand draws them.
+_MARK_INK = _INK["red"] + (255,)
+
+
+def _drawn(pts: list[tuple[float, float]], frac: float) -> list[tuple[float, float]]:
+    """The first `frac` of the stroke through `pts`, by its length."""
+    if frac >= 1.0 or len(pts) < 2:
+        return pts
+    if frac <= 0.0:
+        return []
+    pairs = list(itertools.pairwise(pts))
+    legs = [math.dist(a, b) for a, b in pairs]
+    left = sum(legs) * frac
+    out = [pts[0]]
+    for (a, b), leg in zip(pairs, legs):
+        if left >= leg:
+            out.append(b)
+            left -= leg
+            continue
+        f = left / leg if leg else 0.0
+        out.append((a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f))
+        break
+    return out
+
+
+def _tick(dr, font, x: float, y: float, frac: float, seed: str, stroke: int) -> None:
+    """A tick after a line of text set at (x, y) in `font`, `frac` of it drawn."""
+    asc, desc = font.getmetrics()
+    h = asc + desc
+    rnd = random.Random(seed)
+    x0 = x + 0.35 * h
+    pts = [(x0, y + 0.52 * h), (x0 + 0.2 * h, y + 0.66 * h), (x0 + 0.3 * h, y + 0.8 * h),
+           (x0 + 0.5 * h, y + 0.5 * h), (x0 + 0.72 * h, y + 0.26 * h), (x0 + 0.9 * h, y + 0.1 * h)]
+    pts = [(px + rnd.uniform(-0.03, 0.03) * h, py + rnd.uniform(-0.03, 0.03) * h)
+           for px, py in pts]
+    part = _drawn(pts, frac)
+    if len(part) >= 2:
+        dr.line(part, fill=_MARK_INK, width=int(stroke * 1.3), joint="curve")
+
+
+def _ring(dr, box, font, frac: float, seed: str, stroke: int) -> None:
+    """A ring round the text in `box`, a little more than once round, as a
+    marker goes, `frac` of it drawn."""
+    asc, desc = font.getmetrics()
+    h = asc + desc
+    rnd = random.Random(seed)
+    x0, y0, x1, y1 = box
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    rx = (x1 - x0) / 2 + 0.16 * h
+    ry = (y1 - y0) / 2 + 0.1 * h
+    start = rnd.uniform(-2.4, -1.6)
+    turn, phase = rnd.uniform(1.12, 1.2), rnd.uniform(0, 6.28)
+    n = 48
+    pts = []
+    for j in range(n + 1):
+        a = start + 2 * math.pi * turn * j / n
+        wob = 1 + 0.06 * math.sin(3 * a + phase) + 0.05 * j / n
+        pts.append((cx + rx * wob * math.cos(a), cy + ry * wob * math.sin(a)))
+    part = _drawn(pts, frac)
+    if len(part) >= 2:
+        dr.line(part, fill=_MARK_INK, width=max(int(stroke * 0.9), 2), joint="curve")
 
 
 # ------------------------------------------------------ his things, lettered
@@ -712,9 +808,11 @@ class _Layer:
 
 
 def _layers(plate, d: Dressing, fonts: Path, *, size: tuple[int, int] | None = None,
-            reveal: float = 1.0, only: frozenset[str] | None = None) -> list[_Layer]:
+            reveal: float = 1.0, only: frozenset[str] | None = None,
+            marks: tuple[float, float] = (1.0, 1.0)) -> list[_Layer]:
     """The board's ink and the monitor's picture, each warped into a frame
-    `size` big (the plate's delivered size unless said)."""
+    `size` big (the plate's delivered size unless said). `marks` is how much
+    of the newest tick and ring the board has (`board_ink`)."""
     import numpy as np
     from PIL import Image, ImageDraw
 
@@ -737,7 +835,7 @@ def _layers(plate, d: Dressing, fonts: Path, *, size: tuple[int, int] | None = N
         if which == "board":
             sw, sh = surf.get("size") or (16, 9)
             th = max(int(tw * sh / sw), 16)
-            tex = board_ink(d, fonts, (tw, th))
+            tex = board_ink(d, fonts, (tw, th), tick=marks[0], ring=marks[1])
             colour = surf.get("paper")
         elif which == "screen":
             th = max(int(tw / GLASS_ASPECT), 16)
@@ -952,6 +1050,60 @@ def written_room(plate, d: Dressing, out: Path, fonts: Path):
         log.info("room: wrote episode %d on %s (%s)", d.episode, plate.key,
                  ", ".join(sorted({L.kind for L in layers})))
     return replace(plate, root=root, writable={})
+
+
+# THE CHAPTER BREAK ON THE BOARD (transitions, 18 Oct 2026): in place of the
+# paper card between chapters, the video cuts to the board and the chapter
+# just finished is ticked off, then the next one's number circled, at a
+# marker's pace. In REVEAL_FPS drawings: the tick a third of a second in and
+# drawn in five (the marker sound `highlight` runs 5/12 s), the ring from the
+# eleventh in seven (`pen-circle`, 7/12 s), and the board held to the end.
+TICK_AT, TICK_FRAMES = 4, 5
+RING_AT, RING_FRAMES = 11, 7
+TICK_CLIP_S = 2.0
+
+
+def tick_frames(plate, d: Dressing, fonts: Path, size: tuple[int, int]):
+    """Chapter `d.chapter` starting on the board, as (room, front or None)
+    pairs at `size`, REVEAL_FPS of them a second for TICK_CLIP_S; None when
+    the room has no board in shot or the chapter is not on it.
+
+    The first pictures are the board as the chapter before left it; a room
+    that loops keeps looping under the marker.
+    """
+    if ("board" not in (getattr(plate, "writable", None) or {})
+            or not 2 <= d.chapter <= min(len(d.chapters), BOARD_MAX_CHAPTERS)):
+        return None
+    from PIL import Image
+
+    src = plate.root / plate.family
+    still = _layers(plate, d, fonts, size=size, only=frozenset({"labels", "screen"}))
+    seq = list(plate.frames) if plate.animated else []
+    cache: dict[str, object] = {}
+
+    def _open(n, mode):
+        if n not in cache:
+            cache[n] = Image.open(src / n).convert(mode).resize(size, Image.LANCZOS)
+        return cache[n]
+
+    def _part(i: int, at: int, n: int) -> float:
+        return min(max((i - at + 1) / n, 0.0), 1.0)
+
+    out = []
+    boards: dict[tuple[float, float], list] = {}
+    for i in range(round(TICK_CLIP_S * REVEAL_FPS)):
+        f = seq[i % len(seq)] if seq else None
+        png = f.png if f is not None else plate.files_png
+        front = (f.front if f is not None and f.front else plate.layers.get("front", ""))
+        marks = (_part(i, TICK_AT, TICK_FRAMES), _part(i, RING_AT, RING_FRAMES))
+        if marks not in boards:
+            boards[marks] = _layers(plate, d, fonts, size=size, marks=marks,
+                                    only=frozenset({"board"}))
+        lay = boards[marks] + still
+        room = dress(_open(png, "RGB"), lay)
+        fr = dress(_open(front, "RGBA"), lay) if front else None
+        out.append((room, fr))
+    return out
 
 
 def reveal_frames(plate, d: Dressing, fonts: Path, size: tuple[int, int], *,

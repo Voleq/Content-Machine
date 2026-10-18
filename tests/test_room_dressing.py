@@ -120,6 +120,63 @@ def _plate(tmp: Path, *, frames=("r.png", "r.png", "r_f03.png"), front=True) -> 
         writable=writable)
 
 
+def _red(img) -> np.ndarray:
+    a = np.asarray(img).astype(int)
+    return (a[..., 3] > 0) & (a[..., 0] > 120) & (a[..., 1] < 80)
+
+
+def test_the_board_ticks_off_the_chapters_as_the_video_goes():
+    """18 Oct 2026: the chapters before the one the video is in are ticked,
+    its number and the ones before circled, in red; nothing else moves."""
+    size = (900, 600)
+    d = _dressing(closes=())        # no red price line to confuse the marks
+    none = rd.board_ink(d, FONTS, size)
+    two = rd.board_ink(d.in_chapter(2), FONTS, size)
+    three = rd.board_ink(d.in_chapter(3), FONTS, size)
+    assert not _red(none).any()
+    assert _red(two).sum() > 50 and _red(three).sum() > _red(two).sum()
+    # The episode's box, its ticker and the question are the same strokes in
+    # every chapter: the hand is seeded by the episode, not the chapter.
+    top = slice(0, int(0.35 * size[1]))
+    assert np.array_equal(np.asarray(none)[top], np.asarray(three)[top])
+    assert d.in_chapter(2).board_seed == d.board_seed == d.showing(None).board_seed
+    assert d.in_chapter(2).fingerprint != d.fingerprint
+
+
+def test_a_chapter_break_starts_from_the_board_the_last_chapter_left():
+    """Nothing of the new marks drawn is the board as the chapter before had
+    it; the tick then the ring go on a stroke at a time."""
+    size = (900, 600)
+    d = _dressing(closes=())
+    before = np.asarray(rd.board_ink(d.in_chapter(1), FONTS, size))
+    start = np.asarray(rd.board_ink(d.in_chapter(2), FONTS, size, tick=0.0, ring=0.0))
+    assert np.array_equal(before, start)
+    half = rd.board_ink(d.in_chapter(2), FONTS, size, tick=0.5, ring=0.0)
+    ticked = rd.board_ink(d.in_chapter(2), FONTS, size, tick=1.0, ring=0.0)
+    done = rd.board_ink(d.in_chapter(2), FONTS, size)
+    reds = [_red(x).sum() for x in (start, half, ticked, done)]
+    assert reds == sorted(reds) and len(set(reds)) == 4, reds
+
+
+def test_the_break_is_drawn_on_the_room_at_the_markers_pace(tmp_path):
+    plate = _plate(tmp_path / "kit", frames=("r.png",))
+    d = _dressing(closes=()).in_chapter(2)
+    frames = rd.tick_frames(plate, d, FONTS, (400, 200))
+    assert len(frames) == round(rd.TICK_CLIP_S * rd.REVEAL_FPS)
+    rooms = [np.asarray(r) for r, _ in frames]
+    assert all(f is not None for _, f in frames)
+    # still until the tick, drawing through the ring, then held
+    changed = [i for i in range(1, len(rooms)) if not np.array_equal(rooms[i], rooms[i - 1])]
+    assert changed[0] == rd.TICK_AT
+    assert changed[-1] == rd.RING_AT + rd.RING_FRAMES - 1
+    # a room that loops keeps looping under the marker
+    looped = rd.tick_frames(_plate(tmp_path / "loop"), d, FONTS, (400, 200))
+    assert not np.array_equal(np.asarray(looped[1][0]), np.asarray(looped[2][0]))
+    # The first chapter has no break, and one past the board's list has none.
+    assert rd.tick_frames(plate, d.in_chapter(1), FONTS, (400, 200)) is None
+    assert rd.tick_frames(plate, d.in_chapter(4), FONTS, (400, 200)) is None
+
+
 def test_a_written_room_is_the_same_room_rooted_elsewhere(tmp_path):
     plate = _plate(tmp_path / "kit")
     out = rd.written_room(plate, _dressing(), tmp_path / "written", FONTS)
@@ -415,7 +472,8 @@ def test_the_short_writes_on_the_rooms_it_cuts_to(tmp_path):
     layers = [Layer("t:plate", "plate", "the-turn", 1.0, 4.0, entry_key=plate.key),
               Layer("t:host", "host", "the-turn", 1.0, 4.0, entry_key="host/close-up")]
     result = BuildResult(layers=layers, spans=[], frame=(1080, 1920))
-    settings = SimpleNamespace(price_history_days=120, fonts_dir=FONTS)
+    settings = SimpleNamespace(price_history_days=120, fonts_dir=FONTS,
+                               assets_dir=FONTS.parent)
     prices = SimpleNamespace(closes=list(CLOSES), degraded=False)
     got, rooms = dress_rooms(result, reg, ticker="exmpl", prices=prices,
                              workdir=tmp_path / "w", settings=settings)
