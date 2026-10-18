@@ -2707,6 +2707,16 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     report.findings += report.record("on-screen",
                                      onscreen_fact_check(script, data))
     report.findings += report.record("voice", voice_lint(delivery_text(script)))
+    # Bible v3's checks (10-18): machine phrasing (S1) and the swearing
+    # limits. Both warn; neither can stop a render.
+    from pipeline.writing_checks import (chapter_title_swears, phrasing_lint,
+                                         swear_lint)
+
+    report.findings += report.record(
+        "phrasing", phrasing_lint(delivery_text(script), settings))
+    report.findings += report.record("swearing", swear_lint(
+        narration, "long" if hasattr(script, "chapter_list") else "short")
+        + chapter_title_swears(script))
     report.findings += report.record("direction", direction_lint(script))
     report.findings += report.record("confession",
                                      confession_lint(script, settings))

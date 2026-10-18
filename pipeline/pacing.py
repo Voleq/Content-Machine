@@ -447,12 +447,21 @@ def check_title_package(script, settings: Settings) -> list[Finding]:
     try:
         from pipeline.publish import build_package
 
-        titles = build_package(script, settings,
-                               ticker=getattr(script, "ticker", "")).titles
+        package = build_package(script, settings,
+                                ticker=getattr(script, "ticker", ""))
     except Exception as e:  # noqa: BLE001 — a missing package is not a gate
         log.debug("title check: no package (%s)", e)
         return []
+    titles = package.titles
+    # Swearing in the words AROUND the video (bible v3 §10): YouTube limits
+    # ads for it in a title or the description, wherever the narration is.
+    from pipeline.writing_checks import package_swears
+
+    around = {f"title {n}": t for n, t in enumerate(titles, 1)}
+    around["description"] = package.description
+    around["pinned comment"] = package.pinned_comment
+    found = package_swears(around)
     if not titles or not hook:
-        return []
+        return found
     # The first title is the one the uploader defaults to.
-    return title_coherence(titles[0], hook)
+    return title_coherence(titles[0], hook) + found
