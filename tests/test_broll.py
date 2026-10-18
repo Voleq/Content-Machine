@@ -28,6 +28,13 @@ def test_palette_is_a_real_vetted_palette():
     assert palette_keys() == sorted(PALETTE)
 
 
+def test_the_owned_cat_clip_answers_its_palette_key(settings):
+    """The one owned clip shipped in the repo: first in the chain for its key."""
+    assert "cat_picks_stocks" in PALETTE
+    owned = ContentManager(settings)._library_candidates("cat_picks_stocks")
+    assert [p.name for p in owned] == ["cat_picks_stocks.mp4"]
+
+
 def test_cache_key_by_query_and_provider():
     a = content_cache_key("dumpster fire burning night", "pexels")
     assert a == content_cache_key("dumpster fire burning night", "pexels")

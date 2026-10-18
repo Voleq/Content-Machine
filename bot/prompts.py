@@ -28,7 +28,7 @@ from typing import Callable
 from config import Settings
 from pipeline.broll import PALETTE, palette_keys
 from pipeline.company_data import list_screenshots
-from pipeline.memes import MemeLibrary
+from pipeline.memes import MEME_ROTATION_WINDOW, MemeLibrary, recent_memes
 from pipeline.models import CompanyData
 
 
@@ -155,15 +155,34 @@ def retention_note(settings: Settings, fmt: str) -> str:
                 "earns and ignore this block)")
 
 
-def meme_catalog(settings: Settings) -> str:
-    """Every meme key + its 'use when' — the full catalog (capped in use)."""
+def meme_catalog(settings: Settings, workspace: Path | None = None) -> str:
+    """Every meme key + its 'use when', minus the ones recent videos used.
+
+    A JOKE TOLD LAST WEEK IS NOT OFFERED THIS WEEK. The writer only reaches
+    for what the list shows, so a meme on screen in one of the last
+    `MEME_ROTATION_WINDOW` videos (either lane) is left off it, and approval
+    blocks one written in anyway (`parser_long.validate_long_script`).
+    `workspace` is the video being written, so a rewrite of it does not hide
+    the meme its own earlier render showed.
+    """
     idx = MemeLibrary(settings).index()
     if not idx:
         return "(meme library empty)"
+    recent = recent_memes(settings, exclude=workspace)
     lines = []
     for key in sorted(idx):
+        if key in recent:
+            continue
         use = (idx[key].get("use_when") or "").strip()
         lines.append(f"  - {key}" + (f" — {use}" if use else ""))
+    if not lines:
+        return (f"(none this time: every meme was on screen in the last "
+                f"{MEME_ROTATION_WINDOW} videos. Write this one without a "
+                f"meme.)")
+    left_off = len(idx) - len(lines)
+    if left_off:
+        lines.append(f"  ({left_off} more left off: on screen in the last "
+                     f"{MEME_ROTATION_WINDOW} videos)")
     return "\n".join(lines)
 
 
@@ -1098,7 +1117,7 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     # the paragraph telling the writer the inline form of the same two tags
     # was LONG-form grammar (P3).
     PayloadBlock("{{meme_catalog}}", _LONG_FORM,
-                 lambda c: meme_catalog(c.settings)),
+                 lambda c: meme_catalog(c.settings, c.workspace)),
     PayloadBlock("{{broll_palette}}", _LONG_FORM, lambda c: broll_catalog()),
     PayloadBlock("{{plate_catalogue}}", ("short", "long_write", "update"),
                  lambda c: plate_catalogue(
