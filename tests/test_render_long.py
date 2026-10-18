@@ -411,6 +411,38 @@ def test_later_chapters_break_on_the_board(rendered):
     assert names[-len(wipes):] == wipes
 
 
+
+def test_a_clock_jump_or_a_dip_sits_on_its_cut_over_everything(rendered):
+    """18 Oct 2026, transitions 4 and 5: the clock close-up starts on its
+    cut and is heard as the hands sweep; the dip straddles its cut. Neither
+    is on a chapter's cut, and both are above every layer but the wipes."""
+    settings, script, tts, out, manifest = rendered
+    names = [lay["name"] for lay in manifest["layers"]]
+    layers = {lay["name"]: lay for lay in manifest["layers"]}
+    rows = manifest["moves"]["moves"]
+    clocks = [w for w in manifest["transitions"] if "clock" in w]
+    dips = [w for w in manifest["transitions"] if "dip" in w]
+    assert len(clocks) <= 2 and len(dips) <= 1
+    chapter_cuts = {round(s["t"], 2) for s in manifest["stingers"]}
+    for n, w in enumerate(clocks):
+        lay = layers[f"clock_{n}"]
+        assert abs(lay["t_start"] - w["cut"]) < 1e-3
+        sweep = [r for r in rows if r["shot_id"] == f"clock_{n}"]
+        assert [r["move"] for r in sweep] == ["count-up"]
+        assert lay["t_start"] < sweep[0]["start"] < lay["t_end"]
+    for n, w in enumerate(dips):
+        lay = layers[f"dip_{n}"]
+        assert lay["t_start"] < w["cut"] < lay["t_end"]
+    for w in clocks + dips:
+        assert round(w["cut"], 2) not in chapter_cuts
+    tops = [n for n in names if n.startswith(("clock_", "dip_"))]
+    wipes = [n for n in names if n.startswith("wipe-")]
+    if tops:
+        assert names.index(tops[0]) > max(i for i, n in enumerate(names)
+                                          if not n.startswith(("clock_", "dip_", "wipe-",
+                                                               "pullback_")))
+        assert all(names.index(t) < names.index(w) for t in tops for w in wipes)
+
 # --------------------------------------------------------------------------
 # The mix reacts to structure: a cue on every opener, and a bed that leaves.
 # --------------------------------------------------------------------------
@@ -1391,7 +1423,7 @@ def test_the_clock_and_the_dip_take_a_cut_between_two_scenes_inside_a_chapter():
             Segment(40, 50, "host"),                              # 40: a chapter break
             Segment(50, 60, "host"), Segment(60, 61.5, "host"),   # 50 fine; 60 too short after
             Segment(61.5, 75, "host"), Segment(75, 90, "host")]   # 61.5 covered; 75 fine
-    kw = dict(before=0.5, after=1.2, apart=5.0, seed="x")
+    kw = {"before": 0.5, "after": 1.2, "apart": 5.0, "seed": "x"}
     cover = [(62.0, 63.0)]
     assert _scene_cuts(segs, [0.0, 40.0], cover, n=5, **kw) == [10, 50, 75]
     assert _scene_cuts(segs, [0.0, 40.0], cover, n=5, avoid=(12.0,), **kw) == [50, 75]

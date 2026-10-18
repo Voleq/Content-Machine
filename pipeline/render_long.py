@@ -365,7 +365,9 @@ COLD_OPEN_PREFERRED = "room/window-wide"
 # angle. `gates.reachable_plates` reads these instead. A role asked for below
 # and missing here is a drawing every long puts on screen that the audit
 # reports as having no route to one.
-LONG_ROOM_ROLES = ("talk", "panel")          # and the opener, `opener_role`
+# The board's chapter break is shot in `receipts`, and the pull back out of
+# the monitor in `read` or `talk` (transitions, 18 Oct 2026).
+LONG_ROOM_ROLES = ("talk", "panel", "read", "receipts")   # and the opener, `opener_role`
 
 # THE WIDE ROOMS OPEN A CHAPTER (Valentin, 10 Oct 2026: "he is way too small
 # for the angle ... maybe we could use that only when we're restarting a
@@ -986,8 +988,9 @@ def _render_long(
     # room's lights sagging and flickering back. Sparingly: one clock, a
     # second in a long of eight minutes or more, and one dip, each a minute
     # or more from the others, and none where a cover is.
-    # Both cover their cut, so nothing slides in under them and he does not
-    # turn toward a camera the cut never reaches.
+    # The clock covers its cut, so nothing slides in under it; the dip only
+    # darkens what is there, so the strip and the line under him stay up
+    # through it. He turns toward the next camera at neither (`_cut_to`).
     from pipeline.room_dressing import CLOCK_S, DIP_AFTER_S, DIP_BEFORE_S, clock_shot
 
     _breaks = sorted({*(c for c in chapter_cuts if c is not None),
@@ -1003,7 +1006,6 @@ def _render_long(
         segments, _breaks, covers, n=1, before=DIP_BEFORE_S,
         after=DIP_AFTER_S, apart=_apart, seed=f"dip|{script.ticker}|{duration:.1f}",
         avoid=tuple(clock_cuts))
-    covers += [(c - DIP_BEFORE_S, c + DIP_AFTER_S) for c in dip_cuts]
 
     # WHAT HIS MONITOR SHOWS, CHAPTER BY CHAPTER (items 49, 56): a plate the
     # chapter puts on screen, the writer's [SCREEN] where there is one, else
@@ -1567,12 +1569,12 @@ def _render_long(
     def _cut_to(seg_i: int):
         """The room the cut at the end of host beat `seg_i` goes to, when it
         is a straight cut to him in another room: what he turns to as the
-        beat ends. None at a chapter break or a wipe, or onto a chart."""
+        beat ends. None at a chapter break, a dip or a wipe, or onto a chart."""
         nxt = seg_i + 1
         if nxt >= len(segments) or segments[nxt].kind != "host":
             return None
         cut = segments[nxt].start
-        if any(c is not None and abs(c - cut) < 1e-3 for c in chapter_cuts) \
+        if any(c is not None and abs(c - cut) < 1e-3 for c in (*chapter_cuts, *dip_cuts)) \
                 or any(a - 1e-3 <= cut < b for a, b in covers):
             return None
         try:
