@@ -3742,6 +3742,31 @@ class BotCore:
                 out.append((job.kind, job.ticker, job.workdate))
         return out
 
+    def voice_compare_command(self, chat_id: int) -> Reply:
+        """`/voice compare`: the same twenty seconds dry, with the room, with
+        the de-esser, and with both (A8, A9)."""
+        from pipeline.voice_compare import voice_compare
+
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active video — /new short or /new long first.")
+        fmt = ws.current_format()
+        script, _text, _events, cdir = (self._voice_of(ws, fmt) if fmt
+                                        else (None, "", None, None))
+        if script is None or cdir is None:
+            return Reply("No voice yet to compare — it is made when the "
+                         "render starts (/render).")
+        files = voice_compare(cdir / "audio.m4a", ws.path / "voice_compare")
+        on = [n for n, v in (("VOICE_ROOM", self.settings.voice_room),
+                             ("VOICE_DEESS", self.settings.voice_deess)) if v]
+        return Reply(
+            "🎧 The same twenty seconds four ways: dry (as now), room (a "
+            "small-room echo and a little warmth), deess (the hard S sounds "
+            "softened), both. To keep one, set VOICE_ROOM=true and/or "
+            "VOICE_DEESS=true in .env and restart the bot. "
+            + (f"On now: {', '.join(on)}." if on else "Both are off now."),
+            files=files)
+
     def unsay_command(self, args: list[str]) -> Reply:
         from pipeline.pronounce import remove_rule
 

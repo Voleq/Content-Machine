@@ -483,6 +483,10 @@ def c_unsay(c: Call):
     return c.core.unsay_command(c.args)
 
 
+def c_compare(c: Call):
+    return c.core.voice_compare_command(c.chat_id)
+
+
 async def c_redo(c: Call):
     reply, restart = await asyncio.to_thread(c.core.redo_command, c.chat_id,
                                              c.args)
@@ -870,6 +874,15 @@ COMMANDS: tuple[Command, ...] = (
                 "take of one sentence (cents), through the monthly cap, ten "
                 "per video. A render of this video already running is "
                 "stopped and started again on the new voice.")),
+    Command("voice", "compare", "",
+            "the voice four ways: dry, room, de-essed, both", c_compare,
+            ack="⏳ cutting the clip…", doc=(
+                "Twenty seconds from the middle of the active video's voice, "
+                "four ways: as it is, with the room (a very short small-room "
+                "echo and a little warmth, a touch more in wide shots), with "
+                "the de-esser, and with both. Both ship off: listen, then "
+                "switch on what you liked with `VOICE_ROOM` and "
+                "`VOICE_DEESS`. Free — it re-uses the voice already made.")),
     Command("voice", "unsay", "WORD", "drop a pronunciation", c_unsay,
             doc="Removes the rule; the word is said as written again."),
     # /render

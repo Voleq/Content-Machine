@@ -503,10 +503,21 @@ def move_cues(moves: Sequence[Move], settings, voicing: Voicing, *,
     return tracks
 
 
+def voice_track(path: Path, settings, *,
+                wide: Sequence[tuple[float, float]] = ()) -> AudioTrack:
+    """The voice as the mix takes it, with the room and the de-esser as the
+    switches say (A8, A9)."""
+    return AudioTrack(path=Path(path), gain_db=0.0, voice=True, name="voice",
+                      room=bool(getattr(settings, "voice_room", False)),
+                      deess=bool(getattr(settings, "voice_deess", False)),
+                      wide=tuple(wide))
+
+
 def short_mix(tts, settings, *, cuts: Sequence[Cut] = (), hour: str = "",
               seed: str = "",
               workspace: "Path | str | None" = None,
-              moves: Sequence[Move] = ()) -> list[AudioTrack]:
+              moves: Sequence[Move] = (),
+              wide: Sequence[tuple[float, float]] = ()) -> list[AudioTrack]:
     """Every track under a shots-engine render, or none when there is no voice.
 
     No voice file means no mix at all, the same as before: a proof run on a
@@ -516,8 +527,7 @@ def short_mix(tts, settings, *, cuts: Sequence[Cut] = (), hour: str = "",
     voice = getattr(tts, "audio_path", None)
     if not voice or not Path(voice).exists():
         return []
-    tracks = [AudioTrack(path=Path(voice), gain_db=0.0, voice=True,
-                         name="voice")]
+    tracks = [voice_track(Path(voice), settings, wide=wide)]
     loops: list[AudioTrack] = []
     room = room_track(settings, hour)
     if room:

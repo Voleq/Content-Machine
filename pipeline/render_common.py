@@ -417,6 +417,37 @@ class AudioTrack:
     # Windows of programme time, (start, end), this track is silent in. The
     # half-second of nothing before a SHORT's payoff lands.
     gaps: tuple[tuple[float, float], ...] = ()
+    # The voice only (A8, A9). `room`: a very short small-room echo at about
+    # a tenth of the voice and a little warmth, so he sounds like he is in
+    # the room he is drawn in rather than in a booth; `wide` are the windows
+    # of programme time (wide shots) that get a touch more of it. `deess`:
+    # ffmpeg's de-esser. Both off until he has heard them on his own voice.
+    room: bool = False
+    wide: tuple[tuple[float, float], ...] = ()
+    deess: bool = False
+
+
+# The room on the voice (A8): two reflections 18 and 31 ms late at a tenth
+# and a fourteenth of the voice, the size of a small room with soft things
+# in it, and a gentle lift at 180 Hz. A wide shot hears 1.4 times the echo.
+ROOM_ECHO = "aecho=0:1:18|31:0.10|0.07"
+ROOM_WIDE = 1.4
+ROOM_WARMTH = "equalizer=f=180:t=q:w=1:g=1.5"
+DEESSER = "deesser=i=0.4:m=0.5:f=0.5:s=o"
+
+
+def room_wet(track: "AudioTrack") -> str:
+    """The echo branch of the voice, louder in the wide shots. The windows
+    are programme time; the branch runs before the voice's delay, so they
+    are moved to the voice's own clock."""
+    wet = ROOM_ECHO
+    spans = [(a - track.start_s, b - track.start_s) for a, b in track.wide
+             if b - track.start_s > 0]
+    if spans:
+        terms = "+".join(f"between(t,{max(0.0, a):.3f},{b:.3f})"
+                         for a, b in spans)
+        wet += f",volume='if({terms},{ROOM_WIDE},1.0)':eval=frame"
+    return wet
 
 
 @dataclass
@@ -517,14 +548,23 @@ def audio_graph(spec: CompositeSpec, first_input: int) -> tuple[list[str], list[
             # the lines that carry the joke.
             chain += (",acompressor=threshold=-18dB:ratio=3:attack=8"
                       ":release=180:makeup=2")
+            if track.deess:
+                chain += f",{DEESSER}"
+        post = ""
         if track.start_s > 0:
-            chain += f",adelay={int(track.start_s * 1000)}:all=1"
-        chain += f",volume={track.gain_db + track.trim_db:.1f}dB"
+            post += f",adelay={int(track.start_s * 1000)}:all=1"
+        post += f",volume={track.gain_db + track.trim_db:.1f}dB"
         for a, b in track.gaps:
-            chain += f",volume=0:enable='between(t,{a:.3f},{b:.3f})'"
+            post += f",volume=0:enable='between(t,{a:.3f},{b:.3f})'"
         ducked = j in duckers
         out = f"[pre{j}]" if (ducked or (j == voice_j and duckers)) else f"[a{j}]"
-        lines.append(f"[{idx}:a]{chain}{out}")
+        if track.voice and track.room:
+            lines.append(f"[{idx}:a]{chain},asplit=2[dry{j}][wet{j}]")
+            lines.append(f"[wet{j}]{room_wet(track)}[wetv{j}]")
+            lines.append(f"[dry{j}][wetv{j}]amix=inputs=2:normalize=0,"
+                         f"{ROOM_WARMTH}{post}{out}")
+        else:
+            lines.append(f"[{idx}:a]{chain}{post}{out}")
         a_labels.append(f"[a{j}]")
         idx += 1
     if duckers:
@@ -565,6 +605,16 @@ def audio_graph(spec: CompositeSpec, first_input: int) -> tuple[list[str], list[
         lines.append(f"[amixed]aresample=48000,"
                      f"alimiter=limit={spec.limiter_ceiling}[aout]")
     return inputs, lines
+
+
+def render_audio(spec: CompositeSpec, out_path: Path) -> Path:
+    """The mix alone, as a file: the same graph, no picture. For listening to
+    one setting against another, and for measuring parts of a mix."""
+    inputs, lines = audio_graph(spec, 0)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    run_ffmpeg([*inputs, "-filter_complex", ";".join(lines), "-map", "[aout]",
+                "-t", f"{spec.duration:.3f}", str(out_path)])
+    return out_path
 
 
 def mix_under_picture(

@@ -2118,9 +2118,12 @@ def _render_short(script, tts, workspace: Path, settings, *,
             for sp in result.spans]
     moves = [Move(r["move"], r["start"], r["shot_id"], r["slot"], int(r.get("frames") or 0))
              for r in plan.record()["moves"]]
+    # The wide shots of him hear a touch more room on the voice (A8).
+    wide_ids = {d["shot"] for d in (dennis_3d or []) if not d.get("close_up")}
+    wide = [(c.start, c.end) for c in cuts if c.shot_id in wide_ids]
     tracks = short_mix(tts, settings, cuts=cuts, hour=reg.hour,
                        seed=script.content_sha(),
-                       workspace=workspace, moves=moves)
+                       workspace=workspace, moves=moves, wide=wide)
     if tracks:
         mix_under_picture(silent, tracks, part, duration=duration,
                           audio_bitrate=settings.audio_bitrate,

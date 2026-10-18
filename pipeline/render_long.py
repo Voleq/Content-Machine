@@ -85,7 +85,7 @@ from pipeline.models import (
 from pipeline.bumper import bumper_clip, tick_start, wipe_clip
 from pipeline.plate_frames import drawn_box, frame_indices, playback_seconds
 from pipeline.plates import _prefer_unused, at_episode_hour, load_plates
-from pipeline.sound import (EFFECT_KEYS, Cut, Move, Voicing,
+from pipeline.sound import (EFFECT_KEYS, Cut, Move, Voicing, voice_track,
                             cue_lead_s, manifest_rows, measure_lufs,
                             move_cues, placeholders_played, room_track,
                             sound_summary, theme_tracks, wipe_cues)
@@ -3329,8 +3329,11 @@ def _render_long(
     # which is what actually landed on screen — a chapter with no cut to land
     # on was skipped above, and a cue for an opener nobody sees would be a
     # sound with no picture.
-    audio = [AudioTrack(path=tts.audio_path, gain_db=0.0, voice=True,
-                        name="voice")]
+    # The wide shots of him hear a touch more room on the voice (A8).
+    wide = [(segments[m["segment"]].start, segments[m["segment"]].end)
+            for m in dennis3d_meta
+            if not m.get("close_up") and 0 <= m.get("segment", -1) < len(segments)]
+    audio = [voice_track(tts.audio_path, settings, wide=wide)]
     # The room, under everything, and now the whole floor of the mix. It is
     # diegetic — the desk at three in the morning he is sitting at — and it
     # is the room at the hour the set is drawn at (`sound.room_track`).
