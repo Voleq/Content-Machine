@@ -38,7 +38,7 @@ Vetted b-roll palette — [CLIP: key] / [BROLL: key]:
 {{broll_palette}}
 
 
-Owned memes — [MEME: key] (HARD CAP 1–2 per video):
+Owned memes — [MEME: key] (OPTIONAL: most videos carry none, never more than 2. Memes shown in recent videos are already left off this list):
 {{meme_catalog}}
 
 Chartable metrics — [CHART: metric] ("price" charts the stock). A featured number MUST be one of these:
@@ -273,7 +273,9 @@ draws and where the drawing reads it from.
 ### everything else
 [IMG: query]            real imagery of operations / facilities / people (literal query like "{{ticker}} distribution warehouse")
 [PRODUCT: query]        real imagery of the product itself
-[MEME: key]             from the meme catalog above. HARD CAP: 1–2 per video. A meme is STILL — the freeze is the joke's timing.
+[MEME: key]             from the meme catalog above. Optional and rare: most videos carry none, never more
+                        than 2, and only where one fits the line exactly. A meme is STILL — the freeze is
+                        the joke's timing.
 [CLIP: key or subject]  the visual that PROVES the line. A key from the b-roll palette above, or any specific subject
                         ("lebron shooting a three") — the palette is searched first, then the gif providers, so a real
                         moment is reachable. A clip MOVES. Uncapped: illustration is information, and it is the one
@@ -416,7 +418,7 @@ Dennis is the host and the voice, but the picture does the explaining. When a se
   - Answer "is it priced in?" explicitly against that number — the question is never "good or bad", it's "better or worse than what the price already assumes".
   - Honest both ways: a cheap-looking name can still be a value trap; a dear one can still be worth it. Describe what the price assumes — do not issue a call.
 - At least: one [IMG]/[PRODUCT] on what they do, one [CHART] on the defining metric, and a [SHOW FILING] on every filing you quote.
-- 1–2 [MEME] tags MAXIMUM; zero is fine. Scribbles are uncapped but never wallpaper — and one per frame, because a mark spends the frame's one attention.
+- A [MEME] is the exception, not a fixture. Write none unless one in the catalogue fits a line exactly, and never more than 2. A video with no meme is the normal case: a meme in every video stops being a joke and starts being a habit. Scribbles are uncapped but never wallpaper — and one per frame, because a mark spends the frame's one attention.
 - Let the numbers pick the tone. A genuinely good business gets grudging respect — the irony aims at the market's neglect, not the company.
 - Short sentences. Deadpan reads better clipped. No hype adjectives, no "folks", no exclamation marks.
 - **EVERY FIGURE IN THE NARRATION IS WRITTEN THE WAY IT IS SAID.** The narration is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to the spoken line: values you write INTO a `[PLATE]`, `[CHART]` or `[SCRIBBLE]` are typography and stay as figures — "$1.2B" on the plate, "one point two billion dollars" in the sentence about it.

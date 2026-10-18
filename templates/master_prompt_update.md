@@ -69,7 +69,7 @@ Vetted b-roll palette — [CLIP: key] / [BROLL: key]:
 {{broll_palette}}
 
 
-Owned memes — [MEME: key] (HARD CAP 1–2 per video):
+Owned memes — [MEME: key] (OPTIONAL: most videos carry none, never more than 2. Memes shown in recent videos are already left off this list):
 {{meme_catalog}}
 
 Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below:

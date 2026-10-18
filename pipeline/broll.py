@@ -101,6 +101,9 @@ PALETTE: dict[str, str] = {
     "casino_roulette": "casino roulette wheel spinning",
     "casino_chips": "casino chips stack poker",
     "rocket_launch": "rocket launch smoke",
+    # owned (assets/broll_library/cat_picks_stocks.mp4): a cat walks into a
+    # ring of ticker sheets and sits on one. The query is only the fallback.
+    "cat_picks_stocks": "cat picking a stock off ticker sheets on the floor",
     # money
     "printing_money": "money printing press dollars",
     "counting_cash": "hands counting cash dollars",
