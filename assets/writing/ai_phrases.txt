@@ -1,0 +1,48 @@
+# S1 — phrasings that make a script read as machine-made.
+#
+# One per line. A plain line is matched as whole words, any case. A line that
+# starts with "re:" is a regular expression. Lines starting with # are notes.
+# Edit this on the panel's Library page; the check warns, it never blocks.
+#
+# Not here on purpose: "that's not X, it's Y". The bible allows ONE reframe a
+# script, and the voice check already flags the second.
+here's the thing
+here is the thing
+let that sink in
+the result?
+the answer?
+the catch?
+re: \bdelv(e|es|ed|ing)\b
+in conclusion
+it's worth noting
+it is worth noting
+it's important to note
+it is important to note
+at the end of the day
+make no mistake
+buckle up
+let's dive in
+let's dive into
+dive into
+in today's video
+without further ado
+a testament to
+tapestry
+the elephant in the room
+plot twist
+spoiler alert
+here's the kicker
+here's where it gets interesting
+and that's the real story
+the truth is
+let's be honest
+let's break it down
+fast forward to
+the bottom line
+simply put
+unpack
+moreover
+furthermore
+in essence
+navigating the landscape
+re: \bnot just\b[^.?!]{1,60}\bbut\b
