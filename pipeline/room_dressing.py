@@ -44,7 +44,7 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 # Bumped when the drawing changes, so a workspace's written rooms are redone.
-VERSION = "3"
+VERSION = "4"
 
 # What the board asks when the writer's script sets no [BOARD].
 BOARD_DEFAULT_QUESTION = "what are we paying for?"
@@ -72,23 +72,27 @@ _PAPER_QUIET = (85, 90, 102)
 # whole glass already, less the notes stuck on it.
 _SCREEN_TEX = (1920, 1080)
 _SCREEN_CHART = (60, 116, 1392, 1044)
-# The glass's width over its height in the room: build.py's screenface
-# plane, 0.80 of Kenney's screen across and 0.60 of it up. Pictures are drawn
-# at this shape before they go on the glass; drawn at the chart area's
-# texture pixels, they came out a fifth too wide.
-GLASS_ASPECT = 2.16
-# Where the chapter's picture goes on the glass, as fractions of it: as tall
-# as the glass less a hair, and clear of the sticky notes on its corners,
-# which build.py keeps within 0.11 of either side. A 16:9 plate fills it.
-_PICTURE_BOX = (0.115, 0.03, 0.885, 0.97)
+# The glass's width over its height in the room: build.py's MONITOR_GLASS,
+# 16:9 since 18 Oct 2026 (it was a 2.16 sheet floating in front of Kenney's
+# bigger dark screen, and a plate on it read as paper taped to a monitor).
+# Pictures are drawn at this shape before they go on the glass.
+GLASS_ASPECT = 16 / 9
+# Where the chapter's picture goes on the glass, as fractions of it: all of
+# it, edge to edge, as a screen shows a page. The sticky notes are on the
+# frame and only lap over the picture's corners.
+_PICTURE_BOX = (0.0, 0.0, 1.0, 1.0)
 # How bright the glass shines its paper, as a share of the picture: a screen
 # turned down for a night room, not a light box.
 SCREEN_LEVEL = 0.85
+# A screen seen across a room is a little brighter in its middle than at its
+# edges: how much darker the corners are.
+SCREEN_FALLOFF = 0.12
 # THE GLOW: a lit screen in a dark room spills past its edge in a camera.
 # What spills, as a share of what the glass shines, and how far, as a share
-# of the glass's width.
-GLOW = 0.3
-GLOW_RADIUS = 0.05
+# of the glass's width. Only round the glass, never over it or the notes on
+# it, which a haze over made look smeared.
+GLOW = 0.18
+GLOW_RADIUS = 0.035
 # How many pictures the chapter's chart takes to draw itself in, at what rate:
 # a second.
 REVEAL_FRAMES = 12
@@ -550,7 +554,7 @@ def _layers(plate, d: Dressing, fonts: Path, *, size: tuple[int, int] | None = N
             colour = surf.get("paper")
         elif which == "screen":
             th = max(int(tw / GLASS_ASPECT), 16)
-            tex = screen_chart(d, fonts, (tw, th), reveal=reveal)
+            tex = _falloff(screen_chart(d, fonts, (tw, th), reveal=reveal))
             colour = surf.get("backlight")
             glow = GLOW_RADIUS * edge
             pad = int(3 * glow) + 1
@@ -581,6 +585,20 @@ def _layers(plate, d: Dressing, fonts: Path, *, size: tuple[int, int] | None = N
             layer.glow = glow
         out.append(layer)
     return out
+
+
+def _falloff(img):
+    """`img` a touch darker towards its corners (SCREEN_FALLOFF), as a lit
+    screen reads, rather than a flat card."""
+    import numpy as np
+    from PIL import Image
+
+    w, h = img.size
+    x = np.linspace(-1.0, 1.0, w, dtype=np.float32)[None, :]
+    y = np.linspace(-1.0, 1.0, h, dtype=np.float32)[:, None]
+    k = 1.0 - SCREEN_FALLOFF * (0.6 * x * x + 0.4 * y * y)
+    a = np.asarray(img.convert("RGB"), dtype=np.float32) * k[..., None]
+    return Image.fromarray(np.clip(a + 0.5, 0, 255).astype(np.uint8), "RGB")
 
 
 def _soft(a, r: float):
@@ -633,7 +651,8 @@ def dress(img, layers: list[_Layer]):
             lit = a * tex * (SCREEN_LEVEL * lit_b / np.maximum(L.colour, 1e-4))
             f = f * (1 - a) + lit
             if L.glow > 0:
-                f = f + GLOW * _soft(lit, L.glow) * (1 - a)
+                outside = (1 - L.pixels[..., 3])[..., None]
+                f = f + GLOW * _soft(lit, L.glow) * outside
         arr[y0:y0 + h, x0:x0 + w, :3] = _encode(f)
         if arr.shape[2] == 4:
             # A front layer is clear where nothing stands in front of him.

@@ -59,7 +59,7 @@ import addon_utils
 import bmesh
 import numpy as np
 from bpy_extras.object_utils import world_to_camera_view
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -99,6 +99,8 @@ SLATE = (-0.86, 0.58, 1.42, 2.14)        # the slate a chapter title is chalked 
 DOOR = (-1.36, -0.44, 2.08)              # on the left wall: y0, y1, height
 DESK = (2.05, 0.86, 1.62, 0.76, 1.04)    # centre x, centre y, width, depth, top z
 SCREEN_ROT = -25                         # the screen turned to the room: its chart reads
+MONITOR_GLASS = (0.78, 0.78 * 9 / 16)    # the glass, 16:9 like the plates it shows
+MONITOR_TILT = 6                         # degrees it leans back
 
 # ------------------------------------------------------------------- the angles
 # Every angle the kit drew at 16:9, under its own name, each with its job:
@@ -502,13 +504,87 @@ def dead_screen(name: str, loc, rot: float, scale: float = 1.9) -> None:
     face.location += n * 0.04
 
 
+def wallpaper(name: str, base: str, stripe: str, period: float = 0.22) -> bpy.types.Material:
+    """A papered wall, not bare plaster: broad stripes a shade apart, laid by
+    where they are in the room (x + y), so every wall's run on round the
+    corner without a seam."""
+    m = mat(name, base)
+    nt = m.node_tree
+    geo = nt.nodes.new("ShaderNodeNewGeometry")
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+    add = nt.nodes.new("ShaderNodeMath")
+    add.operation = "ADD"
+    div = nt.nodes.new("ShaderNodeMath")
+    div.operation = "DIVIDE"
+    div.inputs[1].default_value = period
+    frac = nt.nodes.new("ShaderNodeMath")
+    frac.operation = "FRACT"
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.interpolation = "CONSTANT"
+    ramp.color_ramp.elements[0].position = 0.0
+    ramp.color_ramp.elements[0].color = lin(base)
+    ramp.color_ramp.elements[1].position = 0.55
+    ramp.color_ramp.elements[1].color = lin(stripe)
+    nt.links.new(geo.outputs["Position"], sep.inputs[0])
+    nt.links.new(sep.outputs["X"], add.inputs[0])
+    nt.links.new(sep.outputs["Y"], add.inputs[1])
+    nt.links.new(add.outputs[0], div.inputs[0])
+    nt.links.new(div.outputs[0], frac.inputs[0])
+    nt.links.new(frac.outputs[0], ramp.inputs["Fac"])
+    nt.links.new(ramp.outputs["Color"], nt.nodes["Principled BSDF"].inputs["Base Color"])
+    return m
+
+
+# The wood panelling round the bottom of every wall, its rail, and the
+# skirting under it: what makes four painted walls a room somebody lives in.
+WAINSCOT = 0.84
+
+
+def wainscot(name: str, along: str, at: float, inward: int, a0: float, a1: float) -> None:
+    """Panelling on one run of wall, `along` x (the back and front walls) or y
+    (the side walls), whose face is at `at`, the room on its `inward` side,
+    from a0 to a1: a backing board, raised panels, the rail on top and the
+    skirting at the foot."""
+    back = mat("wainscot", "#4A3424", 0.7)
+    raised = mat("wainpanel", "#5A402C", 0.6)
+    rail = mat("wainrail", "#6A4A32", 0.55)
+    skirt = mat("skirting", "#3A281C", 0.6)
+    length = a1 - a0
+
+    def put(nm, depth, run, height, off, z, m, a=None):
+        c = (a0 + a1) / 2 if a is None else a
+        if along == "x":
+            box(f"{name}-{nm}", (run, depth, height), (c, at + inward * off, z), m)
+        else:
+            box(f"{name}-{nm}", (depth, run, height), (at + inward * off, c, z), m)
+
+    put("back", 0.018, length, WAINSCOT, 0.009, WAINSCOT / 2, back)
+    put("rail", 0.045, length, 0.05, 0.0225, WAINSCOT, rail)
+    put("skirt", 0.045, length, 0.14, 0.0225, 0.07, skirt)
+    n = max(1, round(length / 0.72))
+    pitch = length / n
+    if pitch > 0.30:
+        for k in range(n):
+            put(f"panel{k}", 0.012, pitch - 0.12, WAINSCOT - 0.36, 0.024, 0.14 + (WAINSCOT - 0.14) / 2 + 0.01,
+                raised, a=a0 + pitch * (k + 0.5))
+
+
+def cornice(name: str, along: str, at: float, inward: int, a0: float, a1: float) -> None:
+    """The moulding where a wall meets the ceiling, in two steps."""
+    TRIM = mat("trim", "#C2C8D0", 0.6)
+    for k, (depth, height, z) in enumerate(((0.07, 0.08, HEIGHT - 0.04), (0.035, 0.05, HEIGHT - 0.105))):
+        if along == "x":
+            box(f"{name}-cornice{k}", (a1 - a0, depth, height), ((a0 + a1) / 2, at + inward * depth / 2, z), TRIM)
+        else:
+            box(f"{name}-cornice{k}", (depth, a1 - a0, height), (at + inward * depth / 2, (a0 + a1) / 2, z), TRIM)
+
+
 def build_room(season: str) -> None:
     scn = bpy.context.scene
     xmas = season == "christmas"
 
-    WALL = mat("wall", "#2C3752")
-    SIDEWALL = mat("wallSide", "#28324B")
-    TRIM = mat("trim", "#1A2130")
+    WALL = wallpaper("wall", "#2C3752", "#33405F")
+    SIDEWALL = wallpaper("wallSide", "#28324B", "#2E3A56")
     FLOOR = mat("floor", "#FFFFFF", 0.7, image="floor.png")
     WOOD = mat("deskwood", "#8A6240", 0.6)
     DARKMETAL = mat("darkmetal", "#20262F", 0.5, metal=0.4)
@@ -519,10 +595,18 @@ def build_room(season: str) -> None:
     fl = plane("floor", (RIGHT - LEFT, BACK - FRONT), (0, (BACK + FRONT) / 2, 0), (0, 0, 0), FLOOR)
     fl.data.uv_layers.active.data.foreach_set(
         "uv", [c for v in ((0, 0), (3.2, 0), (3.2, 2.8), (0, 2.8)) for c in v])
+    # the boards run on across the whole floor (a picture's default is to
+    # stop at its edge, which left all but one corner of it bare)
+    for nd in FLOOR.node_tree.nodes:
+        if nd.type == "TEX_IMAGE":
+            nd.extension = "REPEAT"
     thing("ceiling", fixed=True)
     plane("ceiling", (RIGHT - LEFT, BACK - FRONT), (0, (BACK + FRONT) / 2, HEIGHT),
-          (math.radians(180), 0, 0), mat("ceil", "#1A2030"))
-    cyl("ceilinglight", 0.22, 0.06, (0.6, -0.6, HEIGHT - 0.03), PALE)
+          (math.radians(180), 0, 0), mat("ceil", "#30384A"))
+    # the room's own light, off at this hour: a glass dome on a rose
+    cyl("ceilingrose", 0.17, 0.03, (0.6, -0.6, HEIGHT - 0.015), mat("trim", "#C2C8D0", 0.6), verts=32)
+    dome = sphere("ceilinglight", 0.24, (0.6, -0.6, HEIGHT - 0.03), mat("dome", "#D8D4C8", 0.4))
+    dome.scale = (1, 1, 0.42)
 
     thing("backwall", fixed=True)
     wall = box("backwall", (RIGHT - LEFT, 0.12, HEIGHT), (0, BACK + 0.06, HEIGHT / 2), WALL)
@@ -535,7 +619,8 @@ def build_room(season: str) -> None:
     bpy.context.view_layer.objects.active = wall
     bpy.ops.object.modifier_apply(modifier="window")
     bpy.data.objects.remove(cut)
-    box("skirt-back", (RIGHT - LEFT, 0.025, 0.12), (0, BACK - 0.0125, 0.06), TRIM)
+    wainscot("back", "x", BACK, -1, LEFT, RIGHT)
+    cornice("back", "x", BACK, -1, LEFT, RIGHT)
 
     thing("leftwall", fixed=True)
     lw = box("leftwall", (0.12, BACK - FRONT, HEIGHT), (LEFT - 0.06, (BACK + FRONT) / 2, HEIGHT / 2), SIDEWALL)
@@ -548,15 +633,20 @@ def build_room(season: str) -> None:
     bpy.context.view_layer.objects.active = lw
     bpy.ops.object.modifier_apply(modifier="door")
     bpy.data.objects.remove(cut)
-    box("skirt-left-a", (0.025, dy0 - FRONT, 0.12), (LEFT + 0.0125, (dy0 + FRONT) / 2, 0.06), TRIM)
-    box("skirt-left-b", (0.025, BACK - dy1, 0.12), (LEFT + 0.0125, (BACK + dy1) / 2, 0.06), TRIM)
+    # round the door, clear of its casing
+    wainscot("left-a", "y", LEFT, 1, FRONT, dy0 - 0.08)
+    wainscot("left-b", "y", LEFT, 1, dy1 + 0.08, BACK)
+    cornice("left", "y", LEFT, 1, FRONT, BACK)
     box("switch", (0.012, 0.08, 0.12), (LEFT + 0.006, dy1 + 0.22, 1.18), PALE)
 
     thing("rightwall", fixed=True)
     box("rightwall", (0.12, BACK - FRONT, HEIGHT), (RIGHT + 0.06, (BACK + FRONT) / 2, HEIGHT / 2), SIDEWALL)
-    box("skirt-right", (0.025, BACK - FRONT, 0.12), (RIGHT - 0.0125, (BACK + FRONT) / 2, 0.06), TRIM)
+    wainscot("right", "y", RIGHT, -1, FRONT, BACK)
+    cornice("right", "y", RIGHT, -1, FRONT, BACK)
     thing("frontwall", fixed=True)
     box("frontwall", (RIGHT - LEFT, 0.12, HEIGHT), (0, FRONT - 0.06, HEIGHT / 2), SIDEWALL)
+    wainscot("front", "x", FRONT, 1, LEFT, RIGHT)
+    cornice("front", "x", FRONT, 1, LEFT, RIGHT)
 
     # ---- the window: frame, bars, sill, curtains, the radiator under it
     thing("window", fixed=True)
@@ -728,25 +818,38 @@ def build_room(season: str) -> None:
     cyl("pen", 0.006, 0.14, (dx - 0.58, dy - 0.15, dz + 0.016), mat("pen", "#283C9A", 0.4),
         rot=(0, math.radians(90), math.radians(30)))
 
-    # the screen, turned to face where he stands: it is his key light
+    # the screen, turned to face where he stands: it is his key light. Built
+    # here, not Kenney's, so the glass the bot writes on IS the screen: a
+    # 16:9 pane flush in a thin bezel, leaned back a little, its picture
+    # edge to edge, and nothing of it a sheet floating in front of a bigger
+    # dark screen (which is how a chapter's plate on it read before).
     thing("monitor")
-    smn, smx = kenney("computerScreen", (dx + 0.48, dy + 0.08, dz), rot=SCREEN_ROT, scale=2.2,
-                      recolor={k: "#262C36" for k in KENNEY})
-    sw = math.hypot(smx.x - smn.x, smx.y - smn.y)
-    scr = plane("screenface", (sw * 0.80, (smx.z - smn.z) * 0.60),
-                ((smn.x + smx.x) / 2, (smn.y + smx.y) / 2, smn.z + (smx.z - smn.z) * 0.60),
-                (math.radians(90), 0, math.radians(SCREEN_ROT)), screen_mat(), group="screen")
-    # a hair in front of the glass. Kenney's screen faces (sin r, -cos r):
-    # into the room, so the chart on it is what the camera reads.
-    n = Vector((math.sin(math.radians(SCREEN_ROT)), -math.cos(math.radians(SCREEN_ROT)), 0))
-    scr.location += n * 0.045
-    bpy.context.view_layer.update()
-    lo = Vector([min(c[i] for c in scr.bound_box) for i in range(3)])
-    hi = Vector([max(c[i] for c in scr.bound_box) for i in range(3)])
-    for k, (u, v, roll) in enumerate(((0.03, 0.93, 6), (0.95, 0.10, -8), (0.06, 0.08, 4))):
-        p = scr.matrix_world @ Vector((lo.x + u * (hi.x - lo.x), lo.y + v * (hi.y - lo.y), 0))
-        plane(f"note{k}", (0.075, 0.075), p + n * 0.006,
-              (math.radians(90), math.radians(roll), math.radians(SCREEN_ROT)),
+    r, t = math.radians(SCREEN_ROT), math.radians(MONITOR_TILT)
+    facing = Vector((math.sin(r), -math.cos(r), 0))
+    right = Vector((math.cos(r), math.sin(r), 0))
+    up = Vector((0, 0, 1))
+    n = facing * math.cos(t) + up * math.sin(t)          # out of the glass
+    gup = up * math.cos(t) - facing * math.sin(t)        # up the glass
+    turn = Matrix((right, gup, n)).transposed().to_euler()
+    gw, gh = MONITOR_GLASS
+    side, top, chin, deep = 0.018, 0.018, 0.05, 0.035
+    cx, cy = dx + 0.48, dy + 0.08
+    gc = Vector((cx, cy, dz + 0.10 + chin + gh / 2))     # the glass's centre
+    HOUSING = mat("monitorbody", "#262C36", 0.45)
+    box("monitor-housing", (gw + 2 * side, gh + top + chin, deep),
+        gc + gup * ((top - chin) / 2) - n * (deep / 2), HOUSING, rot=turn)
+    box("monitor-back", (gw * 0.55, gh * 0.55, 0.03), gc - n * (deep + 0.015), HOUSING, rot=turn)
+    box("monitor-neck", (0.07, 0.035, gc.z - dz - 0.04),
+        Vector((cx, cy, (gc.z + dz - 0.04) / 2)) - facing * (deep + 0.035), HOUSING, rot=(0, 0, r))
+    box("monitor-foot", (0.30, 0.20, 0.014), Vector((cx, cy, dz + 0.007)) - facing * 0.05, HOUSING,
+        rot=(0, 0, r))
+    scr = plane("screenface", (gw, gh), gc + n * 0.0015, turn, screen_mat(), group="screen")
+    # the notes are stuck to the frame where they half cover the corner of
+    # the picture, the way notes on a screen are; not on the picture itself
+    for k, (u, v, roll) in enumerate(((0.02, 0.97, 6), (1.012, 0.24, -8), (0.13, -0.11, 4))):
+        p = gc + right * ((u - 0.5) * gw) + gup * ((v - 0.5) * gh) + n * 0.004
+        plane(f"note{k}", (0.075, 0.075), p, (Matrix((right, gup, n)).transposed()
+                                               @ Matrix.Rotation(math.radians(roll), 3, "Z")).to_euler(),
               mat(f"note{k}", "#F2D45C", 0.9, image=f"note{k}.png"))
 
     # the desk lamp: the warm fill
@@ -791,9 +894,10 @@ def build_room(season: str) -> None:
             continue
         for j in range(2):
             kenney("books", (RIGHT - 0.22, bmn.y + 0.25 + j * 0.42, bmn.z + z + 0.04), rot=-90 + j * 6, scale=2.0)
-    # the six-screen days, retired to the top of the shelves
-    dead_screen("oldscreen1", (RIGHT - 0.26, bmn.y + 0.26, bmx.z), rot=-80, scale=1.8)
-    dead_screen("oldscreen2", (RIGHT - 0.24, bmn.y + 0.72, bmx.z), rot=-102, scale=1.7)
+    # on top: a plant that gets the lamp, and the books that did not fit
+    kenney("pottedPlant", (RIGHT - 0.24, bmn.y + 0.24, bmx.z), rot=20, scale=1.0,
+           recolor={"plant": "#3F6E4E"})
+    kenney("books", (RIGHT - 0.22, bmn.y + 0.70, bmx.z), rot=-90, scale=2.0)
 
     thing("bin")
     tmn, tmx = kenney("trashcan", (2.95, 0.72, 0), scale=1.2)
@@ -802,18 +906,15 @@ def build_room(season: str) -> None:
                                               location=(2.95 + ox, 0.72 + oy, tmx.z + 0.02))
         bpy.context.object.data.materials.append(mat("paperball", "#E4E6E8"))
         own(bpy.context.object)
-    for k, (bx_, by_) in enumerate(((2.70, 0.58), (2.76, 0.96), (2.60, 0.80), (3.06, 0.44))):
-        bpy.ops.mesh.primitive_ico_sphere_add(radius=0.04, subdivisions=1, location=(bx_, by_, 0.035))
-        bpy.context.object.data.materials.append(mat("paperball", "#E4E6E8"))
-        own(bpy.context.object)
 
     thing("rug", fixed=True)      # the floor's: he stands on it, never behind it
-    kenney("rugRectangle", (0.75, 0.25, 0), scale=4.2)
+    rx, ry, rw, rd = 0.15, -0.05, 3.3, 2.2
+    box("rugbase", (rw, rd, 0.008), (rx, ry, 0.004), mat("rugbase", "#2C3450", 0.95))
+    plane("rug", (rw, rd), (rx, ry, 0.0085), (0, 0, 0), mat("rug", "#FFFFFF", 0.95, image="rug.png"))
 
     thing("plant")
     if not xmas:
-        # dying: the cactus on the cabinet is the one that copes with him
-        kenney("pottedPlant", (-2.95, 1.70, 0), rot=30, scale=2.4, recolor={"plant": "#7E6E3C"})
+        kenney("pottedPlant", (-2.95, 1.70, 0), rot=30, scale=2.4, recolor={"plant": "#3F6E4E"})
 
     thing("floorlamp")
     fmn, fmx = kenney("lampRoundFloor", (2.88, -1.25, 0), scale=2.2)
@@ -853,16 +954,18 @@ def build_room(season: str) -> None:
     plane("mc", (0.40, 0.52), (LEFT + 0.032, 0.06, 1.56), (math.radians(90), 0, math.radians(90)),
           mat("mc", "#F2F0E8", image="margin_call.png"))
 
-    # ---- the box of old filings and the stacks by it, on the floor by the board
+    # ---- the box of old filings, lid on, by the board, the latest on top
     thing("filings")
-    kmn, kmx = kenney("cardboardBoxOpen", (-1.20, 1.72, 0), rot=4, scale=1.6)
-    box("boxpaper", (kmx.x - kmn.x - 0.08, kmx.y - kmn.y - 0.08, 0.02),
-        ((kmn.x + kmx.x) / 2, (kmn.y + kmx.y) / 2, kmx.z - 0.06), mat("stackpaper", "#E8E8E2", 0.9))
+    kmn, kmx = kenney("cardboardBoxClosed", (-1.20, 1.72, 0), rot=4, scale=1.6)
     plane("boxlabel", (min(0.34, kmx.x - kmn.x - 0.06), 0.16), ((kmn.x + kmx.x) / 2, kmn.y - 0.004, kmx.z * 0.55),
           (math.radians(90), 0, 0), mat("boxlabel", "#B08C60", image="boxlabel.png"))
-    paper_stack("floorstack0", (-0.96, 1.40, 0), 0.16, "filing.png", turn=8, tabs=5)
-    paper_stack("floorstack1", (-1.40, 1.38, 0), 0.09, "proxy.png", turn=-12)
-    paper_stack("floorstack1b", (-1.40, 1.38, 0.09), 0.07, "form10q.png", turn=10, tabs=3)
+    paper_stack("boxstack", ((kmn.x + kmx.x) / 2, (kmn.y + kmx.y) / 2, kmx.z), 0.06, "proxy.png", turn=-8, tabs=3)
+
+    # ---- the print over the sofa
+    thing("longrun", fixed=True)
+    box("lrframe", (0.03, 1.06, 0.74), (LEFT + 0.015, -2.70, 1.62), mat("certframe", "#2A2018", 0.6))
+    plane("lr", (0.96, 0.64), (LEFT + 0.032, -2.70, 1.62), (math.radians(90), 0, math.radians(90)),
+          mat("lr", "#ECE4D0", image="long_run.png"))
 
     # ---- the sofa by the door, where the night ends
     thing("sofa")

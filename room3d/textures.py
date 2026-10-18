@@ -241,6 +241,80 @@ def floor() -> None:
     im.save(OUT / "floor.png")
 
 
+def rug() -> None:
+    """The rug in the middle of the room: a worn wool kilim, brick red in a
+    navy border, so the floor reads as a home's and not a bare slab."""
+    rnd = random.Random(9)
+    W, H = 2400, 1600
+    NAVY, CREAM, BRICK, OCHRE, DEEP = (44, 52, 78), (206, 190, 156), (132, 54, 42), (196, 146, 64), (96, 36, 30)
+    im = Image.new("RGB", (W, H), NAVY)
+    d = ImageDraw.Draw(im)
+    d.rectangle([150, 150, W - 150, H - 150], fill=CREAM)
+    # the border's running diamonds
+    for x in range(40, W, 110):
+        for y in (75,  H - 75):
+            d.polygon([(x, y - 34), (x + 34, y), (x, y + 34), (x - 34, y)], fill=OCHRE)
+    for y in range(150, H - 100, 110):
+        for x in (75, W - 75):
+            d.polygon([(x, y - 34), (x + 34, y), (x, y + 34), (x - 34, y)], fill=OCHRE)
+    # the field: a medallion of nested diamonds and two half ones at the ends
+    FW, FH = W - 360, H - 360
+    field = Image.new("RGB", (FW, FH), BRICK)
+    fd = ImageDraw.Draw(field)
+    cx, cy = FW / 2, FH / 2
+    for r, c in ((560, NAVY), (500, CREAM), (450, DEEP), (330, OCHRE), (270, NAVY), (150, CREAM), (90, BRICK)):
+        fd.polygon([(cx, cy - r * 0.9), (cx + r, cy), (cx, cy + r * 0.9), (cx - r, cy)], fill=c)
+    for ex in (0, FW):
+        for r, c in ((300, NAVY), (240, CREAM), (190, DEEP)):
+            fd.polygon([(ex, cy - r * 0.9), (ex + r, cy), (ex, cy + r * 0.9), (ex - r, cy)], fill=c)
+    im.paste(field, (180, 180))
+    # wool and wear: a fine speckle, and the path to the desk a little paler
+    px = im.load()
+    for _ in range(140000):
+        x, y = rnd.randrange(W), rnd.randrange(H)
+        r, g, b = px[x, y]
+        k = rnd.randint(-14, 14)
+        px[x, y] = (max(0, min(255, r + k)), max(0, min(255, g + k)), max(0, min(255, b + k)))
+    wear = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(wear).ellipse([W * 0.55, H * 0.15, W * 1.05, H * 0.85], fill=26)
+    wear = wear.filter(ImageFilter.GaussianBlur(160))
+    im = Image.composite(Image.new("RGB", (W, H), (200, 186, 160)), im, wear)
+    im.save(OUT / "rug.png")
+
+
+def long_run() -> None:
+    """The print over the sofa, on the paper the plates are printed on: a
+    century of the market drawn by hand, its three worst days marked, under
+    a title as flat as he is."""
+    rnd = random.Random(23)
+    W, H = 1500, 1000
+    PAPER, INK, RED = (236, 228, 208), (34, 34, 40), (176, 52, 44)
+    im = Image.new("RGB", (W, H), PAPER)
+    d = ImageDraw.Draw(im)
+    d.text((W / 2, 110), "THE LONG RUN", font=font(COUR, 92), fill=INK, anchor="mm")
+    d.text((W / 2, 190), "(not to scale)", font=font(COURR, 40), fill=(90, 86, 80), anchor="mm")
+    x0, x1, base = 120, W - 120, H - 150
+    d.line([(x0, base), (x1, base)], fill=INK, width=4)
+    d.line([(x0, base), (x0, 270)], fill=INK, width=4)
+    pts, y = [], base - 230
+    crashes = {0.12: "1929", 0.62: "1987", 0.84: "2008"}
+    marks = []
+    n = 120
+    for i in range(n + 1):
+        t = i / n
+        y -= 3.8 + rnd.uniform(-5, 5)
+        for at in crashes:
+            if abs(t - at) < 0.5 / n:
+                y += 150 if at == 0.12 else 110
+                marks.append((x0 + (x1 - x0) * t, y, crashes[at]))
+        pts.append((x0 + (x1 - x0) * t, max(y, 290)))
+    wobble(d, pts, INK, 7, rnd, jitter=1.2)
+    for x, y, label in marks:
+        d.ellipse([x - 26, y - 26, x + 26, y + 26], outline=RED, width=5)
+        d.text((x + 30, y + 54), label, font=font(COUR, 40), fill=RED, anchor="lm")
+    im.save(OUT / "long_run.png")
+
+
 def certificate() -> None:
     """The framed print on the wall: an old share certificate, no issuer."""
     rnd = random.Random(4)
@@ -410,6 +484,8 @@ def main() -> None:
     night(snow=True)
     chalkboard()
     floor()
+    rug()
+    long_run()
     certificate()
     margin_call()
     cross_stitch()
