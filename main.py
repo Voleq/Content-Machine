@@ -19,7 +19,7 @@ from pipeline.render_common import set_render_politeness
 from bot.commands import NotifyPrefs, menu_commands, schedule_inbox
 from bot.feed import Feed
 from bot.handlers import (BotCore, build_application, schedule_batch,
-                          schedule_retention_notes)
+                          schedule_retention_notes, schedule_viewer_questions)
 
 log = logging.getLogger("dennis")
 
@@ -223,6 +223,9 @@ def main() -> None:
         schedule_batch(application, core)
         # Weekly: the sentences viewers left on, into the next writing prompt.
         schedule_retention_notes(application, core)
+        # Weekly, and only while VIEWER_QUESTIONS is on: the long's closing
+        # section of viewer questions.
+        schedule_viewer_questions(application, core)
 
     async def _post_shutdown(application) -> None:
         """Let go of anything still reading a filing (P1).

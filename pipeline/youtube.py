@@ -374,6 +374,22 @@ class YouTubeClient:
                                                   {"textOriginal": text}}}},
         ).execute()
 
+    def top_comments(self, video_id: str, n: int = 50) -> list[str]:
+        """The top-level comments YouTube ranks highest, as plain text."""
+        if self._youtube is None:
+            self._youtube = self._build("youtube", "v3")
+        resp = self._youtube.commentThreads().list(
+            part="snippet", videoId=video_id, order="relevance",
+            maxResults=max(1, min(n, 100)), textFormat="plainText",
+        ).execute()
+        out = []
+        for item in resp.get("items") or []:
+            top = ((item.get("snippet") or {}).get("topLevelComment") or {})
+            text = (top.get("snippet") or {}).get("textDisplay") or ""
+            if text.strip():
+                out.append(text.strip())
+        return out
+
     def append_description(self, video_id: str, extra: str) -> None:
         """Add to a published video's description without losing what is there.
 

@@ -130,6 +130,7 @@ Movement 1 still opens on what you said last time; say it in this kind of line.
 
 ## THE SIGN-OFF — POINT AT ONE VIDEO THAT IS ALREADY OUT
 {{public_videos}}
+{{viewer_questions}}
 
 ## OUTPUT
 

@@ -52,6 +52,9 @@ PURPOSES: dict[str, str] = {
     "dennis-facts": "lists the new facts Dennis said about himself in a "
                     "shipped script, so later ones never contradict them "
                     "(local model only)",
+    "viewer-questions": "picks the real questions out of the top comments "
+                        "under the public videos, for the long's closing "
+                        "section (local model only, off by default)",
     "skeptic": "reads a script as a hostile investor and names its weakest "
                "claims (advisory, never blocks)",
     "broll query": "turns a visual cue in a script into a stock-footage "

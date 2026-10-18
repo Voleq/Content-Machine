@@ -409,6 +409,11 @@ class Settings(BaseSettings):
     retention_notes_enabled: bool = Field(default=True,
                                           alias="RETENTION_NOTES_ENABLED")
     retention_note_days: int = Field(default=7, alias="RETENTION_NOTE_DAYS")
+    # Viewer questions (S7): once a week, the top comments under the public
+    # videos are read and up to eight real questions kept; the long's
+    # writer answers one or two in a short closing section. OFF until the
+    # channel has viewers — off, the prompt carries no trace of it.
+    viewer_questions: bool = Field(default=False, alias="VIEWER_QUESTIONS")
 
     # ------------------------------------------------ free sources (P3.4)
     # 8-K/EX-99.1 and Form 4 reuse the EDGAR client above (SEC_USER_AGENT and

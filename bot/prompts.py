@@ -1052,6 +1052,12 @@ def _public(ctx: "_Ctx") -> str:
     return public_videos_block(ctx.settings)
 
 
+def _questions(ctx: "_Ctx") -> str:
+    from pipeline.viewer_questions import questions_block
+
+    return questions_block(ctx.settings)
+
+
 def _hook(ctx: "_Ctx") -> str:
     from pipeline.hook_types import hook_type_block
 
@@ -1186,6 +1192,7 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{recent_chapter_orders}}", _LONG_FORM,
                  lambda c: _orders(c)),
     PayloadBlock("{{public_videos}}", _LONG_FORM, lambda c: _public(c)),
+    PayloadBlock("{{viewer_questions}}", _LONG_FORM, lambda c: _questions(c)),
     PayloadBlock("{{chapter_types}}", _LONG_FORM,
                  lambda c: chapter_type_catalogue(c.settings, fmt=c.fmt,
                                                   sector=_sector(c))),

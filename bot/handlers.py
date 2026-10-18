@@ -3869,6 +3869,35 @@ def schedule_retention_notes(application, core: BotCore) -> None:
         notes_job, interval=6 * 3600, first=10 * 60, name="retention_notes")
 
 
+def schedule_viewer_questions(application, core: BotCore) -> None:
+    """Re-read the comments once a week while `VIEWER_QUESTIONS` is on (S7).
+
+    Checked every six hours against the stored list's own date, like the
+    retention note, so a box that restarts every few days still runs it.
+    Off, each check returns at once: nothing is read, nothing is sent."""
+    settings = core.settings
+
+    async def questions_job(ctx) -> None:
+        import asyncio
+
+        from pipeline.viewer_questions import questions_due, refresh_questions
+        from pipeline.youtube import YouTubeClient, available
+
+        if not questions_due(settings) or not available(settings)[0]:
+            return
+        try:
+            kept = await asyncio.to_thread(refresh_questions, settings,
+                                           YouTubeClient(settings))
+        except Exception as e:  # noqa: BLE001 - a pass that dies waits for the next
+            log.warning("viewer questions failed (%s)", e)
+            return
+        log.info("viewer questions: %d kept", kept)
+
+    application.job_queue.run_repeating(
+        questions_job, interval=6 * 3600, first=15 * 60,
+        name="viewer_questions")
+
+
 # The cloud Bot API's limit on what a bot may DOWNLOAD (getFile).
 TELEGRAM_DOWNLOAD_MAX_BYTES = 20_000_000
 
