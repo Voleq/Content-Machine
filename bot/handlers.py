@@ -3540,6 +3540,37 @@ class BotCore:
                      f"check yourself (not workbook numbers). `/edit N` "
                      f"fixes a line.\n\n" + "\n".join(f"• {c}" for c in claims))
 
+    def cold_read(self, chat_id: int, answer: str = "") -> Reply:
+        """`/script coldread`: the cold-read prompt as a file; with text, the
+        answer pasted back, saved beside the script with its lines linked."""
+        from pipeline.cold_read import (cold_read_prompt, save_cold_read,
+                                        spoken_lines)
+
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active video — /new short or /new long first.")
+        fmt = ws.current_format()
+        script = (ws.load_short() if fmt == "short" else
+                  ws.load_long() if fmt else None)
+        if script is None:
+            return Reply("No script on file yet — paste one first.")
+        lines = spoken_lines(script, ws.raw_script(fmt) or "")
+        if not answer.strip():
+            f = ws.path / f"cold_read_prompt_{fmt}.md"
+            f.write_text(cold_read_prompt(lines, fmt), encoding="utf-8")
+            return Reply(
+                f"🧊 Cold read for {ws.ticker} {fmt.upper()}: paste this file "
+                f"into a fresh chat, then send the answer back with "
+                f"`/script coldread <the answer>`.", files=[f])
+        read = save_cold_read(ws.path, fmt, answer, lines,
+                              script_sha=script.content_sha())
+        linked = sorted({n for _, n in read.quotes})
+        where = (", ".join(f"L{n}" for n in linked) if linked
+                 else "no line it quoted could be found")
+        return Reply(f"🧊 Cold read saved for {ws.ticker} {fmt.upper()} — "
+                     f"{len(read.quotes)} note(s) linked: {where}. "
+                     f"`/edit N` fixes a line.")
+
     def show_report(self, chat_id: int, ticker: str = "",
                     workdate: str = "") -> Reply:
         """The stored report, with its buttons, without re-running the

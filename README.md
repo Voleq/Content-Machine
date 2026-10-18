@@ -759,6 +759,7 @@ and checks every name the bot registers against them in both directions.
 | `/script undo` | Steps back one revision. A revert that fails validation costs nothing — the revision it took is put back. |
 | `/script report` | The validation and cost report on file, with its Approve / Swap / Edit buttons — without re-running the intake. |
 | `/script claims` | The sentences no gate can verify — a date, a deal, a departure, a fine — by line, so `/edit N` fixes one. The same list prints at the bottom of the report. |
+| `/script coldread [the answer]` | With nothing after it: a prompt file to paste into a fresh chat — the narration, numbered, and five questions a viewer who has never seen the channel answers by quoting the line (lost me, landed, fell flat, I'd click away, didn't believe). Send the answer back after the command and it is saved beside the script, each quote linked to its line. |
 | `/script swap` | One button per swappable visual in the LONG; each tap rotates that beat to its next take and re-prices the report. |
 | `/script prompts` | Re-sends the active video's pre-filled prompt. |
 | `/script why [TICKER] [<your sentence>]` | Why this one is worth making, in your own words. Prints above Approve and rides the description. With no sentence it reads back what is recorded. |
@@ -866,6 +867,7 @@ Every name the bot answered before the families still works, as a hidden alias o
 | `/batch` | `/jobs batch` |
 | `/cancel` | `/jobs cancel` |
 | `/claims` | `/script claims` |
+| `/coldread` | `/script coldread` |
 | `/correct` | `/publish correct` |
 | `/cost` | `/admin cost` |
 | `/draft` | `/render draft` |

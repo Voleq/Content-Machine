@@ -388,6 +388,10 @@ def c_claims(c: Call):
     return c.core.claims_text(c.chat_id)
 
 
+def c_coldread(c: Call):
+    return c.core.cold_read(c.chat_id, c.raw or " ".join(c.args))
+
+
 def c_swap(c: Call):
     ws = c.core.context.get(c.chat_id)
     if ws is None:
@@ -780,6 +784,15 @@ COMMANDS: tuple[Command, ...] = (
                 "The sentences no gate can verify — a date, a deal, a "
                 "departure, a fine — by line, so `/edit N` fixes one. The "
                 "same list prints at the bottom of the report.")),
+    Command("script", "coldread", "[the answer]",
+            "a first-time viewer's read, before the voice is paid",
+            c_coldread, aliases=("coldread",), doc=(
+                "With nothing after it: a prompt file to paste into a fresh "
+                "chat — the narration, numbered, and five questions a viewer "
+                "who has never seen the channel answers by quoting the line "
+                "(lost me, landed, fell flat, I'd click away, didn't "
+                "believe). Send the answer back after the command and it is "
+                "saved beside the script, each quote linked to its line.")),
     Command("script", "swap", "", "the swap-clip menu (LONG)", c_swap, doc=(
         "One button per swappable visual in the LONG; each tap rotates that "
         "beat to its next take and re-prices the report.")),
