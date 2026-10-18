@@ -416,6 +416,12 @@ class TTSEngine:
         """Would synthesize() be free? (drives the §9.3 cost report)"""
         return self._cache_dir(text, fmt, events, draft)[0].exists()
 
+    def voice_dir(self, text: str, fmt: str, *, events=None,
+                  draft: bool = False) -> Path | None:
+        """The cache entry holding this script's finished voice, or None."""
+        marker, cdir, *_ = self._cache_dir(text, fmt, events, draft)
+        return cdir if marker.exists() else None
+
     def billable_chars(self, text: str, fmt: str, *, events=None) -> int:
         """The characters the paid voice would be sent — the clean script
         plus the delivery direction inserted into it, which is what the
@@ -423,7 +429,8 @@ class TTSEngine:
         length and ran low by every inserted tag."""
         return len(self._cache_dir(text, fmt, events, False)[2])
 
-    def _cache_dir(self, text: str, fmt: str, events, draft: bool):
+    def _cache_dir(self, text: str, fmt: str, events, draft: bool,
+                   take: int = 0):
         """(audio_path's dir marker, cdir, request text, ids) for one request.
 
         The tier is part of the key. Without it a draft's local audio would
@@ -449,15 +456,84 @@ class TTSEngine:
             keyed["_delivery"] = fingerprint
         if tier != "paid":
             keyed["_tier"] = tier
-        key = cache_key(voice_id, model_id, keyed, req_text)
+        if take:
+            # A second take of the same words (A7): its own entry, or the
+            # cache would hand the first take back.
+            keyed["_take"] = take
+        base_key = cache_key(voice_id, model_id, keyed, req_text)
+        said_text, edits, key, to_index = req_text, [], base_key, []
+        if tier == "paid":
+            said_text, edits, key, to_index = self._said_variant(
+                base_key, keyed, voice_id, model_id, req_text, spans)
         cdir = self.settings.cache_dir / "tts" / key
         marker = cdir / "audio.m4a"
         return (marker if (cdir / "words.json").exists() else cdir / "__absent__",
-                cdir, req_text, voice_id, model_id, vsettings, tier, spans)
+                cdir, said_text, voice_id, model_id, vsettings, tier, spans,
+                edits, req_text, base_key, to_index)
+
+    # -- pronunciations (A5) -------------------------------------------------
+    # The paid request carries the spoken forms of the list's words. The list
+    # is his to edit at any time, and the key is the request, so a rule added
+    # after a voice was paid for would re-key it and the next render would
+    # buy it again. So every variant generated for one base request is
+    # indexed, and a voice that exists wins over the list as it stands now.
+
+    def _say_index_path(self) -> Path:
+        return self.settings.cache_dir / "tts" / "say_index.json"
+
+    def _say_index(self) -> dict:
+        try:
+            data = json.loads(self._say_index_path().read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
+    def _note_said(self, base_key: str, rules) -> None:
+        if not rules:
+            return
+        index = self._say_index()
+        row = [[r.word, r.said] for r in rules]
+        seen = [v for v in index.get(base_key, []) if v != row]
+        index[base_key] = (seen + [row])[-8:]
+        path = self._say_index_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(index), encoding="utf-8")
+        tmp.replace(path)
+
+    def _said_variant(self, base_key, keyed, voice_id, model_id, req_text, spans):
+        """(text sent, edits, key, rules to index once generated): the
+        variant already voiced if there is one, else the list as it stands."""
+        from pipeline.pronounce import Rule, apply_rules, load_rules, rules_hitting
+
+        def variant(rules):
+            said, edits = apply_rules(req_text, rules, protect=spans)
+            if not edits:
+                return req_text, [], base_key, []
+            used = [r for r in rules
+                    if any(req_text[e.src_start:e.src_end] == r.word for e in edits)]
+            k = dict(keyed)
+            k["_say"] = ";".join(f"{r.word}=>{r.said}" for r in used)
+            return said, edits, cache_key(voice_id, model_id, k, said), used
+
+        def done(key):
+            return (self.settings.cache_dir / "tts" / key / "words.json").exists()
+
+        live = variant(rules_hitting(req_text, load_rules(self.settings)))
+        if done(live[2]):
+            return (*live[:3], [])
+        for row in reversed(self._say_index().get(base_key, [])):
+            older = variant([Rule(w, s) for w, s in row])
+            if done(older[2]):
+                return (*older[:3], [])
+        if done(base_key):
+            return req_text, [], base_key, []
+        return live
 
     def synthesize(self, text: str, fmt: str, *, events=None,
                    draft: bool = False, free_only: bool = False,
-                   cached_only: bool = False, ticker: str = "") -> TTSResult:
+                   cached_only: bool = False, ticker: str = "",
+                   take: int = 0) -> TTSResult:
         """text must be the CLEAN script (tags stripped). fmt: short|long.
 
         `events` carries the script's delivery direction ([BEAT], [SIGH],
@@ -498,8 +574,9 @@ class TTSEngine:
             )
 
         clean_text = text
-        _, cdir, text, voice_id, model_id, vsettings, tier, spans = self._cache_dir(
-            clean_text, fmt, events, draft)
+        (_, cdir, text, voice_id, model_id, vsettings, tier, spans,
+         said_edits, before_said, base_key, to_index) = self._cache_dir(
+            clean_text, fmt, events, draft, take)
         audio_path = cdir / "audio.m4a"
         words_path = cdir / "words.json"
 
@@ -599,7 +676,12 @@ class TTSEngine:
         # Alignment offsets mirror the REQUEST, which carries break tags the
         # clean script does not. The timeline resolves every visual cue
         # through these offsets, so put them back on the clean text.
-        if clean_text != text:
+        if said_edits:
+            # The spoken forms back onto the written words first (A5)...
+            from pipeline.pronounce import undo_rules
+
+            words = undo_rules(words, said_edits, before_said)
+        if clean_text != before_said:
             words = remap_to_clean(words, clean_text, spans)
 
         # The cache entry is complete BEFORE the chunks go. They used to be
@@ -625,7 +707,10 @@ class TTSEngine:
             "tier": tier,
             "mock": self.settings.mock_mode,
             "cost_usd": cost_usd,
+            "said": [[before_said[e.src_start:e.src_end],
+                      text[e.dst_start:e.dst_end]] for e in said_edits],
         }, indent=2), encoding="utf-8")
+        self._note_said(base_key, to_index)
 
         return TTSResult(
             audio_path=audio_path,
