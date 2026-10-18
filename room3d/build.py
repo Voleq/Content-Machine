@@ -130,7 +130,7 @@ CAMERAS: dict[str, dict] = {
     # the board: the receipts close, him beside it, and the wide
     "board": {"cam": ((-1.95, -0.25, 1.47), (-1.95, 2.0, 1.47), 33), "spot": None},
     # the wall clock, close: the clock jump between scenes (the long only)
-    "clock": {"cam": ((-1.27, 0.55, 2.33), (-1.25, 2.0, 2.42), 58), "spot": None},
+    "clock": {"cam": ((-1.27, 0.55, 2.33), (-1.25, 2.0, 2.42), 64), "spot": None},
     "board-side": {"cam": ((-3.00, -0.55, 1.55), (-1.40, 2.0, 1.38), 28),
                    "spot": (-2.25, 1.30)},
     "board-wide": {"cam": ((-1.45, -3.20, 1.60), (-1.10, 2.0, 1.36), 24),

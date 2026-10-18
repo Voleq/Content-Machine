@@ -886,6 +886,88 @@
   },
   "title": null
  },
+ "clock": {
+  "anchor": null,
+  "angle": "clock",
+  "aspect": "16x9",
+  "camera": {
+   "lens": 64,
+   "location": [
+    -1.27,
+    0.55,
+    2.33
+   ],
+   "target": [
+    -1.25,
+    2.0,
+    2.42
+   ]
+  },
+  "headCovered": null,
+  "masks": {
+   "labels": "clock_mask_labels.png"
+  },
+  "season": "plain",
+  "states": [
+   {
+    "png": "clock.jpg",
+    "tag": ""
+   },
+   {
+    "png": "clock_dip.jpg",
+    "tag": "_dip"
+   },
+   {
+    "png": "clock_dip2.jpg",
+    "tag": "_dip2"
+   }
+  ],
+  "surfaces": {
+   "labels": {
+    "items": [
+     {
+      "box": [
+       0,
+       0,
+       600,
+       600
+      ],
+      "depth": 1.395,
+      "id": "clockface",
+      "kind": "clock",
+      "paper": [
+       234,
+       232,
+       224
+      ],
+      "quad": [
+       [
+        560.6,
+        130.3
+       ],
+       [
+        1362.0,
+        132.3
+       ],
+       [
+        1368.0,
+        936.8
+       ],
+       [
+        554.7,
+        937.4
+       ]
+      ],
+      "tex": [
+       600,
+       600
+      ]
+     }
+    ]
+   }
+  },
+  "title": null
+ },
  "desk-front": {
   "anchor": {
    "h": 1112,
