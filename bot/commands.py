@@ -471,6 +471,10 @@ def c_correct(c: Call):
     return c.core.correct_command(c.args)
 
 
+def c_mark(c: Call):
+    return c.core.mark_upload(c.args)
+
+
 # ---- /jobs
 def c_status(c: Call):
     if c.core.queue is None:
@@ -871,6 +875,16 @@ COMMANDS: tuple[Command, ...] = (
                 "The next week (or N weeks) of scheduled publishes, day by "
                 "day in `PUBLISH_TIMEZONE`, with the empty days marked — "
                 "something for `/jobs batch` to plan against.")),
+    Command("publish", "mark", "TICKER [short|long] <link> "
+            "[public|unlisted|private]",
+            "record a video's privacy — one you made public by hand",
+            c_mark, ticker="text", example="{T} long https://youtu.be/xxxxxxxxxxx",
+            doc=(
+                "The bot uploads private or scheduled, never public, so a "
+                "video you make public in the Studio — or upload yourself — "
+                "is recorded here. A video already on record has its privacy "
+                "changed in place. The long's sign-off names only public "
+                "videos, and only ones that follow on.")),
     Command("publish", "correct", "[TICKER <what was wrong>]",
             "pin a correction on a shipped video", c_correct,
             aliases=("correct",), ticker="optional", doc=(

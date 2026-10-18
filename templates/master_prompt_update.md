@@ -128,6 +128,9 @@ The evidence carries the explaining; Dennis sets up, jokes and lands. **Untagged
 {{hook_type}}
 Movement 1 still opens on what you said last time; say it in this kind of line.
 
+## THE SIGN-OFF — POINT AT ONE VIDEO THAT IS ALREADY OUT
+{{public_videos}}
+
 ## OUTPUT
 
 ### HOW TO HAND IT BACK — AS A FILE, NOT A PASTE

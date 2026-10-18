@@ -792,6 +792,7 @@ An edit that does not parse never lands. Every edit that does re-runs the gates,
 | `/publish probe [TICKER] [short\|long]` | One **unlisted** upload of a finished render with the synthetic-media box ticked, to see where YouTube puts the AI label on this channel's output. Never public, never scheduled, not recorded as a published video; delete it when you have looked. |
 | `/publish scheduled` | What is queued to publish, and when. |
 | `/publish calendar [weeks]` | The next week (or N weeks) of scheduled publishes, day by day in `PUBLISH_TIMEZONE`, with the empty days marked — something for `/jobs batch` to plan against. |
+| `/publish mark TICKER [short\|long] <link> [public\|unlisted\|private]` | The bot uploads private or scheduled, never public, so a video you make public in the Studio — or upload yourself — is recorded here. A video already on record has its privacy changed in place. The long's sign-off names only public videos, and only ones that follow on. |
 | `/publish correct [TICKER <what was wrong>]` | Pins a correction on a video that has already shipped, amends its description and records it. No arguments lists every correction ever issued. |
 
 ### /jobs — The render queue

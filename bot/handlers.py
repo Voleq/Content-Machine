@@ -3392,6 +3392,63 @@ class BotCore:
 
         return scoreboard_text(self.settings, args[0] if args else "")
 
+    def mark_upload(self, args: list[str]) -> str:
+        """`/publish mark TICKER [short|long] <link> [public|unlisted|private]`
+
+        A video the bot did not upload, or one made public by hand in the
+        Studio: recorded, or its privacy changed in place, so the long's
+        sign-off knows what is out (S12)."""
+        from pipeline.standing import _now
+        from pipeline.youtube import VideoLog, VideoRecord, parse_video_id
+
+        usage = ("usage: /publish mark TICKER [short|long] <YouTube link> "
+                 "[public|unlisted|private]")
+        if not args:
+            return usage
+        ticker, video_id, fmt, privacy = args[0], "", "", "public"
+        for a in args[1:]:
+            low = a.lower()
+            if low in ("short", "long", "clip"):
+                fmt = low
+            elif low in ("public", "unlisted", "private"):
+                privacy = low
+            else:
+                video_id = parse_video_id(a) or video_id
+        if not video_id:
+            return usage
+        log_ = VideoLog(self.settings)
+        known = log_.get(video_id)
+        if known is not None:
+            known.privacy = privacy
+            if fmt:
+                known.fmt = fmt
+            log_.record(known)
+            from pipeline import journal
+
+            journal.note(self.settings, "uploaded",
+                         f"marked {privacy} by hand: {known.title}",
+                         ticker=known.ticker, workdate=known.workdate,
+                         video_id=video_id, privacy=privacy)
+            return f"✅ {known.ticker} {known.url()} is now on record as {privacy}."
+        ws = self._ws_or_error(ticker)
+        if ws is None:
+            return f"⛔ no video folder for {ticker.upper()} — check the ticker."
+        fmt = fmt or ws.current_format() or "long"
+        script = ws.load_short() if fmt == "short" else ws.load_long()
+        narration = (getattr(script, "narration", None)
+                     or getattr(script, "audio_script", "") or "") if script else ""
+        hook = next((t.strip() for t in re.split(r"(?<=[.!?])\s+", narration)
+                     if t.strip()), "")
+        title = f"{ws.ticker} — {hook[:70].rstrip('.')}" if hook else ws.ticker
+        log_.record(VideoRecord(ticker=ws.ticker, video_id=video_id,
+                                title=title, privacy=privacy,
+                                uploaded_at=_now().isoformat(),
+                                workdate=ws.workdate, fmt=fmt))
+        return (f"✅ recorded {ws.ticker} {fmt} ({ws.workdate}) as {privacy}: "
+                f"https://youtu.be/{video_id}"
+                + ("" if privacy == "public" else
+                   " — the long's sign-off names it once it is public."))
+
     def correct_command(self, args: list[str]) -> str:
         """`/correct TICKER what was wrong` — after the video has shipped."""
         from pipeline.youtube import UploadError, corrections_text, pin_correction

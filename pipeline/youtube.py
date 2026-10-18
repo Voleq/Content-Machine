@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 import logging
 from dataclasses import asdict, dataclass, field
@@ -737,6 +738,61 @@ def still_scheduled(v: VideoRecord, now: datetime) -> bool:
         return False
     when = _instant(v.publish_at)
     return when is None or when > now     # unreadable: show it, not hide it
+
+
+def is_public(v: VideoRecord, now: datetime | None = None) -> bool:
+    """Viewers can see it: marked public, or scheduled and its time has come.
+    Private and unlisted videos are not, however long they have been up."""
+    now = now or datetime.now(timezone.utc)
+    if v.privacy == "public":
+        return True
+    if v.privacy == "scheduled" and v.publish_at:
+        when = _instant(v.publish_at)
+        return when is not None and when <= now
+    return False
+
+
+def public_videos(settings: Settings, now: datetime | None = None) -> list[VideoRecord]:
+    """Every public video on record, the newest first."""
+    rows = [v for v in VideoLog(settings).all() if is_public(v, now)]
+    return sorted(rows, key=lambda v: public_since(v) or "", reverse=True)
+
+
+_VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+
+def parse_video_id(link: str) -> str:
+    """The 11-character id in a youtu.be, watch?v=, shorts/ or live/ link,
+    or a bare id; "" for anything else."""
+    link = (link or "").strip().strip("<>")
+    if _VIDEO_ID_RE.match(link):
+        return link
+    m = re.search(r"(?:youtu\.be/|[?&]v=|/shorts/|/live/|/embed/)"
+                  r"([A-Za-z0-9_-]{11})(?![A-Za-z0-9_-])", link)
+    return m.group(1) if m else ""
+
+
+PUBLIC_IN_PROMPT = 12
+
+
+def public_videos_block(settings: Settings, now: datetime | None = None) -> str:
+    """{{public_videos}}: what the sign-off may point at (S12)."""
+    try:
+        rows = public_videos(settings, now)
+    except Exception:                              # noqa: BLE001
+        rows = []
+    if not rows:
+        return ("(no public videos yet — the sign-off names none. Do not "
+                "mention other videos, a playlist or \"last time\".)")
+    lines = [f"- {v.ticker} ({record_format(v)}, "
+             f"{(public_since(v) or v.workdate)[:10]}) — {v.title}"
+             for v in rows[:PUBLIC_IN_PROMPT]]
+    return ("These are out and public:\n" + "\n".join(lines) + "\n"
+            "In the sign-off, name ONE of them that follows on from this "
+            "video — by its subject, the way you would mention it to a "
+            "friend (\"the one where I read the debt notes\"), never as a "
+            "call or a promise. Only these; no video that is not on this "
+            "list, and none at all if none follows on.")
 
 
 def public_since(v: VideoRecord) -> str:

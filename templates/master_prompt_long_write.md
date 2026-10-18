@@ -178,6 +178,9 @@ the work: the analysis stands on its own, only the narrator is a mess.
 {{hook_type}}
 Your first hook option is that kind; the others may be any kind.
 
+## THE SIGN-OFF — POINT AT ONE VIDEO THAT IS ALREADY OUT
+{{public_videos}}
+
 ## STEP A — HOOK OPTIONS FIRST (free; text only, no tags)
 Before the script, give the operator 2–3 hook options for the cold open — muted-safe, open-loop, in the register above. Format:
 === HOOK OPTIONS ===
