@@ -33,7 +33,7 @@ SHOES = "#5A3A28"
 HAIR = "#6A4630"
 FRAMES = "#171B23"
 EYES = "#141820"
-MOUTH = "#3A1C1E"     # dark enough to read as design's black bar on the beard
+MOUTH = "#1A0B0C"     # design's black bar: it must read on the brown beard across the room
 
 MOUTHS = ("mouthClosed", "mouthMid", "mouthWide", "mouthO", "mouthEE", "mouthFV")
 # How far the dropped corner of his mouth sits below the other, metres.
@@ -48,7 +48,7 @@ JOINTS = {
     "spine": ("hips", (0, 0, 0.11)),
     "chest": ("spine", (0, 0, 0.21)),
     "neck": ("chest", (0, 0, 0.20)),
-    "head": ("neck", (0, 0, 0.12)),
+    "head": ("neck", (0, 0, 0.08)),
     "shoulder.L": ("chest", (-0.168, 0.0, 0.15)),
     "elbow.L": ("shoulder.L", (0, 0, -0.29)),
     "wrist.L": ("elbow.L", (0, 0, -0.26)),
@@ -63,8 +63,9 @@ JOINTS = {
     "ankle.R": ("knee.R", (0, 0, -0.41)),
 }
 FINGERS = ("index", "middle", "ring", "little", "thumb")
-# His hands are drawn a size up from life, as cartoon hands are.
-HAND_SCALE = 1.18
+# His hands are drawn a little up from life, as cartoon hands are; at 1.18
+# with fat fingers they read as foam mitts (18 Oct 2026).
+HAND_SCALE = 1.06
 # What he may hold (the kit's holding-a-mug, -phone, -page, -filing poses):
 # where each sits in the right hand, in the wrist's frame (metres; the palm
 # faces -y and the fingers run down -z), and its turn in degrees. The left
@@ -357,7 +358,7 @@ class Rig:
             j.rotation_euler.x = -math.radians(c if f != "thumb" else c * 0.6)
             if f == "thumb":
                 s = -1 if side == "L" else 1
-                j.rotation_euler.y = math.radians(s * (30 - c * 0.4))
+                j.rotation_euler.y = math.radians(s * (40 - c * 0.5))
 
     def apply(self, values: dict[str, float]) -> None:
         """One frame of a `motion.Performance`: every joint it names set over
@@ -450,7 +451,7 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     hair = _mat("hair", HAIR, 0.8)
     frame = _mat("frames", FRAMES, 0.35)
     eye = _mat("eyes", EYES, 0.3)
-    lips = _mat("mouth", MOUTH, 0.6)
+    lips = _mat("mouth", MOUTH, 0.95)
 
     # Torso: design's box of a sweater, straight down from square shoulders,
     # a little wider at the top than at the hem.
@@ -462,10 +463,11 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     rig.attach(torso, "hips")
     rig.attach(loft("collar", [(0.0, 0.074, 0.062), (0.022, 0.071, 0.059)], collar, coll,
                     n=24, cap_top=False, cap_bottom=False), "chest", (0, 0.004, 0.212))
-    # Long and thin, as drawn, and running up inside the head so its end
-    # never shows under the chin.
-    rig.attach(loft("neck", [(0.0, 0.040, 0.040), (0.15, 0.037, 0.038), (0.24, 0.034, 0.034)],
-                    skin, coll, n=16), "neck", (0, 0.014, -0.03))
+    # Short and solid, running up inside the head so its end never shows
+    # under the chin: long and thin, as first drawn, it was a stalk with a
+    # head on it (18 Oct 2026).
+    rig.attach(loft("neck", [(0.0, 0.060, 0.055), (0.08, 0.056, 0.052), (0.17, 0.049, 0.046)],
+                    skin, coll, n=16), "neck", (0, 0.012, -0.03))
     # Head: an egg, the jaw narrower than the temples, its front flatter.
     head = loft("head", [
         (-0.005, 0.0, 0.0, 0, -0.012), (0.004, 0.032, 0.028, 0, -0.012, 0.9),
@@ -475,9 +477,14 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
         (0.232, 0.0, 0.0, 0, 0.01),
     ], skin, coll, n=24)
     rig.attach(head, "head", (0, 0, -0.01))
+    # Ears that stand off the head, the backs out a little, from the brow
+    # to under the nose: inside the head and the hair, as first placed, they
+    # never showed. The bowl is the skin's shade.
     for side in (-1, 1):
-        ear = blob(f"ear{side}", (0.012, 0.02, 0.03), skin, coll)
-        rig.attach(ear, "head", (side * 0.088, 0.012, 0.115))
+        ear = blob(f"ear{side}", (0.011, 0.022, 0.031), skin, coll, subdiv=1)
+        rig.attach(ear, "head", (side * 0.094, 0.014, 0.112), rot=(0, 0, -side * 15))
+        bowl = blob(f"earbowl{side}", (0.003, 0.012, 0.018), tired, coll)
+        rig.attach(bowl, "head", (side * 0.1035, 0.016, 0.113), rot=(0, 0, -side * 15))
     # narrower and longer than a ball: design's nose is a wedge pointing down
     nose = blob("nose", (0.0072, 0.0125, 0.0235), skin, coll, subdiv=1)
     rig.attach(nose, "head", (0, -0.092, 0.099), rot=(26, 0, 0))
@@ -498,8 +505,9 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     rig.attach(cap, "head", (0, 0.0, 0.0))
     # flat across the forehead and down to one side, as slept on: a fringe
     # that stands up is a haircut somebody chose, and he did not
+    # (tilted less than it was, so it clears the brow on its low side)
     fringe = blob("fringe", (0.068, 0.017, 0.014), hair, coll, subdiv=1)
-    rig.attach(fringe, "head", (0.014, -0.083, 0.189), rot=(-10, -24, 4))
+    rig.attach(fringe, "head", (0.014, -0.083, 0.193), rot=(-10, -14, 4))
     back = blob("hairback", (0.082, 0.05, 0.06), hair, coll, subdiv=1)
     rig.attach(back, "head", (0, 0.05, 0.12))
 
@@ -510,12 +518,12 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
         e = blob(f"eye.{name}", (0.0112, 0.003, 0.0029), eye, coll)
         rig.attach(e, "head", (side * 0.033, -0.0935, 0.1325))
         rig.lids.append(e)
-        # The brows are flat bars sitting low on the frames, the inner end a
-        # touch lower: unimpressed. Raised clear of the glasses they read as
-        # pleasant surprise, which is not a thing he has felt in years.
-        b = blob(f"brow.{name}", (0.023, 0.005, 0.0034), hair, coll)
-        rig.attach(b, "head", (side * 0.034, -0.0975, 0.1585), rot=(0, side * -4, 0))
-        b["rest_z"] = 0.1585
+        # The brows are flat bars just over the frames, the inner end
+        # lower: unimpressed. Sitting on the frames, as first placed, the
+        # frames hid them and every raise and frown with them (18 Oct 2026).
+        b = blob(f"brow.{name}", (0.024, 0.005, 0.0042), hair, coll)
+        rig.attach(b, "head", (side * 0.034, -0.094, 0.1655), rot=(0, side * -7, 0))
+        b["rest_z"] = 0.1655
         rig.brows.append(b)
         # design's under-eye pair, at the bottom of each lens
         bag = blob(f"undereye.{name}", (0.0165, 0.0016, 0.0032), tired, coll)
@@ -555,11 +563,11 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
         # the room: a thick rounded palm, four fat fingers fanned a little
         # apart so each one reads, and a thumb that stands off the palm.
         k = HAND_SCALE
-        palm = loft(f"palm.{side}", [(-0.098 * k, 0.034 * k, 0.015 * k),
-                                     (-0.088 * k, 0.047 * k, 0.022 * k),
-                                     (-0.055 * k, 0.051 * k, 0.025 * k),
-                                     (-0.018 * k, 0.045 * k, 0.024 * k),
-                                     (0.0, 0.031 * k, 0.020 * k)],
+        palm = loft(f"palm.{side}", [(-0.098 * k, 0.032 * k, 0.014 * k),
+                                     (-0.088 * k, 0.044 * k, 0.020 * k),
+                                     (-0.055 * k, 0.047 * k, 0.023 * k),
+                                     (-0.018 * k, 0.042 * k, 0.022 * k),
+                                     (0.0, 0.030 * k, 0.019 * k)],
                     skin, coll, n=16)
         rig.attach(palm, f"wrist.{side}", (0, 0, -0.022))
         rig.hands[side].append(palm)
@@ -567,17 +575,19 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
             # The palm faces -y here and the thumb is on its outer edge;
             # the wrist turns the palm to his thigh at rest.
             if f == "thumb":
+                # set low on the palm's edge and long, so it stands off the
+                # hand as a thumb and not a lump on the mitt
                 j = rig.joint(f"thumb.{side}", f"wrist.{side}",
-                              (s * 0.040 * k, -0.012 * k, -0.046 * k))
-                length, r = 0.056 * k, 0.0128 * k
+                              (s * 0.040 * k, -0.013 * k, -0.036 * k))
+                length, r = 0.062 * k, 0.0112 * k
             else:
                 j = rig.joint(f"{f}.{side}", f"wrist.{side}",
-                              (s * (0.031 - i * 0.0205) * k, 0.0, -0.104 * k))
+                              (s * (0.029 - i * 0.0192) * k, 0.0, -0.104 * k))
                 # fanned: the index leans out to the thumb side, the little
                 # finger the other way
                 j.rotation_euler.y = math.radians(s * (-7 + i * 5.5))
-                length = (0.060, 0.066, 0.062, 0.050)[i] * k
-                r = (0.0118, 0.0122, 0.0116, 0.0102)[i] * k
+                length = (0.062, 0.068, 0.064, 0.052)[i] * k
+                r = (0.0098, 0.0102, 0.0097, 0.0086)[i] * k
             finger = loft(f"{f}.{side}.m", [(-length, 0.0, 0.0),
                                             (-length + r * 0.55, r * 0.86, r * 0.82),
                                             (-length * 0.5, r, r * 0.92), (0.0, r * 1.04, r)],
@@ -742,7 +752,7 @@ def _mouth(name: str, m, coll) -> bpy.types.Object:
     n = 16
     shapes = {
         # half width, upper lip lift, lower lip drop, how round (0 wide, 1 round)
-        "mouthClosed": (0.017, 0.0011, 0.0011, 0.0),
+        "mouthClosed": (0.018, 0.0016, 0.0016, 0.0),
         "mouthMid": (0.016, 0.0030, 0.0065, 0.2),
         "mouthWide": (0.018, 0.0045, 0.0130, 0.15),
         "mouthO": (0.0095, 0.0060, 0.0100, 1.0),
