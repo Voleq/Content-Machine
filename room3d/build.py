@@ -63,8 +63,8 @@ from mathutils import Matrix, Vector
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from textures import (BOARD_PAPER, SCREEN_BACKLIGHT, SCREEN_CHART,  # noqa: E402
-                      SCREEN_TEX)
+from textures import (BOARD_PAPER, CARD_PAPERS, LABELS, NOTE_PAPERS,  # noqa: E402
+                      SCREEN_BACKLIGHT, SCREEN_CHART, SCREEN_TEX)
 
 MODELS = HERE / "models"
 TEX = HERE / "textures"
@@ -309,6 +309,16 @@ KENNEY = {"wood": "#7A5638", "woodDark": "#4A3426", "metal": "#9AA4B4",
 # floor, what hangs on the walls): never in front of anybody.
 THINGS: dict[str, dict] = {}
 _current = {"thing": None}
+# THE THINGS THE BOT LETTERS (18 Oct 2026): each plane painted blank, by name,
+# with its kind (textures.LABELS) and its paper. rooms.json says where each is
+# in a shot and the mask pass draws them red, so the video's words go on them
+# through the room's light (pipeline/room_dressing.py).
+LETTERED: dict[str, dict] = {}
+
+
+def lettered(o: bpy.types.Object, kind: str, paper=None) -> bpy.types.Object:
+    LETTERED[o.name] = {"kind": kind, "paper": list(paper or LABELS[kind][1])}
+    return o
 
 
 def thing(name: str, *, fixed: bool = False, season: str = ""):
@@ -697,8 +707,9 @@ def build_room(season: str) -> None:
     cards = [((bx0 + 0.20, bz1 - 0.18), 4, 0), ((bx0 + 0.20, bz1 - 0.48), -3, 1),
              ((bx0 + 0.21, bz1 - 0.78), 2, 2)]
     for (cx, cz), tilt, k in cards:
-        plane(f"card{k}", (0.24, 0.16), (cx, BACK - 0.03, cz),
-              (math.radians(90), math.radians(tilt), 0), mat(f"card{k}", PAPER, image=f"card{k}.png"))
+        lettered(plane(f"card{k}", (0.24, 0.16), (cx, BACK - 0.03, cz),
+                       (math.radians(90), math.radians(tilt), 0),
+                       mat(f"card{k}", PAPER, image=f"card{k}.png")), "card", CARD_PAPERS[k])
         cyl(f"magnet{k}", 0.014, 0.012, (cx, BACK - 0.037, cz + 0.06),
             mat("magnet", "#C4302A", 0.4), rot=(math.radians(90), 0, 0))
 
@@ -749,8 +760,8 @@ def build_room(season: str) -> None:
     tilt = math.radians(82)
     box("csframe", (0.36, 0.025, 0.36), (cx0 + 0.62, BACK - 0.07, ch + 0.18), mat("csframe", "#7A5638", 0.6),
         rot=(tilt - math.radians(90), 0, 0))
-    plane("cs", (0.30, 0.30), (cx0 + 0.62, BACK - 0.084, ch + 0.18), (tilt, 0, 0),
-          mat("cs", "#ECE6D6", image="cross_stitch.png"))
+    lettered(plane("cs", (0.30, 0.30), (cx0 + 0.62, BACK - 0.084, ch + 0.18), (tilt, 0, 0),
+                   mat("cs", "#ECE6D6", image="cross_stitch.png")), "stitch")
     thing("credenza")
     # 3am: the coffee machine, and the mug that never goes back to the kitchen
     kenney("kitchenCoffeeMachine", (cx1 - 0.20, BACK - 0.22, ch), rot=0, scale=1.6,
@@ -784,8 +795,8 @@ def build_room(season: str) -> None:
     for i, (ox, oy, r) in enumerate(((0.0, 0.0, 8), (0.02, 0.01, -4), (-0.01, -0.01, 15))):
         box(f"sheet{i}", (0.21, 0.297, 0.003), (dx + 0.36 + ox, dy - 0.14 + oy, dz + 0.002 + i * 0.004),
             SHEET, rot=(0, 0, math.radians(r)))
-    plane("filing", (0.21, 0.297), (dx + 0.35, dy - 0.15, dz + 0.016), (0, 0, math.radians(12)),
-          mat("filing", "#E6E4DC", image="filing.png"))
+    lettered(plane("filing", (0.21, 0.297), (dx + 0.35, dy - 0.15, dz + 0.016), (0, 0, math.radians(12)),
+                   mat("filing", "#E6E4DC", image="filing.png")), "report")
     box("phone", (0.075, 0.15, 0.009), (dx - 0.30, dy - 0.20, dz + 0.005), mat("phone", "#15181E", 0.3),
         rot=(0, 0, math.radians(-20)))
     # the night so far: a second mug, two cans
@@ -813,6 +824,7 @@ def build_room(season: str) -> None:
         cyl(f"hi{k}", 0.008, 0.12, (dx + 0.22 + ox, dy - 0.30, dz + 0.008), mat(f"hi{k}", c, 0.4),
             rot=(0, math.radians(90), math.radians(70)))
     paper_stack("deskstack", (dx + 0.66, dy - 0.16, dz), 0.11, "form10q.png", turn=-6)
+    lettered(bpy.data.objects["deskstack-top"], "cover")
     box("notepad", (0.15, 0.21, 0.012), (dx - 0.60, dy - 0.16, dz + 0.006), mat("notepad", "#F2D45C", 0.8),
         rot=(0, 0, math.radians(6)))
     cyl("pen", 0.006, 0.14, (dx - 0.58, dy - 0.15, dz + 0.016), mat("pen", "#283C9A", 0.4),
@@ -848,9 +860,9 @@ def build_room(season: str) -> None:
     # the picture, the way notes on a screen are; not on the picture itself
     for k, (u, v, roll) in enumerate(((0.02, 0.97, 6), (1.012, 0.24, -8), (0.13, -0.11, 4))):
         p = gc + right * ((u - 0.5) * gw) + gup * ((v - 0.5) * gh) + n * 0.004
-        plane(f"note{k}", (0.075, 0.075), p, (Matrix((right, gup, n)).transposed()
-                                               @ Matrix.Rotation(math.radians(roll), 3, "Z")).to_euler(),
-              mat(f"note{k}", "#F2D45C", 0.9, image=f"note{k}.png"))
+        lettered(plane(f"note{k}", (0.075, 0.075), p, (Matrix((right, gup, n)).transposed()
+                                                        @ Matrix.Rotation(math.radians(roll), 3, "Z")).to_euler(),
+                       mat(f"note{k}", "#F2D45C", 0.9, image=f"note{k}.png")), "note", NOTE_PAPERS[k])
 
     # the desk lamp: the warm fill
     thing("lamp")
@@ -888,8 +900,9 @@ def build_room(season: str) -> None:
                 by = bmn.y + 0.10 + j * 0.075
                 box(f"binder{k}{j}", (0.28, 0.065, 0.31), (RIGHT - 0.24, by, bmn.z + z + 0.04 + 0.155),
                     mat(f"binder{j}", BINDER[j], 0.6))
-                plane(f"spine{k}{j}", (0.055, 0.30), (RIGHT - 0.24 - 0.141, by, bmn.z + z + 0.04 + 0.155),
-                      (math.radians(90), 0, math.radians(-90)), mat(f"spine{(j + k) % 6}", "#ECECE8", image=f"binder{(j + k) % 6}.png"))
+                lettered(plane(f"spine{k}{j}", (0.055, 0.30), (RIGHT - 0.24 - 0.141, by, bmn.z + z + 0.04 + 0.155),
+                               (math.radians(90), 0, math.radians(-90)), mat("spine", "#ECECE8", image="binder.png")),
+                         "spine")
             kenney("books", (RIGHT - 0.22, bmn.y + 0.25 + 0.42, bmn.z + z + 0.04), rot=-84, scale=2.0)
             continue
         for j in range(2):
@@ -957,9 +970,11 @@ def build_room(season: str) -> None:
     # ---- the box of old filings, lid on, by the board, the latest on top
     thing("filings")
     kmn, kmx = kenney("cardboardBoxClosed", (-1.20, 1.72, 0), rot=4, scale=1.6)
-    plane("boxlabel", (min(0.34, kmx.x - kmn.x - 0.06), 0.16), ((kmn.x + kmx.x) / 2, kmn.y - 0.004, kmx.z * 0.55),
-          (math.radians(90), 0, 0), mat("boxlabel", "#B08C60", image="boxlabel.png"))
+    lettered(plane("boxlabel", (min(0.34, kmx.x - kmn.x - 0.06), 0.16),
+                   ((kmn.x + kmx.x) / 2, kmn.y - 0.004, kmx.z * 0.55),
+                   (math.radians(90), 0, 0), mat("boxlabel", "#B08C60", image="boxlabel.png")), "box")
     paper_stack("boxstack", ((kmn.x + kmx.x) / 2, (kmn.y + kmx.y) / 2, kmx.z), 0.06, "proxy.png", turn=-8, tabs=3)
+    lettered(bpy.data.objects["boxstack-top"], "cover")
 
     # ---- the print over the sofa
     thing("longrun", fixed=True)
@@ -1174,9 +1189,28 @@ def surfaces() -> dict:
 
     screen = [texel(x0, y0), texel(x1, y0), texel(x1, y1), texel(x0, y1)]
     rnd = lambda q: [[round(a, 1), round(b, 1)] for a, b in q]  # noqa: E731
-    return {"board": {"quad": rnd(board), "paper": list(BOARD_PAPER), "size": [ax1 - ax0, az1 - az0]},
-            "screen": {"quad": rnd(screen), "backlight": list(SCREEN_BACKLIGHT),
-                       "size": [x1 - x0, y1 - y0]}}
+    out = {"board": {"quad": rnd(board), "paper": list(BOARD_PAPER), "size": [ax1 - ax0, az1 - az0]},
+           "screen": {"quad": rnd(screen), "backlight": list(SCREEN_BACKLIGHT),
+                      "size": [x1 - x0, y1 - y0]}}
+    # THE LETTERED THINGS: each plane's corners as its picture's (top left,
+    # top right, bottom right, bottom left), how far off it is, its kind,
+    # paper, picture size and the box on its picture the words go in.
+    items = []
+    for name, spec in sorted(LETTERED.items()):
+        o = bpy.data.objects.get(name)
+        if o is None or o.hide_render:
+            continue
+        pts = [to_canvas(o.matrix_world @ Vector(c))
+               for c in ((-0.5, 0.5, 0), (0.5, 0.5, 0), (0.5, -0.5, 0), (-0.5, -0.5, 0))]
+        if min(p[2] for p in pts) <= 0.05:
+            continue
+        tex, _, box_ = LABELS[spec["kind"]]
+        items.append({"id": name, "kind": spec["kind"], "paper": spec["paper"],
+                      "tex": list(tex), "box": list(box_), "quad": rnd([p[:2] for p in pts]),
+                      "depth": round(sum(p[2] for p in pts) / 4, 3)})
+    if items:
+        out["labels"] = {"items": items}
+    return out
 
 
 def his_depth(name: str, aspect: str = "16x9") -> float | None:
@@ -1286,12 +1320,13 @@ def render_room(out: Path, stem: str) -> Path:
     return exr
 
 
-MASKS = ("front", "board", "screen", "window")
+MASKS = ("front", "board", "screen", "window", "labels")
 
 
 def render_masks(out: Path, stem: str, him: float | None) -> Path:
-    """Four masks in one cheap pass: the board (green), the screen (blue), and
-    two AOVs, the night through the window and what stands in front of him.
+    """Five masks in one cheap pass: the board (green), the screen (blue), the
+    lettered things (red), and two AOVs, the night through the window and
+    what stands in front of him.
     Flat colour on a transparent film, one ray a sample, every object where
     it is, so each mask is what the camera SEES of that surface, the room's
     own occluders already cut out of it. The front layer, the episode's
@@ -1307,7 +1342,8 @@ def render_masks(out: Path, stem: str, him: float | None) -> Path:
     """
     scn = bpy.context.scene
     vl = bpy.context.view_layer
-    colour = {"boardface": (0, 1, 0, 1), "screenface": (0, 0, 1, 1)}
+    colour = {"boardface": (0, 1, 0, 1), "screenface": (0, 0, 1, 1),
+              **{name: (1, 0, 0, 1) for name in LETTERED}}
     for o in bpy.data.objects:      # anything no thing claimed is not a mask
         o.color = (0, 0, 0, 1)
         o["win"] = o["movable"] = 0.0
@@ -1416,17 +1452,30 @@ def compose(planes: dict, weights: dict) -> np.ndarray:
 
 
 def masks(planes: dict, scale: float) -> dict[str, np.ndarray]:
-    """The four masks as 8-bit pictures. The front one is grown by half an
+    """The five masks as 8-bit pictures. The front one is grown by half an
     outline, so the ink drawn round the front things' edge comes forward with
     them; the others are exact."""
     from PIL import Image, ImageFilter
 
     rgb = planes["rgb"]
-    raw = {"front": planes["front"], "board": rgb[..., 1], "screen": rgb[..., 2], "window": planes["win"]}
+    raw = {"front": planes["front"], "board": rgb[..., 1], "screen": rgb[..., 2], "window": planes["win"],
+           "labels": rgb[..., 0]}
     out = {k: (np.clip(v, 0, 1) * 255 + 0.5).astype(np.uint8) for k, v in raw.items()}
     grow = max(3, int(round(3.6 * scale)) | 1)
     out["front"] = np.asarray(Image.fromarray(out["front"]).filter(ImageFilter.MaxFilter(grow)))
     return out
+
+
+def seen(mask: np.ndarray, quad) -> int:
+    """How many pixels of `mask` are on inside `quad` (canvas units)."""
+    from PIL import Image, ImageDraw
+
+    h, w = mask.shape
+    cw = canvas()[0]
+    k = w / cw
+    poly = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(poly).polygon([(x * k, y * k) for x, y in quad], fill=255)
+    return int(((np.asarray(poly) > 0) & (mask > 127)).sum())
 
 
 def cut(back: np.ndarray, alpha: np.ndarray) -> np.ndarray:
@@ -1503,9 +1552,17 @@ def render_angle(name: str, season: str, size, samples: int, out: Path, scratch:
             continue
         save(mk[k], out / f"{stem}_mask_{k}.png")
         entry["masks"][k] = f"{stem}_mask_{k}.png"
-    for k in ("board", "screen"):
+    lab = entry["surfaces"].get("labels")
+    if lab is not None and "labels" in entry["masks"]:
+        # a lettered thing the camera sees less than a few pixels of is left
+        # out: nothing could be read on it
+        lab["items"] = [it for it in lab["items"] if seen(mk["labels"], it["quad"]) >= 40]
+        if not lab["items"]:
+            entry["masks"].pop("labels")
+            (out / f"{stem}_mask_labels.png").unlink()
+    for k in ("board", "screen", "labels"):
         if k not in entry["masks"]:
-            entry["surfaces"].pop(k)
+            entry["surfaces"].pop(k, None)
     entry["states"] = []
     first_front = None
     for tag, w in states(season).items():
@@ -1586,6 +1643,7 @@ def main(argv: list[str]) -> int:
         bpy.ops.wm.read_factory_settings(use_empty=True)
         addon_utils.enable("cycles")
         THINGS.clear()
+        LETTERED.clear()
         _MATS.clear()
         build_room(season)
         for aspect in aspects:

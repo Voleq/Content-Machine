@@ -1,0 +1,46 @@
+{
+  "_about": "What the bot may write on the things in Dennis's room (pipeline/room_writing.py). Edit freely: a line too long for its thing is shrunk to fit, and each video takes different ones from each list, so a list needs at least twice as many as one video uses (3 notes, 3 cards, 1 sign). With Gemma running, the notes and cards are written from that video's script instead and these are only the fallback. A new line on a card is a new line in the text.",
+  "notes": [
+    "p.41",
+    "NO CALLS",
+    "read the footnotes",
+    "who audits?",
+    "ask why",
+    "segment data!",
+    "check the debt",
+    "cash or story?",
+    "reread MD&A",
+    "insiders?",
+    "SBC",
+    "not yet",
+    "margins??",
+    "follow the cash",
+    "tired. keep going"
+  ],
+  "cards": [
+    "10-K\ngoing concern?\nno. read it twice",
+    "THE CALL\n\"visibility\" x 6\nguidance: cut",
+    "INSIDERS\nCFO sold\nCEO bought (small)",
+    "CASH FLOW\npositive, barely\ncapex falling",
+    "DEBT\nwhen does it mature?\nrefi at what rate?",
+    "PEERS\ncheaper on sales\nworse margins",
+    "RISKS\nnew paragraph\nwhy now?",
+    "AUDITOR\nsame firm\nno remarks",
+    "DILUTION\nshares up again\nwho pays?",
+    "GUIDANCE\nraised once\ncut twice",
+    "MOAT?\nsays who\nprove it",
+    "BUYBACKS\nat what price?\nwith what cash?"
+  ],
+  "stitches": [
+    "NOT\nFINANCIAL\nADVICE",
+    "READ THE\nFOOT-\nNOTES",
+    "CASH IS\nA\nPOSITION",
+    "PRICE\nIS NOT\nVALUE",
+    "HOME\nSWEET\nHOME",
+    "MARGIN\nKILLS",
+    "SHOW ME\nTHE CASH\nFLOW",
+    "DYOR",
+    "BE\nPATIENT",
+    "NO\nHOT\nTIPS"
+  ]
+}

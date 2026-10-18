@@ -9,6 +9,14 @@ working and the screen that company's chart. The board is a wiped white, the
 chart area one even backlight, and both colours are written into
 `rooms.json` so the writing can be laid on through the room's own light.
 
+THE WRITING ON HIS THINGS IS EACH VIDEO'S TOO (18 Oct 2026): the binder
+spines, the box's label, the tops of the printed stacks, the report on the
+desk, the notes on the screen, the cards on the board and the stitched sign
+are painted here with their paper and none of their words (`LABELS`), so a
+shelf of "10-K '21" does not age with the room. The bot writes them per video:
+the years from its date, the ticker on what he is reading, the notes and the
+cards from its script.
+
     python3 room3d/textures.py
 """
 from __future__ import annotations
@@ -42,6 +50,26 @@ SCREEN_TEX = (1920, 1080)
 # inside what an 8-bit render of it can carry.
 SCREEN_CHART = (60, 116, 1392, 1044)
 SCREEN_BACKLIGHT = (148, 158, 170)
+
+# THE THINGS THE BOT LETTERS, by kind: the picture's size, the paper the words
+# go on and the box they go in (its pixels), so `build.py` can say all three in
+# rooms.json and the bot's hand lands where the painted label is. A paper of
+# None is the item's own (`NOTE_PAPERS`, `CARD_PAPERS`).
+LABELS = {
+    "spine": ((160, 600), (250, 250, 246), (20, 66, 140, 354)),
+    "note": ((400, 400), None, (26, 30, 374, 370)),
+    "card": ((600, 400), None, (30, 14, 570, 386)),
+    "stitch": ((900, 900), (236, 230, 214), (56, 98, 844, 802)),
+    "box": ((900, 500), (176, 140, 96), (40, 50, 860, 450)),
+    "cover": ((850, 1100), (238, 238, 234), (70, 60, 790, 280)),
+    "report": ((850, 1100), (240, 238, 230), (70, 60, 790, 440)),
+}
+NOTE_PAPERS = ((246, 222, 92), (246, 160, 170), (246, 222, 92))
+CARD_PAPERS = ((246, 244, 236), (244, 232, 150), (246, 244, 236),
+               (200, 226, 240), (246, 244, 236), (240, 210, 200))
+# the stitched sign's grid of crosses (pipeline/room_dressing.py stitches the
+# words on the same grid)
+STITCH_CELLS = 64
 
 
 def font(path: str, size: int) -> ImageFont.FreeTypeFont:
@@ -89,29 +117,16 @@ def whiteboard() -> None:
 
 
 def cards() -> None:
-    """Index cards held to the board by magnets: the receipts."""
-    notes = [
-        ("10-K  p.47", ["going concern?", "no. read it twice"], (246, 244, 236)),
-        ("Q3 CALL", ["\"visibility\" x 6", "guidance: cut"], (244, 232, 150)),
-        ("INSIDERS", ["CFO sold", "CEO bought (small)"], (246, 244, 236)),
-        ("FCF", ["3 yrs positive", "capex falling"], (200, 226, 240)),
-        ("DEBT", ["matures 2028", "refi at what rate?"], (246, 244, 236)),
-        ("PEERS", ["cheaper on EV/S", "worse margins"], (240, 210, 200)),
-    ]
-    rnd = random.Random(5)
-    for i, (head, lines, paper) in enumerate(notes):
-        W, H = 600, 400
+    """Index cards held to the board by magnets: the receipts. Ruled and
+    blank: what is on them is the video's (`LABELS`)."""
+    (W, H), _, _ = LABELS["card"]
+    for i, paper in enumerate(CARD_PAPERS):
         im = Image.new("RGB", (W, H), paper)
         d = ImageDraw.Draw(im)
         for k in range(5):
             y = 120 + k * 56
             d.line([(24, y), (W - 24, y)], fill=(170, 196, 220), width=3)
         d.line([(24, 96), (W - 24, 96)], fill=(220, 120, 120), width=4)
-        d.text((36, 18), head, font=font(MARK, 66), fill=BLUE if i % 2 else BLACK)
-        for k, line in enumerate(lines):
-            d.text((40, 118 + k * 74), line, font=font(HAND, 54), fill=BLACK)
-        if i == 1:
-            ring(d, 330, 236, 230, 46, RED, 6, rnd)
         im.save(OUT / f"card{i}.png")
 
 
@@ -138,22 +153,27 @@ def monitor() -> None:
 
 
 def filing() -> None:
-    """The annual report on the desk, one line highlighted."""
-    rnd = random.Random(13)
+    """The annual report on the desk, one line highlighted: its cover's
+    words are the video's (`LABELS`, "report"). The one he holds up
+    (`dennis.py`, `filing_held.png`) keeps a cover with no year on it."""
+    for held in (False, True):
+        rnd = random.Random(13)
+        (W, H), paper, _ = LABELS["report"]
+        im = Image.new("RGB", (W, H), paper)
+        d = ImageDraw.Draw(im)
+        if held:
+            d.text((70, 70), "UNITED STATES SECURITIES AND", font=font(COURR, 30), fill=(40, 40, 46))
+            d.text((70, 110), "EXCHANGE COMMISSION", font=font(COURR, 30), fill=(40, 40, 46))
+            d.text((70, 190), "FORM 10-K", font=font(COUR, 116), fill=(20, 20, 26))
+            d.text((70, 330), "ANNUAL REPORT", font=font(COUR, 58), fill=(20, 20, 26))
+        d.line([(70, 450), (780, 450)], fill=(40, 40, 46), width=4)
+        for i in range(16):
+            w = rnd.randint(420, 700)
+            d.line([(70, 490 + i * 34), (70 + w, 490 + i * 34)], fill=(120, 120, 128), width=8)
+        d.rectangle([60, 860, 560, 930], fill=(246, 214, 120))
+        d.line([(70, 895), (540, 895)], fill=(90, 86, 70), width=8)
+        im.save(OUT / ("filing_held.png" if held else "filing.png"))
     W, H = 850, 1100
-    im = Image.new("RGB", (W, H), (240, 238, 230))
-    d = ImageDraw.Draw(im)
-    d.text((70, 70), "UNITED STATES SECURITIES AND", font=font(COURR, 30), fill=(40, 40, 46))
-    d.text((70, 110), "EXCHANGE COMMISSION", font=font(COURR, 30), fill=(40, 40, 46))
-    d.text((70, 190), "FORM 10-K", font=font(COUR, 116), fill=(20, 20, 26))
-    d.text((70, 330), "ANNUAL REPORT", font=font(COUR, 58), fill=(20, 20, 26))
-    d.line([(70, 420), (780, 420)], fill=(40, 40, 46), width=4)
-    for i in range(16):
-        w = rnd.randint(420, 700)
-        d.line([(70, 470 + i * 36), (70 + w, 470 + i * 36)], fill=(120, 120, 128), width=8)
-    d.rectangle([60, 860, 560, 930], fill=(246, 214, 120))
-    d.line([(70, 895), (540, 895)], fill=(90, 86, 70), width=8)
-    im.save(OUT / "filing.png")
     # loose sheets: lines only
     im = Image.new("RGB", (W, H), (232, 234, 236))
     d = ImageDraw.Draw(im)
@@ -369,16 +389,14 @@ def margin_call() -> None:
 
 
 def cross_stitch() -> None:
-    """NOT FINANCIAL ADVICE, stitched: the disclaimer he is obliged to say,
-    made into the one decoration on his wall."""
-    W, H = 900, 900
-    cells = 64
-    small = Image.new("RGB", (cells, cells), (236, 230, 214))
+    """The stitched sign on the cabinet: its border of red and green
+    stitches and the weave, and none of its words. What it says is the
+    video's, from a list he can edit (NOT FINANCIAL ADVICE among them),
+    stitched on this grid by pipeline/room_dressing.py."""
+    (W, H), paper, _ = LABELS["stitch"]
+    cells = STITCH_CELLS
+    small = Image.new("RGB", (cells, cells), paper)
     d = ImageDraw.Draw(small)
-    f = ImageFont.load_default()
-    for i, word in enumerate(("NOT", "FINANCIAL", "ADVICE")):
-        tw = d.textlength(word, font=f)
-        d.text(((cells - tw) / 2, 13 + i * 13), word, font=f, fill=(36, 50, 110))
     for k in range(0, cells, 6):  # a border of little red and green stitches
         for x, y in ((k, 4), (k, cells - 6)):
             d.rectangle([x + 1, y, x + 2, y + 1], fill=(180, 50, 46) if (k // 6) % 2 else (46, 120, 70))
@@ -401,45 +419,36 @@ def cross_stitch() -> None:
 
 
 def notes() -> None:
-    """The sticky notes on his screen."""
-    for i, (text, paper, size) in enumerate((("p.41", (246, 222, 92), 150),
-                                             ("NO\nCALLS", (246, 160, 170), 110),
-                                             ("read the\nfootnotes", (246, 222, 92), 62))):
-        im = Image.new("RGB", (400, 400), paper)
-        d = ImageDraw.Draw(im)
-        d.multiline_text((36, 70), text, font=font(MARK, size), fill=BLACK, spacing=10)
-        im.save(OUT / f"note{i}.png")
+    """The sticky notes on his screen, blank: the video's script fills them."""
+    (W, H), _, _ = LABELS["note"]
+    for i, paper in enumerate(NOTE_PAPERS):
+        Image.new("RGB", (W, H), paper).save(OUT / f"note{i}.png")
 
 
 def binders() -> None:
-    """Binder spines: what is on his shelves instead of books."""
-    labels = ("10-K '21", "10-K '22", "10-K '23", "10-Q", "PROXY", "CALLS")
-    for i, lab in enumerate(labels):
-        im = Image.new("RGB", (160, 600), (236, 236, 232))
-        d = ImageDraw.Draw(im)
-        d.rectangle([14, 60, 146, 360], fill=(250, 250, 246), outline=(60, 60, 66), width=4)
-        txt = Image.new("RGBA", (290, 120), (0, 0, 0, 0))
-        ImageDraw.Draw(txt).text((10, 20), lab, font=font(MARK, 64), fill=(28, 30, 36, 255))
-        txt = txt.rotate(90, expand=True)
-        im.paste(txt, (20, 66), txt)
-        d.ellipse([60, 470, 100, 510], outline=(60, 60, 66), width=6)
-        im.save(OUT / f"binder{i}.png")
+    """Binder spines: what is on his shelves instead of books. The label is
+    blank: its filing and year are the video's."""
+    (W, H), paper, _ = LABELS["spine"]
+    im = Image.new("RGB", (W, H), (236, 236, 232))
+    d = ImageDraw.Draw(im)
+    d.rectangle([14, 60, 146, 360], fill=paper, outline=(60, 60, 66), width=4)
+    d.ellipse([60, 470, 100, 510], outline=(60, 60, 66), width=6)
+    im.save(OUT / "binder.png")
 
 
 def stack_tops() -> None:
-    """The top sheets of the printed stacks, and the box they came in."""
-    for name, title in (("form10q", "FORM 10-Q"), ("proxy", "DEF 14A")):
+    """The top sheets of the printed stacks, and the box they came in: the
+    body of each page, and no title (the video's)."""
+    (W, H), paper, _ = LABELS["cover"]
+    for name in ("form10q", "proxy"):
         rnd = random.Random(len(name))
-        im = Image.new("RGB", (850, 1100), (238, 238, 234))
+        im = Image.new("RGB", (W, H), paper)
         d = ImageDraw.Draw(im)
-        d.text((80, 90), title, font=font(COUR, 80), fill=(30, 30, 36))
         for i in range(18):
             d.line([(80, 300 + i * 40), (80 + rnd.randint(380, 690), 300 + i * 40)], fill=(150, 152, 160), width=8)
         im.save(OUT / f"{name}.png")
-    im = Image.new("RGB", (900, 500), (176, 140, 96))
-    d = ImageDraw.Draw(im)
-    d.multiline_text((50, 90), "10-Ks\nDO NOT THROW OUT", font=font(MARK, 70), fill=BLACK, spacing=16)
-    im.save(OUT / "boxlabel.png")
+    (W, H), paper, _ = LABELS["box"]
+    Image.new("RGB", (W, H), paper).save(OUT / "boxlabel.png")
 
 
 def dead_screen() -> None:

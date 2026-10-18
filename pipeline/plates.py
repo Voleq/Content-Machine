@@ -587,7 +587,9 @@ class Plate:
     # four corners in canvas units (top left, top right, bottom right, bottom
     # left), the colour the surface is painted (`paper`, `backlight`) and the
     # mask file of what the camera sees of it. `pipeline/room_dressing.py`
-    # writes the episode on them. Empty on a room with neither in shot.
+    # writes the episode on them. And `labels`, his lettered things in shot
+    # (`items`, each its corners, kind and paper) under one mask. Empty on a
+    # room with none of them in shot.
     writable: dict = field(default_factory=dict)
 
     @property
@@ -1142,7 +1144,8 @@ class Registry:
             dressed_from=str(e.get("dressedFrom") or ""),
             weathers=weathers,
             writable={str(k): dict(v) for k, v in (e.get("writable") or {}).items()
-                      if isinstance(v, dict) and v.get("quad") and v.get("mask")},
+                      if isinstance(v, dict) and (v.get("quad") or v.get("items"))
+                      and v.get("mask")},
         )
 
     # ---------------------------------------------------------------- basics

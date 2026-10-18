@@ -113,6 +113,7 @@ class Stage:
         bpy.ops.wm.read_factory_settings(use_empty=True)
         addon_utils.enable("cycles")
         room.THINGS.clear()
+        room.LETTERED.clear()
         room._MATS.clear()
         room.build_room(season)
         self.rig = build_dennis((0.0, 0.0), beard=BEARD)

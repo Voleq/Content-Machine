@@ -1051,18 +1051,23 @@ def _render_long(
         if not room_dressing:
             from pipeline.prices import get_price_history, long_history_days
             from pipeline.room_dressing import Dressing, board_question, episode_number
+            from pipeline.room_writing import props
 
             days = long_history_days(settings)
             series = get_price_history(script.ticker, settings, days=days)
             # A series the feed failed to give is not drawn: a made-up line
             # on his monitor is a made-up chart.
             closes = () if series.degraded else tuple(series.closes)
+            episode = episode_number(settings, script.ticker, workspace.name,
+                                     assign=not (draft or preview or proof))
             room_dressing.append((Dressing(
-                episode=episode_number(settings, script.ticker, workspace.name,
-                                       assign=not (draft or preview or proof)),
+                episode=episode,
                 ticker=script.ticker.upper(), question=board_question(script),
                 chapters=tuple(t for _, t, _ in chapters), closes=closes,
-                span=f"{max(round(days / 365), 1)}Y"), series))
+                span=f"{max(round(days / 365), 1)}Y",
+                props=props(script, ticker=script.ticker, workdate=workspace.name,
+                            episode=episode, settings=settings, workspace=workspace)),
+                series))
         return room_dressing[0][0]
 
     # THE PROGRAMME TIME THE ROOM IS BEING READ FOR: the beat being drawn, or

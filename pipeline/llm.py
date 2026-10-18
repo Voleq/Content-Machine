@@ -54,6 +54,8 @@ PURPOSES: dict[str, str] = {
     "ask-expand": "widens an /ask question into the words the bot's records "
                   "would use",
     "ask": "answers an /ask question from the bot's own records",
+    "room-writing": "writes the sticky notes and board cards in Dennis's "
+                    "room from the approved script (local model only)",
     "retention-note": "reads the sentences viewers left on across recent "
                       "videos and says what they share, for the next "
                       "writing prompt",

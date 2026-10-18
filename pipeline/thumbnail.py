@@ -225,17 +225,20 @@ def _room(settings: Settings, orient: str, size: tuple[int, int],
             log.debug("thumbnail: no %s room (%s)", role_name, exc)
             continue
         path = plate.path
-        screen = (getattr(plate, "writable", None) or {}).get("screen")
-        if dressing is not None and written is not None and screen is not None:
-            # THE MONITOR, NOT THE BOARD. The cover's type runs down its
-            # left, over the board in most rooms, and a written board behind
-            # the leading number is the number made harder to read.
+        # THE MONITOR AND HIS THINGS, NOT THE BOARD. The cover's type runs
+        # down its left, over the board in most rooms, and a written board
+        # behind the leading number is the number made harder to read. His
+        # things are lettered as in the video: the room is rendered with
+        # their labels blank.
+        keep = {k: v for k, v in (getattr(plate, "writable", None) or {}).items()
+                if k in ("screen", "labels")}
+        if dressing is not None and written is not None and keep:
             from dataclasses import replace
 
             from pipeline.room_dressing import written_room
 
             try:
-                path = written_room(replace(plate, writable={"screen": screen}),
+                path = written_room(replace(plate, writable=keep),
                                     dressing, written, settings.fonts_dir).path
             except Exception as exc:  # noqa: BLE001 — a cover is never fatal
                 log.debug("thumbnail: the room goes up unwritten (%s)", exc)
@@ -555,19 +558,31 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
     return img.convert("RGB")
 
 
-def _cover_dressing(script, settings: Settings, is_short: bool):
+def _cover_dressing(script, settings: Settings, is_short: bool, ws_path: Path | None = None):
     """What the cover's monitor shows: the price's run off the feed the video
-    used, or none when it failed. None when the feed cannot be asked."""
+    used, or none when it failed; and his things lettered as the video's
+    were (`pipeline.room_writing`, the model's notes kept in the workspace).
+    None when the feed cannot be asked."""
     from pipeline.prices import get_price_history, long_history_days
-    from pipeline.room_dressing import Dressing
+    from pipeline.room_dressing import Dressing, episode_number
+    from pipeline.room_writing import props
 
     try:
         ticker = str(getattr(script, "ticker", "") or "").upper()
         days = (int(settings.price_history_days) if is_short
                 else long_history_days(settings))
         series = get_price_history(ticker, settings, days=days)
+        workdate = ws_path.name if ws_path is not None else ""
+        try:
+            episode = 0 if is_short or not workdate else episode_number(settings, ticker, workdate)
+            lettered = props(script, ticker=ticker, workdate=workdate, episode=episode,
+                             settings=settings, workspace=ws_path)
+        except Exception as exc:  # noqa: BLE001 — a cover is never fatal
+            log.debug("thumbnail: his things go up blank (%s)", exc)
+            lettered = ()
         return Dressing(episode=0, ticker=ticker,
-                        closes=() if series.degraded else tuple(series.closes))
+                        closes=() if series.degraded else tuple(series.closes),
+                        props=lettered)
     except Exception as exc:  # noqa: BLE001 — a cover is never fatal
         log.debug("thumbnail: nothing for the monitor (%s)", exc)
         return None
@@ -611,7 +626,7 @@ def make_thumbnail(script, ws, settings: Settings) -> Path | None:
         # THE COVER IS A FRAME FROM THE VIDEO, so it is drawn at the hour the
         # render recorded in this workspace: a dusk episode gets a dusk cover,
         # room, host and colours alike, not a night one advertising it.
-        dressing = _cover_dressing(script, settings, is_short)
+        dressing = _cover_dressing(script, settings, is_short, Path(ws.path))
         written = Path(ws.path) / "cover_room"
         # One performer per room aspect, each asked of ITS rooms: the wide
         # cover stands in a 16:9 room and the tall one in a 9:16 room, and a

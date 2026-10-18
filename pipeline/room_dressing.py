@@ -1,4 +1,5 @@
-"""THE EPISODE, WRITTEN IN THE ROOM (item 36): the board and the monitor.
+"""THE EPISODE, WRITTEN IN THE ROOM (item 36): the board, the monitor and
+the writing on his things.
 
 The long's rooms are one 3D room (`room3d/build.py`), rendered with the board
 wiped and the monitor showing a flat backlight, and every room that has
@@ -22,6 +23,12 @@ round it (no title bar, prompt or sidebar), so the picture on his screen and
 the plate the camera cuts to are one page; the first time a chapter's
 picture is seen it draws itself in (`reveal_frames`).
 
+THE WRITING ON HIS THINGS (18 Oct 2026): the binder spines, the box's label,
+the stacks and the report on his desk, the notes on his screen, the cards on
+his board and the stitched sign are rendered blank and lettered here, each
+in its own perspective, as ink in the room's light like the board
+(`label_ink`). What they say is the video's (`pipeline/room_writing.py`).
+
 Every frame and every front layer of a room is written the same way, so the
 desk he stands behind carries the same monitor as the room behind him.
 
@@ -36,6 +43,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
 import random
 import textwrap
 from dataclasses import dataclass, replace
@@ -44,7 +52,7 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 # Bumped when the drawing changes, so a workspace's written rooms are redone.
-VERSION = "4"
+VERSION = "5"
 
 # What the board asks when the writer's script sets no [BOARD].
 BOARD_DEFAULT_QUESTION = "what are we paying for?"
@@ -118,12 +126,16 @@ class Dressing:
     screen_stamp: str = ""
     # What the picture is, for the manifest; nothing on the glass says it.
     screen_label: str = ""
+    # THE WRITING ON HIS THINGS, as (id, text) pairs (`room_writing.props`):
+    # an id the room letters and this does not name goes up blank.
+    props: tuple[tuple[str, str], ...] = ()
 
     @property
     def fingerprint(self) -> str:
         raw = json.dumps([VERSION, self.episode, self.ticker, self.question,
                           list(self.chapters), [round(c, 4) for c in self.closes],
-                          self.span, self.screen_stamp, self.screen_label])
+                          self.span, self.screen_stamp, self.screen_label,
+                          [list(p) for p in self.props]])
         return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
     def showing(self, picture: Path | None, label: str = "") -> "Dressing":
@@ -329,6 +341,178 @@ def board_ink(d: Dressing, fonts: Path, size: tuple[int, int]):
     return img
 
 
+# ------------------------------------------------------ his things, lettered
+# The marker on a label, the stitches of the sign (navy, as it was stitched),
+# a filing's print, the red ring a card's last line gets on the second card.
+_LABEL_INK = (28, 30, 36)
+_STITCH_INK = (36, 50, 110)
+_PRINT_INK = (24, 24, 30)
+_PRINT_QUIET = (40, 40, 46)
+# The sign's grid: textures.py STITCH_CELLS, one cell every 14 of its 900
+# pixels (`cross_stitch`).
+_STITCH_CELLS = 64
+_STITCH_STEP = 14
+
+
+def _fit_block(dr, text: str, fonts: Path, face: str, box_w: float, box_h: float,
+               start: float, *, spacing: float = 0.08):
+    """(font, lines, line height) for `text` at the largest size up to
+    `start` whose lines (its own, each wrapped) fit `box_w` by `box_h`."""
+    size = max(start, 8)
+    while True:
+        font = _font(fonts, face, size)
+        avg = max(dr.textlength("abcdefghij", font=font) / 10, 1)
+        lines: list[str] = []
+        for part in text.split("\n"):
+            # a word too long for the line shrinks the size, never splits
+            lines += textwrap.wrap(part, max(int(box_w / avg), 3),
+                                   break_long_words=False) or [""]
+        asc, desc = font.getmetrics()
+        lh = (asc + desc) * (1 + spacing)
+        if (max(dr.textlength(ln, font=font) for ln in lines) <= box_w
+                and lh * len(lines) <= box_h) or size <= 8:
+            return font, lines, lh
+        size *= 0.92
+
+
+def _centred(dr, lines, font, lh, box, fill, *, left: bool = False) -> None:
+    x0, y0, x1, y1 = box
+    top = y0 + (y1 - y0 - lh * len(lines)) / 2
+    for i, ln in enumerate(lines):
+        w = dr.textlength(ln, font=font)
+        x = x0 if left else x0 + (x1 - x0 - w) / 2
+        dr.text((x, top + i * lh), ln, font=font, fill=fill)
+
+
+def _stitches(img, text: str, fonts: Path, k: float) -> None:
+    """`text` cross-stitched on the sign's grid, `k` its picture's scale."""
+    from PIL import Image, ImageDraw
+
+    cells = _STITCH_CELLS
+    lines = [ln.strip() for ln in text.upper().split("\n") if ln.strip()][:4]
+    if not lines:
+        return
+    small = Image.new("L", (cells, cells), 0)
+    sd = ImageDraw.Draw(small)
+    size = 14
+    while size > 7:
+        f = _font(fonts, "ArchivoNarrow[wght].ttf", size)
+        lh = size * 0.98
+        if max(sd.textlength(ln, font=f) for ln in lines) <= cells - 6 and lh * len(lines) <= cells - 16:
+            break
+        size -= 1
+    f = _font(fonts, "ArchivoNarrow[wght].ttf", size)
+    try:
+        f.set_variation_by_name("Bold")       # a stitch is a thick thread
+    except (OSError, ValueError, AttributeError):
+        pass
+    lh = size * 0.98
+    top = (cells - lh * len(lines)) / 2 - 1
+    for i, ln in enumerate(lines):
+        sd.text(((cells - sd.textlength(ln, font=f)) / 2, top + i * lh), ln, font=f, fill=255)
+    px = small.load()
+    dr = ImageDraw.Draw(img)
+    step = _STITCH_STEP * k
+    w = max(round(5 * k), 1)
+    c = _STITCH_INK + (255,)
+    for cy in range(cells):
+        for cx in range(cells):
+            if px[cx, cy] < 120:
+                continue
+            x0, y0 = cx * step, cy * step
+            if step < 6:
+                # too small for a cross to be seen: the stitch as the block
+                # of thread it reads as across the room
+                dr.rectangle([x0, y0, x0 + step, y0 + step], fill=c)
+                continue
+            dr.line([(x0 + k, y0 + k), (x0 + step - 2 * k, y0 + step - 2 * k)], fill=c, width=w)
+            dr.line([(x0 + step - 2 * k, y0 + k), (x0 + k, y0 + step - 2 * k)], fill=c, width=w)
+
+
+def label_ink(item: dict, text: str, fonts: Path, size: tuple[int, int]):
+    """The words on one of his things, on a clear layer `size` big (its
+    picture's shape): marker on a spine, a note or a box, a hand on a card,
+    stitches on the sign, print on a filing; in the box its picture leaves."""
+    from PIL import Image, ImageDraw
+
+    W = size[0]
+    tw, th = item.get("tex") or size
+    k = W / tw
+    x0, y0, x1, y1 = [v * k for v in (item.get("box") or (0, 0, tw, th))]
+    bw, bh = x1 - x0, y1 - y0
+    img = Image.new("RGBA", size, (0, 0, 0, 0))
+    dr = ImageDraw.Draw(img)
+    ink = _LABEL_INK + (255,)
+    kind = item.get("kind")
+    text = str(text or "").strip()
+    if not text:
+        return img
+    rnd = random.Random(f"{item.get('id')}|{text}")
+    if kind == "spine":
+        # read up the spine, as a binder's label is
+        lay = Image.new("RGBA", (max(int(bh), 1), max(int(bw), 1)), (0, 0, 0, 0))
+        ld = ImageDraw.Draw(lay)
+        f, lines, lh = _fit_block(ld, text, fonts, "PermanentMarker.ttf", bh * 0.9, bw * 0.92,
+                                  bw * 0.62, spacing=-0.12)
+        _centred(ld, lines, f, lh, (0, 0, lay.width, lay.height), ink)
+        lay = lay.rotate(90, expand=True)
+        img.alpha_composite(lay, (int(x0 + (bw - lay.width) / 2), int(y0 + (bh - lay.height) / 2)))
+    elif kind in ("note", "box"):
+        f, lines, lh = _fit_block(dr, text, fonts, "PermanentMarker.ttf", bw, bh,
+                                  bh * (0.42 if kind == "note" else 0.3), spacing=0.0)
+        _centred(dr, lines, f, lh, (x0, y0, x1, y1), ink)
+    elif kind == "card":
+        head, *body = text.split("\n")
+        blue = item.get("id", "").endswith(("1", "3", "5"))
+        hf, hl, _ = _fit_block(dr, head, fonts, "PermanentMarker.ttf", bw * 0.94, 76 * k, 66 * k)
+        dr.text((x0 + 6 * k, y0 + 4 * k), hl[0], font=hf,
+                fill=((30, 58, 132) if blue else _LABEL_INK) + (255,))
+        bf = _font(fonts, "Kalam.ttf", 54 * k)
+        last = None
+        for i, line in enumerate(body[:2]):
+            while dr.textlength(line, font=bf) > bw * 0.96 and bf.size > 12:
+                bf = _font(fonts, "Kalam.ttf", bf.size * 0.92)
+            y = y0 + 104 * k + i * 74 * k
+            dr.text((x0 + 10 * k, y), line, font=bf, fill=ink)
+            last = (x0 + 10 * k, y, dr.textlength(line, font=bf))
+        if item.get("id") == "card1" and last is not None:
+            # the second card's last line, ringed in red, as the board's was
+            lx, ly, lw = last
+            cx, cy = lx + lw / 2, ly + 0.62 * bf.size
+            pts = [(cx + (lw / 2 + 16 * k) * math.cos(a) * (1 + 0.04 * math.sin(3 * a)),
+                    cy + 0.68 * bf.size * math.sin(a))
+                   for a in [i / 40 * 2 * math.pi * 1.08 for i in range(41)]]
+            dr.line(_wobble(rnd, pts, 1.6 * k), fill=_INK["red"] + (255,),
+                    width=max(int(6 * k), 1), joint="curve")
+    elif kind == "stitch":
+        _stitches(img, text, fonts, k)
+    elif kind in ("cover", "report"):
+        title, *rest = text.split("\n")
+        y = y0
+        if kind == "report":
+            sf = _font(fonts, "CourierPrime-Regular.ttf", 30 * k)
+            for ln in ("UNITED STATES SECURITIES AND", "EXCHANGE COMMISSION"):
+                dr.text((x0, y), ln, font=sf, fill=_PRINT_QUIET + (255,))
+                y += 40 * k
+            y += 40 * k
+        tf = _font(fonts, "CourierPrime-Bold.ttf", (116 if kind == "report" else 84) * k)
+        while dr.textlength(title, font=tf) > bw and tf.size > 10:
+            tf = _font(fonts, "CourierPrime-Bold.ttf", tf.size * 0.92)
+        dr.text((x0, y), title, font=tf, fill=_PRINT_INK + (255,))
+        y += tf.size * 1.12
+        for i, ln in enumerate(rest[:3]):
+            big = kind == "report" and i == 0
+            face = "CourierPrime-Bold.ttf" if big else "CourierPrime-Regular.ttf"
+            rf = _font(fonts, face, (58 if big else 50) * k)
+            while dr.textlength(ln, font=rf) > bw and rf.size > 8:
+                rf = _font(fonts, face, rf.size * 0.92)
+            if y + rf.size > y1:
+                break
+            dr.text((x0, y), ln, font=rf, fill=(_PRINT_INK if big else _PRINT_QUIET) + (255,))
+            y += rf.size * 1.25
+    return img
+
+
 def _ground_of(pic) -> tuple[int, int, int]:
     """The paper a picture is drawn on: the median of its outermost pixels."""
     import numpy as np
@@ -515,7 +699,7 @@ def _encode(lin):
 
 @dataclass
 class _Layer:
-    kind: str           # board | screen
+    kind: str           # board | screen | label
     pixels: object      # float RGBA crop, 0..1, the texture in the frame
     at: tuple[int, int]
     mask: object        # float crop, 0..1, what the camera sees of the surface
@@ -539,6 +723,9 @@ def _layers(plate, d: Dressing, fonts: Path, *, size: tuple[int, int] | None = N
     out = []
     for which, surf in sorted(plate.writable.items()):
         if only is not None and which not in only:
+            continue
+        if which == "labels":
+            out += _label_layers(plate, surf, d, fonts, size, k)
             continue
         if which == "screen":
             quad = glass_quad(surf, k)
@@ -587,6 +774,57 @@ def _layers(plate, d: Dressing, fonts: Path, *, size: tuple[int, int] | None = N
     return out
 
 
+def _label_layers(plate, surf: dict, d: Dressing, fonts: Path, size, k: float) -> list[_Layer]:
+    """One ink layer for each lettered thing in shot that this video says
+    something on. The mask is all of them at once, so each takes only the
+    part of it inside its own corners, and of two that overlap in the frame
+    the nearer takes the overlap."""
+    import numpy as np
+    from PIL import Image, ImageDraw
+
+    said = dict(d.props)
+    mpath = plate.writable_mask("labels")
+    if not said or mpath is None or not mpath.exists():
+        return []
+    m = Image.open(mpath).convert("L")
+    if m.size != size:
+        m = m.resize(size, Image.BILINEAR)
+    whole = np.asarray(m, dtype=np.float32) / 255.0
+    taken = np.zeros(whole.shape, dtype=bool)
+    out = []
+    for item in sorted(surf.get("items") or [], key=lambda it: float(it.get("depth", 0))):
+        quad = [(x * k, y * k) for x, y in item.get("quad") or ()]
+        if len(quad) != 4:
+            continue
+        poly = Image.new("L", size, 0)
+        ImageDraw.Draw(poly).polygon(quad, fill=255)
+        inside = (np.asarray(poly) > 0) & ~taken
+        taken |= inside & (whole > 0.5)
+        text = said.get(item.get("id"))
+        if not text:
+            continue
+        sides = [((quad[i][0] - quad[i - 1][0]) ** 2 + (quad[i][1] - quad[i - 1][1]) ** 2) ** 0.5
+                 for i in range(4)]
+        tw, th = item.get("tex") or (400, 400)
+        # drawn about twice the size it is seen, so the warp has detail to
+        # spare and nothing to alias
+        long_side = max(min(max(sides) * 2.2, max(tw, th)), 48)
+        s = long_side / max(tw, th)
+        tex = label_ink(item, text, fonts, (max(int(tw * s), 8), max(int(th * s), 8)))
+        warped = _warp(tex, quad, size)
+        if warped is None:
+            continue
+        px, (x0, y0) = warped
+        h, w = px.shape[:2]
+        mask = whole[y0:y0 + h, x0:x0 + w] * inside[y0:y0 + h, x0:x0 + w]
+        if not mask.any():
+            continue
+        out.append(_Layer("label", px, (x0, y0), mask,
+                          _linear(np.asarray(item.get("paper") or (240, 240, 236),
+                                             dtype=np.uint8)).astype(np.float32)))
+    return out
+
+
 def _falloff(img):
     """`img` a touch darker towards its corners (SCREEN_FALLOFF), as a lit
     screen reads, rather than a flat card."""
@@ -632,7 +870,7 @@ def dress(img, layers: list[_Layer]):
         f = _linear(region)
         a = (L.pixels[..., 3] * L.mask)[..., None]
         tex = _linear((L.pixels[..., :3] * 255 + 0.5).astype(np.uint8))
-        if L.kind == "board":
+        if L.kind != "screen":
             # Ink takes light away from the paint it is on: darker by the
             # ink's share of the paper, and only where it is.
             ratio = tex / np.maximum(L.colour, 1e-4)
@@ -712,7 +950,7 @@ def written_room(plate, d: Dressing, out: Path, fonts: Path):
             dress(im, layers).save(fam / n, compress_level=1)
         done.write_text(d.fingerprint, encoding="utf-8")
         log.info("room: wrote episode %d on %s (%s)", d.episode, plate.key,
-                 ", ".join(L.kind for L in layers))
+                 ", ".join(sorted({L.kind for L in layers})))
     return replace(plate, root=root, writable={})
 
 
@@ -732,7 +970,7 @@ def reveal_frames(plate, d: Dressing, fonts: Path, size: tuple[int, int], *,
     from PIL import Image
 
     src = plate.root / plate.family
-    board = _layers(plate, d, fonts, size=size, only=frozenset({"board"}))
+    board = _layers(plate, d, fonts, size=size, only=frozenset({"board", "labels"}))
     seq = list(plate.frames) if plate.animated else []
     out = []
     cache: dict[str, object] = {}

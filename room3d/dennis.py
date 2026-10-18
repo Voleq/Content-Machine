@@ -658,7 +658,7 @@ def _props(rig: Rig, coll) -> None:
     rig.props["filing"] = box("prop.filing", (0.22, 0.010, 0.30), FOLDER, 0.9)
     # its cover on the face the camera sees: held, its +y faces out and its
     # -z is up
-    cover_png = TEXTURES / "filing.png"
+    cover_png = TEXTURES / "filing_held.png"
     if cover_png.exists():
         bpy.ops.mesh.primitive_plane_add(size=1.0)
         cover = bpy.context.object

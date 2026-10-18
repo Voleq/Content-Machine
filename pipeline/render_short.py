@@ -1416,16 +1416,18 @@ class _WithWritten:
 
 
 def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
-                settings):
+                settings, script=None, workspace: Path | None = None):
     """The board and the monitor in the rooms of this cut, written for it.
 
     THE PHONE'S ROOMS ARE THE 3D ROOM (4 Oct 2026), rendered as the long's
     are, with the board wiped and the monitor on a flat backlight, and each
     says where they are (`Plate.writable`). A short writes the ticker and
     the price's run on them (`pipeline.room_dressing`; no episode number, no
-    chapters, which a short does not have). Returns the registry the
-    frames are drawn from and the rooms written; the registry itself when
-    nothing in the cut has a board or a monitor in shot.
+    chapters, which a short does not have), and the writing on his things
+    (`pipeline.room_writing`: the filings by the video's date, the notes and
+    cards from `script`). Returns the registry the frames are drawn from and
+    the rooms written; the registry itself when nothing in the cut has a
+    board, a monitor or a lettered thing in shot.
     """
     from dataclasses import replace
 
@@ -1446,10 +1448,15 @@ def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
             # only its prompt.
             ok = prices is not None and not getattr(prices, "degraded", True)
             days = int(getattr(settings, "price_history_days", 0) or 0)
+            from pipeline.room_writing import props
+
             d = Dressing(episode=0, ticker=str(ticker).upper(),
                          closes=tuple(prices.closes) if ok else (),
                          span=(f"{max(round(days / 365), 1)}Y" if days >= 365
-                               else f"{max(round(days / 30), 1)}M"))
+                               else f"{max(round(days / 30), 1)}M"),
+                         props=props(script, ticker=ticker,
+                                     workdate=Path(workspace or workdir).name,
+                                     episode=0, settings=settings, workspace=workspace))
         if layer.entry_key not in written:
             try:
                 written[layer.entry_key] = written_room(plate, d, workdir / "written",
@@ -2030,7 +2037,8 @@ def _render_short(script, tts, workspace: Path, settings, *,
     delivered = delivered_size(result.frame, scale)
     frame_reg, written_rooms = dress_rooms(result, reg, ticker=getattr(script, "ticker", ""),
                                            prices=prices, workdir=workdir,
-                                           settings=settings)
+                                           settings=settings, script=script,
+                                           workspace=Path(workspace))
     dennis_3d = perform_3d(result, reg, words, settings, aspect=fmt.aspect,
                            scale=scale, seed=script.content_sha(), draft=proof)
     render_frames(result, resolver, duration, silent, settings, reg=frame_reg,
