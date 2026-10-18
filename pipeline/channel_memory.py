@@ -353,9 +353,9 @@ def used_jokes_block(settings: Settings) -> str:
 
 
 def dennis_story_block(settings: Settings) -> str:
-    from pipeline.writing_files import read_text
+    from pipeline.writing_files import read_file
 
-    text = read_text(settings, "dennis_story").strip()
+    text = read_file(settings, "dennis_story").strip()
     return text or "(his story file is missing — keep him as the bible has him)"
 
 
