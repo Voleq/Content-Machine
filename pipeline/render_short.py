@@ -37,7 +37,7 @@ from pipeline.compose import (MEDIA_PREFIX, MEME_SRC, BuildResult, Layer,
 from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
 from pipeline.render_common import RenderError, mix_under_picture, run_ffmpeg
-from pipeline.sound import (Cut, Move, manifest_rows, measure_lufs,
+from pipeline.sound import (Cut, Move, body_moves, manifest_rows, measure_lufs,
                             normalises, placeholders_played, short_mix,
                             shot_tags, sound_summary)
 from pipeline.shots import (Format, apply_order, beat_keys, choose_order,
@@ -1542,7 +1542,8 @@ def perform_3d(result: BuildResult, reg, words, settings, *, aspect: str,
                     layers.append(l)
             result.layers[:] = layers
             done.append({"shot": h.shot_id, "room": room.entry_key,
-                         "stance": h.entry_key, "close_up": close, "frames": n})
+                         "stance": h.entry_key, "close_up": close, "frames": n,
+                         "start": round(h.t_start, 3), "events": performer.events(layer)})
     finally:
         if own:
             performer.close()
@@ -2118,9 +2119,14 @@ def _render_short(script, tts, workspace: Path, settings, *,
             for sp in result.spans]
     moves = [Move(r["move"], r["start"], r["shot_id"], r["slot"], int(r.get("frames") or 0))
              for r in plan.record()["moves"]]
+    # The wide shots of him hear a touch more room on the voice (A8).
+    wide_ids = {d["shot"] for d in (dennis_3d or []) if not d.get("close_up")}
+    wide = [(c.start, c.end) for c in cuts if c.shot_id in wide_ids]
+    # …and his clothes when he turns or moves an arm (A10).
+    body = body_moves((d.get("start", 0.0), d.get("events", ())) for d in dennis_3d or [])
     tracks = short_mix(tts, settings, cuts=cuts, hour=reg.hour,
                        seed=script.content_sha(),
-                       workspace=workspace, moves=moves)
+                       workspace=workspace, moves=moves, wide=wide, body=body)
     if tracks:
         mix_under_picture(silent, tracks, part, duration=duration,
                           audio_bitrate=settings.audio_bitrate,
@@ -2142,6 +2148,10 @@ def _render_short(script, tts, workspace: Path, settings, *,
     provenance.sound = sound_summary(
         audio_rows, lufs=measure_lufs(out) if tracks else None,
         placeholders=placeholders_played(settings, tracks))
+    # …and through a phone's speaker, on a real voice only (A11).
+    if tracks and normalises(settings, tts):
+        from pipeline.phone_check import phone_report
+        provenance.phone = phone_report(tracks, duration, workdir)
 
     manifest_path = Path(workspace) / f"{Path(out_name).stem}.manifest.json"
     manifest_path.write_text(json.dumps({

@@ -475,6 +475,39 @@ def c_correct(c: Call):
     return c.core.correct_command(c.args)
 
 
+def c_voice(c: Call):
+    return c.core.voice_listing(c.chat_id)
+
+
+def c_say(c: Call):
+    return c.core.say_command(c.chat_id, c.raw or " ".join(c.args))
+
+
+def c_unsay(c: Call):
+    return c.core.unsay_command(c.args)
+
+
+def c_compare(c: Call):
+    return c.core.voice_compare_command(c.chat_id)
+
+
+async def c_redo(c: Call):
+    reply, restart = await asyncio.to_thread(c.core.redo_command, c.chat_id,
+                                             c.args)
+    queued = 0
+    for kind, ticker, workdate in restart:
+        if c.core.queue is None:
+            break
+        try:
+            await c.core.queue.submit(kind, ticker, workdate)
+            queued += 1
+        except ValueError:
+            continue
+    if queued:
+        reply.text += "\nThe render was stopped and has started again on it."
+    return reply
+
+
 def c_mark(c: Call):
     return c.core.mark_upload(c.args)
 
@@ -689,6 +722,14 @@ FAMILIES: tuple[Family, ...] = (
                "Telegram's 4,096-character split point — is refused with "
                "\"send it as a .txt file\" rather than saved as half a "
                "script.")),
+    Family("voice", "The voice",
+           "hear the voice, redo a sentence, fix how a word is said",
+           notes=(
+               "The paid voice goes to the chat the moment it lands, and the "
+               "render has already started: listen while it runs. A "
+               "pronunciation reaches the voice only — the captions, the "
+               "plates and the script keep the written word — and it applies "
+               "from the next voice on, never re-buying one already made.")),
     Family("publish", "Publishing", "YouTube: upload, schedule, probe, "
            "calendar, correct"),
     Family("jobs", "The render queue", "the render queue: status, cancel, "
@@ -814,6 +855,40 @@ COMMANDS: tuple[Command, ...] = (
                 "Why this one is worth making, in your own words. Prints "
                 "above Approve and rides the description. With no sentence "
                 "it reads back what is recorded.")),
+    # /voice
+    Command("voice", "", "", "the voice file and its sentences, numbered",
+            c_voice, doc=(
+                "The active video's finished voice as a file, and its "
+                "sentences numbered with their times — the numbers `/voice "
+                "redo` takes. Nothing is generated: no voice yet says so.")),
+    Command("voice", "say", "[WORD => how to say it]",
+            "how a word is said to the voice; no rule lists them", c_say,
+            aliases=("say",), example="EBITDA => ee-bit-dah", doc=(
+                "Adds or replaces a pronunciation: the left side as written "
+                "(case counts, whole words), the right side as the voice "
+                "should say it. Names the sentences of the active video's "
+                "voice that contain the word, to redo with the fix.")),
+    Command("voice", "redo", "N", "say sentence N again, same words",
+            c_redo, aliases=("redo",), example="3", ack="⏳ saying it again…",
+            doc=(
+                "Voices sentence N (as `/voice` numbers them) again on its "
+                "own and cuts the new take into the voice in the pause "
+                "either side, so nothing around it moves. Same words — "
+                "changing them is a script edit and a fresh approval. A paid "
+                "take of one sentence (cents), through the monthly cap, ten "
+                "per video. A render of this video already running is "
+                "stopped and started again on the new voice.")),
+    Command("voice", "compare", "",
+            "the voice four ways: dry, room, de-essed, both", c_compare,
+            ack="⏳ cutting the clip…", doc=(
+                "Twenty seconds from the middle of the active video's voice, "
+                "four ways: as it is, with the room (a very short small-room "
+                "echo and a little warmth, a touch more in wide shots), with "
+                "the de-esser, and with both. Both ship off: listen, then "
+                "switch on what you liked with `VOICE_ROOM` and "
+                "`VOICE_DEESS`. Free — it re-uses the voice already made.")),
+    Command("voice", "unsay", "WORD", "drop a pronunciation", c_unsay,
+            doc="Removes the rule; the word is said as written again."),
     # /render
     Command("render", "", "[TICKER] [short|long]",
             "render the approved script (this is where money is spent)",

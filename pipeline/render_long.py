@@ -85,8 +85,9 @@ from pipeline.models import (
 from pipeline.bumper import bumper_clip, tick_start, wipe_clip
 from pipeline.plate_frames import drawn_box, frame_indices, playback_seconds
 from pipeline.plates import _prefer_unused, at_episode_hour, load_plates
-from pipeline.sound import (EFFECT_KEYS, Cut, Move, Voicing,
-                            cue_lead_s, manifest_rows, measure_lufs,
+from pipeline.sound import (EFFECT_KEYS, Cut, Move, Voicing, voice_track,
+                            body_cues, body_moves, cue_lead_s, manifest_rows,
+                            measure_lufs,
                             move_cues, placeholders_played, room_track,
                             sound_summary, theme_tracks, wipe_cues)
 from pipeline.rasters import (
@@ -2403,7 +2404,7 @@ def _render_long(
                 plates_used.add(room.key)
                 _count_3d(i, shot.key, two_shot=True)
                 dennis3d_meta.append({"segment": i, "room": room.key, "stance": shot.key,
-                                      "two_shot": True})
+                                      "two_shot": True, "events": performer.events(layer)})
                 bg_i = _room_input(room, draw_in=False)
                 host_i = _add_input(["-i", str(layer)])
                 chain = _scaled_overlay_chain(bg_i, host_i, 0, 0, W, H, seg_len, "[tsbase];")
@@ -2504,7 +2505,8 @@ def _render_long(
                 _count_3d(i, stance3d, close_up=close3d)
                 dennis3d_meta.append({"segment": i, "room": room.key, "stance": stance3d,
                                       "close_up": close3d,
-                                      **({"push_in": round(push3d["z"], 2)} if push3d else {})})
+                                      **({"push_in": round(push3d["z"], 2)} if push3d else {}),
+                                      "events": performer.events(layer)})
             else:
                 host = (None if alone
                         else _host_input(i, seg, seg_len, room=room, pose=pose))
@@ -3329,8 +3331,11 @@ def _render_long(
     # which is what actually landed on screen — a chapter with no cut to land
     # on was skipped above, and a cue for an opener nobody sees would be a
     # sound with no picture.
-    audio = [AudioTrack(path=tts.audio_path, gain_db=0.0, voice=True,
-                        name="voice")]
+    # The wide shots of him hear a touch more room on the voice (A8).
+    wide = [(segments[m["segment"]].start, segments[m["segment"]].end)
+            for m in dennis3d_meta
+            if not m.get("close_up") and 0 <= m.get("segment", -1) < len(segments)]
+    audio = [voice_track(tts.audio_path, settings, wide=wide)]
     # The room, under everything, and now the whole floor of the mix. It is
     # diegetic — the desk at three in the morning he is sitting at — and it
     # is the room at the hour the set is drawn at (`sound.room_track`).
@@ -3359,6 +3364,11 @@ def _render_long(
     audio += wipe_cues([(float(w["start"]), float(w["cut"]))
                         for w in transition_meta if "transition" in w],
                        settings, voicing, clear_of=hits_at)
+    # His clothes when he turns or moves an arm (A10), off the chapter hits.
+    audio += body_cues(body_moves((segments[m["segment"]].start, m.get("events", ()))
+                                  for m in dennis3d_meta
+                                  if 0 <= m.get("segment", -1) < len(segments)),
+                       settings, script.content_sha(), clear_of=hits_at)
     banner = audio_banner(settings)
     if banner:
         log.warning("%s", banner)
@@ -3459,6 +3469,10 @@ def _render_long(
     provenance.sound = sound_summary(
         audio_rows, lufs=None if draft else measure_lufs(out_path),
         placeholders=placeholders_played(settings, audio))
+    # …and through a phone's speaker, on a real voice only (A11).
+    if spec.normalise_audio:
+        from pipeline.phone_check import phone_report
+        provenance.phone = phone_report(audio, duration, workspace)
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "draft": draft,

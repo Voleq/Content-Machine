@@ -682,6 +682,11 @@ class Settings(BaseSettings):
     # than torn out; the long's memes are the writer's [MEME] and unaffected.
     short_meme: bool = Field(default=False, alias="SHORT_MEME")
 
+    # The voice in the room (A8) and the de-esser (A9). Both OFF until he has
+    # heard them on his own first paid voice: `/voice compare` cuts the clip.
+    voice_room: bool = Field(default=False, alias="VOICE_ROOM")
+    voice_deess: bool = Field(default=False, alias="VOICE_DEESS")
+
     # --- encode politeness ------------------------------------------------
     # The render box is the operator's daily-driver desktop, and renders are
     # unattended: slower-but-polite is the right trade. ffmpeg is capped to a

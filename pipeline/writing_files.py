@@ -2,7 +2,7 @@
 
 Three files steer what the writer is told and what the checks look for: the
 machine-phrasing list (S1), the style references the copy check reads (S2)
-and Dennis's story (S8). Each ships as a default under `assets/writing/` and
+and Dennis's story (S8). A fourth steers the voice: how a word is said (A5). Each ships as a default under `assets/writing/` and
 is edited on the panel, and an edit is written to `state/writing/` rather
 than over the default. Two reasons, and they are the design:
 
@@ -30,6 +30,8 @@ WRITING_FILES: dict[str, str] = {
     "ai_phrases": "ai_phrases.txt",
     "style_references": "style_references.txt",
     "dennis_story": "dennis_story.md",
+    # How a word is said to ElevenLabs (A5) — never what the captions show.
+    "pronunciations": "pronunciations.txt",
 }
 
 _REGEX_PREFIX = "re:"
