@@ -280,6 +280,7 @@ h2 .badge { margin-left: 8px; vertical-align: 1px; }
 }
 .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
 .banner { border-radius: var(--r); padding: 10px 12px; margin-bottom: 16px; font-size: 14px; }
+.banner:not(.warn):not(.bad) { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
 .banner.warn { background: var(--warn-tint); color: var(--warn); border: 1px solid var(--warn); }
 
 .list > * + * { border-top: 1px solid var(--line); }
@@ -593,11 +594,12 @@ dialog form button { color: var(--ink); }
   .status::-webkit-scrollbar { display: none; }
   #active { flex: 1 1 auto; min-width: 0; }
   .tabs {
-    position: sticky; top: 0; z-index: 9; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    position: sticky; top: 0; z-index: 9; display: flex; gap: 4px;
     width: auto; max-width: none; margin: 0 -16px 14px; padding: 6px 16px; border-radius: 0; background: var(--bg);
-    border-bottom: 1px solid var(--line); overflow: visible;
+    border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none;
   }
-  .tabs button { justify-content: center; padding: 0 4px; min-height: 40px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button { flex: 0 0 auto; justify-content: center; padding: 0 12px; min-height: 40px; }
   .tabs button.on { background: var(--surface-3); box-shadow: inset 0 -2px 0 var(--accent); }
   .fam-nav { top: 53px; }
   .family { scroll-margin-top: 110px; }
@@ -651,7 +653,6 @@ dialog form button { color: var(--ink); }
   .tabs .badge { position: absolute; margin: -18px 0 0 18px; }
 }
 @media (max-width: 900px) { .tabs .ico { display: none; } }
-@media (max-width: 600px) { .tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
 a.button, label.button {
   display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; font-size: 13px;
@@ -823,3 +824,58 @@ svg.chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; }
 .next-up b { font-size: 19px; overflow-wrap: anywhere; }
 button.big { min-height: 44px; padding: 0 22px; font-size: 16px; }
 #week .item time { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Ideas, Calendar, Stats */
+.table-wrap { overflow-x: auto; margin-top: 8px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.tbl th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--line-strong); white-space: nowrap; }
+.tbl td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl td.num, .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.num.up { color: var(--ok); }
+.num.down { color: var(--bad); }
+.tbl td.acts { white-space: nowrap; text-align: right; }
+.tbl td.acts button + button { margin-left: 4px; }
+.inline-form { flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.inline-form .grow { flex: 1 1 200px; min-width: 0; }
+.inline-form input.ticker { width: 7.5em; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.chip { display: inline-flex; align-items: center; gap: 2px; padding: 2px 4px 2px 10px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-2); font-family: var(--mono); font-size: 13px; }
+.chip button { min-height: 22px; padding: 0 6px; border: 0; }
+.bars { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 6px; }
+.bar-row { display: grid; grid-template-columns: minmax(70px, 32%) 1fr 64px; align-items: center; gap: 10px; font-size: 13px; }
+.bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { position: relative; height: 12px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.bar-track i { position: absolute; top: 0; bottom: 0; left: 0; background: var(--accent-fill); border-radius: 3px; }
+.bars.signed .bar-track::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--line-strong); }
+.bars.signed .bar-track i { left: auto; }
+.bar-track i.neg { background: var(--bad); }
+.bar-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.report { margin-top: 8px; }
+.report summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.report pre { margin-top: 6px; max-height: 320px; overflow: auto; font-size: 12px; }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.cal-head { font-size: 12px; color: var(--muted); font-weight: 600; padding: 0 4px; }
+.cal-cell { min-height: 96px; padding: 6px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cal-cell.blank { border: 0; background: none; }
+.cal-cell.past { background: var(--surface-2); color: var(--muted); }
+.cal-cell.gap { border-style: dashed; border-color: var(--line-strong); }
+.cal-cell.today { border: 2px solid var(--accent); }
+.cal-date { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; font-size: 13px; }
+.cal-date .free { font-size: 11px; color: var(--warn); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-item { display: block; padding: 2px 6px; border-radius: 4px; font-size: 12px; line-height: 1.35; text-decoration: none; color: var(--ink); background: var(--accent-tint); border-left: 3px solid var(--accent); overflow: hidden; }
+.cal-item span { display: block; color: var(--ink-2); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-item.long { background: var(--ok-tint); border-left-color: var(--ok); }
+.cal-item.pending { border-left-style: dashed; }
+.cal-cell button { align-self: flex-start; margin-top: auto; }
+#schedule { width: min(92vw, 420px); }
+#schedule h2 { font-size: 18px; margin-bottom: 10px; }
+#schedule select, #schedule input { width: 100%; }
+@media (max-width: 600px) {
+  .cal { gap: 3px; }
+  .cal-cell { min-height: 64px; padding: 3px; }
+  .cal-date .free, .cal-item span { display: none; }
+  .cal-item { font-size: 10.5px; padding: 1px 3px; }
+  .cal-head { font-size: 10.5px; padding: 0; }
+  .bar-row { grid-template-columns: minmax(60px, 34%) 1fr 52px; }
+}

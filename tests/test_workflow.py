@@ -520,6 +520,7 @@ def test_every_script_the_page_names_is_served(panel):
     _status, _h, body = panel("/", key_="")
     srcs = re.findall(r'<script src="([^"]+)"', body.decode())
     assert "/static/screens/video.js" in srcs
+    assert "/static/screens/pages.js" in srcs
     for src in srcs:
         assert panel(src, key_="")[0] == 200, src
 
@@ -532,6 +533,18 @@ def test_the_panel_opens_one_video_and_its_job_log(panel, core):
     assert status == 200 and view["now"] == "data" and len(view["steps"]) == 10
     assert panel("/api/video?t=EXMPL&d=2026-10-18", key_="")[0] == 401
     assert json.loads(panel("/api/joblog?id=nope")[2]) == {"lines": []}
+
+
+def test_the_ideas_calendar_and_stats_screens_are_served(panel):
+    panel("/api/run", {"text": "/ideas add SMPL up on volume"})
+    ideas = json.loads(panel("/api/ideas")[2])
+    assert [i["ticker"] for i in ideas["backlog"]] == ["SMPL"]
+    cal = json.loads(panel("/api/calendar?m=2026-02")[2])
+    assert cal["month"] == "2026-02" and len(cal["days"]) == 28
+    stats = json.loads(panel("/api/stats")[2])
+    assert set(stats) >= {"hooks", "rules", "runtime", "chapters", "experiments", "scoreboard"}
+    for path in ("/api/ideas", "/api/calendar", "/api/stats"):
+        assert panel(path, key_="")[0] == 401, path
 
 
 def test_home_shows_this_week_and_the_running_render(panel, core):

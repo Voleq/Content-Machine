@@ -39,6 +39,9 @@
   <nav class="tabs" id="tabs" role="tablist" aria-label="Sections" aria-orientation="vertical">
     <button type="button" role="tab" id="tab-btn-home" aria-controls="tab-home" aria-selected="true" tabindex="0" data-tab="home" class="on" title="What waits on you, the queue, and starting a video"><span class="ico" aria-hidden="true">⌂</span><span class="lbl">Home</span><span id="home-count" class="badge soft" hidden></span></button>
     <button type="button" role="tab" id="tab-btn-videos" aria-controls="tab-videos" aria-selected="false" tabindex="-1" data-tab="videos" title="Every recent video; open one to work through its steps"><span class="ico" aria-hidden="true">▶</span><span class="lbl">Videos</span></button>
+    <button type="button" role="tab" id="tab-btn-ideas" aria-controls="tab-ideas" aria-selected="false" tabindex="-1" data-tab="ideas" title="The backlog, the last screen, the watch list and earnings dates"><span class="ico" aria-hidden="true">✦</span><span class="lbl">Ideas</span></button>
+    <button type="button" role="tab" id="tab-btn-calendar" aria-controls="tab-calendar" aria-selected="false" tabindex="-1" data-tab="calendar" title="What went out, what is scheduled, and the free days"><span class="ico" aria-hidden="true">▦</span><span class="lbl">Calendar</span></button>
+    <button type="button" role="tab" id="tab-btn-stats" aria-controls="tab-stats" aria-selected="false" tabindex="-1" data-tab="stats" title="What held viewers: openers, the writing rules, length, chapters, the calls"><span class="ico" aria-hidden="true">↗</span><span class="lbl">Stats</span></button>
     <button type="button" role="tab" id="tab-btn-activity" aria-controls="tab-activity" aria-selected="false" tabindex="-1" data-tab="activity" title="Everything the bot said, newest first"><span class="ico" aria-hidden="true">≡</span><span class="lbl">Activity</span><span id="unread" class="badge" aria-hidden="true" hidden></span><span id="unread-sr" class="sr-only"></span></button>
     <button type="button" role="tab" id="tab-btn-commands" aria-controls="tab-commands" aria-selected="false" tabindex="-1" data-tab="commands" title="Every command the bot knows, as a form"><span class="ico" aria-hidden="true">/</span><span class="lbl">Commands</span></button>
   </nav>
@@ -107,6 +110,18 @@
       <div id="video-screen"></div>
     </section>
 
+    <section id="tab-ideas" class="tab" role="tabpanel" aria-labelledby="tab-btn-ideas" hidden>
+      <div id="ideas-screen"></div>
+    </section>
+
+    <section id="tab-calendar" class="tab" role="tabpanel" aria-labelledby="tab-btn-calendar" hidden>
+      <div id="calendar-screen"></div>
+    </section>
+
+    <section id="tab-stats" class="tab" role="tabpanel" aria-labelledby="tab-btn-stats" hidden>
+      <div id="stats-screen"></div>
+    </section>
+
     <section id="tab-commands" class="tab" role="tabpanel" aria-labelledby="tab-btn-commands" hidden>
       <div class="page-head">
         <h2>Commands</h2>
@@ -172,8 +187,21 @@
   </form>
 </dialog>
 
+<dialog id="schedule" aria-labelledby="schedule-title">
+  <form method="dialog">
+    <h2 id="schedule-title">Schedule for <span id="schedule-day"></span></h2>
+    <label class="field">Video <select id="schedule-video"></select></label>
+    <label class="field">Goes public at <input id="schedule-time" type="time" required></label>
+    <div class="row end">
+      <button type="submit" value="no" class="ghost" formnovalidate>Not now</button>
+      <button type="submit" value="ok" class="primary">Next</button>
+    </div>
+  </form>
+</dialog>
+
 <script src="/static/app.js"></script>
 <script src="/static/screens/video.js"></script>
 <script src="/static/screens/shell.js"></script>
+<script src="/static/screens/pages.js"></script>
 </body>
 </html>

@@ -184,6 +184,7 @@ function showTab(name, focus = false, keepHash = false) {
   });
   if (focus) b.focus();
   if (name === "activity") { UNREAD = 0; badge(); }
+  if (typeof SCREEN_LOAD !== "undefined") SCREEN_LOAD[name]?.();
   if (keepHash) return;
   const url = new URL(location.href);
   url.searchParams.set("tab", name);

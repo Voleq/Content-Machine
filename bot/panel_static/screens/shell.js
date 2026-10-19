@@ -111,7 +111,7 @@ function renderWeek() {
 }
 
 // ------------------------------------------------- the finder (Ctrl+K)
-const SCREENS = [["home", "Home"], ["videos", "Videos"], ["activity", "Activity"], ["commands", "Commands"]];
+const SCREENS = [["home", "Home"], ["videos", "Videos"], ["ideas", "Ideas"], ["calendar", "Calendar"], ["stats", "Stats"], ["activity", "Activity"], ["commands", "Commands"]];
 let PAL = [];
 let PAL_I = 0;
 function paletteItems(q) {

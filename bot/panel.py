@@ -309,6 +309,14 @@ def _handler_for(panel: Panel):
                     return self._json(video_view(
                         panel, (query.get("t") or [""])[0],
                         (query.get("d") or [""])[0]))
+                if url.path in ("/api/ideas", "/api/calendar", "/api/stats"):
+                    from bot import panel_pages
+                    if url.path == "/api/ideas":
+                        return self._json(panel_pages.ideas_view(panel))
+                    if url.path == "/api/calendar":
+                        return self._json(panel_pages.calendar_view(
+                            panel, (query.get("m") or [""])[0]))
+                    return self._json(panel_pages.stats_view(panel))
                 if url.path == "/api/joblog":
                     from pipeline.jobs import job_log
                     n = min(int((query.get("n") or ["50"])[0] or 50), 200)
