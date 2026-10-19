@@ -94,9 +94,9 @@ def test_every_old_name_still_answers():
 def test_the_menu_is_the_entry_points_and_the_families():
     menu = [n for n, _ in cmds.menu_commands()]
     assert menu[:3] == ["go", "card", "inbox"]
-    assert {"new", "script", "render", "publish", "jobs", "ideas", "stats",
-            "search", "admin", "help"} <= set(menu)
-    assert len(menu) == 13, "the menu is the short list, not every name"
+    assert {"new", "script", "render", "voice", "publish", "jobs", "ideas",
+            "stats", "search", "admin", "help"} <= set(menu)
+    assert len(menu) == 14, "the menu is the short list, not every name"
 
 
 def test_every_name_is_one_telegram_accepts():
