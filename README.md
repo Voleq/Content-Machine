@@ -774,6 +774,7 @@ An edit that does not parse never lands. Every edit that does re-runs the gates,
 | `/render long [TICKER]` | Forces the LONG, for a ticker that has both. **Spends.** |
 | `/render short [TICKER]` | Forces the SHORT, for a ticker that has both. **Spends.** |
 | `/render proof [TICKER] [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". Writes `short_proof.mp4` / `long_proof.mp4` — never over a paid final. |
+| `/render notes [add m:ss what \| drop N]` | The notes you made watching the active video's proof (the page's `n` key), in time order, as the numbered list with timestamps you send. `add 0:12 the chart is late` adds one, `drop N` removes one. |
 | `/render draft [TICKER]` | LONG only, half resolution, free voice. Answers "does the timing work?". |
 | `/render clips [TICKER]` | Cuts the best two or three ~58s windows of a finished LONG into free vertical SHORTs. |
 

@@ -94,8 +94,11 @@ class Panel:
         if core.feed is None:
             core.feed = Feed()
         self.feed: Feed = core.feed
+        # The voice's cache holds the audio and its word times, which the
+        # page's voice step plays; nothing else under the cache is served.
         roots = [self.settings.workspace_dir, self.settings.templates_dir,
-                 Path(self.settings.assets_dir) / "custom"]
+                 Path(self.settings.assets_dir) / "custom",
+                 Path(self.settings.cache_dir) / "tts"]
         self.roots = [Path(r).resolve() for r in roots]
 
     # ---- the bridge to the bot's loop
@@ -268,6 +271,16 @@ def _handler_for(panel: Panel):
                         fam, panel.core, panel.chat_id)})
                 if url.path == "/api/file":
                     return self._file((query.get("path") or [""])[0])
+                if url.path == "/api/video":
+                    from bot.panel_views import video_view
+                    return self._json(video_view(
+                        panel, (query.get("t") or [""])[0],
+                        (query.get("d") or [""])[0]))
+                if url.path == "/api/joblog":
+                    from pipeline.jobs import job_log
+                    n = min(int((query.get("n") or ["50"])[0] or 50), 200)
+                    return self._json({"lines": job_log(
+                        panel.settings, (query.get("id") or [""])[0], n)})
             except Exception as e:  # noqa: BLE001 - the page shows it
                 log.exception("panel GET %s", url.path)
                 return self._json({"error": str(e)}, 500)
@@ -309,6 +322,10 @@ def _handler_for(panel: Panel):
                         return self._json({"error": "empty file"}, 400)
                     reply = panel.run(cmds.handle_upload(core, chat, name,
                                                          data, say=panel.say))
+                elif url.path == "/api/thumbnail":
+                    reply = panel.core.set_thumbnail(
+                        (query.get("t") or [""])[0], (query.get("d") or [""])[0],
+                        (query.get("fmt") or [""])[0], self._body())
                 elif url.path == "/api/active":
                     p = self._payload()
                     ticker = str(p.get("ticker") or "").upper()

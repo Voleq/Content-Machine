@@ -16,8 +16,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import threading
 import uuid
+from collections import deque
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Awaitable, Callable
 
@@ -49,6 +52,145 @@ def _start(job: JobRecord) -> None:
     if job.status is not JobStatus.QUEUED:
         raise _NotQueued
     job.status = JobStatus.RUNNING
+    job.started_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+# --------------------------------------------------------------------------
+# The job's own log, and how far along it is (the page's render step)
+# --------------------------------------------------------------------------
+
+LOG_KEEP = 200
+_DETAIL_RE = re.compile(r"^(?P<stage>[a-z]+)\s+(?P<done>\d+)/(?P<total>\d+)")
+# Where each stage the render's checkpoints name sits, as a share of the
+# whole job: the voice and the storyboard are quick, the cut is most of it.
+STAGE_SPAN = {"tts": (0, 8), "storyboard": (8, 12), "render": (12, 96),
+              "proof": (12, 96), "draft": (12, 96), "deliver": (96, 100)}
+_SECRET_RE = re.compile(
+    r"(?i)\b((?:api[_-]?)?key|token|secret|password|access_token|"
+    r"refresh_token|client_secret|signature|sig)=([^&\s\"']+)")
+_BEARER_RE = re.compile(r"(?i)\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]{8,}")
+
+
+def log_path(settings: Settings, job_id: str) -> Path:
+    return settings.state_dir / "jobs" / f"{job_id}.log"
+
+
+def _secret_values(settings: Settings) -> list[str]:
+    """Every key the settings hold, so a line that prints one (a URL with
+    the key in it) never reaches the page with it."""
+    out = []
+    for name in type(settings).model_fields:
+        if re.search(r"key|token|secret|password", name):
+            v = getattr(settings, name, "")
+            if isinstance(v, str) and len(v) >= 8:
+                out.append(v)
+    return out
+
+
+def redact(text: str, secrets: list[str] = ()) -> str:
+    for v in secrets:
+        text = text.replace(v, "•••")
+    text = _SECRET_RE.sub(lambda m: f"{m.group(1)}=•••", text)
+    return _BEARER_RE.sub(lambda m: f"{m.group(1)} •••", text)
+
+
+class _JobLogHandler(logging.Handler):
+    """Every record the job's worker thread logs, to `state/jobs/{id}.log`."""
+
+    def __init__(self, path: Path, secrets: list[str]):
+        super().__init__(logging.INFO)
+        self.path = path
+        self.secrets = secrets
+        self.thread = threading.get_ident()
+        self.setFormatter(logging.Formatter(
+            "%(asctime)s %(levelname)s %(name)s: %(message)s", "%H:%M:%S"))
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.thread != self.thread:
+            return
+        try:
+            line = redact(self.format(record), self.secrets)
+            with open(self.path, "a", encoding="utf-8") as fh:
+                fh.write(line.replace("\n", "\n    ") + "\n")
+        except Exception:  # noqa: BLE001 - a log line is never the render
+            self.handleError(record)
+
+
+def _trim(path: Path) -> None:
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            tail = deque(fh, maxlen=LOG_KEEP)
+        tmp = path.with_suffix(".log.tmp")
+        tmp.write_text("".join(tail), encoding="utf-8")
+        tmp.replace(path)
+    except OSError:
+        pass
+
+
+def run_logged(settings: Settings, job: JobRecord, executor):
+    """`executor(job)`, with what this thread logs kept as the job's log
+    (the last `LOG_KEEP` lines)."""
+    path = log_path(settings, job.id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handler = _JobLogHandler(path, _secret_values(settings))
+    root = logging.getLogger()
+    root.addHandler(handler)
+    try:
+        return executor(job)
+    finally:
+        root.removeHandler(handler)
+        _trim(path)
+
+
+def job_log(settings: Settings, job_id: str, n: int = 50) -> list[str]:
+    """The last `n` lines of one job's log; none when it has none."""
+    if not re.fullmatch(r"[0-9a-f]{6,32}", job_id or ""):
+        return []
+    path = log_path(settings, job_id)
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            return [line.rstrip("\n") for line in deque(fh, maxlen=max(n, 1))]
+    except OSError:
+        return []
+
+
+def _seconds_since(iso: str, now: datetime) -> float | None:
+    try:
+        t = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return None
+    return max((now - t).total_seconds(), 0.0)
+
+
+def progress(job: dict, est_render_min: float | None = None,
+             now: datetime | None = None) -> dict:
+    """`{stage, pct, eta_s}` for one job as the page shows it.
+
+    The share comes from the checkpoint the render last wrote ("render
+    15/40 segments" is 15/40 of the cut's span); the time left from how
+    long it has run against that share, or, before there is a share to go
+    on, from the report's estimate. `eta_s` is None when neither says."""
+    now = now or datetime.now(timezone.utc)
+    detail = str(job.get("detail") or "")
+    status = str(job.get("status") or "")
+    m = _DETAIL_RE.match(detail)
+    stage = m["stage"] if m else (detail.split()[0] if detail else status)
+    if status == "queued":
+        return {"stage": "queued", "pct": 0, "eta_s": None}
+    if detail.startswith("delivered"):
+        stage = "deliver"
+    lo, hi = STAGE_SPAN.get(stage, (0, 0))
+    pct = float(lo)
+    if m and int(m["total"]):
+        pct = lo + (hi - lo) * min(int(m["done"]) / int(m["total"]), 1.0)
+    elapsed = _seconds_since(str(job.get("started_at") or ""), now)
+    eta = None
+    if elapsed is not None and pct >= 15:
+        eta = elapsed * (100 - pct) / pct
+    elif est_render_min:
+        eta = max(est_render_min * 60 - (elapsed or 0.0), 0.0)
+    return {"stage": stage, "pct": round(pct, 1),
+            "eta_s": None if eta is None else round(eta)}
 
 
 def _cancelled(job: JobRecord) -> None:
@@ -269,7 +411,8 @@ class RenderJobQueue:
             _journal(self.settings, job, "started")
             await self._notify(f"🎬 {job.ticker}: {job.kind.value} started")
             try:
-                artifact = await asyncio.to_thread(self.executor, job)
+                artifact = await asyncio.to_thread(
+                    run_logged, self.settings, job, self.executor)
 
                 def _finish(j: JobRecord) -> None:
                     if j.status is JobStatus.CANCELLED and not j.delivered_link:

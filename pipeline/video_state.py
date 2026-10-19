@@ -176,7 +176,8 @@ def _jobs_for(jobs: list, ticker: str, workdate: str) -> list[dict]:
             continue
         out.append({"id": j.id, "kind": j.kind.value, "status": j.status.value,
                     "detail": j.detail, "error": j.error[:300],
-                    "updated_at": j.updated_at, "link": j.delivered_link})
+                    "updated_at": j.updated_at, "started_at": j.started_at,
+                    "link": j.delivered_link})
     return out[:6]
 
 

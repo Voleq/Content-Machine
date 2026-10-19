@@ -1777,6 +1777,7 @@ class BotCore:
         store = self.queue.store if self.queue else None
 
         def checkpoint(detail: str) -> None:
+            log.info("%s %s: %s", job.ticker, job.kind.value, detail)
             if store:
                 # One locked step, so a `/cancel` saved in between cannot be
                 # written over by this progress note (JobStore.update).
@@ -2963,6 +2964,64 @@ class BotCore:
             if found.is_file() and found.stat().st_size:
                 return found
         return None
+
+    def proof_notes(self, chat_id: int, args: list[str]) -> Reply:
+        """`/render notes`: his fault notes on the active video's proof.
+
+        `add m:ss what` (or seconds), `drop N`, or nothing to list them as
+        the numbered list he sends."""
+        from pipeline.proof_review import add_note, drop_note, fault_list, load_notes
+
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active video — /new short|long TICKER first.")
+        fmt = ws.current_format() or ws.lane() or "short"
+        op = (args[0].lower() if args else "")
+        try:
+            if op == "add" and len(args) >= 3:
+                stamp = args[1]
+                if ":" in stamp:
+                    m, _, sec = stamp.partition(":")
+                    t = int(m) * 60 + float(sec)
+                else:
+                    t = float(stamp)
+                notes = add_note(ws.path, fmt, t, " ".join(args[2:]))
+            elif op == "drop" and len(args) == 2:
+                notes = drop_note(ws.path, fmt, int(args[1]))
+            elif not op:
+                notes = load_notes(ws.path, fmt)
+            else:
+                return Reply("Usage: /render notes · /render notes add 0:12 "
+                             "what is wrong · /render notes drop N")
+        except ValueError as e:
+            return Reply(f"❌ {e}")
+        head = f"📝 {ws.ticker} {fmt} proof notes{self._from_date(ws)}"
+        if not notes:
+            return Reply(f"{head}: none yet.")
+        return Reply(f"{head}:\n{fault_list(notes)}")
+
+    def set_thumbnail(self, ticker: str, workdate: str, fmt: str,
+                      data: bytes) -> Reply:
+        """His own cover for one video's upload (the page's upload step);
+        no bytes puts the bot's back."""
+        from bot.panel_views import is_video_key
+        from pipeline.thumbnail import clear_his_cover, set_his_cover
+
+        if not is_video_key(ticker, workdate):
+            return Reply("❌ no such video")
+        ws = Workspace(self.settings, ticker.upper(), workdate)
+        if not ws.exists or fmt not in ("short", "long"):
+            return Reply("❌ no such video")
+        if not data:
+            if clear_his_cover(ws, fmt):
+                return Reply(f"🖼 {ws.ticker} {fmt}: back to the bot's cover.")
+            return Reply(f"{ws.ticker} {fmt} already uses the bot's cover.")
+        try:
+            set_his_cover(ws, fmt, data)
+        except ValueError as e:
+            return Reply(f"❌ {e}")
+        return Reply(f"🖼 {ws.ticker} {fmt}: your cover is the one the upload "
+                     f"sends. The bot's is kept, and a re-render keeps yours.")
 
     @staticmethod
     def short_format_name(ws: Workspace) -> str:

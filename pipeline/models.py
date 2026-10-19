@@ -1356,6 +1356,9 @@ class JobRecord(BaseModel):
     status: JobStatus = JobStatus.QUEUED
     created_at: str = Field(default_factory=lambda: _utcnow())
     updated_at: str = Field(default_factory=lambda: _utcnow())
+    # When the worker picked it up: the page's time left runs from here, not
+    # from when it was queued behind another render.
+    started_at: str = ""
     error: str = ""
     artifact: str = ""       # path of the rendered MP4 when done
     delivered_link: str = "" # shareable link after delivery

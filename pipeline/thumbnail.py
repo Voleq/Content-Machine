@@ -649,7 +649,81 @@ def make_thumbnail(script, ws, settings: Settings) -> Path | None:
             for performer in (wide_perf, tall_perf):
                 if performer is not None:
                     performer.close()
+        _keep_his_cover(ws, "short" if is_short else "long")
         return out
     except Exception:
         log.exception("thumbnail generation failed (non-fatal)")
         return None
+
+
+# --------------------------------------------------------------------------
+# His own cover (the page's upload step)
+# --------------------------------------------------------------------------
+# He makes covers in Figma. The one he puts on the page is the one the upload
+# sends: it goes under the name the upload reads (`publish.byproduct_name`),
+# the bot's is kept beside it, and a re-render that draws the bot's again
+# puts his back on top.
+
+def _shipped(ws, fmt: str) -> Path:
+    from pipeline.publish import byproduct_name
+
+    return Path(ws.path) / byproduct_name("thumbnail", fmt, ws.ticker)
+
+
+def his_cover(ws, fmt: str) -> Path | None:
+    p = Path(ws.path) / f"cover_mine_{fmt}.png"
+    return p if p.is_file() else None
+
+
+def bot_cover(ws, fmt: str) -> Path | None:
+    """The bot's own cover: kept aside while his is the one that ships."""
+    kept = Path(ws.path) / f"cover_bot_{fmt}.png"
+    if kept.is_file():
+        return kept
+    shipped = _shipped(ws, fmt)
+    return shipped if shipped.is_file() and his_cover(ws, fmt) is None else None
+
+
+def _keep_his_cover(ws, fmt: str) -> None:
+    mine = his_cover(ws, fmt)
+    if mine is None:
+        return
+    shipped = _shipped(ws, fmt)
+    if shipped.is_file():
+        shipped.replace(Path(ws.path) / f"cover_bot_{fmt}.png")
+    shipped.write_bytes(mine.read_bytes())
+
+
+def set_his_cover(ws, fmt: str, data: bytes) -> Path:
+    """His picture as the cover this format's upload sends. Raises
+    ValueError for a file that is not a picture."""
+    import io
+
+    try:
+        img = Image.open(io.BytesIO(data))
+        img.load()
+    except Exception as e:  # noqa: BLE001 - whatever PIL says, it is not one
+        raise ValueError("that file is not a picture (PNG or JPG)") from e
+    mine = Path(ws.path) / f"cover_mine_{fmt}.png"
+    img.convert("RGB").save(mine, "PNG")
+    shipped = _shipped(ws, fmt)
+    kept = Path(ws.path) / f"cover_bot_{fmt}.png"
+    if shipped.is_file() and not kept.is_file():
+        shipped.replace(kept)
+    shipped.write_bytes(mine.read_bytes())
+    return shipped
+
+
+def clear_his_cover(ws, fmt: str) -> bool:
+    """Back to the bot's cover. False when he had none set."""
+    mine = his_cover(ws, fmt)
+    if mine is None:
+        return False
+    mine.unlink()
+    kept = Path(ws.path) / f"cover_bot_{fmt}.png"
+    shipped = _shipped(ws, fmt)
+    if kept.is_file():
+        kept.replace(shipped)
+    else:
+        shipped.unlink(missing_ok=True)
+    return True

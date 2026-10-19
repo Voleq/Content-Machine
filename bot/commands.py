@@ -400,6 +400,10 @@ def c_swap(c: Call):
 
 
 # ---- /render
+def c_notes(c: Call):
+    return c.core.proof_notes(c.chat_id, list(c.args))
+
+
 async def c_render(c: Call):
     if not c.args:
         return Reply("Usage: /render [TICKER] [short|long]")
@@ -830,6 +834,13 @@ COMMANDS: tuple[Command, ...] = (
                 "`$0`. The pass that answers \"what will this look like?\". "
                 "Writes `short_proof.mp4` / `long_proof.mp4` — never over a "
                 "paid final.")),
+    Command("render", "notes", "[add m:ss what | drop N]",
+            "your fault notes on the proof, as the numbered list", c_notes,
+            doc=(
+                "The notes you made watching the active video's proof (the "
+                "page's `n` key), in time order, as the numbered list with "
+                "timestamps you send. `add 0:12 the chart is late` adds one, "
+                "`drop N` removes one.")),
     Command("render", "draft", "[TICKER]",
             "cheap low-res LONG timing check (no voice spend)", c_draft,
             aliases=("draft",), ticker="dated", doc=(

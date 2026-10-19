@@ -516,6 +516,24 @@ def test_the_panel_page_loads_and_the_api_needs_the_key(panel):
     assert status == 200 and "inbox" in json.loads(body)
 
 
+def test_every_script_the_page_names_is_served(panel):
+    _status, _h, body = panel("/", key_="")
+    srcs = re.findall(r'<script src="([^"]+)"', body.decode())
+    assert "/static/screens/video.js" in srcs
+    for src in srcs:
+        assert panel(src, key_="")[0] == 200, src
+
+
+def test_the_panel_opens_one_video_and_its_job_log(panel, core):
+    panel("/api/run", {"text": "/new short EXMPL"})
+    ws = core.context.get(core.settings.operator_chat_ids[0])
+    status, _h, body = panel(f"/api/video?t=EXMPL&d={ws.workdate}")
+    view = json.loads(body)
+    assert status == 200 and view["now"] == "data" and len(view["steps"]) == 10
+    assert panel("/api/video?t=EXMPL&d=2026-10-18", key_="")[0] == 401
+    assert json.loads(panel("/api/joblog?id=nope")[2]) == {"lines": []}
+
+
 def test_the_panel_runs_commands_through_the_registry(panel, core):
     status, _h, body = panel("/api/run", {"text": "/new short EXMPL"})
     reply = json.loads(body)["reply"]

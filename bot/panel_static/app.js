@@ -151,6 +151,7 @@ async function start() {
   const tab = new URLSearchParams(location.search).get("tab");
   if (tab) showTab(tab, false);
   await refresh();
+  routeVideo();
   const feed = await api("/api/feed?since=0");
   feed.events.forEach((ev) => { ev._id = ++FEED_ID; FEED.push(ev); });
   FEED_SEQ = feed.seq;
@@ -165,9 +166,11 @@ async function start() {
 }
 
 // ------------------------------------------------------------------- tabs
-function showTab(name, focus = false) {
-  const b = document.querySelector(`#tabs [data-tab="${name}"]`);
+// A video's workspace (`#/video/T/D`) sits under Videos in the menu.
+function showTab(name, focus = false, keepHash = false) {
+  const b = document.querySelector(`#tabs [data-tab="${name === "video" ? "videos" : name}"]`);
   if (!b) return;
+  if (name !== "video") stopVideo();
   $$("#tabs [role=tab]").forEach((x) => {
     const on = x === b;
     x.classList.toggle("on", on);
@@ -181,6 +184,7 @@ function showTab(name, focus = false) {
   });
   if (focus) b.focus();
   if (name === "activity") { UNREAD = 0; badge(); }
+  if (keepHash) return;
   const url = new URL(location.href);
   url.searchParams.set("tab", name);
   url.hash = "";
@@ -194,8 +198,8 @@ $("#tabs").addEventListener("keydown", (e) => {
   const tabs = $$("#tabs [role=tab]");
   let i = tabs.indexOf(document.activeElement);
   if (i < 0) return;
-  if (e.key === "ArrowRight") i = (i + 1) % tabs.length;
-  else if (e.key === "ArrowLeft") i = (i - 1 + tabs.length) % tabs.length;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") i = (i + 1) % tabs.length;
+  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") i = (i - 1 + tabs.length) % tabs.length;
   else if (e.key === "Home") i = 0;
   else if (e.key === "End") i = tabs.length - 1;
   else return;
@@ -353,8 +357,21 @@ $("#replies").addEventListener("click", (e) => {
 });
 const originButton = (...kids) => el("button", { type: "button", class: "origin", "aria-expanded": "true" }, ...kids);
 
+const FOLD_STORE = "dennis.panel.fold";
+function foldReplies(fold, remember = true) {
+  $("#app").classList.toggle("no-replies", fold);
+  const b = $("#fold-replies");
+  b.textContent = fold ? "⇤" : "⇥";
+  b.setAttribute("aria-expanded", fold ? "false" : "true");
+  b.setAttribute("aria-label", fold ? "Show the replies" : "Fold the replies away");
+  if (remember) writeStore(FOLD_STORE, fold ? "1" : "");
+}
+$("#fold-replies").addEventListener("click", () => foldReplies(!$("#app").classList.contains("no-replies")));
+if (readStore(FOLD_STORE)) foldReplies(true);
+
 function addReply(origin) {
   $("#replies .empty")?.remove();
+  if ($("#app").classList.contains("no-replies")) foldReplies(false, false);
   const box = el("div", { class: "reply pending", "aria-busy": "true" },
     originButton(el("span", { text: origin }), el("span", { class: "working", text: "working…" })),
     el("pre", { class: "text" }));
@@ -470,7 +487,7 @@ function renderHeader() {
     a ? el("span", { class: "date meta", text: a.workdate }) : null);
   act_.title = a ? `${a.ticker} · ${a.workdate} — open its card` : "No active video";
   act_.setAttribute("aria-label", a ? `Active ${a.ticker} ${a.workdate} — open its card` : "Active: none");
-  act_.onclick = a ? () => openCard(`${a.ticker}@${a.workdate}`) : null;
+  act_.onclick = a ? () => openVideo(a.ticker, a.workdate) : null;
 
   const s = STATE.spend;
   const sp = $("#spend");
@@ -595,12 +612,12 @@ const SECTION_ORDER = Object.keys(SECTIONS);
 
 const videoFor = (t, d) => STATE.videos.find((v) => v.ticker === t && v.workdate === d);
 
-// The inbox's own button opens the card in the chat; here it opens the card
-// on the Videos tab instead of posting a copy into Replies.
+// The inbox's own button opens the card in the chat; here it opens the
+// video's workspace instead of posting a copy into Replies.
 function cardLocal(b) {
   if (!b.data.startsWith("c|")) return false;
   const [, t, d] = b.data.split("|");
-  openCard(`${t}@${d}`);
+  openVideo(t, d);
   return true;
 }
 
@@ -638,7 +655,7 @@ function renderInbox() {
         el("div", { class: "desc", text: it.text })),
       buttonsBlock(rows, {
         nextRow: next, sm: true, local: cardLocal,
-        relabel: (b) => (b.data.startsWith("c|") ? "Open card" : b.text.replace(/^[A-Z0-9.\-]+:\s*/, "")),
+        relabel: (b) => (b.data.startsWith("c|") ? "Open" : b.text.replace(/^[A-Z0-9.\-]+:\s*/, "")),
       })));
   }
   setKids(box, out);
@@ -752,6 +769,8 @@ function renderVideos() {
     const tail = (v.buttons.at(-1) || []).filter((b) => !b.data.startsWith("c|"));
     return el("article", { class: `card video${isActive ? " is-active" : ""}`, "data-key": v.key, "aria-label": `${v.ticker} ${lane} ${v.workdate}` },
       el("div", { class: "video-head" },
+        el("button", { type: "button", class: "primary sm", text: "Open", title: "Work through this video's steps", "data-cb": `open:${v.key}`,
+          "aria-label": `Open ${v.ticker} ${v.workdate}`, onclick: () => openVideo(v.ticker, v.workdate) }),
         el("span", { class: "tk", text: v.ticker }),
         el("span", { class: "lane", text: lane }),
         el("span", { class: "date", text: v.workdate }),
