@@ -11,10 +11,15 @@
 <body>
 <header class="top">
   <h1 class="brand"><span class="mark" aria-hidden="true">D</span>Dennis<span class="sub">control panel</span></h1>
+  <button id="search" class="search" type="button" title="Find a command, a video or a screen (Ctrl+K)" hidden>
+    <span aria-hidden="true">⌕</span><span class="lbl">Find or run…</span><kbd>Ctrl K</kbd></button>
   <div class="status" id="status" hidden>
+    <button id="queue-pill" class="pill" type="button" hidden></button>
     <button id="active" class="pill" type="button"></button>
     <span id="spend" class="pill" role="img"></span>
     <button id="notify" class="pill" type="button"></button>
+    <button id="alerts" class="pill icon" type="button"></button>
+    <button id="theme" class="pill icon" type="button"></button>
   </div>
 </header>
 <div id="mock" class="mock" hidden><span class="mock-tag">Demo data</span><span id="mock-text"></span></div>
@@ -40,6 +45,7 @@
 
   <main id="main">
     <section id="tab-home" class="tab on" role="tabpanel" aria-labelledby="tab-btn-home">
+      <div id="next-up" class="next-up"></div>
       <div id="summary" class="summary"></div>
       <div id="queue-banner" class="banner warn" hidden>The render queue is not running in this process — anything you render will wait.</div>
       <div class="grid">
@@ -77,6 +83,10 @@
           <textarea id="paste" rows="7" spellcheck="false"
             placeholder="Paste the script, an angle tweak, or the answer to a question the bot asked"></textarea>
           <div class="row end"><button id="send-paste" class="primary" type="button">Send</button></div>
+        </section>
+        <section class="card" aria-labelledby="week-h">
+          <div class="card-head"><h2 id="week-h">This week</h2><span class="meta">out in the last 7 days and the next 7</span></div>
+          <div id="week" class="list"></div>
         </section>
         <section class="card span2" aria-labelledby="queue-h">
           <div class="card-head"><h2 id="queue-h">Render queue</h2><span id="queue-note" class="meta"></span></div>
@@ -144,6 +154,13 @@
   <video id="player-video" controls playsinline></video>
 </dialog>
 
+<dialog id="palette" aria-label="Find or run">
+  <input id="palette-input" type="search" autocomplete="off" spellcheck="false"
+         placeholder="A command, a ticker, or a screen — Enter runs or opens" aria-controls="palette-list">
+  <ul id="palette-list" role="listbox"></ul>
+  <p class="meta palette-foot">↑ ↓ to choose · Enter to run or open · Esc to close</p>
+</dialog>
+
 <dialog id="confirm" aria-labelledby="confirm-title">
   <form method="dialog">
     <h2 id="confirm-title"></h2>
@@ -157,5 +174,6 @@
 
 <script src="/static/app.js"></script>
 <script src="/static/screens/video.js"></script>
+<script src="/static/screens/shell.js"></script>
 </body>
 </html>

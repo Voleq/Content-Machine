@@ -457,8 +457,10 @@ async function refresh(force = false) {
   STATE = next;
   keepFocus(() => {
     renderHeader();
+    renderNextUp();
     renderSummary();
     renderInbox();
+    renderWeek();
     renderJobs();
     renderVideos();
   });
@@ -519,6 +521,7 @@ function renderHeader() {
 
   $("#queue-banner").hidden = !!STATE.queue_running;
   renderTarget();
+  renderShell();
 }
 
 // "Send to": which video a paste or an upload lands in, and the switch.
@@ -1053,6 +1056,7 @@ async function pollFeed() {
     if (data.events.length) {
       data.events.forEach((ev) => { ev._id = ++FEED_ID; FEED.push(ev); });
       if (FEED.length > 600) FEED = FEED.slice(-600);
+      alertPushes(data.events.filter(isPush));
       const pushes = data.events.filter(isPush).length;
       if (pushes && !$("#tab-activity").classList.contains("on")) { UNREAD += pushes; badge(); }
       renderFeed();
@@ -1062,4 +1066,6 @@ async function pollFeed() {
   } catch { /* the next poll tries again */ }
 }
 
-boot();
+// After every screen's script has loaded: the first answer from the bot can
+// come back before the browser has read the files after this one.
+document.addEventListener("DOMContentLoaded", boot);

@@ -534,6 +534,31 @@ def test_the_panel_opens_one_video_and_its_job_log(panel, core):
     assert json.loads(panel("/api/joblog?id=nope")[2]) == {"lines": []}
 
 
+def test_home_shows_this_week_and_the_running_render(panel, core):
+    from datetime import datetime, timedelta, timezone
+
+    from pipeline.models import JobRecord
+    from pipeline.youtube import VideoLog, VideoRecord
+
+    soon = (datetime.now(timezone.utc) + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    long_ago = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    log = VideoLog(core.settings)
+    log.record(VideoRecord(ticker="EXMPL", video_id="soon1", title="soon", privacy="scheduled",
+                           publish_at=soon, uploaded_at=long_ago, workdate="2026-10-18", fmt="short"))
+    log.record(VideoRecord(ticker="OLD", video_id="old1", title="old", privacy="public",
+                           uploaded_at=long_ago, workdate="2026-09-18", fmt="long"))
+    from pipeline.jobs import JobStore
+    JobStore(core.settings).save(JobRecord(
+        id="abcdef1234", kind=JobKind.RENDER_SHORT, ticker="EXMPL", workdate="2026-10-18",
+        status=JobStatus.RUNNING, detail="render 10/20 segments",
+        started_at=long_ago))
+    state = json.loads(panel("/api/state")[2])
+    assert [w["video_id"] if "video_id" in w else w["title"] for w in state["week"]] == ["soon"]
+    assert state["week"][0]["pending"] is True
+    job = next(j for j in state["jobs"] if j["id"] == "abcdef1234")
+    assert job["progress"]["stage"] == "render" and job["progress"]["pct"] == 54.0
+
+
 def test_the_panel_runs_commands_through_the_registry(panel, core):
     status, _h, body = panel("/api/run", {"text": "/new short EXMPL"})
     reply = json.loads(body)["reply"]

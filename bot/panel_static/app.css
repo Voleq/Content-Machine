@@ -42,8 +42,10 @@
   color-scheme: light;
 }
 
+/* Dark follows the computer unless the page's own switch says otherwise
+   (data-theme on <html>, kept per browser). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #0f0f0e;
     --surface: #1f1f1c;
     --surface-2: #282825;
@@ -78,6 +80,41 @@
     --sheet-shadow: 0 -6px 24px rgba(0, 0, 0, .5);
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+    --bg: #0f0f0e;
+    --surface: #1f1f1c;
+    --surface-2: #282825;
+    --surface-3: #302f2b;
+    --line: #3d3c36;
+    --line-strong: #55534b;
+    --field-line: #75736a;
+    --ink: #ecebe6;
+    --ink-2: #c9c8c1;
+    --muted: #a3a29b;
+    --accent: #6eb1e6;
+    --accent-fill: #2a6ea8;
+    --accent-hover: #245f92;
+    --accent-tint: #16293a;
+    --accent-line: #2f5a7d;
+    --accent-ink: #ffffff;
+    --ok: #72c795;
+    --ok-tint: #15291d;
+    --warn: #e8a94a;
+    --warn-tint: #2e2210;
+    --bad: #f2857b;
+    --bad-tint: #341816;
+    --bad-line: #5c2a26;
+    --money: #f3c46b;
+    --money-tint: #33280f;
+    --money-line: #8a6a22;
+    --demo: #c3b5f5;
+    --demo-tint: #241f3a;
+    --badge-ink: #0f0f0e;
+    --shadow-sm: none;
+    --shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+    --sheet-shadow: 0 -6px 24px rgba(0, 0, 0, .5);
+    color-scheme: dark;
 }
 
 /* ------------------------------------------------------------------ base */
@@ -753,3 +790,36 @@ svg.chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; }
 #fold-replies { flex: none; }
 @media (max-width: 900px) { #fold-replies { display: none; } }
 .tabs button { position: relative; }
+
+/* ======================================================= top bar, finder */
+.search {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 32px; flex: 0 1 340px; margin-right: auto; margin-left: 24px;
+  color: var(--muted); background: var(--surface-2); border-color: var(--line); box-shadow: none; justify-content: flex-start;
+}
+.search kbd { margin-left: auto; font-size: 11px; }
+.search:hover { color: var(--ink); }
+.pill.icon { padding: 0 9px; }
+.pill.icon.off { opacity: .6; }
+#queue-pill { background: linear-gradient(to right, var(--warn-tint) var(--pct, 0%), var(--surface) var(--pct, 0%)); border-color: var(--warn); }
+@media (max-width: 1000px) { .search .lbl, .search kbd { display: none; } .search { flex: none; margin-left: 8px; } }
+#palette { width: min(94vw, 680px); padding: 0; margin-top: 10vh; }
+#palette-input { width: 100%; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 14px 16px; font-size: 16px; font-family: var(--sans); outline: none; }
+#palette-list { list-style: none; margin: 0; padding: 6px; max-height: 56vh; overflow-y: auto; }
+.pal { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 0 10px; padding: 7px 10px; border-radius: var(--r); cursor: pointer; }
+.pal.on { background: var(--accent-tint); }
+.pal .kind { grid-row: span 2; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding-top: 2px; }
+.pal b { font-weight: 600; font-family: var(--mono); font-size: 13.5px; overflow-wrap: anywhere; }
+.pal.video b, .pal.screen b { font-family: var(--sans); font-size: 14.5px; }
+.pal small { color: var(--muted); font-size: 12.5px; }
+.pal.none { display: block; color: var(--muted); cursor: default; }
+.palette-foot { padding: 6px 16px 10px; margin: 0; font-size: 12px; }
+.next-up {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap;
+  padding: 16px 18px; margin-bottom: 16px; border-radius: var(--r-lg);
+  background: var(--accent-tint); border: 1px solid var(--accent-line);
+}
+.next-up .what { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.next-up .k { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.next-up b { font-size: 19px; overflow-wrap: anywhere; }
+button.big { min-height: 44px; padding: 0 22px; font-size: 16px; }
+#week .item time { white-space: nowrap; font-variant-numeric: tabular-nums; }

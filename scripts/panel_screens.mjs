@@ -3,7 +3,8 @@
 //   node scripts/panel_screens.mjs "http://127.0.0.1:8765/#k=KEY" OUT_DIR route [route…]
 //
 // A route is the part after the key: "" for Home, "?tab=videos",
-// "#/video/EXMPL/2026-10-18/check". Each is shot at 1440x900 in light and in
+// "#/video/EXMPL/2026-10-18/check", optionally followed by things to do
+// first ("|press:Control+K|type:render"). Each is shot at 1440x900 in light and in
 // dark, as OUT_DIR/<name>-light.png and -dark.png. It starts nothing itself:
 // run `python scripts/panel_demo.py` first. Uses the Playwright that ships
 // with the machine's node tools (NODE_PATH=$(npm root -g)).
@@ -26,10 +27,22 @@ for (const scheme of ["light", "dark"]) {
   const page = await ctx.newPage();
   page.on("pageerror", (e) => errors.push(`${scheme}: ${e.message}`));
   page.on("console", (m) => { if (m.type() === "error") errors.push(`${scheme} console: ${m.text()}`); });
-  for (const route of routes.length ? routes : [""]) {
+  for (const spec of routes.length ? routes : [""]) {
+    // "route|press:Control+K|type:render|click:#sel|wait:500" does those
+    // things before the shot.
+    const [route, ...steps] = spec.split("|");
     await page.goto(base + "/" + route, { waitUntil: "networkidle" });
     await page.waitForTimeout(1500);
-    const name = (route.replace(/^[#?/]+/, "").replace(/[^A-Za-z0-9-]+/g, "_") || "home").slice(0, 60);
+    for (const step of steps) {
+      const [verb, ...rest] = step.split(":");
+      const arg = rest.join(":");
+      if (verb === "press") await page.keyboard.press(arg);
+      else if (verb === "type") await page.keyboard.type(arg);
+      else if (verb === "click") await page.click(arg);
+      else if (verb === "wait") await page.waitForTimeout(Number(arg));
+    }
+    if (steps.length) await page.waitForTimeout(600);
+    const name = (spec.replace(/^[#?/]+/, "").replace(/[^A-Za-z0-9-]+/g, "_") || "home").slice(0, 60);
     await page.screenshot({ path: path.join(out, `${name}-${scheme}.png`), fullPage: true });
   }
   await ctx.close();

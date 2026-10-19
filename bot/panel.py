@@ -147,13 +147,19 @@ class Panel:
         if store is None:
             from pipeline.jobs import JobStore
             store = JobStore(self.settings)
+        from pipeline.jobs import progress
+
+        est = {(st.ticker, st.workdate): st.est_render_min for st in states}
         for j in sorted(store.all(), key=lambda j: j.updated_at,
                         reverse=True)[:15]:
-            jobs.append({"id": j.id, "kind": j.kind.value, "ticker": j.ticker,
-                         "workdate": j.workdate, "status": j.status.value,
-                         "detail": j.detail, "error": j.error[:400],
-                         "updated_at": j.updated_at,
-                         "link": j.delivered_link})
+            row = {"id": j.id, "kind": j.kind.value, "ticker": j.ticker,
+                   "workdate": j.workdate, "status": j.status.value,
+                   "detail": j.detail, "error": j.error[:400],
+                   "updated_at": j.updated_at, "started_at": j.started_at,
+                   "link": j.delivered_link}
+            if j.status.value in ("queued", "running"):
+                row["progress"] = progress(row, est.get((j.ticker, j.workdate)))
+            jobs.append(row)
         ledger = self.core.ledger
         try:
             mtd = ledger.mtd_spend_usd()
@@ -185,7 +191,34 @@ class Panel:
             # The bot's own date: "today" is the render box's, not the
             # browser's, when the two sit in different time zones.
             "today": today_str(),
+            "week": self.week(),
         }
+
+    def week(self) -> list[dict]:
+        """What went out in the last seven days and goes out in the next
+        seven, from the upload log: Home's "this week"."""
+        from datetime import datetime, timedelta, timezone
+
+        from pipeline.youtube import (VideoLog, public_since, record_format,
+                                      still_scheduled)
+
+        now = datetime.now(timezone.utc)
+        out = []
+        for v in VideoLog(self.settings).all():
+            when = public_since(v)
+            try:
+                t = datetime.fromisoformat(when.replace("Z", "+00:00"))
+            except (AttributeError, ValueError):
+                continue
+            if t.tzinfo is None:
+                t = t.replace(tzinfo=timezone.utc)
+            if abs(t - now) > timedelta(days=7):
+                continue
+            out.append({"ticker": v.ticker, "workdate": v.workdate,
+                        "title": v.title, "url": v.url(), "when": when,
+                        "privacy": v.privacy, "fmt": record_format(v),
+                        "pending": still_scheduled(v, now)})
+        return sorted(out, key=lambda r: r["when"])
 
 
 def _handler_for(panel: Panel):
