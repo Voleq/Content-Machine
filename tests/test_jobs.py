@@ -38,15 +38,19 @@ async def test_job_lifecycle_success(settings):
 
 
 async def test_duplicate_submit_rejected(settings):
+    import threading
+
     started = asyncio.Event()
-    release = asyncio.Event()
+    # Set from the test's loop, read from the worker thread: a plain flag.
+    release = threading.Event()
+    loop = asyncio.get_running_loop()
 
     def executor(job):
-        started.set()
-        # block the single worker until released (executor runs in a thread)
-        import time
-        while not release.is_set():
-            time.sleep(0.02)
+        # The executor runs in a thread. `started.set()` called straight from
+        # here resolved the waiting future without waking the loop, so the
+        # test hung in its poll whenever the wait had begun first.
+        loop.call_soon_threadsafe(started.set)
+        release.wait(5)
         return "x"
 
     q = RenderJobQueue(settings, executor)
