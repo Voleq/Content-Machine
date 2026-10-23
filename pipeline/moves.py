@@ -678,7 +678,13 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
     # clear; never over the figures it would cover (design, rebuild-40).
     carried: tuple[str, str] | None = None
 
-    first = next(iter(result.spans), None)
+    # THE COLD OPEN (V4) is him with the number already landed. The opening
+    # shot is the one after it, and a figure he showed final does not count
+    # up again from nothing on the card that follows him.
+    opener = getattr(getattr(fmt, "opener", None), "id", None)
+    first = next((sp for sp in result.spans if sp.shot.id != opener), None)
+    landed = {str(l.text).strip() for l in result.layers
+              if opener and l.shot_id == opener and l.kind == "text"}
     # A BEAT SPLIT FOR RUNNING LONG is one drawing seen twice, wide then
     # close (`resolve_spans`). Its data drew on, its rows lit and its figures
     # counted in the wide part; the close part opens on all of that landed,
@@ -751,6 +757,8 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
         #    whenever the hook gets round to saying it.
         opening = span is first
         for slot in (_figure_slots(plate, values, lit) if not closer else ()):
+            if opening and str(values[slot]).strip() in landed:
+                continue
             at = None if opening else _heard(words, _said_forms(values[slot]), t0, t1)
             lane.place(new("count-up", slot, text=values[slot]),
                        at if at is not None else earliest)

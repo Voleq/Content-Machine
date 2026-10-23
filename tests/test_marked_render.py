@@ -107,7 +107,10 @@ def test_a_marked_script_is_cut_in_the_order_its_markers_name(cut):
     assert manifest["shot_order"] == "news-first"
     assert manifest["beat_order"] == [key for _w, key in _MARKS]
     ids = [s["id"] for s in manifest["shots"]]
-    assert ids[0] == "hook"
+    # The cold open (V4) is him, then the hook the first words are read over.
+    assert ids[:2] == ["open-on-him", "hook"]
+    assert manifest["opening"]["shot"] == "open-on-him"
+    assert manifest["opening"]["number"]
     assert ids.index("the-news") < ids.index("the-move")
 
 

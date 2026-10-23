@@ -25,6 +25,7 @@ import pytest
 
 from pipeline.compose import (build_layers, check_budgets, check_invariants,
                               resolve_plate)
+from pipeline.render_short import host_shots
 from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, TemplateError,
                             available_formats, expand_sequences, load_format,
                             parse_format, resolve_spans)
@@ -177,7 +178,7 @@ def test_no_format_is_named_anywhere_in_the_engine():
 def test_every_format_satisfies_its_own_invariants(name):
     fmt, _spans, result = _cut(name)
     problems = check_invariants(
-        fmt, result, host_shots=[sh.id for sh in fmt.shots if sh.host])
+        fmt, result, host_shots=list(host_shots(fmt)))
     assert problems == [], "\n".join(problems)
 
 

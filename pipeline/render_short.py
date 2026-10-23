@@ -29,7 +29,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from pipeline import marks as mk
+from pipeline import look_alike, marks as mk
 from pipeline.compose import (MEDIA_PREFIX, MEME_SRC, BuildResult, Layer,
                               build_layers, check_budgets, check_invariants,
                               held_layer_spans, placed_meme, plan_variants,
@@ -59,8 +59,28 @@ FPS = 30
 # three formats put him in three different places — so this is read off the
 # format rather than written down twice.
 def host_shots(fmt) -> tuple[str, ...]:
-    """The ids of the shots this format puts the host in."""
-    return tuple(sh.id for sh in fmt.shots if sh.host)
+    """The ids of the shots this format puts the host in, the opener first."""
+    return tuple(sh.id for sh in fmt.cut_shots if sh.host)
+
+
+# Where the cold open's number came from, by the source that gave it.
+_OPENING_FROM = {"chart.move": "move", "compare.reported": "print",
+                 "numbers.headline_figure": "payoff", "script.ticker": "ticker"}
+
+
+def opening_number(fmt, resolver) -> tuple[str, str]:
+    """The number the cold open (V4) shows and what it is, or ("", "").
+
+    The first of the opener's alternatives that says something, as the
+    compositor will draw it, named `move`, `print`, `payoff` or `ticker`.
+    """
+    opener = getattr(fmt, "opener", None)
+    spec = next(iter(opener.text), None) if opener else None
+    for src in (spec.src.split("|") if spec else ()):
+        got = resolver.text_for(src.strip())
+        if got is not None and str(got).strip():
+            return str(got).strip(), _OPENING_FROM.get(src.strip(), src.strip())
+    return "", ""
 
 _FIGURE = re.compile(r"^(-?)([$€£]?)([\d.,]+)([KMBT]?)(%?)$")
 
@@ -917,6 +937,31 @@ def _sound_tags(result, reg, shot_id: str) -> set[str]:
             loops += list(getattr(plate, "loops", ()) or ())
             seasons.append(getattr(plate, "season", "") or "")
     return shot_tags(keys, loops, seasons)
+
+
+def _look(result, reg) -> dict[str, list[str]]:
+    """The plates drawn and the rooms he was in, in cut order (V7)."""
+    out: dict[str, list[str]] = {"plates": [], "rooms": []}
+    for sp in result.spans:
+        for l in result.for_shot(sp.shot.id):
+            if l.kind != "plate" or not l.entry_key:
+                continue
+            plate = reg.get(l.entry_key)
+            room = getattr(plate, "family", "") == "room"
+            out["rooms" if room else "plates"].append(reg.base_key(l.entry_key))
+    return out
+
+
+def _opening(fmt, spans, result, resolver) -> dict:
+    """The manifest's record of the cold open, or {} when the cut has none."""
+    opener = getattr(fmt, "opener", None)
+    if opener is None or not spans or spans[0].shot.id != opener.id:
+        return {}
+    number, came = opening_number(fmt, resolver)
+    return {"shot": opener.id, "end_s": round(spans[0].end, 3),
+            "number": number, "from": came,
+            "host": any(l.kind in ("host", "host3d")
+                        for l in result.for_shot(opener.id))}
 
 
 def _part_fields(shot) -> dict:
@@ -1966,7 +2011,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
     # WHICH DRAWING EACH BEAT GETS, once for the cut, never one layout twice
     # where a beat has another (item 7). The punch-ins and the composition
     # both read it, so a long beat's punch-in is asked of the plate drawn.
-    variants = plan_variants(reg, fmt.shots, fmt.aspect, resolver,
+    variants = plan_variants(reg, fmt.cut_shots, fmt.aspect, resolver,
                              seed=seed, avoid=recent, safe=fmt.safe)
 
     def punch_in(shot):
@@ -2190,6 +2235,14 @@ def _render_short(script, tts, workspace: Path, settings, *,
         # under `<id>-in` with `part_of` naming the beat. Unsplit shots carry
         # neither key, so a manifest reader that knows nothing of parts reads
         # every shot as it always did.
+        # THE COLD OPEN (V4): the number frame one carries and what it is.
+        # Empty when the first beat was too short to give it any time.
+        "opening": _opening(fmt, spans, result, resolver),
+        # A VIDEO THAT LOOKS LIKE THE LAST FEW (V7): the drawings and rooms in
+        # cut order, and the recent shorts this one is close to.
+        "look": (look := _look(result, reg)),
+        "look_alike": look_alike.findings(settings, "short", look,
+                                          exclude=workspace),
         "shots": [{
             "id": s.shot.id,
             "plate": s.shot.plate,

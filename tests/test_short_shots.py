@@ -19,9 +19,9 @@ import pytest
 
 from pipeline.compose import build_layers, check_invariants, held_layer_spans
 from pipeline.render_short import host_shots
-from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, expand_sequences,
-                            load_format, parse_format, resolve_spans,
-                            TemplateError)
+from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, OPEN_ON_HIM_S,
+                            expand_sequences, load_format, parse_format,
+                            resolve_spans, TemplateError)
 
 # Shots the host appears in. The spec said 1, 5-8, 11, 12; 5-8 are the
 # numbers walk, and the push-in that makes the walk a composition change also
@@ -29,7 +29,9 @@ from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, expand_sequences,
 # The host is in ONE vertical shot now, and it is the turn: the line the
 # cut rests on, in close-up. He was in three, all at full figure in a wide
 # room, which is the shot you use when the room is the point.
-SPEC_HOST_SHOTS = {"the-turn"}
+# V4 puts him at the very front too: the cold open is a close-up of him
+# before the hook card.
+SPEC_HOST_SHOTS = {"open-on-him", "the-turn"}
 
 
 class FakeWord:
@@ -206,7 +208,7 @@ def test_the_composition_satisfies_every_invariant(fmt, reg, tmp_path):
     _spans, result = _build(fmt, reg, chart)
     problems = check_invariants(
         fmt, result,
-        host_shots=[sh.id for sh in fmt.shots if sh.host])
+        host_shots=list(host_shots(fmt)))
     assert problems == [], "\n".join(problems)
 
 
@@ -310,7 +312,7 @@ def test_a_bare_shot_never_outruns_its_own_ceiling(fmt, reg):
 
 def test_every_shot_is_present_and_ordered(fmt, reg):
     spans, _result = _build(fmt, reg)
-    assert [s.shot.id for s in spans] == [s.id for s in fmt]
+    assert [s.shot.id for s in spans] == [s.id for s in fmt.cut_shots]
     for a, b in zip(spans, spans[1:]):
         assert a.end <= b.start + 1e-6, f"{a.shot.id} overlaps {b.shot.id}"
         assert a.dur > 0
@@ -328,7 +330,7 @@ def test_an_unfilled_slot_is_a_failure_not_an_empty_box(fmt, reg):
     assert result.unfilled, "an empty resolver filled every slot"
     problems = check_invariants(
         fmt, result,
-        host_shots=[sh.id for sh in fmt.shots if sh.host])
+        host_shots=list(host_shots(fmt)))
     assert any("required and empty" in p for p in problems)
 
 
@@ -507,7 +509,10 @@ def test_a_run_too_long_for_its_evidence_gives_the_slack_to_the_host():
     fmt = load_format("earnings")
     spans = resolve_spans(fmt, _words(72.0), 72.0, {})
     for sp in spans:
-        if sp.shot.host:
+        if sp.shot is fmt.opener:
+            # The cold open is cut to its own length, never given slack.
+            assert sp.dur <= OPEN_ON_HIM_S + 1e-6
+        elif sp.shot.host:
             assert sp.dur > sp.shot.max_hold_s
         else:
             assert sp.dur <= sp.shot.max_hold_s + 1e-6, sp.shot.id
@@ -534,7 +539,8 @@ def test_a_split_beat_keeps_every_invariant_and_moves_in_on_its_own_plate(
     result = build_layers(fmt, spans, resolver, reg, aspect=fmt.aspect,
                           seed="test")
     problems = check_invariants(
-        fmt, result, host_shots=[sh.id for sh in fmt.shots if sh.host])
+        fmt, result, host_shots=[sid for sid in host_shots(fmt)
+                                if any(sp.shot.id == sid for sp in spans)])
     assert problems == [], "\n".join(problems)
     names = [l.name for l in result.layers]
     assert len(names) == len(set(names))

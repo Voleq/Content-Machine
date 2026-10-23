@@ -23,6 +23,27 @@
     "",
     "DENNIS ONCE (item 7). The stock and earnings shorts give him the turn in close-up; the macro short never showed him, and a CPI short with no host looked like a slideshow beside the others. `the-turn` is that same shot, on the line the cut turns on."
   ],
+  "opener": {
+    "id": "open-on-him",
+    "plate": "room/talk",
+    "host": {
+      "pose": "host/close-up",
+      "slot": "host-anchor"
+    },
+    "captions": false,
+    "max_hold_s": 2,
+    "text": [
+      {
+        "name": "number",
+        "src": "compare.reported|numbers.headline_figure|script.ticker",
+        "size_fh": 0.09,
+        "align": "0.66",
+        "max_lines": 1,
+        "panel": true
+      }
+    ],
+    "notes": "V4, the cold open: at most 1.6 s of him in close-up before the hook card, with the video's one number on a strip of paper across his chest, under his face and inside the phone's clear band. The number is the printed reading, else the payoff figure, and the ticker when there is none. It is set final from the first frame; nothing counts up here."
+  },
   "shots": [
     {
       "id": "open",

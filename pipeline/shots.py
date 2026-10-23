@@ -48,7 +48,7 @@ class TemplateError(RuntimeError):
 # Every key any of these objects may carry is listed, and anything else is an
 # error naming the key and the shot it is in.
 FORMAT_KEYS = frozenset({"format", "aspect", "frame", "shots", "notes",
-                         "orders", "safe"})
+                         "orders", "safe", "opener"})
 SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
                        "lit", "anchor", "max_hold_s", "captions", "notes",
                        "repeat", "stagger_s", "focus", "alts", "meme"})
@@ -342,9 +342,19 @@ class Format:
     # channel name and buttons over the bottom of a Short and its search bar
     # over the top, so a footnote at 1,740 px is a footnote nobody sees.
     safe: tuple[int, int] | None = None
+    # THE COLD OPEN (V4): a shot of him in close-up with the video's number,
+    # cut off the front of the first shot's span by `resolve_spans`. It is not
+    # one of `shots`: no order moves it, no writer marks it, and the beats
+    # are counted without it.
+    opener: Shot | None = None
 
     def __len__(self) -> int:
         return len(self.shots)
+
+    @property
+    def cut_shots(self) -> tuple[Shot, ...]:
+        """Every shot a cut of this format can hold, the opener first."""
+        return ((self.opener,) if self.opener else ()) + self.shots
 
     def __iter__(self):
         return iter(self.shots)
@@ -529,10 +539,11 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
         if not 0 <= safe[0] < safe[1] <= frame[1]:
             raise TemplateError(f"{name}: `safe` {safe} is not a band inside "
                                 f"the {frame[1]} px frame")
+    opener = _opener(raw, name, seen)
     fmt = Format(name=name, aspect=raw.get("aspect", "9x16"), frame=frame,
                  shots=tuple(shots), source=source,
                  orders=_parse_orders(raw.get("orders"), name, tuple(shots)),
-                 safe=safe)
+                 safe=safe, opener=opener)
 
     for sh in fmt.shots:
         if not (sh.plate or sh.text or sh.bind or sh.repeat or sh.host):
@@ -596,6 +607,32 @@ def marker_formats(root: Path | str = REPO_ROOT) -> dict[str, tuple[str, ...]]:
     """Every format a SHORT renders through, with the beats it can mark."""
     return {name: beat_keys(load_format(name, root))
             for name in available_formats(root)}
+
+
+def _opener(raw: dict, name: str, ids: set[str]) -> Shot | None:
+    """The format's cold open, parsed as a shot of its own, or None.
+
+    It is him or it is nothing: a cold open of type on paper is the hook
+    card again. It listens for no words of its own, because its time is the
+    front of the first shot's.
+    """
+    got = raw.get("opener")
+    if not got:
+        return None
+    where = f"{name} opener"
+    if not isinstance(got, dict):
+        raise TemplateError(f"{where} is not a shot")
+    if got.get("id") in ids:
+        raise TemplateError(f"{where}: the id {got.get('id')!r} is a shot's "
+                            f"already")
+    if not got.get("host"):
+        raise TemplateError(f"{where}: names no host. The cold open is him "
+                            f"in close-up, so it carries `host`")
+    if got.get("anchor"):
+        raise TemplateError(f"{where}: carries an anchor. Its time is the "
+                            f"front of the first shot's, never words of its own")
+    return parse_format({"format": name, "frame": raw["frame"],
+                         "shots": [got]}).shots[0]
 
 
 def _parse_orders(raw: Any, fmt_name: str,
@@ -1018,6 +1055,8 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
                             spans[i + 1].start, spans[i].anchored)
     # A span the pin swallowed whole has no instant left to be drawn in.
     spans = [sp for sp in spans if sp.end > sp.start]
+    if fmt.opener is not None:
+        spans = _open_on_him(spans, words, fmt.opener)
 
     # max_hold_s is a CEILING ON THE SPAN, for every shot — and it is no
     # longer met by starting the next shot early.
@@ -1037,6 +1076,39 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
     if punch_in is not None:
         spans = _split_long_beats(spans, words, punch_in)
     return spans
+
+
+# THE COLD OPEN (V4): at most this long, and never less than the floor — a
+# shot of him shorter than that is a flash before the hook card, not a shot.
+OPEN_ON_HIM_S = 1.6
+OPEN_MIN_S = 0.9
+
+
+def _open_on_him(spans: list[Span], words: Sequence[Any],
+                 opener: Shot) -> list[Span]:
+    """The first shot's span with its front given to the cold open.
+
+    He hands over to the hook card where the voice gives a place to: the
+    end of the first sentence when it is said inside `OPEN_ON_HIM_S`, else
+    the end of the last word that is, else at `OPEN_ON_HIM_S` itself. The
+    first shot keeps at least `MIN_SHOT_S`; when its span cannot spare the
+    floor and that, the cut opens on it as it always did.
+    """
+    if not spans:
+        return spans
+    first = spans[0]
+    said = [w for w in words
+            if OPEN_MIN_S <= float(getattr(w, "end", 0.0)) <= OPEN_ON_HIM_S]
+    stop = next((float(w.end) for w in said
+                 if str(getattr(w, "word", "")).rstrip("\"'”’)")
+                 .endswith((".", "!", "?", "…"))), None)
+    if stop is None:
+        stop = float(said[-1].end) if said else OPEN_ON_HIM_S
+    stop = min(stop, first.end - MIN_SHOT_S)
+    if stop < OPEN_MIN_S:
+        return spans
+    return [Span(opener, 0.0, stop),
+            Span(first.shot, stop, first.end, first.anchored), *spans[1:]]
 
 
 # How long he stays on after the last word of his line, and the least he is
