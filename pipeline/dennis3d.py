@@ -35,7 +35,7 @@ REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
-LOOK_VERSION = "47-64-11"     # 11: shirt collar, ribbed cuffs and hem, folds (V9, 23 Oct 2026)
+LOOK_VERSION = "47-64-12"     # 12: messier hair, socks and sliders (room picks 9, 10; 23 Oct 2026)
 
 
 @functools.cache

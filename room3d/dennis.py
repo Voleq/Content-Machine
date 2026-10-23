@@ -1,8 +1,8 @@
 """Dennis in 3D (item 47): the same man as design's drawing, built in the room.
 
 A cartoon, never a likeness of anybody: tall and thin, a navy crew-neck
-sweater, glasses, brown hair parted on the side, brown shoes, drawn in the
-room's own ink. He is a puppet of rigid parts on a chain of joints, so a pose
+sweater over a shirt, glasses, brown hair that has not seen a comb today,
+grey socks in sliders, drawn in the room's own ink. He is a puppet of rigid parts on a chain of joints, so a pose
 is a set of joint angles and an animation is those angles over time, and his
 mouth is one shape with a key for each of the kit's six mouths, so the words
 drive it the way they drive the drawn one (`pipeline.host.word_mouths`).
@@ -30,7 +30,8 @@ UNDER_EYE = "#B27350"   # design's under-eye pair: the skin's shade, a man who s
 SWEATER = "#3F5C8C"
 COLLAR = "#2C3E5E"
 TROUSERS = "#4E4A62"
-SHOES = "#5A3A28"
+SOCKS = "#A7A39A"     # grey marl, in sliders: he is at home, and it is that kind of week
+SLIDERS = "#23262E"
 HAIR = "#6A4630"
 FRAMES = "#171B23"
 EYES = "#141820"
@@ -608,7 +609,8 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     shirt = _mat("shirt", SHIRT, 0.8)
     ink = _mat("ink", INK, 0.9)
     cloth = _mat("trousers", TROUSERS, 0.9)
-    shoe = _mat("shoes", SHOES, 0.6)
+    sock = _mat("socks", SOCKS, 0.95, sheen=0.2)
+    slider = _mat("sliders", SLIDERS, 0.55)
     hair = _mat("hair", HAIR, 0.8)
     frame = _mat("frames", FRAMES, 0.35)
     eye = _mat("eyes", EYES, 0.3)
@@ -690,6 +692,18 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     rig.attach(fringe, "head", (0.014, -0.083, 0.193), rot=(-10, -14, 4))
     back = blob("hairback", (0.082, 0.05, 0.06), hair, coll, subdiv=1)
     rig.attach(back, "head", (0, 0.05, 0.12))
+    # Not combed today (room pick 9): a tuft up at the crown, one standing
+    # off above each ear, and a strand of the fringe gone its own way.
+    for k, (where, rot, length, r) in enumerate((
+            ((0.012, 0.050, 0.224), (-58, 16, 0), 0.030, 0.011),
+            ((-0.020, 0.036, 0.232), (-34, -40, 0), 0.024, 0.009),
+            ((0.083, 0.030, 0.166), (-10, 64, 0), 0.020, 0.009),
+            ((-0.082, 0.026, 0.172), (-16, -58, 0), 0.022, 0.009))):
+        tuft = loft(f"tuft.{k}", [(0.0, r, r * 0.8), (length * 0.45, r * 0.72, r * 0.6),
+                                  (length, 0.0, 0.0)], hair, coll, n=10)
+        rig.attach(tuft, "head", where, rot=rot)
+    strand = blob("strand", (0.021, 0.007, 0.006), hair, coll, subdiv=1)
+    rig.attach(strand, "head", (-0.036, -0.088, 0.184), rot=(-15, 0, -52))
 
     # Eyes behind the glasses, the lids that blink them, the brows above.
     for side, name in ((-1, "L"), (1, "R")):
@@ -778,7 +792,7 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
             rig.hands[side].append(rig.attach(finger, f"{f}.{side}"))
         rig.hand(side, "relaxed")
 
-    # Legs and shoes.
+    # Legs, and his feet in socks and sliders (room pick 10).
     for side in ("L", "R"):
         # one trouser leg from the hip to the shoe, bending at the knee
         rig.skins.append(Skin(rig, f"leg.{side}", [
@@ -786,11 +800,28 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
             (-0.39, 0.059), (-0.43, 0.058), (-0.47, 0.057), (-0.62, 0.055), (-0.80, 0.053),
             (-0.835, 0.052), (-0.84, 0.0)],
             cloth, (f"thigh.{side}", f"knee.{side}"), (-0.39, -0.47)))
-        shoe_o = loft(f"shoe.{side}", [
-            (-0.09, 0.0, 0.0, 0, 0.0), (-0.085, 0.034, 0.03), (-0.03, 0.048, 0.044),
-            (0.06, 0.052, 0.040), (0.15, 0.046, 0.032), (0.175, 0.0, 0.0)], shoe, coll, n=16)
-        rig.attach(shoe_o, f"ankle.{side}", (0, -0.03, -0.045), rot=(90, 0, 0))
-        shoe_o.scale = (1.0, 0.62, 1.0)
+        # Each piece runs heel to toe down its own z, laid forward along the
+        # floor and flattened, as the shoe it replaces was.
+        def foot_part(name, rings, m, lift, *, n=16):
+            o = loft(f"{name}.{side}", rings, m, coll, n=n)
+            rig.attach(o, f"ankle.{side}", (0, -0.03, -0.045 + lift), rot=(90, 0, 0))
+            o.scale = (1.0, 0.62, 1.0)
+            return o
+
+        # the foot in its sock, standing on the slider's sole
+        foot_part("sockfoot", [(-0.084, 0.0, 0.0), (-0.080, 0.030, 0.026), (-0.03, 0.043, 0.036),
+                               (0.06, 0.047, 0.032), (0.14, 0.041, 0.026), (0.162, 0.0, 0.0)],
+                  sock, 0.008)
+        # the sole, a little bigger than the foot all round
+        foot_part("sole", [(-0.096, 0.0, 0.0), (-0.092, 0.040, 0.010), (-0.03, 0.054, 0.011),
+                           (0.07, 0.057, 0.011), (0.16, 0.050, 0.010), (0.182, 0.0, 0.0)],
+                  slider, -0.019)
+        # and the one wide strap over the top of the foot
+        foot_part("strap", [(0.002, 0.050, 0.041), (0.008, 0.053, 0.044), (0.058, 0.053, 0.042),
+                            (0.064, 0.050, 0.039)], slider, 0.008, n=20)
+        # the sock up the ankle to inside the trouser hem
+        rig.attach(loft(f"sockankle.{side}", [(-0.05, 0.035, 0.032), (0.02, 0.037, 0.034)],
+                        sock, coll, n=16, cap_top=False), f"ankle.{side}", (0, 0.002, 0))
 
     # A couple of folds, drawn in ink as design draws cloth (V9): the knit
     # bunched at his waist above the hem, and twice on each sleeve above the
