@@ -532,5 +532,12 @@ def test_a_3d_long_draws_every_shot_of_him_in_3d_and_none_drawn(long_3d):
     assert all(s.get("push_in") for s in wide if not s.get("two_shot")), wide
     assert len(wide) <= len(manifest.get("chapters") or []) + 1, wide
     info = ffprobe_json(out)
-    assert abs(float(info["format"]["duration"]) - tts.duration_s) < 1.0
+    # the voice, then the end screen held on him (V3)
+    assert abs(float(info["format"]["duration"]) - manifest["duration"]) < 1.0
+    assert manifest["voice_end"] == pytest.approx(tts.duration_s, abs=0.01)
+    end = manifest["dennis3d"][-1]
+    assert end["segment"] == len(manifest["segments"]) - 1 and not end["close_up"]
+    # the fake slides a pixel a frame, across the boxes' side by the end: the
+    # check reads where he went, not where the room said he stands
+    assert manifest["end_screen"]["side"] and manifest["end_screen"]["clear"] is False
 
