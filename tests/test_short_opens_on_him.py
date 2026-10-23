@@ -84,7 +84,7 @@ def test_he_hands_over_at_the_end_of_a_short_first_sentence():
 
 
 def test_a_hook_too_short_to_share_keeps_the_old_opening():
-    raw = json.loads(load_format("short").source.read_text())
+    raw = json.loads(load_format("short").source.read_text(encoding="utf-8"))
     words = _words(9.0, 30)
     without = dict(raw)
     without.pop("opener")
@@ -104,7 +104,7 @@ def test_host_shots_name_the_opener():
 
 
 def test_an_opener_without_him_is_refused():
-    raw = json.loads(load_format("short").source.read_text())
+    raw = json.loads(load_format("short").source.read_text(encoding="utf-8"))
     raw["opener"] = dict(raw["opener"])
     raw["opener"].pop("host")
     with pytest.raises(TemplateError, match="opener"):
@@ -112,7 +112,7 @@ def test_an_opener_without_him_is_refused():
 
 
 def test_an_opener_named_like_a_shot_is_refused():
-    raw = json.loads(load_format("short").source.read_text())
+    raw = json.loads(load_format("short").source.read_text(encoding="utf-8"))
     raw["opener"] = dict(raw["opener"], id="hook")
     with pytest.raises(TemplateError, match="hook"):
         parse_format(raw)

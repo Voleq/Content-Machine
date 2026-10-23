@@ -31,7 +31,8 @@ def _video(tmp_path, ticker, day, look, *, name="render_long_manifest.json",
     ws = tmp_path / ticker / day
     ws.mkdir(parents=True)
     m = ws / name
-    m.write_text(json.dumps({"look": look} if look is not None else {}))
+    m.write_text(json.dumps({"look": look} if look is not None else {}),
+                 encoding="utf-8")
     t = 1_800_000_000 - age
     os.utime(m, (t, t))
     return ws
@@ -97,7 +98,8 @@ def test_old_manifests_and_a_first_video_are_quiet(tmp_path):
     assert look_alike.findings(_settings(tmp_path / "none"), "long",
                                {"plates": PLATES, "rooms": ROOMS}) == []
     _video(tmp_path, "AAA", "2026-10-20", None)
-    (tmp_path / "AAA" / "2026-10-20" / "x.manifest.json").write_text("not json")
+    (tmp_path / "AAA" / "2026-10-20" / "x.manifest.json").write_text(
+        "not json", encoding="utf-8")
     assert look_alike.findings(_settings(tmp_path), "long",
                                {"plates": PLATES, "rooms": ROOMS}) == []
 
