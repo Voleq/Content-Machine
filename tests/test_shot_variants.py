@@ -177,7 +177,7 @@ def test_every_alternate_composes_and_every_line_still_fits(name, reg):
         fmt, result, _plates = _cut(base, reg, f"seed-{i}")
         problems = check_invariants(
             fmt, result,
-            host_shots=[sh.id for sh in fmt.shots if sh.host])
+            host_shots=[sh.id for sh in fmt.cut_shots if sh.host])
         assert not problems, f"{name} seed-{i}: {problems[:3]}"
         over = check_budgets(fmt, result, reg)
         assert not over, f"{name} seed-{i}: {over[:3]}"
@@ -659,7 +659,7 @@ def test_every_declared_order_cuts_a_whole_video(name, reg):
         fmt = apply_order(load_format(name), order)
         f, result, plates = _cut(fmt, reg, "seed")
         problems = check_invariants(
-            f, result, host_shots=[sh.id for sh in f.shots if sh.host])
+            f, result, host_shots=[sh.id for sh in f.cut_shots if sh.host])
         assert not problems, f"{name}/{order}: {problems[:3]}"
         assert not check_budgets(f, result, reg)
 
