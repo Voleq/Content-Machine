@@ -1747,6 +1747,34 @@ SEASONS: dict[int, str] = {12: "christmas"}
 RAIN_SHARE = 0.25
 
 
+# HIS WINTER JUMPER (V12): from December to February he wears it, and the
+# navy crew-neck the rest of the year. The episode's, like the season: off
+# the video's day, so its draft, proof and final agree.
+WINTER_MONTHS = (12, 1, 2)
+_EPISODE_JUMPER: ContextVar[str] = ContextVar("episode_jumper", default="")
+
+
+def jumper_of_episode(workspace) -> str:
+    """`winter` for a video dated December to February, else ""."""
+    day = episode_date(workspace)
+    return "winter" if day is not None and day.month in WINTER_MONTHS else ""
+
+
+@contextmanager
+def episode_jumper(jumper: str) -> Iterator[str]:
+    """Every 3D shot of him asked for inside this block wears `jumper`."""
+    token = _EPISODE_JUMPER.set(jumper or "")
+    try:
+        yield jumper or ""
+    finally:
+        _EPISODE_JUMPER.reset(token)
+
+
+def current_jumper() -> str:
+    """The jumper of the render in progress: `winter`, or "" for the navy."""
+    return _EPISODE_JUMPER.get()
+
+
 def season_of_episode(workspace) -> str:
     """The season a video's rooms are dressed for: `christmas` in December."""
     day = episode_date(workspace)
@@ -1817,6 +1845,7 @@ def at_episode_hour(settings, workspace, episode: str) -> Iterator[str]:
     """
     hour = _EPISODE_HOUR.get()
     dressing = _EPISODE_DRESSING.get()
+    jumper = _EPISODE_JUMPER.get()
     if not hour:
         try:
             hour = hour_of_episode(settings, workspace, episode)
@@ -1824,10 +1853,11 @@ def at_episode_hour(settings, workspace, episode: str) -> Iterator[str]:
             hour = ""
         # The season and the weather are the episode's as the hour is, and
         # chosen with it: decided here, they reach every plate the render
-        # loads, and nested they stay the outer render's.
+        # loads, and nested they stay the outer render's. His jumper too.
         dressing = (season_of_episode(workspace),
                     weather_of_episode(workspace, episode))
-    with episode_hour(hour), episode_dressing(*dressing):
+        jumper = jumper_of_episode(workspace)
+    with episode_hour(hour), episode_dressing(*dressing), episode_jumper(jumper):
         yield hour
 
 

@@ -42,6 +42,20 @@ INK = "#0B0E16"       # the room's ink (build.INK): his folds are drawn in it
 # the part, the furrow between two this much darker.
 RIB_PITCH = 0.0045
 RIB_SHADE = 0.22
+# HIS WINTER JUMPER (V12), December to February: burgundy, with a cream
+# band of zigzag between two stripes across his chest, as a Nordic knit has.
+# The rest of the year it is the navy crew-neck. `dress` puts either on.
+JUMPERS = {
+    "": {"sweater": SWEATER, "collar": COLLAR, "band": 0.0},
+    "winter": {"sweater": "#7B3036", "collar": "#5C2329", "band": 1.0},
+}
+BAND = "#E6DAC2"
+# The band, in his torso's own height (hips up), metres: a stripe at each
+# edge and the zigzag between them, one tooth every `BAND_TOOTH` round him.
+BAND_Z = (0.358, 0.422)
+BAND_STRIPE = 0.008
+BAND_TOOTH = 0.034
+BAND_LINE = 0.0065
 
 MOUTHS = ("mouthClosed", "mouthMid", "mouthWide", "mouthO", "mouthEE", "mouthFV")
 # How far the dropped corner of his mouth sits below the other, metres.
@@ -434,6 +448,99 @@ class Rig:
         bpy.context.view_layer.update()
 
 
+def _math(nt):
+    """A maker of math nodes in `nt`: `op` over sockets or numbers."""
+    def math_node(op, *args):
+        n = nt.nodes.new("ShaderNodeMath")
+        n.operation = op
+        for i, x in enumerate(args):
+            if isinstance(x, (int, float)):
+                n.inputs[i].default_value = x
+            else:
+                nt.links.new(x, n.inputs[i])
+        return n.outputs[0]
+    return math_node
+
+
+def _round_him(nt):
+    """(height, metres round): each point of a part in its own space, how
+    high up its axis and how far round it from his front (-y), the seam at
+    his back."""
+    math_node = _math(nt)
+    co = nt.nodes.new("ShaderNodeTexCoord").outputs["Object"]
+    xyz = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(co, xyz.inputs[0])
+    x, y = xyz.outputs["X"], xyz.outputs["Y"]
+    turn = math_node("ARCTAN2", x, math_node("MULTIPLY", y, -1.0))
+    r = math_node("SQRT", math_node("ADD", math_node("MULTIPLY", x, x),
+                                    math_node("MULTIPLY", y, y)))
+    return xyz.outputs["Z"], math_node("MULTIPLY", turn, r)
+
+
+def _banded(m: bpy.types.Material) -> bpy.types.Material:
+    """The winter jumper's band (`BAND_Z`) laid into the knit, on the parts
+    that carry a `band` property (his torso: a sleeve's own space moves as
+    it bends, and a band on it would swim). Off until `dress` turns it on;
+    in the colour only, so the ink finds no edge in it."""
+    nt = m.node_tree
+    if "band_on" in nt.nodes:
+        return m
+    b = nt.nodes["Principled BSDF"]
+    math_node = _math(nt)
+    z, round_ = _round_him(nt)
+    lo, hi = BAND_Z
+    # the two stripes
+    stripe = math_node("MAXIMUM",
+                       math_node("LESS_THAN", math_node("ABSOLUTE", math_node(
+                           "SUBTRACT", z, lo + BAND_STRIPE / 2)), BAND_STRIPE / 2),
+                       math_node("LESS_THAN", math_node("ABSOLUTE", math_node(
+                           "SUBTRACT", z, hi - BAND_STRIPE / 2)), BAND_STRIPE / 2))
+    # the zigzag between them: a triangle wave round him, its line this thick
+    tooth = math_node("MULTIPLY", math_node("ABSOLUTE", math_node(
+        "SUBTRACT", math_node("FRACT", math_node("DIVIDE", round_, BAND_TOOTH)), 0.5)), 2.0)
+    inner = (lo + BAND_STRIPE + 0.006, hi - BAND_STRIPE - 0.006)
+    line_z = math_node("MULTIPLY_ADD", tooth, inner[1] - inner[0], inner[0])
+    zig = math_node("LESS_THAN", math_node("ABSOLUTE", math_node("SUBTRACT", z, line_z)),
+                    BAND_LINE / 2)
+    attr = nt.nodes.new("ShaderNodeAttribute")
+    attr.attribute_type = "OBJECT"
+    attr.attribute_name = "band"
+    on = nt.nodes.new("ShaderNodeValue")
+    on.name = "band_on"
+    on.outputs[0].default_value = 0.0
+    fac = math_node("MULTIPLY", math_node("MULTIPLY", math_node("MAXIMUM", stripe, zig),
+                                          attr.outputs["Fac"]), on.outputs[0])
+    knit = nt.nodes.new("ShaderNodeRGB")
+    knit.name = "knit"
+    knit.outputs[0].default_value = tuple(b.inputs["Base Color"].default_value)
+    mix = nt.nodes.new("ShaderNodeMix")
+    mix.data_type = "RGBA"
+    sock = {s.identifier: s for s in (*mix.inputs, *mix.outputs)}
+    nt.links.new(fac, sock["Factor_Float"])
+    nt.links.new(knit.outputs[0], sock["A_Color"])
+    sock["B_Color"].default_value = _lin(BAND)
+    nt.links.new(sock["Result_Color"], b.inputs["Base Color"])
+    return m
+
+
+def dress(rig: "Rig", jumper: str = "") -> None:
+    """Put on his jumper: `winter` (V12) or "" for the navy crew-neck. Only
+    colours change, so the cut of him and every pose stay as they are."""
+    look = JUMPERS.get(jumper or "", JUMPERS[""])
+    knit = _MATS.get("dennis_sweater")
+    if knit is not None:
+        nt = knit.node_tree
+        nt.nodes["knit"].outputs[0].default_value = _lin(look["sweater"])
+        nt.nodes["band_on"].outputs[0].default_value = look["band"]
+    trim = _MATS.get("dennis_collar")
+    if trim is not None:
+        colour = _lin(look["collar"])
+        trim.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = colour
+        lo, hi = trim.node_tree.nodes["ribs"].color_ramp.elements
+        lo.color = tuple(c * (1 - RIB_SHADE) for c in colour[:3]) + (1.0,)
+        hi.color = colour
+
+
 def _ribbed(m: bpy.types.Material) -> bpy.types.Material:
     """Knit ribs down every part drawn in `m`: stripes `RIB_PITCH` apart
     round the part's own up axis, the seam at its back. In the colour only,
@@ -443,29 +550,9 @@ def _ribbed(m: bpy.types.Material) -> bpy.types.Material:
         return m
     b = nt.nodes["Principled BSDF"]
     base = tuple(b.inputs["Base Color"].default_value)
-
-    def math_node(op, *args):
-        n = nt.nodes.new("ShaderNodeMath")
-        n.operation = op
-        for i, x in enumerate(args):
-            if x is None:
-                continue
-            if isinstance(x, (int, float)):
-                n.inputs[i].default_value = x
-            else:
-                nt.links.new(x, n.inputs[i])
-        return n.outputs[0]
-
-    co = nt.nodes.new("ShaderNodeTexCoord").outputs["Object"]
-    xyz = nt.nodes.new("ShaderNodeSeparateXYZ")
-    nt.links.new(co, xyz.inputs[0])
-    x, y = xyz.outputs["X"], xyz.outputs["Y"]
-    # the way round from his front (-y), times the radius: metres round
-    turn = math_node("ARCTAN2", x, math_node("MULTIPLY", y, -1.0))
-    r = math_node("SQRT", math_node("ADD", math_node("MULTIPLY", x, x),
-                                    math_node("MULTIPLY", y, y)))
-    wave = math_node("SINE", math_node("MULTIPLY", math_node("MULTIPLY", turn, r),
-                                       2 * math.pi / RIB_PITCH))
+    math_node = _math(nt)
+    _z, round_ = _round_him(nt)
+    wave = math_node("SINE", math_node("MULTIPLY", round_, 2 * math.pi / RIB_PITCH))
     ramp = nt.nodes.new("ShaderNodeValToRGB")
     ramp.name = "ribs"
     nt.links.new(math_node("MULTIPLY_ADD", wave, 0.5, 0.5), ramp.inputs["Fac"])
@@ -604,7 +691,7 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
 
     skin = _mat("skin", SKIN, 0.9)
     tired = _mat("under-eye", UNDER_EYE, 0.95)
-    knit = _mat("sweater", SWEATER, 0.95, sheen=0.3)
+    knit = _banded(_mat("sweater", SWEATER, 0.95, sheen=0.3))
     collar = _ribbed(_mat("collar", COLLAR, 0.95))
     shirt = _mat("shirt", SHIRT, 0.8)
     ink = _mat("ink", INK, 0.9)
@@ -625,6 +712,7 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
         (0.51, 0.180, 0.098), (0.528, 0.140, 0.085), (0.538, 0.075, 0.060),
     ], knit, coll, n=24)
     rig.attach(torso, "hips")
+    torso["band"] = 1.0         # the winter jumper's band is on him here, not his sleeves
     # its ribbed hem: a straight finished edge across his hips, where the
     # body of it ended in a rounded bottom like a romper's (the ring just
     # above its bottom keeps that corner square under the band)

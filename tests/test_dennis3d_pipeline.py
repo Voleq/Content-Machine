@@ -541,3 +541,31 @@ def test_a_3d_long_draws_every_shot_of_him_in_3d_and_none_drawn(long_3d):
     # check reads where he went, not where the room said he stands
     assert manifest["end_screen"]["side"] and manifest["end_screen"]["clear"] is False
 
+
+
+def test_he_wears_the_winter_jumper_from_december_to_february(tmp_path):
+    """V12: the video's day picks his jumper, as it picks the season."""
+    from pipeline.plates import jumper_of_episode
+
+    for day, want in (("2026-12-01", "winter"), ("2027-01-15", "winter"),
+                      ("2027-02-28", "winter"), ("2027-03-01", ""),
+                      ("2026-11-30", ""), ("2026-07-04", "")):
+        assert jumper_of_episode(tmp_path / "EXMPL" / day) == want, day
+    assert jumper_of_episode(tmp_path / "scratch") == ""
+
+
+def test_a_shot_in_the_winter_jumper_is_drawn_apart_from_the_navy(performer):
+    """The jumper rides in the job only when he wears it, so the navy keeps
+    every shot already drawn, and a winter video draws its own."""
+    from pipeline.plates import episode_jumper
+
+    words = [SimpleNamespace(word="So.", start=0.2, end=0.5)]
+    room = _room("room/desk-front-16x9")
+    navy = performer.shot(room, words, 0.0, 0.5, (320, 180), seed="jumper")
+    assert "jumper" not in json.loads((navy.parent / "job.json").read_text(encoding="utf-8"))
+    with episode_jumper("winter"):
+        winter = performer.shot(room, words, 0.0, 0.5, (320, 180), seed="jumper")
+        cover = performer.still(room, (320, 180), seed="jumper")
+    assert winter != navy
+    assert json.loads((winter.parent / "job.json").read_text(encoding="utf-8"))["jumper"] == "winter"
+    assert json.loads((cover.parent / "job.json").read_text(encoding="utf-8"))["jumper"] == "winter"

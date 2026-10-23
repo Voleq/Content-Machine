@@ -296,6 +296,7 @@ class Performer:
         job = {"angle": angle, "season": season, "aspect": aspect, "size": list(size),
                "fps": fps, "samples": int(self.settings.dennis_3d_samples),
                "seed": seed, "stance": stance, "duration": round(float(duration), 4),
+               **self._jumper(),
                **({"plate": [round(float(c), 4) for c in plate]} if plate else {}),
                **({"close": True} if close else {}),
                **({"push": {k: round(float(v), 3) for k, v in push.items()}}
@@ -344,7 +345,7 @@ class Performer:
         job = {"angle": angle, "season": season, "aspect": aspect, "size": list(size),
                "fps": int(self.settings.dennis_3d_fps),
                "samples": max(int(self.settings.dennis_3d_samples), 16),
-               "seed": seed, "stance": stance, "still": True,
+               "seed": seed, "stance": stance, "still": True, **self._jumper(),
                **({"in_room": True} if in_room else {}), **self._line_style()}
         key = hashlib.sha256(json.dumps({**job, "v": LOOK_VERSION},
                                         sort_keys=True).encode()).hexdigest()[:20]
@@ -360,6 +361,15 @@ class Performer:
         self.shots.append({"angle": angle, "aspect": aspect, "still": True,
                            "seconds": reply.get("seconds"), "device": reply.get("device")})
         return out
+
+    @staticmethod
+    def _jumper() -> dict:
+        """His winter jumper (V12), in the job only when he wears it, so a
+        shot of him in the navy keeps its cache."""
+        from pipeline.plates import current_jumper
+
+        jumper = current_jumper()
+        return {"jumper": jumper} if jumper else {}
 
     def _line_style(self) -> dict:
         """How his lines are drawn, in the job only when it is not Freestyle,

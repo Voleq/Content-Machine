@@ -65,7 +65,7 @@ from mathutils import Matrix, Vector  # noqa: E402
 import build as room  # noqa: E402
 import lines  # noqa: E402
 import motion  # noqa: E402
-from dennis import JOINTS, bounds, build_dennis  # noqa: E402
+from dennis import JOINTS, bounds, build_dennis, dress  # noqa: E402
 
 FPS = 30  # as config.dennis_3d_fps: the bench times what a render will draw
 
@@ -97,6 +97,7 @@ class Stage:
 
     def __init__(self) -> None:
         self.season: str | None = None
+        self.jumper = ""
         self.rig = None
         self.device = "CPU"
         self.size: tuple[int, int] | None = None
@@ -122,6 +123,7 @@ class Stage:
             if o.type == "MESH" and o not in mine:
                 o.is_shadow_catcher = True
         self.season, self.size, self._looks = season, None, {}
+        self.jumper = ""
 
     def frame_up(self, size: tuple[int, int], samples: int, how: str = "freestyle") -> None:
         if self.size == size and self.samples == samples and self.lines == how:
@@ -486,6 +488,10 @@ class Stage:
         season = job.get("season", "plain")
         if season != self.season:
             self.build(season)
+        jumper = str(job.get("jumper", ""))
+        if jumper != self.jumper:
+            dress(self.rig, jumper)
+            self.jumper = jumper
         aspect = job.get("aspect", "16x9")
         self.frame_up(tuple(job["size"]), int(job.get("samples", 8)),
                       str(job.get("lines", "freestyle")))
