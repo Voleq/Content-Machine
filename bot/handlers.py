@@ -307,6 +307,9 @@ class BotCore:
         # (storyboard, thumbnail) to the operator mid-job.
         self.file_pusher: Callable[[Path, str], None] | None = None
         self.queue: RenderJobQueue | None = None  # attached in main.py
+        # /ask questions put off while a render holds the graphics card.
+        import threading
+        self._ask_lock = threading.Lock()
         # FILING READINGS IN FLIGHT, keyed (ticker, workdate) → Future (K3).
         #
         # Its own single worker rather than the render queue: a reading is
@@ -3450,14 +3453,115 @@ class BotCore:
         return find_text(self.settings, " ".join(args or []))
 
     def ask_text(self, args: list[str]) -> str:
-        """`/ask QUESTION` — the local model, reading the bot's own records.
+        """`/ask QUESTION` — the local model, reading the bot's own records
+        and its live state (`bot.bot_facts`): the page's views as text.
 
         Blocking for as long as the model takes, so the glue runs it off the
-        event loop. Counts and totals never reach the model.
+        event loop. Counts and totals never reach the model. While a render
+        holds the graphics card the model waits (his call, 10-23): the search
+        and the drawers answer now, the model once the queue is empty.
         """
+        from bot.bot_facts import drawers
         from pipeline.recall import ask
 
-        return ask(self.settings, " ".join(args or [])).text
+        question = " ".join(" ".join(args or []).split())
+        wait = bool(question) and self.render_busy()
+        answer = ask(self.settings, question, drawers=drawers(self), wait=wait)
+        if answer.reason == "waiting":
+            self._ask_later(question)
+        return answer.text
+
+    # Questions put off by a render, answered when the queue empties.
+    ASK_WAITING = "ask_waiting.json"
+
+    def render_busy(self) -> bool:
+        """A render is running, or one is queued behind it on this bot's
+        queue: the model would share the card with Dennis."""
+        from pipeline.jobs import JobStore
+        from pipeline.models import JobStatus
+
+        store = self.queue.store if self.queue is not None else JobStore(self.settings)
+        for job in store.all():
+            if job.status is JobStatus.RUNNING:
+                return True
+            if job.status is JobStatus.QUEUED and self.queue is not None:
+                return True
+        return False
+
+    def _ask_waiting(self) -> list[dict]:
+        import json
+
+        try:
+            rows = json.loads((self.settings.state_dir / self.ASK_WAITING)
+                              .read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return []
+        return [r for r in rows if isinstance(r, dict) and r.get("q")] \
+            if isinstance(rows, list) else []
+
+    def _ask_save(self, rows: list[dict]) -> None:
+        import json
+
+        path = self.settings.state_dir / self.ASK_WAITING
+        if not rows:
+            path.unlink(missing_ok=True)
+            return
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(rows, indent=1), encoding="utf-8")
+        tmp.replace(path)
+
+    def _ask_later(self, question: str) -> None:
+        from datetime import datetime, timezone
+
+        with self._ask_lock:
+            rows = [r for r in self._ask_waiting() if r["q"] != question]
+            rows.append({"q": question, "at": datetime.now(timezone.utc)
+                         .strftime("%Y-%m-%dT%H:%M:%SZ")})
+            self._ask_save(rows[-10:])
+
+    def answer_waiting(self) -> list[str]:
+        """Answer every question put off by a render, oldest first, and
+        forget them. Empty while a render still holds the card."""
+        from bot.bot_facts import drawers
+        from pipeline.recall import ask
+
+        with self._ask_lock:
+            if self.render_busy():
+                return []
+            rows = self._ask_waiting()
+            self._ask_save([])
+        out = []
+        for r in rows:
+            answer = ask(self.settings, r["q"], drawers=drawers(self))
+            out.append(f"💬 You asked during the render: “{r['q']}”\n\n"
+                       f"{answer.text}")
+        return out
+
+    def job_changed(self, job) -> None:
+        """A `JobStore` listener: when a job ends and nothing else is
+        queued or running, the questions that waited are answered off the
+        thread that saved it (often the event loop)."""
+        status = getattr(getattr(job, "status", None), "value", "")
+        if status in ("queued", "running"):
+            return
+        self.answer_waiting_soon()
+
+    def answer_waiting_soon(self) -> None:
+        """Answer the waiting questions on a thread of their own, and push
+        each answer as a notice (Telegram and the page's Activity)."""
+        import threading
+
+        if not self._ask_waiting() or self.render_busy():
+            return
+
+        def run() -> None:
+            for text in self.answer_waiting():
+                if self.queue is not None:
+                    self.queue.notify_sync(text)
+                elif self.feed is not None:
+                    self.feed.add("notice", text)
+
+        threading.Thread(target=run, name="ask-waiting", daemon=True).start()
 
     def said_text(self, args: list[str]) -> str:
         """`/said PHRASE` — have I used this line before?"""

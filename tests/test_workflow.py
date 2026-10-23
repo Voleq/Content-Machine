@@ -547,6 +547,17 @@ def test_the_ideas_calendar_and_stats_screens_are_served(panel):
         assert panel(path, key_="")[0] == 401, path
 
 
+def test_the_page_asks_the_bot(panel, core):
+    status, _h, body = panel("/api/ask", {"question": "which memes do we have?"})
+    text = json.loads(body)["reply"]["text"]
+    # Mock mode: no model, so the drawer the question reached is shown.
+    assert status == 200 and "The meme library:" in text
+    assert any("❓ which memes do we have?" in e["text"]
+               for e in json.loads(panel("/api/feed")[2])["events"])
+    assert panel("/api/ask", {"question": "  "})[0] == 400
+    assert panel("/api/ask", {"question": "x"}, key_="")[0] == 401
+
+
 def test_home_shows_this_week_and_the_running_render(panel, core):
     from datetime import datetime, timedelta, timezone
 

@@ -140,9 +140,34 @@ function paletteItems(q) {
   const text = $("#palette-input").value.trim();
   if (text.startsWith("/") && /\s\S/.test(text)) {
     scored.unshift({ kind: "run", label: `Run ${text}`, sub: "Enter runs it as typed", go: () => runCommand(text) });
+  } else if (text) {
+    // Anything else can be asked: first when it reads like a question.
+    const ask = { kind: "ask", label: `Ask: ${text}`, sub: "the local AI answers on Home", go: () => { showTab("home", true); askBot(text); } };
+    if (/\?$/.test(text) || text.split(/\s+/).length >= 3) scored.unshift(ask); else scored.push(ask);
   }
   return scored.slice(0, 40);
 }
+
+// ------------------------------------------------- ask the bot
+async function askBot(q) {
+  q = (q || "").trim();
+  if (!q) return;
+  const box = $("#ask-answer"), btn = $("#ask-form button");
+  $("#ask-q").value = q;
+  box.hidden = false;
+  setKids(box, [el("p", { class: "meta", text: "Reading the records and the bot's state. The local AI can take a minute." })]);
+  btn.disabled = true;
+  try {
+    const r = await post("/api/ask", { question: q });
+    setKids(box, [el("p", { class: "ask-q", text: `You asked: ${q}` }),
+      el("pre", { class: "ask-text", text: r.reply?.text || "No answer came back." })]);
+  } catch (e) {
+    setKids(box, [el("p", { class: "bad", text: String(e.message || e) })]);
+  } finally {
+    btn.disabled = false;
+  }
+}
+$("#ask-form").addEventListener("submit", (e) => { e.preventDefault(); askBot($("#ask-q").value); });
 function renderPalette() {
   PAL = paletteItems($("#palette-input").value);
   PAL_I = Math.min(PAL_I, Math.max(PAL.length - 1, 0));

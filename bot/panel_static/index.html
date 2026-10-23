@@ -89,6 +89,16 @@
             placeholder="Paste the script, an angle tweak, or the answer to a question the bot asked"></textarea>
           <div class="row end"><button id="send-paste" class="primary" type="button">Send</button></div>
         </section>
+        <section class="card span2 ask" aria-labelledby="ask-h">
+          <div class="card-head"><h2 id="ask-h">Ask the bot</h2><span class="meta">the local AI, reading the bot's records and its state right now · it never changes anything</span></div>
+          <form id="ask-form" class="ask-form">
+            <label for="ask-q" class="sr-only">Your question</label>
+            <input id="ask-q" class="grow" autocomplete="off" required
+                   placeholder="What's waiting on me? Which memes do we have? Why did the last render fail?">
+            <button class="primary" type="submit" title="Ctrl+K also asks: type a question and pick Ask">Ask</button>
+          </form>
+          <div id="ask-answer" class="ask-answer" aria-live="polite" hidden></div>
+        </section>
         <section class="card" aria-labelledby="week-h">
           <div class="card-head"><h2 id="week-h">This week</h2><span class="meta">out in the last 7 days and the next 7</span></div>
           <div id="week" class="list"></div>

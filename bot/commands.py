@@ -226,7 +226,8 @@ class ChatState:
 class NotifyPrefs:
     """`/admin quiet`: keep only finished, failed and needs-you pushes."""
 
-    LOUD = ("✅", "❌", "⛔", "⚠️", "🚫", "📥", "💥", "❗", "🧭")
+    # 💬 is the answer to a question he asked, put off by a render.
+    LOUD = ("✅", "❌", "⛔", "⚠️", "🚫", "📥", "💥", "❗", "🧭", "💬")
 
     def __init__(self, settings):
         self.path = Path(settings.state_dir) / "notify.json"
@@ -1091,12 +1092,18 @@ COMMANDS: tuple[Command, ...] = (
                 "with the calls that were wrong, deliberately.")),
     # /search
     Command("search", "", "<question>",
-            "the local AI answers from everything the bot has saved", c_ask,
-            aliases=("ask",), ack="🔎 reading the records…",
-            example="how much did voice cost in September", doc=(
-                "The local model answers from the bot's own records, citing "
-                "what it read, or says it has nothing on file. Counts and "
-                "totals are worked out by code and never reach the model.")),
+            "the local AI answers from what the bot has saved and its state now",
+            c_ask, aliases=("ask",), ack="🔎 reading the records…",
+            example="which memes do we have", doc=(
+                "The local model answers from the bot's own records and from "
+                "the bot as it is right now (the videos and their steps, the "
+                "queue, spend, switches, settings, the library, health and "
+                "the page's manual), citing what it read, or says it has "
+                "nothing on file. It only reads. Counts and totals are worked "
+                "out by code and never reach the model. While a render runs "
+                "the model waits: the search answers at once and the full "
+                "answer follows when the render ends. Also on Home as Ask "
+                "the bot.")),
     Command("search", "find", "<words>",
             "search everything the bot has saved, no AI", c_find,
             aliases=("find",), doc=(

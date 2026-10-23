@@ -175,7 +175,10 @@ def main() -> None:
         # Video cards edit themselves as their jobs move.
         core.cards.loop = loop
         core.queue.store.listeners.append(core.cards.job_changed)
+        # /ask questions put off by a render are answered when it ends.
+        core.queue.store.listeners.append(core.job_changed)
         core.queue.start()
+        core.answer_waiting_soon()
 
         # The trimmed "/" menu: the three entry points and the nine
         # families. The old names still answer; they are just not listed.

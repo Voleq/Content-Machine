@@ -850,7 +850,7 @@ Every command here is a read. None spends, none renders, none can fail a job. Th
 
 | command | what it does |
 |---|---|
-| `/search <question>` | The local model answers from the bot's own records, citing what it read, or says it has nothing on file. Counts and totals are worked out by code and never reach the model. |
+| `/search <question>` | The local model answers from the bot's own records and from the bot as it is right now (the videos and their steps, the queue, spend, switches, settings, the library, health and the page's manual), citing what it read, or says it has nothing on file. It only reads. Counts and totals are worked out by code and never reach the model. While a render runs the model waits: the search answers at once and the full answer follows when the render ends. Also on Home as Ask the bot. |
 | `/search find <words>` | Every saved record with those words, ranked, no AI involved. Works with Ollama off. |
 | `/search said <phrase>` | Every earlier use of a line, across every script ever shipped. |
 

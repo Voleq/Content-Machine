@@ -393,6 +393,15 @@ def _handler_for(panel: Panel):
                     name = str(p.get("name") or "")
                     reply = (core.reset_writing(name) if p.get("reset") else
                              core.save_writing(name, str(p.get("text") or "")))
+                elif url.path == "/api/ask":
+                    # Read-only, and as long as the model takes: this
+                    # request's own thread waits, the page shows "reading".
+                    question = " ".join(str(self._payload().get("question") or "").split())
+                    if not question:
+                        return self._json({"error": "ask a question"}, 400)
+                    text = core.ask_text(question.split())
+                    panel.feed.add("reply", f"❓ {question}\n\n{text}")
+                    reply = Reply(text)
                 elif url.path == "/api/memory":
                     p = self._payload()
                     texts = p.get("texts")
@@ -541,7 +550,9 @@ def main() -> None:  # pragma: no cover - exercised by hand
 
         core.file_pusher = push
         core.queue = RenderJobQueue(settings, core.execute_job, notify)
+        core.queue.store.listeners.append(core.job_changed)
         core.queue.start()
+        core.answer_waiting_soon()
 
     loop.run_until_complete(boot())
     _server, url = start_panel(core, loop)

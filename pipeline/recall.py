@@ -78,6 +78,7 @@ KIND_LABELS: dict[str, str] = {
     "command": "command",
     "pass": "AI pass",
     "docs": "README",
+    "now": "the bot right now",
 }
 
 # Words that carry no meaning for a search. The question words matter most:
@@ -362,7 +363,8 @@ _WHAT_DENNIS_IS = (
     "on trending stocks, and 16:9 LONG deep dives on value stocks. The "
     "operator supplies the numbers (an uploaded workbook), the thesis and "
     "the approval; the bot does the voice, the visuals, the composition and "
-    "the render. The voice is synthetic and disclosed as such.\n\n"
+    "the render. The voice is synthetic and disclosed as such. He works "
+    "mostly on the bot's web page on his PC, with Telegram as the remote.\n\n"
     "How a video moves through the bot: /short or /long TICKER opens a "
     "workspace; the operator uploads the refreshed workbook; the bot sends "
     "the writing prompt (a LONG first reads the company's filings and offers "
@@ -412,6 +414,105 @@ def self_description(settings: Settings, *, with_commands: bool = True) -> str:
 def ask_providers(settings: Settings) -> list[str]:
     return [p.strip().lower() for p in settings.ask_provider_order.split(",")
             if p.strip()]
+
+
+# ------------------------------------------------ what the bot is right now
+
+# THE BOT HANDS THE MODEL WHAT IT KNOWS (10-23). He wanted /ask to know the
+# bot's ins and outs, "what's in there", and judged the model unable to go
+# looking on its own. So the records above are joined by DRAWERS: one part
+# of the bot's live state each (the open videos, the library, the switches,
+# the health checks, the manual), read fresh when a question comes in. The
+# bot opens the drawers the question's words reach, never the model, and a
+# drawer is only built once opened, since the health checks take a moment.
+# The builders live with the page (`bot.bot_facts`), off the same views the
+# page draws, so the two can never tell him different things.
+
+@dataclass
+class Drawer:
+    name: str
+    title: str
+    words: tuple[str, ...]          # what a question says when it wants this
+    build: object                   # Callable[[list[str]], str]: its text
+    always: bool = False            # the status board goes with every question
+    ticker: str = ""                # a video's drawer opens on its ticker
+    place: str = ""                 # where he sees the same thing
+
+    def score(self, terms: list[str]) -> int:
+        """How many of the question's words reach this drawer: a word and a
+        drawer word that start the same way, four letters at least, so
+        "memes" reaches "meme" and "switched" reaches "switch"."""
+        hit = 0
+        for term in {t.lower() for t in terms}:
+            if any(len(min(term, w, key=len)) >= 4
+                   and (term.startswith(w) or w.startswith(term))
+                   for w in self.words):
+                hit += 1
+        return hit
+
+
+_DRAWERS_OPEN = 3            # besides the status board and a named video's
+_DRAWER_MAX_CHARS = 3500
+
+
+def pick_drawers(drawers, terms: list[str], tickers=frozenset(), *,
+                 limit: int = _DRAWERS_OPEN) -> list[Drawer]:
+    """The drawers a question opens, in the order they go to the model:
+    the status board, the named videos, then the best few the words reach."""
+    drawers = list(drawers)
+    out = [d for d in drawers if d.always]
+    out += [d for d in drawers if d.ticker and d.ticker in tickers]
+    scored = sorted(((d.score(terms), i, d) for i, d in enumerate(drawers)
+                     if not d.always and not d.ticker), key=lambda x: (-x[0], x[1]))
+    out += [d for s, _, d in scored[:limit] if s > 0]
+    return out
+
+
+def focus(text: str, terms: list[str], limit: int) -> str:
+    """`text` cut to `limit` characters by keeping its lines that carry the
+    question's words, in their order, then the lines from the top. A drawer
+    longer than the room it gets keeps what the question is about."""
+    if len(text) <= limit:
+        return text
+    lines = text.splitlines()
+    low = [t.lower() for t in terms if len(t) >= 3]
+    want = [i for i, ln in enumerate(lines) if any(t in ln.lower() for t in low)]
+    keep: list[int] = []
+    size = 0
+    for i in [0, *want, *range(len(lines))]:
+        if i in keep:
+            continue
+        if size + len(lines[i]) + 1 > limit:
+            if i in want or i == 0:
+                continue
+            break
+        keep.append(i)
+        size += len(lines[i]) + 1
+    if not keep:
+        return text[:limit] + " …"
+    return "\n".join(lines[i] for i in sorted(keep)) + "\n…"
+
+
+def open_drawers(drawers: list[Drawer], terms: list[str],
+                 budget: int) -> list[Hit]:
+    """Each opened drawer as a record the model can cite, inside `budget`
+    characters between them. A drawer whose builder fails says so rather
+    than taking the question down with it."""
+    if not drawers:
+        return []
+    per = min(_DRAWER_MAX_CHARS, budget // len(drawers))
+    out = []
+    for d in drawers:
+        try:
+            text = str(d.build(terms) or "").strip()
+        except Exception as e:                       # noqa: BLE001
+            log.exception("ask: drawer %s", d.name)
+            text = f"(could not be read just now: {type(e).__name__}: {e})"
+        if not text:
+            continue
+        out.append(Hit("now", d.title, focus(text, terms, per), d.ticker,
+                       place=d.place or "the page"))
+    return out
 
 
 # ---------------------------------------------------------------- the index
@@ -643,13 +744,14 @@ _SOURCES = 8
 
 _RULES = (
     "\n\nRULES FOR ANSWERING:\n"
-    "- Answer only from FACTS and SOURCES below. If they do not contain the "
-    "answer, say \"I don't have that on file\" and name the command that "
-    "would know, if one would.\n"
+    "- Answer only from FACTS, NOW and SOURCES below. NOW is the bot as it "
+    "is this minute: trust it over an older record. If none of them contain "
+    "the answer, say \"I don't have that on file\" and name the command or "
+    "the page screen that would know, if one would.\n"
     "- Put the source number in brackets, like [2], after each sentence that "
     "uses it.\n"
     "- Never count, add, subtract or average anything yourself. Every number "
-    "you write must be copied from FACTS or SOURCES.\n"
+    "you write must be copied from FACTS, NOW or SOURCES.\n"
     "- Keep it short: at most eight lines of plain text, no tables, no "
     "markdown headings. It is read in Telegram.\n"
     "- Never invent a ticker, a date, a link or a quote.")
@@ -657,7 +759,10 @@ _RULES = (
 _EXPAND_SYSTEM = (
     "You turn a question about a financial-video bot's records into search "
     "words. The records are video scripts, SEC filing summaries, investment "
-    "theses, check reports, job logs and YouTube uploads. Return ONLY a JSON "
+    "theses, check reports, job logs and YouTube uploads, and the bot's own "
+    "state: its library (memes, b-roll, sounds, rooms, writing files), its "
+    "switches and settings, health checks, the render queue and each "
+    "video's steps. Return ONLY a JSON "
     "list of 6 to 12 lowercase words or two-word phrases: the question's own "
     "key words, their synonyms, and the finance terms a script about it "
     "would use (e.g. margins -> \"gross margin\", \"profitability\"). No "
@@ -738,10 +843,12 @@ def _budget(settings: Settings, fixed_chars: int) -> int:
     return max(0, min(_SOURCES_MAX_CHARS, left))
 
 
-def _sources_block(hits: list[Hit], budget: int) -> tuple[str, list[Hit]]:
+def _sources_block(hits: list[Hit], budget: int,
+                   start: int = 1) -> tuple[str, list[Hit]]:
     """The records as the model reads them, inside `budget` characters.
     A tight budget carries fewer records rather than slivers of all of
-    them. Returns the block and the records it carries, numbered as sent."""
+    them. Returns the block and the records it carries, numbered as sent
+    from `start` (after the drawers, which come first)."""
     fit = min(len(hits), budget // _PER_SOURCE_MIN_CHARS)
     if not fit:
         return "(nothing fits in the model's context)" if hits else \
@@ -749,7 +856,7 @@ def _sources_block(hits: list[Hit], budget: int) -> tuple[str, list[Hit]]:
     hits = hits[:fit]
     per = budget // fit
     parts = []
-    for n, hit in enumerate(hits, 1):
+    for n, hit in enumerate(hits, start):
         head = f"[{n}] {hit.label()} — {hit.title}"[:200]
         room = max(0, per - len(head) - 4)
         body = hit.body if len(hit.body) <= room else hit.body[:room] + " …"
@@ -796,15 +903,29 @@ _WHY_NOT = {
     "no_provider": "no model is configured for /ask (ASK_PROVIDER_ORDER)",
     "empty": "the model came back empty",
     "parse_error": "the model's reply could not be read",
+    "waiting": "a render is using the graphics card",
 }
 
 
 def _fallback(question: str, hits: list[Hit], reason: str,
-              settings: Settings) -> str:
+              settings: Settings, live: list[Hit] = ()) -> str:
     why = _WHY_NOT.get(reason, reason or "no model answered")
     if reason == "timeout":
         why += f" (over {settings.ollama_timeout_s:.0f}s)"
-    lines = [f"The local AI did not answer: {why}."]
+    if reason == "waiting":
+        lines = ["⏳ A render is using the graphics card, so the local AI "
+                 "answers when it finishes. Meanwhile, this is on file:"]
+    else:
+        lines = [f"The local AI did not answer: {why}."]
+    # What the drawers hold needs no model: the one the question reached
+    # (or the status board, when it reached none) is shown as it is.
+    for h in (live[1:3] if len(live) > 1 else live[:1]):
+        body = h.body if len(h.body) <= 1200 else h.body[:1200] + " …"
+        # Most drawers open on a line that names them; the rest get a title.
+        named = body.lower().startswith(h.title.lower()[:12])
+        lines += ["", body] if named else ["", f"{h.title}:", body]
+    if live:
+        lines.append("")
     if hits:
         lines.append(f"Here is what the search found for “{question}”:")
         lines.extend(render_hits(hits[:6]))
@@ -814,8 +935,14 @@ def _fallback(question: str, hits: list[Hit], reason: str,
 
 
 def ask(settings: Settings, question: str, *,
-        today: date | None = None) -> Answer:
-    """One question, answered from the bot's own records."""
+        today: date | None = None, drawers=(),
+        wait: bool = False) -> Answer:
+    """One question, answered from the bot's own records and, when the bot
+    passes its `drawers`, its live state (see `Drawer`).
+
+    `wait`: a render holds the graphics card, so the model is not called at
+    all; the answer is what the search and the drawers found, and the bot
+    asks again once the card is free (`BotCore.answer_waiting`)."""
     from pipeline import llm, tally
 
     question = " ".join(question.split())
@@ -839,8 +966,21 @@ def ask(settings: Settings, question: str, *,
         return Answer(direct + "\n\n(counted by the bot's code, not the AI)",
                       by_code=True)
 
+    if wait:
+        hits = retrieve(index, question, tickers=tickers)
+        terms = terms_of(question)
+        live = open_drawers(pick_drawers(drawers, terms, tickers), terms,
+                            _SOURCES_MAX_CHARS // 2)
+        journal.note(settings, "asked", f"asked: {question[:200]} "
+                     f"(waiting for the render to finish)",
+                     answered_by="none", reason="waiting")
+        return Answer(_fallback(question, hits, "waiting", settings, live),
+                      hits, reason="waiting")
+
     expansion, reason = expand(settings, question)
     hits = retrieve(index, question, expansion, tickers=tickers)
+    terms = terms_of(question) + [w for e in expansion for w in e.split()]
+    opened = pick_drawers(drawers, terms, tickers)
     # The expansion call is the cheap probe: if the model is not there, or
     # is too slow to answer a one-line prompt, the answer call would fail
     # the same way after a longer wait.
@@ -848,7 +988,8 @@ def ask(settings: Settings, question: str, *,
         journal.note(settings, "asked", f"asked: {question[:200]} "
                      f"(the model did not answer: {reason})",
                      answered_by="none", reason=reason)
-        return Answer(_fallback(question, hits, reason, settings), hits,
+        live = open_drawers(opened, terms, _SOURCES_MAX_CHARS // 2)
+        return Answer(_fallback(question, hits, reason, settings, live), hits,
                       reason=reason)
 
     facts = "\n".join(tally.facts(settings, today=today))
@@ -856,9 +997,18 @@ def ask(settings: Settings, question: str, *,
     fixed = len(facts) + len(question) + 200
     if _budget(settings, fixed + len(system)) < _SOURCES_MIN_CHARS:
         system = self_description(settings, with_commands=False) + _RULES
-    sources, hits = _sources_block(hits, _budget(settings, fixed + len(system)))
+    budget = _budget(settings, fixed + len(system))
+    # The drawers take up to half the room; the records get the rest.
+    live = open_drawers(opened, terms, budget // 2)
+    now = "\n\n".join(f"[{n}] {h.title} (seen on {h.place})\n{h.body}"
+                       for n, h in enumerate(live, 1))
+    sources, hits = _sources_block(hits, budget - len(now),
+                                   start=len(live) + 1)
     prompt = (f"FACTS (counted by the bot's code; copy them, never recount):\n"
-              f"{facts}\n\nSOURCES:\n{sources}\n\nQUESTION: {question}")
+              f"{facts}\n\n"
+              + (f"NOW (the bot as it is this minute):\n{now}\n\n" if live else "")
+              + f"SOURCES:\n{sources}\n\nQUESTION: {question}")
+    hits = live + hits
     out = llm.chat_result(prompt, settings, system=system, purpose="ask",
                           providers=ask_providers(settings))
     if not out:
@@ -871,7 +1021,7 @@ def ask(settings: Settings, question: str, *,
 
     text = out.text.strip()
     lines = [text]
-    loose = unsupported_numbers(text, f"{facts}\n{sources}\n{question}")
+    loose = unsupported_numbers(text, f"{facts}\n{now}\n{sources}\n{question}")
     if loose:
         lines.append(f"\n⚠️ Not in anything it read: {', '.join(loose)}. "
                      f"Treat those as the model's guesses.")
@@ -879,7 +1029,8 @@ def ask(settings: Settings, question: str, *,
                     if 0 < int(n) <= len(hits)})
     if cited:
         lines.append("\nRead: " + " · ".join(
-            f"[{n}] {hits[n - 1].label()}" for n in cited))
+            f"[{n}] {hits[n - 1].title if hits[n - 1].kind == 'now' else hits[n - 1].label()}"
+            for n in cited))
     elif hits:
         lines.append(f"\n(It read {len(hits)} records and cited none of "
                      f"them. /find shows what they were.)")
