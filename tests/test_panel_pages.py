@@ -1,4 +1,5 @@
-"""The page's Ideas, Calendar and Stats screens as data (bot/panel_pages)."""
+"""The page's Ideas, Calendar, Stats, Library and Settings screens as data
+(bot/panel_pages), and the switches and edits they make."""
 
 from __future__ import annotations
 
@@ -9,7 +10,8 @@ import pytest
 
 from bot.handlers import BotCore
 from bot.panel import Panel
-from bot.panel_pages import calendar_view, ideas_view, stats_view
+from bot.panel_pages import (calendar_view, ideas_view, library_view,
+                             settings_view, stats_view, thumbnail)
 
 CHAT = 5150
 
@@ -76,3 +78,90 @@ def test_stats_view_with_no_videos(panel):
     assert view["hooks"]["short"]["rows"] == []
     assert view["chapters"]["rows"] == []
     assert isinstance(view["scoreboard"]["text"], str)
+
+
+def test_switch_reaches_settings_and_persists(panel):
+    s = panel.settings
+    assert s.voice_room is False
+    reply = panel.core.set_switch("voice_room", True)
+    assert "on from now" in reply.text and s.voice_room is True
+    # A restart: a fresh Settings off .env (here, the defaults) gets the
+    # page's word back when the bot starts.
+    fresh = s.model_copy(update={"voice_room": False})
+    BotCore(fresh)
+    assert fresh.voice_room is True
+    row = {r["name"]: r for r in settings_view(panel)["switches"]}["voice_room"]
+    assert row["on"] and row["from_page"] and row["env"] == "VOICE_ROOM"
+    # The .env spelling works from Telegram too.
+    panel.core.set_switch("VOICE_ROOM", False)
+    assert s.voice_room is False
+
+
+def test_unknown_switch_refused(panel):
+    reply = panel.core.set_switch("dennis_3d", True)
+    assert reply.text.startswith("❌") and "voice_room" in reply.text
+    assert not (panel.settings.state_dir / "switches.json").exists()
+    # A hand-edited file with a key or a non-bool in it changes nothing.
+    (panel.settings.state_dir / "switches.json").write_text(
+        json.dumps({"elevenlabs_api_key": True, "short_meme": "yes"}), encoding="utf-8")
+    from pipeline.switches import apply
+    assert apply(panel.settings) == {}
+
+
+def test_writing_file_save_and_reset(panel):
+    from bot.prompts import voice_bible
+
+    core, s = panel.core, panel.settings
+    shipped = voice_bible(s)
+    assert core.save_writing("voice_bible", "Dennis is dry.\n").text.startswith("💾")
+    assert voice_bible(s) == "Dennis is dry."
+    assert (s.assets_dir / "voice_bible.md").read_text(encoding="utf-8").strip() == shipped
+    row = {w["name"]: w for w in library_view(panel)["writing"]}["voice_bible"]
+    assert row["edited"] and row["text"].startswith("Dennis is dry.")
+    assert core.save_writing("voice_bible", "   ").text.startswith("❌")
+    assert core.save_writing("passwords", "x").text.startswith("❌")
+    assert "shipped one again" in core.reset_writing("voice_bible").text
+    assert voice_bible(s) == shipped
+
+
+def test_library_lists_memes_with_labels(panel):
+    lib = library_view(panel)
+    memes = lib["memes"]["rows"]
+    assert memes and all(m["tags"] and m["use_when"] for m in memes)
+    assert all(m["file"].startswith("/api/file?path=") and "k=" not in m["file"] for m in memes)
+    first = memes[0]["file"].split("path=", 1)[1]
+    from urllib.parse import unquote
+    small = thumbnail(panel, unquote(first), 200)
+    assert small is not None and small.stat().st_size < 200_000
+    assert thumbnail(panel, str(panel.settings.state_dir / "x.png"), 200) is None
+    assert all(not s["file"] or s["file"].startswith("/api/file") for s in lib["sounds"])
+
+
+def test_memory_lists_are_edited_as_he_leaves_them(panel):
+    from pipeline.channel_memory import FactBook
+
+    s = panel.settings
+    FactBook(s).add("k1", ["Dennis sold his car in 2022.", "Dennis has a cat."],
+                    ticker="ACME", workdate="2026-10-01")
+    reply = panel.core.edit_memory("facts", ["Dennis has a cat.", "Dennis hates Mondays."])
+    assert "2 facts" in reply.text
+    rows = library_view(panel)["facts"]
+    assert [r["text"] for r in rows] == ["Dennis has a cat.", "Dennis hates Mondays."]
+    assert rows[0]["ticker"] == "ACME" and rows[1]["ticker"] == ""
+    assert panel.core.edit_memory("secrets", []).text.startswith("❌")
+
+
+def test_health_rows(panel):
+    view = settings_view(panel)
+    names = {r["name"] for r in view["health"]}
+    assert {"design kit", "sound provenance", "3D Dennis", "DELIVERY_BACKEND"} <= names
+    assert all(r["state"] in ("ok", "bad", "skip") for r in view["health"])
+    assert "test suite" not in names
+    assert view["dennis_3d"] == "off" and "DENNIS_3D" in view["dennis_3d_warning"]
+    assert view["disk"] and view["disk"][0]["free_gb"] > 0
+    assert view["failures"] == []
+    # No key or password reaches the page.
+    blob = json.dumps(view)
+    for secret in ("elevenlabs_api_key", "telegram_bot_token"):
+        value = getattr(panel.settings, secret, "") or ""
+        assert not value or value not in blob

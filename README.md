@@ -863,6 +863,7 @@ Both read what the bot has already saved: every script, filing brief, check repo
 | `/admin cost [explain\|reconciled]` | Month-to-date spend against the cap, and how long ago anyone checked it against the provider. `explain`: where the month went, per video and tier. `reconciled`: stamp today after comparing against the provider's dashboard. |
 | `/admin kit doctor` | Unresolved tag keys, artwork nothing has ever used, PNGs with no registry entry. |
 | `/admin quiet [on\|off]` | Keeps only finished, failed and needs-you pushes (no "started", no progress). On its own it toggles. |
+| `/admin switch [NAME on\|off]` | The four settings that wait on your call, also on the page's Settings: `short_meme`, `viewer_questions`, `voice_room`, `voice_deess`. A flip takes effect at once and is kept across restarts, over what `.env` says. On its own it lists them. |
 | `/admin panel` | The link to the web control panel, when it is running. |
 
 ### /help — Help

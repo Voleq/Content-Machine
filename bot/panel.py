@@ -96,9 +96,13 @@ class Panel:
         self.feed: Feed = core.feed
         # The voice's cache holds the audio and its word times, which the
         # page's voice step plays; nothing else under the cache is served.
+        # The Library shows the owned memes, b-roll, sounds and the rooms:
+        # artwork and audio the repo ships, nothing private.
+        assets = Path(self.settings.assets_dir)
         roots = [self.settings.workspace_dir, self.settings.templates_dir,
-                 Path(self.settings.assets_dir) / "custom",
-                 Path(self.settings.cache_dir) / "tts"]
+                 assets / "custom", Path(self.settings.cache_dir) / "tts",
+                 assets / "meme_library", assets / "broll_library",
+                 assets / "sfx", assets / "score", assets / "plates" / "room"]
         self.roots = [Path(r).resolve() for r in roots]
 
     # ---- the bridge to the bot's loop
@@ -309,14 +313,27 @@ def _handler_for(panel: Panel):
                     return self._json(video_view(
                         panel, (query.get("t") or [""])[0],
                         (query.get("d") or [""])[0]))
-                if url.path in ("/api/ideas", "/api/calendar", "/api/stats"):
+                if url.path in ("/api/ideas", "/api/calendar", "/api/stats",
+                                "/api/library", "/api/settings"):
                     from bot import panel_pages
                     if url.path == "/api/ideas":
                         return self._json(panel_pages.ideas_view(panel))
                     if url.path == "/api/calendar":
                         return self._json(panel_pages.calendar_view(
                             panel, (query.get("m") or [""])[0]))
+                    if url.path == "/api/library":
+                        return self._json(panel_pages.library_view(panel))
+                    if url.path == "/api/settings":
+                        return self._json(panel_pages.settings_view(panel))
                     return self._json(panel_pages.stats_view(panel))
+                if url.path == "/api/thumb":
+                    from bot.panel_pages import thumbnail
+                    out = thumbnail(panel, (query.get("path") or [""])[0],
+                                    int((query.get("w") or ["360"])[0] or 360))
+                    if out is None:
+                        return self._json({"error": "not a picture the panel "
+                                                    "serves"}, 404)
+                    return self._send(200, out.read_bytes(), "image/jpeg")
                 if url.path == "/api/joblog":
                     from pipeline.jobs import job_log
                     n = min(int((query.get("n") or ["50"])[0] or 50), 200)
@@ -367,6 +384,21 @@ def _handler_for(panel: Panel):
                     reply = panel.core.set_thumbnail(
                         (query.get("t") or [""])[0], (query.get("d") or [""])[0],
                         (query.get("fmt") or [""])[0], self._body())
+                elif url.path == "/api/switch":
+                    p = self._payload()
+                    reply = core.set_switch(str(p.get("name") or ""),
+                                            bool(p.get("on")))
+                elif url.path == "/api/writing":
+                    p = self._payload()
+                    name = str(p.get("name") or "")
+                    reply = (core.reset_writing(name) if p.get("reset") else
+                             core.save_writing(name, str(p.get("text") or "")))
+                elif url.path == "/api/memory":
+                    p = self._payload()
+                    texts = p.get("texts")
+                    if not isinstance(texts, list):
+                        return self._json({"error": "texts must be a list"}, 400)
+                    reply = core.edit_memory(str(p.get("book") or ""), texts)
                 elif url.path == "/api/active":
                     p = self._payload()
                     ticker = str(p.get("ticker") or "").upper()

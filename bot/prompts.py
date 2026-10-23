@@ -33,9 +33,11 @@ from pipeline.models import CompanyData
 
 
 def voice_bible(settings: Settings) -> str:
-    """The tone anchor (assets/voice_bible.md), injected verbatim."""
-    f = settings.assets_dir / "voice_bible.md"
-    return f.read_text(encoding="utf-8").strip() if f.exists() else "(voice bible missing)"
+    """The tone anchor, injected verbatim: his edit from the page when he
+    has one, else the shipped `assets/voice_bible.md`."""
+    from pipeline.writing_files import read_file
+
+    return read_file(settings, "voice_bible").strip() or "(voice bible missing)"
 
 
 def confession_ledger(settings: Settings) -> str:

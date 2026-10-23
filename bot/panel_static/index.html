@@ -42,6 +42,8 @@
     <button type="button" role="tab" id="tab-btn-ideas" aria-controls="tab-ideas" aria-selected="false" tabindex="-1" data-tab="ideas" title="The backlog, the last screen, the watch list and earnings dates"><span class="ico" aria-hidden="true">✦</span><span class="lbl">Ideas</span></button>
     <button type="button" role="tab" id="tab-btn-calendar" aria-controls="tab-calendar" aria-selected="false" tabindex="-1" data-tab="calendar" title="What went out, what is scheduled, and the free days"><span class="ico" aria-hidden="true">▦</span><span class="lbl">Calendar</span></button>
     <button type="button" role="tab" id="tab-btn-stats" aria-controls="tab-stats" aria-selected="false" tabindex="-1" data-tab="stats" title="What held viewers: openers, the writing rules, length, chapters, the calls"><span class="ico" aria-hidden="true">↗</span><span class="lbl">Stats</span></button>
+    <button type="button" role="tab" id="tab-btn-library" aria-controls="tab-library" aria-selected="false" tabindex="-1" data-tab="library" title="The writing files, what Dennis remembers, memes, b-roll, sounds and rooms"><span class="ico" aria-hidden="true">▤</span><span class="lbl">Library</span></button>
+    <button type="button" role="tab" id="tab-btn-settings" aria-controls="tab-settings" aria-selected="false" tabindex="-1" data-tab="settings" title="The switches, notifications and the box's health"><span class="ico" aria-hidden="true">⚙</span><span class="lbl">Settings</span></button>
     <button type="button" role="tab" id="tab-btn-activity" aria-controls="tab-activity" aria-selected="false" tabindex="-1" data-tab="activity" title="Everything the bot said, newest first"><span class="ico" aria-hidden="true">≡</span><span class="lbl">Activity</span><span id="unread" class="badge" aria-hidden="true" hidden></span><span id="unread-sr" class="sr-only"></span></button>
     <button type="button" role="tab" id="tab-btn-commands" aria-controls="tab-commands" aria-selected="false" tabindex="-1" data-tab="commands" title="Every command the bot knows, as a form"><span class="ico" aria-hidden="true">/</span><span class="lbl">Commands</span></button>
   </nav>
@@ -120,6 +122,14 @@
 
     <section id="tab-stats" class="tab" role="tabpanel" aria-labelledby="tab-btn-stats" hidden>
       <div id="stats-screen"></div>
+    </section>
+
+    <section id="tab-library" class="tab" role="tabpanel" aria-labelledby="tab-btn-library" hidden>
+      <div id="library-screen"></div>
+    </section>
+
+    <section id="tab-settings" class="tab" role="tabpanel" aria-labelledby="tab-btn-settings" hidden>
+      <div id="settings-screen"></div>
     </section>
 
     <section id="tab-commands" class="tab" role="tabpanel" aria-labelledby="tab-btn-commands" hidden>
@@ -203,5 +213,6 @@
 <script src="/static/screens/video.js"></script>
 <script src="/static/screens/shell.js"></script>
 <script src="/static/screens/pages.js"></script>
+<script src="/static/screens/library.js"></script>
 </body>
 </html>

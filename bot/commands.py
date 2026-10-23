@@ -675,6 +675,16 @@ def c_quiet(c: Call):
     return Reply("usage: /admin quiet [on|off]")
 
 
+def c_switch(c: Call):
+    from pipeline.switches import rows
+
+    if len(c.args) >= 2 and c.args[1].lower() in ("on", "off"):
+        return c.core.set_switch(c.args[0], c.args[1].lower() == "on")
+    lines = [f"{'🟢' if r['on'] else '⚪'} {r['name']} — {r['title']}. {r['says']}"
+             for r in rows(c.core.settings)]
+    return Reply("Switches (/admin switch NAME on|off):\n\n" + "\n\n".join(lines))
+
+
 def c_panel(c: Call):
     url = getattr(c.core, "panel_url", "")
     if not url:
@@ -1113,6 +1123,14 @@ COMMANDS: tuple[Command, ...] = (
             "only finished, failed and needs-you notifications", c_quiet,
             doc=("Keeps only finished, failed and needs-you pushes (no "
                  "\"started\", no progress). On its own it toggles.")),
+    Command("admin", "switch", "[NAME on|off]",
+            "memes in SHORTs, viewer questions, the voice's room and de-esser",
+            c_switch, example="voice_room on", doc=(
+                "The four settings that wait on your call, also on the page's "
+                "Settings: `short_meme`, `viewer_questions`, `voice_room`, "
+                "`voice_deess`. A flip takes effect at once and is kept "
+                "across restarts, over what `.env` says. On its own it lists "
+                "them.")),
     Command("admin", "panel", "", "the web panel's link", c_panel, doc=(
         "The link to the web control panel, when it is running.")),
     # /help

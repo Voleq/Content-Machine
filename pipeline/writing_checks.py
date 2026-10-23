@@ -190,14 +190,10 @@ def _words(text: str) -> list[str]:
 def reference_lines(settings: Settings) -> list[tuple[str, str]]:
     """(where it is from, the sentence) for everything Dennis must not
     repeat: the bible's quoted examples and the style references."""
-    from pipeline.writing_files import list_lines
+    from pipeline.writing_files import list_lines, read_file
 
     out: list[tuple[str, str]] = []
-    bible = settings.assets_dir / "voice_bible.md"
-    try:
-        text = bible.read_text(encoding="utf-8")
-    except OSError:
-        text = ""
+    text = read_file(settings, "voice_bible")
     for line in text.splitlines():
         line = line.strip()
         if not line.startswith(">"):

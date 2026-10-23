@@ -295,6 +295,10 @@ class BotCore:
     def __init__(self, settings: Settings):
         self.settings = settings
         settings.ensure_runtime_dirs()
+        # The page's switches are laid over .env (the page's last word wins).
+        from pipeline.switches import apply as apply_switches
+        for name, on in apply_switches(settings).items():
+            log.info("switch %s = %s (set on the page)", name, "on" if on else "off")
         self.ledger = SpendLedger(settings)
         self.tts = TTSEngine(settings, ledger=self.ledger)
         self.content = ContentManager(settings, ledger=self.ledger)
@@ -3024,6 +3028,54 @@ class BotCore:
             return Reply(f"❌ {e}")
         return Reply(f"🖼 {ws.ticker} {fmt}: your cover is the one the upload "
                      f"sends. The bot's is kept, and a re-render keeps yours.")
+
+    def set_switch(self, name: str, on: bool) -> Reply:
+        """One of the page's switches, now and after a restart."""
+        from pipeline.switches import SWITCHES, set_switch
+
+        try:
+            sw = set_switch(self.settings, name, on)
+        except KeyError:
+            names = ", ".join(SWITCHES)
+            return Reply(f"❌ no switch called {name!r}. The switches: {names}.")
+        return Reply(f"{'🟢' if on else '⚪'} {sw.title} ({sw.env}) is "
+                     f"{'on' if on else 'off'} from now. {sw.says}")
+
+    def save_writing(self, name: str, text: str) -> Reply:
+        """His edit of one writing file (story, AI phrases, style references,
+        pronunciations, the voice bible); the shipped default stays beside it."""
+        from pipeline import writing_files as wf
+
+        if name not in wf.WRITING_FILES:
+            return Reply(f"❌ no writing file called {name!r}")
+        if not text.strip():
+            return Reply("❌ that would empty the file — Reset puts the shipped "
+                         "one back instead.")
+        wf.write_file(self.settings, name, text.rstrip() + "\n")
+        return Reply(f"💾 {wf.TITLES.get(name, name)} saved. The next prompt "
+                     f"and check read it.")
+
+    def reset_writing(self, name: str) -> Reply:
+        from pipeline import writing_files as wf
+
+        if name not in wf.WRITING_FILES:
+            return Reply(f"❌ no writing file called {name!r}")
+        title = wf.TITLES.get(name, name)
+        if wf.reset(self.settings, name):
+            return Reply(f"↩ {title} is the shipped one again.")
+        return Reply(f"{title} was already the shipped one.")
+
+    def edit_memory(self, book: str, texts: list[str]) -> Reply:
+        """The page's edit of Dennis's remembered facts or the used jokes:
+        the list as he left it."""
+        from pipeline.channel_memory import FactBook, JokeBook
+
+        cls = {"facts": FactBook, "jokes": JokeBook}.get(book)
+        if cls is None:
+            return Reply(f"❌ no list called {book!r}")
+        n = cls(self.settings).replace_all([str(t) for t in texts])
+        what = "facts about Dennis" if book == "facts" else "used jokes"
+        return Reply(f"💾 {n} {what} kept.")
 
     @staticmethod
     def short_format_name(ws: Workspace) -> str:

@@ -2,7 +2,9 @@
 
 Three files steer what the writer is told and what the checks look for: the
 machine-phrasing list (S1), the style references the copy check reads (S2)
-and Dennis's story (S8). A fourth steers the voice: how a word is said (A5). Each ships as a default under `assets/writing/` and
+and Dennis's story (S8). A fourth steers the voice: how a word is said (A5),
+and the voice bible is the tone every writing prompt carries. Each ships as a
+default (under `assets/writing/`, the bible at `assets/voice_bible.md`) and
 is edited on the panel, and an edit is written to `state/writing/` rather
 than over the default. Two reasons, and they are the design:
 
@@ -32,7 +34,15 @@ WRITING_FILES: dict[str, str] = {
     "dennis_story": "dennis_story.md",
     # How a word is said to ElevenLabs (A5) — never what the captions show.
     "pronunciations": "pronunciations.txt",
+    # The tone anchor every writing prompt carries. "Change the voice" (18
+    # Oct) means this and the director's writing, not the ElevenLabs sound.
+    "voice_bible": "voice_bible.md",
 }
+# Defaults that ship somewhere other than `assets/writing/`.
+_DEFAULT_AT = {"voice_bible": "voice_bible.md"}
+TITLES = {"dennis_story": "Dennis's story", "voice_bible": "The voice bible",
+          "ai_phrases": "Machine phrasing", "style_references": "Style references",
+          "pronunciations": "Pronunciations"}
 
 _REGEX_PREFIX = "re:"
 
@@ -45,6 +55,8 @@ def _filename(name: str) -> str:
 
 
 def default_path(settings: Settings, name: str) -> Path:
+    if name in _DEFAULT_AT:
+        return settings.assets_dir / _DEFAULT_AT[name]
     return settings.assets_dir / "writing" / _filename(name)
 
 

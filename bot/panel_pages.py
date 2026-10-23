@@ -1,10 +1,13 @@
-"""The page's screens that are not one video: Ideas, Calendar, Stats.
+"""The page's screens that are not one video: Ideas, Calendar, Stats,
+Library and Settings.
 
 Like `bot/panel_views.py`, read-only. Each reads what the bot already keeps
 (the idea queue, the last screener run, the watch list and earnings dates,
 the upload log, the retention evidence) through the functions the commands
 print from, and the page acts through commands: `/ideas add`, `/new short`,
-`/publish TICKER@DATE short YYYY-MM-DD HH:MM`, and so on.
+`/publish TICKER@DATE short YYYY-MM-DD HH:MM`, and so on, or through the
+`BotCore` method a command would call (`set_switch`, `save_writing`,
+`edit_memory`) where no command fits a page edit.
 
 A section that cannot be read comes back as `{"error": …}` on its own.
 """
@@ -16,6 +19,7 @@ import json
 import logging
 from dataclasses import asdict
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -210,3 +214,244 @@ def stats_view(panel) -> dict:
             "runtime": _guard(_runtime, s), "chapters": _guard(_chapters, s),
             "experiments": _guard(_experiments, s),
             "scoreboard": _guard(_scoreboard, s)}
+
+
+# --------------------------------------------------------------------------
+# Library
+# --------------------------------------------------------------------------
+
+_IMAGES = (".png", ".jpg", ".jpeg", ".webp", ".gif")
+_VIDEOS = (".mp4", ".mov", ".mkv", ".webm")
+THUMB_DIR = "panel_thumbs"
+
+
+def _link(panel, path) -> str:
+    """A served file's link, without the key (the page adds it)."""
+    from urllib.parse import quote
+
+    return f"/api/file?path={quote(str(path))}" if panel.allowed(Path(path)) else ""
+
+
+def _thumb(panel, path, w: int = 360) -> str:
+    from urllib.parse import quote
+
+    return (f"/api/thumb?path={quote(str(path))}&w={w}"
+            if panel.allowed(Path(path)) else "")
+
+
+def thumbnail(panel, raw_path: str, width: int = 360) -> Path | None:
+    """A small JPEG of a served picture, drawn once per file version into the
+    cache, so a grid of 4K room renders loads as a few hundred kilobytes."""
+    import hashlib
+
+    path = Path(raw_path)
+    if not raw_path or not panel.allowed(path) or path.suffix.lower() not in _IMAGES:
+        return None
+    real = path.resolve()
+    st = real.stat()
+    width = max(80, min(int(width), 800))
+    key = hashlib.sha1(f"{real}|{st.st_mtime_ns}|{st.st_size}|{width}"
+                       .encode("utf-8")).hexdigest()[:24]
+    out = Path(panel.settings.cache_dir) / THUMB_DIR / f"{key}.jpg"
+    if out.is_file():
+        return out
+    from PIL import Image
+
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with Image.open(real) as im:
+        im = im.convert("RGBA")
+        ground = Image.new("RGBA", im.size, (255, 255, 255, 255))
+        ground.alpha_composite(im)
+        small = ground.convert("RGB")
+        small.thumbnail((width, width * 4))
+        tmp = out.with_suffix(".part.jpg")
+        small.save(tmp, "JPEG", quality=80)
+        tmp.replace(out)
+    return out
+
+
+def _writing(panel) -> list[dict]:
+    from pipeline import writing_files as wf
+
+    s = panel.settings
+    return [{"name": n, "title": wf.TITLES.get(n, n), "text": wf.read_file(s, n),
+             "edited": wf.is_edited(s, n)} for n in wf.WRITING_FILES]
+
+
+def _book(panel, which: str) -> list[dict]:
+    from pipeline.channel_memory import FactBook, JokeBook
+
+    book = (FactBook if which == "facts" else JokeBook)(panel.settings)
+    return [{"text": r.text, "ticker": r.ticker, "workdate": r.workdate}
+            for r in book.all()]
+
+
+def _bits(panel) -> dict:
+    from pipeline.recurring_bits import BITS, NAMES, BitLedger, due_bit
+
+    s = panel.settings
+    led = BitLedger(s)
+    return {"due": NAMES.get(due_bit(s), ""),
+            "bits": [{"bit": b, "name": NAMES.get(b, b), "since": led.since(b),
+                      "gap": led.gap_for(b), "overdue": led.overdue(b)} for b in BITS],
+            "recent": [{"ticker": r.get("ticker", ""), "workdate": r.get("workdate", ""),
+                        "bit": NAMES.get(r.get("bit") or "", "")}
+                       for r in led.rows()[-8:]][::-1]}
+
+
+def _memes(panel) -> dict:
+    from pipeline.memes import MemeLibrary, recent_memes
+
+    s = panel.settings
+    lib = MemeLibrary(s)
+    index = lib.index()
+    try:
+        recent = recent_memes(s)
+    except Exception:                                 # noqa: BLE001
+        recent = set()
+    rows, seen = [], set()
+    for stem in sorted(index):
+        f = lib._file_for(stem)
+        seen.add(f.name if f else "")
+        e = index[stem] or {}
+        rows.append({"stem": stem, "tags": list(e.get("tags") or []),
+                     "use_when": str(e.get("use_when") or ""),
+                     "file": _link(panel, f) if f else "",
+                     "thumb": _thumb(panel, f, 320) if f else "",
+                     "recent": stem in recent})
+    unlabelled = [p.name for p in sorted(lib.dir.glob("*"))
+                  if p.suffix.lower() in _IMAGES and p.name not in seen] \
+        if lib.dir.is_dir() else []
+    return {"rows": rows, "unlabelled": unlabelled}
+
+
+def _broll(panel) -> dict:
+    from pipeline.broll import PALETTE
+
+    lib = Path(panel.settings.assets_dir) / "broll_library"
+    clips = [{"name": p.name, "key": p.stem.split("__")[0], "file": _link(panel, p)}
+             for p in sorted(lib.glob("*")) if p.suffix.lower() in _VIDEOS] \
+        if lib.is_dir() else []
+    owned = {c["key"] for c in clips}
+    return {"clips": clips, "keys": len(PALETTE),
+            "without": sorted(k for k in PALETTE if k not in owned)}
+
+
+def _sounds(panel) -> list[dict]:
+    from pipeline.audio_assets import AUDIO_DIRS, AUDIO_SUFFIXES, load_sources
+
+    out = []
+    for sub in AUDIO_DIRS:
+        d = Path(panel.settings.assets_dir) / sub
+        if not d.is_dir():
+            continue
+        known = load_sources(d)
+        for p in sorted(d.iterdir()):
+            if p.suffix.lower() not in AUDIO_SUFFIXES:
+                continue
+            e = known.get(p.name)
+            out.append({"dir": sub, "name": p.name, "file": _link(panel, p),
+                        "source": e.source if e else "", "licence": e.licence if e else "",
+                        "author": e.author if e else "",
+                        "placeholder": e is None or e.generated})
+    return out
+
+
+def _rooms(panel) -> list[dict]:
+    from pipeline.plates import load_plates
+
+    reg = load_plates(panel.settings.assets_dir)
+    out = []
+    for key, p in sorted(reg.assets.items()):
+        if p.family != "room" or not p.files_png:
+            continue
+        f = Path(p.root) / "room" / p.files_png
+        out.append({"key": key.split("/", 1)[-1], "aspect": p.aspect,
+                    "hour": p.hour or "", "season": p.season or "",
+                    "purpose": p.purpose or "", "file": _link(panel, f),
+                    "thumb": _thumb(panel, f, 360)})
+    return out
+
+
+def library_view(panel) -> dict:
+    return {"writing": _guard(_writing, panel),
+            "facts": _guard(_book, panel, "facts"),
+            "jokes": _guard(_book, panel, "jokes"),
+            "bits": _guard(_bits, panel), "memes": _guard(_memes, panel),
+            "broll": _guard(_broll, panel), "sounds": _guard(_sounds, panel),
+            "rooms": _guard(_rooms, panel)}
+
+
+# --------------------------------------------------------------------------
+# Settings and health
+# --------------------------------------------------------------------------
+
+def _preflight(panel) -> list[dict]:
+    """The machine-checkable half of `scripts/check_preflight.py`, row by
+    row; the test suite row is left out (it is a 25-minute run)."""
+    import importlib.util
+
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "_preflight_for_panel", root / "scripts" / "check_preflight.py")
+    pre = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pre)
+    s = panel.settings
+    live = not s.mock_mode
+    report = pre.Report()
+    checks = [(pre._kit, ()), (pre._sfx, ()), (pre._sec_agent, (live,)),
+              (pre._voice, (live,)), (pre._dennis_3d, (live,)), (pre._broll, ()),
+              (pre._delivery, (live,)), (pre._publish_window, ()),
+              (pre._state_backup, ())]
+    for fn, extra in checks:
+        try:
+            fn(s, report, *extra)
+        except Exception as e:                        # noqa: BLE001
+            report.add(pre.FAIL, fn.__name__.strip("_").replace("_", " "),
+                       f"the check itself failed: {type(e).__name__}: {e}")
+    state = {pre.PASS: "ok", pre.FAIL: "bad", pre.SKIP: "skip"}
+    return [{"state": state.get(st, st), "name": n, "detail": d}
+            for st, n, d in report.rows]
+
+
+def _disk(panel) -> list[dict]:
+    import shutil
+
+    s = panel.settings
+    out = []
+    for label, path in (("workspace", s.workspace_dir), ("cache", s.cache_dir)):
+        try:
+            u = shutil.disk_usage(path)
+        except OSError:
+            continue
+        out.append({"name": label, "path": str(path), "free_gb": round(u.free / 1e9, 1),
+                    "total_gb": round(u.total / 1e9, 1)})
+    return out
+
+
+def _failures(panel) -> list[dict]:
+    from pipeline.jobs import JobStore
+
+    store = panel.core.queue.store if getattr(panel.core, "queue", None) else JobStore(panel.settings)
+    failed = [j for j in store.all() if str(getattr(j.status, "value", j.status)) == "failed"]
+    failed.sort(key=lambda j: j.updated_at, reverse=True)
+    return [{"id": j.id, "kind": str(getattr(j.kind, "value", j.kind)), "ticker": j.ticker,
+             "workdate": j.workdate, "at": j.updated_at, "error": j.error[:400]}
+            for j in failed[:8]]
+
+
+def settings_view(panel) -> dict:
+    from bot.commands import NotifyPrefs
+    from pipeline.switches import rows
+
+    s = panel.settings
+    mode = (s.dennis_3d or "off").strip().lower()
+    return {"switches": _guard(rows, s),
+            "quiet": _guard(lambda: NotifyPrefs(s).level() == "quiet"),
+            "dennis_3d": mode,
+            "dennis_3d_warning": "" if mode == "on" else (
+                f"DENNIS_3D is {mode}: renders draw the old 2D Dennis. Set "
+                f"DENNIS_3D=on in .env once `room3d/perform.py --bench` runs."),
+            "mock": s.mock_banner(),
+            "health": _guard(_preflight, panel), "disk": _guard(_disk, panel),
+            "failures": _guard(_failures, panel)}
