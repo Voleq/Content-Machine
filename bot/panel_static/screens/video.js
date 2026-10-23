@@ -445,6 +445,10 @@ STEPS_UI.proof = (d) => {
   } else {
     body.push(el("p", { class: "meta", text: "Drawing a strip of frames across the proof…" }));
   }
+  if ((d.checks || []).length) {
+    body.push(el("h4", { text: "What the render found" }),
+      el("div", { class: "checks" }, d.checks.map((c) => el("p", { class: "banner warn pre", text: c }))));
+  }
   body.push(el("h4", { text: `Your notes (${(d.notes || []).length})` }));
   if ((d.notes || []).length) {
     body.push(el("ol", { class: "notes" }, d.notes.map((n, i) => el("li", {},

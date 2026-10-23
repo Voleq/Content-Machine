@@ -103,6 +103,25 @@ def test_the_last_twenty_seconds_hold_him_for_the_end_screen(rendered):
     assert len(end["rect"]) == 4
 
 
+def test_the_manifest_records_its_look_and_its_small_type(rendered):
+    """V5 and V7: the plates and rooms in order, the type too small for a
+    phone, and the recent longs it looks like (none: it is the only one).
+
+    The kit sets every full-frame line at a size a phone reads, so the only
+    plate that may be named is the fixture's one two-shot (`with=dennis`),
+    drawn about a third of the frame wide beside him, and only once."""
+    settings, script, tts, out, manifest = rendered
+    plates = [s["value"] for s in manifest["segments"] if s["kind"] == "plate"]
+    assert len(manifest["look"]["plates"]) == len(plates)
+    hosts = [s for s in manifest["segments"] if s["kind"] == "host"]
+    assert len(manifest["look"]["rooms"]) == len(hosts)
+    assert all(r.startswith("room/") for r in manifest["look"]["rooms"])
+    small = manifest["phone_type"]
+    assert all(f["beside"] for f in small)
+    assert len({f["t"] for f in small}) == len(small)
+    assert manifest["look_alike"] == []
+
+
 def test_host_anchored_structure_with_all_kinds(rendered):
     settings, script, tts, out, manifest = rendered
     segs = manifest["segments"]

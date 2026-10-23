@@ -282,6 +282,7 @@ h2 .badge { margin-left: 8px; vertical-align: 1px; }
 .banner { border-radius: var(--r); padding: 10px 12px; margin-bottom: 16px; font-size: 14px; }
 .banner:not(.warn):not(.bad) { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
 .banner.warn { background: var(--warn-tint); color: var(--warn); border: 1px solid var(--warn); }
+.banner.pre { white-space: pre-wrap; }
 
 .list > * + * { border-top: 1px solid var(--line); }
 .list > .section-title, .list > .section-title + * { border-top: none; }

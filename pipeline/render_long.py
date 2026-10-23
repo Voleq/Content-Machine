@@ -69,6 +69,7 @@ from typing import Callable
 from PIL import Image
 
 from config import Settings
+from pipeline import look_alike, phone_type
 from pipeline.audio_assets import audio_banner
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
@@ -2063,6 +2064,10 @@ def _render_long(
     # the frame's. Recorded rather than recomputed, because the rect depends
     # on which room angle and which host shot the beat was given.
     panel_rects: dict[int, tuple[int, int, int, int]] = {}
+    # The size every plate line was set at, per beat (V5).
+    type_rows: list[dict] = []
+    # The plates drawn and the rooms he was in, in order (V7).
+    look: dict[str, list[str]] = {"plates": [], "rooms": []}
 
     # Which pose stood in each two-shot. Recorded because a panel role that
     # only ever reaches one of its poses is a failure the suite cannot see:
@@ -2520,6 +2525,7 @@ def _render_long(
             visual = None
             variant = seg.payload.get("variant", 0)
             room, scene, wide = _beat_room(i)
+            look["rooms"].append(reg.base_key(room.key))
             pose, alone = _scene_pose(scene, room, i)
             stance3d, close3d = None, False
             if performer is not None and not alone and dennis3d.angle_of(room):
@@ -2616,7 +2622,11 @@ def _render_long(
         elif seg.kind in ("plate", "chapter"):
             # The plate the DIRECTOR named, with the text they wrote in it.
             visual = None
-            art, is_video, size, plan, key = _plate_art(seg, i, value)
+            # Every line the beat sets, for the phone check (V5).
+            with phone_type.at_beat(type_rows, i, seg.start):
+                art, is_video, size, plan, key = _plate_art(seg, i, value)
+            if seg.kind == "plate":
+                look["plates"].append(reg.base_key(key) if key else value)
             # AN ANNOTATED BEAT TAKES THE FRAME.
             #
             # A mark is solved onto the type it names, so how big it lands is
@@ -2632,7 +2642,9 @@ def _render_long(
             # composition gives way, not the ink.
             two_shot = (seg.payload.get("layout") == "two-shot"
                         and not _annotated(seg))
-            moving = _plate_moves(seg, i, key, seg_len) if size is not None else None
+            with phone_type.at_beat(type_rows, i, seg.start):
+                moving = (_plate_moves(seg, i, key, seg_len)
+                          if size is not None else None)
             chain = None
             if two_shot and size is not None:
                 # Dennis beside it, talking, in the room (`with=`): the moves
@@ -3630,6 +3642,18 @@ def _render_long(
         # last word.
         "end_screen": end_meta,
         "voice_end": round(voice_end, 3),
+        # TYPE TOO SMALL FOR A PHONE (V5): per beat, a line set under 7 px
+        # on a phone held sideways, at the width its plate was drawn on
+        # screen; a two-shot only when not even its biggest line reads.
+        "phone_type": phone_type.findings(
+            type_rows, shown={i: min(r[2] / W, 1.0)
+                              for i, r in panel_rects.items()},
+            beside=set(panel_hosts)),
+        # A VIDEO THAT LOOKS LIKE THE LAST FEW (V7): this one's plates and
+        # rooms in order, and the recent longs it is close to.
+        "look": look,
+        "look_alike": look_alike.findings(settings, "long", look,
+                                          exclude=workspace),
         # THE WRITER'S SCENES as they were shot: per directed beat of him,
         # the room, the pose the script asked for and what was drawn — the pose, the
         # room alone, or the bot's pick and why.

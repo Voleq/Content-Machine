@@ -250,9 +250,19 @@ def _frame_holds(manifest_path) -> str:
     return frame_holds_report(data) if isinstance(data, dict) else ""
 
 
+def _short_notes(manifest_path) -> str:
+    """What the SHORT's render found worth his eye, as operator text, or "":
+    its over-ceiling holds and the recent shorts it looks like (V7)."""
+    from pipeline.render_notes import notes_at
+
+    held = _frame_holds(manifest_path)
+    return "\n\n".join([x for x in (held,) if x] + notes_at(manifest_path, "short"))
+
+
 def _long_notes(manifest_path, *, final: bool) -> str:
     """What the LONG's render found worth his eye, as operator text, or "":
-    on a final, where the end screen goes (V3).
+    on a final, where the end screen goes (V3); on both, type too small for
+    a phone (V5) and the recent longs it looks like (V7).
 
     Best-effort, as `_frame_holds`."""
     import json as _json
@@ -265,11 +275,14 @@ def _long_notes(manifest_path, *, final: bool) -> str:
         return ""
     if not isinstance(data, dict):
         return ""
+    from pipeline.render_notes import render_notes
+
     lines = []
     end = checklist_line(data.get("end_screen") or {}) if final else ""
     if end:
         lines.append("🔚 " + end)
-    return "\n".join(lines)
+    lines += render_notes(data, "long")
+    return "\n\n".join(lines)
 
 
 def _what_it_said(script, fmt: str) -> dict:
@@ -1841,7 +1854,7 @@ class BotCore:
             result = deliver(out, job.ticker, job.workdate, self.settings,
                              attributions=self._attributions(manifest),
                              extra_files=extra)
-            held = _frame_holds(manifest)
+            held = _short_notes(manifest)
             if held:
                 result.note = "\n\n".join(
                     x for x in (result.note, held) if x)
@@ -2097,7 +2110,7 @@ class BotCore:
                 script, tts, ws.path, self.settings, content=self.content,
                 proof=True, format_name=self.short_format_name(ws),
                 company_data=self._company_data(ws))
-            held = _frame_holds(manifest)
+            held = _short_notes(manifest)
         else:
             data = self._company_data(ws)
             as_of = str(data.get("as_of_date") or "") if data is not None else ""

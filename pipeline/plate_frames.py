@@ -60,6 +60,7 @@ import logging
 
 from config import Settings
 from pipeline.plates import Plate, Registry, Slot
+from pipeline import phone_type
 
 log = logging.getLogger(__name__)
 
@@ -506,6 +507,8 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
         size = nxt
 
     font = _load(settings, family, weight, size)
+    # The size it was set at, for the phone check (V5) when a beat is open.
+    phone_type.note(plate, slot, text, size / scale)
     tracking_px = _em(tr.get("tracking"), size)
     ascent, descent = font.getmetrics()
     line_h = int((ascent + descent) * 1.06)

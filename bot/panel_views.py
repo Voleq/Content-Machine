@@ -351,7 +351,7 @@ def _step_proof(v: _Video) -> dict:
            "chapters": _chapters(v, "proof") if proof else [],
            "render": [{"text": "Render the free proof",
                        "data": f"q|p|{v.ws.ticker}|{v.ws.workdate}|{code}"}],
-           "strip": [], "notes": [], "faults": ""}
+           "strip": [], "notes": [], "faults": "", "checks": []}
     from pipeline import proof_review
 
     if proof:
@@ -359,7 +359,19 @@ def _step_proof(v: _Video) -> dict:
                         for t, p in proof_review.cached_strip(Path(proof))]
     out["notes"] = proof_review.load_notes(v.ws.path, v.fmt)
     out["faults"] = proof_review.fault_list(out["notes"])
+    out["checks"] = _proof_checks(v, proof)
     return out
+
+
+def _proof_checks(v: _Video, proof) -> list[str]:
+    """What the proof's render found worth his eye (V5, V7), off its manifest."""
+    if not proof:
+        return []
+    from pipeline.render_notes import notes_at
+
+    if v.fmt == "long":
+        return notes_at(v.ws.path / "render_long_proof_manifest.json", "long")
+    return notes_at(Path(proof).with_suffix(".manifest.json"), "short")
 
 
 def _step_approve(v: _Video) -> dict:

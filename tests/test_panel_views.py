@@ -291,3 +291,26 @@ def test_the_upload_step_says_where_the_end_screen_goes(tmp_path):
     assert _end_screen_line(SimpleNamespace(fmt="short", ws=v.ws)) == ""
     (tmp_path / "render_long_manifest.json").write_text("{}", encoding="utf-8")
     assert _end_screen_line(v) == ""
+
+
+def test_the_proof_step_says_what_the_render_found(tmp_path):
+    """V5 and V7 on the page: the proof's manifest names small type and a
+    recent video it looks like; an old manifest says nothing."""
+    from types import SimpleNamespace
+
+    from bot.panel_views import _proof_checks
+
+    (tmp_path / "render_long_proof_manifest.json").write_text(json.dumps({
+        "phone_type": [{"t": 134.0, "plate": "charts/bars-6y", "slot": "axis-1",
+                        "text": "Revenue, FY21 to LTM", "phone_px": 5.3}],
+        "look_alike": [{"video": "AAA 2026-10-20", "what": "plates", "ratio": 0.82}],
+    }), encoding="utf-8")
+    v = SimpleNamespace(fmt="long", ws=SimpleNamespace(path=tmp_path))
+    got = _proof_checks(v, tmp_path / "render_long_proof.mp4")
+    assert len(got) == 2
+    assert got[0].startswith("📱") and "2:14" in got[0]
+    assert got[1].startswith("🔁") and "AAA 2026-10-20" in got[1]
+    assert _proof_checks(v, None) == []
+    (tmp_path / "short_proof.manifest.json").write_text("{}", encoding="utf-8")
+    short = SimpleNamespace(fmt="short", ws=v.ws)
+    assert _proof_checks(short, tmp_path / "short_proof.mp4") == []
