@@ -1526,7 +1526,9 @@ def _bound_values(shot: Shot, plate: Plate, resolver: Resolver,
 
     unfilled: list[str] = []
     skipped: list[str] = []
-    parts: list[str] = [plate.key]
+    # By the drawing's key, not the hour's: a registry viewed at dusk finds
+    # the dusk art from the base key, and has no entry under the dusk one.
+    parts: list[str] = [plate.base_key]
     for slot_name, raw in shot.bind.items():
         optional = raw.startswith("?")
         src = raw.lstrip("?")

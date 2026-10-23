@@ -514,7 +514,10 @@ class MockImageClient:
             t = y / H
             d.line([(0, y), (W, y)],
                    fill=tuple(int(top[i] + (bot[i] - top[i]) * t) for i in range(3)))
-        ink, ground = role(self.settings, "structure"), role(self.settings, "ground")
+        # The picture is a deep tone at every hour, so its words take the
+        # lighter of the hour's two inks: at dusk `structure` is the dark one.
+        ink, ground = sorted((role(self.settings, "structure"),
+                              role(self.settings, "ground")), key=sum, reverse=True)
         d.rectangle([28, 28, W - 29, H - 29], outline=ink, width=2)
         kick = load_font(self.settings, COURIER_BOLD, 34)
         size = 72

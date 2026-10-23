@@ -721,3 +721,21 @@ def test_a_query_the_model_never_answered_is_asked_again(settings, tmp_path, mon
     assert m._stock_query("a plateau in a costume") == "flat desert mesa landscape wide"
     monkeypatch.setattr(llm, "chat", lambda *a, **k: pytest.fail("asked twice"))
     assert m._stock_query("a plateau in a costume") == "flat desert mesa landscape wide"
+
+
+@pytest.mark.parametrize("hour", ["night", "dusk"])
+def test_the_imagery_stand_in_reads_at_every_hour(settings, tmp_path, hour):
+    """The stand-in picture is a deep tone at every hour, so its words are set
+    in the hour's lighter ink: at dusk that is the ground, not `structure`."""
+    from pipeline.plates import episode_hour
+    from pipeline.rasters import luminance
+
+    with episode_hour(hour):
+        out = MockImageClient(settings).download("mock://img/factory floor",
+                                                 tmp_path / "card.png")
+    img = Image.open(out).convert("RGB")
+    behind = luminance(img.getpixel((40, 140)))
+    kicker = img.crop((72, 72, 260, 110))
+    lit = [1 for x in range(kicker.width) for y in range(kicker.height)
+           if luminance(kicker.getpixel((x, y))) > behind + 0.3]
+    assert len(lit) > 150, f"the IMAGERY kicker is lost on the picture at {hour}"

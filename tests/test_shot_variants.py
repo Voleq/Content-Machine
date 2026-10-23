@@ -1085,3 +1085,16 @@ def test_the_print_is_labelled_only_by_the_row_it_came_from(tmp_path):
         .text_for("compare.print_label") is None
     assert _compare_resolver(tmp_path, rows) \
         .text_for("compare.reported") == "$9.8B"
+
+
+def test_a_short_composes_at_dusk(reg):
+    """A short at dusk stopped on its first shot: the opener bound its room
+    by the dusk key, and a registry viewed at dusk finds the dusk art from
+    the base key only. Every room and plate in the cut is the dusk drawing."""
+    from pipeline.shots import load_format
+
+    dusk = reg.at("dusk")
+    fmt, result, plates = _cut(load_format("short"), dusk, "seed-dusk")
+    assert plates[fmt.opener.id].endswith("-dusk-9x16")
+    assert not check_invariants(
+        fmt, result, host_shots=[sh.id for sh in fmt.cut_shots if sh.host])
