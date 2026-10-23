@@ -185,6 +185,9 @@ class Layer:
     # blown up to the box and softened: what is behind the 3D Dennis when the
     # camera's lens is longer (`pipeline.dennis3d`). None is the whole plate.
     window: tuple[float, float, float, float] | None = None
+    # Ground: the paper of a card grown off the frame's edges (`fill_safe`),
+    # laid under it. None is the hour's ground.
+    paper: tuple[int, int, int] | None = None
 
     @property
     def dur(self) -> float:
@@ -813,6 +816,146 @@ def _move_in(plate: Plate, name: str, values: dict, reg: Registry,
     return None
 
 
+# FILL THE PHONE (V8). The 9:16 cards keep the kit's margins, drawn for a
+# page: NET INCOME's two figures sat in the top third of the phone over a bare
+# half of paper. A card shot with nothing else on it (no host, no move in, not
+# a room) is grown about its ink until the ink fills the clear area above the
+# caption and the source tag, and centred there. At most `FILL_MAX`, past
+# which the kit's stroke goes soft; under `FILL_MIN` it is the same picture,
+# so it stays as drawn. A card whose ink already runs edge to edge cannot grow
+# and does not.
+FILL_MAX = 1.5
+FILL_MIN = 1.08
+
+
+def fill_safe(ink: tuple[int, int, int, int], placed: tuple[int, int, int, int],
+              frame: tuple[int, int], band: tuple[int, int], *,
+              edge: float = PUNCH_EDGE) -> tuple[int, int, int, int] | None:
+    """`placed` grown so its ink box (frame pixels, x y w h) fills `band`.
+
+    Centred in the band and between the frame's sides less `edge`, as far as
+    the band's height, the width between the margins and `FILL_MAX` allow.
+    None when that is under `FILL_MIN`.
+    """
+    fw, _fh = frame
+    ix, iy, iw, ih = ink
+    px, py, pw, ph = placed
+    k = min((band[1] - band[0]) / max(ih, 1), fw * (1 - 2 * edge) / max(iw, 1),
+            FILL_MAX)
+    if k < FILL_MIN:
+        return None
+    x0 = (fw - iw * k) / 2
+    y0 = band[0] + (band[1] - band[0] - ih * k) / 2
+    return (int(round(x0 - (ix - px) * k)), int(round(y0 - (iy - py) * k)),
+            int(round(pw * k)), int(round(ph * k)))
+
+
+_ART_INK: dict[str, tuple[tuple[int, int, int, int] | None,
+                          tuple[int, int, int] | None]] = {}
+
+
+def _art_ink(plate: Plate, reg: Registry):
+    """(box, ground): where the plate's own drawing is, in canvas units, and
+    the colour of the paper it is drawn on (None on a transparent plate).
+
+    Off its last frame, so what draws on is drawn. Measured, not declared:
+    the kit's slots say where words may go, the pixels where anything is."""
+    if plate.key not in _ART_INK:
+        import numpy as np
+
+        from pipeline.plate_frames import render_frame
+
+        box = ground = None
+        try:
+            img = render_frame(plate, len(plate.frames) - 1, None, _settings(), reg)
+            arr = np.asarray(img.convert("RGBA")).astype(np.int16)
+            if arr[..., 3].min() < 255:
+                mask = arr[..., 3] > 24
+            else:
+                ground = tuple(int(v) for v in arr[0, 0, :3])
+                mask = np.abs(arr[..., :3] - arr[0, 0, :3]).max(axis=2) > 24
+            rows, cols = np.flatnonzero(mask.any(axis=1)), np.flatnonzero(mask.any(axis=0))
+            if rows.size:
+                k = img.width / max(plate.canvas[0], 1)
+                x0, y0 = int(cols[0] / k), int(rows[0] / k)
+                box = (x0, y0, max(int(cols[-1] / k) + 1 - x0, 1),
+                       max(int(rows[-1] / k) + 1 - y0, 1))
+        except Exception:                                    # noqa: BLE001
+            log.debug("fill: no art ink for %s", plate.key, exc_info=True)
+        _ART_INK[plate.key] = (box, ground)
+    return _ART_INK[plate.key]
+
+
+def plate_ink(reg: Registry, plate: Plate, values: dict,
+              regions: Collection[str] = ()) -> tuple[int, int, int, int] | None:
+    """Everything `plate` draws filled with `values`, in canvas units: its
+    art, the words as set (`_on_the_ink`), its data, and the `regions` a
+    picture goes into. A lit row's band is left out: it runs edge to edge."""
+    art, _ground = _art_ink(plate, reg)
+    boxes = [art] if art else []
+    inked = _on_the_ink(plate, values, reg)
+    for name, value in values.items():
+        slot = inked.slot(name)
+        if (slot is not None and slot.is_text and not slot.is_band
+                and not slot.region and not slot.control and str(value or "").strip()):
+            boxes.append((slot.x, slot.y, slot.w, slot.h))
+    for name in regions:
+        slot = plate.slot(name)
+        if slot is not None:
+            boxes.append((slot.x, slot.y, slot.w, slot.h))
+    data = _data_ink(reg, plate, values)
+    if data:
+        boxes.append(data)
+    if not boxes:
+        return None
+    x0 = min(b[0] for b in boxes)
+    y0 = min(b[1] for b in boxes)
+    return (x0, y0, max(b[0] + b[2] for b in boxes) - x0,
+            max(b[1] + b[3] for b in boxes) - y0)
+
+
+def _fill_phone(plate: Plate, shot: Shot, values: dict, reg: Registry,
+                placed: tuple[int, int, int, int], frame: tuple[int, int],
+                safe: tuple[int, int], aspect: str = "",
+                ) -> tuple[tuple[int, int, int, int], tuple[int, int, int] | None] | None:
+    """(placed, paper) for a card grown into the phone (`fill_safe`), or None.
+
+    The band is the format's clear area less a caption's row at its foot and
+    above where the source tag rests on this plate, so neither lands on the
+    grown card. The words keep inside the clear area by their slots too, the
+    way the manifest's `safe_area` measures them. `paper` is the plate's own,
+    for the frame under it where it no longer reaches an edge."""
+    from pipeline.rasters import caption_box_height
+
+    _fw, fh = frame
+    regions = [n for n, src in shot.bind.items()
+               if src.lstrip("?").startswith(("plate.", MEDIA_PREFIX))]
+    ink = plate_ink(reg, plate, values, regions)
+    if ink is None:
+        return None
+    x, y, w, h = _canvas_in_frame(plate, ink, placed)
+    rows = _text_rows(plate, values, [n for n in values if str(values[n]).strip()],
+                      placed)
+    if rows is not None:
+        y, foot = min(y, rows[0]), max(y + h, rows[1])
+        h = foot - y
+    clear = int(fh * CAPTION_CLEARANCE_FH)
+    bottom = safe[1] - caption_box_height(int(fh * CAPTION_TYPE_FH)) - 2 * clear
+    if plate.slot("source") is None:
+        from pipeline.moves import tag_clear, tag_rect
+
+        key = reg.aspect_key("overlays/source-tag", aspect or "9x16")
+        tag = reg.get(key) if key else None
+        if tag is not None and tag_clear(plate):
+            bottom = min(bottom, tag_rect(tag, plate, frame, reg)[1] - clear)
+    if bottom - safe[0] < h:
+        return None
+    grown = fill_safe((x, y, w, h), placed, frame, (safe[0], bottom))
+    if grown is None:
+        return None
+    return grown, _art_ink(plate, reg)[1]
+
+
 # A punch-in smaller than this barely changes the picture, so the beat would
 # still read as one held composition — the thing the split exists to end.
 PUNCH_MIN_SCALE = 1.1
@@ -1017,9 +1160,10 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
 
         # -- the ground. Every frame has paper under it; plates are
         #    transparent PNGs and would composite onto nothing otherwise.
-        layers.append(Layer(name=f"{shot.id}:ground", kind="ground",
-                            shot_id=shot.id, t_start=t0, t_end=t1,
-                            w=fw, h=fh, z=0))
+        ground = Layer(name=f"{shot.id}:ground", kind="ground",
+                       shot_id=shot.id, t_start=t0, t_end=t1,
+                       w=fw, h=fh, z=0)
+        layers.append(ground)
 
         plate: Plate | None = None
         placed: tuple[int, int, int, int] | None = None
@@ -1147,6 +1291,17 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                         values.pop(name, None)
                         skipped.append(f"{shot.id}.{name} <- outside the "
                                        f"clear area")
+
+            # FILL THE PHONE (V8): a card on its own grows into the clear
+            # area. Not under a move in, which frames its own picture, nor
+            # either half of a split beat, whose second half must be closer.
+            if (safe and fh > fw and plate.family != "room" and not shot.host
+                    and not host_column and not shot.focus and not shot.part):
+                got = _fill_phone(plate, shot, values, reg, placed, frame, safe,
+                                  aspect)
+                if got is not None:
+                    placed, ground.paper = got
+                    w, h = placed[2], placed[3]
 
             # MOVING IN ON A SLOT. Without this a walk down a list is one wide
             # shot with a rectangle migrating down it, which a viewer reads as

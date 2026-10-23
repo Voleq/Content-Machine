@@ -1172,7 +1172,11 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
     it.
     """
     if layer.kind == "ground":
-        return                                    # the canvas IS the ground
+        # The canvas IS the ground, unless a card grown off its edges
+        # (`compose.fill_safe`) brings its own paper.
+        if layer.paper is not None:
+            canvas.paste((*layer.paper, 255), (0, 0, canvas.width, canvas.height))
+        return
 
     if layer.kind in ("plate", "fill"):
         if layer.window is not None:

@@ -20,7 +20,9 @@ from pathlib import Path
 
 import pytest
 
-from pipeline.compose import build_layers, check_budgets, check_invariants
+from pipeline import compose
+from pipeline.compose import (FILL_MAX, FILL_MIN, PUNCH_EDGE, build_layers,
+                              check_budgets, check_invariants, fill_safe)
 from pipeline.shots import (AS_AUTHORED, AS_MARKED, apply_order,
                             choose_order, expand_sequences, load_format,
                             order_by_marks, order_names, voice_keys,
@@ -1096,5 +1098,96 @@ def test_a_short_composes_at_dusk(reg):
     dusk = reg.at("dusk")
     fmt, result, plates = _cut(load_format("short"), dusk, "seed-dusk")
     assert plates[fmt.opener.id].endswith("-dusk-9x16")
+    assert not check_invariants(
+        fmt, result, host_shots=[sh.id for sh in fmt.cut_shots if sh.host])
+
+
+# ---------------------------------------------------------------------------
+# A card on a phone fills the part of it a viewer can see (V8, sparse cards)
+# ---------------------------------------------------------------------------
+#
+# The 9:16 cards keep the kit's margins, drawn for a page: NET INCOME's two
+# figures sat in the top third of the phone over a bare half of paper. A card
+# shot with nothing else on it is grown about its ink into the clear area,
+# and centred there; nothing else on a short moves.
+
+FRAME = (1080, 1920)
+FULL = (0, 0, 1080, 1920)
+
+
+def _ink_after(ink, placed, got):
+    """The ink box (x, y, w, h) where `got` puts it, `placed` having had it at `ink`."""
+    k = got[2] / placed[2]
+    return (got[0] + (ink[0] - placed[0]) * k, got[1] + (ink[1] - placed[1]) * k,
+            ink[2] * k, ink[3] * k)
+
+
+def test_a_sparse_card_grows_into_the_band_and_is_centred_there():
+    ink = (56, 172, 846, 742)               # NET INCOME on the sample short
+    band = (170, 1314)
+    got = fill_safe(ink, FULL, FRAME, band)
+    assert got is not None
+    k = got[2] / FULL[2]
+    assert k == pytest.approx((1080 * (1 - 2 * PUNCH_EDGE)) / 846, abs=0.01)
+    x, y, w, h = _ink_after(ink, FULL, got)
+    assert x >= 1080 * PUNCH_EDGE - 1 and x + w <= 1080 * (1 - PUNCH_EDGE) + 1
+    assert y >= band[0] - 1 and y + h <= band[1] + 1
+    assert abs((y + h / 2) - sum(band) / 2) <= 2
+    assert abs((x + w / 2) - 540) <= 2
+
+
+def test_a_small_card_grows_no_further_than_fill_max():
+    ink = (490, 800, 100, 100)
+    got = fill_safe(ink, FULL, FRAME, (170, 1314))
+    assert got[2] / FULL[2] == pytest.approx(FILL_MAX, abs=0.01)
+
+
+def test_a_card_that_already_fills_the_phone_is_left_as_drawn():
+    # A band drawn edge to edge, or a card already within FILL_MIN of the band.
+    assert fill_safe((0, 400, 1080, 744), FULL, FRAME, (170, 1314)) is None
+    near = int(1144 / (FILL_MIN - 0.01))
+    assert fill_safe((100, 170, 600, near), FULL, FRAME, (170, 1314)) is None
+
+
+def _fill_build(fmt, reg, seed):
+    fmt = expand_sequences(fmt, lambda _s: ["m1", "m2", "m3"])
+    spans = resolve_spans(fmt, _words(), 70.0, {})
+    return fmt, build_layers(fmt, spans, StubResolver(), reg,
+                             aspect=fmt.aspect, seed=seed)
+
+
+@pytest.mark.parametrize("seed", ["seed-0", "seed-3", "seed-7"])
+def test_on_a_short_the_cards_fill_and_nothing_else_moves(reg, seed, monkeypatch):
+    fmt, result = _fill_build(load_format("short"), reg, seed)
+    monkeypatch.setattr(compose, "FILL_MAX", 1.0)
+    _fmt, before = _fill_build(load_format("short"), reg, seed)
+    shots = {sh.id: sh for sh in fmt.cut_shots}
+    top, bottom = fmt.safe
+    edge = FRAME[0] * PUNCH_EDGE
+
+    grown = 0
+    then = {l.name: l for l in before.layers}
+    for l in result.of_kind("plate"):
+        sh = shots.get(l.shot_id)
+        plate = reg.get(l.entry_key)
+        was = then[l.name]
+        if sh is None or plate is None or f"{l.shot_id}:plate:" not in l.name:
+            continue
+        if plate.family == "room" or sh.host or sh.focus or sh.part:
+            assert (l.x, l.y, l.w, l.h) == (was.x, was.y, was.w, was.h), (
+                f"{l.name} moved, and only a card on its own may")
+            continue
+        if l.w == was.w:
+            continue
+        grown += 1
+        ink = compose.plate_ink(reg, plate, l.values)
+        x, y, w, h = compose._canvas_in_frame(plate, ink, (l.x, l.y, l.w, l.h))
+        assert x >= edge - 2 and x + w <= FRAME[0] - edge + 2, l.name
+        assert y >= top - 2 and y + h <= bottom + 2, l.name
+        ground = next(g for g in result.layers
+                      if g.kind == "ground" and g.shot_id == l.shot_id)
+        assert ground.paper is not None, (
+            f"{l.name} grew off the frame's edge with no paper under it")
+    assert grown, "no card on the short grew into the phone"
     assert not check_invariants(
         fmt, result, host_shots=[sh.id for sh in fmt.cut_shots if sh.host])
