@@ -22,6 +22,7 @@ from pathlib import Path
 import bmesh
 import bpy
 from mathutils import Matrix, Vector
+from mathutils.bvhtree import BVHTree
 
 # His palette, from design's drawing of him.
 SKIN = "#E2A97C"
@@ -34,6 +35,12 @@ HAIR = "#6A4630"
 FRAMES = "#171B23"
 EYES = "#141820"
 MOUTH = "#1A0B0C"     # design's black bar: it must read on the brown beard across the room
+SHIRT = "#C9D5E4"     # the pale blue oxford under the sweater: its collar shows at his neck
+INK = "#0B0E16"       # the room's ink (build.INK): his folds are drawn in it
+# The knit's ribs at his neck and cuffs: a rib every this many metres round
+# the part, the furrow between two this much darker.
+RIB_PITCH = 0.0045
+RIB_SHADE = 0.22
 
 MOUTHS = ("mouthClosed", "mouthMid", "mouthWide", "mouthO", "mouthEE", "mouthFV")
 # How far the dropped corner of his mouth sits below the other, metres.
@@ -426,6 +433,158 @@ class Rig:
         bpy.context.view_layer.update()
 
 
+def _ribbed(m: bpy.types.Material) -> bpy.types.Material:
+    """Knit ribs down every part drawn in `m`: stripes `RIB_PITCH` apart
+    round the part's own up axis, the seam at its back. In the colour only,
+    never the shape, so the ink finds no edge in them."""
+    nt = m.node_tree
+    if "ribs" in nt.nodes:
+        return m
+    b = nt.nodes["Principled BSDF"]
+    base = tuple(b.inputs["Base Color"].default_value)
+
+    def math_node(op, *args):
+        n = nt.nodes.new("ShaderNodeMath")
+        n.operation = op
+        for i, x in enumerate(args):
+            if x is None:
+                continue
+            if isinstance(x, (int, float)):
+                n.inputs[i].default_value = x
+            else:
+                nt.links.new(x, n.inputs[i])
+        return n.outputs[0]
+
+    co = nt.nodes.new("ShaderNodeTexCoord").outputs["Object"]
+    xyz = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(co, xyz.inputs[0])
+    x, y = xyz.outputs["X"], xyz.outputs["Y"]
+    # the way round from his front (-y), times the radius: metres round
+    turn = math_node("ARCTAN2", x, math_node("MULTIPLY", y, -1.0))
+    r = math_node("SQRT", math_node("ADD", math_node("MULTIPLY", x, x),
+                                    math_node("MULTIPLY", y, y)))
+    wave = math_node("SINE", math_node("MULTIPLY", math_node("MULTIPLY", turn, r),
+                                       2 * math.pi / RIB_PITCH))
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    ramp.name = "ribs"
+    nt.links.new(math_node("MULTIPLY_ADD", wave, 0.5, 0.5), ramp.inputs["Fac"])
+    lo, hi = ramp.color_ramp.elements
+    lo.color = tuple(c * (1 - RIB_SHADE) for c in base[:3]) + (1.0,)
+    hi.color = base
+    nt.links.new(ramp.outputs["Color"], b.inputs["Base Color"])
+    return m
+
+
+def _land(frame: bpy.types.Object, targets, rays):
+    """Where each ray `(origin, direction)`, given in `frame`'s space, first
+    meets one of `targets` as he is built: `(point, normal)` in `frame`'s
+    space, or None for a ray that meets nothing."""
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    trees = [(o, o.matrix_world.copy(), BVHTree.FromObject(o, dg)) for o in targets]
+    to_frame = frame.matrix_world.inverted()
+    out = []
+    for origin, direction in rays:
+        o_w = frame.matrix_world @ Vector(origin)
+        d_w = (frame.matrix_world.to_3x3() @ Vector(direction)).normalized()
+        best = None
+        for _o, mw, tree in trees:
+            inv = mw.inverted()
+            hit, normal, _i, _d = tree.ray_cast(inv @ o_w, (inv.to_3x3() @ d_w).normalized())
+            if hit is None:
+                continue
+            h_w = mw @ hit
+            dist = (h_w - o_w).length
+            if best is None or dist < best[0]:
+                n_w = (mw.to_3x3() @ normal).normalized()
+                best = (dist, h_w, n_w)
+        if best is None:
+            out.append(None)
+            continue
+        n = (to_frame.to_3x3() @ best[2]).normalized()
+        if n.dot(Vector(direction)) > 0:
+            n = -n
+        out.append((to_frame @ best[1], n))
+    return out
+
+
+def _collar_point(name: str, side: int, frame, targets, m, coll, *, steps: int = 6):
+    """One point of his shirt collar, laid over whatever of him is under it
+    at the front: from beside his neck at the top down to its tip on the
+    crew band, a little proud of the knit, never sunk in it. `side` is -1 or
+    1 (his right or left of centre), in `frame`'s space (chest)."""
+    a = Vector((side * 0.008, 0, 0.241))     # at the front of his neck
+    b = Vector((side * 0.057, 0, 0.247))     # round the side of it
+    c = Vector((side * 0.043, 0, 0.197))     # the tip, down and out
+    idx, pts = {}, []
+    for i in range(steps + 1):
+        for j in range(steps + 1 - i):
+            idx[i, j] = len(pts)
+            pts.append(a + (b - a) * (i / steps) + (c - a) * (j / steps))
+    got = _land(frame, targets, [((p.x, -0.4, p.z), (0, 1, 0)) for p in pts])
+    lift = 0.0012
+    fwd = [lift - g[0].y if g else 0.06 for g in got]
+    # Laid on, not shrink-wrapped: down each line from his neck to the edge
+    # it runs to, the cloth goes taut over what stands out under it (the
+    # band's top, his chest below it) and bridges the dip between, as a
+    # stiff collar does: the upper hull of how far forward each point is.
+    ys = [-f for f in fwd]
+    for i in range(steps + 1):
+        col = [idx[i, j] for j in range(steps + 1 - i)]
+        hull: list[int] = []
+        for j, k in enumerate(col):
+            while len(hull) >= 2:
+                (j0, f0), (j1, f1) = ((h, fwd[col[h]]) for h in hull[-2:])
+                if (f1 - f0) * (j - j0) <= (fwd[k] - f0) * (j1 - j0):
+                    hull.pop()
+                else:
+                    break
+            hull.append(j)
+        for h0, h1 in zip(hull, hull[1:]):
+            f0, f1 = fwd[col[h0]], fwd[col[h1]]
+            for j in range(h0, h1 + 1):
+                ys[col[j]] = -(f0 + (f1 - f0) * (j - h0) / (h1 - h0))
+    bm = bmesh.new()
+    vs = [bm.verts.new((p.x, y, p.z)) for p, y in zip(pts, ys)]
+    for (i, j), k in idx.items():
+        if (i + 1, j) in idx and (i, j + 1) in idx:
+            bm.faces.new((vs[k], vs[idx[i + 1, j]], vs[idx[i, j + 1]]))
+        if (i + 1, j) in idx and (i + 1, j + 1) in idx and (i, j + 1) in idx:
+            bm.faces.new((vs[idx[i + 1, j]], vs[idx[i + 1, j + 1]], vs[idx[i, j + 1]]))
+    bm.normal_update()
+    if sum(f.normal.y for f in bm.faces) > 0:
+        bmesh.ops.reverse_faces(bm, faces=bm.faces)
+    o = _mesh_object(name, bm, m, coll, subdiv=0)
+    sol = o.modifiers.new("cloth", "SOLIDIFY")
+    sol.thickness = 0.0022
+    sol.offset = 1.0
+    return o
+
+
+def _fold(name: str, frame, targets, rays, width: float, m, coll, *, lift: float = 0.0009):
+    """A fold drawn in ink: a ribbon laid along the points the `rays` (in
+    `frame`'s space) land on, `width` across at its middle and drawn to a
+    point at both ends, as a pen stroke is."""
+    got = [g for g in _land(frame, targets, rays) if g is not None]
+    if len(got) < 3:
+        return None
+    bm = bmesh.new()
+    rows = []
+    last = len(got) - 1
+    for i, (p, n) in enumerate(got):
+        t = (got[min(i + 1, last)][0] - got[max(i - 1, 0)][0]).normalized()
+        across = n.cross(t).normalized()
+        half = width / 2 * max(math.sin(math.pi * i / last), 0.12) ** 0.7
+        q = p + n * lift
+        rows.append((bm.verts.new(q - across * half), bm.verts.new(q + across * half)))
+    for (a0, a1), (b0, b1) in zip(rows, rows[1:]):
+        bm.faces.new((a0, b0, b1, a1))
+    bm.normal_update()
+    if sum(f.normal.dot(got[0][1]) for f in bm.faces) < 0:
+        bmesh.ops.reverse_faces(bm, faces=bm.faces)
+    return _mesh_object(name, bm, m, coll, subdiv=0)
+
+
 def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
                  beard: str = "short") -> Rig:
     """Dennis standing at `spot` (floor x, y), turned to look at `face` (a
@@ -445,7 +604,9 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     skin = _mat("skin", SKIN, 0.9)
     tired = _mat("under-eye", UNDER_EYE, 0.95)
     knit = _mat("sweater", SWEATER, 0.95, sheen=0.3)
-    collar = _mat("collar", COLLAR, 0.95)
+    collar = _ribbed(_mat("collar", COLLAR, 0.95))
+    shirt = _mat("shirt", SHIRT, 0.8)
+    ink = _mat("ink", INK, 0.9)
     cloth = _mat("trousers", TROUSERS, 0.9)
     shoe = _mat("shoes", SHOES, 0.6)
     hair = _mat("hair", HAIR, 0.8)
@@ -454,20 +615,39 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     lips = _mat("mouth", MOUTH, 0.95)
 
     # Torso: design's box of a sweater, straight down from square shoulders,
-    # a little wider at the top than at the hem.
+    # a little wider at the top than at the hem, and hanging over his hips
+    # (narrower there, the tops of his trousers stood out past it).
     torso = loft("torso", [
-        (-0.07, 0.150, 0.098), (0.05, 0.150, 0.098), (0.20, 0.158, 0.100),
+        (-0.07, 0.170, 0.100), (-0.062, 0.170, 0.100), (0.05, 0.165, 0.099), (0.20, 0.158, 0.100),
         (0.34, 0.176, 0.104), (0.43, 0.190, 0.106), (0.485, 0.192, 0.104),
         (0.51, 0.180, 0.098), (0.528, 0.140, 0.085), (0.538, 0.075, 0.060),
     ], knit, coll, n=24)
     rig.attach(torso, "hips")
-    rig.attach(loft("collar", [(0.0, 0.074, 0.062), (0.022, 0.071, 0.059)], collar, coll,
-                    n=24, cap_top=False, cap_bottom=False), "chest", (0, 0.004, 0.212))
+    # its ribbed hem: a straight finished edge across his hips, where the
+    # body of it ended in a rounded bottom like a romper's (the ring just
+    # above its bottom keeps that corner square under the band)
+    rig.attach(loft("hem", [(-0.080, 0.169, 0.099), (-0.076, 0.1735, 0.1035),
+                            (-0.032, 0.1735, 0.1035), (-0.027, 0.1705, 0.1005)],
+                    collar, coll, n=24, cap_top=False), "hips")
+    band = rig.attach(loft("collar", [(0.0, 0.074, 0.062), (0.022, 0.071, 0.059)], collar,
+                           coll, n=24, cap_top=False, cap_bottom=False),
+                      "chest", (0, 0.004, 0.212))
     # Short and solid, running up inside the head so its end never shows
     # under the chin: long and thin, as first drawn, it was a stalk with a
     # head on it (18 Oct 2026).
-    rig.attach(loft("neck", [(0.0, 0.060, 0.055), (0.08, 0.056, 0.052), (0.17, 0.049, 0.046)],
-                    skin, coll, n=16), "neck", (0, 0.012, -0.03))
+    neck = rig.attach(loft("neck", [(0.0, 0.060, 0.055), (0.08, 0.056, 0.052),
+                                    (0.17, 0.049, 0.046)], skin, coll, n=16),
+                      "neck", (0, 0.012, -0.03))
+    # The shirt under the sweater (V9): its collar's stand round his neck,
+    # inside the crew band and a finger above it, and the collar's two
+    # points laid over the band at the front. The stand clears his neck by
+    # more than a nod moves it.
+    stand = rig.attach(loft("collarstand", [(0.205, 0.066, 0.060, 0, 0.009),
+                                            (0.247, 0.063, 0.058, 0, 0.010)], shirt, coll,
+                            n=24, cap_top=False, cap_bottom=False), "chest")
+    for side in (-1, 1):
+        rig.attach(_collar_point(f"collarpoint.{side}", side, rig.joints["chest"],
+                                 (torso, band, stand, neck), shirt, coll), "chest")
     # Head: an egg, the jaw narrower than the temples, its front flatter.
     head = loft("head", [
         (-0.005, 0.0, 0.0, 0, -0.012), (0.004, 0.032, 0.028, 0, -0.012, 0.9),
@@ -555,8 +735,11 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
             (-0.18, 0.038), (-0.25, 0.037), (-0.29, 0.036), (-0.33, 0.035), (-0.42, 0.033),
             (-0.50, 0.032), (-0.545, 0.031), (-0.548, 0.0)],
             knit, (f"shoulder.{side}", f"elbow.{side}"), (-0.25, -0.33)))
-        rig.attach(loft(f"cuff.{side}", [(-0.262, 0.030, 0.029), (-0.232, 0.034, 0.033)],
-                        collar, coll, n=16), f"elbow.{side}")
+        # a ribbed cuff, snug at the wrist and standing a little proud of
+        # the sleeve it finishes
+        rig.attach(loft(f"cuff.{side}", [(-0.268, 0.029, 0.028), (-0.262, 0.0305, 0.0295),
+                                         (-0.234, 0.0345, 0.0335), (-0.227, 0.0335, 0.0325)],
+                        collar, coll, n=24), f"elbow.{side}")
         rig.attach(loft(f"wristskin.{side}", [(-0.04, 0.026, 0.022), (0.01, 0.028, 0.024)],
                         skin, coll, n=12), f"wrist.{side}")
         # A cartoon hand, a size up from life so it reads at the back of
@@ -599,7 +782,7 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
     for side in ("L", "R"):
         # one trouser leg from the hip to the shoe, bending at the knee
         rig.skins.append(Skin(rig, f"leg.{side}", [
-            (0.06, 0.0), (0.05, 0.06), (0.03, 0.08), (-0.10, 0.074), (-0.25, 0.066),
+            (0.06, 0.0), (0.05, 0.06), (0.03, 0.071), (-0.10, 0.074), (-0.25, 0.066),
             (-0.39, 0.059), (-0.43, 0.058), (-0.47, 0.057), (-0.62, 0.055), (-0.80, 0.053),
             (-0.835, 0.052), (-0.84, 0.0)],
             cloth, (f"thigh.{side}", f"knee.{side}"), (-0.39, -0.47)))
@@ -608,6 +791,36 @@ def build_dennis(spot=(0.0, 0.0), face=None, *, name: str = "dennis",
             (0.06, 0.052, 0.040), (0.15, 0.046, 0.032), (0.175, 0.0, 0.0)], shoe, coll, n=16)
         rig.attach(shoe_o, f"ankle.{side}", (0, -0.03, -0.045), rot=(90, 0, 0))
         shoe_o.scale = (1.0, 0.62, 1.0)
+
+    # A couple of folds, drawn in ink as design draws cloth (V9): the knit
+    # bunched at his waist above the hem, and twice on each sleeve above the
+    # cuff. None on his chest: a pair of curves there reads as a chest, not
+    # as a sweater.
+    for s, x0, x1, z0, tilt in ((-1, 0.050, 0.112, 0.012, 0.007), (-1, 0.066, 0.118, -0.008, 0.005),
+                                (1, 0.056, 0.116, 0.004, 0.008)):
+        rays = []
+        for k in range(9):
+            u = k / 8
+            rays.append(((s * (x0 + (x1 - x0) * u), -0.4,
+                          z0 - tilt * u + 0.003 * math.sin(2 * math.pi * u)), (0, 1, 0)))
+        f = _fold(f"fold.waist.{s}{z0}", rig.joints["hips"], (torso,), rays, 0.0022, ink, coll)
+        if f is not None:
+            rig.attach(f, "hips")
+    for side in ("L", "R"):
+        sleeve = next(sk.obj for sk in rig.skins if sk.obj.name.startswith(f"sleeve.{side}"))
+        out = 1 if side == "R" else -1
+        for z0, a0, a1, w in ((-0.196, -0.9, 0.55, 0.0020), (-0.214, -0.35, 0.95, 0.0017)):
+            rays = []
+            for k in range(9):
+                u = k / 8
+                a = out * (a0 + (a1 - a0) * u)
+                z = z0 + 0.004 * math.sin(math.pi * u)
+                d = (math.sin(a), -math.cos(a))
+                rays.append(((d[0] * 0.2, d[1] * 0.2, z), (-d[0], -d[1], 0)))
+            f = _fold(f"fold.sleeve.{side}{z0}", rig.joints[f"elbow.{side}"], (sleeve,),
+                      rays, w, ink, coll)
+            if f is not None:
+                rig.attach(f, f"elbow.{side}")
 
     _props(rig, coll)
 
