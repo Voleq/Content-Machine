@@ -82,7 +82,25 @@ def test_streams_and_duration(rendered):
     a = next(s for s in info["streams"] if s["codec_type"] == "audio")
     assert v["codec_name"] == "h264" and (v["width"], v["height"]) == (640, 360)
     assert a["codec_name"] == "aac"
-    assert float(info["format"]["duration"]) == pytest.approx(tts.duration_s, abs=0.7)
+    # the voice, then the end screen's quiet tail (V3)
+    assert manifest["voice_end"] == pytest.approx(tts.duration_s, abs=0.01)
+    assert float(info["format"]["duration"]) == pytest.approx(manifest["duration"], abs=0.7)
+    assert float(a["duration"]) == pytest.approx(manifest["duration"], abs=0.7)
+
+
+def test_the_last_twenty_seconds_hold_him_for_the_end_screen(rendered):
+    """V3: YouTube's boxes go over the last 20 s, so they are one beat of
+    him with a side of the wall clear, and a short sign-off holds after its
+    last word."""
+    settings, script, tts, out, manifest = rendered
+    end = manifest["end_screen"]
+    last = manifest["segments"][-1]
+    assert last["kind"] == "host"
+    assert end["end"] == pytest.approx(manifest["duration"], abs=0.01)
+    assert end["end"] - end["start"] == pytest.approx(20.0, abs=0.01)
+    assert last["start"] <= end["start"]
+    assert end["tail_s"] > 0 and end["side"] in ("left", "right") and end["clear"]
+    assert len(end["rect"]) == 4
 
 
 def test_host_anchored_structure_with_all_kinds(rendered):
@@ -90,7 +108,7 @@ def test_host_anchored_structure_with_all_kinds(rendered):
     segs = manifest["segments"]
     # tiles the whole duration
     assert segs[0]["start"] == 0.0
-    assert segs[-1]["end"] == pytest.approx(tts.duration_s, abs=0.01)
+    assert segs[-1]["end"] == pytest.approx(manifest["duration"], abs=0.01)
     for a, b in zip(segs, segs[1:]):
         assert a["end"] == pytest.approx(b["start"], abs=0.01)
     kinds = {s["kind"] for s in segs}

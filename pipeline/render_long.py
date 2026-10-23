@@ -846,6 +846,24 @@ def _render_long(
     for w in seg_warnings:
         log.warning("segment plan: %s", w)
 
+    # THE END SCREEN (V3, 18 Oct 2026): the last 20 seconds are one shot of
+    # him, counted from when the cut into it is uncovered, so YouTube's boxes
+    # never sit on evidence. A shorter sign-off gets a quiet tail, and from
+    # here `duration` is the PICTURE's length: the outro theme ends with it,
+    # the room tone runs to it, and the voice still ends at `voice_end`.
+    from pipeline.end_screen import END_SCREEN_S, clear_side, extend_for_end, room_blocks
+    from pipeline.room_dressing import CLOCK_MIN_VIDEO_S as _CLOCK_MIN
+    from pipeline.room_dressing import CLOCK_S as _CLOCK_S
+
+    voice_end = duration
+    segments, duration = extend_for_end(
+        segments, voice_end, fps=fps,
+        cover_s=_CLOCK_S if voice_end >= _CLOCK_MIN else 4 / 12)
+    end_i = len(segments) - 1
+    end_meta: dict = {"start": round(duration - END_SCREEN_S, 3),
+                      "end": round(duration, 3),
+                      "tail_s": round(duration - voice_end, 3)}
+
     # Four passes, each answering its own question (see config.py):
     # PREVIEW judges the edit at 480p/15fps, where the filter graph — not the
     # encode — is the cost. DRAFT is the half-res timing copy. PROOF keeps the
@@ -1470,9 +1488,11 @@ def _render_long(
     _bounds = [t for t, _title, _type in chapters] + [duration + 1.0]
     for _a, _b in zip(_bounds, _bounds[1:]):
         inside = [i for i, sg in enumerate(segments)
-                  if sg.kind == "host" and _a <= sg.start < _b]
+                  if sg.kind == "host" and _a <= sg.start < _b and i != end_i]
         if inside:
             lands_a_chapter.add(inside[-1])
+    # The end screen's beat is never the close-up: his head and shoulders
+    # fill the wall the boxes go on. The close lands on the beat before it.
     # And the first beat of him in a chapter is the one that may be wide.
     opens_chapter = chapter_openers(segments, chapters, duration, cold_i)
 
@@ -1521,7 +1541,43 @@ def _render_long(
                 if not talks(reg, scene["pose"]):
                     # walking out of the doorway is no line at the desk
                     scene = {**scene, "pose": ""}
+        if seg_i == end_i:
+            return _end_room(room, scene, wide)
         return room, scene, wide
+
+    _end_pick: list = []
+
+    def _end_room(room, scene, wide):
+        """The end screen's room (V3): the beat's own where one side of the
+        wall is clear of him and the cross-stitch, else the first talking
+        angle that has such a side, the writer's room included in that rule.
+        What it chose goes on `end_meta`."""
+        if _end_pick:
+            return _end_pick[0]
+        import random
+
+        picks = [(room, scene, wide)]
+        hour = reg.hour_for(script.ticker, avoid=_avoid_recent)
+        keys = sorted(reg.angles_for("talk", aspect, hour))
+        random.Random(f"{script.ticker}|end").shuffle(keys)
+        for key in keys:
+            alt = reg.plate_at(key, hour)
+            if alt is not None and alt.key != room.key and _his_height(alt) >= WIDE_SHARE:
+                picks.append((alt, None, False))
+        got, found = picks[0], None
+        for cand in picks:
+            found = clear_side(*room_blocks(cand[0]))
+            if found is not None:
+                got = cand
+                break
+        if got[0].key != room.key:
+            log.info("end screen: %s has no clear side of wall for the boxes — "
+                     "the last beat is shot from %s", room.key, got[0].key)
+        end_meta.update(room=got[0].key, side=found[0] if found else "",
+                        rect=[round(v, 3) for v in found[1]] if found else [],
+                        clear=found is not None)
+        _end_pick.append(got)
+        return got
 
     def _cut_to(seg_i: int):
         """The room the cut at the end of host beat `seg_i` goes to, when it
@@ -2468,6 +2524,10 @@ def _render_long(
             stance3d, close3d = None, False
             if performer is not None and not alone and dennis3d.angle_of(room):
                 stance3d, close3d = _pose_3d(i, seg, room, pose)
+                if i == end_i and close3d:
+                    # the end screen needs the wall: the writer's close-up
+                    # goes, and the bot casts him standing
+                    stance3d, close3d = _pose_3d(i, seg, room, None)
                 from pipeline.scenes import stands_in
                 if close3d and not stands_in(room):
                     # nobody stands at the board or over the desk: his
@@ -2478,7 +2538,8 @@ def _render_long(
             # THE PUSH-IN: a chapter's wide shot goes in to him, once the
             # frame is clear of whatever covers its start.
             push3d = None
-            if stance3d is not None and not close3d and wide and seg_len >= PUSH_MIN_BEAT_S:
+            if stance3d is not None and not close3d and wide and seg_len >= PUSH_MIN_BEAT_S \
+                    and i != end_i:
                 z = min(max(PUSH_TO_SHARE / max(_his_height(room), 1e-3), 1.0), PUSH_MAX_Z)
                 p0 = min(max(_cleared(seg.start, covers) - seg.start, 0.0) + 0.2,
                          max(seg_len - 1.0, 0.0))
@@ -2501,6 +2562,13 @@ def _render_long(
                                                               or [], i, seg_len))])
                     _screen_seen(seg.start)
                 his_layers[i] = layer
+                if i == end_i and end_meta.get("rect"):
+                    # Where he actually went, every frame of the shot: the
+                    # anchor said where he stands, not where his arms reach.
+                    x0, y0, x1, y1 = end_meta["rect"]
+                    on = dennis3d.under(layer, (W, H), (int(x0 * W), int(y0 * H),
+                                                        int(x1 * W), int(y1 * H)))
+                    end_meta["clear"] = on is False
                 host = (_add_input(["-i", str(layer)]), 0, 0, W, H, None)
                 _count_3d(i, stance3d, close_up=close3d)
                 dennis3d_meta.append({"segment": i, "room": room.key, "stance": stance3d,
@@ -3556,6 +3624,12 @@ def _render_long(
         # next pass of THIS video reads it to open on the same one.
         "cold_open_room": (reg.base_key(cold_room.key)
                            if cold_room is not None else ""),
+        # THE END SCREEN (V3): from when to the end, the room of the last
+        # beat, the side of the wall left clear for YouTube's boxes and
+        # whether he kept off it; `tail_s` is how long he holds after the
+        # last word.
+        "end_screen": end_meta,
+        "voice_end": round(voice_end, 3),
         # THE WRITER'S SCENES as they were shot: per directed beat of him,
         # the room, the pose the script asked for and what was drawn — the pose, the
         # room alone, or the bot's pick and why.

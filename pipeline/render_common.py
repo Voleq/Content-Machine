@@ -601,14 +601,17 @@ def audio_graph(spec: CompositeSpec, first_input: int) -> tuple[list[str], list[
     # loudnorm works at 192 kHz and hands that on, which the AAC encoder took
     # as 96 kHz and spent the bitrate on what nobody hears: back to 48 kHz,
     # video's rate, before the limiter has the last word.
+    # Silence to the end of the picture: a long's end screen holds after the
+    # last word, and with no room tone on disk nothing else would reach it.
+    pad = f"apad=whole_dur={spec.duration:.3f},"
     if spec.normalise_audio:
         lines.append(
-            f"[amixed]loudnorm=I={spec.loudness_lufs}:TP={spec.true_peak_db}"
+            f"[amixed]{pad}loudnorm=I={spec.loudness_lufs}:TP={spec.true_peak_db}"
             f":LRA={spec.loudness_range},aresample=48000,"
             f"alimiter=limit={spec.limiter_ceiling}[aout]"
         )
     else:
-        lines.append(f"[amixed]aresample=48000,"
+        lines.append(f"[amixed]{pad}aresample=48000,"
                      f"alimiter=limit={spec.limiter_ceiling}[aout]")
     return inputs, lines
 

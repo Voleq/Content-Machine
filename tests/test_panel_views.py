@@ -273,3 +273,21 @@ def test_a_short_is_read_by_sentence(core, panel, xlsx_bytes, short_valid_json):
                              raw_args=f"{first['raw']} => Shares jumped today.")
     assert "⛔" not in reply.text
     assert "Shares jumped today." in ws.raw_script("short")
+
+
+def test_the_upload_step_says_where_the_end_screen_goes(tmp_path):
+    """V3: the long's final records its end screen; Studio's checklist says
+    from when and on which side the boxes go."""
+    from types import SimpleNamespace
+
+    from bot.panel_views import _end_screen_line
+
+    (tmp_path / "render_long_manifest.json").write_text(json.dumps(
+        {"end_screen": {"start": 581.0, "end": 601.2, "side": "right", "clear": True}}),
+        encoding="utf-8")
+    v = SimpleNamespace(fmt="long", ws=SimpleNamespace(path=tmp_path))
+    line = _end_screen_line(v)
+    assert line.startswith("End screen: from 9:41") and "right side" in line
+    assert _end_screen_line(SimpleNamespace(fmt="short", ws=v.ws)) == ""
+    (tmp_path / "render_long_manifest.json").write_text("{}", encoding="utf-8")
+    assert _end_screen_line(v) == ""

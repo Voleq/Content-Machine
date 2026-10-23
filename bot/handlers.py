@@ -250,6 +250,28 @@ def _frame_holds(manifest_path) -> str:
     return frame_holds_report(data) if isinstance(data, dict) else ""
 
 
+def _long_notes(manifest_path, *, final: bool) -> str:
+    """What the LONG's render found worth his eye, as operator text, or "":
+    on a final, where the end screen goes (V3).
+
+    Best-effort, as `_frame_holds`."""
+    import json as _json
+
+    from pipeline.end_screen import checklist_line
+
+    try:
+        data = _json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return ""
+    if not isinstance(data, dict):
+        return ""
+    lines = []
+    end = checklist_line(data.get("end_screen") or {}) if final else ""
+    if end:
+        lines.append("🔚 " + end)
+    return "\n".join(lines)
+
+
 def _what_it_said(script, fmt: str) -> dict:
     """`hook` / `conclusion` / `claims` off a shipped script, best-effort.
 
@@ -1875,6 +1897,9 @@ class BotCore:
             result = deliver(out, job.ticker, job.workdate, self.settings,
                              attributions=self._attributions(manifest),
                              extra_files=extra)
+            notes = _long_notes(manifest, final=True)
+            if notes:
+                result.note = "\n\n".join(x for x in (result.note, notes) if x)
             self._finish(job, result)
             return str(out)
 
@@ -2084,11 +2109,12 @@ class BotCore:
                 if done == total or done % 5 == 0:
                     checkpoint(f"proof {done}/{total} segments")
 
-            out, _ = render_long(
+            out, manifest = render_long(
                 script, tts, ws.path, self.settings, content=self.content,
                 proof=True, broll_overrides=ws.broll_overrides(),
                 as_of=as_of, company_data=data, on_progress=seg_progress,
             )
+            held = _long_notes(manifest, final=False)
         # Never delivered. A proof is for looking at, and `deliver()` is how
         # something reaches YouTube — the local path is the whole output.
         self._local_link(job, out)

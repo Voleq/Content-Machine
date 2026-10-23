@@ -436,6 +436,20 @@ STUDIO_CHECKLIST = (
 )
 
 
+def _end_screen_line(v: _Video) -> str:
+    """The long's end screen as a Studio step (V3), off its final's
+    manifest; "" for a short or a final rendered before it was recorded."""
+    if v.fmt != "long":
+        return ""
+    from pipeline.end_screen import checklist_line
+
+    try:
+        data = json.loads((v.ws.path / "render_long_manifest.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    return checklist_line(data.get("end_screen") or {}) if isinstance(data, dict) else ""
+
+
 def _step_upload(v: _Video) -> dict:
     from pipeline.publish import byproduct_name
     from pipeline.thumbnail import his_cover, bot_cover
@@ -448,6 +462,10 @@ def _step_upload(v: _Video) -> dict:
                  "chapters": [], "buttons": [], "thumbnail": {}}
     if not final:
         return out
+    end = _end_screen_line(v)
+    if end:
+        # Before the "paste the link" line: it is set in Studio, before publishing.
+        out["checklist"].insert(len(out["checklist"]) - 1, end)
     out["downloads"].append({"name": Path(final).name, "url": v.link(final)})
     for kind in ("captions", "transcript", "package", "companion"):
         name = byproduct_name(kind, v.fmt, v.ws.ticker)
