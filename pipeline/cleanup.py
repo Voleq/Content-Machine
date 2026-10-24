@@ -140,7 +140,20 @@ def cleanup(settings: Settings, dry_run: bool = False) -> dict:
     removed_dirs = 0
     freed = 0
 
+    written_cutoff = time.time() - settings.retention_days * 86400
     for ddir in _old_date_dirs(settings.workspace_dir, cutoff):
+        # THE FOLDER'S DATE IS WHEN THE VIDEO WAS STARTED, not when it was
+        # last worked on. A long started fifteen days ago and rendered last
+        # night lost its finished render at 04:30, before it was uploaded
+        # (scan, 24 Oct 2026). A folder written to inside the window is
+        # still in use and is left alone.
+        try:
+            if _newest_write(ddir) >= written_cutoff:
+                log.info("keep %s: written to in the last %d days", ddir,
+                         settings.retention_days)
+                continue
+        except OSError:
+            continue
         # Each file is counted once: a video inside a pruned directory is
         # taken by the file pass, and a dry run (which deletes nothing) used
         # to count it again in the directory's total.

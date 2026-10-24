@@ -1,15 +1,24 @@
+import os
+import time
 from datetime import date, timedelta
 
 from pipeline.cleanup import cleanup
 from pipeline.workspace import Workspace
 
 
-def _fill(ws: Workspace):
+def _fill(ws: Workspace, written_days_ago: int | None = None):
+    """A workspace with a render in it, last written to when its date says
+    unless `written_days_ago` says otherwise."""
     (ws.path / "short_final.mp4").write_bytes(b"x" * 1000)
     (ws.path / "render_short").mkdir()
     (ws.path / "render_short" / "row_0.mov").write_bytes(b"y" * 500)
     (ws.path / "script_short.json").write_text("{}", encoding="utf-8")
     (ws.path / "dennis_data.xlsx").write_bytes(b"z")
+    if written_days_ago is None:
+        written_days_ago = (date.today() - date.fromisoformat(ws.workdate)).days
+    when = time.time() - written_days_ago * 86400
+    for p in [ws.path, *ws.path.rglob("*")]:
+        os.utime(p, (when, when))
 
 
 def test_cleanup_prunes_old_renders_keeps_records(settings):
@@ -79,3 +88,14 @@ def test_rebuildable_caches_are_pruned_and_the_voice_never_is(settings):
     assert stats["cache_entries_removed"] == 1
     assert not shot.exists()
     assert voice.exists(), "the voice cache was paid for"
+
+
+def test_an_old_folder_worked_on_this_week_keeps_its_render(settings):
+    """Started thirty days ago, rendered yesterday: not yet uploaded, and
+    eight hours of a long to make again."""
+    started = (date.today() - timedelta(days=30)).isoformat()
+    ws = Workspace(settings, "SLOW", started).create()
+    _fill(ws, written_days_ago=1)
+    cleanup(settings)
+    assert (ws.path / "short_final.mp4").exists()
+    assert (ws.path / "render_short").exists()
