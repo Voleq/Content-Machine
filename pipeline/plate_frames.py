@@ -574,6 +574,7 @@ def render_frame(plate: Plate, frame_index: int, values: dict[str, str] | None,
     paper_over_clipped_marks(img, plate)
     if not values:
         return img
+    paper_over_empty_boxes(img, plate, values)
 
     # The data keys (`series=`, `steps=` …) are drawn by the data layer, not
     # typeset, and belong to no slot by design.
@@ -687,6 +688,56 @@ def paper_over_clipped_marks(img, plate: Plate) -> None:
         if src + (x1 - x0) > img.width or y1 <= y0:
             continue
         img.paste(img.crop((src, y0, src + (x1 - x0), y1)), (x0, y0))
+
+
+# SLOTS THE KIT DRAWS A BOX ROUND, by drawing. The definition card's example
+# sits in a ruled box that is part of the art, so a card with no example went
+# up with an empty box under its body: the earnings guidance card on every
+# short, the comment card's alternate (24 Oct 2026). How far round the slot
+# the box is drawn, in canvas units: 26 above and below and 15 beside on 9:16,
+# less on 16:9; the card's own edge is further out on both.
+BOXED_SLOTS: dict[str, tuple[str, ...]] = {"cards/definition": ("example",)}
+_BOX_PAD = (20, 32)
+
+
+def paper_over_empty_boxes(img, plate: Plate, values: dict[str, str] | None) -> None:
+    """Fill the box round an empty `BOXED_SLOTS` slot with the card under it.
+
+    The card is one flat colour inside, read off the art just above the box,
+    so the box's strokes — found as whatever differs from it, which follows
+    each boiling frame — are painted out with that colour and nothing else.
+    """
+    import re
+
+    names = BOXED_SLOTS.get(re.sub(r"-(16x9|9x16)$", "", plate.base_key), ())
+    if not names:
+        return
+    import numpy as np
+    from PIL import ImageDraw
+
+    rgb = img.convert("RGB")
+    k = img.width / max(plate.canvas[0], 1)
+    for name in names:
+        slot = plate.slot(name)
+        if slot is None or str((values or {}).get(name) or "").strip():
+            continue
+        px, py = _BOX_PAD
+        x0, y0 = max(int((slot.x - px) * k), 0), max(int((slot.y - py) * k), 1)
+        x1 = min(int((slot.x + slot.w + px) * k), img.width)
+        y1 = min(int((slot.y + slot.h + py) * k), img.height)
+        if x1 <= x0 or y1 <= y0:
+            continue
+        card = rgb.getpixel(((x0 + x1) // 2, y0 - 1))
+        if rgb.getpixel((x0, y0 - 1)) != card:
+            continue                       # not a flat card above: leave it
+        area = np.asarray(rgb.crop((x0, y0, x1, y1)), dtype=np.int16)
+        rows, cols = np.nonzero(np.abs(area - np.array(card)).sum(axis=2) > 15)
+        if not len(cols):
+            continue
+        ImageDraw.Draw(img).rectangle(
+            [x0 + int(cols.min()) - 2, y0 + int(rows.min()) - 2,
+             x0 + int(cols.max()) + 2, y0 + int(rows.max()) + 2],
+            fill=tuple(card) + (255,))
 
 
 def render_still(plate: Plate, values: dict[str, str] | None,

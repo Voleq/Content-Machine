@@ -87,3 +87,40 @@ def test_a_quote_mark_cut_by_the_frame_edge_is_papered_over():
             patch = img[int(y * k):int((y + h) * k), int(x * k):int((x + w) * k)]
             # no red left: the attention ink is far redder than it is green
             assert not ((patch[..., 0] - patch[..., 1]) > 60).any(), (aspect, (x, y, w, h))
+
+
+def test_an_empty_example_box_is_papered_over_and_a_filled_one_kept():
+    """The definition card's example box is part of the art, and a card with
+    no example went up with an empty box under its body: the earnings guidance
+    card, the comment card's alternate (24 Oct 2026). Every hour, every boil
+    frame, both aspects."""
+    import numpy as np
+
+    from config import Settings
+    from pipeline.plate_frames import render_frame
+    from pipeline.plates import load_plates
+
+    settings = Settings(MOCK_MODE=True, _env_file=None)
+    reg = load_plates(settings.assets_dir)
+    body = {"term": "EXMPL", "body": "Revenue flat, losses wider every year."}
+    seen = 0
+    for hour in reg.hour_suffixes.values():
+        for aspect in ("9x16", "16x9"):
+            plate = reg.get(f"cards/definition{hour}-{aspect}")
+            if plate is None:
+                continue
+            slot = plate.slot("example")
+            for f in range(len(plate.frames)):
+                def box(values):
+                    img = render_frame(plate, f, values, settings, reg).convert("RGB")
+                    k = img.width / plate.canvas[0]
+                    return np.asarray(img.crop((
+                        int((slot.x - 20) * k), int((slot.y - 32) * k),
+                        int((slot.x + slot.w + 20) * k),
+                        int((slot.y + slot.h + 32) * k)))).astype(int)
+
+                assert box(body).std(axis=(0, 1)).max() == 0, (plate.key, f)
+                kept = box({**body, "example": "+29% today"})
+                assert kept.std(axis=(0, 1)).max() > 10, (plate.key, f)
+                seen += 1
+    assert seen >= 6
