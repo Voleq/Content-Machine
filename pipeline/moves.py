@@ -1163,6 +1163,25 @@ def underline_line(plate, slot_name: str, value: str, settings, reg):
     return M.Box(pick["x"], pick["y"], pick["w"], pick["h"])
 
 
+def words_end(plate, slot_name: str, value: str, settings, reg) -> float | None:
+    """Where the words of the copy's last line end, in canvas units, or None.
+
+    Design's rule is 0.8 of the line's width, which assumes a full line. The
+    comment's "vertical." alone on its last line took a rule running most of
+    the card past it (24 Oct 2026); the rule stops where the words do.
+    """
+    from pipeline.plate_frames import last_line_box
+
+    slot = plate.slot(slot_name)
+    if slot is None or settings is None:
+        return None
+    got = last_line_box(plate, slot, value, settings, reg)
+    if got is None:
+        return None
+    s = max(int(plate.export_scale or 1), 1)
+    return (got[0] + got[2]) / s
+
+
 def _accent_column(plate, values: dict, n: int) -> int | None:
     """Which bar column the data accents, if it names one: it grows last."""
     from pipeline import series as S
@@ -1635,9 +1654,14 @@ class MoveCompositor:
         shown = M.reveal(line, M.t_of_frame(f, m.frames), "left")
         if shown.w <= 0:
             return
+        full = line.w * share
+        end = words_end(plate, m.slot, value, self.settings, self.reg)
+        if end is not None and end > line.x:
+            full = min(full, end - line.x)
         y = (line.y + line.h + gap) * s
         ImageDraw.Draw(img).rectangle(
-            [line.x * s, y, (line.x + shown.w * share) * s, y + weight * s], fill=ink)
+            [line.x * s, y, (line.x + full * shown.w / line.w) * s, y + weight * s],
+            fill=ink)
 
     def _draw_ring(self, img, plate, m: Move, f: int, value: str) -> None:
         """The pen's ring round the figure's ink, as much of it as is drawn."""

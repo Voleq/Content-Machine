@@ -726,6 +726,38 @@ def drawn_box(plate: Plate, slot: Slot, value: str, settings: Settings,
             max(ink[2] - ink[0], 1), max(ink[3] - ink[1], 1))
 
 
+def last_line_box(plate: Plate, slot: Slot, value: str, settings: Settings,
+                  reg: Registry) -> tuple[int, int, int, int] | None:
+    """The box the LAST LINE of type occupies in a slot, in delivered pixels.
+
+    `drawn_box` is every line at once, so its right edge is the longest
+    line's. A rule under the line the copy ends on has to stop where that
+    line's words do: "vertical." alone on the last line took a rule as wide
+    as the card (the comment card, 24 Oct 2026). Lines are found as runs of
+    inked rows; the leading leaves at least one clear row between two.
+    """
+    from PIL import Image
+
+    scale = max(int(plate.export_scale or 1), 1)
+    w, h = slot.w * scale, slot.h * scale
+    if w <= 0 or h <= 0 or not str(value or "").strip():
+        return None
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    fill_slot(img, plate, slot, value, settings, reg, origin=(0, 0))
+    alpha = img.getchannel("A")
+    if alpha.getbbox() is None:
+        return None
+    data = alpha.tobytes()
+    rows = [any(data[y * w:(y + 1) * w]) for y in range(h)]
+    bottom = max(y for y, inked in enumerate(rows) if inked)
+    top = bottom
+    while top > 0 and rows[top - 1]:
+        top -= 1
+    ink = alpha.crop((0, top, w, bottom + 1)).getbbox()
+    return (slot.x * scale + ink[0], slot.y * scale + top + ink[1],
+            max(ink[2] - ink[0], 1), max(ink[3] - ink[1], 1))
+
+
 def unfilled_slots(plate: Plate, values: dict[str, str] | None) -> list[str]:
     """What this plate declares that `values` leaves empty.
 

@@ -354,9 +354,10 @@
           "plate": "cards/definition-9x16",
           "bind": {
             "term": "script.ticker",
-            "body": "script.numbers_comment"
+            "body": "script.numbers_comment",
+            "example": "wrap.47.1.0.script.move_summary"
           },
-          "notes": "The read as a term and its meaning. `definition` names its slots nothing like `quote-pull`, so it restates the binds. No kicker: the sheet's unit (\"$M\") said nothing over a sentence."
+          "notes": "The read as a term and its meaning. `definition` names its slots nothing like `quote-pull`, so it restates the binds. No kicker: the sheet's unit (\"$M\") said nothing over a sentence. The EXAMPLE IS DRAWN AS A BOX, and left unbound it went up empty under the read (24 Oct 2026): it carries the move, the thing the read is set against. Through `wrap` at its one line so a move summary too long for it takes the quote card instead, without narrowing what the writer is asked for."
         }
       ],
       "captions": false

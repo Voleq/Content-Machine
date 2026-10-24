@@ -546,6 +546,47 @@ def test_the_underline_never_runs_through_or_above_the_words(reg, settings, key,
     assert foot <= line.y + line.h <= foot + 8
 
 
+@pytest.mark.parametrize("key, full_last", [
+    ("cards/quote-pull-9x16",
+     "Revenue flat for years and losses widening every single year since then."),
+    ("cards/definition-9x16",
+     "Revenue flat for three years, losses widening every year, and the share "
+     "count up six percent a year.")])
+def test_the_underline_stops_where_the_last_line_s_words_do(reg, settings, key,
+                                                            full_last):
+    """The comment's last line was "vertical." alone, and the rule ran on
+    under most of the card's width past it (24 Oct 2026). A full last line
+    keeps design's 0.8 of the line."""
+    from PIL import Image
+
+    from pipeline.render_short import _Cache
+
+    plate = reg.get(key)
+    slot = plate.motion["highlight"]["slot"]
+    s = max(int(plate.export_scale or 1), 1)
+    comp = MV.MoveCompositor(MV.MovePlan(moves=[]), reg, settings,
+                             _Cache(settings, reg))
+    move = MV.Move("highlight", "the-comment", "x", slot, 0.0, 6)
+
+    def rule_right(text):
+        img = Image.new("RGBA", (plate.canvas[0] * s, plate.canvas[1] * s),
+                        (0, 0, 0, 0))
+        comp._draw_underline(img, plate, move, 5, text)
+        return img.getbbox()[2] / s
+
+    short_last = ("Revenue flat for three years, losses widening every year, "
+                  "share count up six percent a year. Business sideways; "
+                  "stock vertical.")
+    line = MV.underline_line(plate, slot, short_last, settings, reg)
+    end = MV.words_end(plate, slot, short_last, settings, reg)
+    assert end < line.x + line.w * 0.8 - 100, "the case this test is about"
+    assert rule_right(short_last) <= end + 1
+
+    line = MV.underline_line(plate, slot, full_last, settings, reg)
+    assert MV.words_end(plate, slot, full_last, settings, reg) > line.x + line.w * 0.8
+    assert abs(rule_right(full_last) - (line.x + line.w * 0.8)) <= 1
+
+
 @pytest.mark.parametrize("name, frames", [("wipe-sweep", 8), ("wipe-blinds", 8),
                                           ("wipe-sweep-short", 4),
                                           ("wipe-blinds-short", 4)])

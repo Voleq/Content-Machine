@@ -355,15 +355,16 @@
    "The kit draws every plate at night and at dusk; this list is how often each",
    "is used, which is a separate decision from what is drawn.",
    "",
-   "IT SAYS [\"night\"], DELIBERATELY, as the kit before this one did: nobody has",
-   "watched a dusk episode cut end to end. The route is to force one, watch it,",
-   "then move to [\"night\", \"night\", \"night\", \"dusk\"]. It is one line. Until",
-   "then gates.reachable_plates reports every dusk plate as unreachable, which",
-   "is the report being right. Night is first because it is the empty suffix and",
-   "what an episode with no identity to draw from gets."
+   "ONE VIDEO IN FOUR AT DUSK since 24 Oct 2026, when a dusk short was cut end",
+   "to end and watched frame by frame; until then it said [\"night\"]. Night is",
+   "first because it is the empty suffix and what an episode with no identity",
+   "to draw from gets."
   ],
   "episodes": [
-   "night"
+   "night",
+   "night",
+   "night",
+   "dusk"
   ]
  },
  "chapterTypes": {
