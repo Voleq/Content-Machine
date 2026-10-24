@@ -90,6 +90,10 @@ def evaluate(quote: dict, settings: Settings) -> list[Alert]:
     out: list[Alert] = []
 
     pct = _float(quote.get("regularMarketChangePercent"))
+    # Between the poll's start and the open, the change is the last
+    # session's, and it was sent as "today".
+    if quote.get("sessionStarted") is False:
+        pct = None
     if pct is not None and abs(pct) >= settings.alert_move_pct:
         direction = "up" if pct > 0 else "down"
         price = _float(quote.get("regularMarketPrice"))

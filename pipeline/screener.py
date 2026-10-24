@@ -110,6 +110,7 @@ class YahooMarketSource:
                         "averageDailyVolume3Month": getattr(
                             info, "three_month_average_volume", None),
                         "regularMarketChangePercent": _pct_change(info),
+                        "sessionStarted": regular_session_started(),
                     })
                 except Exception as e:  # noqa: BLE001 - one bad symbol, not all
                     log.debug("quote for %s failed (%s)", sym, e)
@@ -528,7 +529,11 @@ def live_move_context(settings: Settings, ticker: str) -> str:
         price = q.get("regularMarketPrice")
         if move is None:
             continue
-        bits = [f"{float(move):+.1f}% so far today"]
+        # Before the open the figure is the last session's move, and the
+        # prompt said "so far today" over it.
+        when = ("so far today" if q.get("sessionStarted", True)
+                else "in the last session (the market has not opened yet)")
+        bits = [f"{float(move):+.1f}% {when}"]
         if price:
             bits.append(f"last {float(price):.2f}")
         vol = q.get("regularMarketVolume")
@@ -708,15 +713,35 @@ PTB_WEEKDAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
 
 
 def _pct_change(info) -> float | None:
-    """Percent change from the previous close, when both numbers are there."""
+    """Percent change from the previous close, when both numbers are there.
+
+    THE OFFICIAL CLOSE, NOT THE LAST TRADE AFTER HOURS. yfinance's
+    `previous_close` is the last hourly bar of the previous day with pre-
+    and post-market trading in it, so a stock that closed at 100, fell to 85
+    after its report and trades at 86 now read "+1.2% today" and set off no
+    alert (scan, 24 Oct 2026). `regular_market_previous_close` comes from the
+    same daily bars as `last_price`.
+    """
     last = getattr(info, "last_price", None)
-    prev = getattr(info, "previous_close", None)
+    prev = getattr(info, "regular_market_previous_close", None) or getattr(
+        info, "previous_close", None)
     try:
         if last and prev and float(prev) != 0:
             return (float(last) - float(prev)) / float(prev) * 100.0
     except (TypeError, ValueError):
         pass
     return None
+
+
+def regular_session_started(now: datetime | None = None) -> bool:
+    """Whether New York's regular session has opened today. Before it has,
+    a quote's change is the last session's whole move, not today's."""
+    from datetime import timezone
+    from zoneinfo import ZoneInfo
+
+    ny = (now or datetime.now(timezone.utc)).astimezone(
+        ZoneInfo("America/New_York"))
+    return ny.weekday() < 5 and (ny.hour, ny.minute) >= (9, 30)
 
 
 def _digest_state(settings: Settings) -> Path:

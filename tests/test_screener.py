@@ -365,3 +365,46 @@ def test_run_screen_records_what_each_source_did(settings):
 
     result = run_screen(settings, "all")
     assert set(result.get("sources") or {}) >= {"yahoo", "stocktwits"}
+
+
+def test_the_move_is_measured_from_the_official_close(settings, monkeypatch):
+    """yfinance's `previous_close` is the last after-hours trade: a stock
+    that closed at 100, fell to 85 after its report and trades at 86 read
+    "+1.2% today"."""
+    from types import SimpleNamespace
+
+    from pipeline.screener import _pct_change
+
+    info = SimpleNamespace(last_price=86.0, previous_close=85.0,
+                           regular_market_previous_close=100.0)
+    assert round(_pct_change(info), 1) == -14.0
+
+
+def test_before_the_open_the_move_is_called_the_last_session_s(settings,
+                                                               monkeypatch):
+    from datetime import datetime, timezone
+
+    from pipeline.alerts import evaluate
+    from pipeline.screener import live_move_context, regular_session_started
+
+    # 13:00 UTC on a Monday is 09:00 in New York (EDT); 14:00 is 10:00.
+    assert not regular_session_started(datetime(2026, 10, 19, 13, tzinfo=timezone.utc))
+    assert regular_session_started(datetime(2026, 10, 19, 14, tzinfo=timezone.utc))
+    assert not regular_session_started(datetime(2026, 10, 24, 15, tzinfo=timezone.utc))
+
+    live = settings.model_copy(update={"mock_screener": False})
+    quote = {"symbol": "EXMPL", "regularMarketPrice": 22.0,
+             "regularMarketChangePercent": 10.4, "sessionStarted": False}
+
+    class FakeSource:
+        def __init__(self, *a, **k):
+            pass
+
+        def quotes(self, tickers):
+            return [quote]
+
+    monkeypatch.setattr("pipeline.screener.YahooMarketSource", FakeSource)
+    text = live_move_context(live, "EXMPL")
+    assert "+10.4% in the last session" in text and "today" not in text
+    assert evaluate(quote, settings) == []
+    assert evaluate({**quote, "sessionStarted": True}, settings)
