@@ -943,7 +943,11 @@ def _render_long(
     # toward a camera the cut never reaches.
     from pipeline.room_dressing import CLOCK_MIN_VIDEO_S, CLOCK_S, clock_shot
 
-    _clock = (clock_shot() if duration >= CLOCK_MIN_VIDEO_S and end_cut is not None
+    # in the light the rooms are in (`dennis3d.light_of`)
+    _light = ("_t0" + ("_dusk" if reg.hour == "dusk" else "") if reg.season == "christmas"
+              else ("_dusk" if reg.hour == "dusk" else "")
+              + ("_rain" if reg.weather == "rain" else ""))
+    _clock = (clock_shot(light=_light) if duration >= CLOCK_MIN_VIDEO_S and end_cut is not None
               and end_cut + CLOCK_S < duration - 1.0 else None)
     if _clock is not None:
         covers.append((end_cut, end_cut + CLOCK_S))

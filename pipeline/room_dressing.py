@@ -1327,9 +1327,10 @@ ROOM3D_RENDERS = Path(__file__).resolve().parents[1] / "room3d" / "renders"
 class _Shot:
     """One committed 3D render as the little of a plate the lettering reads."""
 
-    def __init__(self, renders: Path, entry: dict):
+    def __init__(self, renders: Path, entry: dict, light: str = ""):
         self.renders = renders
         self.entry = entry
+        self.light = light
         self.canvas = (1920, 1080) if entry.get("aspect", "16x9") == "16x9" else (1080, 1920)
         self.writable = {k: dict(v, mask=(entry.get("masks") or {}).get(k, ""))
                          for k, v in (entry.get("surfaces") or {}).items()
@@ -1341,16 +1342,26 @@ class _Shot:
 
     @property
     def picture(self) -> Path:
-        return self.renders / self.entry["states"][0]["png"]
+        """The render in this video's light (`dennis3d.light_of`): the dusk
+        sky, the rain. It was always the first, the night dry, so at dusk
+        and in the rain the clock close cut to another evening (scan,
+        24 Oct 2026). December's bulbs have no clock render: its hour."""
+        states = self.entry["states"]
+        by_tag = {st.get("tag", ""): st for st in states}
+        for tag in (self.light, self.light.replace("_t0", ""), ""):
+            if tag in by_tag and (self.renders / by_tag[tag]["png"]).exists():
+                return self.renders / by_tag[tag]["png"]
+        return self.renders / states[0]["png"]
 
 
-def clock_shot(renders: Path = ROOM3D_RENDERS) -> _Shot | None:
-    """The clock close-up, or None where the room was rendered without one."""
+def clock_shot(renders: Path = ROOM3D_RENDERS, *, light: str = "") -> _Shot | None:
+    """The clock close-up in `light` (`dennis3d.light_of` of the video's
+    rooms), or None where the room was rendered without one."""
     try:
         entry = json.loads((renders / "rooms.json").read_text(encoding="utf-8"))[CLOCK_ANGLE]
     except (OSError, ValueError, KeyError):
         return None
-    shot = _Shot(renders, entry)
+    shot = _Shot(renders, entry, light)
     items = (shot.writable.get("labels") or {}).get("items") or []
     if not shot.picture.exists() or not any(i.get("kind") == "clock" for i in items):
         return None

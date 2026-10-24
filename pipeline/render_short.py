@@ -2122,6 +2122,8 @@ def _render_short(script, tts, workspace: Path, settings, *,
             performer.close()
     render_frames(result, resolver, duration, silent, settings, reg=frame_reg,
                   words=words, plan=plan, scale=scale)
+    for l in result.of_kind("host3d"):
+        dennis3d.Performer.drop_frames(l.path)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}
     faces = getattr(render_frames, "last_faces", {}) or {}
     # THE CEILING, MEASURED ON THE FRAMES the shots drew, before captions

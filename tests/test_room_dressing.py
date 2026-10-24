@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 import json
+import shutil
 from pathlib import Path
 
 import numpy as np
@@ -690,6 +691,22 @@ def _clock_room(tmp: Path) -> Path:
         "masks": {"labels": "clock_mask_labels.png"},
         "surfaces": {"labels": {"items": [item]}}}}), encoding="utf-8")
     return tmp
+
+
+def test_the_clock_close_is_in_the_video_s_light(tmp_path):
+    """It was always the night's, dry, so at dusk the cut went to another
+    evening."""
+    room = _clock_room(tmp_path)
+    data = json.loads((room / "rooms.json").read_text(encoding="utf-8"))
+    data["clock"]["states"] += [{"png": f"clock{t}.jpg", "tag": t}
+                                for t in ("_rain", "_dusk", "_dusk_rain")]
+    (room / "rooms.json").write_text(json.dumps(data), encoding="utf-8")
+    for t in ("_rain", "_dusk", "_dusk_rain"):
+        shutil.copy(room / "clock.jpg", room / f"clock{t}.jpg")
+    for light, png in (("", "clock.jpg"), ("_dusk", "clock_dusk.jpg"),
+                       ("_dusk_rain", "clock_dusk_rain.jpg"), ("_rain", "clock_rain.jpg"),
+                       ("_t0_dusk", "clock_dusk.jpg"), ("_t0", "clock.jpg")):
+        assert rd.clock_shot(room, light=light).picture.name == png, light
 
 
 def _ink_along(img, minutes: float, *, size=(640, 360), reach=0.3) -> float:

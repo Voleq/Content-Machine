@@ -689,3 +689,17 @@ def test_a_drawn_shot_is_stored_once(performer):
     assert layer.exists() and not (layer.parent / "frames").exists()
     folder = dennis3d.Performer.frames(layer)
     assert len(list(folder.glob("d_*.png"))) == performer.settings.dennis_3d_fps
+
+
+def test_a_half_unpacked_shot_is_unpacked_again_and_dropped_after(performer):
+    """A folder was taken as done when its first frame was there: a run
+    stopped part-way left him frozen on the last frame it reached. And the
+    unpacked frames were kept sixty days beside the layer."""
+    layer = performer.shot(_room("room/desk-front-9x16"), [], 0.0, 1.0, (64, 112), seed="z")
+    half = layer.parent / "frames"
+    half.mkdir()
+    Image.new("RGBA", (64, 112)).save(half / "d_0000.png")
+    folder = dennis3d.Performer.frames(layer)
+    assert len(list(folder.glob("d_*.png"))) == performer.settings.dennis_3d_fps
+    dennis3d.Performer.drop_frames(folder)
+    assert not folder.exists() and layer.exists()
