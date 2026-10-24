@@ -199,16 +199,10 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
     exactly like a script whose [BEAT]s were silently dropped, and for two
     years it was the second one.
 
-    The tag's `= value` is checked here for the same reason. A slot nobody
-    bound is a drawn, empty box in the finished cut, and the only place
-    catching it is free is BEFORE approval — after it, the operator has
-    watched the render to find out. A warning, never a blocker: an empty box
-    is a legitimate choice on some drawings and this is the person who can
-    say so.
+    A visual tag's rows and slots are NOT checked: nothing draws them, so a
+    report saying a [PLATE] row has the wrong number of figures was noise
+    about a discarded line (scan, 24 Oct 2026).
     """
-    from pipeline.plate_tags import check_bound
-    from pipeline.plates import PlateError, load_plates
-
     out: list[str] = []
 
     # SAY THAT THEY ARE NOT DRAWN (D4). The SHORT renderer is a fixed shot
@@ -260,20 +254,9 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
             f"from its shot template, so this reaches no frame. Harmless, and "
             f"it cost a decision: the beat renders either way.")
 
-    try:
-        reg = load_plates(settings.assets_dir)
-    except PlateError:
-        reg = None
-    if reg is not None:
-        for e in script.inline_events:
-            if e.type is not TagType.PLATE:
-                continue
-            # Still checked, because a plate key the writer names is a
-            # statement about the kit and a wrong one is worth knowing about
-            # — but see the note above: the renderer does not draw it.
-            fill = check_bound(reg, e.payload, e.values, aspect="9x16")
-            out.extend(fill.problems)
-            out.extend(fill.warnings)
+    # The tags themselves are not checked any further: a row that does not
+    # match its header on a sheet nobody draws listed lines of warnings about
+    # nothing under the one that says so (scan, 24 Oct 2026).
 
     if not script.delivery_events():
         out.append(
@@ -469,16 +452,12 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
                     payload, tag=rt.type.value)
                 inline_warnings.extend(hold_warnings)
             if rt.type is TagType.PLATE:
-                # The tag carries its own content. Resolved here so a bad plate
-                # name or a mis-sized row is caught at parse time rather than
-                # discovered as a blank rectangle in the finished cut.
+                # Nothing draws it (`_tag_warnings` says so once), so its key
+                # and rows go unchecked. Its values are still read, because
+                # the vendor check reads every surface the writer filled.
                 fill = build_fill(load_plates(settings.assets_dir), rt.payload,
                                   aspect="9x16")
-                payload, values = fill.key or fill.name, fill.values
-                inline_warnings.extend(fill.warnings)
-                if not fill.ok:
-                    inline_warnings.extend(fill.problems)
-                    continue
+                payload, values = fill.key or fill.name or rt.payload, fill.values
             elif rt.type not in DELIVERY_TAG_TYPES:
                 payload, style = parse_chart_payload(payload)
             if rt.type not in DELIVERY_TAG_TYPES and not payload:

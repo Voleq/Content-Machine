@@ -1097,3 +1097,24 @@ def test_a_clean_short_still_passes_the_battery(settings, fixtures_dir,
     core = _short_with_data(_short_core(settings), fixtures_dir)
     reply = core.intake_script(5150, short_valid_json)
     assert "fact-check" not in reply.text
+
+
+def test_a_short_s_plate_tag_blocks_nothing(settings):
+    """A short draws no inline tag, so an unknown plate and a value too long
+    for its box are about a line nobody draws (scan, 24 Oct 2026)."""
+    from pipeline.gates import budget_check
+    from pipeline.models import TagEvent, TagType
+
+    class _Short:
+        audio_script = "x"
+        inline_events = [
+            TagEvent(type=TagType.PLATE, payload="tables/not-a-plate",
+                     char_offset=0, raw_offset=0),
+            TagEvent(type=TagType.PLATE, payload="structure/flow-16x9",
+                     values={"box-3": "Renewal in twelve months"},
+                     char_offset=0, raw_offset=0)]
+
+    findings, stats = kit_doctor(_Short(), settings)
+    assert stats["unresolved_keys"] == []
+    assert not any(f.severity == "block" for f in findings)
+    assert budget_check(_Short(), settings) == []

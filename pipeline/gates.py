@@ -1897,8 +1897,9 @@ def budget_check(script, settings: Settings) -> list[Finding]:
     except PlateError:
         return findings
 
-    events = list(getattr(script, "events", None)
-                  or getattr(script, "inline_events", None) or [])
+    # A short's [PLATE] tags are parsed and discarded (see `kit_doctor`), so
+    # a long value in one fits no box because it is in none.
+    events = list(getattr(script, "events", None) or [])
     for event in events:
         if getattr(event, "type", None) is not TagType.PLATE:
             continue
@@ -2463,6 +2464,13 @@ def kit_doctor(script, settings: Settings, *,
     # rather than whether it happens to be populated.
     aspect = "9x16" if (hasattr(script, "inline_events")
                         and not hasattr(script, "events")) else "16x9"
+    # A SHORT DRAWS NO INLINE TAG: its frames come from its shot template
+    # (`parser_short.SHORT_IGNORED_TAG_TYPES`), so a [PLATE] in one is parsed
+    # and discarded, and its key, slots and rows are nobody's problem. Checked
+    # anyway, a wrong key blocked the approval of a short it changed nothing
+    # in (scan, 24 Oct 2026).
+    if aspect == "9x16":
+        events = []
     for e in events:
         if e.type is not TagType.PLATE:
             continue

@@ -319,43 +319,29 @@ def test_the_short_grammar_carries_plates_and_strips_them_from_the_text(
     assert "|" not in script.audio_script
 
 
-def test_a_plate_that_names_a_slot_the_kit_does_not_have_is_reported(
-        short_valid_json, settings):
-    import json
-
+@pytest.mark.parametrize("tag", [
+    "[PLATE: hook-card-t1 | ticker=EXMPL | nonesuch=x]",
+    "[PLATE: numbers-sheet-4r-9x16 | unit=$M | head=FY22,FY23,FY24,FY25,LTM "
+    "| label-1=Revenue | row-1=1,2,3]",
+    "[PLATE: numbers-sheet-6r-16x9 | unit=$M]",
+    "[PLATE: nonesuch-plate]",
+])
+def test_a_short_s_plate_tag_gets_one_line_saying_it_is_not_drawn(
+        short_valid_json, settings, tag):
+    """A short draws no inline tag, so its slots, rows and aspect are not
+    reported line by line under the one warning that says so (scan,
+    24 Oct 2026)."""
     data = json.loads(short_valid_json)
-    data["audio_script"] = (
-        "EXMPL is up. [PLATE: hook-card-t1 | ticker=EXMPL | nonesuch=x] "
-        + data["audio_script"])
-    _, warnings = parse_short_script(json.dumps(data), settings)
-    assert any("has no slot 'nonesuch'" in w for w in warnings), warnings
-
-
-def test_a_row_that_does_not_match_its_header_is_reported(
-        short_valid_json, settings):
-    import json
-
-    data = json.loads(short_valid_json)
-    data["audio_script"] = (
-        "EXMPL is up. [PLATE: numbers-sheet-4r-9x16 | unit=$M "
-        "| head=FY22,FY23,FY24,FY25,LTM | label-1=Revenue | row-1=1,2,3] "
-        + data["audio_script"])
-    _, warnings = parse_short_script(json.dumps(data), settings)
-    # Five periods on a phone's sheet since rebuild-41.
-    assert any("3 figures against 5 period heads" in w for w in warnings), warnings
-
-
-def test_a_landscape_plate_is_refused_in_a_vertical_cut(
-        short_valid_json, settings):
-    """9:16 is a re-author, never a crop."""
-    import json
-
-    data = json.loads(short_valid_json)
-    data["audio_script"] = (
-        "EXMPL is up. [PLATE: numbers-sheet-6r-16x9 | unit=$M] "
-        + data["audio_script"])
-    _, warnings = parse_short_script(json.dumps(data), settings)
-    assert any("16x9" in w and "9x16" in w for w in warnings), warnings
+    data["audio_script"] = "EXMPL is up. " + data["audio_script"]
+    _, before = parse_short_script(json.dumps(data), settings)
+    data["audio_script"] = data["audio_script"].replace(
+        "EXMPL is up. ", f"EXMPL is up. {tag} ", 1)
+    script, warnings = parse_short_script(json.dumps(data), settings)
+    # The fixture already carries a [PLATE], so its one line is in both.
+    assert [w for w in warnings if w not in before] == []
+    assert any(w.startswith("visual tags in a SHORT are not drawn — PLATE")
+               for w in warnings)
+    assert any(e.type is TagType.PLATE for e in script.inline_events)
 
 
 # ---------------------------------------------------------------------------
