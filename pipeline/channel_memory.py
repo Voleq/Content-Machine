@@ -171,15 +171,19 @@ class _Book:
 class JokeBook(_Book):
     filename = JOKES_FILE
 
-    def repeats(self, sentence: str, *, overlap: float = 0.6) -> list[Remembered]:
+    def repeats(self, sentence: str, *, overlap: float = 0.6,
+                skip: tuple[str, str] | None = None) -> list[Remembered]:
         """Used jokes this sentence re-tells: most of the joke's own content
         words are back, in any order — the same analogy with its nouns moved
-        is the same analogy."""
+        is the same analogy. `skip` is (ticker, workdate) of the video being
+        checked: its own jokes, recorded when it shipped, are not repeats."""
         have = _content_words(sentence)
         if len(have) < 3:
             return []
         hits = []
         for joke in self.all():
+            if skip and (joke.ticker.upper(), joke.workdate) == skip:
+                continue
             want = _content_words(joke.text)
             if len(want) < 4:
                 continue
@@ -374,8 +378,11 @@ def dennis_facts_block(settings: Settings) -> str:
     return "\n".join(lines)
 
 
-def joke_reuse_lint(narration: str, settings: Settings) -> list[Finding]:
-    """A used joke, back again — even reworded."""
+def joke_reuse_lint(narration: str, settings: Settings, *,
+                    skip: tuple[str, str] | None = None) -> list[Finding]:
+    """A used joke, back again — even reworded. `skip` names this video, so
+    checking it again after it shipped does not find its own jokes (scan,
+    24 Oct 2026)."""
     try:
         book = JokeBook(settings)
         if not book.all():
@@ -386,7 +393,7 @@ def joke_reuse_lint(narration: str, settings: Settings) -> list[Finding]:
     findings: list[Finding] = []
     for lineno, line in enumerate(narration.splitlines(), 1):
         for said in _sentences(line):
-            prior = book.repeats(said)
+            prior = book.repeats(said, skip=skip)
             if prior:
                 p = prior[-1]
                 where = (f"{p.ticker} on {p.workdate}" if p.ticker

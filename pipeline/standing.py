@@ -269,7 +269,8 @@ class ConfessionLedger:
         """Whether one is warranted. Roughly one video in three."""
         return self.videos_since_last() >= CONFESSION_EVERY - 1
 
-    def repeats(self, text: str, *, overlap: float = 0.6) -> list[Confession]:
+    def repeats(self, text: str, *, overlap: float = 0.6,
+                skip: tuple[str, str] | None = None) -> list[Confession]:
         """Recorded confessions this text is a re-telling of.
 
         Word overlap against the ledger's own wording, not an exact match: the
@@ -282,6 +283,10 @@ class ConfessionLedger:
             return []
         hits = []
         for c in self.confessions():
+            # `skip` is (ticker, workdate) of the video being checked: its own
+            # confession, written here when it shipped, is not a re-telling.
+            if skip and (c.ticker.upper(), c.workdate) == skip:
+                continue
             had = set(_normalise(c.text).split())
             if not had:
                 continue

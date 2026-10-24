@@ -93,3 +93,38 @@ def test_blocks_fill_in_prompts(settings, workspace):
     assert "DENNIS — WHO HE IS" in text and "Dennis, 25" in text
     assert "ALREADY USED ON THIS CHANNEL" in text
     assert "{{" not in text.split("## TAG GRAMMAR")[0]
+
+
+def test_checking_a_shipped_video_again_does_not_find_its_own_lines(
+        settings, fixtures_dir, long_valid_text):
+    """Shipping writes a video's jokes and confession to the ledgers, so
+    checking it again (a re-render) reported its own lines as "already used
+    in EXMPL on <its own date>". Another video's are still found."""
+    from datetime import date
+
+    from pipeline.company_data import load_company_data
+    from pipeline.gates import run_gates
+    from pipeline.parser_long import parse_long_script
+    from pipeline.standing import ConfessionLedger
+    from pipeline.workspace import Workspace
+
+    data = load_company_data(fixtures_dir / "company_data")
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    joke = next(s for s in script.narration.split(". ")
+                if len(cm._content_words(s)) >= 6)
+    confession = "I bought it at nineteen in 2019 and it is four now."
+    script.confession = SimpleNamespace(kind="financial", text=confession)
+    ws = Workspace(settings, "EXMPL", "2026-10-01").create()
+    cm.JokeBook(settings).add("EXMPL/2026-10-01/long", [joke], ticker="EXMPL",
+                              workdate="2026-10-01", fmt="long")
+    ConfessionLedger(settings).note("EXMPL", kind="financial", text=confession,
+                                    fmt="long", workdate="2026-10-01")
+
+    def gates(where):
+        report = run_gates(script, settings, data=data, skeptic=False,
+                           as_of=date.today().isoformat(), workspace=where)
+        return {f.gate for f in report.findings}
+
+    assert not {"jokes", "confession"} & gates(ws.path)
+    other = Workspace(settings, "EXMPL", "2026-10-20").create()
+    assert {"jokes", "confession"} <= gates(other.path)

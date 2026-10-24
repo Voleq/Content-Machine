@@ -2017,7 +2017,8 @@ def budget_check(script, settings: Settings) -> list[Finding]:
     return findings
 
 
-def confession_lint(script, settings: Settings) -> list[Finding]:
+def confession_lint(script, settings: Settings, *,
+                    skip: tuple[str, str] | None = None) -> list[Finding]:
     """The same admission, told twice.
 
     "A repetition rule someone has to remember will fail; a ledger makes it
@@ -2035,7 +2036,7 @@ def confession_lint(script, settings: Settings) -> list[Finding]:
     from pipeline.standing import ConfessionLedger
 
     try:
-        prior = ConfessionLedger(settings).repeats(said.text)
+        prior = ConfessionLedger(settings).repeats(said.text, skip=skip)
     except Exception as exc:                       # noqa: BLE001 — never fatal
         log.debug("confession ledger unreadable (%s)", exc)
         return []
@@ -2822,8 +2823,14 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     report.findings += report.record("copy", copy_check(narration, settings))
     from pipeline.channel_memory import joke_reuse_lint
 
+    # THIS VIDEO'S OWN ROWS. Shipping writes its jokes and confession to the
+    # ledgers, so checking it again (a re-render, /check) reported its own
+    # lines as "already used in EXMPL on <its own date>".
+    this = ((workspace.parent.name.upper(), workspace.name)
+            if workspace is not None else None)
     report.findings += report.record("jokes",
-                                     joke_reuse_lint(narration, settings))
+                                     joke_reuse_lint(narration, settings,
+                                                     skip=this))
     from pipeline.recurring_bits import bits_lint
 
     report.findings += report.record("bits", bits_lint(script, settings))
@@ -2833,7 +2840,8 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
         script, settings, workspace=workspace))
     report.findings += report.record("direction", direction_lint(script))
     report.findings += report.record("confession",
-                                     confession_lint(script, settings))
+                                     confession_lint(script, settings,
+                                                     skip=this))
     report.findings += report.record("valuation",
                                      valuation_moves(script, settings))
     report.findings += report.record("budgets", budget_check(script, settings))
