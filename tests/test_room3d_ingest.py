@@ -19,7 +19,8 @@ SIZE = (96, 54)
 # The kit's flicker, as its frames name pictures: rest, a dip on 4, a deeper
 # one on 8, both again on 9 and 10.
 KIT_FLICKER = "AAABAAACBCAA"
-CHRISTMAS = ("_t0", "_t0_dip", "_t1", "_t1_dip2", "_t2", "_t2_dip", "_t2_dip2")
+PLAIN = ("", "_rain", "_dusk", "_dusk_rain")
+CHRISTMAS = ("_t0", "_t0_dusk", "_t1", "_t1_dusk", "_t2", "_t2_dusk")
 
 
 def _kit_room(name: str, hour: str, *, season: str = "", loops=("screen-flicker",),
@@ -46,8 +47,9 @@ def _kit_room(name: str, hour: str, *, season: str = "", loops=("screen-flicker"
     return e
 
 
-def _renders(tmp: Path) -> Path:
-    """A rooms.json for desk-wide and its December twin, tiny and flat."""
+def _renders(tmp: Path, plain=PLAIN) -> Path:
+    """A rooms.json for desk-wide and its December twin, tiny and flat, each
+    state its own colour."""
     r = tmp / "renders"
     r.mkdir()
     rooms = {}
@@ -57,7 +59,7 @@ def _renders(tmp: Path) -> Path:
     front[38:, 10:40] = 255
     board = np.zeros(SIZE[::-1], np.uint8)
     board[4:20, 4:30] = 255
-    for stem, tags in (("desk-wide", ("", "_dip", "_dip2")), ("desk-wide-christmas", CHRISTMAS)):
+    for stem, tags in (("desk-wide", plain), ("desk-wide-christmas", CHRISTMAS)):
         states = []
         for i, tag in enumerate(tags):
             png = f"{stem}{tag}.png"
@@ -80,7 +82,7 @@ def _renders(tmp: Path) -> Path:
     return r
 
 
-def _install(tmp: Path):
+def _install(tmp: Path, plain=PLAIN):
     built = {"assets": {
         "room/desk-wide-16x9": _kit_room("desk-wide-16x9", "night", rain=True),
         "room/desk-wide-dusk-16x9": _kit_room("desk-wide-dusk-16x9", "dusk", rain=True),
@@ -92,7 +94,7 @@ def _install(tmp: Path):
     }}
     drawn = tmp / "drawn"
     (drawn / "room").mkdir(parents=True)
-    problems = ingest._rooms_3d(built, drawn, _renders(tmp))
+    problems = ingest._rooms_3d(built, drawn, _renders(tmp, plain))
     return built["assets"], drawn / "room", problems
 
 
@@ -117,8 +119,26 @@ def test_every_room_is_the_render_under_the_kit_name(tmp_path):
     assert "back" not in (e["layers"] or {})
 
 
-def test_dusk_is_the_night_render_under_the_same_files(tmp_path):
-    assets, _, _ = _install(tmp_path)
+def test_dusk_is_its_own_render_under_its_own_names(tmp_path):
+    """V10: the dusk rooms are the render's dusk states, the dry ones and the
+    wet ones, installed under the dusk keys' names, the night's untouched."""
+    assets, room, _ = _install(tmp_path)
+    renders = tmp_path / "renders"
+    night, dusk = assets["room/desk-wide-16x9"], assets["room/desk-wide-dusk-16x9"]
+    assert dusk["files"]["png"].startswith("desk-wide-dusk-16x9")
+    assert not {f["png"] for f in dusk["frames"]} & {f["png"] for f in night["frames"]}
+    assert (_px(room / dusk["files"]["png"]) == _px(renders / "desk-wide_dusk.png")).all()
+    assert (_px(room / night["files"]["png"]) == _px(renders / "desk-wide.png")).all()
+    win = _px(renders / "desk-wide_mask_window.png") > 0
+    wet = _px(room / dusk["weathers"]["rain"]["frames"][0]["png"])
+    assert (wet[~win] == _px(renders / "desk-wide_dusk_rain.png")[~win]).all()
+
+
+def test_a_render_with_only_the_night_gives_dusk_the_night_s_files(tmp_path):
+    """A render from before the dusk and the rain: every hour and weather is
+    the night picture, written once and shared, never a missing state."""
+    assets, _, problems = _install(tmp_path, plain=("",))
+    assert not [p for p in problems if "state" in p], problems
     night, dusk = assets["room/desk-wide-16x9"], assets["room/desk-wide-dusk-16x9"]
     assert [f["png"] for f in dusk["frames"]] == [f["png"] for f in night["frames"]]
     assert [f["front"] for f in dusk["frames"]] == [f["front"] for f in night["frames"]]
@@ -143,11 +163,16 @@ def test_rain_and_snow_fall_only_on_the_glass_and_the_same_every_install(tmp_pat
     e = assets["room/desk-wide-16x9"]
     rain = e["weathers"]["rain"]
     assert rain["frameCount"] == 12 and rain["loops"] == ["window-rain"]
-    plain = _px(room / e["frames"][0]["png"])
+    # The rain's own lights (its state), with the weather on the glass only.
+    lit = _px(tmp_path / "renders" / "desk-wide_rain.png")
     wet = _px(room / rain["frames"][0]["png"])
-    assert (wet[~win] == plain[~win]).all() and (wet[win] != plain[win]).any()
-    # Only the glass moves: the room in front of him is the dry room's.
-    assert {f["front"] for f in rain["frames"]} == {e["frames"][0]["front"]}
+    assert (wet[~win] == lit[~win]).all() and (wet[win] != lit[win]).any()
+    # Only the glass moves: the room in front of him is one picture, cut
+    # from the frames it is laid over.
+    fronts = {f["front"] for f in rain["frames"]}
+    assert len(fronts) == 1 and fronts != {e["frames"][0]["front"]}
+    on = _px(tmp_path / "renders" / "desk-wide_mask_front.png") > 0
+    assert (_px(room / fronts.pop())[..., :3][on] == lit[on]).all()
 
     xmas = assets["room/desk-wide-christmas-16x9"]
     snowy = _px(room / xmas["frames"][0]["png"])
@@ -175,6 +200,27 @@ def test_december_twinkles_and_its_screen_holds_still(tmp_path):
     assert xmas["loops"] == ["lights-twinkle", "window-snow"]
 
 
+def test_every_window_rains_and_in_december_snows(tmp_path):
+    """V10: the weather is every window's, not the kit's few angles': a room
+    the kit drew dry rains wherever its render sees the window, and a
+    December twin the kit drew without snow snows."""
+    renders = _renders(tmp_path)
+    built = {"assets": {
+        "room/desk-wide-16x9": _kit_room("desk-wide-16x9", "night", loops=()),
+        "room/desk-wide-christmas-16x9": _kit_room(
+            "desk-wide-christmas-16x9", "night", season="christmas", loops=("lights-twinkle",)),
+    }}
+    drawn = tmp_path / "drawn"
+    (drawn / "room").mkdir(parents=True)
+    assert not ingest._rooms_3d(built, drawn, renders)
+    dry, xmas = built["assets"]["room/desk-wide-16x9"], built["assets"]["room/desk-wide-christmas-16x9"]
+    assert dry["weathers"]["rain"]["loops"] == ["window-rain"]
+    assert dry["weathers"]["rain"]["frameCount"] == 12
+    assert "weathers" not in xmas, "rain and snow in one pane is neither"
+    assert xmas["loops"] == ["lights-twinkle", "window-snow"]
+    assert len({f["png"] for f in xmas["frames"]}) == 12
+
+
 def test_the_board_is_writable(tmp_path):
     assets, room, _ = _install(tmp_path)
     w = assets["room/desk-wide-16x9"]["writable"]
@@ -186,9 +232,21 @@ def test_the_plan_steps_the_bulbs_and_never_dips_the_screen():
     states = dict.fromkeys(CHRISTMAS)
     plan = ingest._room3d_plan(("screen-flicker", "lights-twinkle"), 12, states)
     assert [t for t, _, _ in plan] == ["_t0"] * 4 + ["_t1"] * 4 + ["_t2"] * 4
+    dusk = ingest._room3d_plan(("lights-twinkle",), 12, states, "snow", "dusk")
+    assert [t for t, _, _ in dusk] == ["_t0_dusk"] * 4 + ["_t1_dusk"] * 4 + ["_t2_dusk"] * 4
     # A bulb state the render did not make falls back to the room at rest.
     assert ingest._room3d_plan(("lights-twinkle",), 12, {"": None})[0][0] == ""
     assert "screen-flicker" in ingest.ROOM3D_DROPS_LOOPS
+
+
+def test_the_plan_takes_the_hour_s_and_the_weather_s_light():
+    states = dict.fromkeys(PLAIN)
+    tags = {(hour, wet): ingest._room3d_plan((), 1, states, wet, hour)[0][0]
+            for hour in ("night", "dusk") for wet in ("", "rain")}
+    assert tags == {("night", ""): "", ("night", "rain"): "_rain",
+                    ("dusk", ""): "_dusk", ("dusk", "rain"): "_dusk_rain"}
+    # a render with the dusk but no dusk rain: the dusk, not the night's rain
+    assert ingest._room3d_plan((), 1, dict.fromkeys(("", "_rain", "_dusk")), "rain", "dusk")[0][0] == "_dusk"
 
 
 def test_the_phone_s_rooms_are_its_own_renders_with_no_title(tmp_path):
@@ -198,13 +256,13 @@ def test_the_phone_s_rooms_are_its_own_renders_with_no_title(tmp_path):
     renders = _renders(tmp_path)
     rooms = json.loads((renders / "rooms.json").read_text(encoding="utf-8"))
     tall = (SIZE[1], SIZE[0])
-    for tag in ("", "_dip", "_dip2"):
+    for tag in PLAIN:
         Image.new("RGB", tall, (90, 30, 30)).save(renders / f"desk-wide-9x16{tag}.png")
     rooms["desk-wide-9x16"] = dict(rooms["desk-wide"], aspect="9x16", title=None,
                                    anchor={"x": 20, "y": 40, "w": 9, "h": 44},
                                    masks={}, surfaces={},
                                    states=[{"tag": t, "png": f"desk-wide-9x16{t}.png"}
-                                           for t in ("", "_dip", "_dip2")])
+                                           for t in PLAIN])
     (renders / "rooms.json").write_text(json.dumps(rooms), encoding="utf-8")
 
     phone = dict(_kit_room("desk-wide-9x16", "night"), aspect="9x16", delivered=list(tall),

@@ -603,3 +603,63 @@ def test_the_clock_jump_runs_the_hands_on_half_an_hour(tmp_path):
     assert frames[-1].tobytes() == frames[-2].tobytes()
     assert len({f.tobytes() for f in frames}) > 8
 
+
+
+# ------------------------------------------- the plant's tag and his phone
+_TAG = {"id": "plant-tag", "kind": "plant", "paper": [242, 242, 236], "tex": [360, 200],
+        "box": [20, 24, 340, 176], "quad": [[20, 20], [56, 20], [56, 40], [20, 40]], "depth": 2.0}
+_PHONE = {"id": "phonescreen", "kind": "phone", "paper": [16, 18, 24], "tex": [400, 800],
+          "box": [28, 150, 372, 470], "quad": [[120, 20], [160, 20], [160, 90], [120, 90]],
+          "depth": 1.5}
+
+
+def _labelled(tmp: Path) -> Plate:
+    """A dark room, 200x100 canvas delivered at 400x200, with a plant's tag
+    painted (242, 242, 236) on the left and the phone's dark glass right."""
+    from PIL import ImageDraw
+
+    fam = tmp / "room"
+    fam.mkdir(parents=True)
+    room = Image.new("RGB", (400, 200), (24, 28, 40))
+    mask = Image.new("L", (400, 200), 0)
+    for item in (_TAG, _PHONE):
+        quad = [(x * 2, y * 2) for x, y in item["quad"]]
+        ImageDraw.Draw(room).polygon(quad, fill=tuple(item["paper"]))
+        ImageDraw.Draw(mask).polygon(quad, fill=255)
+    room.save(fam / "r.png")
+    mask.save(fam / "r_mask_labels.png")
+    return Plate(
+        key="room/r-16x9", family="room", name="r-16x9", canvas=(200, 100),
+        delivered=(400, 200), export_scale=2, aspect="16x9", playback="static",
+        fps=0.0, frame_count=1, frames=(Frame(tag="", png="r.png", front=""),),
+        files_png="r.png", files_svg="", base_is_frame=None, slots={}, type_roles={},
+        root=tmp, layers={},
+        writable={"labels": {"items": [_TAG, _PHONE], "mask": "r_mask_labels.png"}})
+
+
+def test_the_plant_is_named_in_marker_on_its_tag(tmp_path):
+    plate = _labelled(tmp_path / "kit")
+    d = _dressing(props=(("plant-tag", "EXMPL"),))
+    out = rd.written_room(plate, d, tmp_path / "w", FONTS)
+    before = np.asarray(Image.open(plate.path).convert("RGB")).astype(int)
+    after = np.asarray(Image.open(out.path).convert("RGB")).astype(int)
+    tag = (slice(42, 78), slice(42, 110))
+    assert (after[tag] < before[tag] - 60).sum() > 40, "no name in marker on the tag"
+    assert (after[:, 200:] == before[:, 200:]).all(), "a dark phone was lit with nothing to say"
+
+
+def test_kev_s_message_lights_the_phone_and_it_shines(tmp_path):
+    """Pick 7: the glass is lit, brighter than the dark render everywhere
+    on it, with the notification's pale bubble, and spills past its edge."""
+    plate = _labelled(tmp_path / "kit")
+    out = rd.written_room(plate, _dressing(props=(("phonescreen", "Kev: thoughts?"),)),
+                          tmp_path / "w", FONTS)
+    before = np.asarray(Image.open(plate.path).convert("RGB")).astype(int)
+    after = np.asarray(Image.open(out.path).convert("RGB")).astype(int)
+    glass = after[44:176, 244:316]
+    assert (glass.mean(axis=2) > before[44:176, 244:316].mean(axis=2)).mean() > 0.95
+    assert (glass.min(axis=2) > 180).sum() > 60, "no notification on the glass"
+    beside = (slice(60, 160), slice(324, 334))
+    assert (after[beside] >= before[beside]).all() and (after[beside] > before[beside]).any(), \
+        "a lit phone in a dark room spills a little light"
+    assert (after[:, :150] == before[:, :150]).all(), "the phone's light reached across the room"

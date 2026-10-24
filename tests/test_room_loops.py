@@ -344,25 +344,25 @@ def test_the_3d_rooms_hold_the_screen_still(installed, aspect):
                 if "screen-flicker" in (w.loops or ())]
 
 
-def test_the_windows_are_the_only_rooms_with_weather(installed):
-    """doorway-wide's lit door is not a window, so rain falls on the window
-    angles only. window-talk (rebuild-40) is the one whose 9:16 crop keeps its
-    pane, so it is the one room where a short shows the weather."""
-    rooms = [p for k, p in sorted(installed.all_plates().items())
-             if p.family == "room" and p.hour in ("", installed.base_hour)]
-    if not any(p.loops for p in rooms):
+def test_every_window_has_the_weather(installed):
+    """V10 (24 Oct 2026): every room whose 3D render sees the window rains,
+    and its December twin snows, not only the few angles the kit drew the
+    weather on, so a wet night is wet from every angle. A room with no
+    window in shot has neither."""
+    rooms = {k: p for k, p in sorted(installed.all_plates().items())
+             if p.family == "room" and p.hour in ("", installed.base_hour)}
+    if not any(p.loops for p in rooms.values()):
         pytest.skip("the installed kit predates the room loops; re-run the ingest")
+    if any(p.author != "room3d" for p in rooms.values()):
+        pytest.skip("the installed kit predates the 3D room; re-run the ingest")
+    renders = json.loads((ROOT / "room3d" / "renders" / "rooms.json").read_text(encoding="utf-8"))
+    windows = {"room/" + (stem if stem.endswith("-9x16") else f"{stem}-16x9")
+               for stem, e in renders.items() if "window" in (e.get("masks") or {})} & set(rooms)
 
-    wet = {p.key for p in rooms if p.weathers}
-    assert wet == {"room/desk-wide-16x9", "room/window-wall-16x9",
-                   "room/window-wide-16x9", "room/window-talk-16x9",
-                   "room/window-talk-9x16"}
-    snowing = {p.key for p in rooms if "window-snow" in p.loops}
-    assert snowing == {"room/desk-wide-christmas-16x9",
-                       "room/window-wall-christmas-16x9",
-                       "room/window-wide-christmas-16x9",
-                       "room/window-talk-christmas-16x9",
-                       "room/window-talk-christmas-9x16"}
+    wet = {k for k, p in rooms.items() if p.weathers}
+    assert wet == {k for k in windows if "-christmas" not in k}
+    snowing = {k for k, p in rooms.items() if "window-snow" in (p.loops or ())}
+    assert snowing == {k for k in windows if "-christmas" in k}
     for p in rooms:
         if p.season:
             assert "lights-twinkle" in p.loops, p.key

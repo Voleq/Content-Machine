@@ -69,3 +69,36 @@ def test_the_models_answer_is_kept_for_a_rerender(tmp_path, monkeypatch):
                    settings=_settings(), workspace=tmp_path)
     assert one == two and len(calls) == 1
     assert dict(one)["note0"] == "debt doubled"
+
+
+def test_the_plant_is_named_after_his_latest_broken_thesis(tmp_path):
+    """Pick 2: the tag carries the last thesis the book found broken by the
+    video's day; "No. 14" before any has broken."""
+    from pipeline.standing import THESES_FILE
+
+    settings = SimpleNamespace(assets_dir=ROOT / "assets", state_dir=tmp_path)
+    said = lambda day: dict(rw.props(None, ticker="EXMPL", workdate=day, episode=1,  # noqa: E731
+                                     settings=settings))["plant-tag"]
+    assert said("2026-10-18") == "No. 14"
+    (tmp_path / THESES_FILE).write_text(json.dumps({
+        "AAA": {"ticker": "AAA", "summary": "a", "status": "broken",
+                "checked_at": "2026-09-01T10:00:00+00:00"},
+        "BBB": {"ticker": "BBB", "summary": "b", "status": "broken",
+                "checked_at": "2026-10-10T10:00:00+00:00"},
+        "CCC": {"ticker": "CCC", "summary": "c", "status": "cracking",
+                "checked_at": "2026-10-12T10:00:00+00:00"},
+        "DDD": {"ticker": "DDD", "summary": "d", "status": "broken",
+                "checked_at": "2026-11-20T10:00:00+00:00"}}), encoding="utf-8")
+    assert said("2026-10-18") == "BBB"          # not the one broken after the video
+    assert said("2026-09-15") == "AAA"
+    assert said("2026-08-01") == "No. 14"
+
+
+def test_kev_s_message_lights_the_phone_only_when_his_tip_runs(monkeypatch):
+    monkeypatch.setattr(rw, "from_script", lambda text, ticker, settings: ([], []))
+    kev = SimpleNamespace(narration="Kev texted me at six. Thoughts? The filing says otherwise.")
+    plain = SimpleNamespace(narration="The filing says otherwise.")
+    lit = dict(rw.props(kev, ticker="EXMPL", workdate="2026-10-18", episode=1, settings=_settings()))
+    dark = dict(rw.props(plain, ticker="EXMPL", workdate="2026-10-18", episode=1, settings=_settings()))
+    assert lit["phonescreen"] == "Kev: thoughts?"
+    assert "phonescreen" not in dark

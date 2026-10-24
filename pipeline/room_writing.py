@@ -21,6 +21,11 @@ his things are this video's, laid on by `pipeline/room_dressing.py`:
 - THE WALL CLOCK SAYS FIVE PAST THREE, the hour the room was always set at;
   its hands are lettered too, so the clock jump between scenes can run them
   on (`room_dressing.clock_jump_frames`).
+- THE PLANT IS NAMED AFTER HIS LATEST MISTAKE (pick 2, 18 Oct 2026): the tag
+  in its pot carries the ticker of the last thesis of his the thesis book
+  found broken, up to the video's day; "No. 14" before there is one.
+- KEV'S MESSAGE LIGHTS HIS PHONE (pick 7) in a video whose script carries
+  Kev's tip (`pipeline.recurring_bits`), and in no other: "Kev: thoughts?".
 - THE REST IS FROM A LIST he can edit (`assets/room_writing.json`): the notes
   and cards whenever the model is not running or wrote nothing usable. Each
   video takes different lines from it than the video before.
@@ -46,6 +51,9 @@ POOL_FILE = "room_writing.json"
 SIGN = "NOT\nFINANCIAL\nADVICE"
 # The wall clock's hands, "H:MM", before any clock jump runs them on.
 CLOCK = "3:05"
+# The plant's name before any thesis of his has broken, and Kev's message.
+PLANT = "No. 14"
+KEV = "Kev: thoughts?"
 CACHE_FILE = "room_writing.json"
 # How much the model is asked for, and how long each piece may be: what
 # fits a 7.5 cm note and an index card at the back of the room.
@@ -219,6 +227,25 @@ def from_script(script_text: str, ticker: str, settings) -> tuple[list[str], lis
 
 
 # ------------------------------------------------------------ one video
+def wrong_about(settings, day: _dt.date) -> str:
+    """The ticker of the latest thesis of his found broken by `day` (by the
+    day it was found so), or "" when none has: the plant's name."""
+    try:
+        from pipeline.standing import ThesisBook
+
+        book = ThesisBook(settings)
+        broken = []
+        for ticker in book.tickers():
+            t = book.get(ticker)
+            when = str((t.checked_at or t.recorded_at) if t else "")[:10]
+            if t is not None and t.status == "broken" and when and when <= day.isoformat():
+                broken.append((when, t.ticker))
+    except Exception as e:                         # noqa: BLE001 — a name, never a failure
+        log.debug("thesis book unreadable for the plant (%s)", e)
+        return ""
+    return max(broken)[1] if broken else ""
+
+
 def script_text(script) -> str:
     return str(getattr(script, "narration", "") or getattr(script, "audio_script", "") or "")
 
@@ -262,4 +289,9 @@ def props(script, *, ticker: str, workdate: str, episode: int, settings,
         out[f"card{i}"] = c
     out["cs"] = SIGN
     out["clockface"] = CLOCK
+    out["plant-tag"] = wrong_about(settings, day) or PLANT
+    from pipeline.recurring_bits import detect_bit
+
+    if detect_bit(text, confessed=False, old_trade_ready=False) == "kev_tip":
+        out["phonescreen"] = KEV
     return tuple(sorted(out.items()))

@@ -252,7 +252,7 @@ def _kit_proves_itself(staged: Path) -> list[str]:
 # THE MONITOR HOLDS STILL in the 3D room. The kit's rooms dip the screen and
 # the lamp on four of every twelve frames (`screen-flicker`); in a modelled
 # room, behind a man who moves, that read as a fault, and Valentin had it
-# taken off (3 Oct 2026). The render still makes the dip states
+# taken off (3 Oct 2026). The render has made no dip states since 24 Oct
 # (room3d/build.py), and the ingest plays none of them: the loop is dropped
 # from every 3D room and its rain, the phone's included, so a room whose only
 # motion was the flicker installs as a still, and the sound loses the buzz
@@ -260,20 +260,25 @@ def _kit_proves_itself(staged: Path) -> list[str]:
 ROOM3D_DROPS_LOOPS = ("screen-flicker",)
 
 
-def _room3d_plan(loops, n: int, states: dict, precip: str = "") -> list[tuple]:
+def _room3d_plan(loops, n: int, states: dict, precip: str = "", hour: str = BASE_HOUR) -> list[tuple]:
     """What each frame of a loop shows: (state tag, weather, phase).
 
-    The state is the render's lights: in December, which bulb string is lit
-    (the kit's `lights-twinkle` steps every four frames), otherwise the room
-    at rest. The weather is drawn on the glass at install, `phase` frames into
-    its own loop: rain repeats every six frames, snow falls a whole window in
-    twelve.
+    The state is the render's lights (room3d/build.py `states`): in December,
+    which bulb string is lit (the kit's `lights-twinkle` steps every four
+    frames); the hour's sky (`_dusk`); in the rain, the rain's sky and light
+    (`_rain`). The weather itself is drawn on the glass at install, `phase`
+    frames into its own loop: rain repeats every six frames, snow falls a
+    whole window in twelve. A state the render did not make falls back to the
+    nearest it did (a render from before the dusk and the rain had only the
+    night): the bulbs are kept over the hour, the hour over the weather.
     """
     plan = []
     for i in range(n):
-        tag = f"_t{(i // 4) % 3}" if "lights-twinkle" in loops else ""
-        if tag not in states:
-            tag = ""
+        bulbs = f"_t{(i // 4) % 3}" if "lights-twinkle" in loops else ""
+        dusk = "_dusk" if hour != BASE_HOUR else ""
+        wet = "_rain" if precip == "rain" else ""
+        tag = next((t for t in (bulbs + dusk + wet, bulbs + dusk, bulbs + wet, bulbs, dusk + wet, dusk)
+                    if t in states), "")
         if precip == "snow":
             plan.append((tag, "snow", i % 12))
         elif precip == "rain":
@@ -311,6 +316,17 @@ def _precipitation(img, mask, kind: str, phase: int, seed: int):
             y = (y + phase * h / 6) % h
             for yy in (y, y - h):
                 d.line([(x, yy), (x - ln * 0.21, yy + ln)], fill=(186, 202, 226, rnd.randint(70, 130)), width=2)
+        # Drops on the glass itself, still while the rain falls past them,
+        # a few with the run they left: the same on every frame.
+        beads = random.Random(seed + 1)
+        k = min(img.size) / 1080
+        for _ in range(max(24, w * h // 2600)):
+            x, y, r = beads.uniform(0, w), beads.uniform(0, h), beads.uniform(1.6, 4.4) * k
+            if beads.random() < 0.12:
+                d.line([(x, y - beads.uniform(14, 40) * k), (x, y)], fill=(200, 212, 232, 60),
+                       width=max(1, int(r)))
+            d.ellipse([x - r, y - r * 1.15, x + r, y + r * 1.15], fill=(196, 210, 232, 96))
+            d.ellipse([x - r * 0.55, y - r * 0.75, x - r * 0.05, y - r * 0.25], fill=(240, 246, 255, 190))
     else:
         for _ in range(max(30, w * h // 14000)):
             x, y, r = rnd.uniform(0, w), rnd.uniform(0, h), rnd.choice((2.5, 3.5, 4.5, 6.0))
@@ -338,12 +354,15 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
     menu and every caller keep naming the same rooms.
 
     The loops are the kit's, frame for frame, but for the screen's flicker
-    (`ROOM3D_DROPS_LOOPS`): December's bulbs step every four frames, snow
-    falls past the window where the kit had `window-snow`, and the rooms the
-    kit rained on keep their `rain` weather. Every frame is a render state (lights are
-    light groups, so no frame is a second render) with the weather drawn on
-    the glass here, and every front layer is that frame cut by the render's
-    own mask of what stands in front of him.
+    (`ROOM3D_DROPS_LOOPS`): December's bulbs step every four frames. THE
+    WEATHER IS EVERY WINDOW'S (V10, 24 Oct 2026): every room whose render sees
+    the window rains (`rain` weather, outside December) and in December
+    snows (`window-snow`), not only the angles the kit drew it on, so a wet
+    night is wet from every angle. Every frame is a render state (lights are
+    light groups, so no frame is a second render: the rain's own sky and
+    light, `_rain`) with the weather drawn on the glass here, and every front
+    layer is that frame cut by the render's own mask of what stands in front
+    of him.
 
     THE PHONE'S ROOMS are the same angles from cameras of their own
     (`room3d/build.py` PORTRAIT), rendered under `<angle>-9x16`, with him in
@@ -352,11 +371,12 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
     the 9:16 openers rather than being solved onto a slate that is behind his
     head from any phone's width.
 
-    The dusk hour is the night render: no episode is shot at dusk
-    (`roles.json` hours), so it gets the same pictures rather than a second
-    lighting nobody has watched. A room with no render is a problem, not a
-    fallback to the flat drawing: one flat room among 3D ones is the thing
-    this replaces.
+    THE DUSK HOUR IS ITS OWN RENDER (V10): the dusk states (`_dusk`,
+    `_dusk_rain`, December's `_t<n>_dusk`) under the dusk keys' own names.
+    A render made before them has only the night, and a picture the night
+    already installed is not written twice: the dusk frames then find the
+    night's files. A room with no render is a problem, not a fallback to the
+    flat drawing: one flat room among 3D ones is the thing this replaces.
     """
     import numpy as np
     from PIL import Image
@@ -387,10 +407,11 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
             if isinstance(n, str) and n and (room_dir / n).exists():
                 (room_dir / n).unlink()
     cache: dict[tuple, object] = {}
-    # Files by the name they are installed under. Dusk is the night render
-    # under the night's names, so its frames find the night's files here
-    # rather than writing a second copy, or a different state, over them.
+    # Files by the picture they hold (the render, its state, the weather on
+    # it), so a picture two hours share is one file, named for the first
+    # room that installed it.
     on_disk: dict[tuple, str] = {}
+    named: set[tuple] = set()
     claimed: set[str] = set()
 
     def claim(fname: str) -> str:
@@ -432,12 +453,15 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
             continue
         r["_states"] = {st["tag"]: st["png"] for st in r.get("states") or []}
         size = tuple(e["delivered"])
-        name = key.split("/", 1)[1].replace("-dusk", "") if e.get("hour") != BASE_HOUR \
-            else key.split("/", 1)[1]
+        name = key.split("/", 1)[1]
+        hour = str(e.get("hour") or BASE_HOUR)
         loops = tuple(lp for lp in e.get("loops") or () if lp not in ROOM3D_DROPS_LOOPS)
         n = len(e.get("frames") or []) or 1
         front_mask = mask(stem, "front", size)
         window = mask(stem, "window", size)
+        if season and window is not None and "window-snow" not in loops:
+            loops += ("window-snow",)
+            n = max(n, 12)
         # The snow and rain are the same fall on every hour of one angle.
         seed = int.from_bytes(hashlib.sha256(stem.encode()).digest()[:2], "big")
 
@@ -448,19 +472,21 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
                 if tag not in r["_states"]:
                     problems.append(f"{key}: room3d has no {stem} state {tag!r}")
                     return None
-                k = (name, prefix, tag, precip, phase) if precip and window is not None \
-                    else (name, prefix, tag, "", 0)
+                k = (stem, size, tag, precip, phase) if precip and window is not None \
+                    else (stem, size, tag, "", 0)
                 if k not in on_disk:
-                    first = not any(o[:2] == (name, prefix) for o in on_disk)
+                    first = (name, prefix) not in named
+                    named.add((name, prefix))
                     fname = claim(f"{name}{prefix}" + ("" if first and not prefix else f"_f{i + 1:02d}"))
                     im = picture(stem, tag, size)
                     if k[3]:
                         im = _precipitation(im, window, k[3], k[4], seed=seed)
                     im.save(room_dir / f"{fname}.png", compress_level=6)
                     on_disk[k] = f"{fname}.png"
-                fk = (name, "front", tag)
+                fk = (stem, size, tag, "front")
                 if front_mask is not None and fk not in on_disk:
-                    first = not any(o[:2] == (name, "front") for o in on_disk)
+                    first = (name, "front") not in named
+                    named.add((name, "front"))
                     fname = claim(f"{name}_front" + ("" if first else f"_f{i + 1:02d}"))
                     # Straight alpha off the mask, nothing where it is clear,
                     # so the layer composites to exactly the frame's pixels.
@@ -477,7 +503,7 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
             return frames
 
         precip = "snow" if "window-snow" in loops else ""
-        frames = install(_room3d_plan(loops, n, r["_states"], precip), "")
+        frames = install(_room3d_plan(loops, n, r["_states"], precip, hour), "")
         if frames is None:
             continue
         moves = len({f["png"] for f in frames}) > 1 or len({f.get("front") for f in frames}) > 1
@@ -486,17 +512,17 @@ def _rooms_3d(built: dict, drawn: Path, renders: Path = ROOM3D) -> list[str]:
         e["frames"] = frames
         e["files"] = {"png": frames[0]["png"], "svg": None, "baseIsFrame": "_f01" if moves else None}
         e["playback"] = "loop" if moves else "static"
-        e["fps"] = e.get("fps") if moves else 0
+        e["fps"] = (e.get("fps") or 12) if moves else 0
         e["frameCount"] = len(frames)
         if moves:
             e["loops"] = list(loops)
         else:
             e.pop("loops", None)
-        rain = (e.get("weathers") or {}).get("rain")
-        if rain and window is not None:
+        rain = (e.get("weathers") or {}).get("rain") or {}
+        if not season and window is not None:
             wn = len(rain.get("frames") or []) or 12
             wloops = [lp for lp in rain.get("loops") or ["window-rain"] if lp not in ROOM3D_DROPS_LOOPS]
-            wframes = install(_room3d_plan(tuple(wloops), wn, r["_states"], "rain"), "_rain")
+            wframes = install(_room3d_plan(tuple(wloops), wn, r["_states"], "rain", hour), "_rain")
             if wframes is None:
                 continue
             e["weathers"] = {"rain": {"loops": wloops, "playback": "loop",

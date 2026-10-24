@@ -104,6 +104,11 @@ SCREEN_FALLOFF = 0.12
 # it, which a haze over made look smeared.
 GLOW = 0.18
 GLOW_RADIUS = 0.035
+# HIS PHONE, LIT (pick 7): a message on its glass shines the way the
+# monitor's picture does, a little brighter, as a phone at full brightness
+# is, with the same spill past its edge; how far, as a share of its width.
+PHONE_LEVEL = 0.95
+PHONE_GLOW_RADIUS = 0.30
 # How many pictures the chapter's chart takes to draw itself in, at what rate:
 # a second.
 REVEAL_FRAMES = 12
@@ -584,10 +589,12 @@ def label_ink(item: dict, text: str, fonts: Path, size: tuple[int, int]):
         _centred(ld, lines, f, lh, (0, 0, lay.width, lay.height), ink)
         lay = lay.rotate(90, expand=True)
         img.alpha_composite(lay, (int(x0 + (bw - lay.width) / 2), int(y0 + (bh - lay.height) / 2)))
-    elif kind in ("note", "box"):
+    elif kind in ("note", "box", "plant"):
         f, lines, lh = _fit_block(dr, text, fonts, "PermanentMarker.ttf", bw, bh,
-                                  bh * (0.42 if kind == "note" else 0.3), spacing=0.0)
+                                  bh * {"note": 0.42, "box": 0.3, "plant": 0.56}[kind], spacing=0.0)
         _centred(dr, lines, f, lh, (x0, y0, x1, y1), ink)
+    elif kind == "phone":
+        _phone_screen(img, text, fonts, k, (x0, y0, x1, y1))
     elif kind == "card":
         head, *body = text.split("\n")
         blue = item.get("id", "").endswith(("1", "3", "5"))
@@ -640,6 +647,36 @@ def label_ink(item: dict, text: str, fonts: Path, size: tuple[int, int]):
             dr.text((x0, y), ln, font=rf, fill=(_PRINT_INK if big else _PRINT_QUIET) + (255,))
             y += rf.size * 1.25
     return img
+
+
+def _phone_screen(img, text: str, fonts: Path, k: float, box) -> None:
+    """His phone's glass lit with one message: the lock screen's dark blue,
+    and the notification in the box its picture leaves, the sender over what
+    they said ("Kev: thoughts?"). Every pixel of the glass is lit, so the
+    layer replaces the dark glass the room was rendered with."""
+    from PIL import ImageDraw
+
+    W, H = img.size
+    dr = ImageDraw.Draw(img)
+    top, bottom = (78, 104, 168), (40, 50, 98)
+    for y in range(H):
+        t = y / max(H - 1, 1)
+        dr.line([(0, y), (W, y)], fill=tuple(int(a + (b - a) * t) for a, b in zip(top, bottom)) + (255,))
+    x0, y0, x1, y1 = box
+    sender, _, said = (part.strip() for part in text.partition(":"))
+    bh = (y1 - y0) * 0.62
+    dr.rounded_rectangle([x0, y0, x1, y0 + bh], radius=30 * k, fill=(240, 242, 246, 255))
+    r = 30 * k
+    cx, cy = x0 + 22 * k + r, y0 + bh / 2
+    dr.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(52, 190, 92, 255))
+    tx = cx + r + 18 * k
+    room = x1 - 14 * k - tx
+    for line, size, y, colour in ((sender, 84, y0 + bh * 0.10, (16, 18, 24)),
+                                  (said or sender, 74, y0 + bh * 0.52, (44, 48, 58))):
+        f = _font(fonts, "ArchivoNarrow[wght].ttf", size * k)
+        while dr.textlength(line, font=f) > room and f.size > 8:
+            f = _font(fonts, "ArchivoNarrow[wght].ttf", f.size * 0.9)
+        dr.text((tx, y), line, font=f, fill=colour + (255,))
 
 
 def _ground_of(pic) -> tuple[int, int, int]:
@@ -892,7 +929,7 @@ def _encode(lin):
 
 @dataclass
 class _Layer:
-    kind: str           # board | screen | label
+    kind: str           # board | screen | label | lit (his phone)
     pixels: object      # float RGBA crop, 0..1, the texture in the frame
     at: tuple[int, int]
     mask: object        # float crop, 0..1, what the camera sees of the surface
@@ -1006,7 +1043,9 @@ def _label_layers(plate, surf: dict, d: Dressing, fonts: Path, size, k: float) -
         long_side = max(min(max(sides) * 2.2, max(tw, th)), 48)
         s = long_side / max(tw, th)
         tex = label_ink(item, text, fonts, (max(int(tw * s), 8), max(int(th * s), 8)))
-        warped = _warp(tex, quad, size)
+        lit = item.get("kind") == "phone"
+        glow = PHONE_GLOW_RADIUS * max(sides) if lit else 0.0
+        warped = _warp(tex, quad, size, int(3 * glow) + 1 if lit else 0)
         if warped is None:
             continue
         px, (x0, y0) = warped
@@ -1014,9 +1053,10 @@ def _label_layers(plate, surf: dict, d: Dressing, fonts: Path, size, k: float) -
         mask = whole[y0:y0 + h, x0:x0 + w] * inside[y0:y0 + h, x0:x0 + w]
         if not mask.any():
             continue
-        out.append(_Layer("label", px, (x0, y0), mask,
+        out.append(_Layer("lit" if lit else "label", px, (x0, y0), mask,
                           _linear(np.asarray(item.get("paper") or (240, 240, 236),
-                                             dtype=np.uint8)).astype(np.float32)))
+                                             dtype=np.uint8)).astype(np.float32),
+                          glow=glow))
     return out
 
 
@@ -1065,7 +1105,14 @@ def dress(img, layers: list[_Layer]):
         f = _linear(region)
         a = (L.pixels[..., 3] * L.mask)[..., None]
         tex = _linear((L.pixels[..., :3] * 255 + 0.5).astype(np.uint8))
-        if L.kind != "screen":
+        if L.kind == "lit":
+            # A lit picture (his phone) shines by itself whatever the room's
+            # light, over the dark glass, and spills a little past its edge.
+            lit = a * tex * PHONE_LEVEL
+            f = f * (1 - a) + lit
+            if L.glow > 0:
+                f = f + GLOW * _soft(lit, L.glow) * (1 - a)
+        elif L.kind != "screen":
             # Ink takes light away from the paint it is on: darker by the
             # ink's share of the paper, and only where it is.
             ratio = tex / np.maximum(L.colour, 1e-4)
