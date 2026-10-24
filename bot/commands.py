@@ -1431,8 +1431,22 @@ async def handle_text(core: BotCore, chat_id: int, text: str,
                                      pending["workdate"], "done", reply)
             return reply
         if pending["kind"] == "correct":
+            # SHOWN BEFORE IT IS POSTED. A correction is a pinned comment
+            # and a line in the description of a public video, and the
+            # question waits fifteen minutes: an angle pick typed on the
+            # page after a stray tap on Correct… went out as one (scan,
+            # 24 Oct 2026).
+            said = " ".join(words)
+            cs.ask(chat_id, "correct_ready", ticker=pending["ticker"],
+                   text=said)
+            return Reply(f"✍️ Post this on {pending['ticker']}'s video as a "
+                         f"pinned correction? It goes in the description "
+                         f"too.\n\n“{said}”",
+                         keyboard=kb.correction_keyboard(pending["ticker"]))
+        if pending["kind"] == "correct_ready" and text.strip().lower().rstrip(
+                ".!") in ("yes", "post it", "post", "y"):
             return _reply(await asyncio.to_thread(
-                core.correct_command, [pending["ticker"], *words]))
+                core.correct_command, [pending["ticker"], pending["text"]]))
     slow = core.looks_like_script(text)
     if slow and say is not None:
         await say(Reply("⏳ got it — planning the visuals, this takes a "
@@ -1574,6 +1588,19 @@ async def handle_callback(core: BotCore, chat_id: int, data: str,
             f"✍️ What was wrong in {parts[1]}'s video? Reply with the "
             f"correction as it should read.",
             keyboard=kb.ForceReply(input_field_placeholder="the right number"))
+    if op == "cp" and n == 2:
+        cs = ChatState(core.settings)
+        pending = cs.pending(chat_id)
+        if pending.get("kind") != "correct_ready" or \
+                pending.get("ticker") != parts[1]:
+            return Reply("That correction is no longer waiting, so nothing "
+                         "was posted. Tap Correct… again to write it.")
+        cs.answered(chat_id)
+        return _reply(await asyncio.to_thread(
+            core.correct_command, [parts[1], pending.get("text", "")]))
+    if op == "cx":
+        ChatState(core.settings).answered(chat_id)
+        return Reply("OK — nothing posted.")
     if op == "c" and n == 3:
         return await asyncio.to_thread(core.video_card, parts[1],
                                        workdate=parts[2])

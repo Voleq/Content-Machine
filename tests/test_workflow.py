@@ -372,6 +372,30 @@ def test_a_script_paste_is_never_eaten_by_a_pending_question(
     assert run(cmds.handle_text(core, CHAT, short_valid_json)).text == "intake"
 
 
+def test_a_correction_is_shown_and_posted_only_on_a_tap(core, monkeypatch):
+    """It goes on the public video. A stray tap on Correct… made the next
+    plain message, typed for something else, a pinned correction."""
+    posted = []
+    monkeypatch.setattr(core, "correct_command",
+                        lambda args: posted.append(args) or "📌 posted")
+    monkeypatch.setattr(core, "intake_script", lambda chat, text: Reply("intake"))
+    run(cmds.handle_callback(core, CHAT, "cr|EXMPL"))
+    reply = run(cmds.handle_text(core, CHAT, "Margins were 41%, not 44%."))
+    assert posted == [] and "Margins were 41%, not 44%." in reply.text
+    assert "cp|EXMPL" in _buttons(reply)
+    assert run(cmds.handle_callback(core, CHAT, "cp|EXMPL")).text == "📌 posted"
+    assert posted == [["EXMPL", "Margins were 41%, not 44%."]]
+    # once only, and something else typed in between drops it
+    assert "no longer waiting" in run(cmds.handle_callback(
+        core, CHAT, "cp|EXMPL")).text
+    run(cmds.handle_callback(core, CHAT, "cr|EXMPL"))
+    run(cmds.handle_text(core, CHAT, "fix it"))
+    assert run(cmds.handle_text(core, CHAT, "2")).text == "intake"
+    assert "no longer waiting" in run(cmds.handle_callback(
+        core, CHAT, "cp|EXMPL")).text
+    assert len(posted) == 1
+
+
 # --------------------------------------------------------------------------
 # The /go wizard.
 # --------------------------------------------------------------------------

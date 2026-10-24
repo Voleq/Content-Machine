@@ -150,6 +150,12 @@ def uploaded_keyboard(ticker: str) -> InlineKeyboardMarkup:
         _b("Correct…", f"cr|{ticker}")]])
 
 
+def correction_keyboard(ticker: str) -> InlineKeyboardMarkup:
+    """A correction goes on the public video, so it is posted on a tap."""
+    return InlineKeyboardMarkup([[_b("Post it ✅", f"cp|{ticker}"),
+                                  _b("Cancel", "cx")]])
+
+
 def undo_cancel_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([[_b("Undo ↩️ (1 min)", "z")]])
 
