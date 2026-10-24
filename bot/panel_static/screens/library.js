@@ -168,7 +168,10 @@ SCREEN_LOAD.settings = async () => {
     el("ul", { class: "health" }, health.map((r) => el("li", { class: r.state },
       el("span", { class: "dot", "aria-label": { ok: "fine", bad: "needs fixing", skip: "not checked" }[r.state] || r.state }),
       el("b", { text: r.name }), el("span", { class: "meta", text: r.detail })))),
-    el("button", { type: "button", class: "sm", text: "Check again", onclick: () => SCREEN_LOAD.settings() }));
+    el("div", { class: "row" },
+      el("button", { type: "button", class: "sm", text: "Check again", onclick: () => SCREEN_LOAD.settings() }),
+      el("button", { type: "button", class: "sm", text: "Test the keys", title: "Asks each service once, with a call that costs nothing, whether its key works. Takes a few seconds",
+        onclick: (e) => pageRun("/admin keys", e.currentTarget, "Key check") })));
   const disk = Array.isArray(d.disk) ? d.disk : [];
   const diskCard = card("Disk", "", disk.map((x) => el("p", {}, el("b", { text: `${x.free_gb} GB free` }), el("span", { class: "meta", text: ` of ${x.total_gb} GB · ${x.name} (${x.path})` }))),
     disk.some((x) => x.free_gb < 20) ? el("div", { class: "banner warn", text: "Under 20 GB free: a LONG render can run out. python -m pipeline.cleanup --dry-run on the box shows what it would clear." }) : null);

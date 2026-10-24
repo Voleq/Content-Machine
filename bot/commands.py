@@ -660,6 +660,12 @@ def c_kit(c: Call):
     return Reply(kit_doctor_text(c.core.settings))
 
 
+def c_keys(c: Call):
+    from pipeline.key_check import keys_text
+
+    return Reply(keys_text(c.core.settings))
+
+
 def c_quiet(c: Call):
     prefs = NotifyPrefs(c.core.settings)
     what = c.args[0].lower() if c.args else ""
@@ -1126,6 +1132,15 @@ COMMANDS: tuple[Command, ...] = (
             c_kit, aliases=("kit",), doc=(
                 "Unresolved tag keys, artwork nothing has ever used, PNGs "
                 "with no registry entry.")),
+    Command("admin", "keys", "",
+            "do the keys in .env work? one free call per service", c_keys,
+            ack="⏳ asking each service…", doc=(
+                "Asks each service once, with a call that costs nothing, "
+                "whether its key works: ElevenLabs (and how many characters "
+                "are left, and whether both voice ids are on the account), "
+                "Pexels, Giphy, Tenor, FRED, Telegram, OpenAI, GitHub "
+                "Models, the SEC (with SEC_USER_AGENT) and YouTube. Keys are "
+                "never shown. Also the page's Settings, \"Test the keys\".")),
     Command("admin", "quiet", "[on|off]",
             "only finished, failed and needs-you notifications", c_quiet,
             doc=("Keeps only finished, failed and needs-you pushes (no "
