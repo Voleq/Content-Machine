@@ -1437,16 +1437,19 @@ async def handle_text(core: BotCore, chat_id: int, text: str,
             # page after a stray tap on Correct… went out as one (scan,
             # 24 Oct 2026).
             said = " ".join(words)
+            video_id = pending.get("video_id", "")
             cs.ask(chat_id, "correct_ready", ticker=pending["ticker"],
-                   text=said)
-            return Reply(f"✍️ Post this on {pending['ticker']}'s video as a "
+                   text=said, video_id=video_id)
+            return Reply(f"✍️ Post this on "
+                         f"{core.video_name(pending['ticker'], video_id)} as a "
                          f"pinned correction? It goes in the description "
                          f"too.\n\n“{said}”",
-                         keyboard=kb.correction_keyboard(pending["ticker"]))
+                         keyboard=kb.correction_keyboard(pending["ticker"], video_id))
         if pending["kind"] == "correct_ready" and text.strip().lower().rstrip(
                 ".!") in ("yes", "post it", "post", "y"):
             return _reply(await asyncio.to_thread(
-                core.correct_command, [pending["ticker"], pending["text"]]))
+                core.correct_command, [pending["ticker"], pending["text"]],
+                video_id=pending.get("video_id", "")))
     slow = core.looks_like_script(text)
     if slow and say is not None:
         await say(Reply("⏳ got it — planning the visuals, this takes a "
@@ -1581,24 +1584,29 @@ async def handle_callback(core: BotCore, chat_id: int, data: str,
             f"YYYY-MM-DD HH:MM ({core.settings.publish_timezone}), or just a "
             f"date for {core.settings.publish_hour}:00.",
             keyboard=kb.ForceReply(input_field_placeholder="2026-10-09 17:00"))
-    if op == "rt" and n == 2:
-        return await asyncio.to_thread(core.retention_text, [parts[1]])
-    if op == "cr" and n == 2:
-        ChatState(core.settings).ask(chat_id, "correct", ticker=parts[1])
+    if op == "rt" and n in (2, 3):
+        return await asyncio.to_thread(core.retention_text, [parts[1]],
+                                       video_id=parts[2] if n == 3 else "")
+    if op == "cr" and n in (2, 3):
+        video_id = parts[2] if n == 3 else ""
+        ChatState(core.settings).ask(chat_id, "correct", ticker=parts[1],
+                                     video_id=video_id)
         return Reply(
-            f"✍️ What was wrong in {parts[1]}'s video? Reply with the "
-            f"correction as it should read.",
+            f"✍️ What was wrong in {core.video_name(parts[1], video_id)}? "
+            f"Reply with the correction as it should read.",
             keyboard=kb.ForceReply(input_field_placeholder="the right number"))
-    if op == "cp" and n == 2:
+    if op == "cp" and n in (2, 3):
         cs = ChatState(core.settings)
         pending = cs.pending(chat_id)
         if pending.get("kind") != "correct_ready" or \
-                pending.get("ticker") != parts[1]:
+                pending.get("ticker") != parts[1] or \
+                pending.get("video_id", "") != (parts[2] if n == 3 else ""):
             return Reply("That correction is no longer waiting, so nothing "
                          "was posted. Tap Correct… again to write it.")
         cs.answered(chat_id)
         return _reply(await asyncio.to_thread(
-            core.correct_command, [parts[1], pending.get("text", "")]))
+            core.correct_command, [parts[1], pending.get("text", "")],
+            video_id=pending.get("video_id", "")))
     if op == "cx":
         ChatState(core.settings).answered(chat_id)
         return Reply("OK — nothing posted.")

@@ -361,9 +361,14 @@ def build_package(script, settings, *, ticker: str = "",
     # The transcript last, and only if the whole description still fits.
     # A truncated transcript is worse than none: it reads as a video that
     # stops mid-sentence.
+    # YouTube's limit is BYTES, after the API's brackets are swapped for
+    # their three-byte look-alikes (`youtube._api_text`): counted in
+    # characters, a transcript with curly quotes and dashes fit here and the
+    # upload was refused for it (scan, 24 Oct 2026).
     if transcript:
         candidate = body + ["", TRANSCRIPT_HEAD, transcript]
-        if len("\n".join(candidate).strip()) <= DESCRIPTION_MAX:
+        sent = "\n".join(candidate).strip().replace("<", "\u2039").replace(">", "\u203a")
+        if len(sent.encode("utf-8")) <= DESCRIPTION_MAX:
             body = candidate
 
     return UploadPackage(

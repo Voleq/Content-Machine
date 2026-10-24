@@ -536,7 +536,7 @@ def _step_live(v: _Video) -> dict:
                          "kept": round(h.watch_ratio, 3), "drop": round(h.drop, 3)}
                         for h in holds]
     out["corrections"] = list(rec.corrections or [])
-    out["buttons"] = keyboard_rows(kb.uploaded_keyboard(v.ws.ticker))
+    out["buttons"] = keyboard_rows(kb.uploaded_keyboard(v.ws.ticker, rec.video_id))
     return out
 
 

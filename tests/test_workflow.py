@@ -268,6 +268,7 @@ def test_every_new_button_fits_telegrams_64_bytes():
         kb.angle_keyboard(t, d), kb.approved_keyboard("long", t, d, 1.94),
         kb.confirm_render_keyboard("long", t, d), kb.queued_keyboard(t, d),
         kb.delivered_keyboard("long", t, d), kb.uploaded_keyboard(t),
+        kb.uploaded_keyboard(t, "A" * 11), kb.correction_keyboard(t, "A" * 11),
         kb.undo_cancel_keyboard(),
     ]
     for markup in markups:
@@ -377,7 +378,7 @@ def test_a_correction_is_shown_and_posted_only_on_a_tap(core, monkeypatch):
     plain message, typed for something else, a pinned correction."""
     posted = []
     monkeypatch.setattr(core, "correct_command",
-                        lambda args: posted.append(args) or "📌 posted")
+                        lambda args, video_id="": posted.append(args) or "📌 posted")
     monkeypatch.setattr(core, "intake_script", lambda chat, text, **kw: Reply("intake"))
     run(cmds.handle_callback(core, CHAT, "cr|EXMPL"))
     reply = run(cmds.handle_text(core, CHAT, "Margins were 41%, not 44%."))
@@ -394,6 +395,29 @@ def test_a_correction_is_shown_and_posted_only_on_a_tap(core, monkeypatch):
     assert "no longer waiting" in run(cmds.handle_callback(
         core, CHAT, "cp|EXMPL")).text
     assert len(posted) == 1
+
+
+def test_a_correction_goes_on_the_video_whose_button_was_tapped(core, monkeypatch):
+    """Correct… on a long went on the clip of it uploaded after: the
+    newest upload of the ticker, not the video tapped."""
+    from pipeline.youtube import VideoLog, VideoRecord
+
+    log_ = VideoLog(core.settings)
+    log_.record(VideoRecord(ticker="EXMPL", video_id="LONGVIDEO01", title="EXMPL long",
+                            privacy="public", uploaded_at="2026-10-10T10:00:00+00:00",
+                            fmt="long"))
+    log_.record(VideoRecord(ticker="EXMPL", video_id="CLIPVIDEO01", title="EXMPL clip",
+                            privacy="public", uploaded_at="2026-10-12T10:00:00+00:00",
+                            fmt="clip"))
+    assert "cr|EXMPL|LONGVIDEO01" in _buttons(kb.uploaded_keyboard("EXMPL", "LONGVIDEO01"))
+    monkeypatch.setattr(core, "intake_script", lambda chat, text, **kw: Reply("intake"))
+    asked = run(cmds.handle_callback(core, CHAT, "cr|EXMPL|LONGVIDEO01"))
+    assert "EXMPL long" in asked.text
+    shown = run(cmds.handle_text(core, CHAT, "Margins were 41%."))
+    assert "EXMPL long" in shown.text and "cp|EXMPL|LONGVIDEO01" in _buttons(shown)
+    done = run(cmds.handle_callback(core, CHAT, "cp|EXMPL|LONGVIDEO01"))
+    assert "EXMPL long" in done.text
+    assert log_.get("LONGVIDEO01").corrections and not log_.get("CLIPVIDEO01").corrections
 
 
 # --------------------------------------------------------------------------

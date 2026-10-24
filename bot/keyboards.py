@@ -19,8 +19,9 @@ The next-step buttons (one tap to the obvious next thing):
     r!|<s|l>|<ticker>|<date>          the paid render, confirmed
     u|<s|l>|<ticker>|<date>           upload private
     us|<s|l>|<ticker>|<date>          upload scheduled (asks for the time)
-    rt|<ticker>                       retention for the newest upload
-    cr|<ticker>                       pin a correction (asks for the text)
+    rt|<ticker>[|<video id>]          retention for that upload (the newest without)
+    cr|<ticker>[|<video id>]          pin a correction on it (asks for the text)
+    cp|<ticker>[|<video id>]          post the correction shown
     c|<ticker>|<date>                 the video card
     j|<ticker>|<date>                 cancel that video's jobs
     z                                 undo the last cancel (within a minute)
@@ -144,15 +145,19 @@ def delivered_keyboard(fmt: str, ticker: str, workdate: str,
     return InlineKeyboardMarkup(rows)
 
 
-def uploaded_keyboard(ticker: str) -> InlineKeyboardMarkup:
+def uploaded_keyboard(ticker: str, video_id: str = "") -> InlineKeyboardMarkup:
+    """THE VIDEO TAPPED, not the ticker's newest: a long's Correct… tapped
+    after a clip of it went up corrected the clip (scan, 24 Oct 2026)."""
+    tail = f"|{video_id}" if video_id else ""
     return InlineKeyboardMarkup([[
-        _b("Retention 📊", f"rt|{ticker}"),
-        _b("Correct…", f"cr|{ticker}")]])
+        _b("Retention 📊", f"rt|{ticker}{tail}"),
+        _b("Correct…", f"cr|{ticker}{tail}")]])
 
 
-def correction_keyboard(ticker: str) -> InlineKeyboardMarkup:
+def correction_keyboard(ticker: str, video_id: str = "") -> InlineKeyboardMarkup:
     """A correction goes on the public video, so it is posted on a tap."""
-    return InlineKeyboardMarkup([[_b("Post it ✅", f"cp|{ticker}"),
+    tail = f"|{video_id}" if video_id else ""
+    return InlineKeyboardMarkup([[_b("Post it ✅", f"cp|{ticker}{tail}"),
                                   _b("Cancel", "cx")]])
 
 
@@ -206,7 +211,8 @@ def card_keyboard(state) -> InlineKeyboardMarkup:
     elif action == "upload":
         first = list(delivered_keyboard(fmt, t, d).inline_keyboard[0])
     elif action == "retention":
-        first = list(uploaded_keyboard(t).inline_keyboard[0])
+        first = list(uploaded_keyboard(t, (state.uploaded or {}).get("video_id", ""))
+                     .inline_keyboard[0])
     rows = [first] if first else []
     tail = [_b("Refresh 🔄", f"c|{t}|{d}")]
     if state.active_job:

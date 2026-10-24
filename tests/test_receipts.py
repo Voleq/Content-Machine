@@ -289,3 +289,47 @@ def test_the_brief_gives_the_writer_the_calls_not_a_script(settings):
     assert "AAA" in brief
     assert "is mispriced" in brief
     assert "Lead with the ones that were wrong" in brief
+
+
+class _Exec:
+    def __init__(self, v):
+        self.v = v
+
+    def execute(self):
+        return self.v
+
+
+def test_a_correction_said_to_be_in_the_description_is_there_whole(settings):
+    """A full description kept "CORRECTI" of it, a `<` in it was refused,
+    and the reply said "in the description" when the edit had failed."""
+    from pipeline.youtube import DESCRIPTION_MAX, YouTubeClient
+
+    sent = {}
+
+    class Videos:
+        def list(self, part, id):
+            return _Exec({"items": [{"snippet": {"title": "t", "description": "x" * 4990}}]})
+
+        def update(self, part, body):
+            sent.update(body)
+            return _Exec({})
+
+    client = YouTubeClient(settings)
+    client._youtube = type("YT", (), {"videos": lambda self: Videos()})()
+    client.append_description("v1", "\n\nCORRECTION: EPS was <$0.10, not $1.00")
+    got = sent["snippet"]["description"]
+    assert got.endswith("CORRECTION: EPS was ‹$0.10, not $1.00")
+    assert len(got.encode("utf-8")) <= DESCRIPTION_MAX and "<" not in got
+
+    class FailsToAmend:
+        def comment(self, vid, text):
+            pass
+
+        def append_description(self, vid, extra):
+            raise RuntimeError("400 invalidDescription")
+
+    live = settings.model_copy(update={"mock_mode": False})
+    VideoLog(live).record(VideoRecord(ticker="AAPL", video_id="v1", title="t",
+                                      privacy="public"))
+    out = pin_correction("AAPL", "a fix", live, client=FailsToAmend())
+    assert "NOT amended" in out and "in the description" not in out

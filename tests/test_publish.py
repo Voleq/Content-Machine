@@ -254,3 +254,17 @@ def test_a_transcript_too_long_for_the_description_is_left_out(settings,
 
     assert "Transcript" not in pkg.description
     assert len(pkg.description) < 5000
+
+
+def test_the_transcript_fits_youtube_s_limit_in_bytes(settings, short_valid_json):
+    """Counted in characters, a transcript of curly quotes and dashes fit and
+    the upload was refused for it."""
+    from pipeline.models import ShortScript
+    from pipeline.publish import build_package
+    from pipeline.youtube import validate_package
+
+    script = ShortScript.model_validate_json(short_valid_json)
+    pkg = build_package(script, settings, ticker=script.ticker,
+                        transcript="\u201cmargin\u201d \u2014 " * 300)
+    assert not validate_package(pkg.titles[0], pkg.description, pkg.tags)
+    assert "Transcript" not in pkg.description

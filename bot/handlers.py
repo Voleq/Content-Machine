@@ -2780,7 +2780,7 @@ class BotCore:
                     "refuses one). Post and pin it once the video is public:\n"
                     f"{package.pinned_comment}")
         return Reply(f"📺 {ticker}: {tail}\n{record.url()}{note}",
-                     keyboard=uploaded_keyboard(ticker))
+                     keyboard=uploaded_keyboard(ticker, record.video_id))
 
     def probe_command(self, args: list[str]) -> Reply:
         """`/probe TICKER [short|long]` — where YouTube puts the AI label (05).
@@ -2922,8 +2922,9 @@ class BotCore:
                          f"{v.ticker}: {v.title[:50]}")
         return Reply("\n".join(lines))
 
-    def retention_text(self, args: list[str]) -> Reply:
-        """Per-chapter retention for one video, or the evidence across all."""
+    def retention_text(self, args: list[str], *, video_id: str = "") -> Reply:
+        """Per-chapter retention for one video (`video_id`, else the ticker's
+        newest), or the evidence across all."""
         from pipeline.youtube import (
             VideoLog, chapter_type_evidence, pull_retention, retention_report,
         )
@@ -2954,7 +2955,8 @@ class BotCore:
         videos = log_.for_ticker(ticker)
         if not videos:
             return Reply(f"Nothing published for {ticker} yet.")
-        video = max(videos, key=lambda v: v.uploaded_at)
+        video = next((v for v in videos if v.video_id == video_id), None) \
+            or max(videos, key=lambda v: v.uploaded_at)
         payload = pull_retention(video.video_id, self.settings)
         if payload.get("status") != "ok":
             stored = (video.retention or {}).get("chapters")
@@ -3766,8 +3768,23 @@ class BotCore:
                 + ("" if privacy == "public" else
                    " — the long's sign-off names it once it is public."))
 
-    def correct_command(self, args: list[str]) -> str:
-        """`/correct TICKER what was wrong` — after the video has shipped."""
+    def video_name(self, ticker: str, video_id: str = "") -> str:
+        """How a button's video is named back to him: its title, or the
+        ticker's newest upload when the button names none."""
+        from pipeline.youtube import VideoLog, record_format
+
+        log_ = VideoLog(self.settings)
+        rec = log_.get(video_id) if video_id else None
+        if rec is None:
+            own = log_.for_ticker(ticker)
+            rec = max(own, key=lambda v: v.uploaded_at) if own else None
+        if rec is None:
+            return f"{ticker.upper()}'s video"
+        return f"“{(rec.title or rec.video_id)[:70]}” ({record_format(rec)})"
+
+    def correct_command(self, args: list[str], *, video_id: str = "") -> str:
+        """`/correct TICKER what was wrong` — after the video has shipped.
+        `video_id` is the one a button named; without it, the newest."""
         from pipeline.youtube import UploadError, corrections_text, pin_correction
 
         if not args:
@@ -3777,7 +3794,7 @@ class BotCore:
         if not text:
             return f"usage: /correct {ticker} what the right number is"
         try:
-            return pin_correction(ticker, text, self.settings)
+            return pin_correction(ticker, text, self.settings, video_id=video_id)
         except UploadError as e:
             return f"⛔ {e}"
         except Exception as e:  # noqa: BLE001

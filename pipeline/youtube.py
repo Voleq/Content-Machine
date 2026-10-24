@@ -405,8 +405,12 @@ class YouTubeClient:
         if not items:
             raise UploadError(f"no video {video_id} to amend")
         snippet = dict(items[0]["snippet"])
-        snippet["description"] = (
-            str(snippet.get("description", "")) + extra)[:DESCRIPTION_MAX]
+        # THE ADDITION IS KEPT WHOLE; THE OLD TEXT GIVES WAY. Cut at the
+        # end, a full description kept "CORRECTI" of a correction, and a
+        # `<` in it ("EPS was <$0.10") was refused (scan, 24 Oct 2026).
+        extra = _api_text(extra, DESCRIPTION_MAX)
+        room = max(DESCRIPTION_MAX - len(extra.encode("utf-8")), 0)
+        snippet["description"] = _api_text(str(snippet.get("description", "")), room) + extra
         self._youtube.videos().update(
             part="snippet", body={"id": video_id, "snippet": snippet}).execute()
 
@@ -1031,6 +1035,7 @@ def pin_correction(ticker: str, text: str, settings: Settings, *,
             f"/correct works on videos this bot uploaded")
     stamp = (now or datetime.now(timezone.utc)).isoformat()
     body = f"CORRECTION: {text.strip()}"
+    amended = ""
     if settings.mock_mode:
         log.info("mock: would pin a correction on %s: %s", record.video_id, body)
     else:
@@ -1040,15 +1045,20 @@ def pin_correction(ticker: str, text: str, settings: Settings, *,
             client.append_description(record.video_id, f"\n\n{body}")
         except Exception as e:  # noqa: BLE001 — the comment is the correction
             log.warning("correction posted, description not amended (%s)", e)
+            amended = str(e)
     rows = list(record.corrections or [])
     rows.append({"at": stamp, "text": text.strip()})
     record.corrections = rows
     log_.record(record)
     # Posted, not pinned: the API cannot pin a comment (the upload reply
-    # says the same), and this used to tell the operator it had.
+    # says the same), and this used to tell the operator it had. And said
+    # "in the description" when the description edit had failed.
+    where = ("as a comment and in the description" if not amended else
+             f"as a comment. The description was NOT amended ({amended}) — "
+             f"add the line in YouTube Studio")
     return (f"Correction posted on {record.title or record.video_id} "
-            f"({record.url()}) as a comment and in the description — pin "
-            f"the comment in YouTube Studio; the API cannot pin.\n  {body}")
+            f"({record.url()}) {where} — pin the comment in YouTube Studio; "
+            f"the API cannot pin.\n  {body}")
 
 
 def corrections_text(settings: Settings) -> str:
