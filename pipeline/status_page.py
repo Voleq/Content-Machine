@@ -138,9 +138,9 @@ def _thesis_section(settings: Settings) -> str:
 
 
 def _scheduled_section(settings: Settings) -> str:
-    from pipeline.youtube import VideoLog
+    from pipeline.youtube import VideoLog, local_time
 
-    rows = [[v.publish_at[:16].replace("T", " "), v.ticker, v.title[:50]]
+    rows = [[local_time(v.publish_at, settings), v.ticker, v.title[:50]]
             for v in VideoLog(settings).scheduled()]
     return _rows(["Publishes", "Ticker", "Title"], rows, "nothing scheduled")
 

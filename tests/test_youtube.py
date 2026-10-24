@@ -877,3 +877,16 @@ def test_a_session_youtube_forgot_starts_again_and_a_refusal_is_not_retried(
         client._youtube = yt_
         with pytest.raises(UploadError, match=said):
             client.upload(video, body, session=session)
+
+
+def test_a_scheduled_time_is_shown_in_his_zone_and_names_it(settings):
+    """17:00 in Bucharest was shown as 15:00 with no zone, while the
+    calendar said 17:00."""
+    from pipeline.youtube import local_time
+
+    bucharest = settings.model_copy(update={"publish_timezone": "Europe/Bucharest"})
+    assert local_time("2026-10-30T15:00:00+00:00", bucharest) == \
+        "Fri 2026-10-30 17:00 (Europe/Bucharest)"
+    bad = settings.model_copy(update={"publish_timezone": "Mars/Olympus"})
+    assert local_time("2026-10-30T15:00:00+00:00", bad) == "Fri 2026-10-30 15:00 (UTC)"
+    assert local_time("not a time", bucharest) == "not a time"

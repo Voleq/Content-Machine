@@ -116,8 +116,7 @@ class VideoState:
         if up is None:
             return ("upload it to YouTube (private or scheduled)", "upload")
         if up["pending"]:
-            return (f"scheduled for {up['publish_at'][:16].replace('T', ' ')}",
-                    "")
+            return (f"scheduled for {up.get('publish_local') or up['publish_at']}", "")
         if up["age_h"] < RETENTION_READY_H:
             return ("uploaded — retention reads from 48 h after", "")
         return ("read where viewers left: /stats retention", "retention")
@@ -262,7 +261,7 @@ def video_state(settings: Settings, ws: Workspace, jobs: list | None = None,
     if videos is None:
         from pipeline.youtube import VideoLog
         videos = VideoLog(settings).for_ticker(ws.ticker)
-    from pipeline.youtube import public_since, record_format, still_scheduled
+    from pipeline.youtube import local_time, public_since, record_format, still_scheduled
     for v in videos:
         if v.ticker != ws.ticker or v.workdate != ws.workdate:
             continue
@@ -270,6 +269,7 @@ def video_state(settings: Settings, ws: Workspace, jobs: list | None = None,
             "video_id": v.video_id, "url": v.url(), "title": v.title,
             "fmt": record_format(v), "privacy": v.privacy,
             "publish_at": v.publish_at, "uploaded_at": v.uploaded_at,
+            "publish_local": local_time(v.publish_at, settings) if v.publish_at else "",
             # A scheduled row is never rewritten when it goes public: past
             # its time it is published, and its age runs from then.
             "pending": still_scheduled(v, now),
@@ -388,7 +388,7 @@ def card_text(st: VideoState) -> str:
     if up is None:
         lines.append("upload    —")
     elif up.get("pending"):
-        lines.append(f"upload    📅 {up['publish_at'][:16].replace('T', ' ')}"
+        lines.append(f"upload    📅 {up.get('publish_local') or up['publish_at']}"
                      f" · {up['url']}")
     else:
         lines.append(f"upload    ✅ {up['privacy']} · {up['url']}")
@@ -428,7 +428,7 @@ def inbox(settings: Settings, now: datetime | None = None,
           states: list[VideoState] | None = None) -> list[InboxItem]:
     """Everything waiting on the operator, in the order it should be done."""
     from pipeline.standing import BatchQueue
-    from pipeline.youtube import VideoLog, public_since, still_scheduled
+    from pipeline.youtube import VideoLog, local_time, public_since, still_scheduled
 
     now = now or datetime.now(timezone.utc)
     states = states if states is not None else all_states(settings, now=now)
@@ -469,7 +469,7 @@ def inbox(settings: Settings, now: datetime | None = None,
             when = when.replace(tzinfo=timezone.utc)
         if when - now <= timedelta(hours=48):
             items.append(InboxItem("scheduled", v.ticker, v.workdate,
-                                   f"{v.publish_at[:16].replace('T', ' ')} — "
+                                   f"{local_time(v.publish_at, settings)} — "
                                    f"{v.title[:50]}"))
     for v in log_.all():
         if still_scheduled(v, now):

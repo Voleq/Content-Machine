@@ -2770,7 +2770,9 @@ class BotCore:
             return Reply(f"💥 upload error: {e}")
 
         if record.privacy == "scheduled":
-            tail = f"scheduled to publish {record.publish_at}"
+            from pipeline.youtube import local_time
+
+            tail = f"scheduled to publish {local_time(record.publish_at, self.settings)}"
         else:
             tail = "uploaded PRIVATE — publish it when you're ready"
         note = ""
@@ -2913,7 +2915,7 @@ class BotCore:
         return Reply("\n".join(lines))
 
     def scheduled_text(self, now=None) -> Reply:
-        from pipeline.youtube import VideoLog
+        from pipeline.youtube import VideoLog, local_time
 
         rows = VideoLog(self.settings).scheduled(now=now)
         if not rows:
@@ -2921,7 +2923,7 @@ class BotCore:
                          "/upload TICKER 2026-08-07 18:00 schedules one.")
         lines = ["📺 Scheduled"]
         for v in rows:
-            lines.append(f"  {v.publish_at[:16].replace('T', ' ')} — "
+            lines.append(f"  {local_time(v.publish_at, self.settings)} — "
                          f"{v.ticker}: {v.title[:50]}")
         return Reply("\n".join(lines))
 

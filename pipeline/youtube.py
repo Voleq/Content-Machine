@@ -150,6 +150,27 @@ def validate_package(title: str, description: str,
     return problems
 
 
+def local_time(when: str, settings) -> str:
+    """A stored publish time (ISO, UTC) as he set it: in PUBLISH_TIMEZONE,
+    with the zone named. Shown raw, 17:00 in Bucharest read 15:00 with no
+    zone while the calendar said 17:00, which reads as a wrong time (scan,
+    24 Oct 2026)."""
+    try:
+        at = datetime.fromisoformat(str(when).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return str(when or "")
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=timezone.utc)
+    name = str(getattr(settings, "publish_timezone", "") or "UTC")
+    try:
+        from zoneinfo import ZoneInfo
+
+        zone = ZoneInfo(name)
+    except Exception:  # noqa: BLE001 - a bad zone reads in UTC, and says so
+        zone, name = timezone.utc, "UTC"
+    return f"{at.astimezone(zone):%a %Y-%m-%d %H:%M} ({name})"
+
+
 def resolve_publish_at(when: str | datetime | None,
                        now: datetime | None = None,
                        settings=None) -> datetime | None:
