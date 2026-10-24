@@ -273,6 +273,20 @@ def test_moves_make_fewer_sounds_than_moves(assets):
     assert 7.3 - 7.0 < MOVE_GAP_S
 
 
+def test_the_board_s_ring_is_heard_after_its_tick(assets):
+    """The chapter break's tick and ring are 0.58 s apart: the ring was
+    drawn in silence."""
+    from pipeline.room_dressing import REVEAL_FPS, RING_AT, TICK_AT
+
+    root, settings = assets
+    t = 120.0
+    moves = [Move("highlight", round(t + TICK_AT / REVEAL_FPS, 3), "chapter_2", "tick"),
+             Move("pen-circle", round(t + RING_AT / REVEAL_FPS, 3), "chapter_2", "ring")]
+    tracks = move_cues(moves, settings, Voicing(root / "sfx", "s"),
+                       cuts=[Cut("chapter", t, t)])
+    assert [tr.name.split("@")[0] for tr in tracks] == ["move:highlight", "move:pen-circle"]
+
+
 def test_a_short_plays_its_moves_under_its_cuts(assets, tmp_path):
     root, settings = assets
     tracks = short_mix(FakeTTS(_voice(tmp_path / "v.m4a")), settings,
@@ -416,6 +430,8 @@ def test_the_mix_goes_under_the_picture_at_the_streaming_target(settings, tmp_pa
     graph = (tmp_path / "mix.filter.txt").read_text(encoding="utf-8")
     assert "acompressor=" in graph and "loudnorm=I=-14.0" in graph
     assert "alimiter=" in graph
+    # and the limiter adds no gain of its own after loudnorm
+    assert "alimiter=limit=" in graph and ":level=0" in graph
 
     streams = _streams(out)
     assert streams["audio"]["codec_name"] == "aac"

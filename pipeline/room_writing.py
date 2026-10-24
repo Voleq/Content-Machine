@@ -55,6 +55,7 @@ CLOCK = "3:05"
 PLANT = "No. 14"
 KEV = "Kev: thoughts?"
 CACHE_FILE = "room_writing.json"
+CACHE_KEEP = 6            # scripts whose answers the file keeps (long, short, a few edits)
 # How much the model is asked for, and how long each piece may be: what
 # fits a 7.5 cm note and an index card at the back of the room.
 NOTES, CARDS = 3, 3
@@ -157,8 +158,15 @@ def take(pool: list[str], n: int, at: int, salt: str) -> list[str]:
 
 
 # --------------------------------------------------------------- the model
+def _figures(text: str) -> set[str]:
+    return {m.group(0).rstrip(".,").replace(",", "") for m in _NUMBER.finditer(text)}
+
+
 def _numbers_ok(text: str, script: str) -> bool:
-    return all(m.group(0).rstrip(".,") in script for m in _NUMBER.finditer(text))
+    """Every figure written is one the script says, whole. It was a substring
+    test, so "4%" passed on "14%" and "$40B" on "$400 billion" (scan, 24 Oct
+    2026)."""
+    return _figures(text) <= _figures(script)
 
 
 def _clean(text, limit: int, script: str) -> str | None:
@@ -261,22 +269,34 @@ def props(script, *, ticker: str, workdate: str, episode: int, settings,
     sha = hashlib.sha256(text.encode()).hexdigest()[:16]
     notes: list[str] = []
     cards: list[str] = []
+    # ONE ANSWER PER SCRIPT. The long and the short share a workspace, and
+    # the file kept only the last script's answer, so the long's final asked
+    # the model again after the short and its room no longer matched the
+    # proof he approved (scan, 24 Oct 2026). Answers are kept by the script
+    # they were written for.
     cache = Path(workspace) / CACHE_FILE if workspace is not None else None
+    kept: dict = {}
     if cache is not None and cache.exists():
         try:
-            kept = json.loads(cache.read_text(encoding="utf-8"))
-            if kept.get("sha") == sha:
-                notes, cards = list(kept.get("notes") or []), list(kept.get("cards") or [])
-        except (OSError, ValueError):
-            pass
+            raw = json.loads(cache.read_text(encoding="utf-8"))
+            kept = raw.get("by_script") or ({raw["sha"]: raw} if raw.get("sha") else {})
+        except (OSError, ValueError, AttributeError):
+            kept = {}
+    kept = kept if isinstance(kept, dict) else {}
+    if isinstance(kept.get(sha), dict):
+        notes = list(kept[sha].get("notes") or [])
+        cards = list(kept[sha].get("cards") or [])
     if not notes and not cards and text:
         notes, cards = from_script(text, ticker, settings)
         if (notes or cards) and cache is not None:
             # only the model's answer is kept: a list fallback is taken
             # again next time, when the model may be running
+            kept = {k: v for k, v in kept.items() if k != sha}
+            kept = dict(list(kept.items())[-(CACHE_KEEP - 1):]) if CACHE_KEEP > 1 else {}
+            kept[sha] = {"notes": notes, "cards": cards}
             try:
-                cache.write_text(json.dumps({"sha": sha, "notes": notes, "cards": cards},
-                                            indent=1), encoding="utf-8")
+                cache.write_text(json.dumps({"by_script": kept}, indent=1),
+                                 encoding="utf-8")
             except OSError:
                 pass
     notes = (notes + [n for n in take(pool.get("notes", []), NOTES * 2, at, "notes")

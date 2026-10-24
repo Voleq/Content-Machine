@@ -71,6 +71,34 @@ def test_the_models_answer_is_kept_for_a_rerender(tmp_path, monkeypatch):
     assert dict(one)["note0"] == "debt doubled"
 
 
+def test_a_figure_inside_a_said_one_is_not_said():
+    script = "Revenue grew 14% to $400 billion in 2023, a margin of 31.5 percent."
+    for made_up in ("Rev up 4%", "$40B?", "margin 1.5", "$20B due"):
+        assert rw._clean(made_up, rw.NOTE_MAX, script) is None, made_up
+    for said in ("up 14%", "$400B", "31.5 margin", "FY2023"):
+        assert rw._clean(said, rw.NOTE_MAX, script) == said, said
+    assert rw._clean("1,200 stores", rw.NOTE_MAX, "it runs 1200 stores") == "1,200 stores"
+
+
+def test_the_long_and_the_short_keep_their_own_answers(tmp_path, monkeypatch):
+    """They share a workspace: the long's final asked again after the short
+    and came out unlike the proof."""
+    calls = []
+
+    def fake(text, ticker, settings):
+        calls.append(text)
+        return [f"note {len(calls)}"], []
+
+    monkeypatch.setattr(rw, "from_script", fake)
+    long_, short = (SimpleNamespace(narration="The long."),
+                    SimpleNamespace(audio_script="The short."))
+    said = lambda s: dict(rw.props(s, ticker="X", workdate="2026-10-18", episode=3,  # noqa: E731
+                                   settings=_settings(), workspace=tmp_path))["note0"]
+    proof = said(long_)
+    said(short)
+    assert said(long_) == proof and len(calls) == 2
+
+
 def test_the_plant_is_named_after_his_latest_broken_thesis(tmp_path):
     """Pick 2: the tag carries the last thesis the book found broken by the
     video's day; "No. 14" before any has broken."""

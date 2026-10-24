@@ -496,6 +496,7 @@ def move_cues(moves: Sequence[Move], settings, voicing: Voicing, *,
     level = settings.sfx_gain_db + MOVE_GAIN_REL_DB
     cut_times = [c.start for c in cuts]
     last = float("-inf")
+    pen_up = None     # where the last drawn sound stops, None after a struck one
     for mv in sorted(moves, key=lambda m: m.start):
         cue = MOVE_CUES.get(mv.move)
         if cue is None:
@@ -510,7 +511,11 @@ def move_cues(moves: Sequence[Move], settings, voicing: Voicing, *,
             continue
         if any(a <= until and t < b for a, b in drops):
             continue
-        if t - last < MOVE_GAP_S:
+        # A PEN LIFTED AND PUT DOWN AGAIN IS TWO STROKES. The board's tick
+        # and its ring are 0.58 s apart, inside the gap, so the ring was drawn
+        # in silence at every chapter break (scan, 24 Oct 2026): a drawing
+        # that starts after the last drawn sound has stopped is heard.
+        if t - last < MOVE_GAP_S and not (cue.drawn and pen_up is not None and t >= pen_up):
             continue
         tr = voicing.fire(cue.key, t, level,
                           max_s=cue.at_s if cue.drawn else 0.0,
@@ -518,6 +523,7 @@ def move_cues(moves: Sequence[Move], settings, voicing: Voicing, *,
         if tr:
             tracks.append(tr)
             last = t
+            pen_up = until if cue.drawn else None
     return tracks
 
 

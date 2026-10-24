@@ -604,15 +604,18 @@ def audio_graph(spec: CompositeSpec, first_input: int) -> tuple[list[str], list[
     # Silence to the end of the picture: a long's end screen holds after the
     # last word, and with no room tone on disk nothing else would reach it.
     pad = f"apad=whole_dur={spec.duration:.3f},"
+    # NO MAKE-UP GAIN AFTER LOUDNORM. The limiter's own auto level turned the
+    # programme up again by about half a decibel, past the true-peak target
+    # loudnorm had just met (scan, 24 Oct 2026).
+    limit = f"alimiter=limit={spec.limiter_ceiling}:level=0"
     if spec.normalise_audio:
         lines.append(
             f"[amixed]{pad}loudnorm=I={spec.loudness_lufs}:TP={spec.true_peak_db}"
             f":LRA={spec.loudness_range},aresample=48000,"
-            f"alimiter=limit={spec.limiter_ceiling}[aout]"
+            f"{limit}[aout]"
         )
     else:
-        lines.append(f"[amixed]{pad}aresample=48000,"
-                     f"alimiter=limit={spec.limiter_ceiling}[aout]")
+        lines.append(f"[amixed]{pad}aresample=48000,{limit}[aout]")
     return inputs, lines
 
 
