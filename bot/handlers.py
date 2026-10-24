@@ -2506,13 +2506,26 @@ class BotCore:
             return Reply(f"⛔ {args[0]!r} is not a ticker. "
                          f"Usage: /batch [TICKER [short|long] | run | clear]")
         fmt = (args[1].lower() if len(args) > 1 else "")
-        if fmt not in ("short", "long"):
-            ws = self._ws_or_error(ticker, lambda w: any(
-                (w.path / f"script_{f}.json").exists() for f in ("short", "long")))
-            fmt = (ws.current_format() if ws else None) or "long"
+        given = fmt in ("short", "long")
+        ws = self._ws_or_error(ticker, lambda w: any(
+            (w.path / f"script_{f}.json").exists()
+            for f in ((fmt,) if given else ("short", "long"))))
+        # REFUSED NOW, NOT AT NIGHT. A ticker with no folder was queued and
+        # skipped in the window, so the operator learned it in the morning
+        # (scan, 24 Oct 2026). A missing SCRIPT is only a warning: it can
+        # still be pasted before the window opens.
+        if ws is None:
+            name = Workspace.split_arg(ticker)[0]
+            return Reply(f"⛔ No workspace for {name} — /short {name} or "
+                         f"/long {name} first, then /batch it.")
+        if not given:
+            fmt = ws.current_format() or "long"
         b.add(ticker, fmt)
+        note = ("" if (ws.path / f"script_{fmt}.json").exists() else
+                f"⚠ no {fmt.upper()} script in it yet: paste it before the "
+                f"night, or the batch skips it.\n")
         return Reply(f"🌙 {ticker} {fmt.upper()} queued for the overnight batch.\n"
-                     + b.render())
+                     + note + b.render())
 
     def batch_plan(self) -> tuple[list[tuple], list[str], str]:
         """(submittable, skipped reasons, note). Pure — submitting is async.

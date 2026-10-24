@@ -365,9 +365,21 @@ def test_thesis_for_one_ticker_rechecks_against_todays_numbers(core, settings):
 
 def test_the_batch_command_queues_and_reports(core, settings):
     assert "nothing queued" in core.batch_text([]).text
+    core.start_lane(1, "long", "EXMPL")
     reply = core.batch_text(["EXMPL", "long"])
     assert "EXMPL LONG queued" in reply.text
+    assert "no LONG script in it yet" in reply.text
     assert "cleared 1" in core.batch_text(["clear"]).text
+
+
+@pytest.mark.parametrize("args", [["NOSUCH"], ["NOSUCH", "short"],
+                                  ["NOSUCH@2026-01-02", "long"]])
+def test_the_batch_refuses_a_ticker_with_no_folder_when_it_is_queued(
+        core, settings, args):
+    """It used to queue it and skip it at night, so the morning said so."""
+    reply = core.batch_text(args)
+    assert reply.text.startswith("⛔ No workspace for NOSUCH")
+    assert BatchQueue(settings).pending() == []
 
 
 def test_the_batch_plan_reports_what_it_cannot_run_rather_than_dropping_it(
