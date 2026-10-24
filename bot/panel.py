@@ -108,7 +108,26 @@ class Panel:
 
     # ---- the bridge to the bot's loop
     def run(self, coro, timeout: float = ACTION_TIMEOUT_S):
-        return asyncio.run_coroutine_threadsafe(coro, self.loop).result(timeout)
+        """The action's reply, or TimeoutError after `timeout`. The page
+        then says the result will appear in Activity, so it is put there
+        when the action does finish: a long's upload outlasts the wait,
+        and its link was thrown away (scan, 24 Oct 2026)."""
+        fut = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        try:
+            return fut.result(timeout)
+        except TimeoutError:
+            fut.add_done_callback(self._late_reply)
+            raise
+
+    def _late_reply(self, fut) -> None:
+        try:
+            reply = fut.result()
+        except Exception as e:                          # noqa: BLE001
+            self.feed.add("reply", f"💥 {e}")
+            return
+        if isinstance(reply, Reply) and (reply.text or reply.files):
+            self.feed.add("reply", reply.text, files=reply.files,
+                          keyboard=reply.keyboard)
 
     async def say(self, reply: Reply) -> None:
         """An interim message ("⏳ got it…") goes to the feed, where the

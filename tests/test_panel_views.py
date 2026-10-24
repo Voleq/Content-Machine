@@ -328,3 +328,32 @@ def test_the_proof_step_says_what_the_render_found(tmp_path):
     (tmp_path / "short_proof.manifest.json").write_text("{}", encoding="utf-8")
     short = SimpleNamespace(fmt="short", ws=v.ws)
     assert _proof_checks(short, tmp_path / "short_proof.mp4") == []
+
+
+def test_an_action_that_outlasts_the_page_lands_in_activity(core):
+    """The page says the result will appear in Activity; it now does."""
+    import asyncio
+    import threading
+
+    from bot.handlers import Reply
+
+    loop = asyncio.new_event_loop()
+    t = threading.Thread(target=loop.run_forever, daemon=True)
+    t.start()
+    try:
+        panel = Panel(core, loop=loop)
+
+        async def slow():
+            await asyncio.sleep(0.3)
+            return Reply("📺 EXMPL: uploaded PRIVATE")
+
+        with pytest.raises(TimeoutError):
+            panel.run(slow(), timeout=0.05)
+        for _ in range(50):
+            if any("uploaded PRIVATE" in e.text for e in panel.feed.since(0)):
+                break
+            threading.Event().wait(0.05)
+        assert any("uploaded PRIVATE" in e.text for e in panel.feed.since(0))
+    finally:
+        loop.call_soon_threadsafe(loop.stop)
+        t.join(5)

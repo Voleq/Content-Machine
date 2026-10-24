@@ -16,6 +16,7 @@ import asyncio
 import logging
 import os
 import re
+import threading
 import uuid
 from concurrent.futures import CancelledError
 from dataclasses import dataclass, field
@@ -338,12 +339,13 @@ class BotCore:
         self.tts = TTSEngine(settings, ledger=self.ledger)
         self.content = ContentManager(settings, ledger=self.ledger)
         self.context = ActiveContext(settings)
+        self._uploading: set[tuple[str, str]] = set()
+        self._upload_lock = threading.Lock()
         # Set by main.py: a thread-safe way for the worker to hand a file
         # (storyboard, thumbnail) to the operator mid-job.
         self.file_pusher: Callable[[Path, str], None] | None = None
         self.queue: RenderJobQueue | None = None  # attached in main.py
         # /ask questions put off while a render holds the graphics card.
-        import threading
         self._ask_lock = threading.Lock()
         # FILING READINGS IN FLIGHT, keyed (ticker, workdate) → Future (K3).
         #
@@ -2638,10 +2640,7 @@ class BotCore:
         `published.json` — kept "so /upload does not re-upload" — was read
         by nothing for that.
         """
-        from pipeline.youtube import (
-            UploadError, YouTubeUnavailable, available, resolve_publish_at,
-            upload_video,
-        )
+        from pipeline.youtube import resolve_publish_at
 
         if not args:
             return Reply("Usage: /upload TICKER [YYYY-MM-DD HH:MM]\n"
@@ -2668,8 +2667,30 @@ class BotCore:
         ticker = Workspace.split_arg(ticker)[0]
         if ws is None:
             return Reply(f"No workspace for {ticker}.")
-        if wanted_fmt == "pair":
-            return self._upload_pair(ws, when, again=again)
+        # ONE UPLOAD PER VIDEO AT A TIME. A long takes longer to send than
+        # the page waits for an answer, so its Upload button came back while
+        # the first was still sending, and a second press sent a second copy
+        # (scan, 24 Oct 2026).
+        key = (ws.ticker, ws.workdate)
+        with self._upload_lock:
+            if key in self._uploading:
+                return Reply(f"⏳ {ws.ticker} ({ws.workdate}) is already "
+                             f"uploading; its link comes here when it is done.")
+            self._uploading.add(key)
+        try:
+            if wanted_fmt == "pair":
+                return self._upload_pair(ws, when, again=again)
+            return self._upload_one(ws, ticker, wanted_fmt, clip_n, when, again)
+        finally:
+            with self._upload_lock:
+                self._uploading.discard(key)
+
+    def _upload_one(self, ws: Workspace, ticker: str, wanted_fmt: str,
+                    clip_n: int, when, again: bool) -> Reply:
+        from pipeline.youtube import (
+            UploadError, YouTubeUnavailable, available, upload_video,
+        )
+
         fmt, video, why = self._upload_target(ws, wanted_fmt, clip_n)
         if video is None:
             return Reply(why)

@@ -786,3 +786,41 @@ def test_retention_reads_the_final_cut_not_a_draft(core):
     assert core._manifest_for(ws, "long") is None
     assert core._manifest_for(ws, "long", trials=True).name == \
         "render_long_draft_manifest.json"
+
+
+def test_a_second_upload_of_a_video_waits_for_the_first(core, xlsx_bytes,
+                                                        short_valid_json,
+                                                        monkeypatch):
+    """A long outlasts the page's wait, its button comes back, and a second
+    press sent a second copy."""
+    import threading
+
+    import pipeline.youtube as yt
+
+    core.start_lane(CHAT, "short", "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    core.intake_script(CHAT, short_valid_json)
+    ws = Workspace.latest_for(core.settings, "EXMPL")
+    (ws.path / "short_final.mp4").write_bytes(b"short")
+    sending, release = threading.Event(), threading.Event()
+    sent = []
+
+    def slow_upload(video, *a, **kw):
+        sending.set()
+        release.wait(10)
+        sent.append(video)
+        raise yt.UploadError("stopped here")
+
+    monkeypatch.setattr(yt, "available", lambda s: (True, ""))
+    monkeypatch.setattr(yt, "upload_video", slow_upload)
+    first = threading.Thread(target=core.upload_command, args=(["EXMPL", "short"],))
+    first.start()
+    assert sending.wait(10)
+    again = core.upload_command(["EXMPL", "short"])
+    assert again.text.startswith("⏳ EXMPL") and "already uploading" in again.text
+    release.set()
+    first.join(10)
+    assert len(sent) == 1
+    # and once it has finished, the video can be sent again
+    release.set()
+    assert "upload failed" in core.upload_command(["EXMPL", "short"]).text
