@@ -34,7 +34,19 @@ EVENT_VERBS = (
 _EVENT_RE = re.compile(
     r"\b(?:" + "|".join(re.escape(v) for v in EVENT_VERBS) + r")\b",
     re.IGNORECASE)
-_YEAR_RE = re.compile(r"\b(?:19|20)\d{2}\b")
+# A year in digits, or as the narration says it: the prompts have the writer
+# spell every spoken figure out for the voice, so "fined in twenty nineteen"
+# is the usual shape and "2019" the rare one.
+_UNIT = r"(?:one|two|three|four|five|six|seven|eight|nine)"
+_TEEN = (r"(?:ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|"
+         r"eighteen|nineteen)")
+_TENS = r"(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)"
+_YEAR_RE = re.compile(
+    r"\b(?:19|20)\d{2}\b"
+    r"|\b(?:nineteen|twenty)[\s-]+(?:oh[\s-]+" + _UNIT + r"|" + _TEEN + r"|"
+    + _TENS + r"(?:[\s-]+" + _UNIT + r")?)\b"
+    r"|\btwo thousand(?:\s+and)?[\s-]+(?:" + _TEEN + r"|" + _UNIT + r")\b",
+    re.IGNORECASE)
 _MONTHS = ("January", "February", "March", "April", "June", "July", "August",
            "September", "October", "November", "December", "Sept")
 # "May" is a month only with a day or a year after it; "may" is a verb.

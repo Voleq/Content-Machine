@@ -12,6 +12,18 @@ def test_dated_event_is_a_claim():
     assert "resigned" in claims[0].why
 
 
+def test_a_year_said_in_words_dates_the_event():
+    """The narration spells its figures out for the voice, years included,
+    so a year in digits is the rare case: "fined in twenty nineteen"."""
+    for said in ("twenty nineteen", "twenty twenty-two", "twenty twenty two",
+                 "nineteen ninety-nine", "two thousand and eight",
+                 "twenty oh nine"):
+        claims = list_claims(f"They were fined in {said} for the accounts.",
+                             "EXMPL")
+        assert [c.why for c in claims] == ["a dated event: “fined”"], said
+    assert list_claims("They cut two thousand jobs and kept going.", "EXMPL") == []
+
+
 def test_named_event_is_a_claim():
     claims = list_claims("Last spring the company acquired Widget Holdings "
                          "for cash.", "EXMPL")
