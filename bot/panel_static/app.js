@@ -410,9 +410,12 @@ function failReply(box, err, origin) {
   alarm(`${origin} failed: ${err.message || err}`);
 }
 
+// Resolves true only when the bot answered and the answer is not a refusal
+// (⛔) or a crash (💥): what a paste box needs before it empties itself. A
+// second click while the first send ran resolved too, and emptied the box.
 async function act(origin, fn, btn) {
   if (btn) {
-    if (btn.getAttribute("aria-disabled") === "true" && !btn.classList.contains("chosen")) return;
+    if (btn.getAttribute("aria-disabled") === "true" && !btn.classList.contains("chosen")) return false;
     btn.setAttribute("aria-disabled", "true");
     btn.setAttribute("aria-busy", "true");
   }
@@ -421,8 +424,10 @@ async function act(origin, fn, btn) {
   try {
     const data = await fn();
     fillReply(box, data.reply, origin);
+    return !/^\s*(⛔|💥)/u.test(data.reply?.text || "");
   } catch (e) {
     failReply(box, e, origin);
+    return false;
   } finally {
     BUSY--;
     if (btn) {
@@ -840,9 +845,9 @@ $("#send-paste").addEventListener("click", (e) => {
   const who = STATE?.active ? ` → ${STATE.active.ticker}` : "";
   const label = text.length > 60 ? `Paste · ${text.length.toLocaleString()} chars${who}` : `“${text.trim()}”${who}`;
   $("#paste").readOnly = true;
-  act(label, () => post("/api/text", { text }), e.currentTarget).then(() => {
+  act(label, () => post("/api/text", { text }), e.currentTarget).then((ok) => {
     $("#paste").readOnly = false;
-    if (!$("#replies .reply.error")) $("#paste").value = "";
+    if (ok) $("#paste").value = "";
   });
 });
 

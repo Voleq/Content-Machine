@@ -271,7 +271,7 @@ function pasteBox(placeholder, label, send) {
   const btn = el("button", { type: "button", class: "primary", text: label, onclick: (e) => {
     const text = ta.value;
     if (!text.trim()) { ta.focus(); return; }
-    send(text, e.currentTarget).then(() => { if (!$("#replies .reply.error")) { ta.value = ""; delete ta.dataset.dirty; } });
+    send(text, e.currentTarget).then((ok) => { if (ok) { ta.value = ""; delete ta.dataset.dirty; } });
   } });
   return el("div", { class: "paste" }, ta, el("div", { class: "row end" }, btn));
 }
