@@ -912,7 +912,8 @@ COMMANDS: tuple[Command, ...] = (
             c_render, ticker="dated", spends=True, example="{T}", doc=(
                 "Renders the approved script for the video's lane — the one "
                 "step that spends. A format word picks one for a ticker that "
-                "has both.")),
+                "has both. Sent bare, it shows the cost and waits for "
+                "Confirm.")),
     Command("render", "long", "[TICKER]", "force the LONG",
             _render_fmt("long"), aliases=("render_long",), ticker="dated",
             spends=True, doc="Forces the LONG, for a ticker that has both."),
@@ -956,7 +957,8 @@ COMMANDS: tuple[Command, ...] = (
                 "transcript, and chapters cut to the rendered length. A "
                 "render already uploaded is refused unless `again` says "
                 "otherwise. A dropped upload resumes rather than starting a "
-                "second one.")),
+                "second one. Sent bare, it names the active video and waits "
+                "for a tap.")),
     Command("publish", "pair", "[TICKER] [YYYY-MM-DD HH:MM]",
             "two repurposed clips off one LONG, tagged as a pair", c_pair,
             ticker="dated", doc=(
@@ -1232,6 +1234,34 @@ def _fill_ticker(c: Call, cmd: Command) -> str | None:
     return None
 
 
+# BARE, A COMMAND THAT SPENDS OR PUBLISHES ASKS FIRST. Tapped in Telegram's
+# command menu to see what it does, /render started a paid render of the
+# active video and /publish uploaded it (scan, 24 Oct 2026). With nothing
+# typed after it, it names its target and waits for a tap; typed with a
+# ticker or a word, it runs as it always has.
+_ASKS_WHEN_BARE: dict[tuple[str, str], str] = {
+    ("render", ""): "", ("render", "long"): "long", ("render", "short"): "short",
+    ("publish", ""): "", ("publish", "pair"): "long", ("publish", "probe"): ""}
+
+
+def _held_for_a_tap(c: "Call", cmd: Command) -> Reply | None:
+    key = (cmd.family, cmd.sub)
+    if not c.filled or len(c.args) != 1 or key not in _ASKS_WHEN_BARE:
+        return None
+    ws = c.core.context.get(c.chat_id)
+    if ws is None:
+        return None
+    fmt = _ASKS_WHEN_BARE[key] or ws.current_format() or ws.lane() or "short"
+    if cmd.family == "render":
+        return c.core.render_confirm(fmt, ws.ticker, ws.workdate)
+    if cmd.sub:
+        return Reply(f"{cmd.slash} {ws.ticker} — {cmd.help}. Send it with the "
+                     f"ticker to go ahead.")
+    return Reply(f"📤 Upload {ws.ticker} {fmt.upper()} ({ws.workdate})? "
+                 f"Private, never public; Schedule… sets a time.",
+                 keyboard=kb.delivered_keyboard(fmt, ws.ticker, ws.workdate))
+
+
 async def run_command(core: BotCore, chat_id: int, name: str,
                       args: list[str], raw: str = "",
                       say: Say | None = None) -> Reply:
@@ -1246,13 +1276,17 @@ async def run_command(core: BotCore, chat_id: int, name: str,
     refusal = _fill_ticker(c, cmd)
     if refusal:
         return Reply(refusal)
-    if cmd.ack and say is not None and c.args:     # not before a usage line
-        await say(Reply(cmd.ack))
-    if inspect.iscoroutinefunction(cmd.run):
-        result = await cmd.run(c)
+    held = await asyncio.to_thread(_held_for_a_tap, c, cmd)
+    if held is not None:
+        reply = held
     else:
-        result = await asyncio.to_thread(cmd.run, c)
-    reply = _reply(result)
+        if cmd.ack and say is not None and c.args:     # not before a usage line
+            await say(Reply(cmd.ack))
+        if inspect.iscoroutinefunction(cmd.run):
+            result = await cmd.run(c)
+        else:
+            result = await asyncio.to_thread(cmd.run, c)
+        reply = _reply(result)
     if c.filled and not reply.text.startswith("📁"):
         reply.text = f"📁 {c.filled}\n{reply.text}"
     return reply

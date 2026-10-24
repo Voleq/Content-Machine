@@ -770,7 +770,7 @@ An edit that does not parse never lands. Every edit that does re-runs the gates,
 
 | command | what it does |
 |---|---|
-| `/render [TICKER] [short\|long]` | Renders the approved script for the video's lane — the one step that spends. A format word picks one for a ticker that has both. **Spends.** |
+| `/render [TICKER] [short\|long]` | Renders the approved script for the video's lane — the one step that spends. A format word picks one for a ticker that has both. Sent bare, it shows the cost and waits for Confirm. **Spends.** |
 | `/render long [TICKER]` | Forces the LONG, for a ticker that has both. **Spends.** |
 | `/render short [TICKER]` | Forces the SHORT, for a ticker that has both. **Spends.** |
 | `/render proof [TICKER] [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". Writes `short_proof.mp4` / `long_proof.mp4` — never over a paid final. |
@@ -800,7 +800,7 @@ The paid voice goes to the chat the moment it lands, and the render has already 
 
 | command | what it does |
 |---|---|
-| `/publish [TICKER] [short\|long\|clip N] [again] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`. The format's own thumbnail and `.srt` go up with the video, and the description is the render's package — the why, the transcript, and chapters cut to the rendered length. A render already uploaded is refused unless `again` says otherwise. A dropped upload resumes rather than starting a second one. |
+| `/publish [TICKER] [short\|long\|clip N] [again] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`. The format's own thumbnail and `.srt` go up with the video, and the description is the render's package — the why, the transcript, and chapters cut to the rendered length. A render already uploaded is refused unless `again` says otherwise. A dropped upload resumes rather than starting a second one. Sent bare, it names the active video and waits for a tap. |
 | `/publish pair [TICKER] [YYYY-MM-DD HH:MM]` | Ships **two** repurposed clips off one long, tagged as a pair, so `/stats experiments` can compare them. |
 | `/publish probe [TICKER] [short\|long]` | One **unlisted** upload of a finished render with the synthetic-media box ticked, to see where YouTube puts the AI label on this channel's output. Never public, never scheduled, not recorded as a published video; delete it when you have looked. |
 | `/publish scheduled` | What is queued to publish, and when. |

@@ -198,6 +198,27 @@ def test_the_reply_names_the_video_it_acted_on(core):
     assert reply.text.startswith("📁 EXMPL ")
 
 
+def test_a_bare_render_or_publish_asks_before_it_spends_or_uploads(core, monkeypatch):
+    """Tapped in the command menu to see the options, /render started a paid
+    render of the active video and /publish uploaded it."""
+    ran = []
+    monkeypatch.setattr(core, "render_request",
+                        lambda *a, **k: ran.append(("render", a)) or ("x", "ran", None))
+    monkeypatch.setattr(core, "upload_command", lambda args: ran.append(("upload", args))
+                        or Reply("📺 up"))
+    core.start_lane(CHAT, "short", "EXMPL")
+    ws = core.context.get(CHAT)
+    for line in ("/render", "/render short", "/publish", "/upload", "/publish probe"):
+        reply = cmd(core, line)
+        assert reply.text.startswith("📁 EXMPL "), line
+    assert ran == []
+    up = cmd(core, "/publish")
+    assert f"u|s|EXMPL|{ws.workdate}" in _buttons(up)
+    # typed with its ticker, it runs as it always has
+    cmd(core, f"/publish EXMPL@{ws.workdate}")
+    assert ran and ran[0][0] == "upload"
+
+
 # --------------------------------------------------------------------------
 # The video card, the inbox, the calendar.
 # --------------------------------------------------------------------------
