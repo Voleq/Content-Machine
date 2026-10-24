@@ -212,8 +212,46 @@ def _delivery(settings, report: Report, live: bool) -> None:
         report.add(PASS, "DELIVERY_BACKEND", backend)
 
 
+def _youtube(settings, report: Report) -> None:
+    """The upload library and the sign-in file, readable by the bot. Without
+    the library, scripts/youtube_auth.py and /publish stopped on an import
+    error; a sign-in file written with sudo was root's alone."""
+    import importlib.util
+    import os
+
+    if not settings.youtube_enabled:
+        report.add(SKIP, "YouTube", "YOUTUBE_ENABLED=false — finals are posted by hand")
+        return
+    missing = [m for m in ("googleapiclient", "google_auth_oauthlib")
+               if importlib.util.find_spec(m) is None]
+    if missing:
+        report.add(FAIL, "YouTube", f"{', '.join(missing)} not installed — re-run the "
+                   f"install (it puts in '.[youtube]')")
+        return
+    creds = Path(settings.youtube_credentials or "").expanduser()
+    if not settings.youtube_credentials or not creds.is_file():
+        report.add(FAIL, "YouTube", "no YOUTUBE_CREDENTIALS file — make it with "
+                   "scripts/youtube_auth.py client_secret.json")
+    elif not os.access(creds, os.R_OK):
+        report.add(FAIL, "YouTube", f"{creds} is not readable by this user — "
+                   f"`sudo chown dennis {creds}`")
+    else:
+        report.add(PASS, "YouTube", str(creds))
+
+
 def _publish_window(settings, report: Report) -> None:
-    """Not a pass/fail — a decision the operator should have made."""
+    """Not a pass/fail — a decision the operator should have made. A zone
+    name the clock does not know is a failure: every scheduled time was
+    taken as UTC with only a log line to say so."""
+    try:
+        from zoneinfo import ZoneInfo
+
+        ZoneInfo(settings.publish_timezone)
+    except Exception:  # noqa: BLE001
+        report.add(FAIL, "publish window",
+                   f"PUBLISH_TIMEZONE={settings.publish_timezone!r} is not a zone "
+                   f"name (Europe/Bucharest, America/New_York) — times would be UTC")
+        return
     report.add(SKIP, "publish window",
                f"{settings.publish_hour:02d}:{settings.publish_minute:02d} "
                f"{settings.publish_timezone} — decide this rather than "
@@ -263,6 +301,7 @@ def main(argv: list[str] | None = None) -> int:
     _dennis_3d(settings, report, live)
     _broll(settings, report)
     _delivery(settings, report, live)
+    _youtube(settings, report)
     _publish_window(settings, report)
     _state_backup(settings, report)
     _suite(report)

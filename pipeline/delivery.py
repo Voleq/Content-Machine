@@ -162,6 +162,15 @@ class GDriveBackend:
         return creds.token
 
     # ------------------------------------------------------------ folders
+    def _unseen(self, folder_id: str) -> DeliveryError:
+        return DeliveryError(
+            f"Drive cannot see folder {folder_id}. With the `drive.file` "
+            f"scope this app only sees folders it created itself: leave "
+            f"GDRIVE_ROOT_FOLDER_ID blank (it makes and reuses its own "
+            f"'{self.settings.gdrive_folder_name}' folder), or for a "
+            f"service account point it at a Shared Drive folder the "
+            f"account belongs to.")
+
     def _find_or_create_folder(
         self, client: httpx.Client, name: str, parent: str | None
     ) -> str:
@@ -178,6 +187,12 @@ class GDriveBackend:
             "q": q, "fields": "files(id)", "supportsAllDrives": "true",
             "includeItemsFromAllDrives": "true",
         })
+        # THE HINT WHERE THE 404 COMES. A folder shared by hand is invisible
+        # to `drive.file`, and the first call to say so is this one: the
+        # raw 404 reached him and the hint below never did (scan, 24 Oct
+        # 2026).
+        if r.status_code == 404 and parent:
+            raise self._unseen(parent)
         r.raise_for_status()
         files = r.json().get("files", [])
         if files:
@@ -187,6 +202,8 @@ class GDriveBackend:
             body["parents"] = [parent]
         r = client.post(f"{DRIVE_API}/files", json=body,
                         params={"supportsAllDrives": "true", "fields": "id"})
+        if r.status_code == 404 and parent:
+            raise self._unseen(parent)
         r.raise_for_status()
         return r.json()["id"]
 
@@ -205,13 +222,7 @@ class GDriveBackend:
             headers={"X-Upload-Content-Type": mime},
         )
         if r.status_code == 404 and folder_id:
-            raise DeliveryError(
-                f"Drive cannot see folder {folder_id}. With the `drive.file` "
-                f"scope this app only sees folders it created itself: leave "
-                f"GDRIVE_ROOT_FOLDER_ID blank (it makes and reuses its own "
-                f"'{self.settings.gdrive_folder_name}' folder), or for a "
-                f"service account point it at a Shared Drive folder the "
-                f"account belongs to.")
+            raise self._unseen(folder_id)
         r.raise_for_status()
         session_url = r.headers["Location"]
         with open(path, "rb") as f:

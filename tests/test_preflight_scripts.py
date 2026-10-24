@@ -360,6 +360,19 @@ def test_live_mode_checks_the_settings_that_only_matter_in_production(tmp_path):
     assert "silently useless in production" in live.stdout
 
 
+def test_the_preflight_checks_youtube_and_the_publish_zone(tmp_path):
+    """/publish and youtube_auth.py stopped on an import error on a fresh
+    box, with no row to say so; and a zone name the clock does not know made
+    every scheduled time UTC with only a log line."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
+    env = {"ASSETS_DIR": str(assets), "STATE_DIR": str(tmp_path / "state")}
+    assert "[----] YouTube" in _run("check_preflight.py", **env).stdout
+    on = _run("check_preflight.py", YOUTUBE_ENABLED="true",
+              YOUTUBE_CREDENTIALS=str(tmp_path / "none.json"),
+              PUBLISH_TIMEZONE="Mars/Olympus", **env)
+    assert "[FAIL] YouTube" in on.stdout and "[FAIL] publish window" in on.stdout
+
+
 def test_the_readme_preflight_and_the_script_name_the_same_scripts():
     """A checklist step pointing at a script that is not there is worse than
     a step that is missing, and the README is where the operator reads it."""

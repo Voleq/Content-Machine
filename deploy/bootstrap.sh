@@ -649,6 +649,17 @@ fi
 # service user + destination
 # --------------------------------------------------------------------------
 step "service user + directory"
+# AN UPDATE STOPS THE BOT FIRST AND STARTS IT AGAIN AT THE END. It used to
+# run on: old code importing new modules as it went, new page scripts served
+# against the old API, and the kit step replacing assets/plates under a
+# render in progress (scan, 24 Oct 2026).
+WAS_RUNNING=0
+if [ "$SYSTEMD" -eq 1 ] && systemctl is-active --quiet dennis 2>/dev/null; then
+  WAS_RUNNING=1
+  warn "stopping dennis for the update; a render running now stops with it"
+  warn "(queue it again after). It starts again at the end."
+  systemctl stop dennis
+fi
 id -u "$SERVICE_USER" >/dev/null 2>&1 \
   || useradd --system --create-home --shell /usr/sbin/nologin "$SERVICE_USER"
 mkdir -p "$DEST"
@@ -721,8 +732,9 @@ fi
 .venv/bin/pip install --upgrade pip -q
 # Everything comes from the pinned pyproject.toml. `filings` pulls Playwright
 # and BeautifulSoup for the 10-K screenshots; `dev` pulls pytest for the
-# offline suite below.
-.venv/bin/pip install -q -e '.[dev,filings]' || die \
+# offline suite below; `youtube` the upload library, without which
+# scripts/youtube_auth.py and /publish stop on an import error.
+.venv/bin/pip install -q -e '.[dev,filings,youtube]' || die \
 "Dependency install failed.
 
 Every version in pyproject.toml is pinned, so this is a network problem or a
@@ -844,6 +856,10 @@ if [ ! -f .env ]; then
 else
   info ".env already exists - left alone"
 fi
+# The keys go in this file: readable by the bot and nobody else. Copied, it
+# was world-readable (scan, 24 Oct 2026).
+chown "$SERVICE_USER:$SERVICE_USER" .env
+chmod 600 .env
 
 # key=value in .env, whether the key is absent, blank or already set.
 env_set() {
@@ -1107,6 +1123,9 @@ if [ "$SYSTEMD" -eq 1 ]; then
   systemctl start dennis-cleanup.timer
   ok "units installed; cleanup timer enabled"
   UNITS_LIVE=1
+  if [ "$WAS_RUNNING" -eq 1 ]; then
+    systemctl start dennis && ok "dennis started again on the new code"
+  fi
 else
   UNITS_LIVE=0
   warn "units copied to /etc/systemd/system but NOT enabled: systemd is not PID 1."

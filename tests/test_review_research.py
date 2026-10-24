@@ -39,6 +39,30 @@ def test_a_backend_that_fails_any_way_keeps_the_paid_render(settings,
     assert "gdrive delivery failed" in got.note
 
 
+def test_a_folder_drive_cannot_see_says_why_at_the_first_404(settings, monkeypatch,
+                                                              tmp_path):
+    """A folder shared by hand is invisible to `drive.file`. The first call to
+    answer 404 is the folder lookup, which raised the raw error, so the hint
+    written for it never reached him."""
+    from pipeline import delivery
+
+    def handler(req):
+        if req.method == "GET":
+            return httpx.Response(200, json={"files": []})
+        return httpx.Response(404, json={"error": {"message": "File not found"}})
+
+    real = httpx.Client
+    monkeypatch.setattr(delivery.httpx, "Client", lambda *a, **k: real(
+        *a, **{**k, "transport": httpx.MockTransport(handler)}))
+    monkeypatch.setattr(delivery.GDriveBackend, "_token", lambda self: "tok")
+    video = tmp_path / "long_final.mp4"
+    video.write_bytes(b"mp4")
+    got = delivery.deliver(video, "EXMPL", "2026-10-24", _live(
+        settings, delivery_backend="gdrive", gdrive_credentials=str(tmp_path / "sa.json"),
+        gdrive_root_folder_id="SHAREDBYHAND"))
+    assert "drive.file" in got.note and "GDRIVE_ROOT_FOLDER_ID blank" in got.note
+
+
 def test_alert_hours_of_0_to_24_are_never_quiet(settings):
     from pipeline.alerts import in_quiet_hours
 

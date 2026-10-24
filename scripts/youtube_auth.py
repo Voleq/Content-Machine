@@ -82,6 +82,12 @@ def main(argv: list[str] | None = None) -> int:
     with os.fdopen(fd, "w", encoding="utf-8") as fh:
         fh.write(creds.to_json())
     os.chmod(args.out, 0o600)
+    # RUN WITH SUDO, THE BOT COULD NOT READ IT: a root-owned 0600 file in a
+    # folder the service user owns (scan, 24 Oct 2026). Handed to whoever
+    # owns the folder it was written into.
+    folder = args.out.parent.stat()
+    if hasattr(os, "geteuid") and os.geteuid() == 0 and folder.st_uid != 0:
+        os.chown(args.out, folder.st_uid, folder.st_gid)
     print(f"wrote {args.out} with scopes:\n  " + "\n  ".join(SCOPES))
     print(f"set YOUTUBE_CREDENTIALS={args.out} in .env")
     return 0

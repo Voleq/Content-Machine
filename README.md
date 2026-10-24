@@ -542,7 +542,7 @@ nothing and exercises every seam. Only then follow *Going live* above.
 
 | task | command (inside Ubuntu) |
 |---|---|
-| update to the latest code | `cd ~/dennis && git pull && sudo bash deploy/bootstrap.sh /opt/dennis` |
+| update to the latest code | `cd ~/dennis && git pull && sudo bash deploy/bootstrap.sh /opt/dennis` (it stops the bot for the update and starts it again; a render running then stops) |
 | restart after an `.env` change | `sudo systemctl restart dennis` |
 | after a kit ingest | nothing — `load_registry` re-reads when `plates-registry.json` changes under it. It did not always: the registry was cached for the life of the process, so a kit ingested under a running bot did not reach a render until somebody restarted. |
 | watch the logs | `journalctl -u dennis -f` |
@@ -595,11 +595,19 @@ starting point, but they are **unmaintained** and nothing tests them.
 2. Set `ELEVENLABS_API_KEY` and pick the Dennis voice —
    `ELEVEN_VOICE_ID_SHORT/LONG` are deliberate placeholders; audition
    Brian (dry/deadpan), Charlie (casual everyman) or George (weary/raspy)
-   and paste one id. Set `PEXELS_API_KEY`, `GDRIVE_CREDENTIALS`
-   (service-account JSON path) and `GDRIVE_ROOT_FOLDER_ID` (share the
-   folder with the service account). `GIPHY_API_KEY`/`TENOR_API_KEY` are
+   and paste one id. Set `PEXELS_API_KEY` and `GDRIVE_CREDENTIALS`
+   (service-account JSON path), and leave `GDRIVE_ROOT_FOLDER_ID` blank: the
+   bot makes and reuses its own folder, and a folder shared with it by hand
+   is one it cannot see (it asks Drive only for the files it made).
+   `GIPHY_API_KEY`/`TENOR_API_KEY` are
    optional meme fallbacks — the owned library comes first anyway.
 3. Flip `MOCK_MODE=false`, restart, `/cost` to confirm the cap.
+4. The 3D Dennis is the only Dennis a real video uses, and `.env` ships with
+   `DENNIS_3D=on`, so a render stops until Blender's Python module is there:
+   `pip install bpy` into a Python 3.11 (the bot's own venv when it is 3.11,
+   otherwise a separate one named by `DENNIS_3D_PYTHON`), then time it once
+   with `python room3d/perform.py --bench`. `scripts/check_preflight.py` has
+   a "3D Dennis" row that says whether it runs.
 
 ---
 
@@ -1504,8 +1512,10 @@ network calls:
 - **"the data vendor's name appears"** — the model leaked the source into
   an on-screen field; regenerate or edit, then re-paste. On screen the
   data is "from the 10-K".
-- **Drive upload fails** — share the target folder with the service
-  account email; check `GDRIVE_ROOT_FOLDER_ID`.
+- **Drive upload fails** — leave `GDRIVE_ROOT_FOLDER_ID` blank so the bot
+  uses the folder it made itself, or, for a service account, point it at a
+  Shared Drive folder the account is a member of. A folder shared by hand
+  is invisible to it.
 - **Renders feel slow on a small VPS** — lower `LONG_WIDTH/HEIGHT` to
   1280×720, keep `FINAL_PRESET=veryfast`; hardware encoders are used
   automatically when detected.
@@ -1519,7 +1529,7 @@ network calls:
   booted with systemd"** — systemd is off. Put `[boot]\nsystemd=true` in
   `/etc/wsl.conf`, run `wsl --shutdown` from PowerShell, reopen Ubuntu, and
   re-run the bootstrap so the unit files enable. Until then run it in the
-  foreground: `cd /opt/dennis && .venv/bin/python main.py`.
+  foreground: `cd /opt/dennis && sudo -u dennis .venv/bin/python main.py`.
 - **The bootstrap refuses the destination** — it is under `/mnt`. Install to
   the Linux filesystem (`/opt/dennis`), not to a Windows drive.
 - **Renders are inexplicably slow, and the second render of the same video is
