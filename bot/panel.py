@@ -560,6 +560,10 @@ def main() -> None:  # pragma: no cover - exercised by hand
     settings = get_settings()
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    # httpx logs every request URL at INFO, and Giphy, Tenor and FRED take
+    # their key in the URL: run on its own, the panel wrote them to the
+    # console (scan, 24 Oct 2026). main.py has always done this.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     core = BotCore(settings)
     core.feed = Feed()
     loop = asyncio.new_event_loop()

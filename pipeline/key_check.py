@@ -167,7 +167,10 @@ def _fred(s: Settings, get: Get) -> list[KeyResult]:
 def _telegram(s: Settings, get: Get) -> list[KeyResult]:
     if not s.telegram_bot_token:
         return [KeyResult("Telegram", SKIP, "TELEGRAM_BOT_TOKEN is not set")]
-    resp = get(f"{TELEGRAM_API}/bot{s.telegram_bot_token}/getMe")
+    # A self-hosted Bot API server is asked, not the cloud one: the bot has
+    # logged out of the cloud, and asking it there logs it back in.
+    base = (s.telegram_api_base_url or TELEGRAM_API).rstrip("/")
+    resp = get(f"{base}/bot{s.telegram_bot_token}/getMe")
     me = _json(resp).get("result") or {}
     if resp.status_code == 200 and isinstance(me, dict):
         return [KeyResult("Telegram", OK, f"@{me.get('username') or 'the bot'}")]

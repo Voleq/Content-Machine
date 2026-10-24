@@ -150,3 +150,15 @@ def test_the_reply_leads_with_what_needs_fixing(settings):
     assert "❌ Giphy: refused the key (401)" in text
     ok = keys_text(_with(settings), get=_fake({}))
     assert ok.splitlines()[0] == "🔑 every key that is set works."
+
+
+def test_a_self_hosted_telegram_server_is_the_one_asked(settings):
+    """After the bot logs out of the cloud server, asking the cloud for
+    getMe either reports a refused key or logs the bot back in there."""
+    calls: list = []
+    s = _with(settings, telegram_api_base_url="http://127.0.0.1:8081/")
+    rows = _rows(s, {"getMe": Resp(200, {"result": {"username": "dennis_bot"}})},
+                 calls)
+    assert rows["Telegram"].state == OK
+    asked = [u for u, _ in calls if "getMe" in u]
+    assert asked == ["http://127.0.0.1:8081/bot123:tg-SECRET-6/getMe"]
