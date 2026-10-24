@@ -1617,8 +1617,14 @@ def _render_long(
                         and i not in lands_a_chapter), default=-1)
 
     def _words_in(seg) -> list:
-        """The words said during a segment: what casts the pose he stands in."""
-        return [w for w in tts.words if seg.start <= w.start < seg.end]
+        """The words said during a segment: what casts the pose he stands in.
+
+        A WORD UNDER WAY AT THE CUT IS IN IT. Cuts are snapped to the frame
+        grid, so one written on a word's start often lands half a frame after
+        it, and that word was left out: he opened the beat with his mouth
+        shut while his voice spoke (scan, 24 Oct 2026). The mouth track clips
+        a word to the shot, so its earlier part costs nothing."""
+        return [w for w in tts.words if w.end > seg.start and w.start < seg.end]
 
     def _shown_before(seg_i: int) -> str:
         """The pose the last beat before this one showed him in, if any."""

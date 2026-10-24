@@ -658,3 +658,24 @@ def test_a_pile_out_of_shot_is_asked_once_and_one_that_fails_is_left_out(perform
     assert list(performer.cache.glob("piles/*/not-in-shot")), "not in shot is remembered"
     assert performer.pile_layer(_lit_room("room/board-16x9"), (320, 180)) is None, \
         "a pile that could not be drawn stopped the render"
+
+
+def test_a_word_under_way_at_his_cut_is_his_to_say(short_3d):
+    """Cuts are snapped to the frame grid, so one written on a word's start
+    often lands just after it, and that word was left out of his line: he
+    opened the shot with his mouth shut while his voice spoke."""
+    import json
+
+    from pipeline.render_short import perform_3d
+
+    settings, performer = short_3d
+    result, reg = _short_cut()
+    words = [SimpleNamespace(word="Earlier.", start=9.0, end=9.8),
+             SimpleNamespace(word="Plus", start=9.98, end=10.4),
+             SimpleNamespace(word="squeeze.", start=10.5, end=11.0)]
+    perform_3d(result, reg, words, settings, aspect="9x16", scale=4 / 3,
+               seed="sha", performer=performer)
+    him = next(l for l in result.layers if l.kind == "host3d")
+    job = json.loads((Path(him.path).parent / "job.json").read_text(encoding="utf-8"))
+    assert [w["word"] for w in job["words"]] == ["Plus", "squeeze."]
+    assert job["words"][0]["start"] < 0 < job["words"][0]["end"]

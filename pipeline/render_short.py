@@ -1579,7 +1579,9 @@ def perform_3d(result: BuildResult, reg, words, settings, *, aspect: str,
             shot = host_shot(reg, h.entry_key)
             close = bool(shot is not None and shot.is_framing)
             layer = performer.shot(reg.get(room.entry_key),
-                                   [w for w in words if h.t_start <= w.start < h.t_end],
+                                   # a word under way at the cut is his too
+                                   [w for w in words
+                                    if w.end > h.t_start and w.start < h.t_end],
                                    h.t_start, h.dur, (box.w, box.h),
                                    seed=f"{seed}|{h.shot_id}", stance=h.entry_key,
                                    close=close)
