@@ -28,12 +28,16 @@
     "tag": ""
    },
    {
-    "png": "board_dip.jpg",
-    "tag": "_dip"
+    "png": "board_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "board_dip2.jpg",
-    "tag": "_dip2"
+    "png": "board_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "board_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -216,12 +220,16 @@
     "tag": ""
    },
    {
-    "png": "board-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "board-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "board-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "board-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "board-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -445,6 +453,44 @@
        600,
        400
       ]
+     },
+     {
+      "box": [
+       0,
+       0,
+       600,
+       600
+      ],
+      "depth": 2.192,
+      "id": "clockface",
+      "kind": "clock",
+      "paper": [
+       234,
+       232,
+       224
+      ],
+      "quad": [
+       [
+        783.6,
+        254.6
+       ],
+       [
+        992.3,
+        254.6
+       ],
+       [
+        992.3,
+        463.4
+       ],
+       [
+        783.6,
+        463.4
+       ]
+      ],
+      "tex": [
+       600,
+       600
+      ]
      }
     ]
    }
@@ -487,12 +533,16 @@
     "tag": ""
    },
    {
-    "png": "board-side_dip.jpg",
-    "tag": "_dip"
+    "png": "board-side_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "board-side_dip2.jpg",
-    "tag": "_dip2"
+    "png": "board-side_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "board-side_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -681,6 +731,44 @@
      },
      {
       "box": [
+       0,
+       0,
+       600,
+       600
+      ],
+      "depth": 2.987,
+      "id": "clockface",
+      "kind": "clock",
+      "paper": [
+       234,
+       232,
+       224
+      ],
+      "quad": [
+       [
+        969.4,
+        -79.9
+       ],
+       [
+        1105.0,
+        -49.3
+       ],
+       [
+        1104.1,
+        113.7
+       ],
+       [
+        969.3,
+        93.2
+       ]
+      ],
+      "tex": [
+       600,
+       600
+      ]
+     },
+     {
+      "box": [
        56,
        98,
        844,
@@ -715,6 +803,44 @@
       "tex": [
        900,
        900
+      ]
+     },
+     {
+      "box": [
+       20,
+       24,
+       340,
+       176
+      ],
+      "depth": 1.934,
+      "id": "plant-tag",
+      "kind": "plant",
+      "paper": [
+       242,
+       242,
+       236
+      ],
+      "quad": [
+       [
+        166.7,
+        1082.5
+       ],
+       [
+        275.1,
+        1042.3
+       ],
+       [
+        287.3,
+        1104.2
+       ],
+       [
+        179.3,
+        1148.9
+       ]
+      ],
+      "tex": [
+       360,
+       200
       ]
      }
     ]
@@ -757,12 +883,16 @@
     "tag": ""
    },
    {
-    "png": "board-side-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "board-side-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "board-side-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "board-side-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "board-side-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -985,6 +1115,82 @@
       "tex": [
        600,
        400
+      ]
+     },
+     {
+      "box": [
+       0,
+       0,
+       600,
+       600
+      ],
+      "depth": 2.652,
+      "id": "clockface",
+      "kind": "clock",
+      "paper": [
+       234,
+       232,
+       224
+      ],
+      "quad": [
+       [
+        816.4,
+        83.9
+       ],
+       [
+        954.5,
+        108.3
+       ],
+       [
+        942.4,
+        285.7
+       ],
+       [
+        808.0,
+        270.0
+       ]
+      ],
+      "tex": [
+       600,
+       600
+      ]
+     },
+     {
+      "box": [
+       20,
+       24,
+       340,
+       176
+      ],
+      "depth": 2.156,
+      "id": "plant-tag",
+      "kind": "plant",
+      "paper": [
+       242,
+       242,
+       236
+      ],
+      "quad": [
+       [
+        128.1,
+        1138.1
+       ],
+       [
+        207.2,
+        1113.0
+       ],
+       [
+        218.1,
+        1160.7
+       ],
+       [
+        139.8,
+        1188.3
+       ]
+      ],
+      "tex": [
+       360,
+       200
       ]
      }
     ]
@@ -1678,12 +1884,16 @@
     "tag": ""
    },
    {
-    "png": "board-wide_dip.jpg",
-    "tag": "_dip"
+    "png": "board-wide_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "board-wide_dip2.jpg",
-    "tag": "_dip2"
+    "png": "board-wide_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "board-wide_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -1910,6 +2120,44 @@
      },
      {
       "box": [
+       0,
+       0,
+       600,
+       600
+      ],
+      "depth": 5.101,
+      "id": "clockface",
+      "kind": "clock",
+      "paper": [
+       234,
+       232,
+       224
+      ],
+      "quad": [
+       [
+        881.8,
+        232.7
+       ],
+       [
+        964.7,
+        233.8
+       ],
+       [
+        964.7,
+        317.1
+       ],
+       [
+        882.1,
+        316.4
+       ]
+      ],
+      "tex": [
+       600,
+       600
+      ]
+     },
+     {
+      "box": [
        56,
        98,
        844,
@@ -1983,6 +2231,82 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 4.087,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1858.6,
+        650.4
+       ],
+       [
+        1882.2,
+        651.2
+       ],
+       [
+        1899.6,
+        656.6
+       ],
+       [
+        1875.2,
+        655.8
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
+     },
+     {
+      "box": [
+       20,
+       24,
+       340,
+       176
+      ],
+      "depth": 4.689,
+      "id": "plant-tag",
+      "kind": "plant",
+      "paper": [
+       242,
+       242,
+       236
+      ],
+      "quad": [
+       [
+        483.6,
+        710.8
+       ],
+       [
+        526.1,
+        707.0
+       ],
+       [
+        527.9,
+        729.5
+       ],
+       [
+        485.2,
+        733.6
+       ]
+      ],
+      "tex": [
+       360,
+       200
+      ]
      }
     ]
    },
@@ -2051,9 +2375,10 @@
     1.37
    ]
   },
-  "headCovered": null,
+  "headCovered": 0.0,
   "masks": {
    "board": "board-wide-9x16_mask_board.png",
+   "front": "board-wide-9x16_mask_front.png",
    "labels": "board-wide-9x16_mask_labels.png"
   },
   "season": "plain",
@@ -2063,12 +2388,16 @@
     "tag": ""
    },
    {
-    "png": "board-wide-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "board-wide-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "board-wide-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "board-wide-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "board-wide-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -2291,6 +2620,82 @@
       "tex": [
        600,
        400
+      ]
+     },
+     {
+      "box": [
+       0,
+       0,
+       600,
+       600
+      ],
+      "depth": 3.59,
+      "id": "clockface",
+      "kind": "clock",
+      "paper": [
+       234,
+       232,
+       224
+      ],
+      "quad": [
+       [
+        952.8,
+        407.6
+       ],
+       [
+        1105.9,
+        400.5
+       ],
+       [
+        1102.2,
+        551.6
+       ],
+       [
+        950.1,
+        556.3
+       ]
+      ],
+      "tex": [
+       600,
+       600
+      ]
+     },
+     {
+      "box": [
+       20,
+       24,
+       340,
+       176
+      ],
+      "depth": 3.599,
+      "id": "plant-tag",
+      "kind": "plant",
+      "paper": [
+       242,
+       242,
+       236
+      ],
+      "quad": [
+       [
+        284.2,
+        1219.4
+       ],
+       [
+        350.5,
+        1214.9
+       ],
+       [
+        352.6,
+        1251.9
+       ],
+       [
+        286.0,
+        1256.9
+       ]
+      ],
+      "tex": [
+       360,
+       200
       ]
      }
     ]
@@ -3092,12 +3497,16 @@
     "tag": ""
    },
    {
-    "png": "clock_dip.jpg",
-    "tag": "_dip"
+    "png": "clock_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "clock_dip2.jpg",
-    "tag": "_dip2"
+    "png": "clock_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "clock_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -3182,12 +3591,16 @@
     "tag": ""
    },
    {
-    "png": "desk-front_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-front_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-front_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-front_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-front_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -3382,6 +3795,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.741,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        893.6,
+        830.2
+       ],
+       [
+        949.4,
+        834.5
+       ],
+       [
+        913.2,
+        866.3
+       ],
+       [
+        853.6,
+        861.4
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -3453,12 +3904,16 @@
     "tag": ""
    },
    {
-    "png": "desk-front-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-front-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-front-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-front-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-front-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -3577,6 +4032,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.372,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        387.2,
+        1067.5
+       ],
+       [
+        457.3,
+        1073.4
+       ],
+       [
+        409.7,
+        1125.2
+       ],
+       [
+        333.6,
+        1118.2
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -3648,12 +4141,16 @@
     "tag": ""
    },
    {
-    "png": "desk-front-b_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-front-b_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-front-b_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-front-b_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-front-b_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -3848,6 +4345,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.944,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1128.1,
+        787.3
+       ],
+       [
+        1179.0,
+        785.5
+       ],
+       [
+        1211.5,
+        809.2
+       ],
+       [
+        1157.2,
+        811.2
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -3919,12 +4454,16 @@
     "tag": ""
    },
    {
-    "png": "desk-front-b-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-front-b-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-front-b-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-front-b-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-front-b-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -4004,6 +4543,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.365,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        710.5,
+        1069.3
+       ],
+       [
+        781.5,
+        1065.2
+       ],
+       [
+        834.4,
+        1112.8
+       ],
+       [
+        757.0,
+        1117.7
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      }
     ]
@@ -5034,12 +5611,16 @@
     "tag": ""
    },
    {
-    "png": "desk-front-low_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-front-low_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-front-low_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-front-low_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-front-low_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -5305,12 +5886,16 @@
     "tag": ""
    },
    {
-    "png": "desk-front-low-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-front-low-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-front-low-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-front-low-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-front-low-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -5999,12 +6584,16 @@
     "tag": ""
    },
    {
-    "png": "desk-side_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-side_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-side_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-side_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-side_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -6266,6 +6855,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.556,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        970.1,
+        761.1
+       ],
+       [
+        1012.2,
+        777.3
+       ],
+       [
+        904.0,
+        805.3
+       ],
+       [
+        863.3,
+        787.3
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -6337,12 +6964,16 @@
     "tag": ""
    },
    {
-    "png": "desk-side-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-side-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-side-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-side-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-side-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -6460,6 +7091,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.886,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        413.6,
+        1084.8
+       ],
+       [
+        449.2,
+        1094.9
+       ],
+       [
+        361.6,
+        1116.2
+       ],
+       [
+        326.4,
+        1105.1
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      }
     ]
@@ -7091,12 +7760,16 @@
     "tag": ""
    },
    {
-    "png": "desk-top-down_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-top-down_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-top-down_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-top-down_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-top-down_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -7218,6 +7891,44 @@
      },
      {
       "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.296,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        766.5,
+        662.4
+       ],
+       [
+        846.3,
+        672.0
+       ],
+       [
+        823.9,
+        834.6
+       ],
+       [
+        742.3,
+        824.6
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
+     },
+     {
+      "box": [
        20,
        66,
        140,
@@ -7317,12 +8028,16 @@
     "tag": ""
    },
    {
-    "png": "desk-top-down-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-top-down-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-top-down-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-top-down-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-top-down-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -7444,6 +8159,44 @@
      },
      {
       "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.275,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        289.4,
+        632.0
+       ],
+       [
+        282.9,
+        713.9
+       ],
+       [
+        114.4,
+        697.2
+       ],
+       [
+        121.1,
+        614.2
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
+     },
+     {
+      "box": [
        20,
        66,
        140,
@@ -7551,12 +8304,16 @@
     "tag": ""
    },
    {
-    "png": "desk-wide_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-wide_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-wide_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-wide_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-wide_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -7779,6 +8536,44 @@
       "tex": [
        600,
        400
+      ]
+     },
+     {
+      "box": [
+       0,
+       0,
+       600,
+       600
+      ],
+      "depth": 4.974,
+      "id": "clockface",
+      "kind": "clock",
+      "paper": [
+       234,
+       232,
+       224
+      ],
+      "quad": [
+       [
+        446.0,
+        217.9
+       ],
+       [
+        534.8,
+        220.4
+       ],
+       [
+        536.4,
+        305.8
+       ],
+       [
+        447.9,
+        304.2
+       ]
+      ],
+      "tex": [
+       600,
+       600
       ]
      },
      {
@@ -8007,6 +8802,82 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 4.232,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1352.0,
+        638.1
+       ],
+       [
+        1372.5,
+        638.7
+       ],
+       [
+        1377.3,
+        644.0
+       ],
+       [
+        1356.1,
+        643.4
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
+     },
+     {
+      "box": [
+       20,
+       24,
+       340,
+       176
+      ],
+      "depth": 4.456,
+      "id": "plant-tag",
+      "kind": "plant",
+      "paper": [
+       242,
+       242,
+       236
+      ],
+      "quad": [
+       [
+        -13.3,
+        716.4
+       ],
+       [
+        40.2,
+        711.6
+       ],
+       [
+        41.1,
+        735.2
+       ],
+       [
+        -12.6,
+        740.4
+       ]
+      ],
+      "tex": [
+       360,
+       200
       ]
      },
      {
@@ -8470,12 +9341,16 @@
     "tag": ""
    },
    {
-    "png": "desk-wide-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "desk-wide-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "desk-wide-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "desk-wide-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "desk-wide-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -8631,6 +9506,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 2.429,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        559.8,
+        1041.6
+       ],
+       [
+        601.9,
+        1040.7
+       ],
+       [
+        613.4,
+        1061.0
+       ],
+       [
+        569.0,
+        1062.0
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      }
     ]
@@ -9876,7 +10789,8 @@
   },
   "headCovered": 0.0,
   "masks": {
-   "front": "doorway_mask_front.png"
+   "front": "doorway_mask_front.png",
+   "labels": "doorway_mask_labels.png"
   },
   "season": "plain",
   "states": [
@@ -9885,15 +10799,62 @@
     "tag": ""
    },
    {
-    "png": "doorway_dip.jpg",
-    "tag": "_dip"
+    "png": "doorway_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "doorway_dip2.jpg",
-    "tag": "_dip2"
+    "png": "doorway_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "doorway_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
-  "surfaces": {},
+  "surfaces": {
+   "labels": {
+    "items": [
+     {
+      "box": [
+       20,
+       24,
+       340,
+       176
+      ],
+      "depth": 3.661,
+      "id": "plant-tag",
+      "kind": "plant",
+      "paper": [
+       242,
+       242,
+       236
+      ],
+      "quad": [
+       [
+        1857.2,
+        759.0
+       ],
+       [
+        1905.7,
+        771.9
+       ],
+       [
+        1896.2,
+        805.1
+       ],
+       [
+        1848.0,
+        790.9
+       ]
+      ],
+      "tex": [
+       360,
+       200
+      ]
+     }
+    ]
+   }
+  },
   "title": null
  },
  "doorway-9x16": {
@@ -9918,8 +10879,10 @@
     0.94
    ]
   },
-  "headCovered": null,
-  "masks": {},
+  "headCovered": 0.0,
+  "masks": {
+   "front": "doorway-9x16_mask_front.png"
+  },
   "season": "plain",
   "states": [
    {
@@ -9927,12 +10890,16 @@
     "tag": ""
    },
    {
-    "png": "doorway-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "doorway-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "doorway-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "doorway-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "doorway-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {},
@@ -10091,12 +11058,16 @@
     "tag": ""
    },
    {
-    "png": "doorway-wide_dip.jpg",
-    "tag": "_dip"
+    "png": "doorway-wide_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "doorway-wide_dip2.jpg",
-    "tag": "_dip2"
+    "png": "doorway-wide_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "doorway-wide_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -10320,6 +11291,44 @@
        600,
        400
       ]
+     },
+     {
+      "box": [
+       20,
+       24,
+       340,
+       176
+      ],
+      "depth": 5.022,
+      "id": "plant-tag",
+      "kind": "plant",
+      "paper": [
+       242,
+       242,
+       236
+      ],
+      "quad": [
+       [
+        1532.6,
+        667.4
+       ],
+       [
+        1565.3,
+        673.1
+       ],
+       [
+        1560.6,
+        694.0
+       ],
+       [
+        1528.0,
+        687.7
+       ]
+      ],
+      "tex": [
+       360,
+       200
+      ]
      }
     ]
    }
@@ -10348,8 +11357,11 @@
     1.01
    ]
   },
-  "headCovered": null,
-  "masks": {},
+  "headCovered": 0.0,
+  "masks": {
+   "front": "doorway-wide-9x16_mask_front.png",
+   "labels": "doorway-wide-9x16_mask_labels.png"
+  },
   "season": "plain",
   "states": [
    {
@@ -10357,15 +11369,62 @@
     "tag": ""
    },
    {
-    "png": "doorway-wide-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "doorway-wide-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "doorway-wide-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "doorway-wide-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "doorway-wide-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
-  "surfaces": {},
+  "surfaces": {
+   "labels": {
+    "items": [
+     {
+      "box": [
+       20,
+       24,
+       340,
+       176
+      ],
+      "depth": 2.745,
+      "id": "plant-tag",
+      "kind": "plant",
+      "paper": [
+       242,
+       242,
+       236
+      ],
+      "quad": [
+       [
+        1037.3,
+        1002.7
+       ],
+       [
+        1116.7,
+        1022.6
+       ],
+       [
+        1105.1,
+        1070.5
+       ],
+       [
+        1026.3,
+        1048.8
+       ]
+      ],
+      "tex": [
+       360,
+       200
+      ]
+     }
+    ]
+   }
+  },
   "title": null
  },
  "doorway-wide-christmas": {
@@ -10749,12 +11808,16 @@
     "tag": ""
    },
    {
-    "png": "panel-left_dip.jpg",
-    "tag": "_dip"
+    "png": "panel-left_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "panel-left_dip2.jpg",
-    "tag": "_dip2"
+    "png": "panel-left_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "panel-left_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -10863,6 +11926,44 @@
       "tex": [
        850,
        1100
+      ]
+     },
+     {
+      "box": [
+       0,
+       0,
+       600,
+       600
+      ],
+      "depth": 3.497,
+      "id": "clockface",
+      "kind": "clock",
+      "paper": [
+       234,
+       232,
+       224
+      ],
+      "quad": [
+       [
+        51.9,
+        -21.0
+       ],
+       [
+        221.3,
+        3.9
+       ],
+       [
+        223.5,
+        152.5
+       ],
+       [
+        54.7,
+        135.2
+       ]
+      ],
+      "tex": [
+       600,
+       600
       ]
      },
      {
@@ -11092,6 +12193,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 4.043,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1500.3,
+        664.7
+       ],
+       [
+        1523.6,
+        664.1
+       ],
+       [
+        1552.9,
+        669.8
+       ],
+       [
+        1529.0,
+        670.4
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -11149,9 +12288,10 @@
     0.98
    ]
   },
-  "headCovered": null,
+  "headCovered": 0.0,
   "masks": {
    "board": "panel-left-9x16_mask_board.png",
+   "front": "panel-left-9x16_mask_front.png",
    "labels": "panel-left-9x16_mask_labels.png",
    "window": "panel-left-9x16_mask_window.png"
   },
@@ -11162,12 +12302,16 @@
     "tag": ""
    },
    {
-    "png": "panel-left-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "panel-left-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "panel-left-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "panel-left-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "panel-left-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -12036,12 +13180,16 @@
     "tag": ""
    },
    {
-    "png": "read-close_dip.jpg",
-    "tag": "_dip"
+    "png": "read-close_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "read-close_dip2.jpg",
-    "tag": "_dip2"
+    "png": "read-close_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "read-close_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -12193,12 +13341,16 @@
     "tag": ""
    },
    {
-    "png": "read-close-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "read-close-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "read-close-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "read-close-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "read-close-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -12316,6 +13468,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.768,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        469.8,
+        993.5
+       ],
+       [
+        522.8,
+        998.2
+       ],
+       [
+        475.3,
+        1023.6
+       ],
+       [
+        419.2,
+        1018.2
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      }
     ]
@@ -12772,12 +13962,16 @@
     "tag": ""
    },
    {
-    "png": "turn-to-screen_dip.jpg",
-    "tag": "_dip"
+    "png": "turn-to-screen_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "turn-to-screen_dip2.jpg",
-    "tag": "_dip2"
+    "png": "turn-to-screen_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "turn-to-screen_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -12971,6 +14165,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 2.07,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1019.5,
+        715.5
+       ],
+       [
+        1065.1,
+        710.3
+       ],
+       [
+        1123.3,
+        730.9
+       ],
+       [
+        1076.0,
+        736.7
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      },
      {
@@ -13275,29 +14507,31 @@
  },
  "turn-to-screen-9x16": {
   "anchor": {
-   "h": 1081,
-   "w": 204,
-   "x": 435,
-   "y": 417
+   "h": 1009,
+   "w": 191,
+   "x": 175,
+   "y": 508
   },
   "angle": "turn-to-screen",
   "aspect": "9x16",
   "camera": {
-   "lens": 30,
+   "lens": 28,
    "location": [
-    0.01,
-    -0.85,
-    1.5
+    -0.3,
+    -0.7,
+    1.52
    ],
    "target": [
-    1.24,
-    1.35,
-    0.97
+    1.8,
+    1.2,
+    1.0
    ]
   },
   "headCovered": 0.0,
   "masks": {
    "front": "turn-to-screen-9x16_mask_front.png",
+   "labels": "turn-to-screen-9x16_mask_labels.png",
+   "screen": "turn-to-screen-9x16_mask_screen.png",
    "window": "turn-to-screen-9x16_mask_window.png"
   },
   "season": "plain",
@@ -13307,15 +14541,281 @@
     "tag": ""
    },
    {
-    "png": "turn-to-screen-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "turn-to-screen-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "turn-to-screen-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "turn-to-screen-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "turn-to-screen-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
-  "surfaces": {},
+  "surfaces": {
+   "labels": {
+    "items": [
+     {
+      "box": [
+       70,
+       60,
+       790,
+       280
+      ],
+      "depth": 3.186,
+      "id": "deskstack-top",
+      "kind": "cover",
+      "paper": [
+       238,
+       238,
+       234
+      ],
+      "quad": [
+       [
+        912.2,
+        859.5
+       ],
+       [
+        966.4,
+        852.4
+       ],
+       [
+        1090.0,
+        863.9
+       ],
+       [
+        1037.5,
+        872.0
+       ]
+      ],
+      "tex": [
+       850,
+       1100
+      ]
+     },
+     {
+      "box": [
+       70,
+       60,
+       790,
+       440
+      ],
+      "depth": 2.983,
+      "id": "filing",
+      "kind": "report",
+      "paper": [
+       240,
+       238,
+       230
+      ],
+      "quad": [
+       [
+        834.3,
+        923.2
+       ],
+       [
+        867.6,
+        909.7
+       ],
+       [
+        1011.5,
+        920.7
+       ],
+       [
+        985.5,
+        935.5
+       ]
+      ],
+      "tex": [
+       850,
+       1100
+      ]
+     },
+     {
+      "box": [
+       26,
+       30,
+       374,
+       370
+      ],
+      "depth": 3.002,
+      "id": "note0",
+      "kind": "note",
+      "paper": [
+       246,
+       222,
+       92
+      ],
+      "quad": [
+       [
+        685.9,
+        620.6
+       ],
+       [
+        718.4,
+        617.3
+       ],
+       [
+        723.0,
+        654.8
+       ],
+       [
+        690.5,
+        658.5
+       ]
+      ],
+      "tex": [
+       400,
+       400
+      ]
+     },
+     {
+      "box": [
+       26,
+       30,
+       374,
+       370
+      ],
+      "depth": 3.325,
+      "id": "note1",
+      "kind": "note",
+      "paper": [
+       246,
+       160,
+       170
+      ],
+      "quad": [
+       [
+        1002.8,
+        769.1
+       ],
+       [
+        1029.6,
+        773.1
+       ],
+       [
+        1026.3,
+        806.6
+       ],
+       [
+        999.5,
+        802.9
+       ]
+      ],
+      "tex": [
+       400,
+       400
+      ]
+     },
+     {
+      "box": [
+       26,
+       30,
+       374,
+       370
+      ],
+      "depth": 3.075,
+      "id": "note2",
+      "kind": "note",
+      "paper": [
+       246,
+       222,
+       92
+      ],
+      "quad": [
+       [
+        730.9,
+        855.6
+       ],
+       [
+        762.4,
+        851.4
+       ],
+       [
+        765.6,
+        887.5
+       ],
+       [
+        734.2,
+        892.0
+       ]
+      ],
+      "tex": [
+       400,
+       400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 2.477,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        721.9,
+        968.9
+       ],
+       [
+        753.9,
+        965.6
+       ],
+       [
+        801.8,
+        978.8
+       ],
+       [
+        768.9,
+        982.5
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
+     }
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      708.3,
+      655.1
+     ],
+     [
+      928.9,
+      657.1
+     ],
+     [
+      932.1,
+      832.6
+     ],
+     [
+      714.0,
+      842.5
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
   "title": null
  },
  "turn-to-screen-christmas": {
@@ -13968,12 +15468,16 @@
     "tag": ""
    },
    {
-    "png": "window-talk_dip.jpg",
-    "tag": "_dip"
+    "png": "window-talk_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "window-talk_dip2.jpg",
-    "tag": "_dip2"
+    "png": "window-talk_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "window-talk_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -14130,6 +15634,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 2.186,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1464.5,
+        840.2
+       ],
+       [
+        1512.9,
+        841.5
+       ],
+       [
+        1534.6,
+        862.1
+       ],
+       [
+        1483.1,
+        860.8
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -14199,12 +15741,16 @@
     "tag": ""
    },
    {
-    "png": "window-talk-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "window-talk-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "window-talk-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "window-talk-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "window-talk-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {},
@@ -14556,12 +16102,16 @@
     "tag": ""
    },
    {
-    "png": "window-wall_dip.jpg",
-    "tag": "_dip"
+    "png": "window-wall_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "window-wall_dip2.jpg",
-    "tag": "_dip2"
+    "png": "window-wall_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "window-wall_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -14794,6 +16344,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 2.614,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1404.0,
+        771.1
+       ],
+       [
+        1437.6,
+        769.8
+       ],
+       [
+        1478.0,
+        782.5
+       ],
+       [
+        1442.9,
+        783.9
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -14864,12 +16452,16 @@
     "tag": ""
    },
    {
-    "png": "window-wall-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "window-wall-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "window-wall-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "window-wall-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "window-wall-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -15385,12 +16977,16 @@
     "tag": ""
    },
    {
-    "png": "window-wide_dip.jpg",
-    "tag": "_dip"
+    "png": "window-wide_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "window-wide_dip2.jpg",
-    "tag": "_dip2"
+    "png": "window-wide_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "window-wide_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {
@@ -15499,6 +17095,44 @@
       "tex": [
        850,
        1100
+      ]
+     },
+     {
+      "box": [
+       0,
+       0,
+       600,
+       600
+      ],
+      "depth": 4.509,
+      "id": "clockface",
+      "kind": "clock",
+      "paper": [
+       234,
+       232,
+       224
+      ],
+      "quad": [
+       [
+        283.9,
+        210.0
+       ],
+       [
+        388.2,
+        218.7
+       ],
+       [
+        389.7,
+        311.6
+       ],
+       [
+        285.7,
+        305.8
+       ]
+      ],
+      "tex": [
+       600,
+       600
       ]
      },
      {
@@ -15727,6 +17361,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 4.675,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1238.1,
+        643.3
+       ],
+       [
+        1255.5,
+        643.1
+       ],
+       [
+        1267.2,
+        647.3
+       ],
+       [
+        1249.4,
+        647.5
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      },
      {
@@ -16189,12 +17861,16 @@
     "tag": ""
    },
    {
-    "png": "window-wide-9x16_dip.jpg",
-    "tag": "_dip"
+    "png": "window-wide-9x16_rain.jpg",
+    "tag": "_rain"
    },
    {
-    "png": "window-wide-9x16_dip2.jpg",
-    "tag": "_dip2"
+    "png": "window-wide-9x16_dusk.jpg",
+    "tag": "_dusk"
+   },
+   {
+    "png": "window-wide-9x16_dusk_rain.jpg",
+    "tag": "_dusk_rain"
    }
   ],
   "surfaces": {

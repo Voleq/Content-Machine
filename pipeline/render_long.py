@@ -1134,7 +1134,7 @@ def _render_long(
                 span=f"{max(round(days / 365), 1)}Y",
                 props=props(script, ticker=script.ticker, workdate=workspace.name,
                             episode=episode, settings=settings, workspace=workspace),
-                pile=pile),
+                pile=pile if pile_drawer else 0),
                 series))
         return room_dressing[0][0]
 

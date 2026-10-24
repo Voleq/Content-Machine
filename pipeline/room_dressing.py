@@ -1234,6 +1234,8 @@ def written_room(plate, d: Dressing, out: Path, fonts: Path, pile: Path | None =
         if not layers and pile is None:
             return plate
         piled = Image.open(pile).convert("RGBA") if pile is not None else None
+        if piled is not None and piled.size != tuple(plate.delivered):
+            piled = piled.resize(tuple(plate.delivered), Image.LANCZOS)
         fronts = _fronts(plate)
         fam.mkdir(parents=True, exist_ok=True)
         for n in names:
