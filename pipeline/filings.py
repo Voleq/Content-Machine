@@ -168,11 +168,16 @@ def _load_company_tickers(settings: Settings) -> dict | None:
         except Exception as e:
             log.warning("filings: no company_tickers fixture (%s)", e)
             return None
+    from pipeline.sources import cached, store
+
+    hit = cached(settings, "sec_tickers", "company_tickers")
+    if hit:
+        return hit
     resp = _sec_get(f"{settings.sec_base_url}/files/company_tickers.json", settings)
     if resp is None:
         return None
     try:
-        return resp.json()
+        return store(settings, "sec_tickers", "company_tickers", resp.json())
     except Exception:
         return None
 
@@ -198,11 +203,16 @@ def _load_submissions(cik: str, settings: Settings) -> dict | None:
         except Exception as e:
             log.warning("filings: no submissions fixture for CIK%s (%s)", cik, e)
             return None
+    from pipeline.sources import cached, store
+
+    hit = cached(settings, "sec_submissions", cik)
+    if hit:
+        return hit
     resp = _sec_get(f"{settings.sec_data_base_url}/submissions/CIK{cik}.json", settings)
     if resp is None:
         return None
     try:
-        return resp.json()
+        return store(settings, "sec_submissions", cik, resp.json())
     except Exception:
         return None
 

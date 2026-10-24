@@ -312,3 +312,28 @@ def test_the_veto_button_resolves_a_shot_by_index(settings, tmp_path):
     assert not (workspace / names[0]).exists()
     remaining = {s["name"] for s in F.load_manifest(workspace)["shots"]}
     assert remaining == {names[1]}
+
+
+def test_the_sec_ticker_map_is_fetched_once_a_day(settings, monkeypatch):
+    """`company_tickers.json` was downloaded on every call, and each alert
+    poll read it twice per watched name, with the submissions file twice
+    too: about 1,200 requests a day for ten names, which is how a client
+    gets the SEC's fair-access block."""
+    from types import SimpleNamespace
+
+    from pipeline import filings
+
+    live = settings.model_copy(update={"mock_mode": False})
+    calls: list[str] = []
+
+    def fake_get(url, _settings):
+        calls.append(url)
+        body = ({"0": {"cik_str": 1, "ticker": "EXMPL"}}
+                if url.endswith("company_tickers.json") else {"filings": {}})
+        return SimpleNamespace(json=lambda: body)
+
+    monkeypatch.setattr(filings, "_sec_get", fake_get)
+    for _ in range(3):
+        assert filings._load_company_tickers(live)["0"]["ticker"] == "EXMPL"
+        assert filings._load_submissions("0000000001", live) == {"filings": {}}
+    assert len(calls) == 2

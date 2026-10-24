@@ -47,6 +47,11 @@ TTL_SECONDS = {
     "form4": 3600,
     "fred": 3600 * 6,
     "rss": 1800,
+    # The SEC's ticker map changes when a company lists or renames; it was
+    # downloaded on every call, twice per watched name per poll (scan, 24 Oct
+    # 2026). One submissions file serves both of a poll's readings.
+    "sec_tickers": 86400,
+    "sec_submissions": 300,
 }
 
 
