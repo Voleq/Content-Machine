@@ -182,3 +182,16 @@ def test_a_rows_kind_comes_from_its_field_then_a_better_label_read(
 
     row = NumberRow(label=label, values=["1", "2"], field=field)
     assert row.measured.value == kind
+
+
+def test_a_chat_s_markdown_around_the_script_is_never_spoken(settings):
+    """A fenced paste and a bold "Chosen:" line reached the narration."""
+    from pipeline.parser_long import _strip_hook_options, parse_long_script
+
+    raw = (ROOT / "fixtures" / "scripts" / "long_valid.txt").read_text(
+        encoding="utf-8")
+    script, _ = parse_long_script("```text\n" + raw + "\n```\n", "EXMPL", settings)
+    assert "```" not in script.narration
+    menu = ('=== HOOK OPTIONS ===\n1. "aaa"\n2. "bbb"\n\n**Chosen:** 2\n\n'
+            "The real script starts here.")
+    assert _strip_hook_options(menu) == "The real script starts here."

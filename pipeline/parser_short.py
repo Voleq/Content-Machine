@@ -107,9 +107,14 @@ def _extract_json_block(raw: str) -> str:
     if not raw:
         raise ScriptParseError("Empty message — expected the SHORT script JSON.")
 
-    fenced = _FENCE_RE.search(raw)
-    if fenced:
-        raw = fenced.group(1).strip()
+    # The fence that holds the script, not the first one: a chat paste can
+    # fence its prose sections too, and the first fence held no JSON, so a
+    # valid script was refused (scan, 24 Oct 2026).
+    fences = [m.group(1).strip() for m in _FENCE_RE.finditer(raw)]
+    pick = next((f for f in fences if '"format"' in f and _balanced_objects(f)),
+                next((f for f in fences if _balanced_objects(f)), None))
+    if pick is not None:
+        raw = pick
 
     objects = _balanced_objects(raw)
     if not objects:

@@ -502,3 +502,12 @@ def test_rows_past_the_sheet_are_named(short_valid_json, settings):
     data["numbers"] = data["numbers"][:SHEET_ROWS]
     _, warnings = parse_short_script(json.dumps(data), settings)
     assert not any("the sheet draws" in w for w in warnings)
+
+
+def test_the_script_s_fence_is_found_behind_a_fenced_preamble(short_valid_json,
+                                                              settings):
+    """A chat paste may fence its prose sections as well as the JSON."""
+    raw = ("SCRIPT\n```text\nEXMPL is up twenty nine percent.\n```\n\n"
+           f"JSON\n```json\n{short_valid_json}\n```\n")
+    script, _ = parse_short_script(raw, settings)
+    assert script.ticker == "EXMPL"

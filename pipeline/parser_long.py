@@ -90,9 +90,16 @@ _CHAPTERS_TRAILER_RE = re.compile(r"^\s*=+\s*CHAPTERS\s*=+\s*$",
 # the Step-2 writing prompt emits a "=== HOOK OPTIONS ===" block, then the
 # narration begins after its "Chosen:" line — strip that preamble so the
 # hook menu is never spoken (symmetric to the ASSET PROMPTS trailer).
-_HOOK_MARKER_RE = re.compile(r"^\s*=+\s*HOOK OPTIONS\s*=+\s*$",
+# A chat's markdown around either ("**Chosen:** 2", "## === HOOK OPTIONS
+# ===") left the line in the narration, and it was spoken (scan, 24 Oct 2026).
+_HOOK_MARKER_RE = re.compile(r"^\s*[*_#]*\s*=+\s*HOOK OPTIONS\s*=+\s*[*_]*\s*$",
                              re.IGNORECASE | re.MULTILINE)
-_CHOSEN_RE = re.compile(r"^\s*chosen\b[^\n]*$", re.IGNORECASE | re.MULTILINE)
+_CHOSEN_RE = re.compile(r"^\s*[*_]*\s*chosen\b[^\n]*$",
+                        re.IGNORECASE | re.MULTILINE)
+
+# A code fence a chat wraps the script in. Its opening line reached the voice
+# as "``` text" (scan, 24 Oct 2026).
+_FENCE_LINE_RE = re.compile(r"^[ \t]*```[\w-]*[ \t]*(?:\n|$)", re.MULTILINE)
 
 
 # One numbered option of the menu: `1. "<hook>"`.
@@ -250,6 +257,7 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
     if not raw or not raw.strip():
         raise LongScriptError("Empty message — expected the tagged LONG narration.")
 
+    raw = _FENCE_LINE_RE.sub("", raw)
     raw, chapters = _split_chapters_trailer(raw)
     # The confession block may sit before or after the chapter trailer, so it
     # is cut from both halves rather than from a position.
