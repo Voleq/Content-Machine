@@ -144,6 +144,18 @@ def test_upload_package_as_fields(core, panel, xlsx_bytes, short_valid_json):
     assert f"u|s|EXMPL|{ws.workdate}" in data
 
 
+def test_a_final_with_no_script_still_opens_its_upload_step(core, panel):
+    """A final with no script on file (one copied in by hand): the files
+    download, the fields are empty, and the step is not an error."""
+    core.start_lane(CHAT, "short", "EXMPL")
+    ws = core.context.get(CHAT)
+    (ws.path / "short_final.mp4").write_bytes(b"\0" * 64)
+    up = video_view(panel, "EXMPL", ws.workdate)["upload"]
+    assert "error" not in up
+    assert up["ready"] and up["titles"] == [] and up["description"] == ""
+    assert up["downloads"][0]["name"] == "short_final.mp4"
+
+
 def _png(colour) -> bytes:
     buf = io.BytesIO()
     Image.new("RGB", (64, 36), colour).save(buf, "PNG")

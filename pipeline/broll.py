@@ -1178,7 +1178,7 @@ class ContentManager:
         supplied real screenshot or short screen-record (broker app, P&L,
         a Google search). Images fill the frame; clips are pad-fitted.
         Degrades to the filler card if it vanished since validation."""
-        custom = self.settings.assets_dir / "custom"
+        custom = self.settings.custom_assets_dir
         hits = sorted(custom.glob(f"{slug}.*")) if custom.is_dir() else []
         clips = [p for p in hits if p.suffix.lower() in self._CLIP_SUFFIXES]
         images = [p for p in hits if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp")]

@@ -257,7 +257,7 @@ def test_screengrab_image_pad_fits(manager, settings):
     missing = manager.resolve_screengrab("no-such-grab")
     assert missing.source == "filler"
 
-    custom = settings.assets_dir / "custom"
+    custom = settings.custom_assets_dir
     custom.mkdir(parents=True, exist_ok=True)
     target = custom / "phone-pnl.png"
     Image.new("RGB", (1170, 2532), (18, 22, 28)).save(target)  # tall phone capture
@@ -272,7 +272,7 @@ def test_screengrab_image_pad_fits(manager, settings):
 
 
 def test_screengrab_clip_normalized(manager, settings):
-    custom = settings.assets_dir / "custom"
+    custom = settings.custom_assets_dir
     custom.mkdir(parents=True, exist_ok=True)
     target = custom / "screen-record.mp4"
     run_ffmpeg([

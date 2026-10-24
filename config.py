@@ -135,6 +135,11 @@ class Settings(BaseSettings):
     cache_dir: Path = BASE_DIR / "cache"
     state_dir: Path = BASE_DIR / "state"
     assets_dir: Path = BASE_DIR / "assets"
+    # His screengrabs ([SCREENGRAB] uploads). Unset, `assets/custom`; the
+    # suite sets it to a temporary folder, because the install runs the suite
+    # in his own checkout and a test that cleaned up `broker-pnl.png` there
+    # deleted his.
+    custom_dir: Path | None = None
     templates_dir: Path = BASE_DIR / "templates"
     fixtures_dir: Path = BASE_DIR / "fixtures"
 
@@ -1057,6 +1062,11 @@ class Settings(BaseSettings):
     @property
     def fonts_dir(self) -> Path:
         return self.assets_dir / "fonts"
+
+    @property
+    def custom_assets_dir(self) -> Path:
+        """Where his screengrabs live (`CUSTOM_DIR`, else `assets/custom`)."""
+        return Path(self.custom_dir) if self.custom_dir else self.assets_dir / "custom"
 
     def voice_settings(self, fmt: str) -> dict:
         """Per-format ElevenLabs voice settings (part of the TTS cache key)."""

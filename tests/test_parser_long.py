@@ -75,7 +75,7 @@ def test_screengrab_blocks_until_file_present(long_doodles_text, settings, tmp_p
     _, blocking = validate_long_script(script, PALETTE, tmp_path, settings)
     assert any("SCREENGRAB" in b and "broker-pnl" in b for b in blocking)
 
-    custom = settings.assets_dir / "custom"
+    custom = settings.custom_assets_dir
     custom.mkdir(parents=True, exist_ok=True)
     grab = custom / "broker-pnl.png"
     grab.write_bytes(b"png")

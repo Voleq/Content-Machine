@@ -100,7 +100,8 @@ class Panel:
         # artwork and audio the repo ships, nothing private.
         assets = Path(self.settings.assets_dir)
         roots = [self.settings.workspace_dir, self.settings.templates_dir,
-                 assets / "custom", Path(self.settings.cache_dir) / "tts",
+                 self.settings.custom_assets_dir,
+                 Path(self.settings.cache_dir) / "tts",
                  assets / "meme_library", assets / "broll_library",
                  assets / "sfx", assets / "score", assets / "plates" / "room"]
         self.roots = [Path(r).resolve() for r in roots]

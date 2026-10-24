@@ -968,7 +968,7 @@ def validate_long_script(
             f"per LONG (information-first, not meme-spam). Cut some."
         )
 
-    custom_dir = settings.assets_dir / "custom"
+    custom_dir = settings.custom_assets_dir
     reg = load_plates(settings.assets_dir)
 
     # Which chapter each tag falls in, so a plate can be checked against the

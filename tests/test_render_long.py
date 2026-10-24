@@ -319,7 +319,7 @@ def rendered_doodles(tmp_path_factory):
     settings = Settings(
         MOCK_MODE=True,
         workspace_dir=tmp / "ws", cache_dir=tmp / "cache", state_dir=tmp / "state",
-        long_width=640, long_height=360,
+        custom_dir=tmp / "custom", long_width=640, long_height=360,
         _env_file=None,
     )
     settings.ensure_runtime_dirs()
@@ -332,7 +332,7 @@ def rendered_doodles(tmp_path_factory):
     shutil.copy(fixtures / "company_data" / "dennis_data.xlsx", ws / "dennis_data.xlsx")
     data = load_company_data(ws)
     # the operator-supplied screengrab (a tall phone P&L) lives in custom/
-    custom = settings.assets_dir / "custom"
+    custom = settings.custom_assets_dir
     custom.mkdir(parents=True, exist_ok=True)
     grab = custom / "broker-pnl.png"
     Image.new("RGB", (1170, 2532), (16, 26, 20)).save(grab)

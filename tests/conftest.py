@@ -38,6 +38,9 @@ def settings(tmp_path: Path) -> Settings:
         workspace_dir=tmp_path / "workspace",
         cache_dir=tmp_path / "cache",
         state_dir=tmp_path / "state",
+        # Never his screengrab folder: the install runs this suite in his
+        # checkout, and the screengrab tests write and delete files there.
+        custom_dir=tmp_path / "custom",
         _env_file=None,
     )
     s.ensure_runtime_dirs()

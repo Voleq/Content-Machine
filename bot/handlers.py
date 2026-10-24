@@ -743,7 +743,7 @@ class BotCore:
             if stem in pending:
                 # an operator capture ([SCREENGRAB]) — into the shared
                 # custom library, where pre-render validation looks for it
-                custom = self.settings.assets_dir / "custom"
+                custom = self.settings.custom_assets_dir
                 custom.mkdir(parents=True, exist_ok=True)
                 # One file per slug. A re-upload in another format used to
                 # sit beside the first, and whichever the glob found first
@@ -865,7 +865,7 @@ class BotCore:
         script = ws.load_long()
         if script is None:
             return {}
-        custom = self.settings.assets_dir / "custom"
+        custom = self.settings.custom_assets_dir
         out: dict[str, str] = {}
         # [SCREENGRAB] only. [ASSET] is gone — it blocked a render until an
         # operator pasted a prompt into Claude Design, exported a PNG and

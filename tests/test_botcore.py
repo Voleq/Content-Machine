@@ -223,12 +223,11 @@ def test_screengrab_flow_blocks_and_accepts_upload(core, xlsx_bytes):
     core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
 
-    # `assets/custom/` is the SHARED library, not a tmp dir — it has to be,
-    # because that is where the renderer looks. A run killed between the
-    # upload and the cleanup below therefore leaves a file that makes this
-    # test pass for the wrong reason next time, so it is cleared going in as
-    # well as coming out.
-    custom = core.settings.assets_dir / "custom"
+    # The screengrab folder is the test settings' temporary one (CUSTOM_DIR),
+    # never his `assets/custom/`: the install runs this suite in his
+    # checkout. Cleared going in as well as coming out all the same.
+    custom = core.settings.custom_assets_dir
+    assert custom != core.settings.assets_dir / "custom"
     for stale in custom.glob("broker-pnl.*"):
         stale.unlink()
 

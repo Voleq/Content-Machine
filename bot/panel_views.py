@@ -135,7 +135,11 @@ def _step_data(v: _Video) -> dict:
     if export is None:
         return out
     key = (str(export), export.stat().st_mtime)
-    if key not in _CHECKS:
+    # The server answers each request on its own thread: one lookup, so a
+    # clear by a second video's view cannot take this entry between a test
+    # and a read.
+    cached = _CHECKS.get(key)
+    if cached is None:
         check = check_export(export, expect_ticker=v.ws.ticker,
                              max_age_days=v.settings.data_max_age_days)
         figures, missing = [], []
@@ -153,13 +157,13 @@ def _step_data(v: _Video) -> dict:
             if data.warning_missing:
                 missing.append(f"missing, worth filling: "
                                f"{', '.join(data.warning_missing[:12])}")
-        _CHECKS.clear()
-        _CHECKS[key] = {
+        cached = {
             "problems": [{"kind": p.kind, "message": p.message,
                           "blocking": p.blocking} for p in check.problems],
             "figures": figures, "missing": missing,
             "as_of": check.as_of}
-    cached = _CHECKS[key]
+        _CHECKS.clear()
+        _CHECKS[key] = cached
     out.update(problems=cached["problems"], figures=cached["figures"],
                missing=cached["missing"])
     out["as_of"] = out["as_of"] or cached["as_of"]
@@ -484,9 +488,12 @@ def _step_upload(v: _Video) -> dict:
         p = v.ws.path / name if name else None
         if p is not None and p.exists():
             out["downloads"].append({"name": p.name, "url": v.link(p)})
+    # No script on file (a final copied in, or one whose script was lost):
+    # the files still download, there is just nothing to paste.
     pkg = v.core._upload_package(v.ws, v.fmt)
-    out.update(titles=list(pkg.titles), description=pkg.description,
-               tags=list(pkg.tags), pinned=pkg.pinned_comment)
+    if pkg is not None:
+        out.update(titles=list(pkg.titles), description=pkg.description,
+                   tags=list(pkg.tags), pinned=pkg.pinned_comment)
     out["chapters"] = [{"stamp": s, "title": t}
                        for s, t, *_ in v.core._chapter_pairs(v.ws, v.fmt)]
     out["buttons"] = keyboard_rows(kb.delivered_keyboard(
