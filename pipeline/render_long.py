@@ -2990,7 +2990,11 @@ def _render_long(
         else:
             return None
         plates_used.add(plate.key)
-        room = written_room(plate, d, rdir / "written", settings.fonts_dir)
+        # the read 10-Ks on the floor here too, as in every other shot of
+        # the room
+        piled = (pile_drawer[0].pile_layer(plate, tuple(plate.delivered))
+                 if d.pile and pile_drawer else None)
+        room = written_room(plate, d, rdir / "written", settings.fonts_dir, pile=piled)
         frames = pull_back_frames(Image.open(room.path).convert("RGB"), q,
                                   Image.open(pic).convert("RGB"), (W, H), fps)
         pull_meta.append({"segment": j, "chapter": n + 1, "room": plate.key,
@@ -3466,11 +3470,14 @@ def _render_long(
     audio += wipe_cues([(float(w["start"]), float(w["cut"]))
                         for w in transition_meta if "transition" in w],
                        settings, voicing, clear_of=hits_at)
-    # His clothes when he turns or moves an arm (A10), off the chapter hits.
+    # His clothes when he turns or moves an arm (A10), off the chapter hits,
+    # and never while something covers him: under the chapter's board a
+    # rustle was a sound with no picture (scan, 24 Oct 2026).
     audio += body_cues(body_moves((segments[m["segment"]].start, m.get("events", ()))
                                   for m in dennis3d_meta
                                   if 0 <= m.get("segment", -1) < len(segments)),
-                       settings, script.content_sha(), clear_of=hits_at)
+                       settings, script.content_sha(), clear_of=hits_at,
+                       drops=covers)
     banner = audio_banner(settings)
     if banner:
         log.warning("%s", banner)
