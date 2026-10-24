@@ -457,12 +457,14 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
                     payload, tag=rt.type.value)
                 inline_warnings.extend(hold_warnings)
             if rt.type is TagType.PLATE:
-                # Nothing draws it (`_tag_warnings` says so once), so its key
-                # and rows go unchecked. Its values are still read, because
-                # the vendor check reads every surface the writer filled.
+                # Nothing draws it (`_tag_warnings` says so once), so a bad
+                # key or row is dropped without a line of its own. A good one
+                # is kept: its timing and its values are still read.
                 fill = build_fill(load_plates(settings.assets_dir), rt.payload,
                                   aspect="9x16")
-                payload, values = fill.key or fill.name or rt.payload, fill.values
+                if not fill.ok:
+                    continue
+                payload, values = fill.key or fill.name, fill.values
             elif rt.type not in DELIVERY_TAG_TYPES:
                 payload, style = parse_chart_payload(payload)
             if rt.type not in DELIVERY_TAG_TYPES and not payload:

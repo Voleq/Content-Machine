@@ -5,6 +5,8 @@ Each test names what a viewer or the operator would have seen go wrong.
 
 from __future__ import annotations
 
+import os
+import time
 from datetime import date, datetime, timedelta, timezone
 
 from pipeline.workspace import Workspace
@@ -134,6 +136,11 @@ def test_a_dry_run_counts_each_file_once(settings):
     ws = Workspace(settings, "OLD", old).create()
     (ws.path / "render_short").mkdir()
     (ws.path / "render_short" / "frames.mp4").write_bytes(b"x" * 1_000_000)
+    # Last worked on a month ago too: a folder written to inside the window
+    # is kept.
+    when = time.time() - 30 * 86400
+    for p in [ws.path, *ws.path.rglob("*")]:
+        os.utime(p, (when, when))
     dry = cleanup(settings, dry_run=True)
     real = cleanup(settings)
     assert dry["freed_mb"] == real["freed_mb"] == 1.0

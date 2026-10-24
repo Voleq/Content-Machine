@@ -246,10 +246,28 @@ def form_for(name: str, root: Path | str = REPO_ROOT) -> list[Field]:
     out = []
     for src, (dests, shots) in seen.items():
         found = [b for b in (budget_of(d) for d in dests) if b is not None]
+        # A FIELD READ ONLY THROUGH `wrap.`/`sent.` has no box of its own to
+        # measure: those plates are drawn only when the field fits them, so
+        # they never narrow the ask (above). Its length is then the one the
+        # script itself refuses at, the model's.
+        if not found and all(d.startswith(("wrap:", "sent:")) for d in dests):
+            found = [b for b in [_model_limit(src)] if b is not None]
         out.append(Field(src=src, destinations=tuple(dests),
                          budget=min(found) if found else None,
                          shots=tuple(shots)))
     return out
+
+
+def _model_limit(src: str) -> int | None:
+    """The `max_length` a short script's model gives `script.<field>`."""
+    from pipeline.models import ShortScript
+
+    root, _, name = src.partition(".")
+    info = ShortScript.model_fields.get(name) if root in WRITER_ROOTS else None
+    for meta in (info.metadata if info else []):
+        if getattr(meta, "max_length", None):
+            return int(meta.max_length)
+    return None
 
 
 def writer_fields(name: str, root: Path | str = REPO_ROOT) -> list[Field]:
