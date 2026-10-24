@@ -413,9 +413,12 @@ def _handler_for(panel: Panel):
                     p = self._payload()
                     ticker = str(p.get("ticker") or "").upper()
                     workdate = str(p.get("workdate") or "")
+                    from bot.panel_views import is_video_key
                     from pipeline.workspace import Workspace
                     ws = Workspace(panel.settings, ticker, workdate)
-                    if not ticker or not ws.exists:
+                    # A ticker and a date, as /api/video checks: ".." with
+                    # no date made the project folder the active video.
+                    if not is_video_key(ticker, workdate) or not ws.exists:
                         return self._json({"error": "no such video"}, 404)
                     core.context.set(chat, ticker, workdate)
                     reply = Reply(f"📁 now working on {ticker} {workdate} — "

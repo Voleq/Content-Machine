@@ -535,6 +535,18 @@ def test_the_panel_opens_one_video_and_its_job_log(panel, core):
     assert json.loads(panel("/api/joblog?id=nope")[2]) == {"lines": []}
 
 
+def test_only_a_video_can_be_made_the_active_one(panel, core):
+    """".." with no date is a folder that exists: the project's own."""
+    panel("/api/run", {"text": "/new short EXMPL"})
+    ws = core.context.get(core.settings.operator_chat_ids[0])
+    for bad in ({"ticker": "..", "workdate": ""},
+                {"ticker": "EXMPL", "workdate": "../.."},
+                {"ticker": "EXMPL", "workdate": ""}):
+        assert panel("/api/active", bad)[0] == 404, bad
+    assert panel("/api/active", {"ticker": "EXMPL",
+                                 "workdate": ws.workdate})[0] == 200
+
+
 def test_the_ideas_calendar_and_stats_screens_are_served(panel):
     panel("/api/run", {"text": "/ideas add SMPL up on volume"})
     ideas = json.loads(panel("/api/ideas")[2])
