@@ -368,7 +368,7 @@ def test_a_script_paste_is_never_eaten_by_a_pending_question(
     cmds.ChatState(core.settings).ask(CHAT, "correct", ticker="EXMPL")
     monkeypatch.setattr(core, "correct_command",
                         lambda args: pytest.fail("a script went to /correct"))
-    monkeypatch.setattr(core, "intake_script", lambda chat, text: Reply("intake"))
+    monkeypatch.setattr(core, "intake_script", lambda chat, text, **kw: Reply("intake"))
     assert run(cmds.handle_text(core, CHAT, short_valid_json)).text == "intake"
 
 
@@ -378,7 +378,7 @@ def test_a_correction_is_shown_and_posted_only_on_a_tap(core, monkeypatch):
     posted = []
     monkeypatch.setattr(core, "correct_command",
                         lambda args: posted.append(args) or "📌 posted")
-    monkeypatch.setattr(core, "intake_script", lambda chat, text: Reply("intake"))
+    monkeypatch.setattr(core, "intake_script", lambda chat, text, **kw: Reply("intake"))
     run(cmds.handle_callback(core, CHAT, "cr|EXMPL"))
     reply = run(cmds.handle_text(core, CHAT, "Margins were 41%, not 44%."))
     assert posted == [] and "Margins were 41%, not 44%." in reply.text

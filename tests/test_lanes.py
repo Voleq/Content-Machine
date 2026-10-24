@@ -304,6 +304,23 @@ def test_a_paste_at_telegrams_cut_point_is_refused_not_saved(core, settings):
     assert ".txt" in reply.text, "the refusal has to say what to do instead"
 
 
+def test_a_page_paste_at_that_length_is_whole(core, settings,
+                                              short_valid_json):
+    """The page has no message limit, so a script that happens to be 4,090
+    characters long is whole there, and so is a second paste after it."""
+    core.start_lane(CHAT, "short", "EXMPL")
+    _with_data(core, "EXMPL")
+    ws = Workspace.latest_for(settings, "EXMPL")
+    padded = short_valid_json + "\n" * (4090 - len(short_valid_json))
+    assert ".txt" in core.intake_script(CHAT, padded).text
+    assert ws.load_short() is None
+    reply = core.intake_script(CHAT, padded, from_page=True)
+    assert ws.load_short() is not None, reply.text
+    # and the unclosed JSON check still holds there
+    reply = core.intake_script(CHAT, short_valid_json[:2000], from_page=True)
+    assert ".txt" in reply.text
+
+
 def test_the_same_text_as_a_file_is_accepted(core, settings, long_valid_text):
     """A file cannot be split, so the refusal must not apply to one."""
     core.start_lane(CHAT, "long", "EXMPL")

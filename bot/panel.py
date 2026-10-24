@@ -373,7 +373,8 @@ def _handler_for(panel: Panel):
                     if not text.strip():
                         return self._json({"error": "nothing to send"}, 400)
                     reply = panel.run(cmds.handle_text(core, chat, text,
-                                                       say=panel.say))
+                                                       say=panel.say,
+                                                       from_page=True))
                 elif url.path == "/api/upload":
                     name = Path((query.get("name") or ["upload.bin"])[0]).name
                     data = self._body()

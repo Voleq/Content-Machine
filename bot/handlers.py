@@ -893,7 +893,7 @@ class BotCore:
         return False
 
     def intake_script(self, chat_id: int, text: str, *,
-                      from_file: bool = False) -> Reply:
+                      from_file: bool = False, from_page: bool = False) -> Reply:
         ws = self._active_ws(chat_id)
         if ws is None:
             return Reply("No active workspace — /short TICKER or /long TICKER first.")
@@ -904,25 +904,30 @@ class BotCore:
         if not from_file:
             import time
 
+            # The page has no message limit: a paste there that happens to
+            # be 4,085 characters long is whole, and so is the next one
+            # (scan, 24 Oct 2026). An unclosed JSON body is still refused.
             now = time.monotonic()
-            why = self._looks_truncated(text)
+            why = self._looks_truncated(text, at_limit=not from_page)
             if why:
                 self._fragment_at[chat_id] = now
-            elif now - self._fragment_at.get(chat_id, -1e9) < self.SPLIT_TAIL_S:
+            elif not from_page and now - self._fragment_at.get(
+                    chat_id, -1e9) < self.SPLIT_TAIL_S:
                 self._fragment_at[chat_id] = now
                 return self._truncated_reply(
                     "paste", "it arrived right after a message Telegram cut "
                              "at its length limit, so it is the end of the "
                              "same message, not a whole script")
         with llm_scope(self._llm_scope(ws)):
-            return self._intake(ws, text, from_file=from_file)
+            return self._intake(ws, text, from_file=from_file,
+                                from_page=from_page)
 
     # How soon after a refused fragment the next paste is taken for the rest
     # of the same split message.
     SPLIT_TAIL_S = 15.0
 
     def _intake(self, ws: Workspace, text: str, *,
-                from_file: bool = False) -> Reply:
+                from_file: bool = False, from_page: bool = False) -> Reply:
         # LONG two-step: a plain-text reply while awaiting the angle pick is
         # the operator's angle choice, not a script — hand back Step 2.
         if ws.awaiting_angle() and text.strip() and not self.looks_like_script(text):
@@ -930,7 +935,8 @@ class BotCore:
         # A file arrives whole — Telegram only splits chat MESSAGES — so the
         # truncation check applies to pastes only. Running it on an upload
         # would refuse exactly the thing the refusal asks for.
-        truncated = None if from_file else self._looks_truncated(text)
+        truncated = None if from_file else self._looks_truncated(
+            text, at_limit=not from_page)
         # Route by the LANE, not by whether the text starts with a brace
         # (C1). `ws.lane()` was never consulted: anything that did not look
         # like JSON went to `_intake_long`, and `parse_long_script` rejected
@@ -981,7 +987,7 @@ class BotCore:
     TELEGRAM_MESSAGE_LIMIT = 4096
 
     @classmethod
-    def _looks_truncated(cls, text: str) -> str | None:
+    def _looks_truncated(cls, text: str, *, at_limit: bool = True) -> str | None:
         """Why this paste looks like a fragment, or None if it does not."""
         stripped = text.strip()
         if not stripped:
@@ -1003,7 +1009,7 @@ class BotCore:
         #
         # The limit counts UTF-16 units and `len()` counts code points, so
         # the band absorbs the handful an emoji or two would differ by.
-        if cls.TELEGRAM_MESSAGE_LIMIT - 16 <= len(text) <= cls.TELEGRAM_MESSAGE_LIMIT:
+        if at_limit and cls.TELEGRAM_MESSAGE_LIMIT - 16 <= len(text) <= cls.TELEGRAM_MESSAGE_LIMIT:
             return (f"it is {len(text)} characters, which is where Telegram "
                     f"cuts a message in two")
         return None

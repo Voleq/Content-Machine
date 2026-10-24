@@ -1411,7 +1411,7 @@ def registry_json(core: BotCore | None = None,
 
 
 async def handle_text(core: BotCore, chat_id: int, text: str,
-                      say: Say | None = None) -> Reply:
+                      say: Say | None = None, *, from_page: bool = False) -> Reply:
     """A plain message: the answer to a question a button asked, an angle
     pick, or a script."""
     cs = ChatState(core.settings)
@@ -1451,7 +1451,8 @@ async def handle_text(core: BotCore, chat_id: int, text: str,
     if slow and say is not None:
         await say(Reply("⏳ got it — planning the visuals, this takes a "
                         "minute."))
-    reply = await asyncio.to_thread(core.intake_script, chat_id, text)
+    reply = await asyncio.to_thread(core.intake_script, chat_id, text,
+                                    from_page=from_page)
     ws = core.context.get(chat_id)
     if ws is not None and isinstance(reply.keyboard, kb.InlineKeyboardMarkup) \
             and any(b.callback_data.startswith("a|")
