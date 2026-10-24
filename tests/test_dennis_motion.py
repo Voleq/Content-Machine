@@ -193,6 +193,25 @@ def test_counting_puts_a_finger_up_for_each_word_he_leans_on():
     assert after(marks[0].start)["elbow.R.x"] != 0           # the other hand is up
 
 
+def test_the_count_goes_down_when_his_arm_leaves_it():
+    """"Three" stayed up for the rest of the shot, the arm at his side."""
+    line = _line("Three things: revenue, margin and cash. Everything else is noise "
+                 "and you can ignore it. So that is where we are.")
+    perf = motion.perform(line, line[-1].end + 1.0, fps=12, seed="t",
+                          stance="counting-on-fingers")
+    last = perf.at(perf.frames - 1)
+    assert [last[f"curl.L.{f}"] for f in motion.FINGERS] == list(motion.HANDS["relaxed"])
+
+
+def test_at_dusk_he_plays_the_pose_and_not_the_default():
+    """A dusk key (`host/close-up-talk-dusk`) missed every stance, so for
+    one video in four he played the to-camera pose on every beat."""
+    for pose in ("close-up", "arms-crossed", "holding-a-mug", "walking-out-of-frame"):
+        assert motion.stance_of(f"host/{pose}-talk-dusk") is motion.STANCES[pose]
+        assert motion.stance_of(f"host/{pose}-dusk") is motion.STANCES[pose]
+    assert motion.stance_of("host/no-such-pose-dusk") is motion.STANCES["to-camera"]
+
+
 def test_head_in_hands_keeps_his_mouth_still():
     perf = _perf(stance="head-in-hands")
     mouths = [k for k in perf.channels if k.startswith("mouth.")]

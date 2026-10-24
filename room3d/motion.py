@@ -247,15 +247,21 @@ def lean_channels(lean: float) -> dict[str, float]:
 
 
 def stance_of(pose: str) -> Stance:
-    """The 3D stance for a kit pose key (`host/arms-crossed`, or bare)."""
+    """The 3D stance for a kit pose key (`host/arms-crossed`, or bare).
+
+    A KEY CARRIES MORE THAN THE POSE: its frame (`-talk`, `-idle`, `-blink`)
+    and the hour it is drawn at (`-dusk`), in that order. Only the frame
+    suffixes were taken off, so at dusk every pose missed and he played the
+    plain to-camera one all video (scan, 24 Oct 2026): the last word comes
+    off until a stance is found."""
     name = (pose or "").rsplit("/", 1)[-1]
-    for suffix in ("-talk", "-idle", "-blink"):
-        if name.endswith(suffix):
-            name = name[: -len(suffix)]
+    while name not in STANCES and "-" in name:
+        name = name.rsplit("-", 1)[0]
     return STANCES.get(name, STANCES["to-camera"])
 
 
 PHRASE_GAP_S = 0.22              # a pause this long ends a phrase
+COUNT_DOWN_S = 0.3               # the counted fingers fold back this fast
 SENTENCE_GAP_S = 0.45            # a pause this long ends a gesture
 HANDS_DOWN_GAP_S = 0.9           # a silence this long brings the hands down
 
@@ -485,7 +491,7 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
     ph = phrases(words, marks=".?!", gap=SENTENCE_GAP_S)
     last_hand = rng.choice(free or "LR")
     kinds: list[str] = []
-    counts: list[tuple[float, int]] = []                # (time, fingers up)
+    counts: list[tuple[float, int, int]] = []           # (time, fingers up, arm's next move)
     for k, p in enumerate(ph):
         nxt = ph[k + 1] if k + 1 < len(ph) else None
         gap_after = (nxt.start - p.end) if nxt else duration - p.end
@@ -564,7 +570,7 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
             arms.go(p.start + 0.02, _hands(**{count_side: ("count-hand", "one"),
                                               st.hand: ("count-point", "point")}), lead + 0.1)
             for c, w in enumerate(stressed(p.words)[:5]):
-                counts.append((w.start - 0.05, c + 1))
+                counts.append((w.start - 0.05, c + 1, len(arms.keys)))
         elif kind in ("one", "both"):
             side = ("R" if last_hand == "L" else "L") if len(free) == 2 else free
             last_hand = side
@@ -607,6 +613,12 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
             down = {**_hands(), "lift.L": 0.0, "lift.R": 0.0}
             arms.go(p.end + min(gap_after, 0.8), down, min(gap_after, 0.8) * 0.9 + 0.1)
 
+    # THE COUNT ENDS WHEN THE ARM LEAVES IT. Held to the end of the shot,
+    # "three" stayed up with the arm hanging at his side and under every
+    # later gesture (scan, 24 Oct 2026): the fingers fold as the arm's next
+    # move begins, the next sentence's or the hands coming down.
+    counts = [(at, c, arms.keys[nk][0] if nk < len(arms.keys) else float("inf"))
+              for at, c, nk in counts]
     accents = stressed(words)
     questions = [p for p in ph if p.question]
     blinks = blink_intervals(0.0, duration, seed=f"dennis|{seed}") + glance_at
@@ -653,9 +665,12 @@ def perform(words: Sequence, duration: float, *, fps: int = FPS, seed: str = "",
         track = []
     for t in ts:
         a = arms.sample(t)
-        up = max((c for at, c in counts if t >= at), default=0)
-        if up:
-            a.update(_hand_channels(count_side, ("one", "two", "three", "four", "five")[up - 1]))
+        held_up = [(c, until) for at, c, until in counts if at <= t < until + COUNT_DOWN_S]
+        if held_up:
+            up, until = max(held_up)
+            fingers = _hand_channels(count_side, ("one", "two", "three", "four", "five")[up - 1])
+            k = 1.0 - _smooth((t - until) / COUNT_DOWN_S)
+            a.update({n: a.get(n, v) + (v - a.get(n, v)) * k for n, v in fingers.items()})
         g = gaze.sample(t)
         if turn_to is not None and t > cue_at:
             a_ = _smooth((t - cue_at) / CUE_TURN_S)

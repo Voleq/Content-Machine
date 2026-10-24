@@ -1071,9 +1071,10 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
                          duration, spans[-1].anchored)
     # THE PAYOFF IS NOT TRADED FOR THE SIGN-OFF. A conclusion heard in the
     # last moments had its card swallowed by the pin, hit and drop with it
-    # (scan, 24 Oct 2026): the sign-off gives up its own time first, down to
-    # half the minimum.
-    if len(spans) >= 2 and spans[-1].start < spans[-2].start + MIN_SHOT_S:
+    # (scan, 24 Oct 2026): when the pin would swallow the shot before it
+    # whole, the sign-off gives up its own time first, down to half the
+    # minimum. A shot the pin only shortens keeps the sign-off its minimum.
+    if len(spans) >= 2 and spans[-1].start <= spans[-2].start:
         spans[-1] = Span(spans[-1].shot,
                          max(spans[-1].start,
                              min(spans[-2].start + MIN_SHOT_S,

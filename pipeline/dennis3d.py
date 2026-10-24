@@ -35,7 +35,7 @@ REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
-LOOK_VERSION = "47-64-13"     # 13: lit for dusk and rain, the 10-K pile (V10, V12; 24 Oct 2026)
+LOOK_VERSION = "47-64-14"     # 14: his poses at dusk, the count put down (scan, 24 Oct 2026)
 
 
 @functools.cache
