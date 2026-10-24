@@ -679,3 +679,13 @@ def test_a_word_under_way_at_his_cut_is_his_to_say(short_3d):
     job = json.loads((Path(him.path).parent / "job.json").read_text(encoding="utf-8"))
     assert [w["word"] for w in job["words"]] == ["Plus", "squeeze."]
     assert job["words"][0]["start"] < 0 < job["words"][0]["end"]
+
+
+def test_a_drawn_shot_is_stored_once(performer):
+    """The worker's frames stayed beside the layer made of them: every shot
+    stored twice, a hundred gigabytes and more on a long at 1080p. The layer
+    is kept, and its frames come back from it when the short asks."""
+    layer = performer.shot(_room("room/desk-front-9x16"), [], 0.0, 1.0, (64, 112), seed="y")
+    assert layer.exists() and not (layer.parent / "frames").exists()
+    folder = dennis3d.Performer.frames(layer)
+    assert len(list(folder.glob("d_*.png"))) == performer.settings.dennis_3d_fps

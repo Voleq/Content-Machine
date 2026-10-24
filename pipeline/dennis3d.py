@@ -347,6 +347,13 @@ class Performer:
         if reply.get("events"):
             (folder / "events.json").write_text(json.dumps(reply["events"]), encoding="utf-8")
         part.replace(layer)
+        # THE LAYER IS THE CACHE; ITS FRAMES ARE NOT KEPT BESIDE IT. The long
+        # reads the .mov and nothing else, and `frames()` unpacks them for
+        # the short when it needs them. Kept, every shot was stored twice, a
+        # hundred gigabytes and more on a long at 1080p (scan, 24 Oct 2026).
+        import shutil
+
+        shutil.rmtree(folder / "frames", ignore_errors=True)
         self.shots.append({"angle": angle, "aspect": aspect, "frames": reply.get("frames"),
                            "seconds": reply.get("seconds"), "device": reply.get("device")})
         return layer
