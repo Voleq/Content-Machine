@@ -884,16 +884,33 @@ class TTSEngine:
                 # the job fails. A dropped connection is NOT retried here —
                 # that request may have been answered and billed.
                 for attempt in range(3):
-                    resp = client.post(
-                        url,
-                        params={"output_format": "mp3_44100_128"},
-                        headers={"xi-api-key": self.settings.elevenlabs_api_key},
-                        json={
-                            "text": chunk,
-                            "model_id": model_id,
-                            "voice_settings": vsettings,
-                        },
-                    )
+                    try:
+                        resp = client.post(
+                            url,
+                            params={"output_format": "mp3_44100_128"},
+                            headers={"xi-api-key": self.settings.elevenlabs_api_key},
+                            json={
+                                "text": chunk,
+                                "model_id": model_id,
+                                "voice_settings": vsettings,
+                            },
+                        )
+                    except (httpx.ReadTimeout, httpx.ReadError,
+                            httpx.RemoteProtocolError, httpx.WriteError) as e:
+                        # SENT, AND NO ANSWER. The request may have been
+                        # generated and billed, and the re-render that follows
+                        # pays for it again: the first charge never reached
+                        # the ledger and the cap metered low (scan, 24 Oct
+                        # 2026). Counted at its estimate, marked unconfirmed.
+                        # A failure to connect sent nothing and costs nothing.
+                        spent = estimate_tts_usd(len(chunk), self.settings)
+                        self.ledger.record_tts(spent, lane=fmt, ticker=ticker,
+                                               chars=len(chunk), tier=tier,
+                                               unconfirmed=True)
+                        raise TTSError(
+                            f"ElevenLabs did not answer chunk {i + 1} "
+                            f"({type(e).__name__}). It may have been billed, "
+                            f"so ${spent:.2f} is counted against the cap.") from e
                     if resp.status_code not in RETRYABLE_STATUS or attempt == 2:
                         break
                     wait = float(resp.headers.get("retry-after") or 0) or 2.0 * 2 ** attempt

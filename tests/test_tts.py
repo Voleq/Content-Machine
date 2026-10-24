@@ -511,3 +511,28 @@ def test_a_final_with_no_voice_chosen_stops_before_the_request(settings):
     engine = TTSEngine(live, client=httpx.Client(transport=httpx.MockTransport(handler)))
     with pytest.raises(TTSError, match="ELEVEN_VOICE_ID_SHORT"):
         engine.synthesize("hello there", "short")
+
+
+@pytest.mark.parametrize("dropped,billed", [
+    pytest.param(httpx.ReadTimeout("read timed out"), True, id="read-timeout"),
+    pytest.param(httpx.RemoteProtocolError("server hung up"), True,
+                 id="hung-up"),
+    pytest.param(httpx.ConnectError("no route"), False, id="never-sent"),
+])
+def test_a_request_sent_and_never_answered_is_metered(settings, dropped,
+                                                      billed):
+    """A timeout after the request went out may have been generated and
+    billed, and the re-render pays for it again: the first charge never
+    reached the ledger. A failure to connect sent nothing."""
+    live = _live(settings)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise dropped
+
+    engine = TTSEngine(live, ledger=SpendLedger(live), client=httpx.Client(
+        transport=httpx.MockTransport(handler)))
+
+    with pytest.raises(Exception):
+        engine.synthesize(_multi_chunk_text(), "long")
+
+    assert (engine.ledger.mtd_spend_usd() > 0) is billed

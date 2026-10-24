@@ -320,7 +320,8 @@ class SpendLedger:
 
     # ---------------------------------------------------------------- record
     def record_tts(self, usd: float, *, lane: str = "", ticker: str = "",
-                   chars: int = 0, tier: str = "") -> None:
+                   chars: int = 0, tier: str = "",
+                   unconfirmed: bool = False) -> None:
         """Real spend, as it is billed — and WHAT it was spent on (12, 13).
 
         The totals alone answer "how much is left" and nothing else. Where
@@ -333,10 +334,15 @@ class SpendLedger:
             data = self._load(strict=True)
             month = self._month(data)
             month["tts_usd"] = round(month["tts_usd"] + usd, 4)
-            month.setdefault("events", []).append({
+            event = {
                 "at": datetime.now(timezone.utc).isoformat(),
                 "week": week_key(), "lane": lane, "ticker": ticker.upper(),
-                "chars": int(chars), "tier": tier, "usd": round(float(usd), 4)})
+                "chars": int(chars), "tier": tier, "usd": round(float(usd), 4)}
+            if unconfirmed:
+                # The request went out and no answer came back: it may have
+                # been billed, so it is counted, and marked as a guess.
+                event["unconfirmed"] = True
+            month.setdefault("events", []).append(event)
             self._save(data)
 
     def record_cache_hit(self, chars: int, *, lane: str = "",
