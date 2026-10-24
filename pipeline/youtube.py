@@ -304,10 +304,29 @@ class YouTubeClient:
 
         response = None
         attempts = 0
+        fresh = False
         while response is None:
             try:
                 status, response = request.next_chunk()
             except Exception as e:  # noqa: BLE001 - transport, not logic
+                # NOT EVERY FAILURE IS THE NETWORK. A session YouTube no
+                # longer knows (404, 410) was resumed into for ever, and a
+                # refused sign-in or a spent quota was retried and reported
+                # as "run /upload again" every time (scan, 24 Oct 2026).
+                why = _upload_failure(e)
+                if why == "gone" and not fresh:
+                    log.warning("the saved youtube upload session is gone (%s) — "
+                                "starting the upload again", e)
+                    if session is not None:
+                        session.clear(path, body)
+                    request = self._youtube.videos().insert(
+                        part="snippet,status", body=body, media_body=media)
+                    fresh, attempts = True, 0
+                    continue
+                if why in ("auth", "quota", "final"):
+                    if why == "final" and session is not None:
+                        session.clear(path, body)
+                    raise UploadError(_UPLOAD_REFUSED[why].format(e=_short(e))) from e
                 attempts += 1
                 if attempts > self.settings.youtube_upload_retries:
                     raise UploadError(
@@ -531,6 +550,44 @@ def available(settings: Settings) -> tuple[bool, str]:
 # --------------------------------------------------------------------------
 # Upload.
 # --------------------------------------------------------------------------
+
+
+_UPLOAD_REFUSED = {
+    "auth": ("YouTube refused the sign-in ({e}). Run scripts/youtube_auth.py "
+             "again as the dennis user, then /upload: it picks up where it "
+             "stopped."),
+    "quota": ("YouTube's upload allowance for today is used up ({e}). Run "
+              "/upload again after it resets at midnight Pacific time: it "
+              "picks up where it stopped."),
+    "final": ("YouTube refused the upload ({e}). Sending it again will not "
+              "help until that is fixed."),
+}
+# A 403 that says slow down is the network's kind of failure, and retried.
+_RETRY_403 = ("rateLimitExceeded", "userRateLimitExceeded", "backendError")
+_QUOTA = ("quotaExceeded", "uploadLimitExceeded", "dailyLimitExceeded")
+
+
+def _upload_failure(e: Exception) -> str:
+    """What an exception from a chunk means: "gone" (the session is), "auth",
+    "quota", "final" (a refusal a retry will not change) or "transport"."""
+    if type(e).__name__ == "RefreshError":
+        return "auth"
+    try:
+        status = int(getattr(getattr(e, "resp", None), "status", None))
+    except (TypeError, ValueError):
+        return "transport"
+    text = str(e) + str(getattr(e, "content", b"") or b"")
+    if status in (404, 410):
+        return "gone"
+    if status == 401:
+        return "auth"
+    if status in (400, 403) and any(k in text for k in _QUOTA):
+        return "quota"
+    if status == 403 and any(k in text for k in _RETRY_403):
+        return "transport"
+    if 400 <= status < 500 and status not in (408, 429):
+        return "final"
+    return "transport"
 
 
 def _short(e: Exception) -> str:

@@ -810,3 +810,70 @@ def test_the_declaration_is_not_a_switch(settings, package, video):
     client = FakeClient()
     upload_video(video, package, settings, client=client, now=NOW)
     assert client.body["status"]["containsSyntheticMedia"] is True
+
+
+class _Refused(Exception):
+    """What googleapiclient raises: the HTTP status on `resp`."""
+
+    def __init__(self, status: int, content: bytes = b""):
+        super().__init__(f"HttpError {status}: {content.decode()}")
+        self.resp = type("Resp", (), {"status": status})()
+        self.content = content
+
+
+def _youtube_with(monkeypatch, requests):
+    import sys
+    import types
+
+    from pipeline import youtube as yt
+
+    http = types.ModuleType("googleapiclient.http")
+    http.MediaFileUpload = lambda *a, **k: object()
+    monkeypatch.setitem(sys.modules, "googleapiclient", types.ModuleType("googleapiclient"))
+    monkeypatch.setitem(sys.modules, "googleapiclient.http", http)
+    monkeypatch.setattr(yt.time, "sleep", lambda s: None)
+    made = []
+
+    class Videos:
+        def insert(self, **k):
+            made.append(requests[len(made)])
+            return made[-1]
+
+    return type("YT", (), {"videos": lambda self: Videos()})(), made
+
+
+class _Req:
+    def __init__(self, *outcomes):
+        self.outcomes = list(outcomes)
+        self.resumable_uri = None
+
+    def next_chunk(self):
+        got = self.outcomes.pop(0)
+        if isinstance(got, Exception):
+            raise got
+        return None, got
+
+
+def test_a_session_youtube_forgot_starts_again_and_a_refusal_is_not_retried(
+        settings, video, monkeypatch):
+    """A 404 session was resumed into for ever, and a spent quota or a
+    refused sign-in was retried and reported as "run /upload again"."""
+    from pipeline.youtube import UploadError, UploadSession, YouTubeClient
+
+    body = {"snippet": {"title": "t"}, "status": {"privacyStatus": "private"}}
+    session = UploadSession(settings)
+    session.save(video, "https://upload/old-session", body)
+    yt_, made = _youtube_with(monkeypatch, [_Req(_Refused(404)), _Req({"id": "new1"})])
+    client = YouTubeClient(settings)
+    client._youtube = yt_
+    assert client.upload(video, body, session=session) == "new1"
+    assert made[0].resumable_uri == "https://upload/old-session" and len(made) == 2
+    assert session.load(video, body) == ""
+
+    for refusal, said in ((_Refused(403, b'{"reason": "quotaExceeded"}'), "allowance"),
+                          (type("RefreshError", (Exception,), {})("invalid_grant"),
+                           "youtube_auth.py")):
+        yt_, made = _youtube_with(monkeypatch, [_Req(refusal, {"id": "never"})])
+        client._youtube = yt_
+        with pytest.raises(UploadError, match=said):
+            client.upload(video, body, session=session)
