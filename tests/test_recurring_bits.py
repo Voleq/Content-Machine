@@ -82,10 +82,26 @@ def test_block_names_the_due_bit(settings):
 
 
 def test_note_long_is_idempotent(settings):
+    _ship(settings, 8)
     s = _long("Kev texted me.")
     assert rb.note_long(settings, "A/1/long", "A", "1", s) == "kev_tip"
     rb.note_long(settings, "A/1/long", "A", "1", s)
-    assert len(rb.BitLedger(settings).rows()) == 1
+    assert len(rb.BitLedger(settings).rows()) == 9
+
+
+def test_a_passing_mention_in_a_long_that_is_not_kev_s_keeps_his_place(settings):
+    """`bits_lint` allows one line of Kev outside his video; recorded as the
+    tip, that line pushed the real one back six to eight longs."""
+    _ship(settings, 2)
+    led = rb.BitLedger(settings)
+    passing = _long("Margins fell. Even Kev would have sold here. The cash went.")
+    assert rb.note_long(settings, "P/1/long", "P", "1", passing) == ""
+    assert led.since("kev_tip") == 3
+    # Kev through a whole passage is the bit, due or not.
+    run = _long("Kev texted me at six. Kev says it is the next big thing. "
+                "Kev is wrong.")
+    assert rb.note_long(settings, "R/1/long", "R", "1", run) == "kev_tip"
+    assert led.since("kev_tip") == 0
 
 
 def test_junk_ledger(settings):

@@ -170,9 +170,22 @@ def old_trade_line(settings: Settings) -> str:
             "recurring bits above). Write that one and no other.")
 
 
-def detect_bit(narration: str, *, confessed: bool, old_trade_ready: bool) -> str:
-    """Which bit a shipped long actually carried."""
-    if _KEV_RE.search(narration or ""):
+def _kev_sentences(narration: str) -> int:
+    return sum(1 for s in re.split(r"(?<=[.!?])\s+|\n+", narration or "")
+               if _KEV_RE.search(s))
+
+
+def detect_bit(narration: str, *, confessed: bool, old_trade_ready: bool,
+               kev_due: bool = True) -> str:
+    """Which bit a shipped long actually carried.
+
+    A PASSING MENTION IS NOT THE BIT. `bits_lint` lets a long that is not
+    Kev's keep him to one line, and that line was recorded as his tip, which
+    pushed the real one back six to eight longs (scan, 24 Oct 2026). So when
+    the tip was not due, Kev in a single sentence is a mention; in more, the
+    writer ran the bit anyway and it counts."""
+    kev = _kev_sentences(narration)
+    if kev and (kev_due or kev > 1):
         return "kev_tip"
     if confessed and old_trade_ready:
         return "old_trade"
@@ -185,9 +198,13 @@ def note_long(settings: Settings, key: str, ticker: str, workdate: str,
     narration = getattr(script, "narration", "") or ""
     said = getattr(script, "confession", None)
     confessed = bool(getattr(said, "text", "") if said else "")
+    try:
+        kev_due = BitLedger(settings).overdue("kev_tip") >= 0
+    except Exception:                              # noqa: BLE001
+        kev_due = True
     bit = detect_bit(narration, confessed=confessed,
                      old_trade_ready=due_bit(settings, confession_due=True)
-                     == "old_trade")
+                     == "old_trade", kev_due=kev_due)
     BitLedger(settings).note(key, ticker, workdate, bit)
     return bit
 
