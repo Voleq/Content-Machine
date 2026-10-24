@@ -64,6 +64,14 @@ class PriceSeries:
                    degraded=bool(d.get("degraded", False)))
 
 
+def yahoo_symbol(ticker: str) -> str:
+    """The symbol Yahoo files a ticker under. A share class is written with a
+    dot everywhere else (BRK.B, BF.B) and with a dash on Yahoo, which answers
+    the dot with nothing: the chart fell to the synthetic floor and the final
+    render was refused over a feed that was up (scan, 24 Oct 2026)."""
+    return ticker.strip().upper().replace(".", "-")
+
+
 class PriceSource(Protocol):
     def history(self, ticker: str, days: int) -> PriceSeries: ...
 
@@ -141,7 +149,7 @@ class YahooPriceSource:
             # under a chart labelled 5Y. `days` is calendar days, as the
             # fixtures and the synthetic floor both read it.
             start = date.today() - timedelta(days=max(days, 7))
-            hist = yf.Ticker(ticker).history(
+            hist = yf.Ticker(yahoo_symbol(ticker)).history(
                 start=start.isoformat(), interval="1d", auto_adjust=True,
             )
             # A day Yahoo has no close for comes back NaN (a halt, a bad
@@ -287,7 +295,7 @@ INTRADAY_TTL_S = 900
 def _yahoo_session(ticker: str) -> IntradaySession | None:
     import yfinance as yf
 
-    t = yf.Ticker(ticker)
+    t = yf.Ticker(yahoo_symbol(ticker))
     bars = t.history(period="1d", interval="5m", auto_adjust=False,
                      prepost=False)
     days = t.history(period="5d", interval="1d", auto_adjust=False)

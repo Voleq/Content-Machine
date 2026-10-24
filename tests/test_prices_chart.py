@@ -694,3 +694,30 @@ def test_one_missing_close_does_not_throw_five_years_away(settings, monkeypatch)
     assert got.source == "yahoo" and not got.degraded
     assert got.closes == [10.0, 10.5, 11.0]
     assert got.dates == ["2026-01-05", "2026-01-07", "2026-01-08"]
+
+
+def test_a_share_class_is_asked_for_by_yahoo_s_symbol(settings, monkeypatch):
+    """Yahoo files BRK.B as BRK-B and answers the dot with nothing, which put
+    the synthetic floor on the chart and refused the final render."""
+    import sys
+    import types
+
+    import pandas as pd
+
+    from pipeline.prices import YahooPriceSource, yahoo_symbol
+
+    asked: list[str] = []
+
+    class Ticker:
+        def __init__(self, symbol):
+            asked.append(symbol)
+
+        def history(self, **kw):
+            idx = pd.to_datetime(["2026-01-02", "2026-01-05"])
+            return pd.DataFrame({"Close": [10.0, 11.0]}, index=idx)
+
+    monkeypatch.setitem(sys.modules, "yfinance", types.SimpleNamespace(Ticker=Ticker))
+    series = YahooPriceSource(settings).history("brk.b", 30)
+    assert asked == ["BRK-B"]
+    assert series.ticker == "BRK.B" and not series.degraded
+    assert yahoo_symbol("EXMPL") == "EXMPL"

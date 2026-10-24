@@ -181,9 +181,11 @@ def resolve_cik(ticker: str, tickers: dict | None) -> str | None:
     """Look a ticker up in the SEC map → 10-digit zero-padded CIK. Pure."""
     if not tickers:
         return None
-    want = ticker.strip().upper()
+    # The SEC writes a share class with a dash (BRK-B), as Yahoo does; the
+    # operator writes it with a dot. Either finds it.
+    want = ticker.strip().upper().replace(".", "-")
     for row in tickers.values():
-        if str(row.get("ticker", "")).upper() == want:
+        if str(row.get("ticker", "")).upper().replace(".", "-") == want:
             return str(row.get("cik_str", "")).zfill(10)
     return None
 

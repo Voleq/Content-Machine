@@ -96,11 +96,13 @@ class YahooMarketSource:
         try:
             import yfinance as yf
 
-            data = yf.Tickers(" ".join(tickers))
+            from pipeline.prices import yahoo_symbol
+
+            data = yf.Tickers(" ".join(yahoo_symbol(t) for t in tickers))
             out: list[dict] = []
             for sym in tickers:
                 try:
-                    info = data.tickers[sym].fast_info
+                    info = data.tickers[yahoo_symbol(sym)].fast_info
                     out.append({
                         "symbol": sym,
                         "regularMarketPrice": getattr(info, "last_price", None),

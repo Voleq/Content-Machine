@@ -25,6 +25,10 @@ def test_resolve_cik(settings):
     assert F.resolve_cik("exmpl", tickers) == "0001234567"   # case-insensitive
     assert F.resolve_cik("NOPE", tickers) is None            # unknown → None
     assert F.resolve_cik("EXMPL", None) is None              # empty map → None
+    # the SEC writes a share class with a dash
+    classes = {"0": {"ticker": "BRK-B", "cik_str": 1067983}}
+    assert F.resolve_cik("BRK.B", classes) == "0001067983"
+    assert F.resolve_cik("brk-b", classes) == "0001067983"
 
 
 def test_resolve_filing_builds_edgar_url(settings):
