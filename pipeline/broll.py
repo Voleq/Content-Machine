@@ -625,6 +625,10 @@ class ContentManager:
     ):
         self.settings = settings
         self.ledger = ledger or SpendLedger(settings)
+        # Subjects the model gave no rewrite for, this run: asked once, not
+        # once per lookup (four or more per clip, maybe through the paid
+        # fallback).
+        self._no_rewrite: set[str] = set()
         self.library_dir = library_dir or settings.assets_dir / "broll_library"
         if clip_client is not None:
             self.clip_client = clip_client
@@ -740,6 +744,8 @@ class ContentManager:
             store = {}
         if subject in store:
             return str(store[subject]) or subject
+        if subject in self._no_rewrite:
+            return subject
 
         from pipeline.llm import chat
 
@@ -767,6 +773,7 @@ class ContentManager:
         if not str(out or "").strip():
             # No answer is the model being off, not a verdict on the subject:
             # cached, the raw text stood in forever after the model came back.
+            self._no_rewrite.add(subject)
             return query
         store[subject] = query
         try:
@@ -806,8 +813,15 @@ class ContentManager:
     _CLIP_CACHE_FAMILIES = ("pexels", "gif")
 
     def _clip_cache_dir(self, key: str, family: str = "pexels") -> Path:
+        # KEYED ON THE SUBJECT, NOT ON ITS REWRITE. The rewrite comes from a
+        # model that may be down when the approval sheet is built and back
+        # by render time, and a key that followed it missed the cache, spent
+        # a Pexels call and rendered a different clip from the one approved
+        # (scan, 24 Oct 2026). A palette key's query is fixed, so its cache
+        # is where it always was.
+        subject = PALETTE.get(key) or key.replace("_", " ")
         return (self.settings.cache_dir / "broll"
-                / content_cache_key(self._clip_query(key), family))
+                / content_cache_key(subject, family))
 
     def _clip_from_cache(self, key: str, choice: int, portrait: bool) -> Visual | None:
         suffix = "_p" if portrait else ""

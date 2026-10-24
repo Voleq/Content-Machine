@@ -717,10 +717,35 @@ def test_a_query_the_model_never_answered_is_asked_again(settings, tmp_path, mon
     m = ContentManager(s, library_dir=tmp_path / "library")
     monkeypatch.setattr(llm, "chat", lambda *a, **k: "")
     assert m._stock_query("a plateau in a costume") == "a plateau in a costume"
+    # The next run asks again.
+    m = ContentManager(s, library_dir=tmp_path / "library")
     monkeypatch.setattr(llm, "chat", lambda *a, **k: "flat desert mesa landscape wide")
     assert m._stock_query("a plateau in a costume") == "flat desert mesa landscape wide"
     monkeypatch.setattr(llm, "chat", lambda *a, **k: pytest.fail("asked twice"))
     assert m._stock_query("a plateau in a costume") == "flat desert mesa landscape wide"
+
+
+def test_a_clip_s_cache_does_not_move_when_the_model_comes_back(
+        settings, tmp_path, monkeypatch):
+    """The approval sheet was built with the model down (the raw subject) and
+    the render with it back (the rewrite): the cache keyed on the query
+    missed, spent a Pexels call and rendered a different clip from the one
+    approved. And with the model down, every lookup asked it again."""
+    import pipeline.llm as llm
+
+    s = settings.model_copy(update={"broll_rewrite_offpalette": True,
+                                    "cache_dir": tmp_path / "cache"})
+    asked: list = []
+    monkeypatch.setattr(llm, "chat", lambda *a, **k: asked.append(1) or "")
+    m = ContentManager(s, library_dir=tmp_path / "library")
+    before = m._clip_cache_dir("a_plateau_in_a_costume")
+    for _ in range(4):
+        m._clip_query("a_plateau_in_a_costume")
+    assert len(asked) == 1
+    monkeypatch.setattr(llm, "chat", lambda *a, **k: "flat desert mesa landscape wide")
+    later = ContentManager(s, library_dir=tmp_path / "library")
+    assert later._clip_query("a_plateau_in_a_costume") == "flat desert mesa landscape wide"
+    assert later._clip_cache_dir("a_plateau_in_a_costume") == before
 
 
 @pytest.mark.parametrize("hour", ["night", "dusk"])
