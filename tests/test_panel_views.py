@@ -142,6 +142,8 @@ def test_upload_package_as_fields(core, panel, xlsx_bytes, short_valid_json):
     assert any("synthetic" in line.lower() for line in up["checklist"])
     data = [b["data"] for row in up["buttons"] for b in row]
     assert f"u|s|EXMPL|{ws.workdate}" in data
+    # The link is saved against this folder, not the ticker's newest.
+    assert up["mark_hint"] == f"/publish mark EXMPL@{ws.workdate} short "
 
 
 def test_a_final_with_no_script_still_opens_its_upload_step(core, panel):

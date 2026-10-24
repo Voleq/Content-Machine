@@ -72,3 +72,13 @@ def test_mark_then_public_updates_in_place(core, settings):
 def test_mark_needs_a_link(core):
     assert core.mark_upload(["EXMPL", "long"]).startswith("usage:")
     assert core.mark_upload([]).startswith("usage:")
+
+
+
+def test_a_dated_mark_lands_on_that_folder(core, settings):
+    """The page's Upload step names the folder; the newest is a later one."""
+    (settings.workspace_dir / "EXMPL" / "2026-07-09").mkdir(parents=True)
+    reply = core.mark_upload(["EXMPL@2026-07-01", "long",
+                              f"https://youtu.be/{VID}", "unlisted"])
+    assert "recorded EXMPL long (2026-07-01)" in reply
+    assert VideoLog(settings).all()[0].workdate == "2026-07-01"

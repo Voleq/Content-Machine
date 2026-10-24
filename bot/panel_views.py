@@ -503,7 +503,10 @@ def _step_upload(v: _Video) -> dict:
                         "bot": v.link(bot_cover(v.ws, v.fmt)),
                         "his": his_cover(v.ws, v.fmt) is not None,
                         "fmt": v.fmt}
-    out["mark_hint"] = f"/publish mark {v.ws.ticker} {v.fmt} "
+    # The folder's date rides along: without it the link was recorded
+    # against the ticker's newest folder, so an older video stayed under
+    # "Rendered, not uploaded" (scan, 24 Oct 2026).
+    out["mark_hint"] = f"/publish mark {v.ws.ticker}@{v.ws.workdate} {v.fmt} "
     return out
 
 
