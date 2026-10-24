@@ -2599,6 +2599,7 @@ class BotCore:
                 # of submitting a second copy behind it.
                 active = next((j for j in self.queue.store.all()
                                if j.ticker == ws.ticker and j.kind == kind
+                               and j.workdate == ws.workdate
                                and j.status.value in ("queued", "running")),
                               None)
                 if active is not None:
@@ -4170,10 +4171,10 @@ class BotCore:
         back."""
         import time
 
-        ticker = Workspace.split_arg(ticker_arg)[0]
+        ticker, when = Workspace.split_arg(ticker_arg)
         if not ticker:
             return Reply("Usage: /jobs cancel TICKER")
-        cancelled = self.queue.cancel(ticker) if self.queue else []
+        cancelled = self.queue.cancel(ticker, when) if self.queue else []
         # Every workspace a cancelled job was rendering, as well as the
         # newest: the approval worth withdrawing is the one the job was
         # spending against, which need not be today's folder.

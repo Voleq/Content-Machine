@@ -80,6 +80,19 @@ async def test_cancel_queued_job_never_runs(settings):
     assert q.store.load(job.id).status is JobStatus.CANCELLED
 
 
+async def test_two_folders_of_one_ticker_are_two_videos(settings):
+    """Today's short was refused while yesterday's rendered, and a Cancel on
+    one folder stopped the other's job too."""
+    q = RenderJobQueue(settings, lambda job: "x")
+    old = await q.submit(JobKind.RENDER_LONG, "ABC", "2026-07-01")
+    new = await q.submit(JobKind.RENDER_LONG, "ABC", "2026-07-02")
+    with pytest.raises(ValueError, match="already"):
+        await q.submit(JobKind.RENDER_LONG, "ABC", "2026-07-02")
+    assert [j.id for j in q.cancel("ABC", "2026-07-02")] == [new.id]
+    assert q.store.load(old.id).status is JobStatus.QUEUED
+    assert [j.id for j in q.cancel("ABC")] == [old.id]
+
+
 async def test_failed_job_reports(settings):
     def executor(job):
         raise RuntimeError("ffmpeg exploded")

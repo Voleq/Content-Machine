@@ -335,9 +335,12 @@ class RenderJobQueue:
         asyncio.run_coroutine_threadsafe(self._notify(text), self._loop)
 
     async def submit(self, kind: JobKind, ticker: str, workdate: str) -> JobRecord:
+        # The same video, not the same ticker: today's short was refused
+        # while yesterday's was still rendering (scan, 24 Oct 2026).
         active = [
             j for j in self.store.all()
             if j.ticker == ticker.upper() and j.kind == kind
+            and j.workdate == workdate
             and j.status in (JobStatus.QUEUED, JobStatus.RUNNING)
         ]
         if active:
@@ -353,11 +356,16 @@ class RenderJobQueue:
         await self._queue.put(job.id)
         return job
 
-    def cancel(self, ticker: str) -> list[JobRecord]:
+    def cancel(self, ticker: str, workdate: str = "") -> list[JobRecord]:
+        """Every queued or running job of `ticker`, or of its one folder when
+        `workdate` names it: a Cancel on today's proof stopped last week's
+        long as well (scan, 24 Oct 2026)."""
         cancelled = []
         for job in self.store.all():
             if job.ticker != ticker.upper() or job.status not in (
                     JobStatus.QUEUED, JobStatus.RUNNING):
+                continue
+            if workdate and job.workdate != workdate:
                 continue
 
             def _cancel(j: JobRecord) -> None:
