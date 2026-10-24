@@ -1234,28 +1234,24 @@
     "tag": "_t0"
    },
    {
-    "png": "board-side-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "board-side-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "board-side-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "board-side-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "board-side-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "board-side-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "board-side-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "board-side-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "board-side-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -1558,28 +1554,24 @@
     "tag": "_t0"
    },
    {
-    "png": "board-side-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "board-side-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "board-side-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "board-side-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "board-side-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "board-side-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "board-side-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "board-side-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "board-side-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -2740,28 +2732,24 @@
     "tag": "_t0"
    },
    {
-    "png": "board-wide-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "board-wide-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "board-wide-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "board-wide-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "board-wide-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "board-wide-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "board-wide-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "board-wide-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "board-wide-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -3099,6 +3087,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 4.087,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1858.6,
+        650.4
+       ],
+       [
+        1882.2,
+        651.2
+       ],
+       [
+        1899.6,
+        656.6
+       ],
+       [
+        1875.2,
+        655.8
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -3180,28 +3206,24 @@
     "tag": "_t0"
    },
    {
-    "png": "board-wide-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "board-wide-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "board-wide-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "board-wide-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "board-wide-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "board-wide-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "board-wide-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "board-wide-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "board-wide-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -4653,28 +4675,24 @@
     "tag": "_t0"
    },
    {
-    "png": "desk-front-b-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "desk-front-b-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "desk-front-b-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "desk-front-b-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "desk-front-b-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "desk-front-b-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "desk-front-b-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "desk-front-b-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "desk-front-b-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -4869,6 +4887,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.944,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1128.1,
+        787.3
+       ],
+       [
+        1179.0,
+        785.5
+       ],
+       [
+        1211.5,
+        809.2
+       ],
+       [
+        1157.2,
+        811.2
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -4940,28 +4996,24 @@
     "tag": "_t0"
    },
    {
-    "png": "desk-front-b-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "desk-front-b-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "desk-front-b-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "desk-front-b-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "desk-front-b-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "desk-front-b-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "desk-front-b-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "desk-front-b-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "desk-front-b-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -5042,6 +5094,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.365,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        710.5,
+        1069.3
+       ],
+       [
+        781.5,
+        1065.2
+       ],
+       [
+        834.4,
+        1112.8
+       ],
+       [
+        757.0,
+        1117.7
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -5113,28 +5203,24 @@
     "tag": "_t0"
    },
    {
-    "png": "desk-front-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "desk-front-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "desk-front-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "desk-front-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "desk-front-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "desk-front-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "desk-front-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "desk-front-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "desk-front-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -5329,6 +5415,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.741,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        893.6,
+        830.2
+       ],
+       [
+        949.4,
+        834.5
+       ],
+       [
+        913.2,
+        866.3
+       ],
+       [
+        853.6,
+        861.4
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -5400,28 +5524,24 @@
     "tag": "_t0"
    },
    {
-    "png": "desk-front-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "desk-front-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "desk-front-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "desk-front-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "desk-front-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "desk-front-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "desk-front-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "desk-front-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "desk-front-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -5539,6 +5659,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.372,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        387.2,
+        1067.5
+       ],
+       [
+        457.3,
+        1073.4
+       ],
+       [
+        409.7,
+        1125.2
+       ],
+       [
+        333.6,
+        1118.2
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      }
     ]
@@ -6085,28 +6243,24 @@
     "tag": "_t0"
    },
    {
-    "png": "desk-front-low-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "desk-front-low-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "desk-front-low-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "desk-front-low-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "desk-front-low-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "desk-front-low-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "desk-front-low-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "desk-front-low-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "desk-front-low-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -6372,28 +6526,24 @@
     "tag": "_t0"
    },
    {
-    "png": "desk-front-low-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "desk-front-low-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "desk-front-low-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "desk-front-low-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "desk-front-low-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "desk-front-low-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "desk-front-low-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "desk-front-low-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "desk-front-low-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -7202,28 +7352,24 @@
     "tag": "_t0"
    },
    {
-    "png": "desk-side-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "desk-side-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "desk-side-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "desk-side-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "desk-side-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "desk-side-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "desk-side-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "desk-side-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "desk-side-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -7485,6 +7631,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.556,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        970.1,
+        761.1
+       ],
+       [
+        1012.2,
+        777.3
+       ],
+       [
+        904.0,
+        805.3
+       ],
+       [
+        863.3,
+        787.3
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -7556,28 +7740,24 @@
     "tag": "_t0"
    },
    {
-    "png": "desk-side-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "desk-side-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "desk-side-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "desk-side-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "desk-side-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "desk-side-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "desk-side-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "desk-side-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "desk-side-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -7695,6 +7875,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.886,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        413.6,
+        1084.8
+       ],
+       [
+        449.2,
+        1094.9
+       ],
+       [
+        361.6,
+        1116.2
+       ],
+       [
+        326.4,
+        1105.1
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      }
     ]
@@ -9617,28 +9835,24 @@
     "tag": "_t0"
    },
    {
-    "png": "desk-wide-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "desk-wide-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "desk-wide-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "desk-wide-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "desk-wide-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "desk-wide-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "desk-wide-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "desk-wide-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "desk-wide-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -9861,6 +10075,44 @@
       "tex": [
        600,
        400
+      ]
+     },
+     {
+      "box": [
+       0,
+       0,
+       600,
+       600
+      ],
+      "depth": 4.974,
+      "id": "clockface",
+      "kind": "clock",
+      "paper": [
+       234,
+       232,
+       224
+      ],
+      "quad": [
+       [
+        446.0,
+        217.9
+       ],
+       [
+        534.8,
+        220.4
+       ],
+       [
+        536.4,
+        305.8
+       ],
+       [
+        447.9,
+        304.2
+       ]
+      ],
+      "tex": [
+       600,
+       600
       ]
      },
      {
@@ -10089,6 +10341,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 4.232,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1352.0,
+        638.1
+       ],
+       [
+        1372.5,
+        638.7
+       ],
+       [
+        1377.3,
+        644.0
+       ],
+       [
+        1356.1,
+        643.4
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      },
      {
@@ -10552,28 +10842,24 @@
     "tag": "_t0"
    },
    {
-    "png": "desk-wide-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "desk-wide-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "desk-wide-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "desk-wide-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "desk-wide-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "desk-wide-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "desk-wide-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "desk-wide-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "desk-wide-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -10729,6 +11015,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 2.429,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        559.8,
+        1041.6
+       ],
+       [
+        601.9,
+        1040.7
+       ],
+       [
+        613.4,
+        1061.0
+       ],
+       [
+        569.0,
+        1062.0
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      }
     ]
@@ -10938,28 +11262,24 @@
     "tag": "_t0"
    },
    {
-    "png": "doorway-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "doorway-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "doorway-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "doorway-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "doorway-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "doorway-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "doorway-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "doorway-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "doorway-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {},
@@ -10987,8 +11307,10 @@
     0.94
    ]
   },
-  "headCovered": null,
-  "masks": {},
+  "headCovered": 0.0,
+  "masks": {
+   "front": "doorway-christmas-9x16_mask_front.png"
+  },
   "season": "christmas",
   "states": [
    {
@@ -10996,28 +11318,24 @@
     "tag": "_t0"
    },
    {
-    "png": "doorway-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "doorway-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "doorway-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "doorway-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "doorway-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "doorway-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "doorway-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "doorway-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "doorway-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {},
@@ -11462,28 +11780,24 @@
     "tag": "_t0"
    },
    {
-    "png": "doorway-wide-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "doorway-wide-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "doorway-wide-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "doorway-wide-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "doorway-wide-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "doorway-wide-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "doorway-wide-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "doorway-wide-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "doorway-wide-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -11735,8 +12049,10 @@
     1.01
    ]
   },
-  "headCovered": null,
-  "masks": {},
+  "headCovered": 0.0,
+  "masks": {
+   "front": "doorway-wide-christmas-9x16_mask_front.png"
+  },
   "season": "christmas",
   "states": [
    {
@@ -11744,28 +12060,24 @@
     "tag": "_t0"
    },
    {
-    "png": "doorway-wide-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "doorway-wide-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "doorway-wide-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "doorway-wide-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "doorway-wide-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "doorway-wide-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "doorway-wide-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "doorway-wide-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "doorway-wide-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {},
@@ -12502,28 +12814,24 @@
     "tag": "_t0"
    },
    {
-    "png": "panel-left-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "panel-left-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "panel-left-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "panel-left-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "panel-left-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "panel-left-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "panel-left-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "panel-left-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "panel-left-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -12899,6 +13207,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 4.043,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1500.3,
+        664.7
+       ],
+       [
+        1523.6,
+        664.1
+       ],
+       [
+        1552.9,
+        669.8
+       ],
+       [
+        1529.0,
+        670.4
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -12956,9 +13302,10 @@
     0.98
    ]
   },
-  "headCovered": null,
+  "headCovered": 0.0,
   "masks": {
    "board": "panel-left-christmas-9x16_mask_board.png",
+   "front": "panel-left-christmas-9x16_mask_front.png",
    "labels": "panel-left-christmas-9x16_mask_labels.png",
    "window": "panel-left-christmas-9x16_mask_window.png"
   },
@@ -12969,28 +13316,24 @@
     "tag": "_t0"
    },
    {
-    "png": "panel-left-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "panel-left-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "panel-left-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "panel-left-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "panel-left-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "panel-left-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "panel-left-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "panel-left-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "panel-left-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -13578,28 +13921,24 @@
     "tag": "_t0"
    },
    {
-    "png": "read-close-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "read-close-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "read-close-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "read-close-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "read-close-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "read-close-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "read-close-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "read-close-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "read-close-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -13751,28 +14090,24 @@
     "tag": "_t0"
    },
    {
-    "png": "read-close-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "read-close-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "read-close-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "read-close-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "read-close-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "read-close-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "read-close-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "read-close-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "read-close-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -13890,6 +14225,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 1.768,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        469.8,
+        993.5
+       ],
+       [
+        522.8,
+        998.2
+       ],
+       [
+        475.3,
+        1023.6
+       ],
+       [
+        419.2,
+        1018.2
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      }
     ]
@@ -14854,28 +15227,24 @@
     "tag": "_t0"
    },
    {
-    "png": "turn-to-screen-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "turn-to-screen-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "turn-to-screen-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "turn-to-screen-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "turn-to-screen-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "turn-to-screen-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "turn-to-screen-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "turn-to-screen-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "turn-to-screen-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -15069,6 +15438,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 2.07,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1019.5,
+        715.5
+       ],
+       [
+        1065.1,
+        710.3
+       ],
+       [
+        1123.3,
+        730.9
+       ],
+       [
+        1076.0,
+        736.7
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      },
      {
@@ -15373,29 +15780,31 @@
  },
  "turn-to-screen-christmas-9x16": {
   "anchor": {
-   "h": 1081,
-   "w": 204,
-   "x": 435,
-   "y": 417
+   "h": 1009,
+   "w": 191,
+   "x": 175,
+   "y": 508
   },
   "angle": "turn-to-screen",
   "aspect": "9x16",
   "camera": {
-   "lens": 30,
+   "lens": 28,
    "location": [
-    0.01,
-    -0.85,
-    1.5
+    -0.3,
+    -0.7,
+    1.52
    ],
    "target": [
-    1.24,
-    1.35,
-    0.97
+    1.8,
+    1.2,
+    1.0
    ]
   },
   "headCovered": 0.0,
   "masks": {
    "front": "turn-to-screen-christmas-9x16_mask_front.png",
+   "labels": "turn-to-screen-christmas-9x16_mask_labels.png",
+   "screen": "turn-to-screen-christmas-9x16_mask_screen.png",
    "window": "turn-to-screen-christmas-9x16_mask_window.png"
   },
   "season": "christmas",
@@ -15405,31 +15814,289 @@
     "tag": "_t0"
    },
    {
-    "png": "turn-to-screen-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "turn-to-screen-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "turn-to-screen-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "turn-to-screen-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "turn-to-screen-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "turn-to-screen-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "turn-to-screen-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "turn-to-screen-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "turn-to-screen-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
-  "surfaces": {},
+  "surfaces": {
+   "labels": {
+    "items": [
+     {
+      "box": [
+       70,
+       60,
+       790,
+       280
+      ],
+      "depth": 3.186,
+      "id": "deskstack-top",
+      "kind": "cover",
+      "paper": [
+       238,
+       238,
+       234
+      ],
+      "quad": [
+       [
+        912.2,
+        859.5
+       ],
+       [
+        966.4,
+        852.4
+       ],
+       [
+        1090.0,
+        863.9
+       ],
+       [
+        1037.5,
+        872.0
+       ]
+      ],
+      "tex": [
+       850,
+       1100
+      ]
+     },
+     {
+      "box": [
+       70,
+       60,
+       790,
+       440
+      ],
+      "depth": 2.983,
+      "id": "filing",
+      "kind": "report",
+      "paper": [
+       240,
+       238,
+       230
+      ],
+      "quad": [
+       [
+        834.3,
+        923.2
+       ],
+       [
+        867.6,
+        909.7
+       ],
+       [
+        1011.5,
+        920.7
+       ],
+       [
+        985.5,
+        935.5
+       ]
+      ],
+      "tex": [
+       850,
+       1100
+      ]
+     },
+     {
+      "box": [
+       26,
+       30,
+       374,
+       370
+      ],
+      "depth": 3.002,
+      "id": "note0",
+      "kind": "note",
+      "paper": [
+       246,
+       222,
+       92
+      ],
+      "quad": [
+       [
+        685.9,
+        620.6
+       ],
+       [
+        718.4,
+        617.3
+       ],
+       [
+        723.0,
+        654.8
+       ],
+       [
+        690.5,
+        658.5
+       ]
+      ],
+      "tex": [
+       400,
+       400
+      ]
+     },
+     {
+      "box": [
+       26,
+       30,
+       374,
+       370
+      ],
+      "depth": 3.325,
+      "id": "note1",
+      "kind": "note",
+      "paper": [
+       246,
+       160,
+       170
+      ],
+      "quad": [
+       [
+        1002.8,
+        769.1
+       ],
+       [
+        1029.6,
+        773.1
+       ],
+       [
+        1026.3,
+        806.6
+       ],
+       [
+        999.5,
+        802.9
+       ]
+      ],
+      "tex": [
+       400,
+       400
+      ]
+     },
+     {
+      "box": [
+       26,
+       30,
+       374,
+       370
+      ],
+      "depth": 3.075,
+      "id": "note2",
+      "kind": "note",
+      "paper": [
+       246,
+       222,
+       92
+      ],
+      "quad": [
+       [
+        730.9,
+        855.6
+       ],
+       [
+        762.4,
+        851.4
+       ],
+       [
+        765.6,
+        887.5
+       ],
+       [
+        734.2,
+        892.0
+       ]
+      ],
+      "tex": [
+       400,
+       400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 2.477,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        721.9,
+        968.9
+       ],
+       [
+        753.9,
+        965.6
+       ],
+       [
+        801.8,
+        978.8
+       ],
+       [
+        768.9,
+        982.5
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
+     }
+    ]
+   },
+   "screen": {
+    "backlight": [
+     148,
+     158,
+     170
+    ],
+    "quad": [
+     [
+      708.3,
+      655.1
+     ],
+     [
+      928.9,
+      657.1
+     ],
+     [
+      932.1,
+      832.6
+     ],
+     [
+      714.0,
+      842.5
+     ]
+    ],
+    "size": [
+     1332,
+     928
+    ]
+   }
+  },
   "title": null
  },
  "window-talk": {
@@ -15792,28 +16459,24 @@
     "tag": "_t0"
    },
    {
-    "png": "window-talk-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "window-talk-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "window-talk-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "window-talk-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "window-talk-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "window-talk-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "window-talk-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "window-talk-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "window-talk-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -15970,6 +16633,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 2.186,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1464.5,
+        840.2
+       ],
+       [
+        1512.9,
+        841.5
+       ],
+       [
+        1534.6,
+        862.1
+       ],
+       [
+        1483.1,
+        860.8
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -16039,28 +16740,24 @@
     "tag": "_t0"
    },
    {
-    "png": "window-talk-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "window-talk-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "window-talk-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "window-talk-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "window-talk-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "window-talk-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "window-talk-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "window-talk-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "window-talk-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {},
@@ -16546,28 +17243,24 @@
     "tag": "_t0"
    },
    {
-    "png": "window-wall-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "window-wall-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "window-wall-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "window-wall-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "window-wall-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "window-wall-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "window-wall-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "window-wall-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "window-wall-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -16800,6 +17493,44 @@
        400,
        400
       ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 2.614,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1404.0,
+        771.1
+       ],
+       [
+        1437.6,
+        769.8
+       ],
+       [
+        1478.0,
+        782.5
+       ],
+       [
+        1442.9,
+        783.9
+       ]
+      ],
+      "tex": [
+       400,
+       800
+      ]
      }
     ]
    },
@@ -16870,28 +17601,24 @@
     "tag": "_t0"
    },
    {
-    "png": "window-wall-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "window-wall-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "window-wall-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "window-wall-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "window-wall-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "window-wall-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "window-wall-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "window-wall-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "window-wall-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -17956,28 +18683,24 @@
     "tag": "_t0"
    },
    {
-    "png": "window-wide-christmas_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "window-wide-christmas_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "window-wide-christmas_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "window-wide-christmas_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "window-wide-christmas_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "window-wide-christmas_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "window-wide-christmas_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "window-wide-christmas_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "window-wide-christmas_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
@@ -18352,6 +19075,44 @@
       "tex": [
        400,
        400
+      ]
+     },
+     {
+      "box": [
+       28,
+       150,
+       372,
+       470
+      ],
+      "depth": 4.675,
+      "id": "phonescreen",
+      "kind": "phone",
+      "paper": [
+       16,
+       18,
+       24
+      ],
+      "quad": [
+       [
+        1238.1,
+        643.3
+       ],
+       [
+        1255.5,
+        643.1
+       ],
+       [
+        1267.2,
+        647.3
+       ],
+       [
+        1249.4,
+        647.5
+       ]
+      ],
+      "tex": [
+       400,
+       800
       ]
      },
      {
@@ -18814,28 +19575,24 @@
     "tag": "_t0"
    },
    {
-    "png": "window-wide-christmas-9x16_t0_dip.jpg",
-    "tag": "_t0_dip"
+    "png": "window-wide-christmas-9x16_t0_dusk.jpg",
+    "tag": "_t0_dusk"
    },
    {
     "png": "window-wide-christmas-9x16_t1.jpg",
     "tag": "_t1"
    },
    {
-    "png": "window-wide-christmas-9x16_t1_dip2.jpg",
-    "tag": "_t1_dip2"
-   },
-   {
-    "png": "window-wide-christmas-9x16_t2_dip.jpg",
-    "tag": "_t2_dip"
-   },
-   {
-    "png": "window-wide-christmas-9x16_t2_dip2.jpg",
-    "tag": "_t2_dip2"
+    "png": "window-wide-christmas-9x16_t1_dusk.jpg",
+    "tag": "_t1_dusk"
    },
    {
     "png": "window-wide-christmas-9x16_t2.jpg",
     "tag": "_t2"
+   },
+   {
+    "png": "window-wide-christmas-9x16_t2_dusk.jpg",
+    "tag": "_t2_dusk"
    }
   ],
   "surfaces": {
