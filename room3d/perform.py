@@ -117,6 +117,8 @@ class Stage:
         room.LETTERED.clear()
         room._MATS.clear()
         room.build_room(season)
+        # him lit by the room at night, by one sky, not by all of them at once
+        room.apply_state(season)
         self.rig = build_dennis((0.0, 0.0), beard=BEARD)
         mine = set(self.rig.objects())
         for o in bpy.context.scene.objects:

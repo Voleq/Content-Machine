@@ -65,6 +65,10 @@ LABELS = {
     "box": ((900, 500), (176, 140, 96), (40, 50, 860, 450)),
     "cover": ((850, 1100), (238, 238, 234), (70, 60, 790, 280)),
     "report": ((850, 1100), (240, 238, 230), (70, 60, 790, 440)),
+    # the tag in the plant's pot: the company he was last wrong about
+    "plant": ((360, 200), (242, 242, 236), (20, 24, 340, 176)),
+    # his phone's lock screen, dark: lit by the video when Kev texts
+    "phone": ((400, 800), (16, 18, 24), (28, 150, 372, 470)),
 }
 NOTE_PAPERS = ((246, 222, 92), (246, 160, 170), (246, 222, 92))
 CARD_PAPERS = ((246, 244, 236), (244, 232, 150), (246, 244, 236),
@@ -199,24 +203,56 @@ def clock() -> None:
     im.save(OUT / "clock_face.png")
 
 
-def night(snow: bool = False) -> None:
-    """Across the street at night: towers, a few windows still lit, a moon."""
+# THE SKIES (V10): across the street at each hour and in each weather. The
+# room has one pane for each, see-through and lit by itself, and a picture
+# of the room is a mix of them (`build.py` SKIES and `states`), so the dusk
+# sky lights the room near the window as a dusk sky would. Same street, same
+# towers, the same windows: only the light changes.
+TOWERS = ((-20, 330, 820), (330, 270, 1010), (630, 360, 700), (1010, 250, 900), (1280, 340, 760))
+SKY_TONES = {
+    # top of the sky, bottom of it, the towers, their roofline, lit windows' share
+    "night": ((16, 26, 52), (38, 52, 86), (14, 18, 28), (24, 30, 44), 0.20),
+    "dusk": ((58, 52, 110), (236, 140, 96), (40, 36, 66), (64, 56, 92), 0.34),
+    "night_rain": ((30, 36, 50), (52, 58, 72), (24, 28, 38), (32, 38, 50), 0.16),
+    "dusk_rain": ((70, 66, 92), (150, 120, 120), (48, 46, 64), (62, 60, 80), 0.28),
+}
+
+
+def sky(hour: str = "night", snow: bool = False) -> None:
+    """Across the street: towers, some windows lit. At night a moon; at dusk
+    the last of the light low behind the towers; in the rain no moon, the
+    towers soft in it and their windows smeared. Down in the street, out of
+    sight, the laundromat that never closes (pick 8) lights the foot of the
+    tower opposite."""
     rnd = random.Random(21)
     W, H = 1600, 1400
+    top, low, tower, roof, lit = SKY_TONES[hour]
     im = Image.new("RGB", (W, H))
     d = ImageDraw.Draw(im)
     for y in range(H):
-        t = y / H
-        d.line([(0, y), (W, y)], fill=(int(16 + 22 * t), int(26 + 26 * t), int(52 + 34 * t)))
-    d.ellipse([1140, 150, 1250, 260], fill=(226, 232, 238))
-    for bx, bw, bh in ((-20, 330, 820), (330, 270, 1010), (630, 360, 700),
-                       (1010, 250, 900), (1280, 340, 760)):
-        d.rectangle([bx, H - bh, bx + bw, H], fill=(14, 18, 28))
-        d.rectangle([bx, H - bh, bx + bw, H - bh + 14], fill=(24, 30, 44))
+        t = (y / H) ** (1.6 if hour == "dusk" else 1.0)
+        d.line([(0, y), (W, y)], fill=tuple(int(a + (b - a) * t) for a, b in zip(top, low)))
+    if hour == "night":
+        d.ellipse([1140, 150, 1250, 260], fill=(226, 232, 238))
+    if hour == "dusk":
+        d.ellipse([1130, 180, 1166, 216], fill=(236, 226, 208))      # the evening star
+    for bx, bw, bh in TOWERS:
+        d.rectangle([bx, H - bh, bx + bw, H], fill=tower)
+        d.rectangle([bx, H - bh, bx + bw, H - bh + 14], fill=roof)
         for yy in range(H - bh + 46, H - 40, 66):
             for xx in range(bx + 24, bx + bw - 36, 52):
-                if rnd.random() < 0.2:
+                if rnd.random() < lit:
                     d.rectangle([xx, yy, xx + 26, yy + 34], fill=(240, 196, 120))
+    # the laundromat's light up the foot of the street, warm
+    glow = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(glow).ellipse([W * 0.18, H * 0.86, W * 0.82, H * 1.22], fill=150 if hour != "dusk" else 70)
+    glow = glow.filter(ImageFilter.GaussianBlur(70))
+    im = Image.composite(Image.new("RGB", (W, H), (244, 176, 104)), im, glow)
+    if hour.endswith("rain"):
+        # wet air: everything softer, the lit windows run down
+        im = im.filter(ImageFilter.GaussianBlur(5))
+        smear = im.filter(ImageFilter.BoxBlur(1)).resize((W, H // 6)).resize((W, H))
+        im = Image.blend(im, smear, 0.35)
     if snow:
         flakes = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         fd = ImageDraw.Draw(flakes)
@@ -225,8 +261,8 @@ def night(snow: bool = False) -> None:
             fd.ellipse([x - r, y - r, x + r, y + r], fill=(236, 240, 246, 220))
         im = Image.alpha_composite(im.convert("RGBA"), flakes).convert("RGB")
         d = ImageDraw.Draw(im)
-        d.rectangle([0, H - 60, W, H], fill=(200, 208, 220))
-    im.save(OUT / ("night_snow.png" if snow else "night.png"))
+        d.rectangle([0, H - 60, W, H], fill=(200, 208, 220) if hour == "night" else (226, 206, 200))
+    im.save(OUT / f"{hour}{'_snow' if snow else ''}.png")
 
 
 def chalkboard() -> None:
@@ -469,6 +505,69 @@ def dead_screen() -> None:
     im.save(OUT / "dead_screen.png")
 
 
+def jar_label() -> None:
+    """Mum's jar on the bookcase (pick 3): masking tape, her capitals in
+    marker. The same in every video: it is her jar."""
+    W, H = 640, 200
+    im = Image.new("RGB", (W, H), (226, 212, 172))
+    d = ImageDraw.Draw(im)
+    rnd = random.Random(5)
+    for _ in range(40):                       # the tape's crinkle
+        x = rnd.randint(0, W)
+        d.line([(x, 0), (x + rnd.randint(-20, 20), H)], fill=(214, 198, 156), width=2)
+    d.text((W / 2, H / 2 + 4), "DENNIS (AGAIN)", font=font(MARK, 70), fill=(30, 34, 60), anchor="mm")
+    im.save(OUT / "jar_label.png")
+
+
+def loss_post() -> None:
+    """His 2022 post about the loss, printed and framed (pick 4): a forum
+    post drawn generic, an up arrow and its count, no site's name or mark."""
+    W, H = 880, 1200
+    PAPER, INK, QUIET = (246, 246, 242), (28, 30, 36), (120, 124, 132)
+    im = Image.new("RGB", (W, H), PAPER)
+    d = ImageDraw.Draw(im)
+    d.rectangle([40, 40, W - 40, H - 40], outline=(210, 212, 216), width=4)
+    # the vote column: an arrow up, the count, an arrow down
+    d.polygon([(110, 130), (160, 80), (210, 130), (180, 130), (180, 170), (140, 170), (140, 130)],
+              fill=(236, 92, 44))
+    d.text((160, 215), "11k", font=font(COUR, 46), fill=INK, anchor="mm")
+    d.polygon([(110, 270), (160, 320), (210, 270), (180, 270), (180, 230), (140, 230), (140, 270)],
+              outline=QUIET, width=4)
+    d.text((250, 84), "posted by dennis_reads · 2022", font=font(COURR, 28), fill=QUIET)
+    title = ["Turned $41k into $612", "in nine trading days.", "AMA I guess"]
+    for i, ln in enumerate(title):
+        d.text((250, 140 + i * 58), ln, font=font(NARROW, 50), fill=INK)
+    rnd = random.Random(8)
+    for i in range(9):                         # the post itself, too small to read
+        w = rnd.randint(420, 560)
+        d.line([(250, 360 + i * 40), (250 + w, 360 + i * 40)], fill=(170, 172, 180), width=10)
+    # a screenshot of the account in it: one line, all the way down
+    d.rectangle([250, 740, 820, 1040], outline=(190, 192, 198), width=4)
+    pts = [(270 + k * 13, 770 + (k / 41) ** 1.6 * 240 + rnd.uniform(-8, 8)) for k in range(42)]
+    d.line(pts, fill=(204, 60, 52), width=8)
+    d.text((250, 1080), "3.1k comments   ·   share   ·   save", font=font(COURR, 28), fill=QUIET)
+    im.save(OUT / "loss_post.png")
+
+
+def plant_tag() -> None:
+    """The plastic tag in the plant's pot (pick 2), blank: the bot writes the
+    company he was last wrong about on it."""
+    (W, H), paper, _ = LABELS["plant"]
+    im = Image.new("RGB", (W, H), paper)
+    ImageDraw.Draw(im).rectangle([4, 4, W - 5, H - 5], outline=(214, 214, 206), width=6)
+    im.save(OUT / "plant_tag.png")
+
+
+def phone_screen() -> None:
+    """His phone face up on the desk, the screen off (pick 7). When Kev
+    texts, the video lights a notification on it (pipeline/room_dressing.py)."""
+    (W, H), paper, _ = LABELS["phone"]
+    im = Image.new("RGB", (W, H), paper)
+    d = ImageDraw.Draw(im)
+    d.line([(W * 0.62, 0), (W * 0.15, H)], fill=(30, 33, 42), width=60)    # a sheen on the glass
+    im.save(OUT / "phone.png")
+
+
 def blanket() -> None:
     """The blanket on the sofa he sleeps on: a plain wool plaid."""
     W = H = 800
@@ -489,8 +588,10 @@ def main() -> None:
     monitor()
     filing()
     clock()
-    night()
-    night(snow=True)
+    for hour in SKY_TONES:
+        sky(hour)
+    sky("night", snow=True)
+    sky("dusk", snow=True)
     chalkboard()
     floor()
     rug()
@@ -503,6 +604,10 @@ def main() -> None:
     stack_tops()
     dead_screen()
     blanket()
+    jar_label()
+    loss_post()
+    plant_tag()
+    phone_screen()
     print("textures ->", OUT)
 
 

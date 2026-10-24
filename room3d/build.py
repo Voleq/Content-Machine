@@ -24,12 +24,14 @@ What one angle writes (2560x1440 JPEGs, 1440x2560 for the phone's, whose
 names end `-9x16`; the ingest brings them to the kit's delivered size):
 
     <angle><state>.jpg       the room in one light state. Plain angles have
-                             three: at rest, `_dip` and `_dip2` (the screen
-                             and the lamp low, the kit's screen-flicker). The
-                             December twin `<angle>-christmas` has the seven
-                             pairs of bulb string (`_t0/1/2`) and dip that the
-                             kit's twelve frames reach. Lights are light
-                             groups, so a state is a mix, never a render.
+                             four: the night, `_rain`, `_dusk` and
+                             `_dusk_rain`, each its own sky through the window
+                             and its own light from it. The December twin
+                             `<angle>-christmas` has each bulb string lit
+                             (`_t0/1/2`, the kit's lights-twinkle) at night and
+                             at dusk (`_t0_dusk`...), under the snow skies.
+                             Lights are light groups, so a state is a mix,
+                             never a render (`states`).
     <angle>_mask_front.png   what stands between him and the camera, per
                              pixel (movable things nearer than where he
                              stands); the ingest cuts each frame's front
@@ -50,6 +52,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import random
 import sys
 import time
 from pathlib import Path
@@ -177,7 +180,9 @@ PORTRAIT: dict[str, dict] = {
                  "spot": (1.55, 1.48)},
     "read-close": {"cam": ((1.88, -1.06, 1.45), (1.80, 1.43, 0.95), 30),
                   "spot": (1.80, 1.46)},
-    "turn-to-screen": {"cam": ((0.01, -0.85, 1.50), (1.24, 1.35, 0.97), 30),
+    # (turning to the screen, the screen is the point: this camera keeps to
+    # his left with the monitor on the phone's right, 24 Oct 2026, V8)
+    "turn-to-screen": {"cam": ((-0.30, -0.70, 1.52), (1.80, 1.20, 1.00), 28),
                       "spot": (1.25, 1.38)},
     "board": {"cam": ((-1.80, -0.25, 1.47), (-1.80, 2.0, 1.47), 26), "spot": None},
     "board-side": {"cam": ((-2.99, -0.54, 1.55), (-2.26, 1.28, 1.06), 24.6),
@@ -200,39 +205,88 @@ PORTRAIT: dict[str, dict] = {
                   "spot": (-0.35, 1.25)},
 }
 
+# THE PAPER ON THE FLOOR IN FRONT OF HIM (V8, 24 Oct 2026): on the phone's
+# wide angles the floor between him and the camera was bare. Each of these has
+# two piles of its own, either side of him and a step nearer the camera, clear
+# of him and inside the phone's frame, built in the room and rendered in that
+# angle only (`camera`): where each stands on the floor, its turn, and its
+# height, in metres.
+FLOOR_PILES = {
+    "board-wide": (((-1.70, 1.07), 14, 0.40), ((-2.70, 0.90), -9, 0.30)),
+    "doorway": (((-2.35, -0.50), 8, 0.40), ((-2.48, 0.48), -15, 0.28)),
+    "doorway-wide": (((-2.42, 0.05), -6, 0.28), ((-2.23, 0.93), 12, 0.40)),
+    "panel-left": (((-0.88, 1.17), 10, 0.30), ((-0.03, 0.83), -12, 0.40)),
+}
+RUG = (0.15, -0.05, 3.3, 2.2)                   # centre x, y, width, depth
+
 # The kit's December twins: the angles the Christmas set dresses.
 CHRISTMAS = ("desk-front", "desk-wide", "desk-side", "turn-to-screen", "window-wall",
              "doorway", "desk-front-b", "desk-front-low", "read-close", "board-side",
              "board-wide", "window-wide", "window-talk", "doorway-wide", "panel-left")
 
-# The light groups a loop moves. Everything that lights the room is in one.
-GROUPS = ("room", "window", "lamp", "screen", "xmasA", "xmasB", "xmasC")
-REST = {g: 1.0 for g in GROUPS}
-# (The ingest plays none of the dips since 3 Oct 2026: the monitor holds
-# still in the 3D room, `ROOM3D_DROPS_LOOPS` in scripts/ingest_kit.py. They
-# stay rendered, at no cost, being light-group sums.)
-# The kit's screen-flicker has two dips, a deep one and a shallow one, on
-# these of its twelve frames (its `_f04` and `_f08` pictures)...
-DIPS = ({}, dict(screen=0.55, lamp=0.86), dict(screen=0.74, lamp=0.93))
-FLICKER = (0, 0, 0, 1, 0, 0, 0, 2, 1, 2, 0, 0)
-# ...and its lights-twinkle steps the three bulb strings every four frames.
+# THE LIGHT GROUPS. Everything that lights the room is in one, and a picture
+# is a mix of them, so a state is never a second render. The view through the
+# window is one group a sky (V10, 24 Oct 2026): each sky's pane, and the
+# light it throws into the room, are seen and lit on their own, so the night,
+# the dusk and the rain are three mixes of one render. December's skies are
+# the snow twins, and its three bulb strings are a group each. The rest are
+# the room's own (`room`, the world's dark blue and its fills), the desk
+# lamp, the screen's glow and the laundromat's light from the street.
+SKIES = {"plain": {"sky": "night", "sky_rain": "night_rain", "sky_dusk": "dusk",
+                   "sky_dusk_rain": "dusk_rain"},
+         "christmas": {"sky": "night_snow", "sky_dusk": "dusk_snow"}}
+# Each sky's light into the room (the moon's, at night): its colour and power.
+SKY_LIGHT = {"night": ("#9AB4E0", 70), "night_rain": ("#8C9AB4", 48),
+             "dusk": ("#D8A4B4", 160), "dusk_rain": ("#A89CB4", 90),
+             "night_snow": ("#A8BCE4", 80), "dusk_snow": ("#D4ACC0", 165)}
+# The room at each hour, in each weather: which sky, and what else moves. The
+# laundromat over the road (pick 8) is a glow at night, little against the
+# last of the daylight, softer in the rain; a weight may be a tint (r, g, b).
+NIGHT = dict(room=1.0, lamp=1.0, screen=1.0, laundromat=1.0)
+LOOKS = {"": dict(sky=1.0),
+         "_rain": dict(sky_rain=1.0, laundromat=0.75),
+         "_dusk": dict(sky_dusk=1.0, laundromat=0.4, room=(1.10, 1.02, 0.96)),
+         "_dusk_rain": dict(sky_dusk_rain=1.0, laundromat=0.55, room=(1.04, 1.0, 0.99))}
+# December's lights-twinkle steps the three bulb strings every four frames.
 TWINKLE = (dict(xmasA=1.0, xmasB=0.18, xmasC=0.18),
            dict(xmasA=0.18, xmasB=1.0, xmasC=0.18),
            dict(xmasA=0.18, xmasB=0.18, xmasC=1.0))
+# (The kit's screen-flicker dips are not rendered since 24 Oct 2026: the
+# ingest has played none since the monitor was made to hold still, 3 Oct.)
 
 
 def states(season: str) -> dict[str, dict]:
-    """Every picture a loop of this season shows, by tag: `""`, `_dip`,
-    `_dip2` plain; `_t<n>` plus a dip in December, only the pairs the kit's
-    twelve frames actually reach."""
-    dip_tag = ("", "_dip", "_dip2")
+    """Every picture a loop of this season shows, by tag, as the weight of
+    each light group (a group not named is off): plain `""` (night), `_rain`,
+    `_dusk` and `_dusk_rain`; December `_t<n>` and `_t<n>_dusk`, a bulb
+    string lit at each hour (snow is drawn on the glass at install)."""
     if season == "plain":
-        return {dip_tag[k]: dict(REST, **DIPS[k]) for k in range(3)}
-    out = {}
-    for i, k in enumerate(FLICKER):
-        t = (i // 4) % 3
-        out[f"_t{t}{dip_tag[k]}"] = dict(REST, **TWINKLE[t], **DIPS[k])
-    return out
+        return {tag: dict(NIGHT, **look) for tag, look in LOOKS.items()}
+    return {f"_t{t}{hour}": dict(NIGHT, **LOOKS[hour], **bulbs)
+            for t, bulbs in enumerate(TWINKLE) for hour in ("", "_dusk")}
+
+
+def apply_state(season: str, tag: str = "") -> None:
+    """Light the built room as one of its states for a render that is NOT a
+    mix of light groups (perform's: him, lit by the room). A light is scaled
+    and tinted by its group's weight, and a lit thing whose group the state
+    leaves out goes dark. Without it every sky would light him at once."""
+    weights = states(season)[tag or next(iter(states(season)))]
+    for o in bpy.context.scene.objects:
+        g = o.lightgroup
+        if not g:
+            continue
+        w = weights.get(g, 0.0)
+        tint = np.broadcast_to(np.asarray(w, dtype=float), (3,))
+        k = float(tint.mean())
+        if o.type == "LIGHT":
+            o.data["energy0"] = o.data.get("energy0", o.data.energy)
+            o.data["colour0"] = list(o.data.get("colour0", o.data.color))
+            o.data.energy = o.data["energy0"] * k
+            if k > 0:
+                o.data.color = [c * t / k for c, t in zip(o.data["colour0"], tint)]
+        else:
+            o.hide_render = k == 0
 
 
 # ----------------------------------------------------------------- materials
@@ -295,6 +349,30 @@ def screen_mat() -> bpy.types.Material:
     nt.links.new(path.outputs["Is Camera Ray"], em.inputs["Strength"])
     out = nt.nodes.new("ShaderNodeOutputMaterial")
     nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
+    return m
+
+
+def sky_mat(picture: str) -> bpy.types.Material:
+    """One sky through the window: its picture as light, and every ray let
+    through, so the panes stacked behind it are seen too, each in its own
+    light group (`SKIES`). Lit by itself, as the night outside always was."""
+    m = bpy.data.materials.new(f"sky-{picture}")
+    m.use_nodes = True
+    nt = m.node_tree
+    for nd in list(nt.nodes):
+        nt.nodes.remove(nd)
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = bpy.data.images.load(str(TEX / f"{picture}.png"))
+    tex.extension = "CLIP"
+    em = nt.nodes.new("ShaderNodeEmission")
+    em.inputs["Strength"].default_value = 1.3
+    nt.links.new(tex.outputs["Color"], em.inputs["Color"])
+    clear = nt.nodes.new("ShaderNodeBsdfTransparent")
+    add = nt.nodes.new("ShaderNodeAddShader")
+    nt.links.new(em.outputs["Emission"], add.inputs[0])
+    nt.links.new(clear.outputs["BSDF"], add.inputs[1])
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    nt.links.new(add.outputs["Shader"], out.inputs["Surface"])
     return m
 
 
@@ -520,6 +598,136 @@ def dead_screen(name: str, loc, rot: float, scale: float = 1.9) -> None:
     face.location += n * 0.04
 
 
+def band(name: str, centre, r: float, z0: float, z1: float, facing: float, span: float,
+         m) -> bpy.types.Object:
+    """A label round a jar: a strip of its side, `span` degrees about the
+    side that faces `facing` (degrees, x towards y), its picture the right
+    way round from outside."""
+    me = bpy.data.meshes.new(name)
+    bm = bmesh.new()
+    uv = bm.loops.layers.uv.new()
+    n = 16
+    cols = []
+    for i in range(n + 1):
+        a = math.radians(facing - span / 2 + span * i / n)
+        x, y = centre[0] + r * math.cos(a), centre[1] + r * math.sin(a)
+        cols.append((bm.verts.new((x, y, z0)), bm.verts.new((x, y, z1)), i / n))
+    for (b0, t0, u0), (b1, t1, u1) in zip(cols, cols[1:]):
+        f = bm.faces.new((b0, b1, t1, t0))
+        for loop, st in zip(f.loops, ((u0, 0), (u1, 0), (u1, 1), (u0, 1))):
+            loop[uv].uv = st
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(o)
+    me.materials.append(m)
+    return own(o)
+
+
+def jar(name: str, at, facing: float) -> None:
+    """Mum's jar (pick 3): glass, a red lid, her masking tape reading DENNIS
+    (AGAIN) turned to the room, and a few coins in the bottom."""
+    x, y, z = at
+    r, h = 0.075, 0.20
+    glass = mat("jarglass", "#DCEAE6", 0.04)
+    glass.node_tree.nodes["Principled BSDF"].inputs["Transmission Weight"].default_value = 1.0
+    bpy.ops.mesh.primitive_cylinder_add(radius=r, depth=h, location=(x, y, z + h / 2), vertices=40,
+                                        end_fill_type="NOTHING")
+    o = bpy.context.object
+    o.name = f"{name}-glass"
+    o.data.materials.append(glass)
+    o.modifiers.new("wall", "SOLIDIFY").thickness = 0.004
+    own(o)
+    cyl(f"{name}-base", r - 0.002, 0.006, (x, y, z + 0.003), glass, verts=40)
+    cyl(f"{name}-lid", r + 0.005, 0.032, (x, y, z + h + 0.016), mat("jarlid", "#B23A2E", 0.5), verts=40)
+    coin = mat("coin", "#C8A048", 0.35, metal=0.8)
+    rnd = random.Random(3)
+    for k in range(8):
+        a, d = rnd.uniform(0, math.tau), rnd.uniform(0, r - 0.022)
+        cyl(f"{name}-coin{k}", 0.0115, 0.0024, (x + d * math.cos(a), y + d * math.sin(a), z + 0.008 + 0.0025 * (k % 3)),
+            coin, rot=(rnd.uniform(-0.25, 0.25), rnd.uniform(-0.25, 0.25), 0), verts=16)
+    span = 110
+    tall = 2 * math.pi * (r + 0.003) * span / 360 / 3.2      # the tape's picture is 3.2 to 1
+    band(f"{name}-label", (x, y), r + 0.003, z + 0.07, z + 0.07 + tall, facing, span,
+         mat("jarlabel", "#E2D2A4", 0.8, image="jar_label.png"))
+
+
+def plant_tag(at, facing: float) -> None:
+    """A plant's name tag (pick 2) on its stake in the soil at `at`, its face
+    turned `facing` degrees from the room's -y, leaning back a little. The
+    bot writes the name (`plant`)."""
+    x, y, z = at
+    a = math.radians(facing)
+    out = Vector((math.sin(a), -math.cos(a), 0))
+    box("plant-stake", (0.014, 0.004, 0.17), (x, y, z + 0.085), mat("stake", "#E8E8E2", 0.5), rot=(0, 0, a))
+    lettered(plane("plant-tag", (0.15, 0.083), Vector((x, y, z + 0.205)) + out * 0.006,
+                   (math.radians(74), 0, a), mat("planttag", "#F2F2EC", 0.5, image="plant_tag.png")), "plant")
+
+
+def blanket(name: str, front: float, y0: float, y1: float, seat: float, m) -> bpy.types.Object:
+    """The blanket thrown back off the sofa: crumpled on the seat from the
+    back cushion to the front edge, `y0` to `y1` along it, heaped where it was
+    pushed off, then down the front with its hem uneven."""
+    rnd = random.Random(6)
+    waves = [(rnd.uniform(4, 11), rnd.uniform(3, 9), rnd.uniform(0, 6.3), rnd.uniform(0.006, 0.016))
+             for _ in range(5)]
+    lie, drop = 0.50, 0.30
+    nu, ns = 36, 28
+    me = bpy.data.meshes.new(name)
+    bm = bmesh.new()
+    uv = bm.loops.layers.uv.new()
+    grid = []
+    for i in range(nu + 1):
+        u = i / nu
+        row = []
+        for j in range(ns + 1):
+            s = (lie + drop) * j / ns
+            y = y0 + (y1 - y0) * u
+            if s <= lie:
+                heap = 0.07 * math.exp(-((u - 0.35) ** 2 / 0.025 + (s - 0.22) ** 2 / 0.02))
+                crumple = abs(sum(a * math.sin(fu * u * 6 + fs * s * 6 + ph) for fu, fs, ph, a in waves))
+                p = (front - lie + s, y, seat + 0.025 + heap + crumple)
+            else:
+                d = (s - lie) * (0.78 + 0.22 * math.sin(u * 7 + 0.5))
+                fold = 0.025 * math.sin(u * 19 + 1.3) * min(d / 0.08, 1.0)
+                p = (front + 0.05 + fold, y, seat + 0.02 - d)
+            row.append(bm.verts.new(p))
+        grid.append(row)
+    for i in range(nu):
+        for j in range(ns):
+            f = bm.faces.new((grid[i][j], grid[i][j + 1], grid[i + 1][j + 1], grid[i + 1][j]))
+            for loop, (a, b) in zip(f.loops, ((i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j))):
+                loop[uv].uv = (a / nu, b / ns)
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(o)
+    me.materials.append(m)
+    o.modifiers.new("cloth", "SOLIDIFY").thickness = 0.01
+    return own(o)
+
+
+def floor_pile(name: str, at, turn: float, height: float, seed: int) -> None:
+    """Filings on the floor where he left them: reams squared up and knocked
+    askew to `height`, and a sheet that slid off."""
+    rnd = random.Random(seed)
+    x, y = at
+    rx, ry, rw, rd = RUG
+    ground = 0.0085 if abs(x - rx) < rw / 2 and abs(y - ry) < rd / 2 else 0.0
+    z = ground
+    tops = ("form10q.png", "proxy.png", "sheet.png")
+    k = 0
+    while height - z > 0.03:
+        h = min(rnd.uniform(0.07, 0.13), height - z)
+        paper_stack(f"{name}-{k}", (x + rnd.uniform(-0.03, 0.03), y + rnd.uniform(-0.03, 0.03), z), h,
+                    tops[k % 3], turn=turn + rnd.uniform(-14, 14), tabs=rnd.choice((0, 2, 3)))
+        z += h
+        k += 1
+    a = math.radians(turn + rnd.uniform(30, 60))
+    plane(f"{name}-loose", (0.21, 0.297), (x + 0.26 * math.cos(a), y + 0.26 * math.sin(a), ground + 0.0015),
+          (0, 0, a + 0.4), mat("sheet", "#D9DDE0", image="sheet.png"))
+
+
 def wallpaper(name: str, base: str, stripe: str, period: float = 0.22) -> bpy.types.Material:
     """A papered wall, not bare plaster: broad stripes a shade apart, laid by
     where they are in the room (x + y), so every wall's run on round the
@@ -677,10 +885,15 @@ def build_room(season: str) -> None:
             ("wh", (x1 - x0, 0.09, 0.045), ((x0 + x1) / 2, BACK, (z0 + z1) / 2 + 0.12))):
         box(nm, sz, lc, FRAME)
     box("sill", (x1 - x0 + 0.24, 0.24, 0.05), ((x0 + x1) / 2, BACK - 0.09, z0 - 0.025), FRAME)
-    night = "night_snow.png" if xmas else "night.png"
-    plane("outside", (3.4, 2.9), ((x0 + x1) / 2, BACK + 1.2, (z0 + z1) / 2 + 0.15),
-          (math.radians(90), 0, 0),
-          mat(f"outside-{season}", "#203050", image=night, emit="x", strength=1.3), group="window")
+    # The view: one see-through pane a sky, stacked a centimetre apart in
+    # front of a black backing, each lit and seen in its own light group,
+    # so a state shows one of them (`states`). The mask pass sees the first
+    # pane as "the outside", where the weather is drawn.
+    for k, (group, picture) in enumerate(SKIES[season].items()):
+        plane(f"outside-{group}", (3.4, 2.9), ((x0 + x1) / 2, BACK + 1.2 + 0.01 * k, (z0 + z1) / 2 + 0.15),
+              (math.radians(90), 0, 0), sky_mat(picture), group=group)
+    plane("outside-back", (3.6, 3.1), ((x0 + x1) / 2, BACK + 1.3, (z0 + z1) / 2 + 0.15),
+          (math.radians(90), 0, 0), mat("outside-back", "#000000", 1.0))
     CURTAIN = mat("curtain", "#3E4E78", 0.95)
     pleats("curtain-l", x0 - 0.42, x0 + 0.06, BACK - 0.10, 0.30, z1 + 0.20, 5, 0.07, CURTAIN)
     pleats("curtain-r", x1 - 0.06, x1 + 0.42, BACK - 0.10, 0.30, z1 + 0.20, 5, 0.07, CURTAIN)
@@ -808,6 +1021,10 @@ def build_room(season: str) -> None:
                    mat("filing", "#E6E4DC", image="filing.png")), "report")
     box("phone", (0.075, 0.15, 0.009), (dx - 0.30, dy - 0.20, dz + 0.005), mat("phone", "#15181E", 0.3),
         rot=(0, 0, math.radians(-20)))
+    # its glass, face up: dark, and lit by the bot with Kev's message in the
+    # videos his tip runs in (pick 7)
+    lettered(plane("phonescreen", (0.066, 0.132), (dx - 0.30, dy - 0.20, dz + 0.0101), (0, 0, math.radians(-20)),
+                   mat("phonescreen", "#101218", 0.65, image="phone.png")), "phone")
     # the night so far: a second mug, two cans
     mug("mug-desk2", (dx - 0.36, dy + 0.30, dz), "#3E5C8A", turn=30)
     CAN = mat("can", "#B4BCC6", 0.3, metal=0.8)
@@ -915,6 +1132,12 @@ def build_room(season: str) -> None:
             kenney("books", (RIGHT - 0.22, bmn.y + 0.25 + 0.42, bmn.z + z + 0.04), rot=-84, scale=2.0)
             continue
         for j in range(2):
+            if k == 3 and j == 1:
+                # Mum's jar (pick 3), where the books were: the one shelf at
+                # eye height, at the window end, where the shelf's upright
+                # does not hide it from the desk's wide and the window's
+                jar("jar", (RIGHT - 0.35, bmn.y + 0.63, bmn.z + z + 0.04), facing=-149)
+                continue
             kenney("books", (RIGHT - 0.22, bmn.y + 0.25 + j * 0.42, bmn.z + z + 0.04), rot=-90 + j * 6, scale=2.0)
     # on top: a plant that gets the lamp, and the books that did not fit
     kenney("pottedPlant", (RIGHT - 0.24, bmn.y + 0.24, bmx.z), rot=20, scale=1.0,
@@ -930,13 +1153,16 @@ def build_room(season: str) -> None:
         own(bpy.context.object)
 
     thing("rug", fixed=True)      # the floor's: he stands on it, never behind it
-    rx, ry, rw, rd = 0.15, -0.05, 3.3, 2.2
+    rx, ry, rw, rd = RUG
     box("rugbase", (rw, rd, 0.008), (rx, ry, 0.004), mat("rugbase", "#2C3450", 0.95))
     plane("rug", (rw, rd), (rx, ry, 0.0085), (0, 0, 0), mat("rug", "#FFFFFF", 0.95, image="rug.png"))
 
     thing("plant")
     if not xmas:
         kenney("pottedPlant", (-2.95, 1.70, 0), rot=30, scale=2.4, recolor={"plant": "#3F6E4E"})
+        # its name tag (pick 2): renamed by the bot after the latest company
+        # he was wrong about. In December the tree's pot has it.
+        plant_tag((-2.80, 1.56, 0.52), facing=27)
 
     thing("floorlamp")
     fmn, fmx = kenney("lampRoundFloor", (2.88, -1.25, 0), scale=2.2)
@@ -948,6 +1174,14 @@ def build_room(season: str) -> None:
 
     # No chair: it is a standing desk, and every place a chair could stand
     # near it is a place he stands in some angle.
+
+    # ---- the paper on the floor in front of him, one angle's at a time
+    for angle, piles in FLOOR_PILES.items():
+        thing(f"floorpile-{angle}")
+        for k, (at, turn, height) in enumerate(piles):
+            floor_pile(f"floorpile-{angle}{k}", at, turn, height, seed=11 * len(angle) + k)
+        for o in THINGS[f"floorpile-{angle}"]["objects"]:
+            o.hide_render = True
 
     # ---- the door, closed, in the left wall
     thing("door", fixed=True)
@@ -967,9 +1201,15 @@ def build_room(season: str) -> None:
     kenney("coatRackStanding", (LEFT + 0.32, dy0 - 0.55, 0), scale=2.2)
 
     thing("certificate", fixed=True)
-    box("certframe", (0.03, 0.78, 0.58), (LEFT + 0.015, 0.95, 1.62), mat("certframe", "#2A2018", 0.6))
-    plane("cert", (0.70, 0.50), (LEFT + 0.032, 0.95, 1.62), (math.radians(90), 0, math.radians(90)),
+    box("certframe", (0.03, 0.78, 0.58), (LEFT + 0.015, 1.06, 1.62), mat("certframe", "#2A2018", 0.6))
+    plane("cert", (0.70, 0.50), (LEFT + 0.032, 1.06, 1.62), (math.radians(90), 0, math.radians(90)),
           mat("cert", "#E2DCC4", image="certificate.png"))
+    # his 2022 post about the loss, printed and framed beside the margin call
+    # (pick 4): a forum post drawn generic, an upvote arrow and 11k
+    thing("losspost", fixed=True)
+    box("lpframe", (0.03, 0.32, 0.42), (LEFT + 0.015, 0.48, 1.56), mat("certframe", "#2A2018", 0.6))
+    plane("lp", (0.28, 0.38), (LEFT + 0.032, 0.48, 1.56), (math.radians(90), 0, math.radians(90)),
+          mat("lp", "#F2F0EA", image="loss_post.png"))
     # the margin call that ended the trading years, framed like a diploma
     thing("margincall", fixed=True)
     box("mcframe", (0.03, 0.46, 0.60), (LEFT + 0.015, 0.06, 1.56), mat("certframe", "#2A2018", 0.6))
@@ -996,10 +1236,15 @@ def build_room(season: str) -> None:
     omn, omx = kenney("loungeSofa", (LEFT + 0.48, -2.70, 0), rot=90, scale=1.8,
                       recolor={"carpet": "#5A5048", "carpetDarker": "#4A4038", "wood": "#4A3426"})
     seat = omn.z + (omx.z - omn.z) * 0.48
-    kenney("pillow", ((omn.x + omx.x) / 2 + 0.05, omn.y + 0.30, seat), rot=80, scale=1.6,
-           recolor={"carpetWhite": "#C9C4B8"})
-    box("blanket", (0.62, 0.95, 0.035), ((omn.x + omx.x) / 2 + 0.06, (omn.y + omx.y) / 2 + 0.25, seat + 0.02),
-        mat("blanket", "#46546E", 0.95, image="blanket.png"), rot=(0, math.radians(4), math.radians(9)))
+    # where he sleeps (pick 6): a pillow off a bed at the arm, and the
+    # blanket thrown back, half of it down the front to the floor
+    pillow = box("bedpillow", (0.46, 0.32, 0.12), ((omn.x + omx.x) / 2 + 0.04, omn.y + 0.40, seat + 0.07),
+                 mat("bedpillow", "#D6DAE2", 0.9), rot=(math.radians(-6), 0, math.radians(7)))
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    bev = pillow.modifiers.new("soft", "BEVEL")
+    bev.width, bev.segments, bev.affect = 0.045, 5, "EDGES"
+    blanket("blanket", omx.x - 0.02, omn.y + 0.62, omx.y - 0.22, seat, mat("blanket", "#46546E", 0.95,
+                                                                           image="blanket.png"))
 
     # ---- December: a tree in the corner, lights on the window and the board,
     # a wreath on the door. Three strings of bulbs, each its own light group,
@@ -1010,6 +1255,7 @@ def build_room(season: str) -> None:
         tx, ty = -2.85, 1.55
         cyl("trunk", 0.05, 0.25, (tx, ty, 0.125), mat("trunk", "#4A3426"))
         cyl("pot", 0.17, 0.26, (tx, ty, 0.13), mat("pot", "#8A2E2A", 0.6))
+        plant_tag((tx + 0.07, ty - 0.12, 0.25), facing=27)
         for k, (r, z, hgt) in enumerate(((0.55, 0.55, 0.70), (0.44, 0.95, 0.62), (0.32, 1.32, 0.52), (0.19, 1.62, 0.40))):
             cone(f"tier{k}", r, hgt, (tx, ty, z), TREE)
         star = mat("star", "#F0D060", emit="#F0D060", strength=6.0)
@@ -1076,8 +1322,15 @@ def build_room(season: str) -> None:
     glow = light("screenglow", "AREA", scr.location + n * 0.12, "#7FD4E8", 70, "screen",
                  size=(0.6, 0.36))
     glow.rotation_euler = n.to_track_quat("-Z", "Z").to_euler()
-    light("moon", "AREA", ((x0 + x1) / 2, BACK + 0.35, 2.05), "#9AB4E0", 70, "window",
-          rot=(math.radians(-68), 0, 0), size=(1.5, 1.2))
+    # what each sky throws in through the glass: the moon's light at night
+    for group, picture in SKIES[season].items():
+        colour, power = SKY_LIGHT[picture]
+        light(f"skylight-{group}", "AREA", ((x0 + x1) / 2, BACK + 0.35, 2.05), colour, power, group,
+              rot=(math.radians(-68), 0, 0), size=(1.5, 1.2))
+    # the laundromat across the road that never closes (pick 8): warm, from
+    # the street below, up through the window on to the curtains and ceiling
+    light("laundromat", "AREA", ((x0 + x1) / 2, BACK + 0.7, 0.6), "#F2B06A", 400, "laundromat",
+          rot=(math.radians(-132), 0, 0), size=(1.6, 0.5))
     light("floorbulb", "POINT", floorlamp_at, "#F0C890", 45, "room")
     light("fill", "AREA", (0.0, -2.8, 2.65), "#8DA0C8", 520, "room",
           rot=(math.radians(58), 0, 0), size=(5.0, 2.0))
@@ -1128,6 +1381,10 @@ def camera(name: str, aspect: str = "16x9") -> bpy.types.Object:
         from mathutils import Quaternion
         rot = rot @ Quaternion((0, 0, 1), math.radians(roll))
     cam.rotation_euler = rot.to_euler()
+    # an angle's own floor paper, and nobody else's
+    for angle in FLOOR_PILES:
+        for o in THINGS.get(f"floorpile-{angle}", {}).get("objects", ()):
+            o.hide_render = not (aspect == "9x16" and angle == name)
     bpy.context.view_layer.update()
     return cam
 
@@ -1235,6 +1492,15 @@ def his_depth(name: str, aspect: str = "16x9") -> float | None:
 
 
 # ------------------------------------------------------------------ rendering
+def light_groups() -> list[str]:
+    """The light groups the built room lights with, the world's among them."""
+    scn = bpy.context.scene
+    got = {o.lightgroup for o in scn.objects if o.lightgroup}
+    if scn.world is not None and scn.world.lightgroup:
+        got.add(scn.world.lightgroup)
+    return sorted(got)
+
+
 def setup_render(size: tuple[int, int], samples: int) -> None:
     scn = bpy.context.scene
     r = scn.render
@@ -1257,7 +1523,7 @@ def setup_render(size: tuple[int, int], samples: int) -> None:
     scn.view_settings.view_transform = "Standard"
     scn.view_settings.look = "None"
     vl = bpy.context.view_layer
-    for g in GROUPS:
+    for g in light_groups():
         if g not in vl.lightgroups:
             vl.lightgroups.add(name=g)
     vl.cycles.denoising_store_passes = True
@@ -1299,7 +1565,7 @@ def compositor(out: Path, stem: str) -> None:
     fo.file_name = stem
     fo.format.file_format = "OPEN_EXR_MULTILAYER"
     fo.format.color_depth = "32"
-    for g in GROUPS:
+    for g in light_groups():
         dn = ng.nodes.new("CompositorNodeDenoise")
         ng.links.new(rl.outputs[f"Combined_{g}"], dn.inputs["Image"])
         ng.links.new(rl.outputs["Denoising Albedo"], dn.inputs["Albedo"])
@@ -1360,7 +1626,7 @@ def render_masks(out: Path, stem: str, him: float | None) -> Path:
     for t in THINGS.values():
         for o in t["objects"]:
             o.color = colour.get(o.name, (0, 0, 0, 1))
-            o["win"] = 1.0 if o.name == "outside" else 0.0
+            o["win"] = 1.0 if o.name.startswith("outside") else 0.0
             o["movable"] = 0.0 if t["fixed"] else 1.0
     flat = bpy.data.materials.get("_mask") or bpy.data.materials.new("_mask")
     flat.use_nodes = True
@@ -1452,8 +1718,9 @@ def oetf(c: np.ndarray) -> np.ndarray:
 
 
 def compose(planes: dict, weights: dict) -> np.ndarray:
-    """One frame: the light groups at these weights, the lines over them, 8-bit RGB."""
-    rgb = sum(planes[g][..., :3] * weights.get(g, 1.0) for g in GROUPS if g in planes)
+    """One frame: the light groups at these weights (a number, or a tint as
+    (r, g, b)), a group not named left out, the lines over them, 8-bit RGB."""
+    rgb = sum(planes[g][..., :3] * np.asarray(w, dtype=np.float32) for g, w in weights.items() if g in planes)
     lines = planes.get("lines")
     if lines is not None:
         la = lines[..., 3]

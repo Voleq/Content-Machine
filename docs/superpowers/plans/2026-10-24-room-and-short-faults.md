@@ -40,9 +40,11 @@ the thread, 10-18 21:35).
    `FILL_MAX` 1.5, centred; skipped under 1.08. Tests: the NET INCOME card
    grows and stays inside the band; a room or a focus shot is untouched.
 3. **Room build** (`room3d/build.py`, `textures.py`):
-   - light groups `sky` (the view, was `window`) and `laundromat` (pick 8:
-     warm light up from the street under the window); the mask pass writes
-     the view's UV (`skyuv`) so any sky is laid on in perspective;
+   - one light group a sky (`sky`, `sky_rain`, `sky_dusk`, `sky_dusk_rain`;
+     December's snow twins), each a see-through pane in front of a black
+     backing with its own light into the room, and `laundromat` (pick 8:
+     warm light up from the street under the window); a state is a mix of
+     groups, a weight may be a tint; `apply_state` lights perform's room;
    - states: plain `""`, `_rain`, `_dusk`, `_dusk_rain`; December `_t0..2`
      and `_t0..2_dusk`; the unused dips go;
    - skies: night (with the laundromat glow), dusk, rain, and the snow twins;
