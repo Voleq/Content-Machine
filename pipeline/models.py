@@ -929,6 +929,24 @@ RATE_FIELDS = frozenset({
     "sbc_pct_rev", "roic", "roe", "shares_yoy",
 })
 
+# WHAT A CAPITAL IQ PULL RETURNS IN MILLIONS: every amount of money and every
+# share count. The template says so in the Snapshot value column's title,
+# `Value (Capital IQ) MM`, and the loader brings these to whole units when it
+# does, so a real workbook reads like the shipped fixture everything else is
+# built and tested on. Before, a quarter's revenue of 150.0 (million) printed
+# "$150" on the cards and the prompts (scan, 24 Oct 2026). Per-share figures,
+# rates, multiples and prices are not in millions and are never scaled.
+MILLIONS_FIELDS = frozenset({
+    "market_cap", "enterprise_value", "shares_out", "shares_dill_out",
+    "cash_st", "total_debt_now", "net_debt_now", "goodwill_intang",
+    "revenue", "gross_profit", "operating_income", "ebitda", "net_income",
+    "operating_cf", "capex", "fcf", "sbc", "dividends_paid", "buybacks",
+    "cash", "total_debt", "net_debt", "total_equity", "total_assets",
+    "invested_capital", "diluted_shares", "revenue_consensus",
+})
+# The Dashboard rows that repeat one of those.
+MILLIONS_DASHBOARD = frozenset({"Market cap", "Revenue (LTM)", "FCF (LTM)"})
+
 # Fields the workbook holds as a FRACTION and a writer would otherwise read as a
 # percentage. `Snapshot!D50`/`D51` are 0-1, the same convention `D49`
 # short_interest uses, and `insider_own = 0.08` in a prompt is a line that comes

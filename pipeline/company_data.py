@@ -53,6 +53,8 @@ from pipeline.models import (
     CONSENSUS_FIELDS,
     DATA_REQUIRED,
     HISTORY_FIELDS,
+    MILLIONS_DASHBOARD,
+    MILLIONS_FIELDS,
     PERIOD_LABEL_FIELDS,
     QUARTER_FIELDS,
     CompanyData,
@@ -592,6 +594,44 @@ def _read_snapshot(ws) -> dict[str, object]:
     return pairs
 
 
+def _value_scale(ws) -> float:
+    """1e6 when the Snapshot's value column says its figures are in
+    millions (`Value (Capital IQ) MM`), else 1."""
+    import re
+
+    rows = _rows(ws)
+    hr = _header_row(rows, "field_key")
+    if hr is None:
+        return 1.0
+    col = _col_of(rows[hr], "value (auto)", "value")
+    title = _cell_text(rows[hr][col]) if col is not None else ""
+    return 1e6 if re.search(r"\bMM\b|\bmillions?\b", title, re.I) else 1.0
+
+
+def _to_units(scale: float, values: dict, history: dict, quarters: dict,
+              dashboard: dict) -> None:
+    """Bring a workbook written in millions to whole units, in place."""
+    def up(v):
+        return v * scale if isinstance(v, (int, float)) and not isinstance(
+            v, bool) else v
+
+    for f in MILLIONS_FIELDS:
+        if f in values:
+            values[f] = up(values[f])
+        for table in (history, quarters):
+            if table.get(f):
+                table[f] = [up(v) for v in table[f]]
+    for label in MILLIONS_DASHBOARD:
+        if label in dashboard:
+            dashboard[label] = up(dashboard[label])
+    # CIQAVG of IQ_VOLUME: whether it comes back in shares or millions of
+    # shares is not declared anywhere, so only a figure too small to be a
+    # day's shares (under ten thousand) is taken for millions.
+    vol = values.get("avg_volume_3m")
+    if isinstance(vol, (int, float)) and 0 < vol < 1e4:
+        values["avg_volume_3m"] = vol * scale
+
+
 def _read_periods(ws, allowed: list[str], what: str
                   ) -> tuple[list[str], dict[str, list[float | None]]]:
     """A `field_key | Label | <periods…> | <computed tail>` sheet.
@@ -1041,11 +1081,13 @@ def load_company_data(workspace: Path) -> CompanyData:
     news: list[dict] = []
     quarter_labels: list[str] = []
     quarters: dict[str, list[float | None]] = {}
+    scale = 1.0
     if src.suffix == ".xlsx":
         wb = load_workbook(src, data_only=True)
         names = set(wb.sheetnames)
         snap_ws = wb[SNAPSHOT_SHEET] if SNAPSHOT_SHEET in names else wb.worksheets[0]
         pairs = _read_snapshot(snap_ws)
+        scale = _value_scale(snap_ws)
         if HISTORY_SHEET in names:
             history_years, history = _read_history(wb[HISTORY_SHEET])
         else:
@@ -1083,6 +1125,8 @@ def load_company_data(workspace: Path) -> CompanyData:
         log.warning("export has unknown field %r — ignored", k)
 
     values = {field: _coerce(field, pairs.get(field)) for field in ALL_DATA_FIELDS}
+    if scale != 1.0:
+        _to_units(scale, values, history, quarters, dashboard)
     return CompanyData(values=values, history_years=history_years,
                        history=history, quarter_labels=quarter_labels,
                        quarters=quarters, dashboard=dashboard,

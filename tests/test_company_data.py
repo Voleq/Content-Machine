@@ -453,3 +453,49 @@ def test_the_uploads_age_reads_a_date_as_the_freshness_gate_does():
     assert _as_of_age_days("2026-09-03", today) == 7
     assert _as_of_age_days("Sep 3, 2026", today) == 7
     assert _as_of_age_days("not a date", today) is None
+
+
+def _in_millions(path):
+    """The fixture rewritten the way a Capital IQ pull fills the template:
+    the value column titled `Value (Capital IQ) MM`, every amount of money
+    and every share count in millions."""
+    from openpyxl import load_workbook
+
+    from pipeline.models import MILLIONS_DASHBOARD, MILLIONS_FIELDS
+
+    wb = load_workbook(path)
+    for name in ("Snapshot", "History", "Quarters", "Dashboard"):
+        for row in wb[name].iter_rows():
+            key = next((c.value for c in row[:2] if c.value in MILLIONS_FIELDS
+                        or (name == "Dashboard" and c.value in MILLIONS_DASHBOARD)),
+                       None)
+            for c in row:
+                if c.value == "Value (auto)":
+                    c.value = "Value (Capital IQ) MM"
+                elif key and isinstance(c.value, (int, float)):
+                    c.value = c.value / 1e6
+    wb.save(path)
+
+
+def test_a_workbook_in_millions_reads_in_whole_units(workspace):
+    """The real template pulls Capital IQ in millions (its value column says
+    MM). A quarter's revenue of 150.0 printed "$150" on the cards and in the
+    prompts; it is read as 150 million, like the fixture."""
+    from pipeline.short_data import fmt
+
+    whole = load_company_data(workspace)
+    _in_millions(workspace / "dennis_data.xlsx")
+    data = load_company_data(workspace)
+
+    assert data.history_row("revenue") == pytest.approx(whole.history_row("revenue"))
+    assert data.get("market_cap") == pytest.approx(whole.get("market_cap"))
+    assert data.get("shares_out") == pytest.approx(whole.get("shares_out"))
+    assert data.get("price") == whole.get("price")
+    assert data.history_row("eps") == whole.history_row("eps")
+    assert data.history_row("gross_margin") == whole.history_row("gross_margin")
+    assert data.quarters["revenue"] == pytest.approx(whole.quarters["revenue"])
+    assert data.dashboard_get("Market cap") == pytest.approx(
+        whole.dashboard_get("Market cap"))
+    card = fmt("revenue", data.quarters["revenue"][-1])
+    assert card == fmt("revenue", whole.quarters["revenue"][-1])
+    assert card.startswith("$") and card.endswith("M")
