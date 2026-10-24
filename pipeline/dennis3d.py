@@ -35,7 +35,7 @@ REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
-LOOK_VERSION = "47-64-12"     # 12: messier hair, socks and sliders (room picks 9, 10; 23 Oct 2026)
+LOOK_VERSION = "47-64-13"     # 13: lit for dusk and rain, the 10-K pile (V10, V12; 24 Oct 2026)
 
 
 @functools.cache
@@ -53,6 +53,10 @@ def _lines_digest() -> str:
 # twenty-five hours before anyone noticed.
 SHOT_BASE_TIMEOUT_S = 600.0
 FRAME_TIMEOUT_S = 120.0
+# The long side the 3D room is rendered at (room3d/build.py FULLS): the 10-K
+# pile is drawn no bigger, so it is as sharp as the room it is laid on and
+# scaled with it.
+ROOM_LONG_SIDE = 2560
 # The drawing rate a job without one is rendered at: Settings.dennis_3d_fps's
 # default, and what perform.py assumes for a hand-made job.
 DEFAULT_FPS = 30
@@ -132,6 +136,17 @@ def angle_of(plate) -> tuple[str, str, str] | None:
     return stem, season, aspect
 
 
+def light_of(plate) -> str:
+    """The state the 3D room's picture was rendered in (`room3d/build.py`
+    `states`): the dusk sky or the night's, in the rain or not, and in
+    December the bulbs at either hour. "" is the night, dry."""
+    dusk = "_dusk" if getattr(plate, "hour", "") == "dusk" else ""
+    where = angle_of(plate)
+    if where is not None and where[1] == "christmas":
+        return "_t0" + dusk
+    return dusk + ("_rain" if getattr(plate, "weather", "") == "rain" else "")
+
+
 def drawn_rooms(reg, aspect: str) -> list[str]:
     """The rooms at `aspect` (`16x9`, `9x16`) the kit still has drawn,
     where the 3D Dennis cannot stand. A render draws him in 3D only where
@@ -166,8 +181,13 @@ def usable(settings, reg, aspect: str) -> bool:
 class Performer:
     """The Blender process and the shots it has drawn."""
 
-    def __init__(self, settings, cache: Path | None = None, *, draft: bool = False):
+    def __init__(self, settings, cache: Path | None = None, *, draft: bool = False,
+                 pile: int = 0):
         self.settings = settings
+        # How many read 10-Ks are on his floor this video (V12,
+        # `room_dressing.pile_count`): in every shot, for his shadow to fall
+        # on, and drawn on its own for the room's pictures (`pile_layer`).
+        self.pile = int(pile)
         # A proof's performer draws him at half the size each way, a quarter
         # of the work: the proof's voice is not the final's, so the final
         # draws every shot of him again anyway, to its own words.
@@ -302,6 +322,7 @@ class Performer:
                **({"push": {k: round(float(v), 3) for k, v in push.items()}}
                   if push else {}),
                **({"next": cue} if cue else {}),
+               **self._room(room),
                **self._line_style(),
                "words": [{"word": w.word, "start": round(w.start - start, 3),
                           "end": round(w.end - start, 3)} for w in words]}
@@ -346,7 +367,8 @@ class Performer:
                "fps": int(self.settings.dennis_3d_fps),
                "samples": max(int(self.settings.dennis_3d_samples), 16),
                "seed": seed, "stance": stance, "still": True, **self._jumper(),
-               **({"in_room": True} if in_room else {}), **self._line_style()}
+               **({"in_room": True} if in_room else {}), **self._room(room),
+               **self._line_style()}
         key = hashlib.sha256(json.dumps({**job, "v": LOOK_VERSION},
                                         sort_keys=True).encode()).hexdigest()[:20]
         folder = self.cache / key
@@ -361,6 +383,56 @@ class Performer:
         self.shots.append({"angle": angle, "aspect": aspect, "still": True,
                            "seconds": reply.get("seconds"), "device": reply.get("device")})
         return out
+
+    def pile_layer(self, room, size: tuple[int, int]) -> Path | None:
+        """The read 10-Ks alone in `room` (V12): a picture of `size`'s shape,
+        no bigger than the room was rendered (half that for a draft), the
+        pile and its shadow over nothing, lit as the room's picture is, to
+        lay on every picture of the room at its size. None with no pile, in a
+        drawn room, or where the pile is not in shot; a pile that could not
+        be drawn is said in the log and left out, never worth a render."""
+        where = angle_of(room)
+        if not self.pile or where is None:
+            return None
+        angle, season, aspect = where
+        k = min(1.0, ROOM_LONG_SIDE / max(size)) / (2 if self.draft else 1)
+        size = (max(int(size[0] * k) // 2 * 2, 2), max(int(size[1] * k) // 2 * 2, 2))
+        job = {"op": "pile", "pile": self.pile, "angle": angle, "season": season,
+               "aspect": aspect, "size": list(size),
+               "samples": max(int(self.settings.dennis_3d_samples), 16),
+               **({"light": light_of(room)} if light_of(room) else {})}
+        key = hashlib.sha256(json.dumps({**job, "v": LOOK_VERSION},
+                                        sort_keys=True).encode()).hexdigest()[:20]
+        folder = self.cache / "piles" / key
+        out, nothing = folder / "pile.png", folder / "not-in-shot"
+        if out.exists():
+            return out
+        if nothing.exists():
+            return None
+        try:
+            reply = self._ask({**job, "out": str(out)})
+        except RenderError as e:
+            reply = {"ok": False, "error": str(e)}
+        if not reply.get("ok"):
+            why = str(reply.get("error", ""))
+            if "not in shot" in why:
+                folder.mkdir(parents=True, exist_ok=True)
+                nothing.write_text(why, encoding="utf-8")
+            else:
+                log.warning("the 10-K pile could not be drawn at %s (%s): the room "
+                            "goes up without it", angle, why)
+            return None
+        self.shots.append({"angle": angle, "aspect": aspect, "pile": self.pile,
+                           "seconds": reply.get("seconds"), "device": reply.get("device")})
+        return out
+
+    def _room(self, room) -> dict:
+        """The room as its picture has it, in the job only where it is not
+        the default, so a shot of him at night with no pile keeps its cache:
+        the light it was rendered in, and the 10-Ks on the floor."""
+        light = light_of(room)
+        return {**({"light": light} if light else {}),
+                **({"pile": self.pile} if self.pile else {})}
 
     @staticmethod
     def _jumper() -> dict:

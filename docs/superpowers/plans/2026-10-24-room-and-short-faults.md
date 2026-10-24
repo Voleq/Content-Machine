@@ -60,11 +60,15 @@ the thread, 10-18 21:35).
 5. **Writing** - the plant tag is the latest broken thesis's ticker (else
    "No. 14"); the phone lights with "Kev: thoughts?" only when the script
    carries Kev's tip; lit, not inked.
-6. **The pile (V12)** - perform renders the pile alone (`props` job: count,
-   angle, light state) as an overlay with its shadow; the dressing lays it
-   on every room picture of the video. Count = public longs; 24 to a pile,
-   a second pile beside it, capped at 48. Perform also lights him for the
-   hour (`light` key), so he is lit for dusk and rain like the room.
+6. **The pile (V12)** - perform renders the pile alone (`op: pile` job:
+   count, angle, light state) as an overlay with its shadow; the dressing
+   lays it on every room picture of the video but the fronts (the piles
+   stand on the floor under the board, behind every spot he stands on).
+   Count = longs on record as public, dated no later than the video, not
+   the long itself; 24 to a pile, a second pile beside it, capped at 48.
+   Every shot of him carries the count (his shadow falls on them) and the
+   room's light state (`light`), so he is lit for dusk and rain like the
+   room; a still no longer un-hides the skies and other angles' floor paper.
 7. **Dusk on** - after a dusk long and short are watched end to end,
    `kit/roles.json` hours episodes `["night", "night", "night", "dusk"]`.
 8. **Render, ingest, test, merge.**

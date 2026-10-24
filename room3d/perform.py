@@ -27,6 +27,10 @@ the camera, with nothing of the room drawn (no shadow, nothing in front of
 him), so the cover can stand him where its type leaves room; with
 `"in_room": true` as well, the room stays as a shot has it: the desk in front
 of him and his shadow on the room, for a cover that is a frame of the video.
+`"light"` is the state the room's picture behind him was rendered in
+(`build.states`: `_dusk`, `_rain`, `_t1_dusk` ...), so he is lit by the dusk
+sky or the rain's as the room is, and the night when it is left out;
+`"pile"` is how many read 10-Ks are on the floor (V12), which take his shadow.
 It renders `out/d_0000.png` ... and answers with one line that starts with
 `@@` (Blender prints its own chatter on stdout too):
 
@@ -36,6 +40,12 @@ It renders `out/d_0000.png` ... and answers with one line that starts with
 where `window` is, for a close-up, the piece of the room's picture that is
 behind him ([x0, y0, x1, y1], 0-1 from the top left), blown up to the frame;
 for a push-in the answer carries `"push"` instead, that piece for every frame.
+
+`{"op": "pile", "pile": 30, "angle": ..., "season": ..., "aspect": ...,
+"size": [...], "samples": 16, "light": "_dusk", "out": "/abs/pile.png"}` draws
+the read 10-Ks alone the same way, the room as shadow catchers and nobody in
+it: a picture the room's size to lay on every picture of the room, the pile
+and its shadow, behind whatever stands in front of it.
 
 An empty line or `{"op": "quit"}` ends it. A frame already on disk is not
 drawn again, so a render that stopped picks up where it was.
@@ -107,6 +117,10 @@ class Stage:
         self._pushes: list[tuple[float, float, float]] = []
         self._lens0 = 0.0
         self._looks: dict[tuple, dict] = {}
+        self.light = ""
+        self.pile = 0
+        self._pile: list = []
+        self._hidden: list = []
 
     def build(self, season: str) -> None:
         import addon_utils
@@ -125,7 +139,37 @@ class Stage:
             if o.type == "MESH" and o not in mine:
                 o.is_shadow_catcher = True
         self.season, self.size, self._looks = season, None, {}
-        self.jumper = ""
+        self.jumper, self.light, self.pile, self._pile, self._hidden = "", "", 0, [], []
+
+    def lit(self, light: str) -> None:
+        """The room lit as its picture behind him was (`build.states`); the
+        night for a state this season does not have."""
+        if light not in room.states(self.season):
+            light = ""
+        if light != self.light:
+            room.apply_state(self.season, light)
+            self.light = light
+
+    def piled(self, count: int) -> None:
+        """The read 10-Ks on the floor, `count` of them, as shadow catchers
+        like the rest of the room: he throws his shadow on them."""
+        count = max(0, min(int(count), room.PILE_MAX))
+        if count == self.pile:
+            return
+        for o in self._pile:
+            bpy.data.objects.remove(o, do_unlink=True)
+        room.THINGS.pop("tenk", None)
+        self._pile = room.ten_k_pile(count) if count else []
+        coll = bpy.data.collections.get("tenk")
+        if coll is None:
+            coll = bpy.data.collections.new("tenk")
+            bpy.context.scene.collection.children.link(coll)
+        for o in self._pile:
+            for c in list(o.users_collection):
+                c.objects.unlink(o)
+            coll.objects.link(o)
+            o.is_shadow_catcher = True
+        self.pile = count
 
     def frame_up(self, size: tuple[int, int], samples: int, how: str = "freestyle") -> None:
         if self.size == size and self.samples == samples and self.lines == how:
@@ -479,17 +523,26 @@ class Stage:
         return st
 
     def _bare(self, on: bool) -> None:
-        """Every mesh of the room hidden from the render (a cover), or back."""
-        mine = set(self.rig.objects())
-        for o in bpy.context.scene.objects:
-            if o.type == "MESH" and o not in mine:
-                o.hide_render = on
+        """Every mesh of the room hidden from the render (a cover), or back:
+        only what was hidden here comes back, so the skies the state leaves
+        dark and another angle's floor paper stay out (they were in every
+        shot, unseen, hiding him and taking his shadow)."""
+        if on:
+            mine = set(self.rig.objects())
+            self._hidden = [o for o in bpy.context.scene.objects
+                            if o.type == "MESH" and o not in mine and not o.hide_render]
+        for o in self._hidden:
+            o.hide_render = on
+        if not on:
+            self._hidden = []
 
     def shot(self, job: dict) -> dict:
         t0 = time.monotonic()
         season = job.get("season", "plain")
         if season != self.season:
             self.build(season)
+        self.lit(str(job.get("light", "")))
+        self.piled(int(job.get("pile", 0)))
         jumper = str(job.get("jumper", ""))
         if jumper != self.jumper:
             dress(self.rig, jumper)
@@ -526,11 +579,80 @@ class Stage:
         pushes = (self.push_in(job["push"], fps, perf.frames)
                   if job.get("push") and not still and window is None else None)
         self.rig.hold(st.prop, st.prop_side)
-        self._bare(still and not job.get("in_room"))
+        bare = still and not job.get("in_room")
+        if bare:
+            self._bare(True)
         try:
             return self._render(job, perf, frames, fps, window, t0, pushes)
         finally:
-            self._bare(False)
+            if bare:
+                self._bare(False)
+
+    def pile_layer(self, job: dict) -> dict:
+        """The read 10-Ks alone at an angle (V12), lit as the room's picture
+        is: the room as shadow catchers, so the picture is the pile and its
+        shadow over nothing, behind whatever of the room stands in front of
+        it, and nobody in the room. Drawn in the room's lines."""
+        t0 = time.monotonic()
+        season = job.get("season", "plain")
+        if season != self.season:
+            self.build(season)
+        self.lit(str(job.get("light", "")))
+        self.piled(int(job["pile"]))
+        if not self._pile:
+            return {"ok": False, "error": "no pile to draw"}
+        self.frame_up(tuple(job["size"]), int(job.get("samples", 16)), "freestyle")
+        cam_o = room.camera(job["angle"], job.get("aspect", "16x9"))
+        cam_o.data.shift_x = cam_o.data.shift_y = 0.0
+        scn = bpy.context.scene
+        vl = bpy.context.view_layer
+        pile_coll = bpy.data.collections["tenk"]
+        mine = self.rig.objects()
+        for o in mine:
+            o.hide_render = True
+        for o in self._pile:
+            o.is_shadow_catcher = False
+        for ls in vl.freestyle_settings.linesets:
+            ls.collection = pile_coll
+        out = Path(job["out"])
+        out.parent.mkdir(parents=True, exist_ok=True)
+        part = out.with_suffix(".part.png")
+        try:
+            from bpy_extras.object_utils import world_to_camera_view
+
+            vl.update()
+            pts = [o.matrix_world @ Vector(c) for o in self._pile for c in o.bound_box]
+            mn = Vector([min(p[i] for p in pts) for i in range(3)])
+            mx = Vector([max(p[i] for p in pts) for i in range(3)])
+
+            def seen(grow: float, up: float):
+                got = [world_to_camera_view(scn, scn.camera, Vector((x, y, z)))
+                       for x in (mn.x - grow, mx.x + grow) for y in (mn.y - grow, mx.y + grow)
+                       for z in (0.0, mx.z + up)]
+                return (min(p.x for p in got), max(p.x for p in got),
+                        min(p.y for p in got), max(p.y for p in got))
+
+            # its shadow runs out across the floor and up the wall
+            body, (x0, x1, y0, y1) = seen(0.0, 0.0), seen(0.30, 0.15)
+            r = scn.render
+            r.use_border, r.use_crop_to_border = True, False
+            r.border_min_x, r.border_max_x = max(x0, 0.0), min(x1, 1.0)
+            r.border_min_y, r.border_max_y = max(y0, 0.0), min(y1, 1.0)
+            if r.border_min_x >= r.border_max_x or r.border_min_y >= r.border_max_y:
+                return {"ok": False, "error": f"the pile is not in shot at {job['angle']}"}
+            r.filepath = str(part)
+            bpy.ops.render.render(write_still=True)
+            _feather(part, (r.border_min_x, r.border_max_x, r.border_min_y, r.border_max_y), body)
+            part.replace(out)
+        finally:
+            for o in mine:
+                o.hide_render = False
+            for o in self._pile:
+                o.is_shadow_catcher = True
+            for ls in vl.freestyle_settings.linesets:
+                ls.collection = self.rig.coll
+        return {"ok": True, "out": str(out), "seconds": round(time.monotonic() - t0, 1),
+                "device": self.device}
 
     def _render(self, job: dict, perf, frames, fps: int, window, t0: float,
                 pushes=None) -> dict:
@@ -656,7 +778,7 @@ def serve() -> int:
             job = json.loads(line)
             if job.get("op") == "quit":
                 break
-            reply = stage.shot(job)
+            reply = stage.pile_layer(job) if job.get("op") == "pile" else stage.shot(job)
         except Exception as e:  # one bad shot answers, it does not end the render
             reply = {"ok": False, "error": f"{type(e).__name__}: {e}",
                      "trace": traceback.format_exc(limit=6)}

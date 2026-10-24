@@ -259,6 +259,88 @@ def test_the_episode_number_counts_the_longs(settings):
     assert rd.episode_number(settings, "DDD", "2026-10-03") == 3
 
 
+def _records(settings, rows) -> None:
+    from pipeline.youtube import RECORDS_FILE
+
+    path = settings.state_dir / RECORDS_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(rows), encoding="utf-8")
+
+
+def _long(ticker: str, day: str, *, privacy: str = "public", fmt: str = "long", vid: str = ""):
+    return {"ticker": ticker, "video_id": vid or f"{ticker}{day}", "title": ticker,
+            "privacy": privacy, "workdate": day, "uploaded_at": f"{day}T10:00", "fmt": fmt}
+
+
+def test_the_10k_pile_counts_the_longs_gone_public_before_this_video(settings):
+    """V12: a report for every long on record as public and dated no later
+    than the video; not a short, not one still private or unlisted, not the
+    long being made, and a long uploaded twice once."""
+    _records(settings, [
+        _long("AAA", "2026-09-01"), _long("BBB", "2026-09-02", fmt="short"),
+        _long("CCC", "2026-09-03"), _long("AAA", "2026-09-01", vid="again"),
+        _long("DDD", "2026-09-04", privacy="unlisted"), _long("EEE", "2026-09-05", privacy="private"),
+        _long("FFF", "2026-10-20")])
+    assert rd.pile_count(settings, "GGG", "2026-10-01", long=True) == 2
+    assert rd.pile_count(settings, "ccc", "2026-09-03", long=True) == 1, \
+        "the long being made is on the pile before it went public"
+    assert rd.pile_count(settings, "CCC", "2026-09-03", long=False) == 2
+    assert rd.pile_count(settings, "ZZZ", "2026-08-01", long=True) == 0
+    _records(settings, [_long(f"T{i:02d}", f"2026-0{1 + i % 9}-1{i % 10}") for i in range(60)])
+    assert rd.pile_count(settings, "ZZZ", "2026-12-31", long=True) == rd.PILE_MAX == 48
+
+
+def test_no_record_is_no_pile(settings):
+    assert rd.pile_count(settings, "EXMPL", "2026-10-01", long=True) == 0
+
+
+def test_the_pile_is_a_new_room_but_the_board_keeps_its_hand():
+    d = _dressing()
+    assert _dressing(pile=3).fingerprint != d.fingerprint
+    assert _dressing(pile=3).board_seed == d.board_seed
+
+
+def _pile_png(tmp: Path, size=(400, 200)) -> Path:
+    """The 10-Ks alone at the room's size: the reports opaque, their shadow
+    half dark, nothing else."""
+    k = size[0] / 400
+    im = Image.new("RGBA", size, (0, 0, 0, 0))
+    im.paste((200, 30, 30, 255), (int(20 * k), int(150 * k), int(60 * k), int(190 * k)))
+    im.paste((0, 0, 0, 128), (int(60 * k), int(170 * k), int(90 * k), int(190 * k)))
+    tmp.mkdir(parents=True, exist_ok=True)
+    path = tmp / f"pile{size[0]}.png"
+    im.save(path)
+    return path
+
+
+def test_the_10k_pile_is_laid_on_every_picture_but_the_front(tmp_path):
+    plate = _plate(tmp_path / "kit")
+    out = rd.written_room(plate, _dressing(pile=5), tmp_path / "written", FONTS,
+                          pile=_pile_png(tmp_path / "p"))
+    before = np.asarray(Image.open(plate.path).convert("RGB")).astype(int)
+    for p in [out.path, *out.frame_paths()]:
+        a = np.asarray(Image.open(p).convert("RGB")).astype(int)
+        assert (a[155:185, 25:55] == (200, 30, 30)).all(), f"no pile on {p.name}"
+    after = np.asarray(Image.open(out.path).convert("RGB")).astype(int)
+    assert (after[175:188, 65:85] < before[175:188, 65:85] - 20).all(), "no shadow under it"
+    front = np.asarray(Image.open(out.front_path(0)))
+    assert front[150:190, 20:90, 3].max() == 0, "the pile went in front of him"
+    # Without the pile the same episode is its own set of pictures.
+    bare = rd.written_room(plate, _dressing(pile=5), tmp_path / "written", FONTS)
+    assert bare.root != out.root
+
+
+def test_a_room_with_only_the_pile_to_lay_is_written_and_a_draft_s_pile_scaled(tmp_path):
+    from dataclasses import replace
+
+    plate = replace(_plate(tmp_path / "kit"), writable={})
+    out = rd.written_room(plate, _dressing(pile=5), tmp_path / "written", FONTS,
+                          pile=_pile_png(tmp_path / "p", size=(200, 100)))
+    assert out is not plate
+    a = np.asarray(Image.open(out.path).convert("RGB")).astype(int)
+    assert (np.abs(a[160:180, 30:50] - (200, 30, 30)) < 6).all()
+
+
 def test_the_writer_sets_the_board(long_valid_text, settings):
     from pipeline.models import TagType
     from pipeline.parser_long import parse_long_script
@@ -490,6 +572,45 @@ def test_the_short_writes_on_the_rooms_it_cuts_to(tmp_path):
     bare = BuildResult(layers=[layers[1]], spans=[], frame=(1080, 1920))
     assert dress_rooms(bare, reg, ticker="X", prices=None, workdir=tmp_path / "w2",
                        settings=settings) == (reg, [])
+
+
+def test_the_short_lays_the_10k_pile_on_its_rooms(tmp_path):
+    """V12 in the short: the performer draws the pile at the room's angle
+    and every picture of the room gets it, the front excepted; a room the
+    pile is not in shot of is written as it was."""
+    from dataclasses import replace
+    from types import SimpleNamespace
+
+    from pipeline.compose import BuildResult, Layer
+    from pipeline.render_short import dress_rooms
+
+    plate = _plate(tmp_path / "kit")
+    bare = replace(plate, key="room/b-16x9", name="b-16x9", writable={})
+    plates = {p.key: p for p in (plate, bare)}
+    reg = SimpleNamespace(get=plates.get, base_hour="night")
+    asked = []
+    pile_png = _pile_png(tmp_path / "p")
+
+    def pile_layer(room, size):
+        asked.append((room.key, size))
+        return pile_png if room.key == plate.key else None
+
+    performer = SimpleNamespace(pile_layer=pile_layer)
+    layers = [Layer("t:plate", "plate", "the-turn", 1.0, 4.0, entry_key=plate.key),
+              Layer("b:plate", "plate", "the-bare", 4.0, 6.0, entry_key=bare.key)]
+    result = BuildResult(layers=layers, spans=[], frame=(1080, 1920))
+    settings = SimpleNamespace(price_history_days=120, fonts_dir=FONTS,
+                               assets_dir=FONTS.parent)
+    prices = SimpleNamespace(closes=list(CLOSES), degraded=False)
+    got, rooms = dress_rooms(result, reg, ticker="exmpl", prices=prices,
+                             workdir=tmp_path / "w", settings=settings, pile=4,
+                             performer=performer)
+    assert asked == [(plate.key, (400, 200)), (bare.key, (400, 200))]
+    assert rooms == [plate.key], "the room with nothing to write and no pile in shot is itself"
+    w = got.get(plate.key)
+    a = np.asarray(Image.open(w.path).convert("RGB")).astype(int)
+    assert (a[155:185, 25:55] == (200, 30, 30)).all()
+    assert np.asarray(Image.open(w.front_path(0)))[150:190, 20:90, 3].max() == 0
 
 
 def test_the_push_in_reads_his_pixels_not_his_rectangle(tmp_path):

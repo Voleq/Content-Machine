@@ -219,6 +219,16 @@ FLOOR_PILES = {
 }
 RUG = (0.15, -0.05, 3.3, 2.2)                   # centre x, y, width, depth
 
+# THE READ 10-Ks (V12, 24 Oct 2026): a report for every long that has gone
+# public, squared up on the floor under the board beside the box of old
+# filings; from the twenty-fifth a second pile beside the first, and never
+# more than PILE_MAX. It grows per video, so the room is rendered without it
+# and perform draws it for each video (`ten_k_pile`). Both piles are behind
+# every spot he stands on (x, y, turn).
+PILES = ((-1.62, 1.72, -6.0), (-1.95, 1.74, 9.0))
+PILE_SIZE = 24
+PILE_MAX = 2 * PILE_SIZE
+
 # The kit's December twins: the angles the Christmas set dresses.
 CHRISTMAS = ("desk-front", "desk-wide", "desk-side", "turn-to-screen", "window-wall",
              "doorway", "desk-front-b", "desk-front-low", "read-close", "board-side",
@@ -726,6 +736,47 @@ def floor_pile(name: str, at, turn: float, height: float, seed: int) -> None:
     a = math.radians(turn + rnd.uniform(30, 60))
     plane(f"{name}-loose", (0.21, 0.297), (x + 0.26 * math.cos(a), y + 0.26 * math.sin(a), ground + 0.0015),
           (0, 0, a + 0.4), mat("sheet", "#D9DDE0", image="sheet.png"))
+
+
+def ten_k_pile(count: int) -> list[bpy.types.Object]:
+    """The read 10-Ks, `count` of them (PILE_SIZE to a pile, at most
+    PILE_MAX), as the thing `tenk`: letter-size reports a centimetre or so
+    thick, each knocked a little askew, some with a binder clip or a tab, and
+    a 10-K's cover on top. Each report is seeded by its place in the pile, so
+    the pile grows by one and the rest stay where they were."""
+    thing("tenk")
+    made = []
+    papers = [mat(f"tenk{k}", c, 0.9) for k, c in enumerate(("#E6E6DE", "#DCDCD2", "#EAE6D8"))]
+    clip = mat("tenkclip", "#1C2027", 0.4, metal=0.6)
+    inks = ("#F2D45C", "#F07A8A", "#7FC4E8", "#9AD47F")
+    count = max(0, min(int(count), PILE_MAX))
+    for p, (x, y, turn) in enumerate(PILES):
+        n = min(max(count - p * PILE_SIZE, 0), PILE_SIZE)
+        z, top = 0.0, None
+        for k in range(n):
+            rnd = random.Random(f"tenk-{p}-{k}")
+            t = rnd.uniform(0.010, 0.016)
+            a = math.radians(turn + rnd.uniform(-7, 7))
+            cx, cy = x + rnd.uniform(-0.012, 0.012), y + rnd.uniform(-0.012, 0.012)
+            made.append(box(f"tenk{p}-{k}", (0.216, 0.279, t), (cx, cy, z + t / 2),
+                            papers[rnd.randrange(3)], rot=(0, 0, a)))
+            # along the report (its long side) and across it, in the room
+            along, across = Vector((-math.sin(a), math.cos(a), 0)), Vector((math.cos(a), math.sin(a), 0))
+            if rnd.random() < 0.35:
+                at = Vector((cx, cy, z + t / 2)) + along * 0.135 + across * rnd.uniform(-0.05, 0.05)
+                made.append(box(f"tenk{p}-{k}-clip", (0.05, 0.022, t + 0.006), at, clip, rot=(0, 0, a)))
+            if rnd.random() < 0.3:
+                side = rnd.choice((-1, 1))
+                at = Vector((cx, cy, z + t * 0.6)) + across * side * 0.116 + along * rnd.uniform(-0.09, 0.09)
+                made.append(box(f"tenk{p}-{k}-tab", (0.03, 0.022, 0.002), at,
+                                mat(f"tab{k % 4}", inks[k % 4], 0.7), rot=(0, 0, a)))
+            z += t
+            top = (cx, cy, z, a)
+        if top is not None:
+            cx, cy, z, a = top
+            made.append(plane(f"tenk{p}-cover", (0.216, 0.279), (cx, cy, z + 0.0008), (0, 0, a),
+                              mat("tenkcover", "#E6E6DE", image="filing_held.png")))
+    return made
 
 
 def wallpaper(name: str, base: str, stripe: str, period: float = 0.22) -> bpy.types.Material:

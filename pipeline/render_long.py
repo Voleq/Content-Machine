@@ -1107,6 +1107,12 @@ def _render_long(
     # behind him, the desk in front of him and the chapter opener agree.
     written_rooms: dict[tuple[str, str], object] = {}
     room_dressing: list = []
+    # THE READ 10-Ks ON HIS FLOOR (V12): one count for every room of the
+    # video and every shot of him, who throws his shadow on them. They are
+    # drawn by the 3D performer, once it is up (`pile_drawer`).
+    from pipeline.room_dressing import pile_count
+    pile = pile_count(settings, script.ticker, workspace.name, long=True)
+    pile_drawer: list = []
 
     def _dressing():
         if not room_dressing:
@@ -1127,7 +1133,8 @@ def _render_long(
                 chapters=tuple(t for _, t, _ in chapters), closes=closes,
                 span=f"{max(round(days / 365), 1)}Y",
                 props=props(script, ticker=script.ticker, workdate=workspace.name,
-                            episode=episode, settings=settings, workspace=workspace)),
+                            episode=episode, settings=settings, workspace=workspace),
+                pile=pile),
                 series))
         return room_dressing[0][0]
 
@@ -1191,8 +1198,9 @@ def _render_long(
         return screen_dressings[pick.chapter]
 
     def _written(plate):
-        """`plate` with the episode written on its board and monitor."""
-        if plate is None or not getattr(plate, "writable", None):
+        """`plate` with the episode written on its board and monitor, and the
+        read 10-Ks on its floor."""
+        if plate is None or not (getattr(plate, "writable", None) or (pile and pile_drawer)):
             return plate
         d = (_screen_dressing(room_now[0]) if "screen" in plate.writable
              else _chapter_dressing(room_now[0]) if "board" in plate.writable
@@ -1201,8 +1209,10 @@ def _render_long(
         if k not in written_rooms:
             from pipeline.room_dressing import written_room
 
+            piled = (pile_drawer[0].pile_layer(plate, tuple(plate.delivered))
+                     if d.pile and pile_drawer else None)
             written_rooms[k] = written_room(plate, d, rdir / "written",
-                                            settings.fonts_dir)
+                                            settings.fonts_dir, pile=piled)
         return written_rooms[k]
 
     def _room_file(plate) -> Path:
@@ -2189,8 +2199,10 @@ def _render_long(
     # video or in none (`dennis3d.usable`).
     from pipeline import dennis3d
     performer = (dennis3d.Performer(settings, cache=Path(settings.cache_dir) / "dennis3d",
-                                    draft=proof)
+                                    draft=proof, pile=pile)
                  if dennis3d.usable(settings, reg, aspect) else None)
+    if performer is not None:
+        pile_drawer.append(performer)
     if performer is not None and _closers is not None:
         # An exception anywhere in the beats below would otherwise leave the
         # Blender worker running until the garbage collector closed its pipes.

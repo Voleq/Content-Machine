@@ -363,7 +363,7 @@ def test_every_window_has_the_weather(installed):
     assert wet == {k for k in windows if "-christmas" not in k}
     snowing = {k for k, p in rooms.items() if "window-snow" in (p.loops or ())}
     assert snowing == {k for k in windows if "-christmas" in k}
-    for p in rooms:
+    for p in rooms.values():
         if p.season:
             assert "lights-twinkle" in p.loops, p.key
 

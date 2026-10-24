@@ -10,6 +10,7 @@ import textwrap
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 from PIL import Image
 
@@ -82,6 +83,21 @@ FAKE = textwrap.dedent('''
             break
         job = json.loads(line)
         print("Fra:1 blender chatter", flush=True)
+        if job.get("op") == "pile":
+            if job["angle"] == "desk-front":
+                print("@@" + json.dumps({"ok": False, "error": "the pile is not in shot at desk-front"}), flush=True)
+                continue
+            if job["angle"] == "board":
+                print("@@" + json.dumps({"ok": False, "error": "it broke"}), flush=True)
+                continue
+            out = Path(job["out"]); out.parent.mkdir(parents=True, exist_ok=True)
+            w, h = job["size"]
+            im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            im.paste((200, 30, 30, 255), (w // 8, h // 2, w // 4, h * 3 // 4))
+            im.save(out)
+            (out.parent / "job.json").write_text(json.dumps(job))
+            print("@@" + json.dumps({"ok": True, "out": str(out), "seconds": 0.1, "device": "CPU"}), flush=True)
+            continue
         if job["angle"] == "board":
             print("@@" + json.dumps({"ok": False, "error": "nobody stands in board"}), flush=True)
             continue
@@ -489,6 +505,13 @@ def long_3d(tmp_path_factory):
     settings.ensure_runtime_dirs()
     if dennis3d.drawn_rooms(load_plates(settings.assets_dir), "16x9"):
         pytest.skip("the kit's long rooms are not the 3D room (run the kit ingest)")
+    # three longs gone public before this one: three read 10-Ks on his floor
+    from pipeline.youtube import RECORDS_FILE
+
+    (settings.state_dir / RECORDS_FILE).write_text(json.dumps([
+        {"ticker": t, "video_id": t, "title": t, "privacy": "public", "workdate": d,
+         "fmt": "long"} for t, d in (("AAA", "2026-06-01"), ("BBB", "2026-06-08"),
+                                     ("CCC", "2026-06-15"))]), encoding="utf-8")
     fake = tmp / "fake_worker.py"
     fake.write_text(FAKE, encoding="utf-8")
     script, _ = parse_long_script(RAW, "EXMPL", settings)
@@ -543,6 +566,20 @@ def test_a_3d_long_draws_every_shot_of_him_in_3d_and_none_drawn(long_3d):
 
 
 
+def test_a_3d_long_lays_the_read_10ks_on_its_rooms_and_his_shadow_falls_on_them(long_3d):
+    settings = long_3d[0]
+    root = settings.cache_dir / "dennis3d"
+    piles = [json.loads(f.read_text(encoding="utf-8")) for f in root.glob("piles/*/job.json")]
+    assert piles and {j["pile"] for j in piles} == {3}
+    assert all(j["size"] == [2560, 1440] for j in piles), "drawn as big as the room was"
+    shots = [json.loads(f.read_text(encoding="utf-8")) for f in root.glob("*/job.json")]
+    assert shots and all(j.get("pile") == 3 for j in shots)
+    written = list((settings.workspace_dir / "EXMPL" / "test").rglob("written/**/*.png"))
+    red = [f for f in written
+           if (np.asarray(Image.open(f).convert("RGB")) == (200, 30, 30)).all(axis=2).any()]
+    assert red, "no room went up with the pile on it"
+
+
 def test_he_wears_the_winter_jumper_from_december_to_february(tmp_path):
     """V12: the video's day picks his jumper, as it picks the season."""
     from pipeline.plates import jumper_of_episode
@@ -569,3 +606,55 @@ def test_a_shot_in_the_winter_jumper_is_drawn_apart_from_the_navy(performer):
     assert winter != navy
     assert json.loads((winter.parent / "job.json").read_text(encoding="utf-8"))["jumper"] == "winter"
     assert json.loads((cover.parent / "job.json").read_text(encoding="utf-8"))["jumper"] == "winter"
+
+
+def _lit_room(key: str, hour: str = "night", weather: str = ""):
+    return SimpleNamespace(key=key, author="room3d", hour=hour, weather=weather)
+
+
+def test_he_is_lit_as_the_room_s_picture_behind_him(performer):
+    """V10: at dusk the dusk sky lights him, in the rain the rain's, and in
+    December the bulbs; at night, dry, the job is as it was, so every shot
+    of him at night keeps its cache."""
+    assert dennis3d.light_of(_lit_room("room/desk-front-16x9")) == ""
+    assert dennis3d.light_of(_lit_room("room/desk-front-16x9", weather="rain")) == "_rain"
+    assert dennis3d.light_of(_lit_room("room/desk-front-16x9", "dusk", "rain")) == "_dusk_rain"
+    assert dennis3d.light_of(_lit_room("room/desk-front-christmas-16x9", "dusk", "snow")) == "_t0_dusk"
+    assert dennis3d.light_of(_lit_room("room/desk-front-christmas-16x9")) == "_t0"
+    words = [SimpleNamespace(word="So.", start=0.2, end=0.5)]
+    night = performer.shot(_lit_room("room/desk-front-16x9"), words, 0.0, 0.5, (320, 180), seed="lit")
+    dusk = performer.shot(_lit_room("room/desk-front-16x9", "dusk"), words, 0.0, 0.5, (320, 180),
+                          seed="lit")
+    job = lambda layer: json.loads((layer.parent / "job.json").read_text(encoding="utf-8"))  # noqa: E731
+    assert "light" not in job(night) and "pile" not in job(night)
+    assert job(dusk)["light"] == "_dusk" and dusk != night
+
+
+def test_the_10k_pile_is_drawn_once_an_angle_and_he_throws_his_shadow_on_it(performer):
+    """V12: the read 10-Ks are drawn alone, lit as the room's picture is,
+    once for each angle and count; every shot of him has them on the floor."""
+    room = _lit_room("room/board-wide-16x9", "dusk")
+    assert performer.pile_layer(room, (320, 180)) is None, "no public long, no pile"
+    performer.pile = 7
+    png = performer.pile_layer(room, (320, 180))
+    job = json.loads((png.parent / "job.json").read_text(encoding="utf-8"))
+    assert (job["op"], job["pile"], job["angle"], job["light"]) == ("pile", 7, "board-wide", "_dusk")
+    assert Image.open(png).size == (320, 180)
+    assert json.loads((performer.pile_layer(room, (3840, 2160)).parent / "job.json")
+                      .read_text(encoding="utf-8"))["size"] == [2560, 1440], \
+        "never drawn bigger than the room was rendered"
+    stamp = png.stat().st_mtime_ns
+    assert performer.pile_layer(room, (320, 180)) == png and png.stat().st_mtime_ns == stamp
+    words = [SimpleNamespace(word="So.", start=0.2, end=0.5)]
+    layer = performer.shot(room, words, 0.0, 0.5, (320, 180), seed="pile")
+    assert json.loads((layer.parent / "job.json").read_text(encoding="utf-8"))["pile"] == 7
+    assert performer.pile_layer(_room("room/receipts-16x9", author="kit"), (320, 180)) is None
+
+
+def test_a_pile_out_of_shot_is_asked_once_and_one_that_fails_is_left_out(performer):
+    room = _lit_room("room/desk-front-16x9")
+    performer.pile = 3
+    assert performer.pile_layer(room, (320, 180)) is None
+    assert list(performer.cache.glob("piles/*/not-in-shot")), "not in shot is remembered"
+    assert performer.pile_layer(_lit_room("room/board-16x9"), (320, 180)) is None, \
+        "a pile that could not be drawn stopped the render"

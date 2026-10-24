@@ -1465,7 +1465,8 @@ class _WithWritten:
 
 
 def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
-                settings, script=None, workspace: Path | None = None):
+                settings, script=None, workspace: Path | None = None,
+                pile: int = 0, performer=None):
     """The board and the monitor in the rooms of this cut, written for it.
 
     THE PHONE'S ROOMS ARE THE 3D ROOM (4 Oct 2026), rendered as the long's
@@ -1476,7 +1477,8 @@ def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
     (`pipeline.room_writing`: the filings by the video's date, the notes and
     cards from `script`). Returns the registry the frames are drawn from and
     the rooms written; the registry itself when nothing in the cut has a
-    board, a monitor or a lettered thing in shot.
+    board, a monitor or a lettered thing in shot. `pile` read 10-Ks are on
+    the floor (V12), drawn by the 3D `performer` where they are in shot.
     """
     from dataclasses import replace
 
@@ -1488,7 +1490,9 @@ def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
         if layer.kind != "plate":
             continue
         plate = reg.get(layer.entry_key)
-        if plate is None or plate.family != "room" or not getattr(plate, "writable", None):
+        piled = bool(pile and performer is not None)
+        if plate is None or plate.family != "room" \
+                or not (getattr(plate, "writable", None) or piled):
             continue
         if d is None:
             # A series the feed failed to give is not drawn: a made-up line
@@ -1505,11 +1509,17 @@ def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
                                else f"{max(round(days / 30), 1)}M"),
                          props=props(script, ticker=ticker,
                                      workdate=Path(workspace or workdir).name,
-                                     episode=0, settings=settings, workspace=workspace))
+                                     episode=0, settings=settings, workspace=workspace),
+                         pile=pile if piled else 0)
         if layer.entry_key not in written:
             try:
-                written[layer.entry_key] = written_room(plate, d, workdir / "written",
-                                                        settings.fonts_dir)
+                ten_ks = (performer.pile_layer(plate, tuple(plate.delivered))
+                          if piled else None)
+                got = written_room(plate, d, workdir / "written", settings.fonts_dir,
+                                   pile=ten_ks)
+                if got is plate and not getattr(plate, "writable", None):
+                    continue
+                written[layer.entry_key] = got
             except Exception as e:  # noqa: BLE001 — a board is never worth a render
                 log.warning("room: could not write on %s (%s) — it goes up blank",
                             layer.entry_key, e)
@@ -2085,12 +2095,29 @@ def _render_short(script, tts, workspace: Path, settings, *,
     silent = workdir / "video_frames.mkv"
     scale = delivery_scale(settings, result.frame, proof=proof)
     delivered = delivered_size(result.frame, scale)
-    frame_reg, written_rooms = dress_rooms(result, reg, ticker=getattr(script, "ticker", ""),
-                                           prices=prices, workdir=workdir,
-                                           settings=settings, script=script,
-                                           workspace=Path(workspace))
-    dennis_3d = perform_3d(result, reg, words, settings, aspect=fmt.aspect,
-                           scale=scale, seed=script.content_sha(), draft=proof)
+    # ONE BLENDER FOR THE SHORT: the read 10-Ks on the room's floor (V12)
+    # and him, who throws his shadow on them.
+    from pipeline import dennis3d
+    from pipeline.room_dressing import pile_count
+
+    pile = pile_count(settings, getattr(script, "ticker", ""),
+                      Path(workspace or workdir).name, long=False)
+    performer = (dennis3d.Performer(settings, draft=proof, pile=pile,
+                                    cache=Path(settings.cache_dir) / "dennis3d")
+                 if result.of_kind("host") and dennis3d.usable(settings, reg, fmt.aspect)
+                 else None)
+    try:
+        frame_reg, written_rooms = dress_rooms(result, reg, ticker=getattr(script, "ticker", ""),
+                                               prices=prices, workdir=workdir,
+                                               settings=settings, script=script,
+                                               workspace=Path(workspace),
+                                               pile=pile, performer=performer)
+        dennis_3d = perform_3d(result, reg, words, settings, aspect=fmt.aspect,
+                               scale=scale, seed=script.content_sha(), draft=proof,
+                               performer=performer)
+    finally:
+        if performer is not None:
+            performer.close()
     render_frames(result, resolver, duration, silent, settings, reg=frame_reg,
                   words=words, plan=plan, scale=scale)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}

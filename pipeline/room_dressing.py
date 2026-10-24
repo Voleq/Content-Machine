@@ -142,13 +142,17 @@ class Dressing:
     # ticks off the ones before it, so a wide shot in chapter four shows the
     # board as the last chapter break left it.
     chapter: int = 0
+    # THE READ 10-Ks ON HIS FLOOR (V12): one for every long gone public
+    # before this video (`pile_count`), laid on the room by `written_room`.
+    pile: int = 0
 
     @property
     def fingerprint(self) -> str:
         raw = json.dumps([VERSION, self.episode, self.ticker, self.question,
                           list(self.chapters), [round(c, 4) for c in self.closes],
                           self.span, self.screen_stamp, self.screen_label,
-                          [list(p) for p in self.props], self.chapter])
+                          [list(p) for p in self.props], self.chapter]
+                         + ([self.pile] if self.pile else []))
         return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
     @property
@@ -157,7 +161,7 @@ class Dressing:
         or the monitor, so the box and the underline are the same strokes all
         video long and only the marks are added."""
         return replace(self, screen="", screen_stamp="", screen_label="",
-                       chapter=0).fingerprint
+                       chapter=0, pile=0).fingerprint
 
     def in_chapter(self, n: int) -> Dressing:
         """This dressing with the board ticked off up to chapter `n`."""
@@ -223,6 +227,30 @@ def episode_number(settings, ticker: str, workdate: str, *,
         tmp.write_text(json.dumps(book, indent=2, sort_keys=True), encoding="utf-8")
         tmp.replace(path)
     return n
+
+
+# As room3d/build.py PILE_MAX: two piles of 24, and no more.
+PILE_MAX = 48
+
+
+def pile_count(settings, ticker: str, workdate: str, *, long: bool) -> int:
+    """How many read 10-Ks are on his floor in this video (V12): one for
+    every long on record as public, dated no later than this video, not
+    counting this long itself; at most PILE_MAX. Counted from the record
+    rather than the channel, so a video rendered again shows the pile it had.
+    Nothing on record, or a record that cannot be read, is no pile."""
+    from pipeline.youtube import public_videos, record_format
+
+    try:
+        rows = public_videos(settings)
+    except Exception as e:  # noqa: BLE001 — a pile is never worth a render
+        log.warning("room: the video log could not be read for the 10-K pile (%s)", e)
+        return 0
+    me = (ticker.upper(), workdate) if long else None
+    seen = {(v.ticker.upper(), v.workdate) for v in rows
+            if record_format(v) == "long" and (v.workdate or "") <= workdate}
+    seen.discard(me)
+    return min(len(seen), PILE_MAX)
 
 
 def board_question(script) -> str:
@@ -1150,49 +1178,76 @@ def _files(plate) -> list[str]:
     return list(dict.fromkeys(n for n in names if n))
 
 
-def _stamp(plate, d: Dressing, names: list[str]) -> str:
+def _stamp(plate, d: Dressing, names: list[str], pile: Path | None = None) -> str:
     src = plate.root / plate.family
     stamp = hashlib.sha256()
     stamp.update(d.fingerprint.encode())
     for n in names:
         st = (src / n).stat()
         stamp.update(f"{n}:{st.st_size}:{st.st_mtime_ns}".encode())
+    if pile is not None:
+        stamp.update(f"pile:{pile}".encode())
     return stamp.hexdigest()[:12]
 
 
-def written_room(plate, d: Dressing, out: Path, fonts: Path):
+def _fronts(plate) -> set[str]:
+    """The pictures of what stands in front of him: nothing behind him is
+    laid on them."""
+    return {f.front for f in plate.frames if f.front} | {plate.layers.get("front") or ""}
+
+
+def _piled(img, pile):
+    """`img` with the 10-Ks' picture (him-less, the room's size) laid over it."""
+    from PIL import Image
+
+    if pile.size != img.size:
+        pile = pile.resize(img.size, Image.LANCZOS)
+    out = img.convert("RGBA")
+    out.alpha_composite(pile)
+    return out if img.mode == "RGBA" else out.convert(img.mode)
+
+
+def written_room(plate, d: Dressing, out: Path, fonts: Path, pile: Path | None = None):
     """`plate` with this episode on its board and monitor, or `plate` itself.
 
     The written pictures go under `out`, named as the kit names them, and the
     plate that comes back is the same plate rooted there: every renderer that
     opens a frame, a front layer or the base file opens the written one, and
     nothing else about the room (its anchor, its slots, its own loop) changes.
+    `pile` is the read 10-Ks drawn alone at this angle (V12,
+    `dennis3d.Performer.pile_layer`), laid over every picture of the room but
+    the front ones: the piles are behind every spot he stands on.
 
     Done once per room, dressing and drawing; a second call finds it on disk.
     """
-    if not getattr(plate, "writable", None):
+    if not getattr(plate, "writable", None) and pile is None:
         return plate
     src = plate.root / plate.family
     names = _files(plate)
-    root = out / f"{plate.name}_{_stamp(plate, d, names)}"
+    root = out / f"{plate.name}_{_stamp(plate, d, names, pile)}"
     fam = root / plate.family
     done = fam / ".written"
     if not done.exists():
         from PIL import Image
 
-        layers = _layers(plate, d, fonts)
-        if not layers:
+        layers = _layers(plate, d, fonts) if getattr(plate, "writable", None) else []
+        if not layers and pile is None:
             return plate
+        piled = Image.open(pile).convert("RGBA") if pile is not None else None
+        fronts = _fronts(plate)
         fam.mkdir(parents=True, exist_ok=True)
         for n in names:
             im = Image.open(src / n)
             im = im.convert("RGBA" if "A" in im.getbands() else "RGB")
             if im.size != tuple(plate.delivered):
                 im = im.resize(tuple(plate.delivered), Image.LANCZOS)
-            dress(im, layers).save(fam / n, compress_level=1)
+            im = dress(im, layers)
+            if piled is not None and n not in fronts:
+                im = _piled(im, piled)
+            im.save(fam / n, compress_level=1)
         done.write_text(d.fingerprint, encoding="utf-8")
         log.info("room: wrote episode %d on %s (%s)", d.episode, plate.key,
-                 ", ".join(sorted({L.kind for L in layers})))
+                 ", ".join(sorted({L.kind for L in layers} | ({"pile"} if piled else set()))))
     return replace(plate, root=root, writable={})
 
 
