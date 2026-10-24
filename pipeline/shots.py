@@ -958,6 +958,26 @@ class Span:
 
 
 
+def _without_overlaps(spans: list["Span"]) -> list["Span"]:
+    """Each span ended where the next begins, and any span left with no
+    instant to be drawn in dropped, until nothing overlaps.
+
+    ONE PASS WAS NOT ENOUGH. A span the pin swallowed was dropped after the
+    repair had already measured its neighbour against it, so the shot before
+    it ran on over the sign-off and both plates and their captions were
+    drawn together."""
+    out = list(spans)
+    while True:
+        for i in range(len(out) - 1):
+            if out[i].end > out[i + 1].start:
+                out[i] = Span(out[i].shot, out[i].start, out[i + 1].start,
+                              out[i].anchored)
+        kept = [sp for sp in out if sp.end > sp.start]
+        if len(kept) == len(out):
+            return kept
+        out = kept
+
+
 def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
                   anchors: dict[str, str] | None = None, *,
                   ordered: bool = False,
@@ -1049,12 +1069,17 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
         spans[-1] = Span(spans[-1].shot,
                          min(spans[-1].start, duration - MIN_SHOT_S),
                          duration, spans[-1].anchored)
-    for i in range(len(spans) - 1):
-        if spans[i].end > spans[i + 1].start:
-            spans[i] = Span(spans[i].shot, spans[i].start,
-                            spans[i + 1].start, spans[i].anchored)
-    # A span the pin swallowed whole has no instant left to be drawn in.
-    spans = [sp for sp in spans if sp.end > sp.start]
+    # THE PAYOFF IS NOT TRADED FOR THE SIGN-OFF. A conclusion heard in the
+    # last moments had its card swallowed by the pin, hit and drop with it
+    # (scan, 24 Oct 2026): the sign-off gives up its own time first, down to
+    # half the minimum.
+    if len(spans) >= 2 and spans[-1].start < spans[-2].start + MIN_SHOT_S:
+        spans[-1] = Span(spans[-1].shot,
+                         max(spans[-1].start,
+                             min(spans[-2].start + MIN_SHOT_S,
+                                 duration - MIN_SHOT_S / 2)),
+                         duration, spans[-1].anchored)
+    spans = _without_overlaps(spans)
     if fmt.opener is not None:
         spans = _open_on_him(spans, words, fmt.opener)
 

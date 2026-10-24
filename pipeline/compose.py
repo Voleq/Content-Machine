@@ -2152,6 +2152,14 @@ def check_invariants(fmt: Format, result: BuildResult,
                 f"{l.name}: runs {l.t_start:.2f}–{l.t_end:.2f} outside its "
                 f"shot's {span.start:.2f}–{span.end:.2f}")
 
+    # 1b. One shot at a time: a shot that runs on over the next one draws
+    # both plates and both captions together.
+    for a, b in zip(result.spans, result.spans[1:]):
+        if a.end > b.start + 1e-6:
+            problems.append(
+                f"{a.shot.id}: runs to {a.end:.2f}, over {b.shot.id} from "
+                f"{b.start:.2f}")
+
     # 2. The host appears in exactly the shots the template puts them in.
     wanted = set(host_shots)
     got = {l.shot_id for l in result.of_kind("host")}

@@ -569,3 +569,38 @@ def test_the_punch_in_is_the_shots_own_focus_then_where_the_kit_puts_the_eye(
     assert slot("the-comment") == "body"
     # He is never punched in on.
     assert slot("the-turn") is None
+
+
+def test_a_conclusion_heard_at_the_last_moment_keeps_its_card_and_one_shot_shows():
+    """The tail pin swallowed the payoff when the conclusion was heard in the
+    last moments, and the one-pass repair had measured the shot before it
+    against the payoff, so that shot ran on over the sign-off: two plates and
+    their captions drawn together, and no payoff card, hit or drop."""
+    from types import SimpleNamespace as W
+
+    from pipeline.compose import BuildResult
+
+    fmt = expand_sequences(load_format("short"), lambda src: ["a", "b"])
+    words = [W(word=f"w{i}", start=0.1 + i * 0.3, end=0.35 + i * 0.3)
+             for i in range(132)]
+    dur = words[-1].end + 0.05
+
+    def said_at(t):
+        i = min(range(len(words) - 1), key=lambda k: abs(words[k].start - t))
+        return f"{words[i].word} {words[i + 1].word}"
+
+    spans = resolve_spans(fmt, words, dur, {"cheap_or_trap": said_at(dur - 1.2),
+                                            "conclusion": said_at(dur - 0.6)})
+    ids = [sp.shot.id for sp in spans]
+    assert ids[-2:] == ["payoff", "close"]
+    for a, b in zip(spans, spans[1:]):
+        assert a.end <= b.start + 1e-9, (a.shot.id, a.end, b.shot.id, b.start)
+    result = BuildResult(layers=[], spans=spans, frame=(1080, 1920), aspect="9x16")
+    assert not [p for p in check_invariants(fmt, result) if " over " in p]
+    # And the invariant does catch two shots at once.
+    from dataclasses import replace
+
+    bad = list(spans)
+    bad[-2] = replace(bad[-2], end=bad[-1].start + 0.1)
+    overlap = BuildResult(layers=[], spans=bad, frame=(1080, 1920), aspect="9x16")
+    assert any("over close" in p for p in check_invariants(fmt, overlap))
