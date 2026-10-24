@@ -363,3 +363,33 @@ def test_a_rejected_undo_does_not_eat_a_revision(settings, long_valid_text,
     assert "doesn't parse" in reply.text
     assert ws.revision_count("long") == before, \
         "a refused undo must cost nothing"
+
+
+def test_two_edits_at_once_both_land(core_with_long, monkeypatch):
+    """The page and Telegram each run the core in a thread of their own. An
+    /edit from one while the other's was still being checked read the same
+    file, and the second save threw the first one's change away."""
+    import threading
+    import time
+
+    core, ws = core_with_long
+    real = core._intake_long
+
+    def slow(w, raw):
+        time.sleep(0.3)
+        return real(w, raw)
+
+    monkeypatch.setattr(core, "_intake_long", slow)
+    first = threading.Thread(target=core.edit_script, args=(
+        CHAT, ["1", "The first line, changed from the page."]))
+    second = threading.Thread(target=core.edit_script, args=(
+        CHAT, ["2", "The second line, changed from Telegram."]))
+    first.start()
+    time.sleep(0.05)
+    second.start()
+    first.join()
+    second.join()
+
+    lines = ws.raw_script("long").splitlines()
+    assert lines[0] == "The first line, changed from the page."
+    assert lines[1] == "The second line, changed from Telegram."

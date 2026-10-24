@@ -341,6 +341,12 @@ class BotCore:
         self.context = ActiveContext(settings)
         self._uploading: set[tuple[str, str]] = set()
         self._upload_lock = threading.Lock()
+        # ONE SCRIPT CHANGE AT A TIME PER VIDEO. The page and Telegram each
+        # run the core in a thread of their own, so an /edit from one and a
+        # paste or /undo from the other read the same file, and the second
+        # save threw the first one's change away (scan, 24 Oct 2026).
+        self._script_locks: dict[str, threading.RLock] = {}
+        self._script_locks_guard = threading.Lock()
         # Set by main.py: a thread-safe way for the worker to hand a file
         # (storyboard, thumbnail) to the operator mid-job.
         self.file_pusher: Callable[[Path, str], None] | None = None
@@ -894,6 +900,11 @@ class BotCore:
             return True  # the LONG write-step output
         return False
 
+    def _script_lock(self, ws: Workspace) -> threading.RLock:
+        """The lock every read-edit-save of `ws`'s script holds."""
+        with self._script_locks_guard:
+            return self._script_locks.setdefault(str(ws.path), threading.RLock())
+
     def intake_script(self, chat_id: int, text: str, *,
                       from_file: bool = False, from_page: bool = False) -> Reply:
         ws = self._active_ws(chat_id)
@@ -920,7 +931,7 @@ class BotCore:
                     "paste", "it arrived right after a message Telegram cut "
                              "at its length limit, so it is the end of the "
                              "same message, not a whole script")
-        with llm_scope(self._llm_scope(ws)):
+        with llm_scope(self._llm_scope(ws)), self._script_lock(ws):
             return self._intake(ws, text, from_file=from_file,
                                 from_page=from_page)
 
@@ -1068,6 +1079,11 @@ class BotCore:
         ws = self._active_ws(chat_id)
         if ws is None:
             return Reply("No active workspace — /short TICKER or /long TICKER first.")
+        with self._script_lock(ws):
+            return self._edit_script(ws, args, mode=mode, raw_args=raw_args)
+
+    def _edit_script(self, ws: Workspace, args: list[str], *, mode: str,
+                     raw_args: str | None) -> Reply:
         fmt = ws.current_format()
         raw = ws.raw_script(fmt) if fmt else None
         if not raw:
@@ -1101,6 +1117,10 @@ class BotCore:
         ws = self._active_ws(chat_id)
         if ws is None:
             return Reply("No active workspace — /short TICKER or /long TICKER first.")
+        with self._script_lock(ws):
+            return self._undo_edit(ws)
+
+    def _undo_edit(self, ws: Workspace) -> Reply:
         fmt = ws.current_format()
         if fmt is None:
             return Reply("No script on file.")
