@@ -73,6 +73,16 @@ def test_swear_in_title_warns():
     assert len(found) == 1 and "title 1" in found[0].message
 
 
+def test_names_that_only_look_like_swears_pass():
+    """A retailer, a novel, a Lehman chief, a mushroom: none is a swear."""
+    for text in ("Dick's Sporting Goods beat on margin", "The Moby Dick of write-downs",
+                 "What Dick Fuld told the board", "Shiitake farms and shitake typos",
+                 "A Pissarro in the lobby", "Philip K. Dick predicted this"):
+        assert wc.package_swears({"title 1": text}) == [], text
+    for text in ("What a dick move", "That guidance was bullshit", "dick's move"):
+        assert len(wc.package_swears({"title 1": text})) == 1, text
+
+
 def test_clean_package_no_findings():
     assert wc.package_swears({"title 1": "The margin that fell ninety percent",
                               "pinned comment": "Not advice."}) == []

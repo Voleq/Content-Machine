@@ -107,6 +107,14 @@ SWEAR_GAP_S = 60.0
 
 _STRONG_RE = re.compile("|".join(STRONG_SWEARS), re.IGNORECASE)
 _PACKAGE_RE = re.compile("|".join(PACKAGE_SWEARS), re.IGNORECASE)
+# NAMES AND WORDS THAT ONLY LOOK LIKE ONE (scan, 24 Oct 2026): a retailer, a
+# novel, people a finance channel names, a mushroom, a painter. Taken out of
+# the text before it is searched. The names are matched with their capital,
+# so "dick's" in lower case is still the word.
+_NOT_SWEARS = re.compile(
+    r"\bDick's\b|\bMoby[ -]Dick\b|\bK\. ?Dick\b"
+    r"|\bDick (?:Fuld|Grasso|Cheney|Clark|Costolo)\b"
+    r"|(?i:\bshi+take\w*|\bPissarro\b)")
 
 
 def swear_lint(narration: str, fmt: str) -> list[Finding]:
@@ -149,7 +157,8 @@ def package_swears(texts: dict[str, str]) -> list[Finding]:
     description, the pinned comment. `texts` is {what it is: its words}."""
     findings: list[Finding] = []
     for where, text in texts.items():
-        m = _PACKAGE_RE.search(text or "")
+        m = _PACKAGE_RE.search(_NOT_SWEARS.sub(
+            lambda n: " " * len(n.group(0)), text or ""))
         if m:
             findings.append(Finding(
                 gate="swearing", severity="warn",
