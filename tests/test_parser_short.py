@@ -511,3 +511,20 @@ def test_the_script_s_fence_is_found_behind_a_fenced_preamble(short_valid_json,
            f"JSON\n```json\n{short_valid_json}\n```\n")
     script, _ = parse_short_script(raw, settings)
     assert script.ticker == "EXMPL"
+
+
+@pytest.mark.parametrize("field", ["numbers_comment", "conclusion"])
+def test_a_card_line_the_voice_does_not_say_is_flagged(short_valid_json,
+                                                       settings, field):
+    """The comment card prints its line with no captions and the sign-off
+    card prints the conclusion: a card saying "a plateau in a costume" while
+    the voice says "a plateau wearing a costume" passed without a word."""
+    data = json.loads(short_valid_json)
+    data["numbers_comment"] = ("Eleven times earnings, and every number "
+                               "underneath it is going the wrong way.")
+    _, clean = parse_short_script(json.dumps(data), settings)
+    assert not any("word for word" in w for w in clean)
+    data[field] = data[field].rstrip(".") + ", and then some."
+    _, warned = parse_short_script(json.dumps(data), settings)
+    assert any(w.startswith(f"{field} is not spoken word for word")
+               for w in warned)

@@ -108,3 +108,20 @@ def test_junk_ledger(settings):
     (settings.state_dir / rb.BITS_FILE).write_text("{oops", encoding="utf-8")
     assert rb.due_bit(settings) == ""
     assert "No recurring bit is due" in rb.bits_block(settings)
+
+
+def test_only_a_financial_confession_is_the_old_trade(settings):
+    """The old trade is declared `financial | …`. A long whose confession
+    was another kind did not carry it, and recording it as the old trade put
+    the real one back six to eight longs."""
+    _ship(settings, 9)
+    rb.BitLedger(settings).note("K/2026-08-01/long", "K", "2026-08-01", "kev_tip")
+    for k in range(3):
+        ConfessionLedger(settings).note(f"C{k}", fmt="long")
+    assert rb.due_bit(settings, confession_due=True) == "old_trade"
+    other = _long("Margins fell.", SimpleNamespace(
+        kind="epistemic", text="I said it would double. It halved."))
+    assert rb.note_long(settings, "O/1/long", "O", "1", other) == ""
+    trade = _long("Margins fell.", SimpleNamespace(
+        kind="financial", text="I bought it at nineteen in 2019."))
+    assert rb.note_long(settings, "F/1/long", "F", "1", trade) == "old_trade"

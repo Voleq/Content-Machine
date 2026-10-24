@@ -95,6 +95,17 @@ def _balanced_objects(raw: str) -> list[str]:
     return spans
 
 
+def _folded(text: str) -> str:
+    """`text` as the voice says it, for a word-for-word comparison: tags
+    out, typed figures spelled, case and punctuation gone."""
+    from pipeline.spoken import eye_written_figures
+
+    text = re.sub(r"\[[^\]]*\]", " ", text or "")
+    for typed, spoken in eye_written_figures(text):
+        text = text.replace(typed, f" {spoken} ", 1)
+    return " " + " ".join(re.sub(r"[^\w]+", " ", text.lower()).split()) + " "
+
+
 def _extract_json_block(raw: str) -> str:
     """Pull the SHORT script object out of fences/prose.
 
@@ -529,6 +540,17 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             "some numbers rows carry fewer than 3 years — direction is the "
             "point of the gut check"
         )
+    said = _folded(script.audio_script)
+    for name, why in (("numbers_comment", "its card prints it as the line "
+                       "being said, with no captions"),
+                      ("conclusion", "the sign-off card prints it and the "
+                       "payoff syncs to its words")):
+        text = str(getattr(script, name, "") or "")
+        if text.strip() and _folded(text) not in said:
+            warnings.append(
+                f"{name} is not spoken word for word in audio_script — {why}, "
+                f"so a viewer reads one thing while hearing another. Say it "
+                f"as written, or write it as it is said.")
     if len(script.numbers) > SHEET_ROWS:
         dropped = ", ".join(r.label for r in script.numbers[SHEET_ROWS:])
         warnings.append(

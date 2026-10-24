@@ -197,7 +197,12 @@ def note_long(settings: Settings, key: str, ticker: str, workdate: str,
     """Ship time: record which bit this long carried. Returns the bit."""
     narration = getattr(script, "narration", "") or ""
     said = getattr(script, "confession", None)
-    confessed = bool(getattr(said, "text", "") if said else "")
+    # THE OLD TRADE IS A FINANCIAL CONFESSION. The prompt asks for it as
+    # `financial | …`; any other kind admitted something else, and was
+    # recorded as the old trade, which put the real one back six to eight
+    # longs (scan, 24 Oct 2026).
+    confessed = bool(said and getattr(said, "text", "")
+                     and getattr(said, "kind", "") == "financial")
     try:
         kev_due = BitLedger(settings).overdue("kev_tip") >= 0
     except Exception:                              # noqa: BLE001
