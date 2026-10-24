@@ -2746,7 +2746,8 @@ class BotCore:
         if not ok:
             return Reply(
                 f"⛔ can't upload from here: {why}\n"
-                f"The package is attached — post it by hand.",
+                f"The package is attached — post it by hand, and set "
+                f"\"Altered or synthetic content\" to Yes in Studio.",
                 files=[pkg_path] if pkg_path.exists() else [])
         try:
             record = upload_video(
@@ -2761,7 +2762,8 @@ class BotCore:
                 fmt=fmt)
         except (UploadError, YouTubeUnavailable) as e:
             return Reply(f"⛔ upload failed: {e}\nThe package is still yours "
-                         f"to post by hand.",
+                         f"to post by hand — set \"Altered or synthetic "
+                         f"content\" to Yes in Studio if you do.",
                          files=[pkg_path] if pkg_path.exists() else [])
         except Exception as e:  # noqa: BLE001
             log.exception("youtube upload blew up")
@@ -2779,6 +2781,7 @@ class BotCore:
             note = ("\n📌 the comment did not post (a private video often "
                     "refuses one). Post and pin it once the video is public:\n"
                     f"{package.pinned_comment}")
+        note += "".join(f"\n⚠️ {n}" for n in record.upload_notes)
         return Reply(f"📺 {ticker}: {tail}\n{record.url()}{note}",
                      keyboard=uploaded_keyboard(ticker, record.video_id))
 

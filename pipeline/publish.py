@@ -236,6 +236,10 @@ def timestamps_from_cues(cues: list[tuple[float, float, str]],
 _CHAPTER_RE = re.compile(r"^\s*(\d{1,2}:\d{2}(?::\d{2})?)\s+(.{2,80})$")
 
 
+SYNTHETIC_REMINDER = ("BEFORE YOU PUBLISH: in Studio's Details, set \"Altered or "
+                      "synthetic content\" to YES — the narration is an AI voice.")
+
+
 @dataclass
 class UploadPackage:
     ticker: str
@@ -245,7 +249,11 @@ class UploadPackage:
     pinned_comment: str = ""
 
     def render_text(self) -> str:
-        lines = [f"=== {self.ticker} — upload package ===", "", "TITLE OPTIONS"]
+        # POSTED BY HAND, THE DISCLOSURE IS HIS TO TICK. The API path sets it
+        # on every upload; the package said nothing, so a video put up in
+        # Studio from it went out undeclared (scan, 24 Oct 2026).
+        lines = [f"=== {self.ticker} — upload package ===", "",
+                 SYNTHETIC_REMINDER, "", "TITLE OPTIONS"]
         lines += [f"  {i}. {t}" for i, t in enumerate(self.titles, 1)]
         lines += ["", "DESCRIPTION", self.description, "",
                   "TAGS", ", ".join(self.tags), "",

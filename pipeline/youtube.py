@@ -100,6 +100,10 @@ class VideoRecord:
     # private video may refuse comments altogether — False is the operator's
     # cue to post it by hand once the video is public.
     comment_posted: bool | None = None
+    # What went up without its part: the thumbnail or the captions YouTube
+    # refused, said back to him (an unverified channel takes no custom
+    # thumbnail, and the video went live on the frame YouTube picked).
+    upload_notes: list = field(default_factory=list)
 
     def url(self) -> str:
         return f"https://youtu.be/{self.video_id}"
@@ -529,6 +533,12 @@ def available(settings: Settings) -> tuple[bool, str]:
 # --------------------------------------------------------------------------
 
 
+def _short(e: Exception) -> str:
+    """An API error in a line: its first, cut to fit a reply."""
+    line = (str(e).strip().splitlines() or [type(e).__name__])[0]
+    return line[:120]
+
+
 def _api_text(text: str, max_bytes: int) -> str:
     """Text the Data API takes as it is.
 
@@ -622,17 +632,23 @@ def upload_video(video: Path, package, settings: Settings, *,
     # thumbnail and no captions, which is most of what the generation was
     # for. Best-effort: the video is already live, and a failed thumbnail
     # must not read as a failed upload.
+    notes: list[str] = []
     if thumbnail is not None and Path(thumbnail).exists():
         try:
             client.set_thumbnail(video_id, thumbnail_for_upload(Path(thumbnail)))
         except Exception as e:  # noqa: BLE001
             log.warning("thumbnail upload failed for %s: %s", video_id, e)
+            notes.append(f"the thumbnail did not go up ({_short(e)}) — YouTube "
+                         f"shows a frame it picked; set it in Studio (a custom "
+                         f"thumbnail needs a phone-verified channel)")
     if captions is not None and Path(captions).exists():
         try:
             client.set_captions(video_id, Path(captions),
                                 language=settings.captions_language)
         except Exception as e:  # noqa: BLE001
             log.warning("caption upload failed for %s: %s", video_id, e)
+            notes.append(f"the captions did not go up ({_short(e)}) — add the "
+                         f".srt in Studio")
 
     comment_posted: bool | None = None
     if package.pinned_comment:
@@ -651,6 +667,9 @@ def upload_video(video: Path, package, settings: Settings, *,
         # lost the flag is one YouTube will label for itself.
         log.warning("youtube: %s came back WITHOUT the synthetic-media "
                     "declaration — set it by hand on the watch page", video_id)
+        notes.insert(0, "YouTube's reply does NOT carry the AI disclosure — open "
+                        "the video in Studio and set \"Altered or synthetic "
+                        "content\" to Yes before it goes public")
     record = VideoRecord(
         ticker=package.ticker, video_id=video_id, title=chosen,
         privacy="scheduled" if when else "private",
@@ -660,7 +679,7 @@ def upload_video(video: Path, package, settings: Settings, *,
         duration_s=duration_s,
         synthetic_declared=(None if declared is None else bool(declared)),
         experiment=experiment, clip_start_s=clip_start_s, fmt=fmt,
-        comment_posted=comment_posted)
+        comment_posted=comment_posted, upload_notes=notes)
     VideoLog(settings).record(record)
     log.info("youtube: %s uploaded as %s%s", video_id, record.privacy,
              f" for {record.publish_at}" if when else "")

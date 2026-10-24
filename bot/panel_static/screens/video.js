@@ -615,7 +615,8 @@ function retentionChart(curve, chapters, duration) {
 STEPS_UI.live = (d) => {
   if (!d.video) return { main: null, body: [empty("Not out yet", "Once it is uploaded, how viewers watched it shows here.", "", "·")] };
   const body = [el("p", {}, el("a", { href: d.video.url, target: "_blank", rel: "noopener", text: d.video.title || d.video.url }), el("span", { class: "meta", text: ` · ${d.video.privacy}` })),
-    d.synthetic_declared === false ? el("div", { class: "banner bad", text: "YouTube did not confirm the altered or synthetic content label on this upload. Set it in Studio." }) : null];
+    d.synthetic_declared === false ? el("div", { class: "banner bad", text: "YouTube did not confirm the altered or synthetic content label on this upload. Set it in Studio." }) : null,
+    ...(d.upload_notes || []).filter((n) => !n.startsWith("YouTube's reply does NOT")).map((n) => el("div", { class: "banner warn", text: n }))];
   if ((d.curve || []).length) body.push(retentionChart(d.curve, d.chapters, d.duration_s));
   else body.push(el("p", { class: "meta", text: "Retention reads from 48 hours after it goes public." }));
   if ((d.lines || []).length) {

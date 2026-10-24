@@ -172,6 +172,22 @@ def test_a_failed_thumbnail_does_not_fail_the_upload(settings, package, video,
                           thumbnail=thumb)
 
     assert record.video_id == "vid123"
+    # but it is said: the video went live on a frame YouTube picked
+    assert any("thumbnail did not go up" in n for n in record.upload_notes)
+
+
+def test_a_lost_disclosure_is_said_and_the_by_hand_package_carries_it(settings, package,
+                                                                      video):
+    """YouTube's reply without the declaration was only logged, and a
+    package posted by hand never said to tick it."""
+    from pipeline.publish import SYNTHETIC_REMINDER
+
+    client = FakeClient()
+    client.last_upload_status = {"containsSyntheticMedia": False}
+    record = upload_video(video, package, settings, client=client, now=NOW)
+    assert record.synthetic_declared is False
+    assert "Altered or synthetic content" in record.upload_notes[0]
+    assert SYNTHETIC_REMINDER in package.render_text()
 
 
 def test_the_upload_carries_a_resumable_session(settings, package, video):

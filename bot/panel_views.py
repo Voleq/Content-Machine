@@ -529,6 +529,7 @@ def _step_live(v: _Video) -> dict:
                        if isinstance(c, (list, tuple)) and len(c) >= 2]
     out["duration_s"] = rec.duration_s
     out["synthetic_declared"] = rec.synthetic_declared
+    out["upload_notes"] = list(rec.upload_notes or [])
     if record_format(rec) != "clip" and rec.retention:
         from pipeline.retention_lines import holds_for_video, narration_for
         holds = holds_for_video(v.settings, rec, narration_for(v.settings, rec))
