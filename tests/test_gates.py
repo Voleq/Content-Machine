@@ -1118,3 +1118,46 @@ def test_a_short_s_plate_tag_blocks_nothing(settings):
     assert stats["unresolved_keys"] == []
     assert not any(f.severity == "block" for f in findings)
     assert budget_check(_Short(), settings) == []
+
+
+# --------------------------------------------------------------------------
+# True sentences the fact-check blocked (scan, 24 Oct 2026).
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("sentence", [
+    # a fall said with a verb is a negative change
+    "Free cash flow fell by four million.",
+    "Gross margin dropped two percent.",
+    # a page, a note and a form, said
+    "On page four hundred and eleven, the 10-K explains how revenue is recognised.",
+    "Note fourteen says free cash flow excludes leases.",
+    "The ten K shows revenue of four hundred and ninety six million.",
+    # what management guided to and analysts expect is not on the sheet
+    "Management guided to six hundred million of revenue next year.",
+    "Analysts expect revenue of five hundred and sixty million in FY26.",
+    # a ratio is neither of its lines
+    "Net debt to EBITDA is two point one.",
+    # a year said in words
+    "Free cash flow turned negative in twenty twenty two.",
+])
+def test_a_true_sentence_passes(data, sentence):
+    assert fact_check(sentence, data) == []
+
+
+@pytest.mark.parametrize("sentence", [
+    "Gross margin is twenty one percent.",         # a number, not 2001
+    "Gross margin rose two percent.",              # it fell
+    "Revenue was nine hundred million, and management expects six hundred "
+    "million next year.",                          # the reported half is checked
+])
+def test_a_wrong_sentence_still_blocks(data, sentence):
+    assert [f.severity for f in fact_check(sentence, data)] == ["block"]
+
+
+def test_a_relative_quarter_header_names_no_fiscal_quarter(data):
+    """The template's headers count back from the latest quarter, so Q-4 is
+    a year ago, not the fourth quarter."""
+    data.quarter_labels = [f"Q-{i}" for i in range(7, -1, -1)]
+    said = "In the fourth quarter, revenue was one hundred and twenty two million."
+    assert fact_check(said, data) == []

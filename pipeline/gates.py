@@ -564,6 +564,13 @@ _DECOY_PHRASES = (
     "sales and marketing", "sales & marketing", "sales team", "sales force",
     "salesforce", "cost of sales", "cost of revenue", "sales cycle",
     "sales pipeline", "research and development",
+    # A RATIO NAMES TWO LINES AND IS NEITHER. "Net debt to EBITDA is two
+    # point one" was checked as an EBITDA of 2.1 and blocked (scan, 24 Oct
+    # 2026); the price multiples are the voice lint's own spoken forms.
+    "net debt to ebitda", "debt to ebitda", "ev to ebitda",
+    "enterprise value to ebitda", "price to earnings", "price to sales",
+    "price to book", "price to free cash flow", "debt to equity",
+    "ev to sales", "ev to ebit",
 )
 
 # A number attached to its own subject by a preposition belongs to that
@@ -576,6 +583,39 @@ _ATTACHED_RE = re.compile(r"^\s*(?:on|for|in|per|across|toward|towards)\s+"
 _NEGATIVE_RE = re.compile(
     r"(?:minus|negative|-|\b(?:loss(?:es)?|deficit) of"
     r"(?: about| around| roughly| nearly| almost)?)\s*$")
+
+# A FIGURE ABOUT THE FUTURE is not on the sheet. The long's guidance chapter
+# and the earnings short's expected beat are invited to say what management
+# guided to and what analysts expect, and each was checked against history
+# and blocked (scan, 24 Oct 2026). Its own clause decides, so the reported
+# figure beside it in the same sentence is still checked.
+_FORWARD_CLAUSE_RE = re.compile(
+    r"\b(?:guid(?:e|es|ed|ing|ance)|expect(?:s|ed|ing|ation|ations)?|"
+    r"consensus|estimates?|estimated|forecasts?|forecasted|projects|"
+    r"projected|projections?|outlook|targets?|targeted|next (?:year|quarter)|"
+    r"looking for|predicts?|predicted)\b")
+_CLAUSE_EDGE_RE = re.compile(r"[,;:—–()]|\b(?:and|but|while|whereas)\b")
+
+
+def _clause(low: str, pos: int, end: int) -> str:
+    """The clause around the figure at `pos:end` of the sentence."""
+    starts = [m.end() for m in _CLAUSE_EDGE_RE.finditer(low, 0, pos)]
+    after = _CLAUSE_EDGE_RE.search(low, end)
+    return low[(starts[-1] if starts else 0):(after.start() if after else len(low))]
+
+
+# A FALL SAID WITH A VERB is a negative change. "Revenue dropped two point
+# four percent" against a sheet that fell 2.4% was compared as +2.4% and
+# blocked a true sentence (scan, 24 Oct 2026). Only when the verb leads
+# straight into the figure (or through "by"): "fell to four hundred million"
+# and "down from five hundred" name levels, not the change.
+_FALL_RE = re.compile(
+    r"\b(?:fell|falls?|falling|dropped|drops?|dropping|declined|declines?|"
+    r"declining|down|shrank|shrunk|shrinks?|shrinking|slid|slides?|sliding|"
+    r"slipped|slips?|decreased|decreases?|contracted|contracts?|plunged|"
+    r"plunges?|sank|sinks?|tumbled|tumbles?|lost|loses?|losing)"
+    r"(?:\s+(?:by|about|around|roughly|nearly|almost|some|just|over|another|"
+    r"more\s+than|less\s+than))*\s*$")
 
 # A PRICE MOVE IS NOT A METRIC CLAIM. "EXMPL is up twelve percent because the
 # boring machine beat earnings again" names earnings, and the nearest-metric
@@ -705,8 +745,15 @@ _QUARTER_WORD_RE = re.compile(
     r"\b(first|second|third|fourth)\s+quarter\b", re.IGNORECASE)
 
 
+# A HEADER'S FISCAL QUARTER. Not `Q-4`: the template's relative headers count
+# quarters back from the latest, so "the fourth quarter" checked against the
+# column a year ago and blocked a correct print (scan, 24 Oct 2026). A sheet
+# whose fiscal rows filled in says `Q4 FY25` instead.
+_LABEL_QUARTER_RE = re.compile(r"\bq\s?([1-4])\b", re.IGNORECASE)
+
+
 def _label_quarter(label: str) -> int | None:
-    m = _QUARTER_NUM_RE.search(str(label))
+    m = _LABEL_QUARTER_RE.search(str(label))
     return int(m.group(1)) if m else None
 
 
@@ -751,12 +798,19 @@ _PERIOD_TOKEN_RE = re.compile(r"\b(?:fy|q|h|cy)\s?-?\s?\d{1,4}\b",
 # A spoken year. "Free cash flow turned negative in twenty twenty two" is a
 # DATE, and the word-number parser reads it as a quantity — which the old
 # magnitude floor hid and a blocking gate cannot afford to.
+#
+# "Twenty" and a lone digit word is a NUMBER: "twenty one percent" is not the
+# year 2001, which is said "two thousand and one" or "twenty oh one". Read
+# as one, a margin of twenty-one percent went unchecked and "twenty five
+# million" left a bare "million" behind to block (scan, 24 Oct 2026).
+_YEAR_UNIT = r"(?:one|two|three|four|five|six|seven|eight|nine)"
+_YEAR_TEEN = (r"(?:nineteen|eighteen|seventeen|sixteen|fifteen|fourteen|"
+              r"thirteen|twelve|eleven|ten)")
 _SPOKEN_YEAR_RE = re.compile(
-    r"\b(?:twenty|two thousand(?:\s+and)?)\s+"
-    r"(?:oh\s+)?"
-    r"(?:twenty|thirty|nineteen|eighteen|seventeen|sixteen|fifteen|fourteen|"
-    r"thirteen|twelve|eleven|ten|one|two|three|four|five|six|seven|eight|nine)"
-    r"(?:\s+(?:one|two|three|four|five|six|seven|eight|nine))?\b",
+    rf"\b(?:twenty\s+(?:oh\s+{_YEAR_UNIT}|{_YEAR_TEEN}|"
+    rf"(?:twenty|thirty)(?:[\s-]+{_YEAR_UNIT})?)"
+    rf"|two thousand(?:\s+and)?\s+(?:oh\s+)?"
+    rf"(?:{_YEAR_TEEN}|(?:twenty|thirty)(?:[\s-]+{_YEAR_UNIT})?|{_YEAR_UNIT}))\b",
     re.IGNORECASE)
 
 _DIGIT_YEAR_RE = re.compile(
@@ -772,6 +826,19 @@ _NUMBERED_RE = re.compile(
     r"\b(?:page|pages|p\.|note|notes|item|items|section|exhibit|form|part|"
     r"chapter|slide|footnote|table|schedule)\s+(\d+[a-z]?(?:\.\d+)?)\b",
     re.IGNORECASE)
+# ...and the same names SAID, as the prompts ask: "on page four hundred and
+# eleven", "note fourteen", "the ten K" (scan, 24 Oct 2026).
+_SPOKEN_NUMBER_WORD = (r"(?:zero|one|two|three|four|five|six|seven|eight|nine|"
+                       r"ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|"
+                       r"seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|"
+                       r"sixty|seventy|eighty|ninety|hundred|thousand)")
+_SPOKEN_NUMBERED_RE = re.compile(
+    r"\b(?:page|pages|note|notes|item|items|section|exhibit|part|chapter|"
+    r"slide|footnote|table|schedule)\s+"
+    rf"((?:{_SPOKEN_NUMBER_WORD}(?:[\s-]+and[\s-]+|[\s-]+)?)*"
+    rf"{_SPOKEN_NUMBER_WORD})\b",
+    re.IGNORECASE)
+_SPOKEN_FORM_RE = re.compile(r"\b(?:ten|eight)[\s-]+[kq]s?\b", re.IGNORECASE)
 _BARE_YEAR_RE = re.compile(
     r"(?<![\d$£€.,])((?:19|20)\d{2})(?![\d,]|\.\d|\s*(?:%|percent\b|"
     r"thousand\b|million\b|billion\b|trillion\b|bn\b|[kmbt]\b))",
@@ -858,7 +925,9 @@ def _mask_labels(sentence: str, labels: list[str]) -> str:
     out = _PERIOD_TOKEN_RE.sub(_blank, out)
     out = _SPOKEN_YEAR_RE.sub(_blank, out)
     out = _FORM_NAME_RE.sub(_blank, out)
-    for rx in (_DIGIT_YEAR_RE, _NUMBERED_RE, _BARE_YEAR_RE, _DAY_OF_MONTH_RE):
+    out = _SPOKEN_FORM_RE.sub(_blank, out)
+    for rx in (_DIGIT_YEAR_RE, _NUMBERED_RE, _SPOKEN_NUMBERED_RE,
+               _BARE_YEAR_RE, _DAY_OF_MONTH_RE):
         out = rx.sub(_blank_groups, out)
     return out
 
@@ -1065,6 +1134,8 @@ def fact_check(narration: str, data, *,
                     continue
                 if _counts_things(low, num):
                     continue
+                if _FORWARD_CLAUSE_RE.search(_clause(low, pos, end)):
+                    continue
                 metric = _owner_of(pos, end, low[end:], named, low)
                 if metric is None:
                     continue
@@ -1110,7 +1181,8 @@ def fact_check(narration: str, data, *,
 
                 value = num.value
                 before = low[:pos].rstrip() if pos >= 0 else ""
-                if _NEGATIVE_RE.search(before):
+                if _NEGATIVE_RE.search(before) or (
+                        _FALL_RE.search(before) and value > 0):
                     value = -value
                 if not _matches_scaled(value, candidates):
                     findings.append(Finding(
