@@ -176,7 +176,12 @@ def undo_rules(words: list[WordTimestamp], edits: list[Edit],
     for w in words:
         start, e1 = _to_src(w.char_start, edits, end=False)
         stop, e2 = _to_src(w.char_end, edits, end=True)
-        inside = e1 or e2
+        # A word that holds a whole substitution with punctuation either
+        # side, "(ee-bit-dah)", starts before it and ends after it: neither
+        # end is inside, and the spoken form was kept as the caption's word.
+        inside = e1 or e2 or next(
+            (e for e in edits
+             if w.char_start <= e.dst_start and e.dst_end <= w.char_end), None)
         if (inside is not None and inside is last_edit and out
                 and out[-1].char_end >= inside.src_start):
             prev = out[-1]

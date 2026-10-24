@@ -39,6 +39,22 @@ def test_word_with_a_suffix_keeps_it():
     assert [w.word for w in back] == ["The", "EBITDA's", "fine."]
 
 
+def test_a_word_in_brackets_or_quotes_is_written_back():
+    """The spoken form inside punctuation on both sides came back as the
+    caption's word: "(ee-bit-dah)" in the captions and the transcript."""
+    src = "Their (EBITDA) fell, and “EBITDA” and (EBITDA) again."
+    rules = [Rule("EBITDA", "ee-bit-dah")]
+    said, edits = apply_rules(src, rules)
+    back = undo_rules(_words(said), edits, src)
+    assert [w.word for w in back] == ["Their", "(EBITDA)", "fell,", "and",
+                                      "“EBITDA”", "and", "(EBITDA)", "again."]
+    for w in back:
+        assert src[w.char_start:w.char_end] == w.word
+    said, edits = apply_rules("A (10-K) here.", RULES)
+    back = undo_rules(_words(said), edits, "A (10-K) here.")
+    assert [w.word for w in back] == ["A", "(10-K)", "here."]
+
+
 def test_protected_span_untouched():
     src = "EBITDA [EBITDA] EBITDA"
     said, edits = apply_rules(src, RULES, protect=[(7, 15)])
