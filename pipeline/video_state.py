@@ -181,6 +181,21 @@ def _jobs_for(jobs: list, ticker: str, workdate: str) -> list[dict]:
     return out[:6]
 
 
+def live_failure(jobs: list[dict]) -> dict | None:
+    """The newest failed job no later run of the same kind put right.
+
+    `jobs` is newest first, as `_jobs_for` returns it. A proof that failed,
+    was fixed and re-ran sat under Failed in the inbox for a day anyway
+    (scan, 24 Oct 2026)."""
+    fixed: set[str] = set()
+    for j in jobs:
+        if j["status"] == "done":
+            fixed.add(j["kind"])
+        elif j["status"] == "failed" and j["kind"] not in fixed:
+            return j
+    return None
+
+
 def video_state(settings: Settings, ws: Workspace, jobs: list | None = None,
                 videos: list | None = None,
                 now: datetime | None = None) -> VideoState:
@@ -377,7 +392,7 @@ def card_text(st: VideoState) -> str:
                      f" · {up['url']}")
     else:
         lines.append(f"upload    ✅ {up['privacy']} · {up['url']}")
-    failed = next((j for j in st.jobs if j["status"] == "failed"), None)
+    failed = live_failure(st.jobs)
     if failed and not job:
         lines.append(f"last job  ❌ {failed['kind']}: {failed['error'][:120]}")
     step, _ = st.next_step()
@@ -439,7 +454,7 @@ def inbox(settings: Settings, now: datetime | None = None,
             items.append(InboxItem("upload", st.ticker, st.workdate,
                                    f"{st.fmt.upper()} final on disk",
                                    "upload"))
-        failed = next((j for j in st.jobs if j["status"] == "failed"), None)
+        failed = live_failure(st.jobs)
         if failed and _age_hours(failed["updated_at"], now) < 24:
             items.append(InboxItem("failed", st.ticker, st.workdate,
                                    f"{failed['kind']}: {failed['error'][:80]}",

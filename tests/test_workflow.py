@@ -666,3 +666,32 @@ def test_the_telegram_glue_registers_every_name_from_the_registry(core):
     assert isinstance(core.cards, cmds.CardBoard) and core.send_to is not None
     # /jobs cancel never waits behind a slow update (see test_review_bot).
     assert type(app.update_processor).__name__ == "ControlFirst"
+
+
+def test_a_failure_a_later_run_put_right_leaves_the_inbox(core, xlsx_bytes,
+                                                          short_valid_json):
+    """A proof that failed and then re-ran fine sat under Failed for a day."""
+    import uuid
+
+    from pipeline.jobs import JobStore
+    from pipeline.models import JobKind, JobRecord, JobStatus
+
+    ws = _approved_short(core, xlsx_bytes, short_valid_json)
+    store = JobStore(core.settings)
+
+    def job(status, hours_ago):
+        # Written as is: `save` stamps the time, to the second.
+        rec = JobRecord(id=uuid.uuid4().hex[:10],
+                        kind=JobKind.RENDER_PROOF_SHORT, ticker="EXMPL",
+                        workdate=ws.workdate, status=status,
+                        error="ffmpeg exploded" if status is JobStatus.FAILED
+                        else "",
+                        updated_at=(now - timedelta(hours=hours_ago))
+                        .strftime("%Y-%m-%dT%H:%M:%SZ"))
+        store.path(rec.id).write_text(rec.model_dump_json(), encoding="utf-8")
+
+    now = datetime.now(timezone.utc)
+    job(JobStatus.FAILED, 2)
+    assert "ffmpeg exploded" in core.inbox_reply().text
+    job(JobStatus.DONE, 1)
+    assert "ffmpeg exploded" not in core.inbox_reply().text
