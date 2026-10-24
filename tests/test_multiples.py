@@ -469,6 +469,19 @@ def test_the_gate_fails_a_chapter_that_skips_the_peer_comparison(settings):
     assert "move 3" in findings[0].message
 
 
+def test_the_gate_hears_the_multiple_said_the_way_the_voice_lint_asks(settings):
+    """The voice lint asks for "price to earnings" rather than "P/E", and
+    written that way the same skipped move passed."""
+    from pipeline.gates import valuation_moves
+
+    class _Script:
+        narration = ("On forward price to earnings it is eleven. The price is "
+                     "priced for twenty percent growth.")
+        events: list = []
+
+    assert [f.severity for f in valuation_moves(_Script(), settings)] == ["block"]
+
+
 def test_the_gate_is_satisfied_by_the_strip_alone(settings):
     """The plate IS the move. A director who reached for it made the
     comparison whether or not the narration used the word "peer"."""

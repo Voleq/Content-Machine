@@ -1713,6 +1713,16 @@ def _row_figures(values: dict[str, str]) -> list[tuple[str, list[str]]]:
     return out
 
 
+_CELL_UNIT_RE = re.compile(r"\d\s*(?:bn|mm|mn|[kmbt])\s*\)?$", re.IGNORECASE)
+
+
+def _cell_has_unit(raw: str) -> bool:
+    """Does the cell carry its own scale letter, as `_cell_value` reads it?"""
+    text = (str(raw or "").replace(",", "").replace("$", "").replace("%", "")
+            .strip())
+    return bool(_CELL_UNIT_RE.search(text))
+
+
 def _cell_value(raw: str) -> float | None:
     """A plate cell as a signed number, or None when it holds no figure.
 
@@ -1802,7 +1812,11 @@ def onscreen_fact_check(script, data) -> list[Finding]:
                     continue            # an empty cell means NO DATA
                 if "%" in figure and metric not in _RATE_METRICS:
                     continue            # a share of a money line is not its level
-                stated *= scale
+                # A cell that says its own unit ("$1.1B") is not scaled by
+                # the sheet's again: under `unit=$B` it read as 1.1e18 and
+                # every cell blocked (scan, 24 Oct 2026).
+                if not _cell_has_unit(figure):
+                    stated *= scale
                 if aligned:
                     want = aligned[i]
                     # With a unit declared the comparison is exact. Without
@@ -1842,6 +1856,11 @@ _FORWARD_WORDS = (
     "forward p/e", "forward pe", "forward multiple", "forward earnings",
     "forward peg", "next year's earnings", "next year's estimates",
     "on forward numbers", "fwd p/e",
+    # The spoken forms the voice lint asks for: written that way, a forward
+    # multiple with no peer comparison passed (scan, 24 Oct 2026).
+    "forward price to earnings", "forward price-to-earnings", "forward p e",
+    "forward p-e", "forward ev to ebitda", "forward enterprise value",
+    "price to next year's earnings",
 )
 
 # Move 3 — the subject placed against the peer set. Any of these is the move

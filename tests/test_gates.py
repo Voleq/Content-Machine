@@ -368,6 +368,22 @@ def test_a_wrong_figure_blocks_whether_it_is_spoken_or_on_screen(settings, data,
     assert spoken and all(f.severity == "block" for f in spoken)
 
 
+def test_a_cell_that_says_its_unit_is_not_scaled_twice(settings, data,
+                                                       long_valid_text):
+    """`unit=$B` with "$0.40B" cells read as 4e17 and every cell blocked."""
+    from pipeline.gates import onscreen_fact_check
+
+    own = long_valid_text.replace(
+        "unit=$M | head=FY21,FY22,FY23,FY24,FY25,LTM | label-1=Revenue | "
+        "row-1=400,452,471,491,496,496",
+        "unit=$B | head=FY21,FY22,FY23,FY24,FY25,LTM | label-1=Revenue | "
+        "row-1=$0.40B,$0.452B,$0.471B,$0.491B,$0.496B,$0.496B", 1)
+    assert own != long_valid_text
+    out = [f for f in onscreen_fact_check(_long(own, settings), data)
+           if "revenue" in f.message]
+    assert out == []
+
+
 def test_a_real_figure_under_the_wrong_year_is_caught(settings, data,
                                                       long_valid_text):
     """The failure a membership test cannot see.
