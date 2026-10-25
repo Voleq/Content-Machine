@@ -754,3 +754,51 @@ def test_a_preview_draws_him_at_the_preview_s_rate(look_long):
     settings, jobs = look_long
     assert jobs and all(j["fps"] == settings.preview_fps for j in jobs), \
         [j["fps"] for j in jobs]
+
+
+def _blender_python() -> str | None:
+    """Blender's own Python where this box has one (his install has it at
+    /opt/blender-py), else None and the test below is skipped."""
+    import os
+    import subprocess
+
+    for p in (os.environ.get("DENNIS_3D_PYTHON"), "/opt/blender-py/bin/python"):
+        if p and Path(p).exists() and subprocess.run(
+                [p, "-c", "import bpy"], capture_output=True, timeout=120).returncode == 0:
+            return p
+    return None
+
+
+def test_switching_his_lines_keeps_his_collection_counted(tmp_path):
+    """His bench logged "ID user decrement error: GRdennis ... 0 <= 0" (25 Oct
+    2026): a line set's collection is not counted when it is set but is
+    uncounted when the set is freed, so every switch of DENNIS_3D_LINES took
+    the scene's own count of his collection to nought and then below."""
+    import subprocess
+
+    py = _blender_python()
+    if py is None:
+        pytest.skip("needs Blender's Python (DENNIS_3D_PYTHON)")
+    room3d = Path(__file__).resolve().parents[1] / "room3d"
+    script = tmp_path / "linesets.py"
+    script.write_text(textwrap.dedent(f"""
+        import sys
+        sys.path.insert(0, {str(room3d)!r})
+        import bpy
+        import build
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        him = bpy.data.collections.new("dennis")
+        bpy.context.scene.collection.children.link(him)
+        fs = bpy.context.view_layer.freestyle_settings
+        for _ in range(3):
+            build.clear_linesets(fs)
+            for name in ("outline", "detail"):
+                ls = fs.linesets.new(name)
+                ls.select_by_collection = True
+                ls.collection = him
+        print("USERS", him.users)
+    """), encoding="utf-8")
+    got = subprocess.run([py, str(script)], capture_output=True, text=True, timeout=300)
+    said = got.stdout + got.stderr
+    assert "USERS 1" in got.stdout, said
+    assert "decrement error" not in said

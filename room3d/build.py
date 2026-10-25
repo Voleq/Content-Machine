@@ -1585,8 +1585,7 @@ def setup_render(size: tuple[int, int], samples: int) -> None:
     fs = vl.freestyle_settings
     fs.as_render_pass = True
     fs.crease_angle = math.radians(128)
-    while fs.linesets:
-        fs.linesets.remove(fs.linesets[0])
+    clear_linesets(fs)
     for nm, edges, width in (("outline", ("silhouette", "border", "external_contour"), 3.6),
                              ("detail", ("crease", "material_boundary"), 2.0)):
         ls = fs.linesets.new(nm)
@@ -1599,6 +1598,21 @@ def setup_render(size: tuple[int, int], samples: int) -> None:
         style.thickness = max(width * scale, 1.4)
         style.chaining = "PLAIN"
         ls.linestyle = style
+
+
+def clear_linesets(fs) -> None:
+    """Every line set off the view layer, letting go of its collection first.
+
+    Setting a line set's collection does not count it as a user of that
+    collection, but freeing the set uncounts it. So removing sets that still
+    named his collection took the scene's own count of it to nought, and
+    Blender logged "ID user decrement error: GRdennis" on every switch of
+    his lines after that (his bench, 25 Oct 2026).
+    """
+    for ls in fs.linesets:
+        ls.collection = None
+    while fs.linesets:
+        fs.linesets.remove(fs.linesets[0])
 
 
 def compositor(out: Path, stem: str) -> None:
