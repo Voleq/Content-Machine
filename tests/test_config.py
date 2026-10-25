@@ -384,19 +384,6 @@ def test_the_library_count_ignores_things_that_are_not_clips(tmp_path):
                     _env_file=None).broll_library_size() == 1
 
 
-def test_the_shipped_library_is_still_empty_so_the_warning_is_live():
-    """This repo ships a README and no clips. If that ever changes the
-    warning above stops firing, which is the point — but it should change
-    because someone added clips, not because the check drifted."""
-    from pathlib import Path as _P
-
-    root = _P(__file__).resolve().parents[1]
-    s = Settings(MOCK_MODE=True, assets_dir=root / "assets", _env_file=None)
-    assert s.broll_library_size() == 0, (
-        "the owned b-roll library now has clips — good; drop this test and "
-        "the operator note in the README's preflight with it")
-
-
 def test_gif_visuals_are_counted_where_the_operator_will_look():
     """H3's counter has to reach both surfaces, or an over-reliance on the
     GIF chain is invisible exactly when the empty library makes it likely."""
