@@ -594,3 +594,54 @@ def test_the_channel_key_is_written_for_its_owner_only(tmp_path, monkeypatch):
     assert mod.main([str(secret), "--out", str(out), "--no-browser"]) == 0
     assert stat.S_IMODE(out.stat().st_mode) == 0o600
     assert "refresh_token" in out.read_text(encoding="utf-8")
+
+
+def test_the_drive_key_is_minted_by_the_same_sign_in(tmp_path, monkeypatch, capsys):
+    """DELIVERY_BACKEND=gdrive read an authorized-user JSON that nothing in
+    the repo made, and a personal Google account has no Shared Drive for a
+    service account to write to. `--drive` mints it with the one scope the
+    Drive backend asks for, beside the YouTube one, for its owner only."""
+    import importlib.util
+    import stat
+    import sys
+    import types
+
+    from pipeline.delivery import GDriveBackend
+
+    asked: list[list[str]] = []
+
+    class Creds:
+        refresh_token = "r"
+
+        def to_json(self):
+            return '{"refresh_token": "r"}'
+
+    class Flow:
+        @classmethod
+        def from_client_secrets_file(cls, _path, scopes, **_k):
+            asked.append(list(scopes))
+            return cls()
+
+        def run_local_server(self, **_k):
+            return Creds()
+
+    flow_mod = types.ModuleType("google_auth_oauthlib.flow")
+    flow_mod.InstalledAppFlow = Flow
+    monkeypatch.setitem(sys.modules, "google_auth_oauthlib",
+                        types.ModuleType("google_auth_oauthlib"))
+    monkeypatch.setitem(sys.modules, "google_auth_oauthlib.flow", flow_mod)
+    spec = importlib.util.spec_from_file_location(
+        "youtube_auth", Path(__file__).resolve().parents[1] / "scripts" / "youtube_auth.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setattr(mod, "ROOT", tmp_path)
+
+    secret = tmp_path / "client.json"
+    secret.write_text("{}", encoding="utf-8")
+    assert mod.main([str(secret), "--drive", "--no-browser"]) == 0
+    out = tmp_path / "state" / "gdrive.json"
+    assert asked == [list(GDriveBackend.SCOPES)]
+    assert stat.S_IMODE(out.stat().st_mode) == 0o600
+    said = capsys.readouterr().out
+    assert f"GDRIVE_CREDENTIALS={out}" in said and "YOUTUBE_CREDENTIALS" not in said
+    assert not (tmp_path / "state" / "youtube.json").exists()

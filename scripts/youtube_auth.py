@@ -19,6 +19,17 @@ An OAuth app left in "Testing" issues refresh tokens that expire after seven
 days. Publish the app (no verification is needed for your own channel) or
 re-run this weekly.
 
+`--drive` mints `GDRIVE_CREDENTIALS` for DELIVERY_BACKEND=gdrive the same way,
+with the one scope the Drive backend asks for (`drive.file`: only the files
+and folders this app makes), from the same client JSON once "Google Drive
+API" is enabled in the same project:
+
+    python scripts/youtube_auth.py client_secret.json --drive
+    GDRIVE_CREDENTIALS=state/gdrive.json in .env
+
+A personal Google account has no Shared Drive, and a service account has no
+storage of its own, so this is the way in for a channel on a gmail account.
+
 Needs `pip install '.[youtube]'`.
 """
 
@@ -35,14 +46,16 @@ if str(ROOT) not in sys.path:
 
 
 def main(argv: list[str] | None = None) -> int:
-    from pipeline.youtube import SCOPES
-
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("client_secret", type=Path,
                     help="the OAuth client JSON downloaded from the console")
-    ap.add_argument("--out", type=Path, default=ROOT / "state" / "youtube.json",
-                    help="where to write the authorized-user JSON")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="where to write the authorized-user JSON (default "
+                         "state/youtube.json, or state/gdrive.json with --drive)")
+    ap.add_argument("--drive", action="store_true",
+                    help="mint GDRIVE_CREDENTIALS (the drive.file scope) "
+                         "instead of YOUTUBE_CREDENTIALS")
     ap.add_argument("--no-browser", action="store_true",
                     help="print the URL instead of opening a browser. The "
                          "sign-in still returns to this machine's localhost: "
@@ -54,6 +67,14 @@ def main(argv: list[str] | None = None) -> int:
                     help="the localhost port the sign-in returns to "
                          "(default: any free one)")
     args = ap.parse_args(argv)
+    if args.drive:
+        from pipeline.delivery import GDriveBackend
+        scopes, setting = list(GDriveBackend.SCOPES), "GDRIVE_CREDENTIALS"
+    else:
+        from pipeline.youtube import SCOPES
+        scopes, setting = list(SCOPES), "YOUTUBE_CREDENTIALS"
+    if args.out is None:
+        args.out = ROOT / "state" / ("gdrive.json" if args.drive else "youtube.json")
 
     try:
         from google_auth_oauthlib.flow import InstalledAppFlow
@@ -66,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     flow = InstalledAppFlow.from_client_secrets_file(str(args.client_secret),
-                                                     list(SCOPES))
+                                                     scopes)
     creds = flow.run_local_server(port=args.port,
                                   open_browser=not args.no_browser,
                                   prompt="consent", access_type="offline")
@@ -88,8 +109,8 @@ def main(argv: list[str] | None = None) -> int:
     folder = args.out.parent.stat()
     if hasattr(os, "geteuid") and os.geteuid() == 0 and folder.st_uid != 0:
         os.chown(args.out, folder.st_uid, folder.st_gid)
-    print(f"wrote {args.out} with scopes:\n  " + "\n  ".join(SCOPES))
-    print(f"set YOUTUBE_CREDENTIALS={args.out} in .env")
+    print(f"wrote {args.out} with scopes:\n  " + "\n  ".join(scopes))
+    print(f"set {setting}={args.out} in .env")
     return 0
 
 

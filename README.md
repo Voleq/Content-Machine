@@ -282,7 +282,8 @@ scripts/
   gen_assets.py          procedural placeholders for everything not drawn
   gen_fixtures.py, fetch_sfx.py, contact_sheet.py
   youtube_auth.py        mint YOUTUBE_CREDENTIALS with the scopes /upload,
-                         the caption track, the comment and /correct need
+                         the caption track, the comment and /correct need;
+                         --drive mints GDRIVE_CREDENTIALS (drive.file)
 room3d/                  the long's 16:9 rooms, one room built in 3D:
                          build.py (Blender as a Python module, run when the
                          room changes, never on the render box), renders/
@@ -596,7 +597,9 @@ starting point, but they are **unmaintained** and nothing tests them.
    `ELEVEN_VOICE_ID_SHORT/LONG` are deliberate placeholders; audition
    Brian (dry/deadpan), Charlie (casual everyman) or George (weary/raspy)
    and paste one id. Set `PEXELS_API_KEY` and `GDRIVE_CREDENTIALS`
-   (service-account JSON path), and leave `GDRIVE_ROOT_FOLDER_ID` blank: the
+   (`scripts/youtube_auth.py client_secret.json --drive` writes it; a
+   service account works only in a Shared Drive), and leave
+   `GDRIVE_ROOT_FOLDER_ID` blank: the
    bot makes and reuses its own folder, and a folder shared with it by hand
    is one it cannot see (it asks Drive only for the files it made).
    `GIPHY_API_KEY`/`TENOR_API_KEY` are
