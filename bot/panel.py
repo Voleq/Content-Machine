@@ -275,7 +275,11 @@ def _handler_for(panel: Panel):
         def _authed(self, query: dict) -> bool:
             key = self.headers.get("X-Panel-Key") or \
                 (query.get("k") or [""])[0]
-            return bool(key) and hmac.compare_digest(key, panel.token)
+            # compared as bytes: a key with a letter outside ASCII made
+            # compare_digest raise, and the connection dropped instead of a
+            # 401 (scan, 24 Oct 2026)
+            return bool(key) and hmac.compare_digest(
+                key.encode("utf-8", "surrogateescape"), panel.token.encode("utf-8"))
 
         def _body(self) -> bytes:
             n = int(self.headers.get("Content-Length") or 0)
@@ -348,8 +352,10 @@ def _handler_for(panel: Panel):
                     return self._json(panel_pages.stats_view(panel))
                 if url.path == "/api/thumb":
                     from bot.panel_pages import thumbnail
-                    out = thumbnail(panel, (query.get("path") or [""])[0],
-                                    int((query.get("w") or ["360"])[0] or 360))
+                    w = (query.get("w") or ["360"])[0] or "360"
+                    if not w.isdigit():
+                        return self._json({"error": "w must be a width in pixels"}, 400)
+                    out = thumbnail(panel, (query.get("path") or [""])[0], int(w))
                     if out is None:
                         return self._json({"error": "not a picture the panel "
                                                     "serves"}, 404)
@@ -428,7 +434,8 @@ def _handler_for(panel: Panel):
                     texts = p.get("texts")
                     if not isinstance(texts, list):
                         return self._json({"error": "texts must be a list"}, 400)
-                    reply = core.edit_memory(str(p.get("book") or ""), texts)
+                    reply = core.edit_memory(str(p.get("book") or ""), texts,
+                                             was=p.get("was"))
                 elif url.path == "/api/active":
                     p = self._payload()
                     ticker = str(p.get("ticker") or "").upper()

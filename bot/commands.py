@@ -1457,6 +1457,19 @@ async def handle_text(core: BotCore, chat_id: int, text: str,
                                                   "never mind", "nevermind"):
             return Reply("OK — left as it was.")
         if pending["kind"] == "schedule":
+            # A TYPO IS ASKED AGAIN, not the end of the question: the answer
+            # went to the upload, which refused it, and the question was
+            # gone (scan, 24 Oct 2026).
+            from pipeline.youtube import resolve_publish_at
+
+            try:
+                resolve_publish_at(" ".join(words), settings=core.settings)
+            except ValueError as e:
+                cs.ask(chat_id, "schedule", fmt=pending["fmt"],
+                       ticker=pending["ticker"], workdate=pending["workdate"])
+                return Reply(f"⛔ {e}\nReply with the time again "
+                             f"(YYYY-MM-DD HH:MM), or cancel.",
+                             keyboard=kb.ForceReply(input_field_placeholder="2026-10-09 17:00"))
             target = f"{pending['ticker']}@{pending['workdate']}"
             reply = await asyncio.to_thread(
                 core.upload_command, [target, pending["fmt"], *words])

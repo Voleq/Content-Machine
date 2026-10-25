@@ -84,6 +84,22 @@ def test_replace_all_keeps_known_videos(settings):
     assert rows[0].ticker == "ABC" and rows[1].ticker == ""
 
 
+def test_a_save_from_an_open_page_keeps_what_shipped_meanwhile(settings):
+    """A video shipped while the library was open, and saving an edit there
+    dropped its lines. And a video whose lines were all removed was taken as
+    never remembered, so a final rendered again added them back."""
+    book = cm.JokeBook(settings)
+    book.add("ABC/2026-07-01/long", ["one joke here"], ticker="ABC",
+             workdate="2026-07-01", fmt="long")
+    shown = [r.text for r in book.all()]
+    book.add("XYZ/2026-07-02/long", ["a new one meanwhile"], ticker="XYZ",
+             workdate="2026-07-02", fmt="long")
+    book.replace_all([], was=shown)
+    assert [r.text for r in book.all()] == ["a new one meanwhile"]
+    assert book.has("ABC/2026-07-01/long")
+    assert book.add("ABC/2026-07-01/long", ["one joke here"]) == 0
+
+
 def test_blocks_fill_in_prompts(settings, workspace):
     from pipeline.company_data import load_company_data
 

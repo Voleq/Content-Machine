@@ -63,7 +63,7 @@ function libWriting(d) {
 // ----------------------------------------------------------------- Memory
 function memoryList(book, rows, what) {
   const texts = rows.map((r) => r.text);
-  const saveAll = (list, btn, label) => pagePost(label, "/api/memory", { book, texts: list }, btn).then(SCREEN_LOAD.library);
+  const saveAll = (list, btn, label) => pagePost(label, "/api/memory", { book, texts: list, was: texts }, btn).then(SCREEN_LOAD.library);
   const add = book === "facts" ? el("form", { class: "row inline-form" },
     el("input", { name: "t", class: "grow", placeholder: "A new fact about Dennis, e.g. Dennis's sister lives in Leeds.", required: true }),
     el("button", { type: "submit", class: "sm", text: "Add" })) : null;

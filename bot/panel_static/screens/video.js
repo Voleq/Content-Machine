@@ -243,7 +243,7 @@ function findingList(items) {
 }
 
 STEPS_UI.data = (d) => {
-  const zone = dropZone("Drop the workbook", ".xlsx,.xlsm,.csv", uploadFile, "dennis_data.xlsx from your Capital IQ terminal");
+  const zone = dropZone("Drop the workbook", ".xlsx,.csv", uploadFile, "dennis_data.xlsx from your Capital IQ terminal");
   const body = [];
   if (d.file) {
     body.push(el("p", {}, el("b", { text: d.file }), d.as_of ? el("span", { class: "meta", text: ` · numbers as of ${d.as_of}` }) : null));

@@ -3175,15 +3175,18 @@ class BotCore:
             return Reply(f"↩ {title} is the shipped one again.")
         return Reply(f"{title} was already the shipped one.")
 
-    def edit_memory(self, book: str, texts: list[str]) -> Reply:
+    def edit_memory(self, book: str, texts: list[str],
+                    was: list[str] | None = None) -> Reply:
         """The page's edit of Dennis's remembered facts or the used jokes:
-        the list as he left it."""
+        the list as he left it. `was` is the list the page showed."""
         from pipeline.channel_memory import FactBook, JokeBook
 
         cls = {"facts": FactBook, "jokes": JokeBook}.get(book)
         if cls is None:
             return Reply(f"❌ no list called {book!r}")
-        n = cls(self.settings).replace_all([str(t) for t in texts])
+        n = cls(self.settings).replace_all(
+            [str(t) for t in texts],
+            was=[str(t) for t in was] if isinstance(was, list) else None)
         what = "facts about Dennis" if book == "facts" else "used jokes"
         return Reply(f"💾 {n} {what} kept.")
 

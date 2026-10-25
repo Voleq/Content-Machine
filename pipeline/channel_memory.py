@@ -151,21 +151,34 @@ class _Book:
         _write(self.path, rows)
         return len(clean[:MAX_PER_VIDEO])
 
-    def replace_all(self, texts: list[str]) -> int:
+    def replace_all(self, texts: list[str], was: list[str] | None = None) -> int:
         """The panel's edit: the list as he left it. Lines he kept keep their
-        video; new lines are his own and carry none."""
+        video; new lines are his own and carry none.
+
+        `was` is the list the page showed him. A line a shipped video added
+        after the page loaded is not one he removed, and is kept: saved from
+        a tab left open, the edit dropped it (scan, 24 Oct 2026). And each
+        video stays on record as remembered, its lines removed or not, so a
+        final rendered again does not add them back."""
         from pipeline.standing import _write
 
+        clean = lambda t: " ".join(str(t or "").split())  # noqa: E731
         old = {r.text: r for r in self.all()}
+        wanted = [clean(t) for t in texts]
+        if was is not None:
+            seen = {clean(t) for t in was}
+            wanted += [t for t in old if t not in seen and t not in wanted]
         rows = []
-        for t in texts:
-            t = " ".join(str(t or "").split())
-            if not t:
-                continue
-            was = old.get(t)
-            rows.append((was or Remembered(text=t, added_at=_now())).to_json())
+        for t in dict.fromkeys(t for t in wanted if t):
+            rows.append((old.get(t) or Remembered(text=t, added_at=_now())).to_json())
+        kept = {r["key"] for r in rows if r.get("key")}
+        for r in self._rows():
+            k = r.get("key")
+            if k and k not in kept:
+                kept.add(k)
+                rows.append({**r, "text": ""})
         _write(self.path, rows)
-        return len(rows)
+        return sum(1 for r in rows if r["text"])
 
 
 class JokeBook(_Book):

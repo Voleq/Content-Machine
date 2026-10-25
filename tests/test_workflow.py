@@ -379,8 +379,8 @@ def test_schedule_asks_for_a_time_and_the_next_message_answers(core,
     got = []
     monkeypatch.setattr(core, "upload_command",
                         lambda args: got.append(args) or Reply("📺 ok"))
-    run(cmds.handle_text(core, CHAT, "2026-10-20 17:00"))
-    assert got == [[f"EXMPL@{ws.workdate}", "short", "2026-10-20", "17:00"]]
+    run(cmds.handle_text(core, CHAT, "2099-10-20 17:00"))
+    assert got == [[f"EXMPL@{ws.workdate}", "short", "2099-10-20", "17:00"]]
     assert not cmds.ChatState(core.settings).pending(CHAT), "answered once"
 
 
@@ -416,6 +416,19 @@ def test_a_correction_is_shown_and_posted_only_on_a_tap(core, monkeypatch):
     assert "no longer waiting" in run(cmds.handle_callback(
         core, CHAT, "cp|EXMPL")).text
     assert len(posted) == 1
+
+
+def test_a_typo_in_the_schedule_time_asks_again(core, monkeypatch):
+    """The answer went to the upload, which refused it, and the question
+    was used up."""
+    sent = []
+    monkeypatch.setattr(core, "upload_command", lambda args: sent.append(args)
+                        or Reply("📺 EXMPL: scheduled"))
+    run(cmds.handle_callback(core, CHAT, "us|s|EXMPL|2026-10-18"))
+    again = run(cmds.handle_text(core, CHAT, "2026-13-45 17:00"))
+    assert again.text.startswith("⛔") and sent == []
+    run(cmds.handle_text(core, CHAT, "2099-10-30 17:00"))
+    assert sent and sent[0][-2:] == ["2099-10-30", "17:00"]
 
 
 def test_a_correction_goes_on_the_video_whose_button_was_tapped(core, monkeypatch):
@@ -581,6 +594,9 @@ def test_the_panel_page_loads_and_the_api_needs_the_key(panel):
     assert panel("/static/app.js", key_="")[0] == 200
     assert panel("/api/state", key_="")[0] == 401
     assert panel("/api/state", key_="wrong")[0] == 401
+    # a key outside ASCII is a wrong key, not a dropped connection
+    assert panel("/api/state?k=%C3%A9", key_="")[0] == 401
+    assert panel("/api/thumb?w=abc&path=x.png")[0] == 400
     status, _h, body = panel("/api/state")
     assert status == 200 and "inbox" in json.loads(body)
 
