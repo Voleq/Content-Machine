@@ -802,3 +802,33 @@ def test_switching_his_lines_keeps_his_collection_counted(tmp_path):
     said = got.stdout + got.stderr
     assert "USERS 1" in got.stdout, said
     assert "decrement error" not in said
+
+
+def test_his_frames_carry_only_what_they_are_used_for(tmp_path):
+    """His bench (25 Oct 2026): a frame of the short's close-up took 24.5 s on
+    his card. Blender cleans a frame on the processor unless it is told to
+    use the card (here the cleaning was two thirds of a one-sample frame),
+    and the room's light groups and denoising passes, which only the room's
+    own picture reads (`build.compositor`), were drawn into every frame of him."""
+    import subprocess
+
+    py = _blender_python()
+    if py is None:
+        pytest.skip("needs Blender's Python (DENNIS_3D_PYTHON)")
+    root = Path(__file__).resolve().parents[1]
+    script = tmp_path / "frame_up.py"
+    script.write_text(textwrap.dedent(f"""
+        import sys
+        sys.path[:0] = [{str(root / "room3d")!r}, {str(root)!r}]
+        import bpy
+        import perform
+        stage = perform.Stage()
+        stage.build("plain")
+        perform._gpu = lambda: "GPU"        # as on his box: drawn on the card
+        stage.frame_up((288, 512), 1, "passes")
+        c, vl = bpy.context.scene.cycles, bpy.context.view_layer
+        print("GROUPS", len(vl.lightgroups), "STORE", vl.cycles.denoising_store_passes,
+              "CARD", c.denoising_use_gpu, "CLEANED", c.use_denoising)
+    """), encoding="utf-8")
+    got = subprocess.run([py, str(script)], capture_output=True, text=True, timeout=600)
+    assert "GROUPS 0 STORE False CARD True CLEANED True" in got.stdout, got.stdout + got.stderr

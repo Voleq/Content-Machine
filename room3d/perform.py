@@ -181,11 +181,20 @@ class Stage:
         scn.render.film_transparent = True
         scn.compositing_node_group = None
         scn.cycles.use_denoising = True
+        # cleaned on the card he is drawn on: Blender's own default cleans
+        # every frame on the processor while the card waits (his bench,
+        # 25 Oct 2026); with no card for it Cycles cleans on the processor
+        scn.cycles.denoising_use_gpu = self.device == "GPU"
         scn.render.use_persistent_data = True
         scn.cycles.max_bounces = 3
         scn.cycles.diffuse_bounces = 2
         scn.cycles.glossy_bounces = 1
         vl = bpy.context.view_layer
+        # the room's light groups and denoising passes are for the room's own
+        # picture (`room.compositor`); a frame of him is only its combined image
+        while vl.lightgroups:
+            vl.lightgroups.remove(vl.lightgroups[0])
+        vl.cycles.denoising_store_passes = False
         vl.freestyle_settings.as_render_pass = False
         for ls in vl.freestyle_settings.linesets:
             ls.select_by_collection = True
@@ -196,6 +205,8 @@ class Stage:
             ls.face_mark_condition = "ONE"
         scn.render.image_settings.file_format = "PNG"
         scn.render.image_settings.color_mode = "RGBA"
+        # `_feather` writes every frame again, so this first write is a hand-over
+        scn.render.image_settings.compression = 0
         if how == "passes":
             self._passes()
         self.size, self.samples, self.lines = size, samples, how
@@ -263,7 +274,7 @@ class Stage:
                          plane("Material Index"), outline_px=max(3.6 * scale, 1.4),
                          detail_px=max(2.0 * scale, 1.4), colour=ink_rgb,
                          toward=self._toward())
-        Image.fromarray(out, "RGBA").save(png)
+        Image.fromarray(out, "RGBA").save(png, compress_level=0)     # `_feather` writes it again
 
     def _toward(self):
         """From each pixel toward the camera: which way a surface must face
@@ -726,7 +737,7 @@ def _feather(png: Path, border, body) -> None:
     fx = fade(xs, x0, bx0, x0 <= 0.0) * fade(xs, x1, bx1, x1 >= 1.0)
     fy = fade(ys, y0, by0, y0 <= 0.0) * fade(ys, y1, by1, y1 >= 1.0)
     a[..., 3] = (a[..., 3] * np.outer(fy, fx)).round().astype(np.uint8)
-    Image.fromarray(a, "RGBA").save(png)
+    Image.fromarray(a, "RGBA").save(png, compress_level=1)
 
 
 def bench() -> int:
