@@ -1606,7 +1606,15 @@ def _render_long(
                 or any(a - 1e-3 <= cut < b for a, b in covers):
             return None
         try:
-            return _beat_room(nxt, quiet=True)[0]
+            room, scene, _wide = _beat_room(nxt, quiet=True)
+            from pipeline.scenes import is_framing, stands_in
+            asked = reg.get((scene or {}).get("pose") or "")
+            if not stands_in(room) and asked is not None and is_framing(asked):
+                # his close-up at the board is shot where he talks, as the
+                # beat itself is below: the look goes to that camera
+                variant = segments[nxt].payload.get("variant", 0)
+                return _room_plate("talk", seed=f"{script.ticker}|{variant % 3}")
+            return room
         except Exception as e:  # noqa: BLE001 — a glance is never worth a render
             log.warning("rooms: no look ahead from beat %d (%s)", seg_i, e)
             return None
@@ -2167,7 +2175,7 @@ def _render_long(
         room = _written(room)
         n = max(int(round(seg_len * fps)), 1)
         windows = list(windows) or [(0.0, 0.0, 1.0, 1.0)]
-        dfps = int(getattr(settings, "dennis_3d_fps", 0) or fps)
+        dfps = performer.fps if performer is not None else fps
         files = room.frame_paths() if room.animated and not room.plays_once else []
         idx = frame_indices(room, seg_len, fps) if files else [0] * n
         opened: dict[Path, Image.Image] = {}
@@ -2209,7 +2217,10 @@ def _render_long(
     # video or in none (`dennis3d.usable`).
     from pipeline import dennis3d
     performer = (dennis3d.Performer(settings, cache=Path(settings.cache_dir) / "dennis3d",
-                                    draft=proof, pile=pile)
+                                    draft=proof, pile=pile,
+                                    # a preview's 15 frames, not his 30
+                                    fps=min(fps, int(settings.dennis_3d_fps)) if preview
+                                    else None)
                  if dennis3d.usable(settings, reg, aspect) else None)
     if performer is not None:
         pile_drawer.append(performer)

@@ -703,3 +703,70 @@ def test_a_half_unpacked_shot_is_unpacked_again_and_dropped_after(performer):
     assert len(list(folder.glob("d_*.png"))) == performer.settings.dennis_3d_fps
     dennis3d.Performer.drop_frames(folder)
     assert not folder.exists() and layer.exists()
+
+
+LOOK_RAW = """[SCENE: desk-side | pose=holding-a-mug] EXMPL is down sixty percent and nobody cares anymore. Which is when I start reading the filings.
+[SCENE: board | pose=close-up] Here is what they actually do. Software for depots, real customers, and not many of them.
+[SCENE: desk-front | pose=to-camera] See you at the next filing, where the contracts are all short.
+
+=== CHAPTERS ===
+00:00 cold-open | nobody cares anymore
+00:12 resigned-close | see you at the next filing"""
+
+
+@pytest.fixture(scope="module")
+def look_long(tmp_path_factory):
+    """A small long's preview with the 3D Dennis on: a beat at the desk, then
+    his close-up asked for at the board, which nobody stands in."""
+    from config import Settings
+    from pipeline.broll import ContentManager
+    from pipeline.company_data import load_company_data
+    from pipeline.parser_long import parse_long_script
+    from pipeline.plates import load_plates
+    from pipeline.render_long import render_long
+    from pipeline.tts import TTSEngine
+
+    if shutil.which("ffmpeg") is None:
+        pytest.skip("needs ffmpeg")
+    tmp = tmp_path_factory.mktemp("look_long")
+    settings = Settings(MOCK_MODE=True, workspace_dir=tmp / "ws", cache_dir=tmp / "cache",
+                        state_dir=tmp / "state", long_width=640, long_height=360,
+                        long_min_chars=0, DENNIS_3D="on", DENNIS_3D_PYTHON=sys.executable,
+                        _env_file=None)
+    settings.ensure_runtime_dirs()
+    if dennis3d.drawn_rooms(load_plates(settings.assets_dir), "16x9"):
+        pytest.skip("the kit's long rooms are not the 3D room (run the kit ingest)")
+    fake = tmp / "fake_worker.py"
+    fake.write_text(FAKE, encoding="utf-8")
+    script, _ = parse_long_script(LOOK_RAW, "EXMPL", settings)
+    ws = settings.workspace_dir / "EXMPL" / "look"
+    ws.mkdir(parents=True)
+    shutil.copy(Path(__file__).resolve().parents[1] / "fixtures" / "company_data"
+                / "dennis_data.xlsx", ws / "dennis_data.xlsx")
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(dennis3d, "WORKER", fake)
+        mp.setattr(dennis3d, "_has_bpy", lambda python: True)
+        tts = TTSEngine(settings).synthesize(script.narration, "long")
+        render_long(script, tts, ws, settings, content=ContentManager(settings),
+                    preview=True, as_of="2026-07-01", company_data=load_company_data(ws))
+    jobs = [json.loads(f.read_text(encoding="utf-8"))
+            for f in (settings.cache_dir / "dennis3d").glob("*/job.json")]
+    return settings, jobs
+
+
+def test_he_turns_to_where_his_close_up_at_the_board_is_shot(look_long):
+    """His close-up at the board is taken where he talks, but the beat before
+    it had him turn to the board's camera as it ended, a look to a camera the
+    cut never went to (scan, 24 Oct 2026)."""
+    _settings, jobs = look_long
+    close = [j for j in jobs if j.get("close")]
+    assert close and all(j["angle"] != "board" for j in close), close
+    assert all(j.get("next") != "board" for j in jobs), [j.get("next") for j in jobs]
+
+
+def test_a_preview_draws_him_at_the_preview_s_rate(look_long):
+    """A preview is 15 frames a second and drew him at 30: half the shots'
+    Blender time spent on frames the preview drops."""
+    settings, jobs = look_long
+    assert jobs and all(j["fps"] == settings.preview_fps for j in jobs), \
+        [j["fps"] for j in jobs]

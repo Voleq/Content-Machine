@@ -184,8 +184,9 @@ class Performer:
     """The Blender process and the shots it has drawn."""
 
     def __init__(self, settings, cache: Path | None = None, *, draft: bool = False,
-                 pile: int = 0):
+                 pile: int = 0, fps: int | None = None):
         self.settings = settings
+        self._fps = fps
         # How many read 10-Ks are on his floor this video (V12,
         # `room_dressing.pile_count`): in every shot, for his shadow to fall
         # on, and drawn on its own for the room's pictures (`pile_layer`).
@@ -200,6 +201,12 @@ class Performer:
         self._err = None
         self._lines: "queue.Queue[str | None] | None" = None
         self.shots: list[dict] = []          # what each shot cost, for the manifest
+
+    @property
+    def fps(self) -> int:
+        """The rate his shots are drawn at: `dennis_3d_fps`, or the video's
+        own where it is lower (a preview's 15), whose encode drops the rest."""
+        return int(self._fps or self.settings.dennis_3d_fps)
 
     # ------------------------------------------------------------------ worker
     def _start(self) -> subprocess.Popen:
@@ -294,7 +301,7 @@ class Performer:
              *, seed: str, stance: str = "", plate: tuple[float, float] | None = None,
              close: bool = False, push: dict | None = None, then=None) -> Path:
         """His layer for one shot in `room`: an RGBA .mov, `size` big, at
-        `dennis_3d_fps`. `words` carry `.word`, `.start`, `.end` on the
+        `self.fps`. `words` carry `.word`, `.start`, `.end` on the
         programme clock; `start` is the shot's start on it. `stance` is the
         kit pose he plays; `plate` is where a two-shot's evidence sits in the
         frame (0-1 from the top left), for him to show; `close` is the
@@ -314,7 +321,7 @@ class Performer:
         cue = nxt[0] if nxt is not None and nxt[2] == aspect and nxt[0] != angle else ""
         if self.draft:
             size = (max(size[0] // 4 * 2, 2), max(size[1] // 4 * 2, 2))
-        fps = int(self.settings.dennis_3d_fps)
+        fps = self.fps
         job = {"angle": angle, "season": season, "aspect": aspect, "size": list(size),
                "fps": fps, "samples": int(self.settings.dennis_3d_samples),
                "seed": seed, "stance": stance, "duration": round(float(duration), 4),

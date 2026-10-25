@@ -1570,7 +1570,7 @@ def perform_3d(result: BuildResult, reg, words, settings, *, aspect: str,
     if own:
         performer = dennis3d.Performer(settings, draft=draft,
                                        cache=Path(settings.cache_dir) / "dennis3d")
-    fps = int(settings.dennis_3d_fps)
+    fps = performer.fps
     done: list[dict] = []
     try:
         for h in hosts:
