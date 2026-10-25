@@ -28,11 +28,29 @@ jobs:
     # the default branch were cancelled at the old 45 with tests still going.
     timeout-minutes: 120
     steps:
+      # The fifteen hold tests read `samples/*.mp4`, which are LFS pointers
+      # until fetched and fail with misleading ffmpeg errors. `lfs: true` on
+      # the checkout fetched all of them (about 90 MB) on every run, two runs
+      # per merge, and that is what spent the account's LFS quota (25 Oct
+      # 2026). They are cached on their ids instead: a run downloads only
+      # when a sample changes.
       - uses: actions/checkout@v4
+
+      - name: List the LFS objects
+        run: git lfs ls-files --long | cut -d ' ' -f1 | sort > .lfs-ids
+
+      - name: Cache the LFS objects
+        uses: actions/cache@v4
         with:
-          # The fifteen hold tests read `samples/*.mp4`, which are LFS
-          # pointers without this and fail with misleading ffmpeg errors.
-          lfs: true
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-ids') }}
+
+      - name: Sample videos (from the cache, else Git LFS)
+        run: |
+          git lfs pull || {
+            echo "::error::Git LFS refused the sample videos (is the account's LFS bandwidth used up?)"
+            exit 1
+          }
 
       - name: ffmpeg
         run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
