@@ -161,6 +161,14 @@ def correction_keyboard(ticker: str, video_id: str = "") -> InlineKeyboardMarkup
                                   _b("Cancel", "cx")]])
 
 
+def prune_keyboard(confirm: bool = False) -> InlineKeyboardMarkup:
+    """`/admin usage`: one tap asks, the second prunes."""
+    if confirm:
+        return InlineKeyboardMarkup([[_b("Prune them 🧹", "kz!"),
+                                      _b("Keep", "kz-")]])
+    return InlineKeyboardMarkup([[_b("Prune old caches 🧹", "kz")]])
+
+
 def undo_cancel_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([[_b("Undo ↩️ (1 min)", "z")]])
 

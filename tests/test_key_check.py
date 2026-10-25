@@ -162,3 +162,69 @@ def test_a_self_hosted_telegram_server_is_the_one_asked(settings):
     assert rows["Telegram"].state == OK
     asked = [u for u, _ in calls if "getMe" in u]
     assert asked == ["http://127.0.0.1:8081/bot123:tg-SECRET-6/getMe"]
+
+
+# --------------------------------------------------------------------------
+# /cost: the account's own count of the characters left (improvement 14).
+# --------------------------------------------------------------------------
+
+_SUB = {"/v1/user/subscription": Resp(200, {
+    "character_count": 18800, "character_limit": 100000,
+    "next_character_count_reset_unix": 1798761600})}
+
+
+def test_cost_asks_the_account_for_the_characters_left_once_in_a_while(
+        settings, monkeypatch):
+    from pipeline import key_check
+
+    monkeypatch.setattr(key_check, "_characters", {})
+    live = _with(settings, mock_mode=False)
+    calls: list = []
+    get = _fake(_SUB, calls)
+    assert key_check.characters_left(live, get=get).startswith(
+        "81,200 of 100,000 characters left, resets")
+    assert key_check.characters_left(live, get=get).startswith("81,200")
+    assert len(calls) == 1, "a /cost tapped twice is not two questions"
+    assert "el-SECRET-1" not in str(calls[0][0])
+
+
+def test_no_question_is_asked_offline_or_without_a_key(settings, monkeypatch):
+    from pipeline import key_check
+
+    monkeypatch.setattr(key_check, "_characters", {})
+    calls: list = []
+    assert key_check.characters_left(_with(settings, mock_mode=True),
+                                     get=_fake(_SUB, calls)) == ""
+    assert key_check.characters_left(
+        _with(settings, mock_mode=False, elevenlabs_api_key=""),
+        get=_fake(_SUB, calls)) == ""
+    assert calls == []
+
+
+def test_a_refused_key_reads_as_not_read_and_never_shows_the_key(
+        settings, monkeypatch):
+    from pipeline import key_check
+
+    monkeypatch.setattr(key_check, "_characters", {})
+    got = key_check.characters_left(
+        _with(settings, mock_mode=False),
+        get=_fake({"/v1/user/subscription": Resp(401, {"detail": "bad"})}))
+    assert got.startswith("not read (refused the key (401))")
+
+
+def test_the_cost_report_carries_the_count_and_the_model_s_cap(
+        settings, monkeypatch):
+    """Improvements 14 and 15: the account's figure beside the ledger's, and
+    the hosted model's spend against its own cap."""
+    from bot.handlers import BotCore
+    from pipeline import key_check
+
+    monkeypatch.setattr(key_check, "_characters", {})
+    monkeypatch.setattr(key_check, "_get", _fake(_SUB))
+    live = _with(settings, mock_mode=False, llm_monthly_cap_usd=5.0)
+    core = BotCore(live)
+    core.ledger.record_llm(0.25)
+    text = core.cost_text()
+    assert "🎙 ElevenLabs: 81,200 of 100,000 characters left" in text
+    assert "Hosted AI model: $0.25 of $5.00 cap (LLM_MONTHLY_CAP)" in text
+    assert "🎙" not in BotCore(settings).cost_text()

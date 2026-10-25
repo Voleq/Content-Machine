@@ -132,7 +132,7 @@ def test_a_meme_whose_download_fails_asks_the_next_provider(settings):
     class Broken:
         name = "broken"
 
-        def search(self, query, *, animated=False):
+        def search(self, query, *, animated=False, skip=0):
             return "https://example.invalid/meme.gif"
 
         def download(self, url, dest):

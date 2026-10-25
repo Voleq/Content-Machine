@@ -660,6 +660,10 @@ def c_kit(c: Call):
     return Reply(kit_doctor_text(c.core.settings))
 
 
+def c_usage(c: Call):
+    return c.core.usage_reply()
+
+
 def c_keys(c: Call):
     from pipeline.key_check import keys_text
 
@@ -1125,8 +1129,10 @@ COMMANDS: tuple[Command, ...] = (
     # /admin
     Command("admin", "cost", "[explain|reconciled]",
             "month-to-date spend vs cap", c_cost, aliases=("cost",), doc=(
-                "Month-to-date spend against the cap, and how long ago "
-                "anyone checked it against the provider. `explain`: where "
+                "Month-to-date spend against the cap, the hosted AI model's "
+                "against LLM_MONTHLY_CAP, ElevenLabs' own count of the "
+                "characters left, and how long ago anyone checked the spend "
+                "against the provider. `explain`: where "
                 "the month went, per video and tier. `reconciled`: stamp "
                 "today after comparing against the provider's dashboard.")),
     Command("admin", "kit", "doctor",
@@ -1143,6 +1149,15 @@ COMMANDS: tuple[Command, ...] = (
                 "Pexels, Giphy, Tenor, FRED, Telegram, OpenAI, GitHub "
                 "Models, the SEC (with SEC_USER_AGENT) and YouTube. Keys are "
                 "never shown. Also the page's Settings, \"Test the keys\".")),
+    Command("admin", "usage", "",
+            "SEC and Pexels requests a day, the caches' sizes, a prune",
+            c_usage, ack="⏳ measuring the caches…", doc=(
+                "Requests a day to the SEC and Pexels (today, yesterday and "
+                "the busiest day this week), so a coming block shows before "
+                "the filings or the b-roll go quiet. Then what each folder "
+                "of the cache holds, and a button that prunes the 3D Dennis "
+                "shots and segment clips nobody has written in a week, after "
+                "asking. The voice cache is paid for and never pruned.")),
     Command("admin", "quiet", "[on|off]",
             "only finished, failed and needs-you notifications", c_quiet,
             doc=("Keeps only finished, failed and needs-you pushes (no "
@@ -1695,6 +1710,10 @@ async def handle_callback(core: BotCore, chat_id: int, data: str,
     if op == "cx":
         ChatState(core.settings).answered(chat_id)
         return Reply("OK — nothing posted.")
+    if op == "kz-":
+        return Reply("Kept: nothing pruned.")
+    if op in ("kz", "kz!"):
+        return await asyncio.to_thread(core.prune_reply, op == "kz!")
     if op == "pq":
         return await asyncio.to_thread(drop_question, core, chat_id)
     if op == "jx" and n == 2:

@@ -142,7 +142,7 @@ def test_a_gif_that_replaced_a_capped_pexels_clip_is_counted_as_a_gif(
 
         name = "tenor"
 
-        def search(self, query, *, animated=False):
+        def search(self, query, *, animated=False, skip=0):
             return f"mock://gif/{query.replace(' ', '-')}"
 
         def download(self, url, dest):

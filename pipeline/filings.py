@@ -121,6 +121,9 @@ def _sec_get(url: str, settings: Settings) -> "object | None":
         if wait > 0:
             time.sleep(wait)
         _sec_last = time.monotonic()
+    from pipeline.request_count import count
+
+    count(settings, "sec")
     try:
         resp = httpx.get(url, headers=_sec_headers(settings), timeout=20.0,
                          follow_redirects=True)

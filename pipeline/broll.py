@@ -919,7 +919,9 @@ class ContentManager:
             # illustration. So the whole fetch is inside the loop's guard, not
             # just the search.
             try:
-                url = provider.search(query, animated=True)
+                # The take is the provider's nth hit: "take 2" asked for
+                # the top hit again and came back with the same clip.
+                url = provider.search(query, animated=True, skip=choice)
                 if not url:
                     continue
                 raw = cdir / f"raw_{choice}.bin"

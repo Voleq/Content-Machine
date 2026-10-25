@@ -77,9 +77,12 @@ def _newest_write(path: Path) -> float:
     return newest
 
 
-def _prune_cache(settings: Settings, dry_run: bool) -> tuple[int, int]:
-    """(entries removed, bytes freed) across the rebuildable caches."""
-    days = int(getattr(settings, "cache_retention_days", 0) or 0)
+def _prune_cache(settings: Settings, dry_run: bool, *,
+                 days: int | None = None) -> tuple[int, int]:
+    """(entries removed, bytes freed) across the rebuildable caches, of the
+    entries not written in `days` (CACHE_RETENTION_DAYS when not given)."""
+    if days is None:
+        days = int(getattr(settings, "cache_retention_days", 0) or 0)
     if days <= 0:
         return 0, 0
     cutoff = time.time() - days * 86400
@@ -106,6 +109,34 @@ def _prune_cache(settings: Settings, dry_run: bool) -> tuple[int, int]:
                 else:
                     entry.unlink(missing_ok=True)
     return removed, freed
+
+
+# `/admin usage`'s prune: the rebuildable caches' entries nothing has written
+# in a week. A render that is weeks old rebuilds them in CPU; one from this
+# week keeps its shots.
+PRUNE_NOW_DAYS = 7
+# Never pruned, and said so: the voice is paid for.
+KEPT_CACHES = ("tts",)
+
+
+def cache_sizes(settings: Settings) -> list[tuple[str, int]]:
+    """(folder, bytes) for each folder in the cache, biggest first."""
+    root = Path(settings.cache_dir)
+    out: list[tuple[str, int]] = []
+    if not root.is_dir():
+        return out
+    for entry in root.iterdir():
+        try:
+            out.append((entry.name, _size(entry)))
+        except OSError:
+            continue
+    return sorted(out, key=lambda r: (-r[1], r[0]))
+
+
+def prune_now(settings: Settings, *, dry_run: bool = False) -> tuple[int, int]:
+    """(entries, bytes) of the rebuildable caches untouched for a week:
+    what the one-tap prune takes, or would (`dry_run`)."""
+    return _prune_cache(settings, dry_run, days=PRUNE_NOW_DAYS)
 
 
 def _prune_jobs(settings: Settings, dry_run: bool) -> int:

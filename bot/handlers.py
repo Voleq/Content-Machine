@@ -327,6 +327,14 @@ def _what_it_said(script, fmt: str) -> dict:
         return {}
 
 
+def _bytes(n: int) -> str:
+    """A size the way a person reads one."""
+    for unit, size in (("GB", 1e9), ("MB", 1e6), ("KB", 1e3)):
+        if n >= size:
+            return f"{n / size:.1f} {unit}"
+    return f"{n} bytes"
+
+
 class BotCore:
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -3412,6 +3420,15 @@ class BotCore:
                      f"{' ' + slot if slot else ''}. I'll flag it before and after.")
 
     # ----------------------------------------------------------- utilities
+    def _characters_line(self) -> str:
+        """ElevenLabs' count beside the ledger's: what the account says is
+        left, which no ledger figure can (a generation outside the bot, a
+        plan change)."""
+        from pipeline.key_check import characters_left
+
+        left = characters_left(self.settings)
+        return f"🎙 ElevenLabs: {left}\n" if left else ""
+
     def cost_text(self) -> str:
         broken = ("" if self.ledger.readable() else
                   "⛔ THE SPEND LEDGER CANNOT BE READ — every paid call is "
@@ -3423,7 +3440,11 @@ class BotCore:
             f"${self.settings.monthly_spend_cap_usd:.2f} cap\n"
             f"Pexels calls: {self.ledger.pexels_calls_this_month()} of "
             f"{self.settings.pexels_monthly_call_cap}\n"
-            f"Filing-flagger LLM: ${self.ledger.llm_usd_this_month():.2f}\n"
+            # THE HOSTED MODEL'S OWN CAP (the filing flagger, the skeptic):
+            # its spend was shown with nothing to measure it against.
+            f"Hosted AI model: ${self.ledger.llm_usd_this_month():.2f} of "
+            f"${self.settings.llm_monthly_cap_usd:.2f} cap (LLM_MONTHLY_CAP)\n"
+            + self._characters_line() +
             # HOW OLD IS THE NUMBER ABOVE (P7). Every figure here is what
             # Dennis BELIEVES it spent — chunks counted at the configured
             # rate, against a cap enforced from the same number. Nothing
@@ -3810,6 +3831,67 @@ class BotCore:
         except Exception as e:  # noqa: BLE001
             log.exception("correction failed")
             return f"💥 the correction did not post: {e}"
+
+    def usage_reply(self) -> Reply:
+        """`/admin usage`: requests a day to the services that block a heavy
+        day, and what the caches hold, with a prune of the week-old entries
+        of the ones that rebuild for CPU alone."""
+        from bot.keyboards import prune_keyboard
+        from pipeline.cleanup import (KEPT_CACHES, PRUNE_NOW_DAYS,
+                                      REBUILDABLE_CACHES, cache_sizes,
+                                      prune_now)
+        from pipeline.request_count import usage_lines
+
+        lines = ["📡 Requests a day (the SEC asks for under ten a second; "
+                 "Pexels allows 200 an hour):"]
+        lines += [f"  {line}" for line in usage_lines(self.settings)]
+        lines.append(f"  Pexels this month: "
+                     f"{self.ledger.pexels_calls_this_month():,} of "
+                     f"{self.settings.pexels_monthly_call_cap:,}")
+        sizes = cache_sizes(self.settings)
+        lines += ["", f"🗄 The cache, {_bytes(sum(b for _n, b in sizes))} "
+                      f"in {self.settings.cache_dir}:"]
+        for name, size in sizes:
+            why = (" (paid for, never pruned)" if name in KEPT_CACHES else
+                   " (rebuilds for CPU)" if name in REBUILDABLE_CACHES else "")
+            lines.append(f"  {name}: {_bytes(size)}{why}")
+        if not sizes:
+            lines.append("  empty")
+        n, freed = prune_now(self.settings, dry_run=True)
+        if not n:
+            lines += ["", f"Nothing in {', '.join(REBUILDABLE_CACHES)} is "
+                          f"older than {PRUNE_NOW_DAYS} days, so there is "
+                          f"nothing to prune."]
+            return Reply("\n".join(lines))
+        lines += ["", f"{n} entr{'y' if n == 1 else 'ies'} in "
+                      f"{', '.join(REBUILDABLE_CACHES)} untouched for "
+                      f"{PRUNE_NOW_DAYS} days hold {_bytes(freed)}."]
+        return Reply("\n".join(lines), keyboard=prune_keyboard())
+
+    def prune_reply(self, confirmed: bool) -> Reply:
+        """The prune button: the first tap says what goes, the second takes
+        it. Never while a job runs: a render writes these as it goes."""
+        from bot.keyboards import prune_keyboard
+        from pipeline.cleanup import PRUNE_NOW_DAYS, prune_now
+        from pipeline.models import JobStatus
+
+        jobs = self.queue.store.all() if self.queue is not None else []
+        if any(j.status is JobStatus.RUNNING for j in jobs):
+            return Reply("⏳ A job is running, and a render writes these "
+                         "caches as it goes. Prune once it finishes.")
+        if not confirmed:
+            n, freed = prune_now(self.settings, dry_run=True)
+            if not n:
+                return Reply("Nothing to prune.")
+            return Reply(f"🧹 Prune {n} cache entr{'y' if n == 1 else 'ies'} "
+                         f"nobody has written in {PRUNE_NOW_DAYS} days "
+                         f"({_bytes(freed)})? The 3D Dennis shots and the "
+                         f"segment clips rebuild at the next render that "
+                         f"needs them, for CPU time. The voice cache stays.",
+                         keyboard=prune_keyboard(confirm=True))
+        n, freed = prune_now(self.settings)
+        return Reply(f"🧹 Pruned {n} cache entr{'y' if n == 1 else 'ies'}, "
+                     f"{_bytes(freed)} freed.")
 
     def cost_reply(self, args: list[str] | None = None) -> Reply:
         """`/cost` and its one subcommand.

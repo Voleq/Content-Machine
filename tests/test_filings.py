@@ -337,3 +337,36 @@ def test_the_sec_ticker_map_is_fetched_once_a_day(settings, monkeypatch):
         assert filings._load_company_tickers(live)["0"]["ticker"] == "EXMPL"
         assert filings._load_submissions("0000000001", live) == {"filings": {}}
     assert len(calls) == 2
+
+
+def test_every_sec_request_is_counted_on_its_day(settings, monkeypatch):
+    """A heavy day is what the SEC blocks, and a block reads as silence:
+    `/admin usage` shows the count first (improvement 17)."""
+    from datetime import date, timedelta
+
+    import httpx
+
+    from pipeline import filings, request_count
+
+    class _Resp:
+        status_code = 200
+
+        def raise_for_status(self):
+            return None
+
+    monkeypatch.setattr(httpx, "get", lambda *a, **k: _Resp())
+    fast = settings.model_copy(update={"sec_min_interval_s": 0.0})
+    for _ in range(3):
+        assert filings._sec_get("https://example.invalid/x", fast) is not None
+    assert request_count.on_day(fast, date.today())["sec"] == 3
+
+    # Kept for two weeks, and no longer.
+    path = fast.state_dir / request_count.FILE
+    import json
+
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data[(date.today() - timedelta(days=30)).isoformat()] = {"sec": 99}
+    path.write_text(json.dumps(data), encoding="utf-8")
+    request_count.count(fast, "pexels")
+    kept = json.loads(path.read_text(encoding="utf-8"))
+    assert len(kept) == 1 and kept[date.today().isoformat()] == {"sec": 3, "pexels": 1}

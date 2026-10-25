@@ -340,11 +340,14 @@ class _Provider:
         self.hit = hit
         self.search_calls: list[str] = []
         self.download_calls: list[str] = []
+        self.skips: list[int] = []
 
-    def search(self, query, *, animated=False):
+    def search(self, query, *, animated=False, skip=0):
         self.search_calls.append(query)
+        self.skips.append(skip)
         assert animated, "the clip chain must ask for the MOVING rendition"
-        return f"mock://gif/{query.replace(' ', '-')}" if self.hit else None
+        take = f"~{skip + 1}" if skip else ""
+        return f"mock://gif/{query.replace(' ', '-')}{take}" if self.hit else None
 
     def download(self, url, dest):
         self.download_calls.append(url)
@@ -471,6 +474,55 @@ def test_a_gif_clip_keeps_looping_out_of_the_cache(settings, tmp_path):
     assert second.source == "cache" and second.path == first.path
     assert second.loops, "the clip came back from the cache frozen"
     assert m.gif_clients[0].search_calls == [], "a cache hit must not re-fetch"
+
+
+def test_a_gif_s_second_take_is_the_provider_s_second_hit(settings, tmp_path):
+    """"Take 2" asked Giphy for its top hit again, and the swap came back
+    with the clip it was swapping out (improvement 16)."""
+    giphy = _Provider("giphy", settings)
+    m = ContentManager(settings, library_dir=tmp_path / "library",
+                       clip_client=_NoResultsPexels(settings),
+                       gif_clients=[giphy])
+    first = m.resolve_clip("lebron three pointer")
+    second = m.resolve_clip("lebron three pointer", choice=1)
+    assert giphy.skips == [0, 1]
+    assert second.source == "giphy" and second.path != first.path
+    assert "~2" in second.attribution
+
+
+def test_the_gif_clients_hand_back_the_hit_asked_for(settings, monkeypatch):
+    from pipeline import memes
+
+    settings = settings.model_copy(update={"giphy_api_key": "k",
+                                           "tenor_api_key": "k",
+                                           "image_min_interval_s": 0.0})
+    asked = {}
+
+    class _Resp:
+        status_code = 200
+
+        def __init__(self, body):
+            self._body = body
+
+        def json(self):
+            return self._body
+
+    def fake_get(url, params=None, **_kw):
+        asked[url] = params
+        if "giphy" in url or "/v1/gifs" in url:
+            return _Resp({"data": [{"images": {"downsized_small": {
+                "mp4": f"https://g/{i}.mp4"}}} for i in range(3)]})
+        return _Resp({"results": [{"media_formats": {"mp4": {
+            "url": f"https://t/{i}.mp4"}}} for i in range(3)]})
+
+    monkeypatch.setattr(memes.httpx, "get", fake_get)
+    giphy = memes.GiphyClient(settings, "giphy")
+    tenor = memes.TenorClient(settings, "tenor")
+    assert giphy.search("x", animated=True) == "https://g/0.mp4"
+    assert giphy.search("x", animated=True, skip=1) == "https://g/1.mp4"
+    assert giphy.search("x", animated=True, skip=9) == "https://g/2.mp4"
+    assert tenor.search("x", animated=True, skip=2) == "https://t/2.mp4"
+    assert all(p["limit"] >= 3 for p in asked.values())
 
 
 # --------------------------------------------------------------------------

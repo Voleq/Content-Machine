@@ -824,3 +824,72 @@ def test_a_second_upload_of_a_video_waits_for_the_first(core, xlsx_bytes,
     # and once it has finished, the video can be sent again
     release.set()
     assert "upload failed" in core.upload_command(["EXMPL", "short"]).text
+
+
+
+# --------------------------------------------------------------------------
+# /admin usage (improvements 17 and 20).
+# --------------------------------------------------------------------------
+
+def test_usage_shows_the_requests_a_day_and_the_caches(settings):
+    import os
+    import time
+
+    from bot.handlers import BotCore
+    from pipeline.request_count import count
+
+    count(settings, "sec", 7)
+    core = BotCore(settings)
+    core.ledger.record_pexels_call()
+    shot = settings.cache_dir / "dennis3d" / "shot-old"
+    shot.mkdir(parents=True)
+    (shot / "f.png").write_bytes(b"x" * 2_500_000)
+    when = time.time() - 9 * 86400
+    for p in (shot, shot / "f.png"):
+        os.utime(p, (when, when))
+    reply = core.usage_reply()
+    assert "SEC: 7 today, 0 yesterday" in reply.text
+    assert "Pexels: 1 today" in reply.text
+    assert "dennis3d: 2.5 MB (rebuilds for CPU)" in reply.text
+    assert "1 entry in segments, dennis3d untouched for 7 days" in reply.text
+    data = [b.callback_data for row in reply.keyboard.inline_keyboard for b in row]
+    assert data == ["kz"]
+
+
+def test_the_prune_asks_then_prunes_and_never_while_a_job_runs(settings):
+    import asyncio
+    import os
+    import time
+
+    from bot.commands import handle_callback
+    from bot.handlers import BotCore
+
+    core = BotCore(settings)
+    shot = settings.cache_dir / "dennis3d" / "shot-old"
+    shot.mkdir(parents=True)
+    (shot / "f.png").write_bytes(b"x" * 1000)
+    when = time.time() - 9 * 86400
+    for p in (shot, shot / "f.png"):
+        os.utime(p, (when, when))
+
+    ask = asyncio.run(handle_callback(core, 1, "kz"))
+    assert "Prune 1 cache entry" in ask.text and shot.exists()
+    data = [b.callback_data for row in ask.keyboard.inline_keyboard for b in row]
+    assert data == ["kz!", "kz-"]
+    assert "nothing pruned" in asyncio.run(handle_callback(core, 1, "kz-")).text
+    assert shot.exists()
+
+    class _Busy:
+        class store:
+            @staticmethod
+            def all():
+                from pipeline.models import JobStatus
+
+                return [type("J", (), {"status": JobStatus.RUNNING})()]
+
+    core.queue = _Busy()
+    assert "A job is running" in asyncio.run(handle_callback(core, 1, "kz!")).text
+    assert shot.exists()
+    core.queue = None
+    done = asyncio.run(handle_callback(core, 1, "kz!"))
+    assert "Pruned 1 cache entry" in done.text and not shot.exists()

@@ -99,3 +99,44 @@ def test_an_old_folder_worked_on_this_week_keeps_its_render(settings):
     cleanup(settings)
     assert (ws.path / "short_final.mp4").exists()
     assert (ws.path / "render_short").exists()
+
+
+# --------------------------------------------------------------------------
+# /admin usage: the caches' sizes and the one-tap prune (improvement 20).
+# --------------------------------------------------------------------------
+
+def _entry(root, name, size, days_ago):
+    d = root / name
+    d.mkdir(parents=True)
+    (d / "f.bin").write_bytes(b"x" * size)
+    when = time.time() - days_ago * 86400
+    for p in (d, d / "f.bin"):
+        os.utime(p, (when, when))
+    return d
+
+
+def test_the_caches_are_measured_biggest_first(settings):
+    from pipeline.cleanup import cache_sizes
+
+    root = settings.cache_dir
+    _entry(root / "dennis3d", "shot-a", 3000, 1)
+    _entry(root / "tts", "voice-a", 5000, 1)
+    _entry(root / "segments", "seg-a", 1000, 1)
+    sizes = dict(cache_sizes(settings))
+    assert [n for n, _b in cache_sizes(settings)][:3] == ["tts", "dennis3d", "segments"]
+    assert sizes["dennis3d"] == 3000
+
+
+def test_the_prune_takes_week_old_rebuildable_entries_and_never_the_voice(settings):
+    from pipeline.cleanup import prune_now
+
+    root = settings.cache_dir
+    old_shot = _entry(root / "dennis3d", "shot-old", 3000, 9)
+    new_shot = _entry(root / "dennis3d", "shot-new", 3000, 2)
+    old_seg = _entry(root / "segments", "seg-old", 1000, 30)
+    old_voice = _entry(root / "tts", "voice-old", 5000, 90)
+    assert prune_now(settings, dry_run=True) == (2, 4000)
+    assert old_shot.exists(), "a dry run takes nothing"
+    assert prune_now(settings) == (2, 4000)
+    assert not old_shot.exists() and not old_seg.exists()
+    assert new_shot.exists() and old_voice.exists()

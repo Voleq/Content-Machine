@@ -26,6 +26,7 @@ WARNING.
 from __future__ import annotations
 
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -74,9 +75,8 @@ def _refused(service: str, resp) -> KeyResult:
     return KeyResult(service, BAD, f"refused the key ({resp.status_code})")
 
 
-def _eleven(s: Settings, get: Get) -> list[KeyResult]:
-    if not s.elevenlabs_api_key:
-        return [KeyResult("ElevenLabs", SKIP, "ELEVENLABS_API_KEY is not set")]
+def _subscription(s: Settings, get: Get) -> KeyResult:
+    """The account's subscription: the characters left, and when they reset."""
     head = {"xi-api-key": s.elevenlabs_api_key}
     resp = get(f"{s.eleven_base_url}/v1/user/subscription", headers=head)
     detail = _json(resp).get("detail")
@@ -90,14 +90,22 @@ def _eleven(s: Settings, get: Get) -> list[KeyResult]:
             if isinstance(reset, (int, float)) and reset > 0:
                 day = datetime.fromtimestamp(reset, timezone.utc).strftime("%d %b")
                 left += f", resets {day}"
-            out = [KeyResult("ElevenLabs", OK, left)]
-        else:
-            out = [KeyResult("ElevenLabs", OK, "the key works")]
-    elif resp.status_code == 401 and status == "missing_permissions":
-        out = [KeyResult("ElevenLabs", OK, "the key works; it may not read the "
-                         "account, so the characters left cannot be shown")]
-    else:
-        return [_refused("ElevenLabs", resp)]
+            return KeyResult("ElevenLabs", OK, left)
+        return KeyResult("ElevenLabs", OK, "the key works")
+    if resp.status_code == 401 and status == "missing_permissions":
+        return KeyResult("ElevenLabs", OK, "the key works; it may not read the "
+                         "account, so the characters left cannot be shown")
+    return _refused("ElevenLabs", resp)
+
+
+def _eleven(s: Settings, get: Get) -> list[KeyResult]:
+    if not s.elevenlabs_api_key:
+        return [KeyResult("ElevenLabs", SKIP, "ELEVENLABS_API_KEY is not set")]
+    head = {"xi-api-key": s.elevenlabs_api_key}
+    sub = _subscription(s, get)
+    if sub.state == BAD:
+        return [sub]
+    out = [sub]
     ids = {}
     for lane, vid in (("short", s.eleven_voice_id_short), ("long", s.eleven_voice_id_long)):
         ids.setdefault(vid, []).append(lane)
@@ -203,6 +211,9 @@ def _sec(s: Settings, get: Get) -> list[KeyResult]:
     agent = s.sec_user_agent.strip()
     if not agent or agent in SEC_AGENT_PLACEHOLDERS:
         return [KeyResult("SEC", SKIP, "SEC_USER_AGENT is not set")]
+    from pipeline.request_count import count
+
+    count(s, "sec")
     resp = get(f"{s.sec_base_url}/files/company_tickers.json",
                headers={"User-Agent": agent, "Accept-Encoding": "gzip, deflate"})
     if resp.status_code == 200:
@@ -263,6 +274,35 @@ def check_keys(settings: Settings, *, get: Get | None = None) -> list[KeyResult]
         for secret in secrets:
             r.detail = r.detail.replace(secret, "…")
     return rows
+
+
+# `/cost` asks once in this long: the figure moves a voice generation at a
+# time, and a /cost tapped twice is not two questions.
+CHARACTERS_FRESH_S = 300.0
+_characters: dict[str, tuple[float, str]] = {}
+
+
+def characters_left(settings: Settings, *, get: Get | None = None) -> str:
+    """ElevenLabs' own count of the characters left this month, for `/cost`
+    beside the ledger's: "" with no key or in MOCK_MODE, where nothing is
+    asked. Never raises, and never carries the key."""
+    if settings.mock_mode or not settings.elevenlabs_api_key:
+        return ""
+    import hashlib
+
+    who = hashlib.sha256(settings.elevenlabs_api_key.encode()).hexdigest()[:12]
+    now = time.monotonic()
+    hit = _characters.get(who)
+    if hit and now - hit[0] < CHARACTERS_FRESH_S:
+        return hit[1]
+    try:
+        r = _subscription(settings, get or _get)
+        text = r.detail if r.state == OK else f"not read ({r.detail})"
+    except Exception as e:                             # noqa: BLE001
+        text = f"not read (could not be reached, {type(e).__name__})"
+    text = text.replace(settings.elevenlabs_api_key, "…")
+    _characters[who] = (now, text)
+    return text
 
 
 _MARK = {OK: "✅", BAD: "❌", SKIP: "·"}

@@ -868,9 +868,10 @@ Both read what the bot has already saved: every script, filing brief, check repo
 
 | command | what it does |
 |---|---|
-| `/admin cost [explain\|reconciled]` | Month-to-date spend against the cap, and how long ago anyone checked it against the provider. `explain`: where the month went, per video and tier. `reconciled`: stamp today after comparing against the provider's dashboard. |
+| `/admin cost [explain\|reconciled]` | Month-to-date spend against the cap, the hosted AI model's against LLM_MONTHLY_CAP, ElevenLabs' own count of the characters left, and how long ago anyone checked the spend against the provider. `explain`: where the month went, per video and tier. `reconciled`: stamp today after comparing against the provider's dashboard. |
 | `/admin kit doctor` | Unresolved tag keys, artwork nothing has ever used, PNGs with no registry entry. |
 | `/admin keys` | Asks each service once, with a call that costs nothing, whether its key works: ElevenLabs (and how many characters are left, and whether both voice ids are on the account), Pexels, Giphy, Tenor, FRED, Telegram, OpenAI, GitHub Models, the SEC (with SEC_USER_AGENT) and YouTube. Keys are never shown. Also the page's Settings, "Test the keys". |
+| `/admin usage` | Requests a day to the SEC and Pexels (today, yesterday and the busiest day this week), so a coming block shows before the filings or the b-roll go quiet. Then what each folder of the cache holds, and a button that prunes the 3D Dennis shots and segment clips nobody has written in a week, after asking. The voice cache is paid for and never pruned. |
 | `/admin quiet [on\|off]` | Keeps only finished, failed and needs-you pushes (no "started", no progress). On its own it toggles. |
 | `/admin switch [NAME on\|off]` | The four settings that wait on your call, also on the page's Settings: `short_meme`, `viewer_questions`, `voice_room`, `voice_deess`. A flip takes effect at once and is kept across restarts, over what `.env` says. On its own it lists them. |
 | `/admin panel` | The link to the web control panel, when it is running. |

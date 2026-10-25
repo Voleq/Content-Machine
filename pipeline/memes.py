@@ -179,6 +179,20 @@ class _PoliteHttp:
         return dest
 
 
+def _hits_for(skip: int) -> int:
+    """Results to ask a search for when the caller wants hit `skip` (0 is
+    the top one): enough for it and two spares, within what the APIs give."""
+    return min(max(int(skip), 0) + 3, 25)
+
+
+def _nth(urls: list, skip: int) -> str | None:
+    """Hit `skip`, or the last one when the search had fewer, as a Pexels
+    take clamps to what came back."""
+    if not urls:
+        return None
+    return urls[min(max(int(skip), 0), len(urls) - 1)]
+
+
 class GiphyClient(_PoliteHttp):
     name = "giphy"
 
@@ -193,20 +207,22 @@ class GiphyClient(_PoliteHttp):
     _STILL_FORMS = ("downsized_still", "original_still")
     _MOVING_FORMS = ("downsized_small", "original_mp4", "downsized", "original")
 
-    def search(self, query: str, *, animated: bool = False) -> str | None:
+    def search(self, query: str, *, animated: bool = False,
+               skip: int = 0) -> str | None:
         if not self.settings.giphy_api_key:
             return None
         self._respect_interval()
         r = httpx.get(
             f"{self.settings.giphy_base_url}/v1/gifs/search",
             params={"api_key": self.settings.giphy_api_key, "q": query,
-                    "limit": 3, "rating": "pg-13"},
+                    "limit": _hits_for(skip), "rating": "pg-13"},
             timeout=30,
         )
         if r.status_code != 200:
             log.warning("giphy %s for %r", r.status_code, query)
             return None
         forms = self._MOVING_FORMS if animated else self._STILL_FORMS
+        urls = []
         for item in r.json().get("data", []):
             images = item.get("images", {})
             for form in forms:
@@ -214,8 +230,9 @@ class GiphyClient(_PoliteHttp):
                 url = (rendition.get("mp4") if animated else None) \
                     or rendition.get("url")
                 if url:
-                    return url
-        return None
+                    urls.append(url)
+                    break
+        return _nth(urls, skip)
 
 
 class TenorClient(_PoliteHttp):
@@ -224,7 +241,8 @@ class TenorClient(_PoliteHttp):
     _STILL_FORMS = ("png_transparent", "gifpreview", "gif")
     _MOVING_FORMS = ("mp4", "tinymp4", "gif", "tinygif")
 
-    def search(self, query: str, *, animated: bool = False) -> str | None:
+    def search(self, query: str, *, animated: bool = False,
+               skip: int = 0) -> str | None:
         if not self.settings.tenor_api_key:
             return None
         forms = self._MOVING_FORMS if animated else self._STILL_FORMS
@@ -232,25 +250,28 @@ class TenorClient(_PoliteHttp):
         r = httpx.get(
             f"{self.settings.tenor_base_url}/v2/search",
             params={"key": self.settings.tenor_api_key, "q": query,
-                    "limit": 3, "media_filter": ",".join(forms)},
+                    "limit": _hits_for(skip), "media_filter": ",".join(forms)},
             timeout=30,
         )
         if r.status_code != 200:
             log.warning("tenor %s for %r", r.status_code, query)
             return None
+        urls = []
         for item in r.json().get("results", []):
             formats = item.get("media_formats", {})
             for fmt in forms:
                 url = (formats.get(fmt) or {}).get("url")
                 if url:
-                    return url
-        return None
+                    urls.append(url)
+                    break
+        return _nth(urls, skip)
 
 
 class ImgflipClient(_PoliteHttp):
     name = "imgflip"
 
-    def search(self, query: str, *, animated: bool = False) -> str | None:
+    def search(self, query: str, *, animated: bool = False,
+               skip: int = 0) -> str | None:
         # imgflip is a library of meme TEMPLATES — flat jpgs, every one of
         # them. It has nothing to offer a caller that asked for motion, and
         # saying so is better than handing back a still that then normalises
@@ -263,11 +284,8 @@ class ImgflipClient(_PoliteHttp):
             return None
         memes = r.json().get("data", {}).get("memes", [])
         tokens = {t for t in query.lower().replace("-", " ").split() if len(t) > 2}
-        for m in memes:
-            name_tokens = set(m.get("name", "").lower().split())
-            if tokens & name_tokens:
-                return m.get("url")
-        return None
+        return _nth([m.get("url") for m in memes if m.get("url")
+                     and tokens & set(m.get("name", "").lower().split())], skip)
 
 
 # How many frames a mock animated stand-in carries, and how long it runs.
@@ -295,10 +313,12 @@ class MockMemeClient:
         self.search_calls: list[str] = []
         self.download_calls: list[str] = []
 
-    def search(self, query: str, *, animated: bool = False) -> str | None:
+    def search(self, query: str, *, animated: bool = False,
+               skip: int = 0) -> str | None:
         self.search_calls.append(query)
         kind = "gif" if animated else "meme"
-        return f"mock://{kind}/{query.replace(' ', '-')}"
+        take = f"~{skip + 1}" if skip else ""
+        return f"mock://{kind}/{query.replace(' ', '-')}{take}"
 
     def download(self, url: str, dest: Path) -> Path:
         self.download_calls.append(url)

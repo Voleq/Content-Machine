@@ -450,6 +450,10 @@ class SpendLedger:
             data = self._load(strict=True)
             self._month(data)["pexels_calls"] += 1
             self._save(data)
+        # And the day's, for `/admin usage`: the hourly limit bites first.
+        from pipeline.request_count import count
+
+        count(self.settings, "pexels")
 
     def record_llm(self, usd: float) -> None:
         """Filing-flagger LLM spend. Cheap (often free-tier $0) but tracked for
