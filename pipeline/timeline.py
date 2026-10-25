@@ -18,6 +18,7 @@ same word stream; no scene time is ever hardcoded in a renderer.
 
 from __future__ import annotations
 
+import bisect
 import math
 import re
 from dataclasses import dataclass, field
@@ -627,6 +628,7 @@ def plan_long_segments(
     paragraphs: list[float] | None = None,
     max_readable_s: float = MAX_READABLE_S,
     report: list[dict] | None = None,
+    words: list[WordTimestamp] | None = None,
 ) -> tuple[list[Segment], list[str]]:
     """Tile [0, duration] with host beats and the evidence he cuts away to.
 
@@ -652,6 +654,9 @@ def plan_long_segments(
     `report`, when given, gets one entry per visual that was dropped or went
     up late — `{"cue", "what": "dropped" | "late", "late_s", "why"}` — for
     the approval screen to say in the writer's terms (`late_visuals`).
+
+    `words`, when given, are the voice's: a stretch of him cut into even
+    parts is cut where a word starts, never inside one.
     """
     holds = {**DEFAULT_HOLDS, **(holds or {})}
 
@@ -760,6 +765,17 @@ def plan_long_segments(
         for p0, p1 in zip(edges, edges[1:]):
             _even_parts(p0, p1)
 
+    word_starts = sorted(float(w.start) for w in (words or ()))
+
+    def _on_a_word(t: float, reach: float) -> float:
+        """The word start nearest `t` within `reach` of it, else `t`: an
+        even part cut at its arithmetic point cut him mid-word (scan, 24
+        Oct 2026)."""
+        i = bisect.bisect_left(word_starts, t)
+        near = [word_starts[j] for j in (i - 1, i)
+                if 0 <= j < len(word_starts) and abs(word_starts[j] - t) <= reach]
+        return min(near, key=lambda x: abs(x - t)) if near else t
+
     def _even_parts(a: float, b: float) -> None:
         nonlocal host_i
         span = b - a
@@ -772,13 +788,14 @@ def plan_long_segments(
         # Even parts, so the last one is never a stub.
         n = max(int(math.ceil(span / MAX_HOST_BEAT_S)), 1)
         step = span / n
+        start = a
         for i in range(n):
-            start = a + i * step
-            end = b if i == n - 1 else a + (i + 1) * step
+            end = b if i == n - 1 else _on_a_word(a + (i + 1) * step, step / 4)
             segments.append(Segment(start=start, end=end, kind="host",
                                     payload={"variant": host_i,
                                              "layout": "host-full"}))
             host_i += 1
+            start = end
 
     # Where the writer moves on: a readable beat holds until the first of
     # these after it starts. Each chapter's bookend begins `chapter_host_s`
@@ -955,7 +972,8 @@ def late_visuals(script, settings) -> list[dict]:
         min_readable_s=settings.long_min_readable_s,
         chapter_host_s=settings.long_chapter_host_s,
         paragraphs=paragraph_starts(script.narration, words),
-        max_readable_s=settings.long_max_readable_s, report=report)
+        max_readable_s=settings.long_max_readable_s, report=report,
+        words=words)
     return report
 
 
@@ -980,7 +998,7 @@ def host_beats(script, settings) -> list[dict]:
         min_readable_s=settings.long_min_readable_s,
         chapter_host_s=settings.long_chapter_host_s,
         paragraphs=paragraph_starts(script.narration, words),
-        max_readable_s=settings.long_max_readable_s)
+        max_readable_s=settings.long_max_readable_s, words=words)
     return [{"start": s.start, "end": s.end,
              "scene": dict(s.payload.get("scene") or {}),
              "words": [w.word for w in words if s.start <= w.start < s.end]}
@@ -1011,7 +1029,7 @@ def estimate_dennis_alone(script, settings) -> float | None:
         min_readable_s=settings.long_min_readable_s,
         chapter_host_s=settings.long_chapter_host_s,
         paragraphs=paragraph_starts(script.narration, words),
-        max_readable_s=settings.long_max_readable_s)
+        max_readable_s=settings.long_max_readable_s, words=words)
     alone = sum(s.length for s in segments if s.kind == "host")
     return alone / duration
 

@@ -546,8 +546,12 @@ def test_the_bed_is_gone_and_the_room_is_the_floor_of_the_mix(rendered):
     room = _track(manifest, "room_tone")
     assert room["loop"] is True and room["start"] == 0.0, \
         "the room has to run the whole video — it is the only floor left"
-    assert [a for a in manifest["audio"] if a["loop"]] == [room], \
-        "nothing else loops under the voice any more"
+    # Nothing else loops under the whole voice any more. The set's own
+    # sounds loop (item 24), but each only under the beats that show it.
+    from pipeline.sound import SET_LAYERS
+    others = [a for a in manifest["audio"] if a["loop"] and a is not room]
+    assert all(a["file"][:-4] in SET_LAYERS.values() and "@" in a["name"]
+               for a in others), f"a bed came back under the voice: {others}"
 
     # …and the tracks the manifest names are the tracks the mix got. A row
     # that no longer carries a mute envelope is the point: there is nothing

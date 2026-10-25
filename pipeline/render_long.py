@@ -90,7 +90,8 @@ from pipeline.sound import (EFFECT_KEYS, Cut, Move, Voicing, voice_track,
                             body_cues, body_moves, cue_lead_s, manifest_rows,
                             measure_lufs,
                             move_cues, placeholders_played, room_track,
-                            sound_summary, theme_tracks, wipe_cues)
+                            set_layers, shot_tags, sound_summary,
+                            theme_tracks, wipe_cues)
 from pipeline.rasters import (
     cover_fill_frame,
     frames_to_alpha_clip,
@@ -111,6 +112,7 @@ from pipeline.render_common import (
     encode_profile,
     ffprobe_duration,
     final_long_profile,
+    frame_count_check,
     render_thread_budget,
     segment_profile,
 )
@@ -745,6 +747,27 @@ def _price_provenance(script, settings) -> dict:
             "days": len(series.closes)}
 
 
+def _set_windows(rooms_shown: dict, segments) -> list[tuple[float, float, set[str]]]:
+    """(start, end, tags) of the stretches whose room has a sound of its
+    own, a run of beats in rooms that sound the same joined into one."""
+    out: list[tuple[float, float, set[str]]] = []
+    for i in sorted(rooms_shown):
+        if not 0 <= i < len(segments):
+            continue
+        room = rooms_shown[i]
+        tags = shot_tags([str(getattr(room, "key", ""))],
+                         getattr(room, "loops", ()) or (),
+                         [str(getattr(room, "season", "") or "")])
+        if not tags:
+            continue
+        a, b = segments[i].start, segments[i].end
+        if out and out[-1][2] == tags and abs(out[-1][1] - a) < 0.05:
+            out[-1] = (out[-1][0], b, tags)
+        else:
+            out.append((a, b, tags))
+    return out
+
+
 def render_long(
     script: LongScript,
     tts: TTSResult,
@@ -843,6 +866,7 @@ def _render_long(
         fps=fps,
         paragraphs=paragraph_starts(script.narration, tts.words),
         max_readable_s=settings.long_max_readable_s,
+        words=tts.words,
     )
     for w in seg_warnings:
         log.warning("segment plan: %s", w)
@@ -2263,6 +2287,9 @@ def _render_long(
         """Whether a mark lands on this beat."""
         return any(seg.start - 1e-6 <= c.t < seg.end for c in scribble_cues)
 
+    # THE ROOM EACH BEAT SHOWS, for the set's own sounds under it (item 24):
+    # the rain on the window and the winter room, as the short has them.
+    rooms_shown: dict[int, object] = {}
 
     for i, seg in enumerate(segments):
         room_now[0] = seg.start
@@ -2450,6 +2477,7 @@ def _render_long(
             that reads it, exactly as the still is. `draw_in` False on a
             two-shot, whose evidence stands where the monitor is.
             """
+            rooms_shown.setdefault(i, room)
             intro = _screen_intro(room) if draw_in else None
             if intro is not None:
                 screen_front[i] = intro[1]
@@ -2584,6 +2612,8 @@ def _render_long(
                          max(seg_len - 1.0, 0.0))
                 if z > 1.05:
                     push3d = {"z": z, "t0": p0, "t1": min(p0 + PUSH_IN_S, seg_len)}
+            if push3d:
+                rooms_shown.setdefault(i, room)
             bg_i = None if push3d else _room_input(room)
             layer, window = None, None
             if stance3d is not None:
@@ -3459,6 +3489,11 @@ def _render_long(
     room = room_track(settings, reg.hour)
     if room is not None:
         audio.append(room)
+    # THE SET'S OWN SOUNDS, under the beats that show them (item 24): rain on
+    # the window, the winter room at Christmas. The short had them; the long
+    # had the room tone alone. A run of beats in one sounding room is one
+    # loop, not a restart at every cut.
+    audio += set_layers(settings, _set_windows(rooms_shown, segments))
     # NO EFFECT PLAYS THE SAME WAY TWICE: each firing is a different variant,
     # a little off in pitch and level (`pipeline/sound.py`). Seeded by the
     # script, so every pass of this video sounds the same.
@@ -3559,6 +3594,12 @@ def _render_long(
             f"clock {duration:.2f}s"
         )
     os.replace(part, out_path)
+    # THE PICTURE IS AS LONG AS THE SOUND, AND NEVER SHORTER THAN THE VOICE,
+    # counted in frames off the file (item 22): the check above allows most
+    # of a second either way, and that is twenty frames of picture.
+    frames = frame_count_check(out_path, int(fps), voice_end)
+    if frames.get("ok") is False:
+        log.warning("long frames: %s", frames.get("why"))
     # `composite_video` writes its filtergraph beside its OUTPUT, so the
     # sidecar followed the temp name. Move it with the file it describes —
     # the manifest points at it, and the tests read it to check what was
@@ -3748,5 +3789,6 @@ def _render_long(
         "visual_sources": _visual_source_counts(seg_meta),
         "filter_script": str(out_path.with_suffix(".filter.txt")),
         "output": str(out_path),
+        "frames": frames,
     }, indent=2), encoding="utf-8")
     return out_path, manifest_path

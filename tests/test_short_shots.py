@@ -604,3 +604,26 @@ def test_a_conclusion_heard_at_the_last_moment_keeps_its_card_and_one_shot_shows
     bad[-2] = replace(bad[-2], end=bad[-1].start + 0.1)
     overlap = BuildResult(layers=[], spans=bad, frame=(1080, 1920), aspect="9x16")
     assert any("over close" in p for p in check_invariants(fmt, overlap))
+
+
+def test_a_split_beat_is_cut_on_a_word_never_inside_one():
+    """With no sentence end near the middle the cut fell at the midpoint,
+    which is usually inside a word (improvement 18). A clause ending beats
+    a bare word gap; a sentence end beats both."""
+    from types import SimpleNamespace as W
+
+    from pipeline.shots import Span, _split_point
+
+    sp = Span(shot=None, start=0.0, end=8.0)
+    # Words 0.0-0.7, 0.9-1.6, …: the midpoint, 4.0, is inside "word5".
+    words = [W(word=f"word{i}", start=i * 0.9, end=i * 0.9 + 0.7)
+             for i in range(9)]
+    cut = _split_point(sp, words)
+    assert any(abs(cut - w.start) < 1e-9 for w in words), cut
+    assert abs(cut - 3.6) < 1e-9          # word4 starts nearest the middle
+
+    words[4] = W(word="word4,", start=3.6, end=4.3)
+    assert abs(_split_point(sp, words) - 4.5) < 1e-9   # after the comma
+    words[5] = W(word="word5.", start=4.5, end=5.2)
+    assert abs(_split_point(sp, words) - 5.4) < 1e-9   # after the full stop
+    assert _split_point(sp, []) == 4.0                 # no words: the middle

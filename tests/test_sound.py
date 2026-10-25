@@ -184,6 +184,30 @@ def test_the_set_is_heard_only_while_it_is_on_screen(assets):
     assert all(t.loop and t.gain_db < -30 for t in layers)
 
 
+def test_the_long_hears_the_set_under_the_beats_that_show_it():
+    """Item 24: the long had the room tone alone. Now each beat's room is
+    read the way the short reads a shot's: rain where the window rains, the
+    winter room at Christmas, and a run of beats in one sounding room joined
+    into one loop, not restarted at every cut."""
+    from types import SimpleNamespace as NS
+
+    from pipeline.render_long import _set_windows
+
+    seg = [NS(start=a, end=b) for a, b in
+           [(0, 4), (4, 9), (9, 12), (12, 15), (15, 20), (20, 26)]]
+    plain = NS(key="room/desk-front", loops=(), season="")
+    rain = NS(key="room/window-wall", loops=("window-rain", "lights-twinkle"), season="")
+    xmas = NS(key="room/desk-front-christmas", loops=(), season="")
+    dressed = NS(key="room/desk-wide", loops=(), season="christmas")
+    shown = {0: plain, 1: rain, 2: rain, 3: xmas, 4: dressed, 9: rain}
+    assert _set_windows(shown, seg) == [
+        (4, 12, {"window-rain"}), (12, 20, {"christmas"})]
+    # A gap (a beat of evidence, no room) starts the loop again after it.
+    assert _set_windows({1: rain, 3: rain}, seg) == [
+        (4, 9, {"window-rain"}), (12, 15, {"window-rain"})]
+    assert _set_windows({0: plain}, seg) == []
+
+
 # ------------------------------------------------------------ the cues
 
 

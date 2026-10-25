@@ -2205,6 +2205,7 @@ class BotCore:
                 chapter_host_s=self.settings.long_chapter_host_s,
                 paragraphs=paragraph_starts(script.narration, tts.words),
                 max_readable_s=self.settings.long_max_readable_s,
+                words=tts.words,
             )
             sheet, problems = build_storyboard(
                 segments, tts.words, ws.path / "storyboard.png", self.settings,

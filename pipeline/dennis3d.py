@@ -34,8 +34,6 @@ log = logging.getLogger(__name__)
 REPO = Path(__file__).resolve().parent.parent
 WORKER = REPO / "room3d" / "perform.py"
 ROOM3D_AUTHOR = "room3d"
-# The file a layer's unpacked frames folder holds once every frame is in it.
-DONE = ".unpacked"
 # Bumped whenever how he is built or moves changes, so no older shot is reused.
 LOOK_VERSION = "47-64-14"     # 14: his poses at dusk, the count put down (scan, 24 Oct 2026)
 
@@ -356,10 +354,10 @@ class Performer:
         if reply.get("events"):
             (folder / "events.json").write_text(json.dumps(reply["events"]), encoding="utf-8")
         part.replace(layer)
-        # THE LAYER IS THE CACHE; ITS FRAMES ARE NOT KEPT BESIDE IT. The long
-        # reads the .mov and nothing else, and `frames()` unpacks them for
-        # the short when it needs them. Kept, every shot was stored twice, a
-        # hundred gigabytes and more on a long at 1080p (scan, 24 Oct 2026).
+        # THE LAYER IS THE CACHE; ITS FRAMES ARE NOT KEPT BESIDE IT. Both
+        # cuts read the .mov and nothing else. Kept, every shot was stored
+        # twice, a hundred gigabytes and more on a long at 1080p (scan, 24
+        # Oct 2026).
         import shutil
 
         shutil.rmtree(folder / "frames", ignore_errors=True)
@@ -469,40 +467,20 @@ class Performer:
         return {"lines": how, "lines_by": _lines_digest()}
 
     @staticmethod
-    def frames(layer: Path) -> Path:
-        """The folder of his layer's frames, `d_0000.png` on, unpacked from
-        the layer. `drop_frames` takes them away again once the short is
-        drawn.
+    def frame_count(layer: Path) -> int:
+        """How many frames his layer holds, counted off the .mov (the short
+        reads them straight from it, `render_short._MovFrames`)."""
+        from config import detect_ffmpeg
 
-        UNPACKED WHOLE OR NOT AT ALL. A folder was taken as done when its
-        first frame was there, so a run stopped part-way through left him
-        to freeze on the last frame it reached in every later render of the
-        shot (scan, 24 Oct 2026): the frames go to a folder of their own
-        and are moved into place once all of them are written."""
-        import shutil
-
-        folder = Path(layer).parent / "frames"
-        if (folder / DONE).exists():
-            return folder
-        part = Path(layer).parent / "frames.part"
-        shutil.rmtree(part, ignore_errors=True)
-        part.mkdir(parents=True)
-        run_ffmpeg(["-i", str(layer), "-start_number", "0", str(part / "d_%04d.png")])
-        (part / DONE).write_text("", encoding="utf-8")
-        shutil.rmtree(folder, ignore_errors=True)
-        part.replace(folder)
-        return folder
-
-    @staticmethod
-    def drop_frames(folder: Path) -> None:
-        """Delete a layer's unpacked frames: the .mov beside them is the
-        cache, and the frames were kept for sixty days, a short's worth of
-        1440x2560 pictures each time (scan, 24 Oct 2026)."""
-        import shutil
-
-        folder = Path(folder)
-        if folder.name == "frames" and (folder.parent / "layer.mov").exists():
-            shutil.rmtree(folder, ignore_errors=True)
+        _, ffprobe = detect_ffmpeg()
+        try:
+            out = subprocess.run(
+                [ffprobe, "-v", "error", "-count_packets", "-select_streams",
+                 "v:0", "-show_entries", "stream=nb_read_packets", "-of", "csv=p=0",
+                 str(layer)], capture_output=True, text=True, timeout=120).stdout
+            return max(int(out.strip().split(",")[0]), 1)
+        except (OSError, ValueError, subprocess.SubprocessError):
+            return 1
 
     @staticmethod
     def window(layer: Path) -> tuple[float, float, float, float] | None:

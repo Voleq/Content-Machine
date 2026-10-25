@@ -300,3 +300,11 @@ def test_the_short_manifest_names_the_template_it_rendered(settings, tmp_path,
     pacing = manifest["pacing"]
     assert pacing["hold_ceiling_s"] == small.short_max_hold_s
     assert isinstance(pacing["held_over_ceiling"], list)
+    # Flashes and lost beats are listed (item 19), and the frames are
+    # counted off the file after the encode (item 22).
+    assert isinstance(pacing["flashes"], list) and isinstance(pacing["dropped"], list)
+    assert "payoff" not in pacing["dropped"]
+    frames = manifest["frames"]
+    assert frames["ok"] is True, frames
+    assert frames["fps"] == small.fps
+    assert abs(frames["video_s"] - frames["voice_s"]) < 1.0

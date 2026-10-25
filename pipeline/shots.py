@@ -1331,20 +1331,23 @@ def _split_point(sp: Span, words: Sequence[Any]) -> float:
 
     On a sentence boundary when the words give one near the middle — the cut
     lands as the voice starts a new thought, which is where an editor puts
-    it — and at the midpoint when they do not. Never so near either end that
-    one part is a flash: each keeps a quarter of the beat.
+    it — else after a comma or a colon, else on the next word nearest the
+    middle: the midpoint itself cut inside a word, and the picture changed
+    halfway through it. The midpoint only when no word starts in reach.
+    Never so near either end that one part is a flash: each keeps a quarter
+    of the beat.
     """
     margin = max(MIN_SHOT_S, 0.25 * sp.dur)
     lo, hi = sp.start + margin, sp.end - margin
     mid = (sp.start + sp.end) / 2
-    best: float | None = None
+    best: tuple[int, float, float] | None = None
     for w, nxt in zip(words, list(words)[1:]):
         t = float(getattr(nxt, "start", 0.0))
         if not lo <= t <= hi:
             continue
         said = str(getattr(w, "word", "")).rstrip("\"'”’)")
-        if not said.endswith((".", "!", "?", "…")):
-            continue
-        if best is None or abs(t - mid) < abs(best - mid):
-            best = t
-    return best if best is not None else mid
+        rank = (0 if said.endswith((".", "!", "?", "…")) else
+                1 if said.endswith((",", ";", ":", "—", "–")) else 2)
+        if best is None or (rank, abs(t - mid)) < best[:2]:
+            best = (rank, abs(t - mid), t)
+    return best[2] if best is not None else mid

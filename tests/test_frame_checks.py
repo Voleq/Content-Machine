@@ -285,3 +285,54 @@ def test_a_backend_s_own_note_survives_the_credits(settings, tmp_path):
         dmod._local_deliver = original
 
     assert "the backend had something to say" in got.note
+
+
+# --------------------------------------------------------------------------
+# The frame count after an encode (item 22), and what the delivery says.
+# --------------------------------------------------------------------------
+
+def _clip(path, video_s, audio_s):
+    from pipeline.render_common import run_ffmpeg
+
+    run_ffmpeg(["-f", "lavfi", "-i", f"color=c=gray:size=64x64:rate=30:duration={video_s}",
+                "-f", "lavfi", "-i", f"sine=frequency=440:duration={audio_s}",
+                "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+                "-c:a", "aac", str(path)])
+    return path
+
+
+def test_an_encode_s_frames_are_counted_against_its_sound_and_the_voice(tmp_path):
+    from pipeline.render_common import frame_count_check
+
+    good = frame_count_check(_clip(tmp_path / "a.mp4", 2, 2), 30, voice_s=1.9)
+    assert good["ok"] is True and good["frames"] == 60, good
+
+    short_pic = frame_count_check(_clip(tmp_path / "b.mp4", 1, 2), 30)
+    assert short_pic["ok"] is False
+    assert "shorter than the sound" in short_pic["why"]
+
+    early = frame_count_check(_clip(tmp_path / "c.mp4", 2, 2), 30, voice_s=2.5)
+    assert early["ok"] is False and "before the voice does" in early["why"]
+
+    missing = frame_count_check(tmp_path / "nothing.mp4", 30)
+    assert missing["ok"] is None
+
+
+def test_the_delivery_names_a_flash_a_lost_beat_and_a_bad_encode():
+    from pipeline.render_notes import render_notes
+
+    manifest = {"pacing": {"min_shot_s": 0.8,
+                           "flashes": [{"shot": "the-move", "start_s": 12.3,
+                                        "dur_s": 0.4}],
+                           "dropped": ["payoff"]},
+                "frames": {"ok": False, "why": "the picture ends 0.50s before "
+                           "the voice does", "frames": 900, "fps": 30}}
+    notes = render_notes(manifest, "short")
+    assert any(n.startswith("🎞 The encode came out wrong: the picture ends")
+               for n in notes), notes
+    flash = next(n for n in notes if n.startswith("⚡"))
+    assert "the-move 0.40s at 12.3s" in flash and "payoff" in flash
+    assert render_notes({"pacing": {"flashes": [], "dropped": []},
+                         "frames": {"ok": True}}, "short") == []
+    # A long has no beats to lose this way; its frames are still counted.
+    assert [n[:1] for n in render_notes(manifest, "long")] == ["🎞"]

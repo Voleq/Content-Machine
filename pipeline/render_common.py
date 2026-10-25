@@ -164,6 +164,54 @@ def ffprobe_duration(path: Path | str) -> float:
     return float(dur)
 
 
+# A frame either side is the encoder rounding the last one; more is a
+# picture that ends before the voice, or runs on with nothing to say.
+FRAME_SLACK = 2
+
+
+def frame_count_check(path: Path | str, fps: int,
+                      voice_s: float | None = None) -> dict:
+    """What an encode made, measured off the file: the frames the video
+    stream holds against the audio stream's length and the voice's. Recorded
+    in the manifest after each encode, so "the picture is as long as the
+    voice" is a figure read off the result, not a plan. Never raises: a file
+    that cannot be read is `ok: None` with the reason."""
+    _, ffprobe = detect_ffmpeg()
+    try:
+        proc = subprocess.run(
+            [ffprobe, "-v", "error", "-count_packets", "-print_format", "json",
+             "-show_entries", "stream=codec_type,nb_read_packets,duration",
+             str(path)], capture_output=True, text=True, timeout=600)
+        streams = json.loads(proc.stdout or "{}").get("streams") or []
+    except (OSError, ValueError, subprocess.SubprocessError) as e:
+        return {"ok": None, "why": f"could not be read ({type(e).__name__})"}
+    video = next((x for x in streams if x.get("codec_type") == "video"), None)
+    audio = next((x for x in streams if x.get("codec_type") == "audio"), None)
+    try:
+        frames = int((video or {}).get("nb_read_packets"))
+    except (TypeError, ValueError):
+        return {"ok": None, "why": "no video frames could be counted"}
+    out = {"fps": fps, "frames": frames,
+           "video_s": round(frames / fps, 3) if fps else None}
+    slack = FRAME_SLACK / fps if fps else 0.0
+    problems = []
+    if audio is not None and audio.get("duration") and fps:
+        out["audio_s"] = round(float(audio["duration"]), 3)
+        gap = out["video_s"] - out["audio_s"]
+        if abs(gap) > slack:
+            problems.append(f"the picture is {abs(gap):.2f}s "
+                            f"{'longer' if gap > 0 else 'shorter'} than the sound")
+    if voice_s is not None and fps:
+        out["voice_s"] = round(float(voice_s), 3)
+        if out["video_s"] < float(voice_s) - slack:
+            problems.append(f"the picture ends {float(voice_s) - out['video_s']:.2f}s "
+                            f"before the voice does")
+    out["ok"] = not problems
+    if problems:
+        out["why"] = "; ".join(problems)
+    return out
+
+
 HARDWARE_ENCODER = "h264_nvenc"
 
 # The smoke-encode frame. Big enough to clear NVENC's minimum frame dimension,

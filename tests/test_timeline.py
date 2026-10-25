@@ -783,3 +783,27 @@ def test_a_chart_of_one_row_is_not_dropped_for_a_plate_that_names_it_inside_anot
     assert shown == [("plate", "charts/line-6y-16x9"), ("chart", "cash")], shown
     # the plate's own row is still the twin
     assert [(r["what"], r["cue"].payload["value"]) for r in report] == [("dropped", "fcf")]
+
+
+
+def test_a_long_stretch_of_him_is_cut_where_a_word_starts():
+    """Even parts were cut at their arithmetic point, mid-word (improvement
+    18); with the voice's words each inner cut lands on a word's start."""
+    from pipeline.models import WordTimestamp
+    from pipeline.timeline import MAX_HOST_BEAT_S, plan_long_segments
+
+    duration = 3 * MAX_HOST_BEAT_S + 1.0
+    words = [WordTimestamp(word=f"w{i}", start=i * 0.7, end=i * 0.7 + 0.5,
+                           char_start=3 * i, char_end=3 * i + 2)
+             for i in range(int(duration / 0.7))]
+    segments, _ = plan_long_segments([], duration, words=words)
+    hosts = [s for s in segments if s.kind == "host"]
+    assert len(hosts) == 4
+    starts = {round(w.start, 6) for w in words}
+    for seg in hosts[1:]:
+        assert round(seg.start, 6) in starts, seg.start
+    for a, b in zip(hosts, hosts[1:]):
+        assert a.end == b.start, "the parts still tile the stretch"
+    assert hosts[-1].end == duration
+    bare, _ = plan_long_segments([], duration)
+    assert [round(s.start, 3) for s in bare][1] == round(duration / 4, 3)

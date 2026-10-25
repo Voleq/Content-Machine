@@ -36,13 +36,15 @@ from pipeline.compose import (MEDIA_PREFIX, MEME_SRC, BuildResult, Layer,
                               punch_in_slot)
 from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
-from pipeline.render_common import RenderError, mix_under_picture, run_ffmpeg
+from pipeline.render_common import (RenderError, frame_count_check,
+                                    mix_under_picture, run_ffmpeg)
 from pipeline.sound import (Cut, Move, body_moves, manifest_rows, measure_lufs,
                             normalises, placeholders_played, short_mix,
                             shot_tags, sound_summary)
-from pipeline.shots import (Format, apply_order, beat_keys, choose_order,
-                            draws_prices, expand_sequences, load_format,
-                            order_by_marks, resolve_spans, voice_keys)
+from pipeline.shots import (MIN_SHOT_S, Format, apply_order, beat_keys,
+                            choose_order, draws_prices, expand_sequences,
+                            load_format, order_by_marks, resolve_spans,
+                            voice_keys)
 
 log = logging.getLogger(__name__)
 
@@ -1026,6 +1028,58 @@ def prune_empty_shots(fmt: Format, probe: "ShortResolver") -> tuple[Format, list
 # Drawing
 # ---------------------------------------------------------------------------
 
+class _MovFrames:
+    """His layer's frames, decoded off the .mov in order by one ffmpeg that
+    stays open while the cut draws him. Asked for a frame behind the last
+    one read, it starts again from the top; asked past the end, it gives
+    the last frame there was."""
+
+    def __init__(self, path: Path) -> None:
+        from pipeline.render_common import ffprobe_json
+
+        self.path = path
+        video = next(s for s in ffprobe_json(path).get("streams", [])
+                     if s.get("codec_type") == "video")
+        self.size = (int(video["width"]), int(video["height"]))
+        self._proc: subprocess.Popen | None = None
+        self._next = 0                      # the index the pipe gives next
+        self._last: tuple[int, Image.Image] | None = None
+
+    def _open(self) -> None:
+        from config import detect_ffmpeg
+
+        self.close()
+        ffmpeg, _ = detect_ffmpeg()
+        self._proc = subprocess.Popen(
+            [ffmpeg, "-hide_banner", "-v", "error", "-i", str(self.path),
+             "-f", "rawvideo", "-pix_fmt", "rgba", "-"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        self._next = 0
+        self._last = None
+
+    def frame(self, index: int) -> Image.Image | None:
+        if self._last is not None and self._last[0] == index:
+            return self._last[1]
+        if self._proc is None or index < self._next:
+            self._open()
+        size = self.size[0] * self.size[1] * 4
+        while self._next <= index and self._proc is not None:
+            buf = self._proc.stdout.read(size) if self._proc.stdout else b""
+            if len(buf) < size:
+                break                       # past his last frame: hold it
+            self._last = (self._next, Image.frombytes("RGBA", self.size, buf))
+            self._next += 1
+        return self._last[1] if self._last is not None else None
+
+    def close(self) -> None:
+        if self._proc is not None:
+            if self._proc.stdout:
+                self._proc.stdout.close()
+            self._proc.kill()
+            self._proc.wait()
+            self._proc = None
+
+
 class _Cache:
     """Rendered plate frames, keyed by what makes them different.
 
@@ -1041,7 +1095,8 @@ class _Cache:
         self.reg = reg
         self._drawn: dict[tuple, Image.Image] = {}
         self._sized: dict[tuple, Image.Image] = {}
-        self._clip: tuple[Path, Image.Image] | None = None
+        self._clip: tuple[tuple, Image.Image] | None = None
+        self._movs: dict[str, _MovFrames] = {}
 
     def _draw(self, key: str, frame_i: int, values: dict[str, str]) -> Image.Image | None:
         """The plate with its values in it, at the size the kit drew it."""
@@ -1106,18 +1161,34 @@ class _Cache:
         self._sized[sized_key] = out
         return out
 
-    def clip_frame(self, path: Path, w: int, h: int) -> Image.Image | None:
-        """One frame of the 3D Dennis's layer. Each is on screen for two or
-        three output frames and never again, so only the last one is kept."""
-        if self._clip is not None and self._clip[0] == path:
+    def clip_frame(self, path: Path, index: int, w: int, h: int) -> Image.Image | None:
+        """Frame `index` of the 3D Dennis's layer, read straight off its
+        .mov, in order, as the cut reaches it (item 23): the frames were
+        unpacked to a folder of PNGs first, a short's worth of 1440x2560
+        pictures written and read back for every render. Each is on screen
+        for an output frame or two and never again, so only the last is kept;
+        past his layer's end he holds on its last frame."""
+        key = (str(path), index, w, h)
+        if self._clip is not None and self._clip[0] == key:
             return self._clip[1]
-        if not path.exists():
+        reader = self._movs.get(str(path))
+        if reader is None:
+            if not Path(path).exists():
+                return None
+            reader = self._movs[str(path)] = _MovFrames(Path(path))
+        im = reader.frame(index)
+        if im is None:
             return None
-        im = Image.open(path).convert("RGBA")
         if im.size != (w, h):
             im = im.resize((max(w, 1), max(h, 1)), Image.LANCZOS)
-        self._clip = (path, im)
+        self._clip = (key, im)
         return im
+
+    def close(self) -> None:
+        """Stop every layer's decoder."""
+        for reader in self._movs.values():
+            reader.close()
+        self._movs.clear()
 
     def _frame_file(self, key: str, frame_i: int):
         """The file frame `frame_i` of `key` shows; the index if there is none."""
@@ -1193,7 +1264,7 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
         # The 3D Dennis: one frame of his layer, the room's size, the desk
         # already in front of him. Held on its last frame past its end.
         if layer.path is not None:
-            img = cache.clip_frame(Path(layer.path) / f"d_{_frame_index(layer, t):04d}.png",
+            img = cache.clip_frame(Path(layer.path), _frame_index(layer, t),
                                    layer.w, layer.h)
             if img is not None:
                 canvas.alpha_composite(img, (layer.x, layer.y))
@@ -1586,12 +1657,11 @@ def perform_3d(result: BuildResult, reg, words, settings, *, aspect: str,
                                    seed=f"{seed}|{h.shot_id}", stance=h.entry_key,
                                    close=close)
             window = performer.window(layer) if close else None
-            frames = performer.frames(layer)
-            n = len(list(frames.glob("d_*.png")))
+            n = performer.frame_count(layer)
             him = Layer(name=f"{h.shot_id}:host3d:{h.entry_key.rsplit('/', 1)[-1]}",
                         kind="host3d", shot_id=h.shot_id, t_start=h.t_start,
                         t_end=h.t_end, x=room.x, y=room.y, w=room.w, h=room.h,
-                        path=frames, entry_key=h.entry_key, concept=h.concept,
+                        path=layer, entry_key=h.entry_key, concept=h.concept,
                         frame_count=max(n, 1), fps=fps, loops=False, z=h.z)
             layers = []
             for l in result.layers:
@@ -1713,6 +1783,7 @@ def render_frames(result: BuildResult, resolver, duration: float,
             except BrokenPipeError:
                 break               # ffmpeg died; its own words are below
     finally:
+        cache.close()
         try:
             proc.stdin.close()
         except BrokenPipeError:
@@ -2122,8 +2193,6 @@ def _render_short(script, tts, workspace: Path, settings, *,
             performer.close()
     render_frames(result, resolver, duration, silent, settings, reg=frame_reg,
                   words=words, plan=plan, scale=scale)
-    for l in result.of_kind("host3d"):
-        dennis3d.Performer.drop_frames(l.path)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}
     faces = getattr(render_frames, "last_faces", {}) or {}
     # THE CEILING, MEASURED ON THE FRAMES the shots drew, before captions
@@ -2218,6 +2287,10 @@ def _render_short(script, tts, workspace: Path, settings, *,
         part.unlink(missing_ok=True)
         raise RenderError(f"the SHORT mux produced nothing at {part}")
     os.replace(part, out)
+    # THE PICTURE IS AS LONG AS THE VOICE, measured off the file (item 22).
+    frames = frame_count_check(out, int(settings.fps), duration)
+    if frames.get("ok") is False:
+        log.warning("short frames: %s", frames.get("why"))
 
     meme = _meme_record(resolver, result)
     provenance = _provenance(script, settings, Path(workspace), duration,
@@ -2371,7 +2444,19 @@ def _render_short(script, tts, workspace: Path, settings, *,
             # past this one. `null` means they could not be measured.
             "hold_ceiling_s": settings.short_max_hold_s,
             "held_over_ceiling": held_over,
+            # A FLASH AND A LOST BEAT (item 19): a shot up for under the
+            # minimum reads as a glitch, and a beat the cut swallowed (the
+            # payoff, said in the last moments) is gone with its hit.
+            "min_shot_s": MIN_SHOT_S,
+            "flashes": [
+                {"shot": sp.shot.id, "start_s": round(sp.start, 2),
+                 "dur_s": round(sp.end - sp.start, 2)}
+                for sp in result.spans if sp.end - sp.start < MIN_SHOT_S - 0.01],
+            "dropped": [sh.id for sh in fmt.shots if sh.id not in {
+                getattr(sp.shot, "part_of", "") or sp.shot.id
+                for sp in result.spans}],
         },
+        "frames": frames,
     }, indent=1), encoding="utf-8")
 
     return out, manifest_path

@@ -15,7 +15,7 @@ import pytest
 from PIL import Image
 
 from pipeline import dennis3d
-from pipeline.render_common import RenderError
+from pipeline.render_common import RenderError, run_ffmpeg
 
 
 def _room(key: str, author: str = "room3d"):
@@ -323,7 +323,8 @@ def test_the_short_s_close_up_is_his_3d_layer_over_a_blown_up_room(short_3d):
     assert (him.x, him.y, him.w, him.h) == (0, 0, 1080, 1920), "his layer is the room's size"
     assert him.entry_key == "host/close-up" and him.z == 40
     assert (him.fps, him.loops) == (12, False) and him.frame_count == 24 and him.moves
-    assert (Path(him.path) / "d_0023.png").exists()
+    assert Path(him.path).name == "layer.mov", "read off his layer, not unpacked"
+    assert not (Path(him.path).parent / "frames").exists()
     assert room.window == (0.25, 0.1, 0.5, 0.35), "behind him, the piece the lens sees"
     assert "the-turn:caption" in [l.name for l in result.layers]
     job = json.loads((Path(him.path).parent / "job.json").read_text(encoding="utf-8"))
@@ -377,24 +378,22 @@ def test_the_short_draws_his_frames_over_the_blown_up_room(tmp_path, settings):
         im = Image.new("RGBA", (100, 200), (0, 0, 0, 0))
         im.paste((250, 250, 250, 255), (10 + 30 * i, 50, 30 + 30 * i, 150))
         im.save(frames / f"d_{i:04d}.png")
-    him = Layer("h", "host3d", "t", 0.0, 2.0, 0, 0, 100, 200, path=frames,
+    # His layer as the performer writes it: PNG frames in an RGBA .mov,
+    # read straight off it (item 23).
+    mov = tmp_path / "layer.mov"
+    run_ffmpeg(["-framerate", "12", "-i", str(frames / "d_%04d.png"),
+                "-c:v", "png", "-pix_fmt", "rgba", "-f", "mov", str(mov)])
+    shutil.rmtree(frames)
+    assert dennis3d.Performer.frame_count(mov) == 3
+    him = Layer("h", "host3d", "t", 0.0, 2.0, 0, 0, 100, 200, path=mov,
                 frame_count=3, fps=12, loops=False, z=40)
-    for t, x in ((0.0, 15), (1 / 12 + 0.01, 45), (1.5, 75)):   # past the end: the last
+    # In order, past the end (the last frame holds), and back to the top.
+    for t, x in ((0.0, 15), (1 / 12 + 0.01, 45), (1.5, 75), (0.0, 15)):
         canvas = Image.new("RGBA", (100, 200), (0, 0, 0, 255))
         _draw_layer(canvas, him, t, cache, reg=None, settings=settings, lost={})
         assert canvas.getpixel((x, 100))[:3] == (250, 250, 250), t
         assert canvas.getpixel((x, 20))[:3] == (0, 0, 0)
-
-
-def test_his_frames_come_back_from_the_layer_when_the_folder_went(performer):
-    layer = performer.shot(_room("room/desk-front-9x16"), [], 0.0, 1.0, (64, 112), seed="x")
-    folder = dennis3d.Performer.frames(layer)
-    n = len(list(folder.glob("d_*.png")))
-    shutil.rmtree(folder)
-    again = dennis3d.Performer.frames(layer)
-    assert again == folder and len(list(again.glob("d_*.png"))) == n \
-        == performer.settings.dennis_3d_fps
-    assert (again / "d_0000.png").exists()
+    cache.close()
 
 
 # --------------------------------------------------------------------------
@@ -684,25 +683,10 @@ def test_a_word_under_way_at_his_cut_is_his_to_say(short_3d):
 def test_a_drawn_shot_is_stored_once(performer):
     """The worker's frames stayed beside the layer made of them: every shot
     stored twice, a hundred gigabytes and more on a long at 1080p. The layer
-    is kept, and its frames come back from it when the short asks."""
+    is kept, and the short reads its frames straight off it."""
     layer = performer.shot(_room("room/desk-front-9x16"), [], 0.0, 1.0, (64, 112), seed="y")
     assert layer.exists() and not (layer.parent / "frames").exists()
-    folder = dennis3d.Performer.frames(layer)
-    assert len(list(folder.glob("d_*.png"))) == performer.settings.dennis_3d_fps
-
-
-def test_a_half_unpacked_shot_is_unpacked_again_and_dropped_after(performer):
-    """A folder was taken as done when its first frame was there: a run
-    stopped part-way left him frozen on the last frame it reached. And the
-    unpacked frames were kept sixty days beside the layer."""
-    layer = performer.shot(_room("room/desk-front-9x16"), [], 0.0, 1.0, (64, 112), seed="z")
-    half = layer.parent / "frames"
-    half.mkdir()
-    Image.new("RGBA", (64, 112)).save(half / "d_0000.png")
-    folder = dennis3d.Performer.frames(layer)
-    assert len(list(folder.glob("d_*.png"))) == performer.settings.dennis_3d_fps
-    dennis3d.Performer.drop_frames(folder)
-    assert not folder.exists() and layer.exists()
+    assert dennis3d.Performer.frame_count(layer) == performer.settings.dennis_3d_fps
 
 
 LOOK_RAW = """[SCENE: desk-side | pose=holding-a-mug] EXMPL is down sixty percent and nobody cares anymore. Which is when I start reading the filings.
