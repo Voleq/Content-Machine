@@ -17,6 +17,8 @@ call that costs nothing:
 * SEC — the ticker list, with SEC_USER_AGENT, which is what the SEC refuses.
 * YouTube — the channel the credentials upload to (one unit of the day's
   10,000).
+* Google Drive — the folder a final is delivered into, found the way the
+  delivery finds it (`GDRIVE_CREDENTIALS`, from `youtube_auth.py --drive`).
 
 A key's text never reaches a result: every detail is scrubbed of it before it
 is returned, and requests go through httpx, whose request log `main` keeps at
@@ -243,10 +245,49 @@ def _youtube(s: Settings, get: Get) -> list[KeyResult]:
     return [KeyResult("YouTube", OK, f"uploads to {title}")]
 
 
+def _drive(s: Settings, get: Get) -> list[KeyResult]:
+    path = Path(s.gdrive_credentials or "").expanduser()
+    if not s.gdrive_credentials or not path.is_file():
+        return [KeyResult("Google Drive", SKIP, "no credentials file (GDRIVE_CREDENTIALS)")]
+    from pipeline.delivery import DRIVE_API, GDriveBackend
+
+    try:
+        token = GDriveBackend(s)._token()
+    except Exception as e:                             # noqa: BLE001
+        return [KeyResult("Google Drive", BAD, f"the credentials did not sign in: "
+                          f"{type(e).__name__}")]
+    head = {"Authorization": f"Bearer {token}"}
+    idle = "" if s.delivery_backend == "gdrive" else \
+        "; DELIVERY_BACKEND is not gdrive, so nothing goes there yet"
+    if s.gdrive_root_folder_id:
+        resp = get(f"{DRIVE_API}/files/{s.gdrive_root_folder_id}", headers=head,
+                   params={"fields": "name", "supportsAllDrives": "true"})
+        if resp.status_code == 404:
+            return [KeyResult("Google Drive", BAD, "signed in, but it cannot see "
+                              "GDRIVE_ROOT_FOLDER_ID: a folder made by hand is "
+                              "invisible to it, so leave that blank")]
+        if resp.status_code != 200:
+            return [_refused("Google Drive", resp)]
+        name = _json(resp).get("name") or "the folder set"
+        return [KeyResult("Google Drive", OK, f"delivers into {name}{idle}")]
+    name = s.gdrive_folder_name
+    safe = name.replace("\\", "\\\\").replace("'", "\\'")
+    resp = get(f"{DRIVE_API}/files", headers=head, params={
+        "q": f"name = '{safe}' and mimeType = 'application/vnd.google-apps.folder' "
+             f"and trashed = false",
+        "fields": "files(id)"})
+    if resp.status_code != 200:
+        return [_refused("Google Drive", resp)]
+    if _json(resp).get("files"):
+        return [KeyResult("Google Drive", OK, f"delivers into its {name} folder{idle}")]
+    return [KeyResult("Google Drive", OK, f"signs in; it makes its {name} folder "
+                      f"with the first final{idle}")]
+
+
 CHECKS = (("ElevenLabs", _eleven), ("Pexels", _pexels), ("Giphy", _giphy),
           ("Tenor", _tenor), ("FRED", _fred), ("Telegram", _telegram),
           ("OpenAI", _openai), ("GitHub Models", _github), ("SEC", _sec),
-          ("YouTube", _youtube))
+          ("YouTube", _youtube), ("Google Drive", _drive))
 
 
 def _secrets(s: Settings) -> list[str]:

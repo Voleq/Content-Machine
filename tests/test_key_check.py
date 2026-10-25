@@ -69,6 +69,7 @@ def test_every_set_key_that_works_is_ok_and_says_what_it_found(settings):
     for name in ("Giphy", "Tenor", "FRED", "OpenAI", "SEC"):
         assert rows[name].state == OK, name
     assert rows["YouTube"].state == SKIP
+    assert rows["Google Drive"].state == SKIP
 
 
 def test_a_refused_key_and_a_foreign_voice_are_bad(settings):
@@ -228,3 +229,49 @@ def test_the_cost_report_carries_the_count_and_the_model_s_cap(
     assert "🎙 ElevenLabs: 81,200 of 100,000 characters left" in text
     assert "Hosted AI model: $0.25 of $5.00 cap (LLM_MONTHLY_CAP)" in text
     assert "🎙" not in BotCore(settings).cost_text()
+
+
+def _drive_settings(settings, tmp_path, monkeypatch, **over):
+    from pipeline.delivery import GDriveBackend
+
+    creds = tmp_path / "gdrive.json"
+    creds.write_text('{"refresh_token": "r"}', encoding="utf-8")
+    monkeypatch.setattr(GDriveBackend, "_token", lambda self: "ya29.ACCESS")
+    return _with(settings, gdrive_credentials=str(creds),
+                 delivery_backend="gdrive", **over)
+
+
+def test_drive_is_asked_for_the_folder_a_final_goes_into(settings, tmp_path, monkeypatch):
+    """Drive had no row: a sign-in that did not take showed first as a final
+    kept on the PC instead of delivered."""
+    s = _drive_settings(settings, tmp_path, monkeypatch)
+    calls = []
+    rows = _rows(s, {"drive/v3/files": Resp(200, {"files": [{"id": "f1"}]})}, calls)
+    assert rows["Google Drive"].state == OK
+    assert rows["Google Drive"].detail == "delivers into its Dennis folder"
+    asked = [kw for url, kw in calls if "drive/v3/files" in url]
+    assert asked and asked[0]["headers"]["Authorization"] == "Bearer ya29.ACCESS"
+    assert "'Dennis'" in asked[0]["params"]["q"]
+    assert "ya29" not in keys_text(s, get=_fake({"drive/v3/files": Resp(200, {})}))
+
+    fresh = _rows(s, {"drive/v3/files": Resp(200, {"files": []})})
+    assert "makes its Dennis folder with the first final" in fresh["Google Drive"].detail
+    idle = _rows(s.model_copy(update={"delivery_backend": "telegram"}),
+                 {"drive/v3/files": Resp(200, {"files": [{"id": "f1"}]})})
+    assert "DELIVERY_BACKEND is not gdrive" in idle["Google Drive"].detail
+
+
+def test_a_folder_made_by_hand_and_a_failed_sign_in_are_bad(settings, tmp_path, monkeypatch):
+    from pipeline.delivery import GDriveBackend
+
+    s = _drive_settings(settings, tmp_path, monkeypatch, gdrive_root_folder_id="byhand")
+    rows = _rows(s, {"drive/v3/files/byhand": Resp(404)})
+    assert rows["Google Drive"].state == BAD
+    assert "leave that blank" in rows["Google Drive"].detail
+
+    def refused(self):
+        raise RuntimeError("invalid_grant")
+    monkeypatch.setattr(GDriveBackend, "_token", refused)
+    rows = _rows(s, {})
+    assert rows["Google Drive"].state == BAD
+    assert rows["Google Drive"].detail == "the credentials did not sign in: RuntimeError"

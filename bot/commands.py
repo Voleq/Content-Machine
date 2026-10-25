@@ -1147,7 +1147,7 @@ COMMANDS: tuple[Command, ...] = (
                 "whether its key works: ElevenLabs (and how many characters "
                 "are left, and whether both voice ids are on the account), "
                 "Pexels, Giphy, Tenor, FRED, Telegram, OpenAI, GitHub "
-                "Models, the SEC (with SEC_USER_AGENT) and YouTube. Keys are "
+                "Models, the SEC (with SEC_USER_AGENT), YouTube and Google Drive. Keys are "
                 "never shown. Also the page's Settings, \"Test the keys\".")),
     Command("admin", "usage", "",
             "SEC and Pexels requests a day, the caches' sizes, a prune",
