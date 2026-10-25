@@ -483,6 +483,20 @@ def test_acronyms_and_the_ticker_are_not_shouting():
     assert out == [], [f.message for f in out]
 
 
+def test_the_workbook_s_terms_and_the_peers_are_not_shouting():
+    """LTM, COGS and the Fed's committee are how the filing talks, and a
+    peer's ticker is a ticker (improvement 10). A shout is still one."""
+    text = ("LTM revenue, TTM margins, COGS and SBC; CPI came in hot and the "
+            "FOMC held. ACME and BIGCO trade cheaper. That is NOT it.")
+    def shouted(out):
+        return {f.message.split("”")[0].lstrip("“") for f in out
+                if "is shouted" in f.message}
+
+    peers = [{"name": "ACME"}, {"name": "NYSE:BIGCO"}]
+    assert shouted(direction_lint(_Script(text), peers=peers)) == {"NOT"}
+    assert shouted(direction_lint(_Script(text))) == {"ACME", "BIGCO", "NOT"}
+
+
 # --------------------------------------------------------------------------
 # §7 — the thing that must not be wired in.
 # --------------------------------------------------------------------------

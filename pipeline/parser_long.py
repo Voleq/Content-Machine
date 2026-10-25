@@ -583,6 +583,48 @@ def late_visual_warnings(script: LongScript, settings: Settings) -> list[str]:
     return out
 
 
+# One shot of him the writer directed, past which it is worth saying so: a
+# directed beat is never split (the room and the pose are the writer's), so
+# the picture does not change for the whole of it.
+SCENE_BEAT_WARN_S = 20.0
+# Words over a pose with no mouth before it reads as him not talking while
+# the voice does: a breath of a line plays over it, a sentence does not.
+NO_MOUTH_WORDS = 6
+
+
+def host_beat_warnings(script: LongScript, settings: Settings,
+                       reg=None) -> list[str]:
+    """Beats of Dennis the cut will make, said while the script is free to
+    change: one [SCENE] held over a long stretch, and a pose with no mouth
+    (walking out, head in hands) over more than a few words. Estimated on
+    the voice's average pace, as `late_visual_warnings`."""
+    from pipeline.scenes import talks
+    from pipeline.timeline import host_beats
+
+    out = []
+    for b in host_beats(script, settings):
+        scene, words = b["scene"], b["words"]
+        if not scene or not words:
+            continue
+        said = '"' + " ".join(words[:5]).rstrip(",.;:!?") + '"'
+        pose = str(scene.get("pose") or "")
+        secs = b["end"] - b["start"]
+        if secs > SCENE_BEAT_WARN_S:
+            out.append(
+                f"the [SCENE] over {said} holds him in one shot for about "
+                f"{secs:.0f}s: a beat you directed is never split, so nothing "
+                f"on screen changes. Put a visual or another [SCENE] in that "
+                f"stretch.")
+        if pose and reg is not None and not talks(reg, pose) \
+                and len(words) > NO_MOUTH_WORDS:
+            out.append(
+                f"pose={pose.removeprefix('host/')} has no mouth, and about "
+                f"{len(words)} words play over it from {said}: his mouth stays "
+                f"shut while the voice talks. Keep that beat to a few words, "
+                f"or pick a pose that talks.")
+    return out
+
+
 # ---------------------------------------------------------------------------
 # [MOVE] — the writer's design moves on the plate on screen.
 # ---------------------------------------------------------------------------
@@ -1064,6 +1106,7 @@ def validate_long_script(
     warnings.extend(density_warnings(script, settings))
     warnings.extend(dennis_alone_warnings(script, settings))
     warnings.extend(late_visual_warnings(script, settings))
+    warnings.extend(host_beat_warnings(script, settings, reg))
 
     from pipeline.room_dressing import BOARD_MAX_CHARS
 

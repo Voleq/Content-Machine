@@ -1480,8 +1480,9 @@ class BotCore:
         gates = run_gates(script, self.settings, data=data,
                           as_of=str((data.get("as_of_date") if data else "") or ""),
                           workspace=ws.path)
+        v_notes: list[str] = []
         for f in gates.findings:
-            (v_blocking if f.severity == "block" else v_warnings).append(f.render())
+            {"block": v_blocking, "note": v_notes}.get(f.severity, v_warnings).append(f.render())
         ws.save_long(script, raw)
         ws.clear_awaiting_angle()  # a script is on file — past the angle stage
         plan = self.content.plan(script, company_data=data,
@@ -1492,6 +1493,7 @@ class BotCore:
             self.settings, self.ledger, self.tts, plan, filing_count,
         )
         report.claims = _claims(script, ws.ticker, raw)
+        report.notes = v_notes
         (ws.path / "report_long.txt").write_text(report.render_text(), encoding="utf-8")
         _save_report_json(ws, "long", report)
         _journal_script(self.settings, ws, "long", report)

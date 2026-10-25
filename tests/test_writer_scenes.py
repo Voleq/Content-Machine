@@ -180,6 +180,48 @@ def test_validation_carries_the_scene_warnings(settings, tmp_path):
     assert any("no [SCENE]" in w for w in warnings)
 
 
+def test_one_scene_held_over_a_long_stretch_is_named_at_the_check(
+        settings, reg, tmp_path):
+    """A directed beat is never split, so twenty seconds of him in one shot
+    is said while the script can change (improvement 21)."""
+    from pipeline.parser_long import host_beat_warnings
+
+    words = " ".join(["and the margin went the wrong way"] * 12) + "."
+    script, _ = parse_long_script(
+        "[SCENE: desk-front | pose=to-camera] " + words, "EXMPL", settings)
+    out = host_beat_warnings(script, settings, reg)
+    assert any("holds him in one shot" in w and '"and the margin went the' in w
+               for w in out), out
+    warnings, _ = validate_long_script(script, set(), tmp_path, settings)
+    assert any("holds him in one shot" in w for w in warnings)
+
+    brief, _ = parse_long_script(
+        "[SCENE: desk-front | pose=to-camera] Nobody cares anymore.",
+        "EXMPL", settings)
+    assert host_beat_warnings(brief, settings, reg) == []
+
+
+def test_a_pose_with_no_mouth_over_a_sentence_is_named(settings, reg):
+    """Walking out or head in hands keeps his mouth shut: a line of more
+    than a few words plays over a man not talking (improvement 13)."""
+    from pipeline.parser_long import host_beat_warnings
+
+    long_line, _ = parse_long_script(
+        "[SCENE: doorway | pose=walking-out-of-frame] I am going for a walk "
+        "and I will be back when the margin call clears.", "EXMPL", settings)
+    out = host_beat_warnings(long_line, settings, reg)
+    assert any("walking-out-of-frame has no mouth" in w for w in out), out
+
+    few, _ = parse_long_script(
+        "[SCENE: doorway | pose=walking-out-of-frame] Anyway. I'm out.",
+        "EXMPL", settings)
+    assert host_beat_warnings(few, settings, reg) == []
+    talking, _ = parse_long_script(
+        "[SCENE: desk-front | pose=to-camera] I am going for a walk and I "
+        "will be back when the margin call clears.", "EXMPL", settings)
+    assert host_beat_warnings(talking, settings, reg) == []
+
+
 def test_the_short_strips_a_scene(settings):
     from pipeline.models import SHORT_TAG_TYPES
 

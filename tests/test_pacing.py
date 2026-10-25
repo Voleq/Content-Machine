@@ -82,8 +82,21 @@ def test_the_report_leads_with_the_numbers_and_never_blocks():
     findings = pacing_report(_Script("Revenue was 4 billion. It fell 12%."))
 
     assert findings
-    assert all(f.severity == "warn" for f in findings)
+    assert all(f.severity in ("note", "warn") for f in findings)
     assert "Pacing:" in findings[0].message
+
+
+def test_the_pacing_summary_is_a_note_and_a_clean_script_reads_clean():
+    """The summary is on every report. As a warning, no script ever read as
+    clean: every report showed "pacing ⚠" (improvement 8)."""
+    from pipeline.gates import GateReport
+
+    findings = pacing_report(_Script("Revenue was 4 billion. It fell 12%."))
+    assert findings[0].severity == "note"
+    report = GateReport()
+    report.findings += report.record("pacing", findings[:1])
+    assert report.ok
+    assert report.ran["pacing"] == "ok"
 
 
 def test_the_report_flags_a_late_first_figure():

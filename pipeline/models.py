@@ -1482,6 +1482,9 @@ class CostReport(BaseModel):
     dennis_alone_max: float = 0.35
     warnings: list[str] = Field(default_factory=list)
     blocking: list[str] = Field(default_factory=list)
+    # For the record, not for fixing: the pacing summary, a sentence the
+    # fact-check could not check. ℹ️ on the report.
+    notes: list[str] = Field(default_factory=list)
     # Sentences no gate can verify — dates, deals, departures — for a human
     # to check before the voice is paid for (S6). "L{n}: text (why)".
     claims: list[str] = Field(default_factory=list)
@@ -1569,6 +1572,8 @@ class CostReport(BaseModel):
             f"Est. render: ~{self.est_render_minutes:.0f} min   "
             f"MTD spend: ${self.mtd_spend_usd:.2f} / ${self.monthly_cap_usd:.2f} cap"
         )
+        for n in self.notes:
+            lines.append(f"ℹ️ {n}")
         for w in self.warnings:
             lines.append(f"⚠️ {w}")
         for b in self.blocking:

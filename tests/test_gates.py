@@ -87,6 +87,38 @@ def test_rounding_is_tolerated(data):
     assert fact_check("Revenue started at four hundred million.", data) == []
 
 
+def test_guidance_and_ratios_are_listed_as_not_checked(data):
+    """The sheet has no row for a figure about the future or for a ratio.
+    Both pass, as before, and are now said to have passed unread
+    (improvement 12)."""
+    text = "\n".join([
+        "Management guides revenue to six hundred million next year.",
+        "Net debt to EBITDA is two point one.",
+        "Revenue started at four hundred million.",
+    ])
+    unread: list = []
+    assert fact_check(text, data, unchecked=unread) == []
+    assert [(n, why.split(":")[0]) for n, _t, why in unread] == [
+        (1, "guidance or an estimate"), (2, "net debt to ebitda")]
+
+
+def test_the_report_carries_the_unchecked_sentences_as_notes(
+        settings, data, long_valid_text):
+    from pipeline.parser_long import parse_long_script
+
+    text = long_valid_text.replace(
+        "That part is real. I checked.", "That part is real. I checked. "
+        "Management guides revenue to six hundred million next year.", 1)
+    assert text != long_valid_text
+    script, _ = parse_long_script(text, "EXMPL", settings)
+    report = run_gates(script, settings, data=data,
+                       as_of=date.today().isoformat(), skeptic=False)
+    notes = [f for f in report.findings
+             if f.gate == "fact-check" and f.severity == "note"]
+    assert any("not checked" in f.message and "guides revenue" in f.excerpt
+               for f in notes), report.text()
+
+
 def test_numbers_not_attached_to_a_metric_are_left_alone(data):
     """Free-floating figures are prose. Flagging them would bury the real
     mismatches, and a noisy gate gets ignored."""

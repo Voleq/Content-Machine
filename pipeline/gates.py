@@ -48,7 +48,10 @@ class Finding:
     """One thing worth the operator's attention."""
 
     gate: str
-    severity: str          # "warn" | "block"
+    # "note" | "warn" | "block". A note is for the record (the pacing
+    # summary, a sentence the fact-check could not check): it is listed on
+    # the report, and never makes a clean script read as one with warnings.
+    severity: str
     message: str
     line: int = 0
     excerpt: str = ""
@@ -80,10 +83,11 @@ class GateReport:
 
     @property
     def ok(self) -> bool:
-        return not self.findings
+        return not [f for f in self.findings if f.severity != "note"]
 
     def record(self, gate: str, findings: list[Finding]) -> list[Finding]:
-        """Note that `gate` ran, at the worst severity it reported."""
+        """Note that `gate` ran, at the worst severity it reported (a note
+        is not one)."""
         worst = "ok"
         for f in findings:
             if f.severity == "block":
@@ -560,18 +564,20 @@ _RATE_METRICS = RATE_FIELDS
 # claim about revenue, and the same trap as the `cash` note above: matching a
 # figure against the wrong row makes a blocking gate block a correct script,
 # which is the one thing it must never do.
-_DECOY_PHRASES = (
-    "sales and marketing", "sales & marketing", "sales team", "sales force",
-    "salesforce", "cost of sales", "cost of revenue", "sales cycle",
-    "sales pipeline", "research and development",
-    # A RATIO NAMES TWO LINES AND IS NEITHER. "Net debt to EBITDA is two
-    # point one" was checked as an EBITDA of 2.1 and blocked (scan, 24 Oct
-    # 2026); the price multiples are the voice lint's own spoken forms.
+# A RATIO NAMES TWO LINES AND IS NEITHER. "Net debt to EBITDA is two point
+# one" was checked as an EBITDA of 2.1 and blocked (scan, 24 Oct 2026); the
+# price multiples are the voice lint's own spoken forms.
+_RATIO_PHRASES = (
     "net debt to ebitda", "debt to ebitda", "ev to ebitda",
     "enterprise value to ebitda", "price to earnings", "price to sales",
     "price to book", "price to free cash flow", "debt to equity",
     "ev to sales", "ev to ebit",
 )
+_DECOY_PHRASES = (
+    "sales and marketing", "sales & marketing", "sales team", "sales force",
+    "salesforce", "cost of sales", "cost of revenue", "sales cycle",
+    "sales pipeline", "research and development",
+) + _RATIO_PHRASES
 
 # A number attached to its own subject by a preposition belongs to that
 # subject, not to a metric named elsewhere in the sentence.
@@ -1065,7 +1071,8 @@ _CLAUSE_CUT_RE = re.compile(r"[,;:]|\s(?:and|but|while|whereas)\s")
 
 
 def fact_check(narration: str, data, *,
-               severity: str = "block", ticker: str = "") -> list[Finding]:
+               severity: str = "block", ticker: str = "",
+               unchecked: list | None = None) -> list[Finding]:
     """Re-read every numeric claim against the loaded company data.
 
     This is the last line of defence the README describes, and it BLOCKS.
@@ -1106,6 +1113,14 @@ def fact_check(narration: str, data, *,
     findings: list[Finding] = []
     if data is None:
         return findings
+    # WHAT IT PASSED UNREAD, when `unchecked` is a list: (line, sentence,
+    # why) for a figure about the future or a ratio, which the sheet has no
+    # row for. They passed silently, and read on the report as checked.
+    skipped: list = unchecked if unchecked is not None else []
+
+    def _skip(lineno: int, sentence: str, why: str) -> None:
+        if not any(n == lineno and t == sentence for n, t, _w in skipped):
+            skipped.append((lineno, sentence, why))
 
     known, unreadable = _known_series(data)
     findings.extend(unreadable)
@@ -1117,6 +1132,9 @@ def fact_check(narration: str, data, *,
             low = sentence.lower()
             named = {m: pos for m, pos in _metrics_named(low).items()
                      if known.get(m)}
+            ratio = next((r for r in _RATIO_PHRASES if r in low), "")
+            if ratio and spoken_figures(_mask_labels(sentence, labels)):
+                _skip(lineno, sentence, f"{ratio}: a ratio, not a line of the workbook")
             if not named:
                 continue
             # A period label is not a figure. "In FY-2, revenue was…" carries
@@ -1135,6 +1153,8 @@ def fact_check(narration: str, data, *,
                 if _counts_things(low, num):
                     continue
                 if _FORWARD_CLAUSE_RE.search(_clause(low, pos, end)):
+                    _skip(lineno, sentence, "guidance or an estimate: the "
+                                            "workbook only has what was reported")
                     continue
                 metric = _owner_of(pos, end, low[end:], named, low)
                 if metric is None:
@@ -1444,7 +1464,22 @@ _ACRONYMS = frozenset({
     "NYSE", "OEM", "OPEX", "P&L", "PE", "R&D", "ROE", "ROIC", "RSU", "SAAS",
     "SEC", "SG&A", "SKU", "TAM", "TSR", "UK", "US", "USA", "USD", "VAT", "YOY",
     "YTD",
+    # The workbook's own row names and the macro chapter's institutions: the
+    # scan's clean scripts warned on every one (24 Oct 2026).
+    "LTM", "TTM", "COGS", "SBC", "CPI", "FOMC",
 })
+
+
+def _peer_tokens(peers) -> set[str]:
+    """The Peers sheet's names as a script would write them: a ticker
+    ("NASDAQGS:ACME" or "ACME") or a name already in capitals ("IBM Corp").
+    A peer named in its own capitals is a ticker, not a shout."""
+    out: set[str] = set()
+    for p in peers or ():
+        name = str((p.get("name") if isinstance(p, dict) else p) or "")
+        name = name.rsplit(":", 1)[-1]
+        out.update(w for w in re.findall(r"[A-Za-z&]{2,}", name) if w.isupper())
+    return out
 
 _SENTENCE_END_RE = re.compile(r"[.!?…]+[\s\"'’”)]*")
 
@@ -1477,7 +1512,7 @@ def _sentence_index(narration: str) -> list[int]:
     return idx
 
 
-def direction_lint(script) -> list[Finding]:
+def direction_lint(script, *, peers=()) -> list[Finding]:
     """The delivery vocabulary, and the ceilings on using it.
 
     A device used constantly stops being a device — the bible caps repetition
@@ -1527,6 +1562,7 @@ def direction_lint(script) -> list[Finding]:
     ticker = str(getattr(script, "ticker", "") or "").upper()
     if ticker:
         known.add(ticker)
+    known |= _peer_tokens(peers)
     for lineno, line in enumerate(narration.splitlines(), 1):
         for m in _EMPHASIS_CAPS_RE.finditer(line):
             word = m.group(1)
@@ -2802,8 +2838,14 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     # A gate that ran and found nothing used to look exactly like one that
     # never ran, and for a record whose whole purpose is honesty about what
     # happened, those cannot render the same way.
+    unread: list = []
     report.findings += report.record("fact-check", fact_check(
-        narration, data, ticker=str(getattr(script, "ticker", "") or "")))
+        narration, data, ticker=str(getattr(script, "ticker", "") or ""),
+        unchecked=unread))
+    # Listed, so "the fact-check passed it" never stands for "it was read".
+    report.findings += [Finding("fact-check", "note", f"not checked — {why}",
+                                line=n, excerpt=text[:90])
+                        for n, text, why in unread]
     report.findings += report.record("on-screen",
                                      onscreen_fact_check(script, data))
     report.findings += report.record("voice", voice_lint(delivery_text(script)))
@@ -2838,7 +2880,8 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
 
     report.findings += report.record("chapters", chapter_order_lint(
         script, settings, workspace=workspace))
-    report.findings += report.record("direction", direction_lint(script))
+    report.findings += report.record("direction", direction_lint(
+        script, peers=getattr(data, "peers", None) or ()))
     report.findings += report.record("confession",
                                      confession_lint(script, settings,
                                                      skip=this))

@@ -609,9 +609,10 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine,
     # `check_audio` is still called directly when no battery was handed in,
     # so the report keeps working for callers that have no CompanyData to
     # gate against (the sample renderer, and the tests that predate this).
+    notes: list[str] = []
     if gate_report is not None:
         for f in gate_report.findings:
-            (blocking if f.severity == "block" else warnings).append(f.render())
+            {"block": blocking, "note": notes}.get(f.severity, warnings).append(f.render())
     else:
         for f in check_audio(settings):
             (blocking if f.severity == "block" else warnings).append(f.message)
@@ -637,6 +638,7 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine,
         # reach is on its manifest.
         warnings=warnings,
         blocking=blocking,
+        notes=notes,
         script_sha=script.content_sha(),
     )
 

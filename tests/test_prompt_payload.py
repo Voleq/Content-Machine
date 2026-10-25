@@ -330,6 +330,38 @@ def test_the_prompt_example_is_marked_and_in_the_word_band(fmt):
     assert len(clean) <= 1100
 
 
+@pytest.mark.parametrize("fmt", ["short", "headline"])
+def test_the_prompt_example_passes_the_voice_check(fmt):
+    """The example models a clean script. It read as forty seconds with no
+    turn, so every script copied from it did too (improvement 9)."""
+    from pipeline.gates import voice_lint
+    from pipeline.tagging import tokenize_tags
+
+    text = (TEMPLATES / f"master_prompt_{fmt}.md").read_text(encoding="utf-8")
+    example = re.search(r'"audio_script": "(\[BEAT: hook\].*?)",\n', text)
+    clean, _tags, _w = tokenize_tags(example.group(1))
+    assert [f.message for f in voice_lint(clean)] == []
+
+
+def test_the_long_prompt_s_scene_examples_raise_no_warning(settings):
+    """`[SCENE: desk-side | pose=holding-a-filing]` drew "design drew that
+    pose for desk-front" off the prompt's own example (improvement 9)."""
+    from pipeline.plates import load_plates
+    from pipeline.scenes import resolve_scene
+
+    reg = load_plates(settings.assets_dir)
+    seen = 0
+    for fmt in ("long_write", "update"):
+        text = (TEMPLATES / f"master_prompt_{fmt}.md").read_text(encoding="utf-8")
+        for m in re.finditer(r"\[SCENE: ([^\]]+)\]", text):
+            if m.group(1).startswith("room |"):
+                continue  # the syntax line, not an example
+            fill = resolve_scene(reg, m.group(1))
+            assert not fill.warnings and not fill.problems, (m.group(0), fill)
+            seen += 1
+    assert seen
+
+
 def test_the_short_is_not_asked_for_a_plate_per_figure():
     """The tagging-density rule asks for a plate on every figure and
     [SHOW FILING] on every quote. The short prompt tells its writer the

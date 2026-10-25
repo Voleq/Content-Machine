@@ -959,6 +959,34 @@ def late_visuals(script, settings) -> list[dict]:
     return report
 
 
+def host_beats(script, settings) -> list[dict]:
+    """Dennis's beats as the planner will cut them, before a word is spoken,
+    on the voice's estimated timings (as `late_visuals`): one entry a beat,
+    `{"start", "end", "scene", "words"}`, where `scene` is the writer's
+    [SCENE] values ({} for a beat the bot shoots) and `words` the words said
+    over it, in order."""
+    from pipeline.tts import mock_words
+
+    wps = max(float(getattr(settings, "mock_wps_long", 2.3) or 2.3), 0.1)
+    duration = script.word_count / wps
+    if duration <= 0:
+        return []
+    words = mock_words(script.narration, duration)
+    cues = build_long_timeline(script, words, duration)
+    guessed = [a for a, _b in chapter_windows(script.chapter_list, duration)]
+    starts = measured_chapter_times(guessed, script.narration, words, duration)
+    segments, _ = plan_long_segments(
+        cues, duration, chapter_starts=starts,
+        min_readable_s=settings.long_min_readable_s,
+        chapter_host_s=settings.long_chapter_host_s,
+        paragraphs=paragraph_starts(script.narration, words),
+        max_readable_s=settings.long_max_readable_s)
+    return [{"start": s.start, "end": s.end,
+             "scene": dict(s.payload.get("scene") or {}),
+             "words": [w.word for w in words if s.start <= w.start < s.end]}
+            for s in segments if s.kind == "host"]
+
+
 def estimate_dennis_alone(script, settings) -> float | None:
     """The share of the video that is Dennis alone in frame, before a word
     is spoken (item 32), or None for an empty script.

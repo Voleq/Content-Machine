@@ -174,7 +174,9 @@ def pacing_report(script) -> list[Finding]:
     pacing = measure_pacing(narration)
     if not pacing.words:
         return []
-    out = [Finding("pacing", "warn", pacing.line())]
+    # The summary is a note: it is on every report, and as a warning no
+    # script ever read as clean.
+    out = [Finding("pacing", "note", pacing.line())]
     if pacing.first_figure_s is None:
         out.append(Finding("pacing", "warn",
                            "no figure is spoken anywhere in this script — on "

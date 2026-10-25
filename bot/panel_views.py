@@ -296,7 +296,7 @@ def _step_check(v: _Video) -> dict:
         out["lines"] = [{"n": i, "text": r["text"], "raw": r["raw"]}
                         for i, r in enumerate(rows, 1)]
     rep = _report(v)
-    for sev, key in (("block", "blocking"), ("warn", "warnings")):
+    for sev, key in (("block", "blocking"), ("warn", "warnings"), ("note", "notes")):
         for text in rep.get(key) or []:
             f = parse_finding(str(text), sev)
             # A gate numbers the narration's lines; the editor numbers the

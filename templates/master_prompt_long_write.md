@@ -339,7 +339,7 @@ draws and where the drawing reads it from.
                         note ("FY24 10-K, note 7") when you read the figure there yourself.
 [SCENE: room | pose=name]  WHERE DENNIS IS AND WHAT HE IS DOING, from here until your next [SCENE].
                         You direct him: the room angle and the pose are yours, off THE SCENES below.
-                        [SCENE: desk-side | pose=holding-a-filing] The 10-K has a note on this.
+                        [SCENE: desk-front | pose=holding-a-filing] The 10-K has a note on this.
                         Put it right before the word the shot should cut on. It holds across every
                         cutaway in between: when the evidence goes away, he is back where you left
                         him, so a new [SCENE] is a new picture, not a formality. Leave pose= off only

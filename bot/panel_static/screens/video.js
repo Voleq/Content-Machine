@@ -341,7 +341,7 @@ STEPS_UI.check = (d) => {
   const sentences = d.mode === "sentences";
   const lineRow = (ln, idPrefix, raw) => {
     const fs = idPrefix === "line" ? byLine[ln.n] || [] : [];
-    const row = el("li", { id: `${idPrefix}-${ln.n}`, class: `${fs.some((f) => f.severity === "block") ? "bad" : fs.length ? "warn" : ""}${idPrefix === "line" && claimLines.has(ln.n) ? " claim" : ""}`,
+    const row = el("li", { id: `${idPrefix}-${ln.n}`, class: `${fs.some((f) => f.severity === "block") ? "bad" : fs.some((f) => f.severity === "warn") ? "warn" : ""}${idPrefix === "line" && claimLines.has(ln.n) ? " claim" : ""}`,
       tabindex: "0", title: `Click to change this ${raw ? "sentence" : "line"}`, "data-n": ln.n },
       el("span", { class: "ln", text: String(ln.n) }), el("span", { class: "tx" }, lineText(ln.text) || " "));
     const open = () => editLine(row, ln.n, ln.text, raw ? ln.raw : "");
@@ -368,7 +368,7 @@ STEPS_UI.check = (d) => {
   if (!(d.findings || []).length) side.push(el("p", { class: "ok-line", text: d.lines?.length ? "Nothing. Clean." : "No script yet." }));
   Object.entries(groups).forEach(([gate, fs]) => side.push(el("details", { open: fs.some((f) => f.severity === "block") || Object.keys(groups).length < 4, class: "gate" },
     el("summary", {}, el("b", { text: gate }), el("span", { class: "meta", text: ` ${fs.length}` })),
-    el("ul", { class: "findings" }, fs.map((f) => el("li", { class: f.severity === "block" ? "bad" : "warn" },
+    el("ul", { class: "findings" }, fs.map((f) => el("li", { class: f.severity === "block" ? "bad" : f.severity === "note" ? "" : "warn" },
       f.raw_line ? el("button", { type: "button", class: "link", text: `${unit} ${f.raw_line}`, onclick: () => goLine(f.raw_line) }) : null, " ", f.message,
       f.excerpt ? el("q", { text: f.excerpt }) : null))))));
   if ((d.claims || []).length) {

@@ -148,10 +148,26 @@ def fold_chapter_type(raw: str) -> str:
     close` — the same chapter, in two buckets, which is the exact defect the
     type was introduced to fix.
 
-    Folding only. Whether the result is one of the sixteen is a question for
-    whoever is validating, and they do not all answer it the same way.
+    Folding, and the writer's other names for a type (`_CHAPTER_ALIASES`).
+    Whether the result is one of the sixteen is a question for whoever is
+    validating, and they do not all answer it the same way.
     """
-    return str(raw).strip().lower().replace(" ", "-").replace("_", "-")
+    t = str(raw).strip().lower().replace(" ", "-").replace("_", "-")
+    return _CHAPTER_ALIASES.get(t, t)
+
+
+# What a writer calls a chapter that is one of the sixteen by another name.
+# "What they do" is the business explained, which is how the money is made:
+# dropped as an unknown type, the chapter lost its card and its plates (scan,
+# 24 Oct 2026).
+_CHAPTER_ALIASES = {
+    "what-they-do": "how-the-money-is-made",
+    "what-they-actually-do": "how-the-money-is-made",
+    "what-it-does": "how-the-money-is-made",
+    "what-the-company-does": "how-the-money-is-made",
+    "the-business": "how-the-money-is-made",
+    "business-model": "how-the-money-is-made",
+}
 
 # Six periods, always: four fiscal years, the last full year, and LTM. Every
 # table and every time-series chart in the kit is authored six wide. Anything

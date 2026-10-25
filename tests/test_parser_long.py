@@ -163,6 +163,19 @@ def test_an_unknown_chapter_type_is_named_and_skipped(settings):
                for w in warnings), warnings
 
 
+def test_a_what_they_do_chapter_is_how_the_money_is_made(settings):
+    """The writer's name for the business explained was dropped as an
+    unknown type, and the chapter lost its card (improvement 11)."""
+    raw = ("Words enough to parse.\n\n=== CHAPTERS ===\n"
+           "00:00 cold-open | the hook\n"
+           "01:00 what they do | what they actually sell\n"
+           "02:00 What They Actually Do | and who pays\n")
+    script, warnings = parse_long_script(raw, "EXMPL", settings)
+    assert [c.type for c in script.chapter_list] == [
+        "cold-open", "how-the-money-is-made", "how-the-money-is-made"]
+    assert not any("sixteen" in w for w in warnings), warnings
+
+
 def test_offsets_point_into_clean_narration(long_valid_text, settings):
     script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
     first_clip = script.events_of(TagType.CLIP)[0]
