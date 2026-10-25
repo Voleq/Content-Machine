@@ -1444,6 +1444,44 @@ def registry_json(core: BotCore | None = None,
 # --------------------------------------------------------------------------
 
 
+def waiting_for(core: BotCore, chat_id: int) -> dict | None:
+    """The question the bot is waiting on an answer to, for the page's
+    header: what the next plain message will be taken as. A question asked
+    in Telegram and forgotten took the page's next paste as its answer."""
+    p = ChatState(core.settings).pending(chat_id)
+    if p:
+        t, fmt = p.get("ticker", ""), str(p.get("fmt", "")).upper()
+        text = {
+            "schedule": f"the time to schedule {t} {fmt}".rstrip(),
+            "correct": f"the correction for {core.video_name(t, p.get('video_id', ''))}",
+            "correct_ready": f"a yes to post the correction on "
+                             f"{core.video_name(t, p.get('video_id', ''))}",
+        }.get(p["kind"], f"an answer about {t}".rstrip())
+        return {"text": text, "ticker": t, "workdate": p.get("workdate", "")}
+    ws = core.context.get(chat_id)
+    if ws is not None and ws.awaiting_angle():
+        return {"text": f"your angle pick for {ws.ticker}", "ticker": ws.ticker,
+                "workdate": ws.workdate}
+    return None
+
+
+def drop_question(core: BotCore, chat_id: int) -> Reply:
+    """Cancel on the page's "Waiting for": the next plain message is a
+    paste again."""
+    cs = ChatState(core.settings)
+    was = waiting_for(core, chat_id)
+    if cs.pending(chat_id):
+        cs.answered(chat_id)
+    else:
+        ws = core.context.get(chat_id)
+        if ws is not None and ws.awaiting_angle():
+            ws.clear_awaiting_angle()
+    if was is None:
+        return Reply("Nothing was waiting on an answer.")
+    return Reply(f"OK — no longer waiting for {was['text']}. "
+                 f"The next message is read as a paste.")
+
+
 async def handle_text(core: BotCore, chat_id: int, text: str,
                       say: Say | None = None, *, from_page: bool = False) -> Reply:
     """A plain message: the answer to a question a button asked, an angle
@@ -1657,6 +1695,10 @@ async def handle_callback(core: BotCore, chat_id: int, data: str,
     if op == "cx":
         ChatState(core.settings).answered(chat_id)
         return Reply("OK — nothing posted.")
+    if op == "pq":
+        return await asyncio.to_thread(drop_question, core, chat_id)
+    if op == "jx" and n == 2:
+        return await asyncio.to_thread(core.cancel_job, parts[1])
     if op == "c" and n == 3:
         return await asyncio.to_thread(core.video_card, parts[1],
                                        workdate=parts[2])

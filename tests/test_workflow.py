@@ -780,3 +780,91 @@ def test_a_failure_a_later_run_put_right_leaves_the_inbox(core, xlsx_bytes,
     assert "ffmpeg exploded" in core.inbox_reply().text
     job(JobStatus.DONE, 1)
     assert "ffmpeg exploded" not in core.inbox_reply().text
+
+
+# --------------------------------------------------------------------------
+# The page names its video; the bot says what it waits for (25 Oct 2026).
+# --------------------------------------------------------------------------
+
+
+def test_a_page_action_runs_on_the_video_it_names(panel, core, monkeypatch):
+    """The page made a video active, then sent the paste: a tap in Telegram
+    between the two sent the paste to another video. Now one request names
+    its video, and the action runs there whatever is made active meanwhile."""
+    panel("/api/run", {"text": "/new short EXMPL"})
+    exmpl = core.context.get(CHAT)
+    panel("/api/run", {"text": "/new short SMPL"})
+    smpl = core.context.get(CHAT)
+    assert smpl.ticker == "SMPL"
+
+    async def meanwhile(core_, chat, text, say=None, from_page=False):
+        core_.context.set(chat, "SMPL", smpl.workdate)      # Telegram, mid-paste
+        return Reply(f"landed in {core_.context.get(chat).ticker}")
+
+    monkeypatch.setattr(cmds, "handle_text", meanwhile)
+    video = {"ticker": "EXMPL", "workdate": exmpl.workdate}
+    status, _h, body = panel("/api/text", {"text": "a paste", "video": video})
+    assert status == 200 and json.loads(body)["reply"]["text"] == "landed in EXMPL"
+    for bad in ({"ticker": "..", "workdate": ""}, {"ticker": "EXMPL", "workdate": "../.."}):
+        assert panel("/api/text", {"text": "x", "video": bad})[0] == 404, bad
+    seen = []
+
+    async def took(core_, chat, name, data, say=None):
+        seen.append(core_.context.get(chat).ticker)
+        return Reply("💾 saved")
+
+    monkeypatch.setattr(cmds, "handle_upload", took)
+    assert panel(f"/api/upload?name=x.csv&t=EXMPL&d={exmpl.workdate}", raw=b"a,b")[0] == 200
+    assert seen == ["EXMPL"]
+
+
+def test_the_page_says_what_the_bot_waits_for_and_can_drop_it(panel, core):
+    panel("/api/run", {"text": "/new short EXMPL"})
+    ws = core.context.get(CHAT)
+    assert json.loads(panel("/api/state")[2])["waiting"] is None
+    cmds.ChatState(core.settings).ask(CHAT, "schedule", fmt="short", ticker="EXMPL",
+                                      workdate=ws.workdate)
+    waiting = json.loads(panel("/api/state")[2])["waiting"]
+    assert waiting["text"] == "the time to schedule EXMPL SHORT"
+    reply = json.loads(panel("/api/callback", {"data": "pq"})[2])["reply"]["text"]
+    assert "no longer waiting for the time to schedule EXMPL SHORT" in reply
+    assert json.loads(panel("/api/state")[2])["waiting"] is None
+    ws.set_awaiting_angle()
+    assert json.loads(panel("/api/state")[2])["waiting"]["text"] == \
+        "your angle pick for EXMPL"
+    panel("/api/callback", {"data": "pq"})
+    assert not ws.awaiting_angle()
+
+
+def test_a_queue_row_cancels_its_own_job_and_no_other(core, xlsx_bytes,
+                                                       short_valid_json):
+    from pipeline.jobs import RenderJobQueue
+
+    ws = _approved_short(core, xlsx_bytes, short_valid_json)
+    core.queue = RenderJobQueue(core.settings, lambda job: "x")
+    final = run(core.queue.submit(JobKind.RENDER_SHORT, "EXMPL", ws.workdate))
+    proof = run(core.queue.submit(JobKind.RENDER_PROOF_LONG, "EXMPL", ws.workdate))
+    reply = run(cmds.handle_callback(core, CHAT, f"jx|{final.id}"))
+    assert "the short render cancelled, its short approval withdrawn" in reply.text
+    assert core.queue.store.load(final.id).status is JobStatus.CANCELLED
+    assert core.queue.store.load(proof.id).status is JobStatus.QUEUED
+    assert not ws.is_approved("short")
+    assert "restored" in run(cmds.handle_callback(core, CHAT, "z")).text
+    assert ws.is_approved("short")
+    assert "not in the queue" in run(cmds.handle_callback(core, CHAT, "jx|../x")).text
+
+
+def test_a_filing_opened_from_the_page_runs_nothing(panel, core):
+    from urllib.parse import quote
+
+    panel("/api/run", {"text": "/new short EXMPL"})
+    ws = core.context.get(CHAT)
+    page = ws.path / "filing.htm"
+    page.write_text("<script>alert(1)</script><p>10-K</p>", encoding="utf-8")
+    status, headers, _b = panel(f"/api/file?path={quote(str(page))}")
+    assert status == 200
+    assert "sandbox" in headers["Content-Security-Policy"]
+    assert "script-src 'none'" in headers["Content-Security-Policy"]
+    assert headers["X-Frame-Options"] == "SAMEORIGIN"
+    assert json.loads(panel("/api/state")[2])["max_upload_mb"] == \
+        core.settings.panel_max_upload_mb

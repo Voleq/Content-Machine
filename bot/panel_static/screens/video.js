@@ -43,36 +43,32 @@ function stopVideo() {
 }
 window.addEventListener("hashchange", () => { if (!$("#app").hidden) routeVideo(); });
 
-// The bot acts on the video that is "active" for a paste, an upload or a
-// command; the page makes this one active first, so nothing lands elsewhere.
-async function ensureActive() {
-  const a = STATE?.active;
-  if (a && a.ticker === VID.t && a.workdate === VID.d) return;
-  await post("/api/active", { ticker: VID.t, workdate: VID.d });
-  if (STATE) STATE.active = { ticker: VID.t, workdate: VID.d };
-}
-const vRun = (text, btn, label = text) => act(label, async () => { await ensureActive(); return post("/api/run", { text }); }, btn);
-const vText = (text, btn, label) => act(label, async () => { await ensureActive(); return post("/api/text", { text }); }, btn);
+// Every paste, upload, command and button here names this video, in the
+// same request: the page made it active first and sent the action after,
+// and a tap in Telegram or another tab in between sent it to another video.
+const here = () => ({ ticker: VID.t, workdate: VID.d });
+const vRun = (text, btn, label = text) => act(label, () => post("/api/run", { text, video: here() }), btn);
+const vText = (text, btn, label) => act(label, () => post("/api/text", { text, video: here() }), btn);
 
 function sendFile(file, url, origin) {
   return new Promise((resolve) => {
     const box = addReply(origin);
+    const big = tooBig(file);
+    if (big) { failReply(box, new Error(big), origin); resolve(); return; }
     BUSY++;
-    ensureActive().catch(() => {}).finally(() => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", url);
-      xhr.setRequestHeader("X-Panel-Key", KEY);
-      xhr.onloadend = () => {
-        BUSY--;
-        let data = {};
-        try { data = JSON.parse(xhr.responseText || "{}"); } catch { /* empty */ }
-        if (xhr.status === 200 && data.reply) fillReply(box, data.reply, origin);
-        else failReply(box, new Error(data.error || `upload failed (${xhr.status})`), origin);
-        refresh(true); loadVideo(true);
-        resolve();
-      };
-      xhr.send(file);
-    });
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url + (/[?&]t=/.test(url) ? "" : `&t=${encodeURIComponent(VID.t)}&d=${encodeURIComponent(VID.d)}`));
+    xhr.setRequestHeader("X-Panel-Key", KEY);
+    xhr.onloadend = () => {
+      BUSY--;
+      let data = {};
+      try { data = JSON.parse(xhr.responseText || "{}"); } catch { /* empty */ }
+      if (xhr.status === 200 && data.reply) fillReply(box, data.reply, origin);
+      else failReply(box, new Error(data.error || `upload failed (${xhr.status})`), origin);
+      refresh(true); loadVideo(true);
+      resolve();
+    };
+    xhr.send(file);
   });
 }
 
@@ -109,12 +105,12 @@ function askConfirm(title, text, ok = "Yes") {
 }
 // A button from a bot keyboard; money ones ask first, then send the callback.
 function cbButtons(rows, opts = {}) {
-  return buttonsBlock(rows, Object.assign({}, opts, {
+  return buttonsBlock(rows, Object.assign({ video: here() }, opts, {
     local: (b, btn) => {
       if (opts.local && opts.local(b, btn)) return true;
       if (!isMoney(b.text)) return false;
       askConfirm("This spends money", `${b.text.replace(/💰/g, "").trim()} — the paid voice and render. Go ahead?`, "Spend it").then((yes) => {
-        if (yes) { INFLIGHT.add(b.data); callback(b.data, b.text, btn).finally(() => { INFLIGHT.delete(b.data); loadVideo(true); }); }
+        if (yes) { INFLIGHT.add(b.data); callback(b.data, b.text, btn, here()).finally(() => { INFLIGHT.delete(b.data); loadVideo(true); }); }
       });
       return true;
     },
@@ -265,13 +261,24 @@ function promptCard(p, what) {
       copyBtn("Copy the prompt", () => fileText(withKey(p.url)), "Copy it, then paste it into your Claude chat"),
       el("a", { href: withKey(p.url), download: p.name, class: "button sm", text: "Download" })));
 }
+// AN UNSENT PASTE IS KEPT in this browser, one per box per video, until the
+// bot says it took it: a tab closed or reloaded before the send lost a whole
+// script the chat had written.
+const draftKey = (label) => `cm.draft.${VID.t}@${VID.d}.${label}`;
+function dropStore(k) { try { localStorage.removeItem(k); } catch { /* private window */ } }
+
 function pasteBox(placeholder, label, send) {
+  const key = draftKey(label);
   const ta = el("textarea", { rows: 8, spellcheck: "false", placeholder });
-  ta.addEventListener("input", () => { if (ta.value.trim()) ta.dataset.dirty = "1"; else delete ta.dataset.dirty; });
+  ta.value = readStore(key);
+  if (ta.value.trim()) ta.dataset.dirty = "1";
+  ta.addEventListener("input", () => {
+    if (ta.value.trim()) { ta.dataset.dirty = "1"; writeStore(key, ta.value); } else { delete ta.dataset.dirty; dropStore(key); }
+  });
   const btn = el("button", { type: "button", class: "primary", text: label, onclick: (e) => {
     const text = ta.value;
     if (!text.trim()) { ta.focus(); return; }
-    send(text, e.currentTarget).then((ok) => { if (ok) { ta.value = ""; delete ta.dataset.dirty; } });
+    send(text, e.currentTarget).then((ok) => { if (ok) { ta.value = ""; delete ta.dataset.dirty; dropStore(key); } });
   } });
   return el("div", { class: "paste" }, ta, el("div", { class: "row end" }, btn));
 }
@@ -534,7 +541,7 @@ STEPS_UI.render = (d) => {
       try { const r = await api(`/api/joblog?id=${encodeURIComponent(d.job.id)}&n=12`); logBox.textContent = r.lines.join("\n") || logBox.textContent; } catch { /* next tick */ }
     }, 3000);
     main = cbButtons([(d.cancel[0] || []).filter((b) => b.data.startsWith("j|")).map((b) => Object.assign({}, b, { text: "Stop the render 🚫" }))], {
-      local: (b, btn) => { askConfirm("Stop the render?", "What is already made is kept in the caches; a re-run picks up from there.", "Stop it").then((yes) => yes && callback(b.data, "Stop · " + VID.t, btn)); return true; } });
+      local: (b, btn) => { askConfirm("Stop the render?", "What is already made is kept in the caches; a re-run picks up from there.", "Stop it").then((yes) => yes && callback(b.data, "Stop · " + VID.t, btn, here())); return true; } });
   } else if (d.final_url) {
     const { video } = videoPlayer(d.final_url, []);
     body.push(el("p", { class: "ok-line", text: "The final is rendered." }), video);
@@ -592,7 +599,16 @@ STEPS_UI.upload = (d, v) => {
   const priv = el("select", {}, ["unlisted", "private", "public"].map((p) => el("option", { value: p, text: p })));
   right.append(el("h4", { text: "Uploaded it yourself? Paste the link" }), el("div", { class: "row" }, link, priv,
     el("button", { type: "button", class: "sm", text: "Save the link", onclick: (e) => link.value.trim() && vRun(`${d.mark_hint}${link.value.trim()} ${priv.value}`, e.currentTarget, `Link · ${v.ticker}`) })));
-  right.append(el("h4", { text: "Or let the bot upload it" }), cbButtons(d.buttons, {}));
+  if (d.uploading) {
+    // the bot is sending it: how far, and no second press meanwhile
+    const pct = d.uploading.pct || 0;
+    right.append(el("h4", { text: "Uploading to YouTube" }),
+      el("div", { class: "bar", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(pct), "aria-label": `${v.ticker} upload` },
+        el("i", { style: `width:${pct}%` })),
+      el("p", { class: "meta", text: `${pct}% sent. The link comes to Activity when it is done.` }));
+  } else {
+    right.append(el("h4", { text: "Or let the bot upload it" }), cbButtons(d.buttons, {}));
+  }
   cols.append(left, right);
   body.push(cols);
   return { main: (d.titles || [])[0] ? copyBtn("Copy title 1", d.titles[0]) : null, body };

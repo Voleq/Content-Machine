@@ -82,6 +82,21 @@ def panel_chat_id(settings) -> int:
     return int(ids[0]) if ids else 0
 
 
+class NoSuchVideo(LookupError):
+    """A page action named a video that is not a folder of the bot's."""
+
+
+async def _on_video(coro, video: tuple[str, str]):
+    """Run `coro` with `video` as the active one (`workspace.PINNED`)."""
+    from pipeline.workspace import PINNED
+
+    token = PINNED.set(video)
+    try:
+        return await coro
+    finally:
+        PINNED.reset(token)
+
+
 class Panel:
     """The state the request handler needs, and the loop it runs on."""
 
@@ -107,11 +122,17 @@ class Panel:
         self.roots = [Path(r).resolve() for r in roots]
 
     # ---- the bridge to the bot's loop
-    def run(self, coro, timeout: float = ACTION_TIMEOUT_S):
+    def run(self, coro, timeout: float = ACTION_TIMEOUT_S,
+            video: tuple[str, str] | None = None):
         """The action's reply, or TimeoutError after `timeout`. The page
         then says the result will appear in Activity, so it is put there
         when the action does finish: a long's upload outlasts the wait,
-        and its link was thrown away (scan, 24 Oct 2026)."""
+        and its link was thrown away (scan, 24 Oct 2026).
+
+        `video` is the one the page named: the action runs on it whatever
+        is made active elsewhere while it runs."""
+        if video is not None:
+            coro = _on_video(coro, video)
         fut = asyncio.run_coroutine_threadsafe(coro, self.loop)
         try:
             return fut.result(timeout)
@@ -216,6 +237,9 @@ class Panel:
             # browser's, when the two sit in different time zones.
             "today": today_str(),
             "week": self.week(),
+            # what the next plain message will be taken as, with a Cancel
+            "waiting": cmds.waiting_for(self.core, self.chat_id),
+            "max_upload_mb": self.settings.panel_max_upload_mb,
         }
 
     def week(self) -> list[dict]:
@@ -377,9 +401,32 @@ def _handler_for(panel: Panel):
                 return self._json({"error": "the panel key is missing or "
                                             "wrong"}, 401)
             core, chat = panel.core, panel.chat_id
+
+            def _video(ticker, workdate) -> tuple[str, str] | None:
+                """The video a page action names, made the active one: the
+                action runs on it, whatever else is made active meanwhile."""
+                if not ticker and not workdate:
+                    return None
+                from bot.panel_views import is_video_key
+                from pipeline.workspace import Workspace
+
+                ticker, workdate = str(ticker).upper(), str(workdate)
+                if not is_video_key(ticker, workdate) or \
+                        not Workspace(panel.settings, ticker, workdate).exists:
+                    raise NoSuchVideo("no such video")
+                core.context.set(chat, ticker, workdate)
+                return ticker, workdate
+
+            def _named(p: dict) -> tuple[str, str] | None:
+                v = p.get("video") or {}
+                return _video(v.get("ticker"), v.get("workdate")) \
+                    if isinstance(v, dict) else None
+
             try:
                 if url.path == "/api/run":
-                    text = str(self._payload().get("text") or "").strip()
+                    p = self._payload()
+                    video = _named(p)
+                    text = str(p.get("text") or "").strip()
                     if not text.startswith("/"):
                         text = "/" + text
                     head, _, raw = text.partition(" ")
@@ -388,25 +435,34 @@ def _handler_for(panel: Panel):
                         raw = rest + (" " + raw if raw else "")
                     reply = panel.run(cmds.run_command(
                         core, chat, head[1:], raw.split(), raw=raw,
-                        say=panel.say))
+                        say=panel.say), video=video)
                 elif url.path == "/api/callback":
-                    data = str(self._payload().get("data") or "")
+                    p = self._payload()
+                    video = _named(p)
+                    data = str(p.get("data") or "")
                     reply = panel.run(cmds.handle_callback(core, chat, data,
-                                                           say=panel.say))
+                                                           say=panel.say),
+                                      video=video)
                 elif url.path == "/api/text":
-                    text = str(self._payload().get("text") or "")
+                    p = self._payload()
+                    text = str(p.get("text") or "")
                     if not text.strip():
                         return self._json({"error": "nothing to send"}, 400)
+                    video = _named(p)
                     reply = panel.run(cmds.handle_text(core, chat, text,
                                                        say=panel.say,
-                                                       from_page=True))
+                                                       from_page=True),
+                                      video=video)
                 elif url.path == "/api/upload":
                     name = Path((query.get("name") or ["upload.bin"])[0]).name
+                    video = _video((query.get("t") or [""])[0],
+                                   (query.get("d") or [""])[0])
                     data = self._body()
                     if not data:
                         return self._json({"error": "empty file"}, 400)
                     reply = panel.run(cmds.handle_upload(core, chat, name,
-                                                         data, say=panel.say))
+                                                         data, say=panel.say),
+                                      video=video)
                 elif url.path == "/api/thumbnail":
                     reply = panel.core.set_thumbnail(
                         (query.get("t") or [""])[0], (query.get("d") or [""])[0],
@@ -454,6 +510,8 @@ def _handler_for(panel: Panel):
                     return self._json({"error": "not found"}, 404)
             except ValueError as e:
                 return self._json({"error": str(e)}, 400)
+            except NoSuchVideo as e:
+                return self._json({"error": str(e)}, 404)
             except TimeoutError:
                 return self._json({"error": "still running — the result will "
                                             "appear in Activity"}, 504)
@@ -513,6 +571,14 @@ def _handler_for(panel: Panel):
                 "image", "video", "audio", "text") else "attachment"
             self.send_header("Content-Disposition",
                              f'{disposition}; filename="{path.name}"')
+            # A FILING IS SOMEONE ELSE'S HTML, opened on the panel's own
+            # address, where the key lives: it runs no script, sends no
+            # form, and nothing frames it but the panel.
+            self.send_header("Content-Security-Policy",
+                             "sandbox; script-src 'none'; object-src 'none'; "
+                             "frame-ancestors 'self'")
+            self.send_header("X-Frame-Options", "SAMEORIGIN")
+            self.send_header("X-Content-Type-Options", "nosniff")
             self.end_headers()
             if self.command == "HEAD" or not length:
                 return

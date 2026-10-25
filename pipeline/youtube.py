@@ -323,6 +323,15 @@ class YouTubeClient:
                 log.info("resuming the youtube upload of %s", path.name)
                 request.resumable_uri = resume_uri
 
+        key = str(Path(path).resolve())
+        _SENDING[key] = 0.0
+        try:
+            return self._send(request, path, body, session, media, key)
+        finally:
+            _SENDING.pop(key, None)
+
+    def _send(self, request, path: Path, body: dict, session, media, key: str) -> str:
+        """`upload`'s loop: chunk by chunk, resumed and retried."""
         response = None
         attempts = 0
         fresh = False
@@ -365,6 +374,7 @@ class YouTubeClient:
             # multi-GB file aborted on its third hiccup an hour apart.
             attempts = 0
             if status:
+                _SENDING[key] = float(status.progress())
                 log.info("youtube upload %d%%", int(status.progress() * 100))
                 if session is not None:
                     session.save(path, getattr(request, "resumable_uri", ""),
@@ -586,6 +596,20 @@ _UPLOAD_REFUSED = {
 # A 403 that says slow down is the network's kind of failure, and retried.
 _RETRY_403 = ("rateLimitExceeded", "userRateLimitExceeded", "backendError")
 _QUOTA = ("quotaExceeded", "uploadLimitExceeded", "dailyLimitExceeded")
+
+
+# HOW FAR EACH UPLOAD IS, for the page's Upload step: the file's path and
+# the share of it sent. A long takes longer to send than the page waits for
+# an answer, and nothing said it was still going.
+_SENDING: dict[str, float] = {}
+
+
+def sending(folder: Path) -> float | None:
+    """The share sent of the upload running from `folder`, or None."""
+    root = str(Path(folder).resolve())
+    shares = [v for k, v in list(_SENDING.items())
+              if k == root or k.startswith(root + "/")]
+    return max(shares) if shares else None
 
 
 def _upload_failure(e: Exception) -> str:

@@ -356,16 +356,20 @@ class RenderJobQueue:
         await self._queue.put(job.id)
         return job
 
-    def cancel(self, ticker: str, workdate: str = "") -> list[JobRecord]:
+    def cancel(self, ticker: str, workdate: str = "", *,
+               job_id: str = "") -> list[JobRecord]:
         """Every queued or running job of `ticker`, or of its one folder when
         `workdate` names it: a Cancel on today's proof stopped last week's
-        long as well (scan, 24 Oct 2026)."""
+        long as well (scan, 24 Oct 2026). `job_id` is that job alone, a
+        queue row's own Cancel."""
         cancelled = []
         for job in self.store.all():
-            if job.ticker != ticker.upper() or job.status not in (
-                    JobStatus.QUEUED, JobStatus.RUNNING):
+            if job.status not in (JobStatus.QUEUED, JobStatus.RUNNING):
                 continue
-            if workdate and job.workdate != workdate:
+            if job_id:
+                if job.id != job_id:
+                    continue
+            elif job.ticker != ticker.upper() or (workdate and job.workdate != workdate):
                 continue
 
             def _cancel(j: JobRecord) -> None:

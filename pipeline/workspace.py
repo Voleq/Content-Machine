@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import re
+from contextvars import ContextVar
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -388,6 +389,13 @@ class Workspace:
 # ---------------------------------------------------------------------------
 
 
+# THE VIDEO A PAGE ACTION NAMES, for as long as that action runs. The page
+# made a video active and then sent its paste as a second request, so a tap
+# in Telegram or a second tab between the two sent the paste to another
+# video (scan, 24 Oct 2026). `ActiveContext.get` answers this first.
+PINNED: ContextVar[tuple[str, str] | None] = ContextVar("pinned_video", default=None)
+
+
 class ActiveContext:
     """Which workspace a chat's pasted scripts/uploads belong to."""
 
@@ -407,6 +415,11 @@ class ActiveContext:
         _write(self.path, json.dumps(data, indent=2))
 
     def get(self, chat_id: int) -> Workspace | None:
+        pinned = PINNED.get()
+        if pinned is not None:
+            ws = Workspace(self.settings, *pinned)
+            if ws.exists:
+                return ws
         entry = self._load().get(str(chat_id))
         if not entry:
             return None

@@ -357,3 +357,25 @@ def test_an_action_that_outlasts_the_page_lands_in_activity(core):
     finally:
         loop.call_soon_threadsafe(loop.stop)
         t.join(5)
+
+
+def test_the_upload_step_shows_an_upload_under_way(core, panel, xlsx_bytes,
+                                                   short_valid_json):
+    """A long takes longer to send than the page waits for an answer, and
+    nothing said it was still going: its share sent, in place of the
+    buttons that would send a second copy."""
+    from pipeline import youtube
+
+    ws = _approved_short(core, xlsx_bytes, short_valid_json)
+    final = ws.path / "short_final.mp4"
+    final.write_bytes(b"\0" * 64)
+    assert video_view(panel, "EXMPL", ws.workdate)["upload"]["uploading"] is None
+    core._uploading.add(("EXMPL", ws.workdate))
+    youtube._SENDING[str(final.resolve())] = 0.42
+    try:
+        up = video_view(panel, "EXMPL", ws.workdate)["upload"]
+        assert up["uploading"] == {"pct": 42}
+        assert youtube.sending(ws.path) == 0.42
+    finally:
+        youtube._SENDING.clear()
+        core._uploading.clear()

@@ -4273,6 +4273,43 @@ class BotCore:
                              if undo else ""),
             keyboard=undo_cancel_keyboard() if undo else None)
 
+    def cancel_job(self, job_id: str) -> Reply:
+        """A queue row's own Cancel: that job alone, and the approval it was
+        spending against (a final render's), with the same minute to undo."""
+        import re
+        import time
+
+        from pipeline.jobs import JobStore
+        from pipeline.models import JobKind
+
+        store = self.queue.store if self.queue else JobStore(self.settings)
+        # an id names a file: nothing but the queue's own hex
+        job = store.load(job_id) if re.fullmatch(r"[0-9a-f]{6,32}", job_id) else None
+        if job is None:
+            return Reply("That job is not in the queue any more.")
+        cancelled = self.queue.cancel(job.ticker, job_id=job_id) if self.queue else []
+        if not cancelled:
+            return Reply(f"{job.ticker}'s {job.kind.value.replace('_', ' ')} "
+                         f"is not queued or running, so nothing was cancelled.")
+        fmt = {JobKind.RENDER_SHORT: "short", JobKind.RENDER_LONG: "long"}.get(job.kind)
+        approvals: dict[str, str] = {}
+        if fmt:
+            ws = Workspace(self.settings, job.ticker, job.workdate)
+            f = ws._approval_file(fmt)
+            if f.exists():
+                approvals[str(f)] = f.read_text(encoding="utf-8")
+            ws._invalidate_approval(fmt)
+        self._last_cancel = {
+            "at": time.monotonic(), "ticker": job.ticker,
+            "jobs": [(j.kind, j.ticker, j.workdate) for j in cancelled],
+            "approvals": approvals}
+        what = job.kind.value.replace("render_", "").replace("_", " ")
+        return Reply(
+            f"🚫 {job.ticker} ({job.workdate}): the {what} render cancelled"
+            + (f", its {fmt} approval withdrawn" if approvals else "")
+            + ". Undo within a minute puts it back.",
+            keyboard=undo_cancel_keyboard())
+
     def undo_cancel_plan(self) -> tuple[list, str]:
         """Put the withdrawn approvals back and say which jobs to resubmit.
         The resubmitting is async (the queue), so the caller does it."""

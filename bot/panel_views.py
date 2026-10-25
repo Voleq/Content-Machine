@@ -470,9 +470,16 @@ def _step_upload(v: _Video) -> dict:
     from pipeline.publish import byproduct_name
     from pipeline.thumbnail import his_cover, bot_cover
 
+    from pipeline.youtube import sending
+
     st = v.st
     final = st.renders.get("final")
+    # AN UPLOAD UNDER WAY, and how far: the page greys its Upload buttons
+    # and shows the share sent, where nothing said it was still going.
+    going = (v.ws.ticker, v.ws.workdate) in getattr(v.core, "_uploading", ())
+    share = sending(v.ws.path) if going else None
     out: dict = {"ready": bool(final), "uploaded": st.uploaded,
+                 "uploading": ({"pct": round((share or 0.0) * 100)} if going else None),
                  "checklist": list(STUDIO_CHECKLIST), "downloads": [],
                  "titles": [], "description": "", "tags": [], "pinned": "",
                  "chapters": [], "buttons": [], "thumbnail": {}}

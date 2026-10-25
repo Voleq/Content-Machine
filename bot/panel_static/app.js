@@ -271,7 +271,7 @@ function buttonsBlock(rows, opts = {}) {
           }
           if (opts.local && opts.local(b, btn)) return;
           INFLIGHT.add(b.data);
-          callback(b.data, b.text, btn).finally(() => INFLIGHT.delete(b.data));
+          callback(b.data, b.text, btn, opts.video).finally(() => INFLIGHT.delete(b.data));
         },
       });
     })));
@@ -438,13 +438,15 @@ async function act(origin, fn, btn) {
   }
 }
 
-const runCommand = (text, btn) => act(text, () => post("/api/run", { text }), btn);
+// `video` ({ticker, workdate}) is the one the action is for: the bot runs it
+// there, whatever Telegram or another tab makes active meanwhile.
+const runCommand = (text, btn, video) => act(text, () => post("/api/run", video ? { text, video } : { text }), btn);
 // A reply is labelled with the button that was tapped, and the video it is
 // about when the button does not say.
-function callback(data, label, btn) {
+function callback(data, label, btn, video) {
   const ticker = data.split("|").find((p) => /^[A-Z0-9.\-]{1,15}$/.test(p) && /[A-Z]/.test(p)) || "";
   const named = ticker && label.includes(ticker);
-  return act(named || !ticker ? label : `${label} · ${ticker}`, () => post("/api/callback", { data }), btn);
+  return act(named || !ticker ? label : `${label} · ${ticker}`, () => post("/api/callback", video ? { data, video } : { data }), btn);
 }
 
 // ------------------------------------------------------------------- state
@@ -526,6 +528,11 @@ function renderHeader() {
   $("#mock").title = mock;
 
   $("#queue-banner").hidden = !!STATE.queue_running;
+  const w = STATE.waiting;
+  $("#waiting").hidden = !w;
+  $("#waiting-text").textContent = w ? w.text : "";
+  $("#waiting").title = w ? `Your next message is taken as ${w.text}` : "";
+  $("#waiting-cancel").onclick = w ? (e) => callback("pq", "Cancel the question", e.currentTarget) : null;
   renderTarget();
   renderShell();
 }
@@ -704,9 +711,18 @@ function renderJobs() {
         j.status === "done" && file ? el("div", { class: "meta", text: file }) : null),
       el("time", { datetime: j.updated_at, title: when(j.updated_at), text: ago(j.updated_at) }),
       active ? el("button", {
-        type: "button", class: "danger sm", text: "Cancel", "data-cb": `j|${j.ticker}|${j.workdate}`,
+        type: "button", class: "danger sm", text: "Cancel", "data-cb": `jx|${j.id}`,
         "aria-label": `Cancel ${j.ticker} ${kind}`,
-        onclick: (e) => callback(`j|${j.ticker}|${j.workdate}`, `Cancel ${j.ticker}`, e.currentTarget),
+        // this job alone, and said before it is done
+        onclick: (e) => {
+          const btn = e.currentTarget;
+          const final = /^render_(short|long)$/.test(j.kind);
+          askConfirm(`Cancel ${j.ticker}'s ${kind}?`,
+            `Only this ${j.status} job stops${date ? ` (${j.workdate})` : ""}` +
+            (final ? `, and its ${kind} approval is withdrawn.` : ".") +
+            " What is already made stays in the caches, and Undo within a minute puts it back.", "Cancel it")
+            .then((yes) => yes && callback(`jx|${j.id}`, `Cancel ${j.ticker} ${kind}`, btn));
+        },
       }) : m ? el("button", {
         type: "button", class: "ghost sm", text: "▶ Play", "data-cb": `play:${j.ticker}@${j.workdate}/${file}`,
         "aria-label": `Play ${j.ticker} ${file}`, onclick: () => play(m),
@@ -845,23 +861,37 @@ $("#send-paste").addEventListener("click", (e) => {
   const who = STATE?.active ? ` → ${STATE.active.ticker}` : "";
   const label = text.length > 60 ? `Paste · ${text.length.toLocaleString()} chars${who}` : `“${text.trim()}”${who}`;
   $("#paste").readOnly = true;
-  act(label, () => post("/api/text", { text }), e.currentTarget).then((ok) => {
+  // the video the label names, not whichever is active when it arrives
+  const video = STATE?.active ? { ticker: STATE.active.ticker, workdate: STATE.active.workdate } : null;
+  act(label, () => post("/api/text", video ? { text, video } : { text }), e.currentTarget).then((ok) => {
     $("#paste").readOnly = false;
     if (ok) $("#paste").value = "";
   });
 });
+
+// Said before the file is sent: over the limit, the server could only drop
+// the connection part-way, and the page showed a bare network error.
+function tooBig(file) {
+  const mb = STATE?.max_upload_mb;
+  if (!mb || file.size <= mb * 1e6) return "";
+  return `${file.name} is ${(file.size / 1e6).toFixed(1)} MB, over the page's ${mb} MB limit (PANEL_MAX_UPLOAD_MB in .env).`;
+}
 
 function upload(file) {
   const bar = $("#upload-progress");
   const who = STATE?.active ? ` → ${STATE.active.ticker}` : "";
   const origin = `Upload · ${file.name}${who}`;
   const box = addReply(origin);
+  const big = tooBig(file);
+  if (big) { failReply(box, new Error(big), origin); return; }
+  const a = STATE?.active;
   bar.hidden = false;
   bar.value = 0;
   $("#drop").setAttribute("aria-disabled", "true");
   BUSY++;
   const xhr = new XMLHttpRequest();
-  xhr.open("POST", `/api/upload?name=${encodeURIComponent(file.name)}`);
+  xhr.open("POST", `/api/upload?name=${encodeURIComponent(file.name)}` +
+    (a ? `&t=${encodeURIComponent(a.ticker)}&d=${encodeURIComponent(a.workdate)}` : ""));
   xhr.setRequestHeader("X-Panel-Key", KEY);
   xhr.upload.onprogress = (e) => { if (e.lengthComputable) bar.value = e.loaded / e.total; };
   xhr.onloadend = () => {
