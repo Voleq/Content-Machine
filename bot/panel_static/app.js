@@ -156,6 +156,7 @@ async function start() {
   feed.events.forEach((ev) => { ev._id = ++FEED_ID; FEED.push(ev); });
   FEED_SEQ = feed.seq;
   renderFeed();
+  restoreAsk();
   setInterval(refresh, 5000);
   setInterval(pollFeed, 2500);
   // "2 min ago" has to keep moving when the state itself has not.

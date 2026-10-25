@@ -149,23 +149,52 @@ function paletteItems(q) {
 }
 
 // ------------------------------------------------- ask the bot
+// The question runs on the bot, not on this page's request: the page asks,
+// then looks again every two seconds, so a reload or a closed tab loses
+// nothing (his /ask, 25 Oct 2026: the answer came after the page had gone).
+let ASKING = "";
 async function askBot(q) {
   q = (q || "").trim();
-  if (!q) return;
-  const box = $("#ask-answer"), btn = $("#ask-form button");
+  if (!q || ASKING) return;
   $("#ask-q").value = q;
-  box.hidden = false;
-  setKids(box, [el("p", { class: "meta", text: "Reading the records and the bot's state. The local AI can take a minute." })]);
-  btn.disabled = true;
   try {
-    const r = await post("/api/ask", { question: q });
-    setKids(box, [el("p", { class: "ask-q", text: `You asked: ${q}` }),
-      el("pre", { class: "ask-text", text: r.reply?.text || "No answer came back." })]);
+    showAsk((await post("/api/ask", { question: q })).ask);
   } catch (e) {
-    setKids(box, [el("p", { class: "bad", text: String(e.message || e) })]);
-  } finally {
-    btn.disabled = false;
+    $("#ask-answer").hidden = false;
+    setKids($("#ask-answer"), [el("p", { class: "bad", text: String(e.message || e) })]);
   }
+}
+function showAsk(a) {
+  if (!a) return;
+  const box = $("#ask-answer"), done = a.text !== null;
+  box.hidden = false;
+  $("#ask-form button").disabled = !done;
+  ASKING = done ? "" : a.id;
+  setKids(box, [el("p", { class: "ask-q", text: `You asked: ${a.question}` }), done
+    ? el("pre", { class: "ask-text", text: a.text || "No answer came back." })
+    : el("p", { class: "meta", text: `Reading the records and the bot's state: ${a.seconds} s so far. The local AI can take a few minutes. The answer lands here, and in Activity under Replies, even if you leave the page.` })]);
+  if (!done) setTimeout(() => pollAsk(a.id), 2000);
+}
+async function pollAsk(id) {
+  if (ASKING !== id) return;
+  try {
+    const r = await api(`/api/ask?id=${encodeURIComponent(id)}`);
+    if (r.ask) return showAsk(r.ask);
+    ASKING = "";                         // the bot restarted: it is gone
+    $("#ask-form button").disabled = false;
+  } catch {
+    setTimeout(() => pollAsk(id), 5000);
+  }
+}
+// A page opened while a question runs picks it up; a recent answer stays.
+async function restoreAsk() {
+  try {
+    const a = (await api("/api/ask")).ask;
+    if (a && (a.text === null || a.answered_ago < 3600)) {
+      $("#ask-q").value = a.question;
+      showAsk(a);
+    }
+  } catch { /* the box stays empty */ }
 }
 $("#ask-form").addEventListener("submit", (e) => { e.preventDefault(); askBot($("#ask-q").value); });
 function renderPalette() {

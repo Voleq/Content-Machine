@@ -37,6 +37,7 @@ import logging
 import mimetypes
 import secrets
 import threading
+import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -120,6 +121,52 @@ class Panel:
                  assets / "meme_library", assets / "broll_library",
                  assets / "sfx", assets / "score", assets / "plates" / "room"]
         self.roots = [Path(r).resolve() for r in roots]
+        self.asks: dict[str, dict] = {}     # the page's questions, newest last
+        self._asks_lock = threading.Lock()
+
+    # ---- the page's questions
+    # A question runs on its own thread, not on the page's request: the local
+    # model took two minutes, his page stopped waiting, and the answer had
+    # nowhere to go (his /ask, 25 Oct 2026). The page asks, then looks again
+    # by id, and a page opened later finds the newest question with no id.
+    ASKS_KEPT = 5
+
+    def ask(self, question: str) -> dict:
+        entry = {"id": secrets.token_hex(6), "question": question,
+                 "started": time.time(), "finished": None, "text": None}
+        with self._asks_lock:
+            self.asks[entry["id"]] = entry
+            while len(self.asks) > self.ASKS_KEPT:
+                self.asks.pop(next(iter(self.asks)))
+        threading.Thread(target=self._answer, args=(entry,), daemon=True,
+                         name="panel-ask").start()
+        return self.ask_view(entry["id"])
+
+    def _answer(self, entry: dict) -> None:
+        try:
+            text = self.core.ask_text(entry["question"].split())
+        except Exception as e:                          # noqa: BLE001
+            log.exception("panel ask")
+            text = f"💥 {e}"
+        self.feed.add("reply", f"❓ {entry['question']}\n\n{text}")
+        with self._asks_lock:
+            entry["text"] = text
+            entry["finished"] = time.time()
+
+    def ask_view(self, ask_id: str = "") -> dict | None:
+        """The question `ask_id`, or the newest; `text` is None until the
+        answer is in."""
+        with self._asks_lock:
+            entry = self.asks.get(ask_id) if ask_id else \
+                next(reversed(self.asks.values()), None)
+            if entry is None:
+                return None
+            now = time.time()
+            done = entry["finished"]
+            return {"id": entry["id"], "question": entry["question"],
+                    "text": entry["text"],
+                    "seconds": round((done or now) - entry["started"]),
+                    "answered_ago": None if done is None else round(now - done)}
 
     # ---- the bridge to the bot's loop
     def run(self, coro, timeout: float = ACTION_TIMEOUT_S,
@@ -279,7 +326,9 @@ def _handler_for(panel: Panel):
 
         # ---- plumbing
         def _send(self, status: int, body: bytes, ctype: str,
-                  extra: dict | None = None) -> None:
+                  extra: dict | None = None) -> bool:
+            """False when the page had gone by the time this was ready
+            (reloaded, closed): there is no one to send it to."""
             self.send_response(status)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
@@ -288,13 +337,20 @@ def _handler_for(panel: Panel):
             self.send_header("X-Content-Type-Options", "nosniff")
             for k, v in (extra or {}).items():
                 self.send_header(k, v)
-            self.end_headers()
-            if self.command != "HEAD":
-                self.wfile.write(body)
+            try:
+                self.end_headers()
+                if self.command != "HEAD":
+                    self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                log.info("panel %s: the page left before its answer",
+                         urlparse(self.path).path)
+                self.close_connection = True
+                return False
+            return True
 
-        def _json(self, data, status: int = 200) -> None:
-            self._send(status, json.dumps(data).encode("utf-8"),
-                       "application/json; charset=utf-8")
+        def _json(self, data, status: int = 200) -> bool:
+            return self._send(status, json.dumps(data).encode("utf-8"),
+                              "application/json; charset=utf-8")
 
         def _authed(self, query: dict) -> bool:
             key = self.headers.get("X-Panel-Key") or \
@@ -354,6 +410,9 @@ def _handler_for(panel: Panel):
                     fam = (query.get("family") or [""])[0]
                     return self._json({"text": cmds.help_text(
                         fam, panel.core, panel.chat_id)})
+                if url.path == "/api/ask":
+                    return self._json({"ask": panel.ask_view(
+                        (query.get("id") or [""])[0])})
                 if url.path == "/api/file":
                     return self._file((query.get("path") or [""])[0])
                 if url.path == "/api/video":
@@ -477,14 +536,12 @@ def _handler_for(panel: Panel):
                     reply = (core.reset_writing(name) if p.get("reset") else
                              core.save_writing(name, str(p.get("text") or "")))
                 elif url.path == "/api/ask":
-                    # Read-only, and as long as the model takes: this
-                    # request's own thread waits, the page shows "reading".
+                    # Read-only. Answered at once with the question's id;
+                    # the model answers on its own thread (`Panel.ask`).
                     question = " ".join(str(self._payload().get("question") or "").split())
                     if not question:
                         return self._json({"error": "ask a question"}, 400)
-                    text = core.ask_text(question.split())
-                    panel.feed.add("reply", f"❓ {question}\n\n{text}")
-                    reply = Reply(text)
+                    return self._json({"ask": panel.ask(question)})
                 elif url.path == "/api/memory":
                     p = self._payload()
                     texts = p.get("texts")
@@ -518,7 +575,11 @@ def _handler_for(panel: Panel):
             except Exception as e:  # noqa: BLE001 - the page shows it
                 log.exception("panel POST %s", url.path)
                 return self._json({"error": f"💥 {e}"}, 500)
-            return self._json({"reply": panel.reply_json(reply)})
+            if not self._json({"reply": panel.reply_json(reply)}) \
+                    and (reply.text or reply.files):
+                # the page that asked has gone: Activity keeps the reply
+                panel.feed.add("reply", reply.text, files=reply.files,
+                               keyboard=reply.keyboard)
 
         # ---- files
         def _static(self, name: str) -> None:

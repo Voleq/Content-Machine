@@ -582,6 +582,7 @@ def panel(core):
         except urllib.error.HTTPError as e:
             return e.code, e.headers, e.read()
 
+    call.base, call.key = base, key
     yield call
     server.shutdown()
     loop.call_soon_threadsafe(loop.stop)
@@ -644,15 +645,86 @@ def test_the_ideas_calendar_and_stats_screens_are_served(panel):
         assert panel(path, key_="")[0] == 401, path
 
 
+def _answered(panel, ask_id: str) -> dict:
+    import time
+
+    for _ in range(100):
+        got = json.loads(panel(f"/api/ask?id={ask_id}")[2])["ask"]
+        if got["text"] is not None:
+            return got
+        time.sleep(0.1)
+    raise AssertionError("the question was never answered")
+
+
 def test_the_page_asks_the_bot(panel, core):
     status, _h, body = panel("/api/ask", {"question": "which memes do we have?"})
-    text = json.loads(body)["reply"]["text"]
+    ask = json.loads(body)["ask"]
+    assert status == 200 and ask["question"] == "which memes do we have?"
     # Mock mode: no model, so the drawer the question reached is shown.
-    assert status == 200 and "The meme library:" in text
+    assert "The meme library:" in _answered(panel, ask["id"])["text"]
     assert any("❓ which memes do we have?" in e["text"]
                for e in json.loads(panel("/api/feed")[2])["events"])
     assert panel("/api/ask", {"question": "  "})[0] == 400
     assert panel("/api/ask", {"question": "x"}, key_="")[0] == 401
+    assert panel("/api/ask?id=nope", key_="")[0] == 401
+    assert json.loads(panel("/api/ask?id=nope")[2])["ask"] is None
+
+
+def test_a_slow_answer_outlives_the_page_that_asked(panel, core, monkeypatch):
+    """His /ask (25 Oct 2026): the local model took two minutes, the page
+    had gone by then, and the answer was written to a closed connection.
+    The request now only starts the question; the page looks again by id,
+    and a page opened later finds the newest question with no id."""
+    import time
+
+    gate = threading.Event()
+
+    def slow(args):
+        gate.wait(10)
+        return "the margins held"
+
+    monkeypatch.setattr(core, "ask_text", slow)
+    t = time.monotonic()
+    ask = json.loads(panel("/api/ask", {"question": "did the margins hold?"})[2])["ask"]
+    assert time.monotonic() - t < 5 and ask["text"] is None
+    again = json.loads(panel("/api/ask")[2])["ask"]          # a reloaded page
+    assert again["id"] == ask["id"] and again["text"] is None
+    gate.set()
+    got = _answered(panel, ask["id"])
+    assert got["text"] == "the margins held" and got["answered_ago"] >= 0
+
+
+def test_a_reply_the_page_left_before_lands_in_activity(panel, core, monkeypatch, capsys):
+    """A reload while an action runs closed its connection: the reply met a
+    broken pipe, a traceback went to the log and the reply was lost
+    (25 Oct 2026). Activity keeps it now, and the log says one line."""
+    import socket
+    import struct
+    import time
+    from urllib.parse import urlparse
+
+    async def slow(*_a, **_k):
+        await asyncio.sleep(0.5)
+        return Reply("the late one")
+
+    monkeypatch.setattr(cmds, "run_command", slow)
+    where = urlparse(panel.base)
+    body = json.dumps({"text": "/help"}).encode()
+    s = socket.create_connection((where.hostname, where.port))
+    s.sendall(b"POST /api/run HTTP/1.1\r\nHost: x\r\nX-Panel-Key: " + panel.key.encode()
+              + b"\r\nContent-Type: application/json\r\nContent-Length: "
+              + str(len(body)).encode() + b"\r\n\r\n" + body)
+    time.sleep(0.2)                       # read, and the action is running
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+    s.close()                             # gone, as a reloaded page goes
+    for _ in range(50):
+        events = json.loads(panel("/api/feed")[2])["events"]
+        if any(e["text"] == "the late one" for e in events):
+            break
+        time.sleep(0.1)
+    else:
+        raise AssertionError("the reply was lost")
+    assert "Traceback" not in capsys.readouterr().err
 
 
 def test_home_shows_this_week_and_the_running_render(panel, core):
