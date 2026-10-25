@@ -329,11 +329,15 @@ def normalise(src: Path, dest: Path, *, loop: bool = False,
     tmp = dest.with_name(dest.stem + ".part.wav")
     level = (f"loudnorm=I=-18:TP={TARGET_PEAK_DBFS}:LRA=11,"
              f"alimiter=limit={10 ** (TARGET_PEAK_DBFS / 20):.4f}")
+    inputs = ["-i", str(src)]
     if loop:
+        # The take is read twice, once for the body and once for the head.
+        # One stream split in two gave acrossfade nothing to write on ffmpeg
+        # 6.1: every room loop failed as "under 0.1s of sound" (25 Oct 2026).
         d, total = LOOP_SEAM_SECONDS, LOOP_SECONDS + LOOP_SEAM_SECONDS
-        graph = (f"[0:a]atrim=0:{total},asplit[a][b];"
-                 f"[a]atrim=start={d},asetpts=PTS-STARTPTS[body];"
-                 f"[b]atrim=0:{d},asetpts=PTS-STARTPTS[head];"
+        inputs += ["-i", str(src)]
+        graph = (f"[0:a]atrim=start={d}:end={total},asetpts=PTS-STARTPTS[body];"
+                 f"[1:a]atrim=0:{d},asetpts=PTS-STARTPTS[head];"
                  f"[body][head]acrossfade=d={d}:c1=tri:c2=tri,{level}[out]")
         af = ["-filter_complex", graph, "-map", "[out]"]
     elif trim_lead:
@@ -346,7 +350,7 @@ def normalise(src: Path, dest: Path, *, loop: bool = False,
         # -50 dB, and the trim above then removed all of it.
         af = ["-af", level]
     cmd = [
-        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(src),
+        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", *inputs,
         *af, "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(tmp),
     ]
     try:

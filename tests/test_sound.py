@@ -668,3 +668,31 @@ def test_the_fetched_room_tone_keeps_its_quiet(tmp_path):
     cue.write_bytes(b"placeholder")
     assert not mod.normalise(quiet, cue)
     assert cue.read_bytes() == b"placeholder"
+
+
+def test_a_fetched_loop_is_cut_to_its_length_with_the_seam_crossfaded(tmp_path):
+    """Every room loop (room_tone, room_night, room_dusk, rain_window,
+    winter_room, screen_buzz) came out of the fetch as "normalise left under
+    0.1s of sound" on his box (25 Oct 2026): the seam's crossfade read one
+    split stream twice, and ffmpeg 6.1 wrote nothing at all."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_fetch_sfx", Path(__file__).resolve().parents[1] / "scripts" / "fetch_sfx.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    rain = tmp_path / "raw.mp3"
+    run_ffmpeg(["-f", "lavfi", "-i", "anoisesrc=d=40:a=0.05:c=pink",
+                "-c:a", "libmp3lame", "-b:a", "128k", str(rain)])
+    out = tmp_path / "rain_window.wav"
+    assert mod.normalise(rain, out, loop=True)
+    assert abs(ffprobe_duration(out) - mod.LOOP_SECONDS) < 0.2
+
+    # a take shorter than a loop keeps all it has, less the seam
+    short = tmp_path / "short.wav"
+    run_ffmpeg(["-f", "lavfi", "-i", "anoisesrc=d=6:a=0.0005:c=pink",
+                "-ar", "44100", "-c:a", "pcm_s16le", str(short)])
+    hum = tmp_path / "screen_buzz.wav"
+    assert mod.normalise(short, hum, loop=True)
+    assert abs(ffprobe_duration(hum) - (6 - mod.LOOP_SEAM_SECONDS)) < 0.2
