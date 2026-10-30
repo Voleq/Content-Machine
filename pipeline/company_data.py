@@ -669,7 +669,12 @@ def _read_periods(ws, allowed: list[str], what: str
         key = _cell_text(row[key_c])
         if not key or key == "field_key":
             continue
-        history[key] = [_num(row[j] if j < len(row) else None) for j in period_cols]
+        cells = [row[j] if j < len(row) else None for j in period_cols]
+        # A label row keeps its cells as written: `Q3`, `FY2026` and a
+        # period-end date are names, and a number coerce reads all three as
+        # nothing — which is how a whole sheet kept `Q-0` for a header.
+        history[key] = (cells if key in PERIOD_LABEL_FIELDS
+                        else [_num(c) for c in cells])
     unknown = [k for k in history if k not in allowed]
     for k in unknown:
         log.warning("%s sheet has unknown field %r — ignored", what, k)
@@ -683,7 +688,118 @@ def _read_history(ws) -> tuple[list[str], dict[str, list[float | None]]]:
     return _named_periods(periods, rows)
 
 
-def _named_periods(periods: list[str], rows: dict[str, list[float | None]]
+def _fiscal_year(raw) -> int | None:
+    """A fiscal year off a label cell: `2026`, `2026.0`, `FY2026`, `FY 26`."""
+    import re
+
+    if raw is None or isinstance(raw, (bool, _dt.date, _dt.datetime)):
+        return None
+    if isinstance(raw, (int, float)):
+        return int(raw) if raw == int(raw) and 1900 <= raw <= 2200 else None
+    text = str(raw).strip()
+    if unresolved_marker(text) or _is_na(text):
+        return None
+    m = re.search(r"(?<!\d)((?:19|20|21)\d{2})(?!\d)", text)
+    if m:
+        return int(m.group(1))
+    m = re.search(r"(?i)\bFY\s*'?(\d{2})(?!\d)", text)
+    return 2000 + int(m.group(1)) if m else None
+
+
+def _fiscal_quarter(raw) -> int | None:
+    """A fiscal quarter off a label cell: `3`, `3.0`, `Q3`, `FQ3`, `3Q`,
+    `Q3 2026`. Anything else, including a `Q-0` header, is no quarter."""
+    import re
+
+    if raw is None or isinstance(raw, (bool, _dt.date, _dt.datetime)):
+        return None
+    if isinstance(raw, (int, float)):
+        return int(raw) if raw in (1, 2, 3, 4) else None
+    text = str(raw).strip()
+    if unresolved_marker(text) or _is_na(text):
+        return None
+    m = (re.fullmatch(r"([1-4])(?:\.0+)?", text)
+         or re.search(r"(?i)(?<![A-Z-])F?Q\s?([1-4])(?!\d)", text)
+         or re.match(r"(?i)([1-4])Q(?![A-Z])", text))
+    return int(m.group(1)) if m else None
+
+
+def _period_date(raw) -> _dt.date | None:
+    """A period-end date: a real date, an Excel serial, or `09/30/2026`."""
+    if raw is None or isinstance(raw, bool):
+        return None
+    if isinstance(raw, _dt.datetime):
+        return raw.date()
+    if isinstance(raw, _dt.date):
+        return raw
+    if isinstance(raw, (int, float)):
+        if not 20000 <= raw <= 80000:        # 1954 to 2119: a date, not a year
+            return None
+        from openpyxl.utils.datetime import from_excel
+
+        got = from_excel(raw)
+        return got.date() if isinstance(got, _dt.datetime) else got
+    text = str(raw).strip()
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%d-%b-%Y", "%d-%b-%y", "%b %d, %Y",
+                "%Y-%m-%d %H:%M:%S"):
+        try:
+            return _dt.datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _fill_quarters(years: list[int | None], quarters: list[int | None]
+                   ) -> tuple[list[int | None], list[int | None]]:
+    """Every column's fiscal year and quarter, from whatever the rows gave.
+
+    The columns are consecutive quarters (`IQ_FQ-7` … `IQ_FQ`), so one
+    column known in full names all eight: the next column is the next
+    quarter. And when only the YEAR row resolved, the column where the year
+    ticks over is a Q1, which anchors the rest. That is the case on a
+    terminal where the quarter mnemonic does not resolve and the year one
+    does, and it is how `Q-0` reached a headline as "Boeing Q0 revenue".
+
+    Nothing is filled when the rows contradict each other (a company that
+    moved its year end has a short year in the middle): a column left with
+    its relative header is honest, a wrong quarter name is not.
+    """
+    n = len(years)
+    anchor = next(((i, years[i], quarters[i]) for i in range(n)
+                   if years[i] is not None and quarters[i] is not None), None)
+    if anchor is None:
+        tick = next((i for i in range(1, n)
+                     if years[i] is not None and years[i - 1] is not None
+                     and years[i] == years[i - 1] + 1), None)
+        if tick is None:
+            return years, quarters
+        anchor = (tick, years[tick], 1)
+    i0, y0, q0 = anchor
+    filled_y: list[int | None] = []
+    filled_q: list[int | None] = []
+    for i in range(n):
+        idx = y0 * 4 + (q0 - 1) + (i - i0)
+        y, q = divmod(idx, 4)
+        filled_y.append(y)
+        filled_q.append(q + 1)
+    for i in range(n):
+        if (years[i] is not None and years[i] != filled_y[i]) or \
+                (quarters[i] is not None and quarters[i] != filled_q[i]):
+            log.warning("quarters sheet: fiscal year/quarter rows disagree "
+                        "with consecutive quarters at column %d — the "
+                        "columns keep their relative headers", i + 1)
+            return years, quarters
+    return filled_y, filled_q
+
+
+def _quarter_end_label(end: _dt.date) -> str:
+    """A quarter named by the day it ended, when no fiscal name is known:
+    `qtr to Sep '26`. Always true, and never a fiscal number it cannot back."""
+    return f"qtr to {end:%b} '{end:%y}"
+
+
+def _named_periods(periods: list[str], rows: dict[str, list],
+                   *, quarterly: bool = False
                    ) -> tuple[list[str], dict[str, list[float | None]]]:
     """Put real names on relative period headers, and take the label rows off.
 
@@ -694,21 +810,36 @@ def _named_periods(periods: list[str], rows: dict[str, list[float | None]]
     header becomes `FY21` / `Q2 FY25`. A column the rows say nothing sane
     about keeps its header (LTM has no fiscal year), and so does every column
     of a sheet without the rows: older workbooks read exactly as before.
+
+    On Quarters the year row alone is enough (`_fill_quarters`), and a
+    `period_end` row names whatever is still unnamed by the day it ended. On
+    History a `period_end` names a year the `fiscal_year` row did not.
     """
-    years = rows.pop("fiscal_year", None) or []
-    quarters = rows.pop("fiscal_quarter", None) or []
+    n = len(periods)
+
+    def _row(key: str, parse) -> list:
+        cells = list(rows.pop(key, None) or [])
+        return [parse(c) for c in (cells + [None] * n)[:n]]
+
+    years = _row("fiscal_year", _fiscal_year)
+    quarters = _row("fiscal_quarter", _fiscal_quarter)
+    ends = _row("period_end", _period_date)
     named = list(periods)
-    for i in range(len(named)):
-        y = years[i] if i < len(years) else None
-        if y is None or not 1900 <= y <= 2200 or y != int(y):
-            continue
-        q = quarters[i] if i < len(quarters) else None
-        if quarters:
-            if q is None or q not in (1, 2, 3, 4):
-                continue
-            named[i] = f"Q{int(q)} FY{int(y) % 100:02d}"
-        else:
-            named[i] = f"FY{int(y) % 100:02d}"
+    if quarterly:
+        years, quarters = _fill_quarters(years, quarters)
+        for i in range(n):
+            if years[i] is not None and quarters[i] is not None:
+                named[i] = f"Q{quarters[i]} FY{years[i] % 100:02d}"
+            elif ends[i] is not None:
+                named[i] = _quarter_end_label(ends[i])
+    else:
+        for i in range(n):
+            # A year the period-end date names is the calendar year it ended
+            # in, which is how most companies number theirs.
+            year = years[i] if years[i] is not None else (
+                ends[i].year if ends[i] is not None else None)
+            if year is not None:
+                named[i] = f"FY{year % 100:02d}"
     return named, rows
 
 
@@ -723,7 +854,7 @@ def _read_quarters(ws) -> tuple[list[str], dict[str, list[float | None]]]:
     """
     periods, rows = _read_periods(
         ws, QUARTER_FIELDS + CONSENSUS_FIELDS + PERIOD_LABEL_FIELDS, "quarters")
-    return _named_periods(periods, rows)
+    return _named_periods(periods, rows, quarterly=True)
 
 
 def _read_dashboard(ws) -> dict[str, object]:
@@ -829,6 +960,11 @@ def _read_valuation(ws) -> dict:
     val["rev_cagr"] = _find_value("revenue cagr (4y)")
     val["priced_vs_delivered"] = _find_value_prefix("priced-for")
     val["reverse_dcf_read"] = _find_text("read")
+    # The cash the reverse DCF ran on. Not shown to anyone: `_repair` blanks
+    # the implied growth when it is not positive.
+    fcf_base = _find_value_prefix("fcf base")
+    if fcf_base is not None:
+        val["fcf_base"] = fcf_base
 
     hr = _header_row(rows, "scenario")
     scenarios: list[dict] = []
@@ -1060,6 +1196,149 @@ def merge_free_news(news: list[dict], ticker: str, website: str,
     return out
 
 
+# --------------------------------------------------------------------------
+# Figures a workbook computes that mean nothing (the audit of 30 Oct 2026).
+# --------------------------------------------------------------------------
+# The template now guards each of these where it is computed, but every
+# workbook filled before that still carries them, and a writer reads them as
+# facts: the BA short said free cash flow "delivered -19.2%" a year (a CAGR
+# from one loss to a smaller one) and that the price "assumes 9.4% perpetual
+# cash growth" (a reverse DCF on cash that is not there). So the reader blanks
+# them too. A blank is "n/a" in the prompt, which is what these figures are.
+
+def _last(series) -> float | None:
+    vals = [v for v in (series or []) if isinstance(v, (int, float))]
+    return vals[-1] if vals else None
+
+
+def _positive(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0
+
+
+def _annual_ends(years: list[str], series) -> tuple[float | None, float | None]:
+    """The first and last fiscal-year figures of a History row, LTM aside."""
+    vals = [v for lab, v in zip(years, series or [])
+            if str(lab).strip().upper() != "LTM"]
+    return (vals[0], vals[-1]) if len(vals) >= 2 else (None, None)
+
+
+def _flag(test) -> str | None:
+    return None if test is None else ("yes" if test else "no")
+
+
+def _repair(values: dict, years: list[str], history: dict, quarters: dict,
+            dashboard: dict, valuation: dict, news: list[dict]) -> None:
+    """Blank or rebuild what an older template computed wrongly, in place."""
+    # RATIOS OVER A NEGATIVE BASE. A loss over negative equity is a positive
+    # "ROE", and net debt over negative EBITDA a negative leverage.
+    for key, base in (("roe", "total_equity"), ("roic", "invested_capital"),
+                      ("net_debt_ebitda", "ebitda")):
+        row, den = history.get(key), history.get(base)
+        if row and den:
+            history[key] = [None if i < len(den) and den[i] is not None
+                            and den[i] <= 0 else v for i, v in enumerate(row)]
+
+    fcf_ltm = _last(history.get("fcf"))
+    ebitda_ltm = _last(history.get("ebitda"))
+    cap = values.get("market_cap")
+    # A multiple of negative cash is no multiple.
+    for key in ("ev_fcf", "p_fcf"):
+        v = values.get(key)
+        if v is not None and (not _positive(v) or (fcf_ltm is not None
+                                                   and fcf_ltm <= 0)):
+            values[key] = None
+    if ebitda_ltm is not None and ebitda_ltm <= 0:
+        values["net_debt_ebitda_now"] = None
+    # FCF YIELD: the template's LSEG call never resolved on his terminal
+    # (`#NAME?` in the BA proof's log). The same figure off the sheet's own
+    # cash flow and market cap.
+    if values.get("fcf_yield") is None and fcf_ltm is not None and _positive(cap):
+        values["fcf_yield"] = fcf_ltm / cap
+    if values.get("earnings_yield") is None and _positive(cap):
+        ni = _last(history.get("net_income"))
+        if ni is not None:
+            values["earnings_yield"] = ni / cap
+    # COUNTRY was the whole address ("81 Meta Way, …, United States").
+    country = values.get("country")
+    if isinstance(country, str) and "," in country:
+        values["country"] = country.rsplit(",", 1)[-1].strip() or None
+    # DILUTED SHARES: `IQ_SHARESOUTSTANDING_OUT` is the basic count again, so
+    # the dilution gap read zero on every ticker. The latest quarter's diluted
+    # weighted count is the diluted number.
+    dil = _last(quarters.get("diluted_shares"))
+    if dil is not None:
+        values["shares_dill_out"] = dil
+
+    # GROWTH BETWEEN TWO LOSSES. `((end/start)^(1/4)-1)` over two negatives
+    # is a real number and a meaningless one: BA's free cash flow going from
+    # -4.4B to -1.9B came out as "-19.2% a year delivered". (Mixed signs
+    # already errored to a blank in Excel.)
+    fcf_a, fcf_b = _annual_ends(years, history.get("fcf"))
+    rev_a, rev_b = _annual_ends(years, history.get("revenue"))
+
+    def _two_losses(a, b) -> bool:
+        return a is not None and b is not None and a < 0 and b < 0
+
+    blanked = False
+    if valuation:
+        if _two_losses(fcf_a, fcf_b) and valuation.get("hist_fcf_cagr") is not None:
+            valuation["hist_fcf_cagr"] = None
+            blanked = True
+        if _two_losses(rev_a, rev_b):
+            valuation["rev_cagr"] = None
+        # The reverse DCF solves for the growth that makes today's price
+        # fair on today's cash. With no cash there is no such growth, and
+        # WACC minus a negative yield came out as "9.4% perpetual growth".
+        base = valuation.pop("fcf_base", None)
+        if base is not None and base <= 0 and valuation.get("implied_growth") is not None:
+            valuation["implied_growth"] = None
+            blanked = True
+        if blanked:
+            valuation["priced_vs_delivered"] = None
+            valuation["reverse_dcf_read"] = None
+        # A multiple of a loss per share is a negative price.
+        for sc in valuation.get("scenarios") or []:
+            ps = sc.get("per_share")
+            if ps is not None and ps <= 0:
+                sc["implied_price"] = None
+                sc["upside_pct"] = None
+    if _two_losses(rev_a, rev_b):
+        dashboard["Revenue 4y CAGR"] = None
+    if "FCF yield" in dashboard and dashboard.get("FCF yield") is None:
+        dashboard["FCF yield"] = values.get("fcf_yield")
+
+    # THE FLAGS read "yes" off an empty cell: in Excel "" > 0 is TRUE, so a
+    # missing figure said profitable, diluting and over-levered at once.
+    nd, lev = values.get("net_debt_now"), values.get("net_debt_ebitda_now")
+    rev_cagr = dashboard.get("Revenue 4y CAGR")
+    sh_cagr = dashboard.get("Share count 4y CAGR")
+    ni_ltm = _last(history.get("net_income"))
+    flags = {
+        "Profitable? (LTM NI>0)": None if ni_ltm is None else ni_ltm > 0,
+        "FCF positive? (LTM)": None if fcf_ltm is None else fcf_ltm > 0,
+        "Growing? (rev CAGR>0)": (rev_cagr > 0 if isinstance(rev_cagr, (int, float))
+                                  else None),
+        "Diluting? (share CAGR>1%)": (sh_cagr > 1 if isinstance(sh_cagr, (int, float))
+                                      else None),
+        "Over-levered? (ND/EBITDA>3x)": (
+            lev > 3 if isinstance(lev, (int, float))
+            else (True if ebitda_ltm is not None and ebitda_ltm <= 0
+                  and _positive(nd) else None)),
+    }
+    for label, test in flags.items():
+        if label in dashboard:
+            dashboard[label] = _flag(test)
+
+    # NEWS: the add-in expands its news range into one formula per cell and
+    # drops the column's item, so Date, Source and URL can all hold the
+    # headline again.
+    for item in news:
+        head = item.get("headline")
+        for key in ("date", "source", "url"):
+            if item.get(key) and item.get(key) == head:
+                item[key] = None
+
+
 def load_company_data(workspace: Path) -> CompanyData:
     """Load + type-coerce the v3 export (all sheets, by name). Raises
     CompanyDataError if absent or unreadable; missing-field policy lives on
@@ -1127,6 +1406,7 @@ def load_company_data(workspace: Path) -> CompanyData:
     values = {field: _coerce(field, pairs.get(field)) for field in ALL_DATA_FIELDS}
     if scale != 1.0:
         _to_units(scale, values, history, quarters, dashboard)
+    _repair(values, history_years, history, quarters, dashboard, valuation, news)
     return CompanyData(values=values, history_years=history_years,
                        history=history, quarter_labels=quarter_labels,
                        quarters=quarters, dashboard=dashboard,

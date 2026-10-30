@@ -48,11 +48,13 @@ from pipeline.models import (
     SOURCE_MAX_CHARS,
     VISUAL_TAG_TYPES,
     Chapter,
+    RELATIVE_PERIOD_FIX,
     LongScript,
     VENDOR_WORDS,
     TagEvent,
     TagType,
     parse_scribble_payload,
+    relative_period_terms,
 )
 from pipeline.plate_tags import build_fill, check_bound
 from pipeline.plates import (
@@ -393,9 +395,18 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
             "The narration names the data vendor — it would be spoken and land "
             'in the captions. Data is "from the 10-K"; source stays unnamed.'
         )
+    said = relative_period_terms(narration)
+    if said:
+        raise LongScriptError(f"“{said[0]}” in the narration {RELATIVE_PERIOD_FIX}")
     # A [SOURCE] is not narration, so the check above never sees it — and it
     # is the one tag whose whole job is to put a source's name on screen.
     for e in events:
+        drawn = relative_period_terms(
+            " ".join([e.payload, *(str(v) for v in e.values.values())]))
+        if drawn:
+            raise LongScriptError(
+                f"“{drawn[0]}” in [{e.type.value}: {e.payload}] "
+                f"{RELATIVE_PERIOD_FIX}")
         if e.type is TagType.BOARD and any(w in e.payload.lower() for w in VENDOR_WORDS):
             raise LongScriptError(
                 f"[BOARD: {e.payload}] names the data vendor — it would be "

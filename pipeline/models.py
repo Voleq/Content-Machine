@@ -33,6 +33,24 @@ SOURCE_MAX_CHARS = 40
 VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "capital iq", "factset",
                 "bloomberg terminal")
 
+# A workbook's RELATIVE period headers, which are positions and not periods:
+# `Q-0` is the latest quarter and `FY-0` the latest year. A writer handed one
+# printed "Boeing Q0 revenue" in a headline. Only the spellings no real period
+# has are matched (a quarter zero, a year counted back), so a `Q4` or an
+# `FY24` is never caught.
+_RELATIVE_PERIOD_RE = re.compile(r"\bQ\s?-?\s?0\b|\bFY\s?-\s?\d\b|\bFY\s?0\b")
+
+
+def relative_period_terms(text: str) -> list[str]:
+    """The relative period labels written into `text` (`Q0`, `Q-0`, `FY-1`)."""
+    return [m.group(0) for m in _RELATIVE_PERIOD_RE.finditer(str(text or ""))]
+
+
+RELATIVE_PERIOD_FIX = (
+    "is the workbook's column, not a period: Q-0 is the latest quarter and "
+    "FY-0 the latest year. Write the real name (Q3 FY26, FY25) or say "
+    "\"the latest quarter\", then resend.")
+
 # Fixed SFX taxonomy (assets/sfx/<key>.wav). Unknown keys are skipped+warned.
 SFX_KEYS = (
     "windows_error",
@@ -913,9 +931,10 @@ CONSENSUS_FIELDS: list[str] = ["eps_consensus", "eps_street",
 # Rows a period sheet may carry to NAME its columns: the fiscal year and, on
 # the Quarters sheet, the fiscal quarter. The template's headers are relative
 # (`FY-4`, `Q-7`) because the add-in fills them relative to today; these turn
-# them into `FY21` and `Q2 FY25` for the screen. Read, then taken off the
-# table: they are labels, not figures.
-PERIOD_LABEL_FIELDS: list[str] = ["fiscal_year", "fiscal_quarter"]
+# them into `FY21` and `Q2 FY25` for the screen; a `period_end` row names a
+# quarter by the day it ended when no fiscal name is known. Read, then taken
+# off the table: they are labels, not figures.
+PERIOD_LABEL_FIELDS: list[str] = ["fiscal_year", "fiscal_quarter", "period_end"]
 
 # Fields the workbook carries as a RATE — a margin, a return, a share-count
 # change — rather than a quantity. The distinction is load-bearing twice: the
@@ -988,6 +1007,26 @@ def _mag(v: float) -> str:
     return f"{v:,.3f}".rstrip("0").rstrip(".") if a < 10 else f"{v:,.1f}"
 
 
+_RELATIVE_QUARTER = re.compile(r"^Q\s*-\s*(\d+)$", re.IGNORECASE)
+
+
+def quarter_words(label: str) -> str:
+    """A quarter column as a writer, a card or a finding names it.
+
+    A named column (`Q3 FY26`) is its own name. A relative one (`Q-0`) is a
+    position, not a quarter, and handed `Q-0` a writer printed "Boeing Q0
+    revenue" in a headline: it reads as the latest quarter, the prior
+    quarter, or so many quarters back.
+    """
+    m = _RELATIVE_QUARTER.match(str(label).strip())
+    if not m:
+        return str(label)
+    n = int(m.group(1))
+    if n == 0:
+        return "latest quarter"
+    return "prior quarter" if n == 1 else f"{n} quarters back"
+
+
 def _one_move(d: dict | None, kind: str, absent: str) -> str:
     """One half of the pair. Says what it cannot say (O2)."""
     if d is None:
@@ -1040,6 +1079,13 @@ def _present(field: str, value):
         of = " of shares outstanding" if field in _OWN_FIELDS else ""
         return f"{value * 100:.1f}%{of} (fraction {value:g})"
     return value
+
+
+# Words a company's name carries that are not the name a headline uses.
+_NAME_FILLER = frozenset({
+    "the", "inc", "corp", "corporation", "co", "company", "plc", "ltd",
+    "limited", "holdings", "group", "sa", "nv", "ag", "se",
+})
 
 
 class CompanyData(BaseModel):
@@ -1155,7 +1201,8 @@ class CompanyData(BaseModel):
             if prior is None:
                 return None
             latest = vals[-1]
-            out = {"from_label": labels[prior_i] if prior_i < len(labels) else "?",
+            out = {"from_label": (quarter_words(labels[prior_i])
+                                  if prior_i < len(labels) else "?"),
                    "from": prior, "to": latest}
             if rate:
                 out["points"] = latest - prior
@@ -1176,7 +1223,7 @@ class CompanyData(BaseModel):
             return out
 
         return {
-            "label": labels[-1] if labels else "latest",
+            "label": quarter_words(labels[-1]) if labels else "latest",
             "value": vals[-1],
             "rate": rate,
             "qoq": _delta(len(vals) - 2),
@@ -1189,7 +1236,12 @@ class CompanyData(BaseModel):
             return ""
         lines = [f"[quarters · {len(self.quarter_labels)} quarters, "
                  f"oldest → newest]",
-                 "  quarters: " + " | ".join(self.quarter_labels)]
+                 "  quarters: " + " | ".join(quarter_words(q)
+                                             for q in self.quarter_labels)]
+        if any(_RELATIVE_QUARTER.match(q.strip()) for q in self.quarter_labels):
+            lines.append("  (the workbook did not name these quarters: call "
+                         "them the latest quarter, the prior quarter, and so "
+                         "on, never a quarter number or Q0)")
         for f in QUARTER_FIELDS:
             vals = self.quarters.get(f)
             if not vals or all(v is None for v in vals):
@@ -1230,7 +1282,7 @@ class CompanyData(BaseModel):
             vals = self.quarters.get(field) or []
             return vals[-1] if vals else None
 
-        out: dict = {"label": (self.quarter_labels[-1]
+        out: dict = {"label": (quarter_words(self.quarter_labels[-1])
                                if self.quarter_labels else "latest")}
         eps = (last("eps_street"), last("eps_consensus"))
         rev = (last("revenue"), last("revenue_consensus"))
@@ -1262,6 +1314,19 @@ class CompanyData(BaseModel):
     def dashboard_get(self, label: str):
         return self.dashboard.get(label)
 
+    def names_company(self, text: str) -> bool:
+        """Whether `text` names this company: its ticker, or the name with
+        the legal suffix off (`The Boeing Company` → Boeing)."""
+        text = str(text or "")
+        ticker = str(self.values.get("ticker") or "").strip().upper()
+        if ticker and re.search(rf"(?<![A-Za-z]){re.escape(ticker)}(?![A-Za-z])",
+                                text):
+            return True
+        name = str(self.values.get("company_name") or "")
+        words = [w for w in re.findall(r"[A-Za-z0-9&'.-]+", name)
+                 if w.lower().strip(".,") not in _NAME_FILLER]
+        return bool(words) and words[0].lower().strip(".,") in text.lower()
+
     def as_prompt_block(self) -> str:
         """Render as the {{company_data}} block for the master prompts —
         the snapshot by group, the multi-year history table, the one-glance
@@ -1279,6 +1344,12 @@ class CompanyData(BaseModel):
         if self.has_history:
             lines.append("[history · periods, oldest → newest]")
             lines.append("  periods: " + " | ".join(self.history_years))
+            if any(re.match(r"^FY\s*-\s*\d+$", y.strip(), re.I)
+                   for y in self.history_years):
+                lines.append("  (the workbook did not name these years: FY-0 "
+                             "is the latest full fiscal year, FY-1 the one "
+                             "before. Never print FY-0; name the year from "
+                             "the filings, or say \"last year\")")
             for f in HISTORY_FIELDS:
                 vals = self.history.get(f)
                 if vals and any(v is not None for v in vals):
@@ -1316,7 +1387,13 @@ class CompanyData(BaseModel):
             #
             # The URL is deliberately absent: a model handed one will put it
             # on screen.
-            lines.append(f"[news · {len(self.news)} recent headlines]")
+            #
+            # A headline that never names the company goes last, and says so.
+            # The terminal's news for a ticker includes market round-ups that
+            # merely tag it ("Apple pays $17B in Irish taxes; Uber faces …"
+            # came back for META), and a writer reading them as the reason
+            # for the move explains a move with somebody else's news.
+            named, other = [], []
             for item in self.news[:12]:
                 head = str(item.get("headline") or "").strip()
                 if not head:
@@ -1324,7 +1401,15 @@ class CompanyData(BaseModel):
                 when = str(item.get("date") or "").strip()
                 src = str(item.get("source") or "").strip()
                 bits = " · ".join(b for b in (when, src) if b)
-                lines.append(f"  {head}" + (f"  ({bits})" if bits else ""))
+                line = f"  {head}" + (f"  ({bits})" if bits else "")
+                (named if self.names_company(head) else other).append(line)
+            lines.append(f"[news · {len(self.news)} recent headlines]")
+            lines.extend(named)
+            if other:
+                lines.append("  not naming the company (market news that may "
+                             "only mention it; never the reason for its move "
+                             "unless a named headline says so):")
+                lines.extend("  " + line for line in other)
         if self.has_peers:
             lines.append(f"[peers · {len(self.peers)} names]")
             for p in self.peers:

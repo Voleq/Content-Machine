@@ -37,7 +37,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from config import Settings
-from pipeline.models import RATE_FIELDS, VENDOR_WORDS
+from pipeline.models import RATE_FIELDS, VENDOR_WORDS, quarter_words
 from pipeline.spoken import eye_written_figures, eye_written_terms
 
 log = logging.getLogger(__name__)
@@ -552,10 +552,13 @@ def _quarters_for(data, field_name: str) -> list[float]:
 
 
 def _quarter_labels(data) -> list[str]:
+    """The quarter columns as a finding names them: `Q-0` reads as the
+    latest quarter (`quarter_words`), never as a quarter called zero."""
     labels = getattr(data, "quarter_labels", None)
     if not isinstance(labels, (list, tuple)) and hasattr(data, "get"):
         labels = data.get("quarter_labels")
-    return [str(x) for x in labels] if isinstance(labels, (list, tuple)) else []
+    return ([quarter_words(str(x)) for x in labels]
+            if isinstance(labels, (list, tuple)) else [])
 
 
 def _matches(value: float, known: list[float]) -> bool:

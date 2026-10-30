@@ -2,6 +2,8 @@
 Dashboard · Valuation · Peers), History period columns read dynamically
 from the header row, CSV = snapshot-only, generic screenshot label."""
 
+from pathlib import Path
+
 import pytest
 from PIL import Image
 
@@ -499,3 +501,241 @@ def test_a_workbook_in_millions_reads_in_whole_units(workspace):
     card = fmt("revenue", data.quarters["revenue"][-1])
     assert card == fmt("revenue", whole.quarters["revenue"][-1])
     assert card.startswith("$") and card.endswith("M")
+
+
+# --------------------------------------------------------------------------
+# The workbook audit (30 Oct 2026): what an older template computed wrongly.
+# --------------------------------------------------------------------------
+
+def _edit(workspace, sheet, edits, value_offset=2):
+    """Overwrite cells on one sheet of the workspace's workbook: by
+    coordinate, by `(field_key, period index)`, or by `(label, None)` for the
+    value `value_offset` columns right of the label."""
+    from openpyxl import load_workbook
+
+    xlsx = workspace / "dennis_data.xlsx"
+    wb = load_workbook(xlsx)
+    ws = wb[sheet]
+    for where, value in edits.items():
+        if isinstance(where, str):
+            ws[where] = value
+            continue
+        key, idx = where
+        row = next(r for r in range(1, ws.max_row + 1)
+                   if str(ws.cell(r, 1).value or "").strip() == key
+                   or str(ws.cell(r, 2).value or "").strip() == key)
+        if idx is None:
+            col = next(c for c in range(1, ws.max_column + 1)
+                       if str(ws.cell(row, c).value or "").strip() == key) + value_offset
+        else:
+            col = 3 + idx
+        ws.cell(row, col).value = value
+    wb.save(xlsx)
+    wb.close()
+
+
+def test_growth_between_two_losses_is_not_a_growth_rate(workspace):
+    """BA's free cash flow went from -4.4B to -1.9B, and the sheet's CAGR
+    said it "delivered -19.2%" a year. That and the reverse DCF on negative
+    cash ("9.4% perpetual growth") are blanked, with the verdict built on
+    them; the WACC beside them stands."""
+    _edit(workspace, "History", {("fcf", 0): -4396e6, ("fcf", 4): -1877e6,
+                                 ("fcf", 5): -357e6})
+    from openpyxl import load_workbook
+
+    xlsx = workspace / "dennis_data.xlsx"
+    wb = load_workbook(xlsx)
+    ws = wb["Valuation"]
+    r = ws.max_row + 2
+    ws.cell(r, 1, "FCF base (LTM)")
+    ws.cell(r, 2, -357)
+    wb.save(xlsx)
+    wb.close()
+
+    val = load_company_data(workspace).valuation
+    assert val["hist_fcf_cagr"] is None
+    assert val["implied_growth"] is None
+    assert val["priced_vs_delivered"] is None and val["reverse_dcf_read"] is None
+    assert val["wacc"] == 0.092 and "fcf_base" not in val
+
+    from pipeline import short_data
+    from bot.prompts import valuation_data_block
+
+    data = load_company_data(workspace)
+    assert short_data.implied(data) is None
+    assert "verdict" not in valuation_data_block(data)
+
+
+def _repaired(history=None, values=None, valuation=None, dashboard=None,
+              years=("FY21", "FY22", "FY23", "FY24", "FY25", "LTM")):
+    from pipeline.company_data import _repair
+
+    values = dict(values or {})
+    history = {k: list(v) for k, v in (history or {}).items()}
+    valuation = dict(valuation or {})
+    dashboard = dict(dashboard or {})
+    _repair(values, list(years), history, {}, dashboard, valuation, [])
+    return values, history, valuation, dashboard
+
+
+def test_a_loss_per_share_gets_no_scenario_price():
+    sc = [{"scenario": "Base", "per_share": -1.5, "exit_multiple": 20,
+           "implied_price": -30.0, "upside_pct": -118.0},
+          {"scenario": "Bull", "per_share": 2.0, "exit_multiple": 20,
+           "implied_price": 40.0, "upside_pct": 5.0}]
+    _, _, val, _ = _repaired(valuation={"scenarios": sc})
+    assert val["scenarios"][0]["implied_price"] is None
+    assert val["scenarios"][0]["upside_pct"] is None
+    assert val["scenarios"][1]["implied_price"] == 40.0
+
+
+def test_ratios_over_a_negative_base_are_blank():
+    """BA's equity is negative: a loss over it is a positive "ROE"."""
+    M = 1e6
+    values, hist, _, dash = _repaired(
+        history={"total_equity": [5e9, 4e9, 1e9, -3.9e9, -3.3e9, -3.9e9],
+                 "roe": [10.0, 5.0, 2.0, 302.0, 250.0, 302.0],
+                 "ebitda": [2400 * M, 1668 * M, 3792 * M, -11748 * M, -4652 * M, -50 * M],
+                 "net_debt_ebitda": [10.0, 12.0, 5.0, -2.0, -4.0, -20.0]},
+        values={"net_debt_ebitda_now": -20.0, "net_debt_now": 30e9},
+        dashboard={"Over-levered? (ND/EBITDA>3x)": "no"})
+    assert hist["roe"] == [10.0, 5.0, 2.0, None, None, None]
+    assert hist["net_debt_ebitda"][-3:] == [None, None, None]
+    assert values["net_debt_ebitda_now"] is None
+    assert dash["Over-levered? (ND/EBITDA>3x)"] == "yes"
+
+
+def test_the_fcf_yield_that_never_resolved_is_rebuilt(workspace):
+    """`fcf_yield did not resolve (#NAME?)` in his BA log: the template's
+    LSEG call. The same figure off the sheet's own cash flow and size."""
+    _edit(workspace, "Snapshot", {("fcf_yield", None): "#NAME?"})
+    data = load_company_data(workspace)
+    fcf = data.history["fcf"][-1]
+    assert data.get("fcf_yield") == pytest.approx(fcf / data.get("market_cap"))
+
+
+def test_a_flag_on_an_empty_cell_is_no_answer(workspace):
+    """In Excel `"" > 0` is TRUE, so a blank figure flagged the company
+    profitable, diluting and over-levered at once."""
+    _edit(workspace, "Dashboard", {("Profitable? (LTM NI>0)", None): "yes",
+                                   ("Share count 4y CAGR", None): None,
+                                   ("Diluting? (share CAGR>1%)", None): "yes"},
+          value_offset=1)
+    data = load_company_data(workspace)
+    assert data.dashboard_get("Profitable? (LTM NI>0)") == "no"   # NI is a loss
+    assert data.dashboard_get("Diluting? (share CAGR>1%)") is None
+
+
+def test_country_is_a_country_and_diluted_shares_are_diluted(workspace):
+    _edit(workspace, "Snapshot", {
+        ("country", None): "100 N Riverside, Chicago, Illinois, 60606, United States"})
+    data = load_company_data(workspace)
+    assert data.get("country") == "United States"
+    assert data.get("shares_dill_out") == data.quarters["diluted_shares"][-1]
+
+
+def test_a_news_column_repeating_the_headline_is_dropped(workspace):
+    head = "Example Corp posts record quarterly revenue, tops estimates"
+    _edit(workspace, "News", {"A5": head, "C5": head, "D5": head})
+    data = load_company_data(workspace)
+    first = next(n for n in data.news if n["headline"] == head)
+    assert first["date"] is None and first["source"] is None and first["url"] is None
+
+
+def test_news_that_never_names_the_company_is_listed_apart(workspace):
+    """The terminal's news for META came back as market round-ups ("Apple
+    pays $17B in Irish taxes"). The writer sees them marked, after the
+    company's own."""
+    data = load_company_data(workspace)
+    data.news = [{"headline": "Apple pays $17B in Irish taxes"},
+                 {"headline": "Example Corp posts record quarterly revenue"},
+                 {"headline": "EXMPL slides after guidance cut"}]
+    block = data.as_prompt_block()
+    news = block[block.index("[news"):]
+    assert news.index("Example Corp posts") < news.index("not naming the company")
+    assert news.index("EXMPL slides") < news.index("not naming the company")
+    assert news.index("not naming the company") < news.index("Apple pays")
+    assert data.names_company("Boeing misses") is False
+
+
+# --------------------------------------------------------------------------
+# The template itself.
+# --------------------------------------------------------------------------
+
+TEMPLATE = Path(__file__).resolve().parents[1] / "templates" / "dennis_data_template.xlsx"
+
+
+def _template(**kw):
+    from openpyxl import load_workbook
+
+    return load_workbook(TEMPLATE, **kw)
+
+
+def test_the_template_carries_no_other_company_s_rows():
+    """GameStop's peers and its top headline were saved into the template as
+    plain values. A ticker with fewer peers kept GameStop's tail under its
+    own, and every News sheet opened on a GameStop headline."""
+    wb = _template()
+    peers = wb["Peers"]
+    for r in range(5, 55):
+        for c in "ABCDEFGHIJKLWXY":
+            v = peers[f"{c}{r}"].value
+            assert v is None or (isinstance(v, str) and v.startswith("=")), \
+                f"Peers!{c}{r} holds a saved value: {v!r}"
+    news = wb["News"]
+    for c in "ABCD":
+        assert news[f"{c}7"].value is None
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                assert not (isinstance(cell.value, str) and '"GME"' in cell.value), \
+                    f"{ws.title}!{cell.coordinate} is pinned to GME"
+
+
+def test_the_template_calls_no_function_his_excel_lacks():
+    """`_xll.RDP.Data` showed `#NAME?` on his terminal (BA proof log)."""
+    wb = _template()
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                assert not (isinstance(cell.value, str) and cell.value.startswith("=")
+                            and "RDP.Data" in cell.value), f"{ws.title}!{cell.coordinate}"
+
+
+def test_the_template_names_its_quarters_and_guards_its_math():
+    from pipeline.company_data import _read_quarters
+
+    wb = _template()
+    labels, rows = _read_quarters(wb["Quarters"])
+    assert len(labels) == 8 and "period_end" not in rows
+    q = wb["Quarters"]
+    row = next(r for r in range(1, q.max_row + 1) if q.cell(r, 1).value == "period_end")
+    assert "IQ_PERIODDATE" in q.cell(row, 10).value
+    h = wb["History"]
+    assert "N(C15)>0" in h["I15"].value and "N(G15)>0" in h["I15"].value
+    assert "N(C24)>0" in h["C32"].value          # ROE over positive equity only
+    v = wb["Valuation"]
+    assert "N(B32)>0" in v["B34"].value           # no implied growth on no cash
+    assert "ISNUMBER(B35)" in v["B38"].value      # no verdict on a blank
+    d = wb["Dashboard"]
+    for r in range(23, 28):
+        assert "ISNUMBER" in d[f"B{r}"].value, f"Dashboard!B{r}"
+    s = wb["Snapshot"]
+    assert "IQ_CQ" in s["D44"].value and "IQ_CQ" in s["D45"].value
+    assert s["D19"].value == "=Quarters!J22"
+
+
+def test_the_template_keeps_no_stale_range_names():
+    """The plug-in tracks each CIQRANGE output with a hidden `IQR…` name.
+    One pointing at cells that hold other formulas is a range a refresh may
+    clear as its own."""
+    wb = _template()
+    for name, dn in wb.defined_names.items():
+        if not name.startswith("IQR"):
+            continue
+        for sheet, ref in dn.destinations:
+            ws = wb[sheet]
+            for row in ws[ref.replace("$", "")] if ":" in ref else [[ws[ref.replace("$", "")]]]:
+                for cell in row:
+                    assert not (isinstance(cell.value, str) and cell.value.startswith("=")
+                                and "CIQ" not in cell.value), f"{name} -> {sheet}!{cell.coordinate}"

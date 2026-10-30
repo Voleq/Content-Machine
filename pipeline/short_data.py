@@ -27,7 +27,7 @@ import math
 import re
 from typing import Any
 
-from pipeline.models import RATE_FIELDS
+from pipeline.models import RATE_FIELDS, quarter_words
 
 log = logging.getLogger(__name__)
 
@@ -291,7 +291,7 @@ def _as_of_year(data) -> int | None:
         return None
 
 
-def quarter_labels(data) -> list[str]:
+def _real_quarter_labels(data) -> list[str]:
     """The Quarters sheet's column names, with relative years made real.
 
     `Q3 FY25` stays; `Q3 FY-1` becomes `Q3 FY24` off `as_of_date`, the same
@@ -308,15 +308,25 @@ def quarter_labels(data) -> list[str]:
     return out
 
 
+def quarter_labels(data) -> list[str]:
+    """The quarter columns as a card prints them.
+
+    A bare `Q-0` is a position, so it reads as the latest quarter, the prior
+    quarter or so many quarters back (`quarter_words`), never as `Q-0`.
+    """
+    return [quarter_words(h) for h in _real_quarter_labels(data)]
+
+
 def quarter_heads(data) -> list[str]:
     """Each quarter's head as a card prints it (7 characters at most).
 
-    `Q2 FY25` becomes `Q2 '25`. A sheet still on relative headers (`Q-7`) gets
+    `Q2 FY25` becomes `Q2 '25`, and a quarter named by its end, `qtr to Sep
+    '26`, becomes `Sep '26`. A sheet still on relative headers (`Q-7`) gets
     `-7Q`…`LATEST`, which is what those columns are, rather than a date the
     workbook never gave.
     """
     out = []
-    for h in quarter_labels(data):
+    for h in _real_quarter_labels(data):
         m = re.match(r"^Q([1-4])\s*FY\s*(\d{2,4})$", h.strip(), re.I)
         if m:
             out.append(f"Q{m.group(1)} '{m.group(2)[-2:]}")
@@ -325,6 +335,10 @@ def quarter_heads(data) -> list[str]:
         if r:
             n = int(r.group(1))
             out.append("LATEST" if n == 0 else f"-{n}Q")
+            continue
+        e = re.match(r"^qtr to (\w{3} '\d{2})$", h.strip(), re.I)
+        if e:
+            out.append(e.group(1))
             continue
         out.append(h.strip()[:7])
     return out

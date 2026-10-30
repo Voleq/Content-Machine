@@ -452,3 +452,127 @@ def test_a_workspace_written_before_the_rename_is_adopted(settings, tmp_path):
     assert got == filing_path(ref, tmp_path)
     assert got.read_text(encoding="utf-8") == "old bytes"
     assert not (tmp_path / "filings" / "filing.html").exists()
+
+
+# --------------------------------------------------------------------------
+# Naming the columns: "Boeing Q0 revenue" (30 Oct 2026).
+# --------------------------------------------------------------------------
+# His BA short printed `Q0` in a headline. The Quarters headers are relative
+# (`Q-7` … `Q-0`) and are renamed only off the label rows; when those did not
+# read as numbers, `Q-0` went to the writer as the quarter's name.
+
+RELATIVE = [f"Q-{n}" for n in range(7, -1, -1)]
+
+
+def _named(rows):
+    from pipeline.company_data import _named_periods
+
+    return _named_periods(list(RELATIVE), dict(rows), quarterly=True)[0]
+
+
+def test_the_year_row_alone_names_every_quarter():
+    """The quarter row did not resolve and the year row did: the column
+    where the year ticks over is a Q1, and the rest follow."""
+    years = [2024, 2025, 2025, 2025, 2025, 2026, 2026, 2026]
+    names = _named({"fiscal_year": years, "fiscal_quarter": [None] * 8})
+    assert names == ["Q4 FY24", "Q1 FY25", "Q2 FY25", "Q3 FY25", "Q4 FY25",
+                     "Q1 FY26", "Q2 FY26", "Q3 FY26"]
+
+
+@pytest.mark.parametrize("cell", [3, 3.0, "3", "Q3", "FQ3", "3Q", "Q3 2026"])
+def test_a_quarter_cell_reads_however_the_add_in_writes_it(cell):
+    names = _named({"fiscal_year": [None] * 7 + ["FY2026"],
+                    "fiscal_quarter": [None] * 7 + [cell]})
+    assert names[-1] == "Q3 FY26" and names[0] == "Q4 FY24"
+
+
+def test_a_period_end_names_what_no_fiscal_row_does():
+    import datetime as dt
+
+    ends = [dt.date(2024, 12, 31), dt.date(2025, 3, 31), dt.date(2025, 6, 30),
+            dt.date(2025, 9, 30), dt.date(2025, 12, 31), 46112.0,
+            "06/30/2026", dt.datetime(2026, 9, 30)]
+    names = _named({"period_end": ends})
+    assert names[0] == "qtr to Dec '24"
+    assert names[-1] == "qtr to Sep '26"
+    assert names[-2] == "qtr to Jun '26"
+    assert names[5] == "qtr to Mar '26"
+
+
+def test_rows_that_contradict_each_other_name_nothing():
+    """A year that skips (a moved year end) is a reason to keep the relative
+    headers: a wrong quarter name is worse than an honest position."""
+    years = [2024, 2025, 2025, 2025, 2025, 2025, 2026, 2026]
+    assert _named({"fiscal_year": years}) == RELATIVE
+
+
+def test_unresolved_label_cells_name_nothing():
+    assert _named({"fiscal_year": ["#N/A"] * 8,
+                   "fiscal_quarter": ["(Invalid Formula Name)"] * 8}) == RELATIVE
+
+
+def test_the_loaded_workbook_names_the_print_quarter(workspace):
+    """End to end, the shape of his workbook: relative headers, a year row
+    that resolved, a quarter row that did not."""
+    xlsx = workspace / "dennis_data.xlsx"
+    wb = load_workbook(xlsx)
+    ws = wb["Quarters"]
+    head = next(r for r in range(1, ws.max_row + 1)
+                if ws.cell(r, 1).value == "field_key")
+    for i in range(8):
+        ws.cell(head, 3 + i, f"Q-{7 - i}")
+    row = ws.max_row + 1
+    ws.cell(row, 1, "fiscal_year")
+    for i, y in enumerate([2024, 2025, 2025, 2025, 2025, 2026, 2026, 2026]):
+        ws.cell(row, 3 + i, y)
+    ws.cell(row + 1, 1, "fiscal_quarter")
+    for i in range(8):
+        ws.cell(row + 1, 3 + i, "(Invalid Formula Name)")
+    wb.save(xlsx)
+    wb.close()
+
+    data = load_company_data(workspace)
+    assert data.quarter_labels[-1] == "Q3 FY26"
+    assert data.consensus()["label"] == "Q3 FY26"
+    assert "fiscal_year" not in data.quarters
+    assert "vs consensus, Q3 FY26" in data.quarters_prompt_block()
+
+
+def test_an_unnamed_quarter_never_reaches_the_writer_as_q0(workspace):
+    """When nothing names them, the columns are positions, and the prompt,
+    the cards and the findings all say so in words."""
+    from pipeline import short_data
+    from pipeline.gates import _quarter_labels
+
+    data = load_company_data(workspace)
+    data.quarter_labels = list(RELATIVE)
+    block = data.quarters_prompt_block()
+    assert "Q-0" not in block and "Q-1 " not in block
+    assert "vs consensus, latest quarter" in block
+    assert "never a quarter number or Q0" in block
+    assert data.consensus()["label"] == "latest quarter"
+
+    card = short_data.print_vs_consensus(data)
+    assert card and "Q-0" not in card["kicker"]
+    assert card["kicker"].endswith("latest quarter")
+    assert short_data.quarter_heads(data)[-1] == "LATEST"
+    assert _quarter_labels(data)[-2:] == ["prior quarter", "latest quarter"]
+
+
+def test_a_history_year_is_named_by_its_period_end_when_the_row_fails():
+    import datetime as dt
+
+    from pipeline.company_data import _named_periods
+
+    periods = ["FY-4", "FY-3", "FY-2", "FY-1", "FY-0", "LTM"]
+    ends = [dt.date(2021 + i, 12, 31) for i in range(5)] + [None]
+    names, rows = _named_periods(periods, {"fiscal_year": ["#N/A"] * 6,
+                                           "period_end": ends})
+    assert names == ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"]
+    assert rows == {}
+
+
+def test_unnamed_years_come_with_a_warning_to_the_writer(workspace):
+    data = load_company_data(workspace)
+    assert data.history_years[-2] == "FY-0"
+    assert "Never print FY-0" in data.as_prompt_block()

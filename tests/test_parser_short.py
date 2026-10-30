@@ -528,3 +528,32 @@ def test_a_card_line_the_voice_does_not_say_is_flagged(short_valid_json,
     _, warned = parse_short_script(json.dumps(data), settings)
     assert any(w.startswith(f"{field} is not spoken word for word")
                for w in warned)
+
+
+# --------------------------------------------------------------------------
+# "Boeing Q0 revenue" (30 Oct 2026): a workbook's relative header in a script.
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("label", ["Q0", "Q-0", "FY-1", "FY0"])
+def test_a_relative_period_label_is_refused_with_the_fix(settings, label):
+    from pathlib import Path
+
+    raw = (Path(__file__).resolve().parents[1] / "fixtures" / "scripts"
+           / "short_ba_earnings.json").read_text("utf-8")
+    script = json.loads(raw)
+    script["headlines"][0]["text"] = f"Boeing {label} revenue $24.19B vs $24.37B consensus"
+    with pytest.raises(ScriptParseError) as err:
+        parse_short_script(json.dumps(script), settings)
+    msg = str(err.value)
+    assert f"“{label}”" in msg and "headlines[0]" in msg
+    assert "latest quarter" in msg
+
+
+@pytest.mark.parametrize("text", ["Boeing Q4 revenue", "Q3 FY26 revenue",
+                                  "FY25 free cash flow", "Q1-Q3 deliveries",
+                                  "FY21-FY25 revenue"])
+def test_a_real_period_name_is_not_caught(text):
+    from pipeline.models import relative_period_terms
+
+    assert relative_period_terms(text) == []

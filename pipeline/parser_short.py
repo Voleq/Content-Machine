@@ -23,11 +23,13 @@ from pipeline.models import (
     DELIVERY_TAG_TYPES,
     HOLDABLE_TAG_TYPES,
     SHORT_TAG_TYPES,
+    RELATIVE_PERIOD_FIX,
     ShortScript,
     VENDOR_WORDS,
     TagEvent,
     TagType,
     parse_scribble_payload,
+    relative_period_terms,
 )
 from pipeline.plate_tags import build_fill
 from pipeline.plates import load_plates
@@ -162,9 +164,8 @@ def _friendly_validation_error(err: ValidationError) -> str:
     return "Schema validation failed:\n" + "\n".join(f"  • {p}" for p in parts)
 
 
-def vendor_name_hits(script: ShortScript) -> list[str]:
-    """Fields that leak the data vendor's name — hard-blocked (§3)."""
-    hits: list[str] = []
+def _text_surfaces(script: ShortScript) -> dict[str, str]:
+    """Every field of a short that is spoken or drawn, by name."""
     surfaces = {
         "hook_text": script.hook_text,
         "audio_script": script.audio_script,
@@ -191,11 +192,20 @@ def vendor_name_hits(script: ShortScript) -> list[str]:
     # `audio_script` has been stripped of the tags that carried them.
     for i, e in enumerate(script.inline_events):
         surfaces[f"inline_events[{i}]"] = " ".join(str(v) for v in e.values.values())
-    for name, text in surfaces.items():
-        low = text.lower()
-        if any(w in low for w in VENDOR_WORDS):
-            hits.append(name)
-    return hits
+    return surfaces
+
+
+def vendor_name_hits(script: ShortScript) -> list[str]:
+    """Fields that leak the data vendor's name — hard-blocked (§3)."""
+    return [name for name, text in _text_surfaces(script).items()
+            if any(w in text.lower() for w in VENDOR_WORDS)]
+
+
+def relative_period_hits(script: ShortScript) -> list[tuple[str, str]]:
+    """`(field, term)` for every relative period label a short carries:
+    the "Q0" of "Boeing Q0 revenue", copied off a workbook header."""
+    return [(name, term) for name, text in _text_surfaces(script).items()
+            for term in relative_period_terms(text)]
 
 
 # Tag types a SHORT may carry that its renderer does not draw (D4). Delivery
@@ -521,6 +531,12 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             + ", ".join(leaks)
             + '. Data is "from the 10-K" — source unnamed. Fix and resend.'
         )
+    relative = relative_period_hits(script)
+    if relative:
+        name, term = relative[0]
+        where = ", ".join(dict.fromkeys(n for n, _ in relative))
+        raise ScriptParseError(
+            f"“{term}” in {where} {RELATIVE_PERIOD_FIX}")
 
     warnings: list[str] = list(inline_warnings)
     warnings.extend(_tag_warnings(script, settings))
