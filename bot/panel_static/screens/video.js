@@ -3,13 +3,13 @@
 // and acts only through the bot's own entry points: a button's callback data,
 // a command, a paste, an upload. Loaded after app.js and uses its helpers.
 
-const VID = { t: "", d: "", step: "", data: null, raw: {}, timer: 0, logTimer: 0 };
+const VID = { t: "", d: "", step: "", data: null, raw: {}, rest: {}, jobBox: null };
 const STEP_HELP = {
   data: "The workbook you filled in Capital IQ. Drop it here; the bot checks it before anything else.",
   angle: "LONG only: the bot's prompt asks your Claude chat for three angles. Paste the answer, then pick one.",
   write: "Paste the bot's prompt into your Claude chat, then paste the script it writes back here.",
   check: "Your script one sentence a row, with what the checks found beside it. Red stops Approve, yellow is worth a look. Click a sentence to change it; every check runs again when you save.",
-  proof: "A free full-size look with the free voice. Press n while it plays to note a fault at that moment.",
+  proof: "A free full-size render with a stand-in voice, to catch what looks wrong before anything is paid for. Press n while it plays to note a fault at that moment.",
   approve: "Approving fixes this exact script for the paid render. Nothing is spent yet.",
   voice: "The paid voice, as it landed. Redo one sentence, or teach it how a word is said.",
   render: "The final render. This is the step that spends money.",
@@ -31,24 +31,22 @@ function routeVideo() {
   const same = t === VID.t && d === VID.d;
   VID.t = t; VID.d = d; VID.step = step;
   showTab("video", false, true);
-  if (!same) { VID.data = null; VID.raw = {}; setKids($("#video-screen"), el("p", { class: "meta", text: "Opening…" })); }
+  if (!same) { VID.data = null; VID.raw = {}; VID.rest = {}; setKids($("#video-screen"), el("p", { class: "meta", text: "Opening…" })); }
   loadVideo(true);
-  clearInterval(VID.timer);
-  VID.timer = setInterval(() => loadVideo(false), 4000);
   return true;
 }
-function stopVideo() {
-  clearInterval(VID.timer); clearInterval(VID.logTimer);
-  VID.timer = 0; VID.logTimer = 0;
-}
+// The screen looks again every four seconds while it is open, one look at a
+// time (`every`, app.js); nothing to stop when it closes.
+function stopVideo() { VID.jobBox = null; }
+every(4000, () => (VID.t && !$("#tab-video").hidden ? loadVideo(false) : null));
 window.addEventListener("hashchange", () => { if (!$("#app").hidden) routeVideo(); });
 
 // Every paste, upload, command and button here names this video, in the
 // same request: the page made it active first and sent the action after,
 // and a tap in Telegram or another tab in between sent it to another video.
 const here = () => ({ ticker: VID.t, workdate: VID.d });
-const vRun = (text, btn, label = text) => act(label, () => post("/api/run", { text, video: here() }), btn);
-const vText = (text, btn, label) => act(label, () => post("/api/text", { text, video: here() }), btn);
+const vRun = (text, btn, label = text) => act(label, () => post("/api/run", { text, video: here(), origin: label }), btn);
+const vText = (text, btn, label) => act(label, () => post("/api/text", { text, video: here(), origin: label }), btn);
 
 function sendFile(file, url, origin) {
   return new Promise((resolve) => {
@@ -57,16 +55,15 @@ function sendFile(file, url, origin) {
     if (big) { failReply(box, new Error(big), origin); resolve(); return; }
     BUSY++;
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", url + (/[?&]t=/.test(url) ? "" : `&t=${encodeURIComponent(VID.t)}&d=${encodeURIComponent(VID.d)}`));
+    xhr.open("POST", url + (/[?&]t=/.test(url) ? "" : `&t=${encodeURIComponent(VID.t)}&d=${encodeURIComponent(VID.d)}`)
+      + `&o=${encodeURIComponent(origin)}`);
     xhr.setRequestHeader("X-Panel-Key", KEY);
     xhr.onloadend = () => {
-      BUSY--;
-      let data = {};
-      try { data = JSON.parse(xhr.responseText || "{}"); } catch { /* empty */ }
-      if (xhr.status === 200 && data.reply) fillReply(box, data.reply, origin);
-      else failReply(box, new Error(data.error || `upload failed (${xhr.status})`), origin);
-      refresh(true); loadVideo(true);
-      resolve();
+      sent(xhr, box, origin).finally(() => {
+        BUSY--;
+        refresh(true); loadVideo(true);
+        resolve();
+      });
     };
     xhr.send(file);
   });
@@ -121,16 +118,24 @@ function mainButton(text, onclick, cls = "primary", title = "") {
 }
 
 // -------------------------------------------------------------------- load
-async function loadVideo(force) {
+// Only the step on screen is asked for (`video_view(step=…)`): building all
+// ten every four seconds was most of what a busy bot was asked to do.
+const loadVideo = single(loadVideoNow);
+async function loadVideoNow(force) {
   if (!VID.t || document.hidden && !force) return;
   if ($("#tab-video").hidden) return;
+  const [t, d, want] = [VID.t, VID.d, VID.step || "now"];
   let data;
   try {
-    data = await api(`/api/video?t=${encodeURIComponent(VID.t)}&d=${encodeURIComponent(VID.d)}`);
+    data = await api(`/api/video?t=${encodeURIComponent(t)}&d=${encodeURIComponent(d)}&step=${encodeURIComponent(want)}`);
   } catch (e) {
-    setKids($("#video-screen"), empty("Could not open this video", e.message || String(e), "bad", "!"));
+    // A slow or missed look keeps what is on screen; the line under the top
+    // bar says the bot is slow. Only a video never opened says it failed.
+    if (!VID.data) setKids($("#video-screen"), empty("Could not open this video", e.message || String(e), "bad", "!"));
     return;
   }
+  // He moved on while this was asked for: the next look is his.
+  if (t !== VID.t || d !== VID.d || want !== (VID.step || "now")) return;
   const prev = VID.data;
   VID.data = data;
   if (data.error || !data.exists) {
@@ -143,8 +148,19 @@ async function loadVideo(force) {
   renderRail(step);
   renderHead();
   const raw = JSON.stringify(data[step]);
-  if (raw !== VID.raw[step] && (force || !panelBusy())) renderPanel(step);
+  if (raw === VID.raw[step]) return;
+  // A render under way changes every few seconds and nothing else does: its
+  // box is brought up to date where it is, so the player, a half-typed note
+  // and the scroll stay as they were.
+  const running = data[step]?.running;
+  if (running && VID.jobBox && VID.rest[step] === restOf(data[step])) {
+    VID.raw[step] = raw;
+    VID.jobBox.update(running);
+    return;
+  }
+  if (force || !panelBusy()) renderPanel(step);
 }
+const restOf = (d) => JSON.stringify(Object.assign({}, d, { running: null, progress: null, log: null, cancel: null, job: null }));
 
 // He is typing, has a line open, or is watching: a redraw would lose it.
 function panelBusy() {
@@ -199,7 +215,8 @@ function renderPanel(step) {
   const v = VID.data;
   const data = v[step] || {};
   VID.raw[step] = JSON.stringify(data);
-  clearInterval(VID.logTimer); VID.logTimer = 0;
+  VID.rest[step] = restOf(data);
+  VID.jobBox = null;
   const meta = v.steps.find((s) => s.id === step) || { title: step, status: "" };
   let built = { main: null, body: [] };
   if (data.error) {
@@ -213,7 +230,98 @@ function renderPanel(step) {
     el("div", { class: "ws-panel-head" },
       el("div", {}, el("h3", { text: meta.title }), el("p", { class: "meta", text: STEP_HELP[step] || "" })),
       el("div", { class: "ws-main" }, built.main)),
-    built.body);
+    howTo(step), built.body);
+}
+
+// ------------------------------------------------------- a render under way
+// The same box on the Proof and the Render step (`running` in the view): what
+// the render is doing in words, how far this stage is, how long it has run and
+// about how long is left, what waits ahead of it, its last log lines, and
+// Stop. His proof rendered for minutes with the step saying "No proof yet"
+// (30 Oct 2026).
+const RENDER_STAGES = {
+  short: [["tts", "Voice"], ["render", "Plan the shots"], ["dennis", "Dennis in 3D"], ["frames", "Put the frames together"], ["encode", "Encode + captions"]],
+  long: [["tts", "Voice"], ["storyboard", "Storyboard"], ["render", "Plan the shots"], ["dennis", "Dennis in 3D"], ["segments", "Encode the beats"]],
+};
+function phaseOf(p) {
+  if (["render", "proof", "draft"].includes(p.stage) && p.total) return "segments";
+  if (p.stage === "proof" || p.stage === "draft") return "after:tts";   // the stand-in voice is in
+  if (p.stage === "deliver") return "delivery";
+  return p.stage;
+}
+const RATES = new Map();          // a stage's pace, from the looks so far
+function stageLeft(key, done, total) {
+  const now = Date.now();
+  const r = RATES.get(key) || { t0: now, d0: done };
+  if (!RATES.has(key) || done < r.d0) { RATES.set(key, { t0: now, d0: done }); return null; }
+  const secs = (now - r.t0) / 1000;
+  if (secs < 10 || done <= r.d0) return null;
+  return ((total - done) * secs) / (done - r.d0);
+}
+function jobBox(r, what) {
+  const head = el("b", {});
+  const since = el("span", { class: "meta since" });
+  const words = el("p", { class: "stage-words" });
+  const stageBar = el("progress", { max: 100, value: 0, "aria-label": "This stage" });
+  const stageLine = el("div", { class: "meta" });
+  const allBar = el("progress", { max: 100, value: 0, "aria-label": "The whole render" });
+  const allLine = el("div", { class: "meta" });
+  const stages = el("ol", { class: "render-stages", "aria-label": "The render's stages" });
+  const ahead = el("p", { class: "banner" });
+  const log = el("pre", { class: "log" });
+  const stop = cbButtons([(r.cancel[0] || []).filter((b) => b.data.startsWith("j|")).map((b) => Object.assign({}, b, { text: "Stop the render 🚫" }))], {
+    local: (b, btn) => {
+      askConfirm(`Stop the ${what}?`, "It stops at the next frame. What is already drawn stays in the caches, so running it again picks up from there; nothing paid for is lost.", "Stop it")
+        .then((yes) => yes && callback(b.data, `Stop · ${VID.t}`, btn, here()));
+      return true;
+    } });
+  const box = el("div", { class: "progress-box running", "aria-live": "off" },
+    el("div", { class: "row between" }, el("div", {}, head, " ", since), stop),
+    words, el("div", { class: "stage-bar" }, stageBar, stageLine), stages,
+    el("div", { class: "stage-bar all" }, allBar, allLine), ahead,
+    el("details", { class: "log-box" }, el("summary", { text: "What it is doing: the last lines of its log" }), log));
+  box.update = (x) => {
+    const p = x.progress || {};
+    const job = x.job || {};
+    const final = /^render_(short|long)$/.test(job.kind);
+    const fmt = /long/.test(job.kind || "") ? "long" : "short";
+    const queued = job.status === "queued";
+    head.textContent = queued ? `The ${what} is queued` : `The ${what} is running`;
+    since.dataset.since = p.elapsed_s != null ? String(Date.now() - p.elapsed_s * 1000) : "";
+    words.textContent = p.words || job.detail || job.status || "";
+    const counted = p.total > 1;              // encoding is one step: words only
+    stageBar.hidden = !counted;
+    if (counted) stageBar.value = Math.round((p.done / p.total) * 100);
+    const left = counted && !queued ? stageLeft(`${job.id}|${p.stage}|${p.note}`, p.done, p.total) : null;
+    const unit = p.stage === "dennis" || p.stage === "frames" ? "frame" : p.stage === "encode" ? "step" : "beat";
+    stageLine.textContent = !counted ? "" : `${p.note ? `${p.note} · ` : ""}${unit} ${p.done.toLocaleString()} of ${p.total.toLocaleString()}` +
+      (left != null ? ` · about ${dur(left)} left${p.stage === "dennis" ? " on this shot" : " on this stage"}` : "");
+    allBar.value = p.pct || 0;
+    allLine.textContent = queued ? "" : `The whole ${what}: about ${Math.round(p.pct || 0)}%` + (p.eta_s != null ? `, roughly ${dur(p.eta_s)} to go` : "") +
+      ". The bar is a guess: drawing Dennis in 3D takes most of the time.";
+    allBar.hidden = queued;
+    const list = RENDER_STAGES[fmt].concat(final ? [["delivery", "Save the video"]] : []);
+    const phase = phaseOf(p);
+    const at = phase.startsWith("after:") ? list.findIndex(([k]) => k === phase.slice(6)) + 1 : list.findIndex(([k]) => k === phase);
+    setKids(stages, list.map(([k, label], i) => el("li", {
+      class: queued ? "" : i < at ? "done" : i === at ? "now" : "",
+      "aria-current": i === at && !queued ? "step" : null }, label)));
+    ahead.hidden = !queued;
+    ahead.textContent = !queued ? "" : (x.ahead || []).length
+      ? `One render at a time. Ahead of this one: ${x.ahead.map((j) => `${j.ticker} ${j.kind.replace(/^render_/, "").replace(/_/g, " ")} (${j.status}${j.detail ? `, ${j.detail}` : ""})`).join("; ")}. It starts when they finish.`
+      : "It starts in a moment.";
+    log.textContent = (x.log || []).join("\n") || "No log lines yet.";
+  };
+  box.update(r);
+  VID.jobBox = box;
+  return box;
+}
+// Once a second (app.js `tick`): how long the render has run.
+function tickVideo() {
+  $$("#ws-panel .since").forEach((n) => {
+    const t = Number(n.dataset.since);
+    n.textContent = t ? `· ${dur((Date.now() - t) / 1000)} so far` : "";
+  });
 }
 
 // ------------------------------------------------------------- the steps
@@ -468,11 +576,17 @@ function videoPlayer(url, chapters, onKey) {
 
 STEPS_UI.proof = (d) => {
   const body = [];
-  let main = cbButtons([d.render.map((b) => Object.assign({}, b, { text: d.url ? "Render the proof again ($0)" : "Render the free proof ($0)" }))], { nextRow: !d.url });
+  let main = d.running ? null : cbButtons([d.render.map((b) => Object.assign({}, b, { text: d.url ? "Render the proof again ($0)" : "Render the free proof ($0)" }))], { nextRow: !d.url });
+  if (d.running) body.push(jobBox(d.running, "proof"));
+  if (d.failed) {
+    body.push(el("div", { class: "banner bad", text: `The last proof failed: ${d.failed.error}` }),
+      el("details", { class: "log-box" }, el("summary", { text: "Its last log lines" }), el("pre", { class: "log", text: (d.failed.log || []).join("\n") })));
+  }
   if (!d.url) {
-    body.push(empty("No proof yet", "A proof is free: the real visuals at full size, with the free voice.", "", "▶"));
+    if (!d.running) body.push(empty("No proof yet", "A proof is free: the real visuals at full size, with the free voice.", "", "▶"));
     return { main, body };
   }
+  if (d.running) body.push(el("h4", { text: "The proof you have now (the new one replaces it when it is done)" }));
   const noteInput = el("input", { type: "text", placeholder: "What is wrong at this moment?", class: "grow" });
   const noteAt = el("span", { class: "meta", text: "" });
   const noteRow = el("div", { class: "row note-row", hidden: true }, noteAt, noteInput,
@@ -574,20 +688,9 @@ STEPS_UI.voice = (d) => {
 STEPS_UI.render = (d) => {
   const body = [];
   let main = null;
-  if (d.job) {
-    const p = d.progress || {};
-    body.push(el("div", { class: "progress-box" },
-      el("div", { class: "row between" }, el("b", { text: `${d.job.kind} · ${p.stage || d.job.status}` }),
-        el("span", { class: "meta", text: p.eta_s != null ? `about ${dur(p.eta_s)} left` : "" })),
-      el("progress", { max: 100, value: p.pct || 0, "aria-label": "Render progress" }),
-      el("div", { class: "meta", text: `${p.pct || 0}% · ${d.job.detail || d.job.status}` })));
-    const logBox = el("pre", { class: "log", text: (d.log || []).join("\n") || "No log lines yet." });
-    body.push(el("h4", { text: "What it is doing" }), logBox);
-    VID.logTimer = setInterval(async () => {
-      try { const r = await api(`/api/joblog?id=${encodeURIComponent(d.job.id)}&n=12`); logBox.textContent = r.lines.join("\n") || logBox.textContent; } catch { /* next tick */ }
-    }, 3000);
-    main = cbButtons([(d.cancel[0] || []).filter((b) => b.data.startsWith("j|")).map((b) => Object.assign({}, b, { text: "Stop the render 🚫" }))], {
-      local: (b, btn) => { askConfirm("Stop the render?", "What is already made is kept in the caches; a re-run picks up from there.", "Stop it").then((yes) => yes && callback(b.data, "Stop · " + VID.t, btn, here())); return true; } });
+  if (d.running) {
+    const proof = /proof|draft/.test(d.running.job.kind);
+    body.push(jobBox(d.running, proof ? "proof" : "render"));
   } else if (d.final_url) {
     const { video } = videoPlayer(d.final_url, []);
     body.push(el("p", { class: "ok-line", text: "The final is rendered." }), video);

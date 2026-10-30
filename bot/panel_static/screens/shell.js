@@ -70,8 +70,8 @@ function renderShell() {
     run.status === "running" ? el("span", { class: "meta", text: ` ${Math.round(p.pct || 0)}%${p.eta_s != null ? ` · ${dur(p.eta_s)} left` : ""}` }) : null,
     waiting > 0 ? el("span", { class: "meta", text: ` +${waiting}` }) : null);
   q.style.setProperty("--pct", `${p.pct || 0}%`);
-  q.title = `${run.kind} ${run.ticker} — ${run.detail || run.status}. Click to open it`;
-  q.onclick = () => openVideo(run.ticker, run.workdate, "render");
+  q.title = `${run.ticker} ${run.kind.replace(/^render_/, "").replace(/_/g, " ")}: ${p.words || run.detail || run.status}. Click to open it`;
+  q.onclick = () => openVideo(run.ticker, run.workdate, /proof/.test(run.kind) ? "proof" : "render");
 }
 
 // ------------------------------------------------------------- next up

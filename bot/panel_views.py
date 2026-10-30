@@ -370,6 +370,17 @@ def _step_proof(v: _Video) -> dict:
     out["notes"] = proof_review.load_notes(v.ws.path, v.fmt)
     out["faults"] = proof_review.fault_list(out["notes"])
     out["checks"] = _proof_checks(v, proof)
+    # A proof under way: said here, where he pressed for it, with its stage
+    # and a Stop. The step said "No proof yet" and offered the button again
+    # the whole time one rendered (30 Oct 2026).
+    job = v.st.active_job
+    out["running"] = (_job_view(v, job) if job and job["kind"].startswith("render_proof")
+                      else None)
+    if out["running"] is None:
+        last = next((j for j in v.st.jobs if j["kind"].startswith("render_proof")), None)
+        if last and last["status"] == "failed":
+            out["failed"] = {"error": last["error"],
+                             "log": _job_log(v, last["id"])}
     return out
 
 
@@ -428,18 +439,48 @@ def _step_voice(v: _Video) -> dict:
     return out
 
 
-def _step_render(v: _Video) -> dict:
-    from pipeline.jobs import job_log, progress
+def _job_log(v: _Video, job_id: str, n: int = 12) -> list[str]:
+    from pipeline.jobs import job_log
 
+    return job_log(v.settings, job_id or "", n)
+
+
+def _job_view(v: _Video, job: dict) -> dict:
+    """A queued or running job as the page shows it wherever it is asked
+    for: its stage in words and how far, its last log lines, a Stop, and,
+    while it waits, what runs ahead of it."""
+    from pipeline.jobs import JobStore, progress
+
+    out = {"job": job, "progress": progress(job, v.st.est_render_min),
+           "log": _job_log(v, job["id"]),
+           "cancel": keyboard_rows(kb.queued_keyboard(v.ws.ticker, v.ws.workdate)),
+           "ahead": []}
+    if job["status"] == "queued":
+        # One render at a time, oldest first (`RenderJobQueue`): what runs
+        # now, and what was queued before this one.
+        store = getattr(v.core.queue, "store", None) or JobStore(v.settings)
+        live = sorted((j for j in store.all()
+                       if j.status.value in ("queued", "running")),
+                      key=lambda j: (j.status.value != "running", j.created_at))
+        for j in live:
+            if j.id == job["id"]:
+                break
+            out["ahead"].append({"ticker": j.ticker, "kind": j.kind.value,
+                                 "status": j.status.value, "detail": j.detail})
+    return out
+
+
+def _step_render(v: _Video) -> dict:
     job = v.st.active_job
     last = v.st.jobs[0] if v.st.jobs else None
     out: dict = {"job": job, "progress": None, "last": last,
                  "final_url": v.link(v.st.renders.get("final")),
-                 "log": job_log(v.settings, (job or last or {}).get("id", ""), 12),
-                 "cancel": [], "render": []}
+                 "log": _job_log(v, (job or last or {}).get("id", "")),
+                 "cancel": [], "render": [], "running": None}
     if job:
-        out["progress"] = progress(job, v.st.est_render_min)
-        out["cancel"] = keyboard_rows(kb.queued_keyboard(v.ws.ticker, v.ws.workdate))
+        out["running"] = _job_view(v, job)
+        out.update(progress=out["running"]["progress"], log=out["running"]["log"],
+                   cancel=out["running"]["cancel"])
     elif v.st.approved and "final" not in v.st.renders:
         code = kb.FMT_CODES.get(v.fmt, "s")
         price = f" ~${v.st.est_usd:.2f}" if v.st.est_usd else ""
@@ -588,7 +629,8 @@ def current_step(st: VideoState) -> str:
     if st.report_ok is False:
         return "check"
     if st.active_job:
-        return "render"
+        # a proof under way is shown where he asked for it
+        return "proof" if st.active_job["kind"].startswith("render_proof") else "render"
     if not st.approved and "final" not in st.renders:
         return "approve"
     if "final" not in st.renders:
@@ -623,9 +665,14 @@ def _status(step: str, st: VideoState, now: str, has_voice: bool) -> str:
     return "todo"
 
 
-def _summary(step: str, st: VideoState, data: dict) -> str:
-    if "error" in data:
+def _summary(step: str, st: VideoState, data: dict | None,
+             has_voice: bool = False) -> str:
+    """The rail's line under a step. `data` is None for a step this view
+    did not build (`video_view(step=…)`): the line then comes from the
+    video's state alone."""
+    if data is not None and "error" in data:
         return "could not be read"
+    data = data or {}
     if step == "data":
         return (f"{st.data_file} · as of {st.data_as_of}" if st.data_file
                 else "no workbook yet")
@@ -643,7 +690,10 @@ def _summary(step: str, st: VideoState, data: dict) -> str:
         return (f"{st.blocking} blocking · {st.warnings} warnings"
                 if st.blocking else f"clean · {st.warnings} warnings")
     if step == "proof":
-        return "rendered" if data.get("url") else ""
+        job = st.active_job
+        if job and job["kind"].startswith("render_proof"):
+            return f"{job['status']}…"
+        return "rendered" if ("proof" in st.renders or "draft" in st.renders) else ""
     if step == "approve":
         if st.approved:
             return "approved"
@@ -652,11 +702,13 @@ def _summary(step: str, st: VideoState, data: dict) -> str:
         n = len(data.get("sentences") or [])
         if n:
             return f"{n} sentences"
+        if has_voice:
+            return "made"
         return "made when the render starts" if st.approved else ""
     if step == "render":
         job = st.active_job
-        if job:
-            return f"{job['kind']} · {job['detail'] or job['status']}"
+        if job and not job["kind"].startswith("render_proof"):
+            return f"{job['status']}…"
         return "final rendered" if "final" in st.renders else ""
     if step == "upload":
         up = st.uploaded
@@ -676,8 +728,26 @@ def is_video_key(ticker: str, workdate: str) -> bool:
                 and _WORKDATE_RE.match(workdate))
 
 
-def video_view(panel, ticker: str, workdate: str) -> dict:
-    """Everything the workspace screen shows about one video."""
+def _has_voice(v: _Video) -> bool:
+    if not v.fmt or not hasattr(v.core, "_voice_of"):
+        return False
+    try:
+        _script, _text, _events, cdir = v.core._voice_of(v.ws, v.fmt)
+    except Exception:                                # noqa: BLE001
+        return False
+    return cdir is not None and (Path(cdir) / "audio.m4a").is_file()
+
+
+def video_view(panel, ticker: str, workdate: str,
+               step: str | None = None) -> dict:
+    """What the workspace screen shows about one video.
+
+    `step` is the one step the page is showing ("now" or "" for the one the
+    video waits on): only that step is built, the rest of the rail coming
+    from the video's state. The page asks every few seconds, and building
+    all ten each time (the script parsed, the claims listed, the cold read,
+    the voice's words) was most of what a render's busy bot was asked to do
+    (30 Oct 2026). None builds every step."""
     settings = panel.settings
     if not is_video_key(ticker, workdate):
         return {"error": "no such video", "exists": False, "steps": []}
@@ -687,21 +757,32 @@ def video_view(panel, ticker: str, workdate: str) -> dict:
     out: dict = {"ticker": ws.ticker, "workdate": ws.workdate,
                  "exists": ws.exists, "state": st.to_json()}
     now = current_step(st)
+    want = None if step is None else (step if step in _BUILDERS else now)
     steps = []
-    for step, title in STEPS:
+    has_voice = False
+    for name, title in STEPS:
+        data: dict | None
         if not ws.exists:
-            data: dict = {}
+            data = {}
+        elif want is not None and name != want:
+            data = None
         else:
             try:
-                data = _BUILDERS[step](v)
+                data = _BUILDERS[name](v)
             except Exception as e:                   # noqa: BLE001
-                log.exception("panel view %s %s %s", ticker, workdate, step)
+                log.exception("panel view %s %s %s", ticker, workdate, name)
                 data = {"error": f"{type(e).__name__}: {e}"}
-        out[step] = data
-        status = _status(step, st, now,
-                         bool(out.get("voice", {}).get("audio_url")))
-        steps.append({"id": step, "title": title, "status": status,
-                      "summary": _summary(step, st, data) if ws.exists else ""})
+        if data is not None:
+            out[name] = data
+        if name == "voice":
+            has_voice = (bool(data.get("audio_url")) if data is not None
+                         else ws.exists and _has_voice(v))
+        status = _status(name, st, now, name == "voice" and has_voice)
+        steps.append({"id": name, "title": title, "status": status,
+                      "summary": (_summary(name, st, data,
+                                           name == "voice" and has_voice)
+                                  if ws.exists else "")})
     out["steps"] = steps
     out["now"] = now
+    out["step"] = want or "all"
     return out

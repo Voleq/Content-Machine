@@ -727,6 +727,44 @@ def test_a_reply_the_page_left_before_lands_in_activity(panel, core, monkeypatch
     assert "Traceback" not in capsys.readouterr().err
 
 
+def test_a_slow_action_answers_at_once_and_the_page_looks_again(panel, core,
+                                                               monkeypatch):
+    """A paste that took minutes held the request, and with it one of the
+    browser's six connections to the bot, the whole time (30 Oct 2026)."""
+    import time
+
+    from bot import panel as panel_mod
+
+    monkeypatch.setattr(panel_mod, "QUICK_S", 0.1)
+    gate = threading.Event()
+
+    async def slow(*_a, say=None, **_k):
+        await say(Reply("⏳ planning the cut…"))
+        while not gate.is_set():
+            await asyncio.sleep(0.02)
+        return Reply("✅ the plan is in")
+
+    monkeypatch.setattr(cmds, "run_command", slow)
+    t = time.monotonic()
+    status, _h, body = panel("/api/run", {"text": "/help", "origin": "Help"})
+    assert status == 202 and time.monotonic() - t < 2
+    pending = json.loads(body)["pending"]
+    assert pending["origin"] == "Help" and pending["done"] is False
+    # a reloaded page finds it
+    opened = json.loads(panel("/api/action")[2])["actions"]
+    assert [a["id"] for a in opened] == [pending["id"]]
+    gate.set()
+    for _ in range(100):
+        got = json.loads(panel(f"/api/action?id={pending['id']}")[2])["action"]
+        if got["done"]:
+            break
+        time.sleep(0.05)
+    assert got["reply"]["text"] == "✅ the plan is in"
+    assert got["notes"] == ["⏳ planning the cut…"]
+    assert json.loads(panel("/api/action?id=nope")[2])["action"] is None
+    assert panel("/api/action", key_="")[0] == 401
+
+
 def test_home_shows_this_week_and_the_running_render(panel, core):
     from datetime import datetime, timedelta, timezone
 
@@ -749,7 +787,7 @@ def test_home_shows_this_week_and_the_running_render(panel, core):
     assert [w["video_id"] if "video_id" in w else w["title"] for w in state["week"]] == ["soon"]
     assert state["week"][0]["pending"] is True
     job = next(j for j in state["jobs"] if j["id"] == "abcdef1234")
-    assert job["progress"]["stage"] == "render" and job["progress"]["pct"] == 54.0
+    assert job["progress"]["stage"] == "render" and job["progress"]["pct"] == 85.5
 
 
 def test_the_panel_runs_commands_through_the_registry(panel, core):

@@ -2292,6 +2292,8 @@ def _render_long(
     rooms_shown: dict[int, object] = {}
 
     for i, seg in enumerate(segments):
+        if performer is not None:
+            performer.at = ("beat", i + 1, len(segments))
         room_now[0] = seg.start
         seg_len = seg.length
         seg_inputs = []

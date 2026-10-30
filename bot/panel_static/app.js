@@ -93,9 +93,30 @@ function scrollTo(node) {
 }
 
 // --------------------------------------------------------------------- api
+// How the bot is answering, for the line under the top bar. A render runs in
+// the bot's own process and slows every answer; the page said nothing and
+// looked frozen (his "it gets stuck", 30 Oct 2026).
+const LINK = { tookMs: 0, fails: 0, open: new Set() };   // open: when each unanswered request went
+const GET_TIMEOUT_MS = 25000;
 async function api(path, opts = {}) {
   const headers = Object.assign({ "X-Panel-Key": KEY }, opts.headers || {});
-  const res = await fetch(path, Object.assign({}, opts, { headers }));
+  // A look that never comes back must not hold its poller for ever.
+  const stop = new AbortController();
+  const timer = setTimeout(() => stop.abort(), opts.timeout || GET_TIMEOUT_MS);
+  const t0 = { at: Date.now() };
+  LINK.open.add(t0);
+  let res;
+  try {
+    res = await fetch(path, Object.assign({ signal: stop.signal }, opts, { headers }));
+  } catch (e) {
+    LINK.fails++;
+    renderLink();
+    throw new Error(e.name === "AbortError" ? "the bot did not answer in time" : "the bot could not be reached");
+  } finally {
+    clearTimeout(timer);
+    LINK.open.delete(t0);
+  }
+  LINK.tookMs = Date.now() - t0.at; LINK.fails = 0;
   if (res.status === 401) { showLogin(); throw new Error("the panel key is missing or wrong"); }
   let data = {};
   try { data = await res.json(); } catch { /* empty */ }
@@ -103,8 +124,58 @@ async function api(path, opts = {}) {
   return data;
 }
 const post = (path, body) => api(path, {
-  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), timeout: 120000,
 });
+
+function renderLink() {
+  const box = $("#link");
+  if (!box || !STATE) return;
+  // how long the oldest request still out has waited
+  const quiet = Math.max(0, ...[...LINK.open].map((t) => (Date.now() - t.at) / 1000));
+  let tone = "", text = "";
+  if (LINK.fails >= 2) {
+    tone = "bad";
+    text = `Can't reach the bot (${LINK.fails} tries in a row). Is it running on the render box? This page keeps trying on its own.`;
+  } else if (LINK.tookMs > 4000 || quiet > 8) {
+    tone = "warn";
+    text = (quiet > 8 ? `The bot has not answered for ${Math.round(quiet)} s` : `The bot is slow to answer: the last answer took ${Math.round(LINK.tookMs / 1000)} s`) +
+      ". When a render is running it shares the computer with the bot; the page keeps up, just slower.";
+  }
+  box.hidden = !tone;
+  box.className = `link-state ${tone}`;
+  $("#link-text").textContent = text;
+}
+
+// ------------------------------------------------------------------ polls
+// ONE REQUEST AT A TIME PER POLL. Every poll used to fire on a timer whether
+// or not its last request had come back: on a busy bot they piled up, and a
+// browser opens six connections to one address, so a click waited behind
+// them and the page looked stuck (30 Oct 2026). `single(fn)` runs fn once at
+// a time and once more after if it was asked for meanwhile; `every` waits for
+// a round to finish before it starts the clock on the next.
+function single(fn) {
+  let running = null;
+  let again = null;
+  async function go(args) {
+    try { return await fn(...args); } finally {
+      running = null;
+      if (again) { const a = again; again = null; run(...a); }
+    }
+  }
+  function run(...args) {
+    if (running) { again = args; return running; }
+    running = go(args);
+    return running;
+  }
+  return run;
+}
+function every(ms, fn) {
+  const loop = async () => {
+    try { if (!document.hidden) await fn(); } catch { /* the next round tries again */ }
+    setTimeout(loop, ms);
+  };
+  setTimeout(loop, ms);
+}
 
 // ------------------------------------------------------------------ login
 function showLogin() {
@@ -157,10 +228,12 @@ async function start() {
   FEED_SEQ = feed.seq;
   renderFeed();
   restoreAsk();
-  setInterval(refresh, 5000);
-  setInterval(pollFeed, 2500);
+  restoreActions();
+  every(5000, refresh);
+  every(2500, pollFeed);
   // "2 min ago" has to keep moving when the state itself has not.
   setInterval(() => { if (STATE && !document.hidden) keepFocus(renderJobs); }, 60000);
+  setInterval(tick, 1000);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) { refresh(); pollFeed(); }
   });
@@ -371,11 +444,14 @@ function foldReplies(fold, remember = true) {
 $("#fold-replies").addEventListener("click", () => foldReplies(!$("#app").classList.contains("no-replies")));
 if (readStore(FOLD_STORE)) foldReplies(true);
 
-function addReply(origin) {
+function addReply(origin, startedAt = Date.now()) {
   $("#replies .empty")?.remove();
   if ($("#app").classList.contains("no-replies")) foldReplies(false, false);
-  const box = el("div", { class: "reply pending", "aria-busy": "true" },
+  const box = el("div", { class: "reply pending", "aria-busy": "true", "data-started": String(startedAt) },
     originButton(el("span", { text: origin }), el("span", { class: "working", text: "working…" })),
+    el("ul", { class: "said", "aria-label": "What the bot says while it works" }),
+    el("p", { class: "wait-hint meta", hidden: true,
+      text: "Still working. The bot carries on even if you reload or leave this page: the answer lands here, or in Activity under Replies." }),
     el("pre", { class: "text" }));
   $("#replies").prepend(box);
   foldOlder();
@@ -423,8 +499,11 @@ async function act(origin, fn, btn) {
   const box = addReply(origin);
   BUSY++;
   try {
-    const data = await fn();
-    fillReply(box, data.reply, origin);
+    let data = await fn();
+    // Slow: the bot answered with the action's id, and goes on with it.
+    if (data.pending) data = await waitFor(data.pending, box, origin);
+    if (data.error) throw new Error(data.error);
+    fillReply(box, data.reply || { text: "Done." }, origin);
     return !/^\s*(⛔|💥)/u.test(data.reply?.text || "");
   } catch (e) {
     failReply(box, e, origin);
@@ -441,17 +520,19 @@ async function act(origin, fn, btn) {
 
 // `video` ({ticker, workdate}) is the one the action is for: the bot runs it
 // there, whatever Telegram or another tab makes active meanwhile.
-const runCommand = (text, btn, video) => act(text, () => post("/api/run", video ? { text, video } : { text }), btn);
+const runCommand = (text, btn, video) => act(text, () => post("/api/run", video ? { text, video, origin: text } : { text, origin: text }), btn);
 // A reply is labelled with the button that was tapped, and the video it is
 // about when the button does not say.
 function callback(data, label, btn, video) {
   const ticker = data.split("|").find((p) => /^[A-Z0-9.\-]{1,15}$/.test(p) && /[A-Z]/.test(p)) || "";
   const named = ticker && label.includes(ticker);
-  return act(named || !ticker ? label : `${label} · ${ticker}`, () => post("/api/callback", video ? { data, video } : { data }), btn);
+  const origin = named || !ticker ? label : `${label} · ${ticker}`;
+  return act(origin, () => post("/api/callback", video ? { data, video, origin } : { data, origin }), btn);
 }
 
 // ------------------------------------------------------------------- state
-async function refresh(force = false) {
+const refresh = single(refreshNow);
+async function refreshNow(force = false) {
   if (document.hidden && STATE && !force) return;   // a background tab polls nothing
   let next;
   try {
@@ -581,7 +662,7 @@ function renderSummary() {
 
   const jobs = STATE.jobs.filter((j) => j.status === "running" || j.status === "queued");
   const run = jobs.find((j) => j.status === "running");
-  const prog = run && /(\d+)\s*\/\s*(\d+)/.exec(run.detail || "");
+  const prog = run?.progress;
   const uploads = items.filter((i) => i.section === "upload");
 
   const s = STATE.spend;
@@ -597,9 +678,9 @@ function renderSummary() {
     tile("waiting", "Waiting on you", waiting.length, detail,
       waiting.length ? (hot ? "bad" : "accent") : "", () => jump($("#inbox-h"))),
     tile("rendering", "Rendering", jobs.length,
-      run ? `${run.ticker} ${prog ? `${prog[1]}/${prog[2]}` : run.detail || "running"}` : (jobs.length ? "queued" : "queue idle"),
+      run ? `${run.ticker}: ${prog ? prog.words.toLowerCase() : run.detail || "running"}` : (jobs.length ? "queued" : "queue idle"),
       jobs.length ? "warn" : "", () => jump($("#queue-h")),
-      prog ? el("div", { class: "meter warn" }, el("i", { style: `width:${Math.round((prog[1] / prog[2]) * 100)}%` })) : null),
+      prog ? el("div", { class: "meter warn" }, el("i", { style: `width:${Math.round(prog.pct)}%` })) : null),
     tile("upload", "Ready to upload", uploads.length,
       uploads.map((u) => u.ticker).join(", ") || "nothing rendered and waiting",
       uploads.length ? "ok" : "", () => jump($("#inbox .section-title[data-s=upload]") || $("#inbox-h"))),
@@ -696,18 +777,20 @@ function renderJobs() {
   STATE.videos.forEach((v) => v.media.forEach((m) => media.set(`${v.ticker}@${v.workdate}/${m.name}`, m)));
   const rows = shown.map((j) => {
     const active = j.status === "running" || j.status === "queued";
-    const prog = /(\d+)\s*\/\s*(\d+)/.exec(j.detail || "");
+    const p = j.progress;
     const kind = j.kind.replace(/^render_/, "").replace(/_/g, " ");
     const date = notToday(j.workdate);
     const file = j.link ? j.link.split("/").pop() : "";
     const m = file && media.get(`${j.ticker}@${j.workdate}/${file}`);
+    // what it is doing in words, and how far: "Drawing Dennis in 3D · frame 40 of 91"
+    const doing = p ? `${p.words}${p.total != null ? ` · ${p.done.toLocaleString()} of ${p.total.toLocaleString()}` : ""}${p.note ? ` · ${p.note}` : ""}` : j.detail;
     return el("div", { class: "job" },
       el("span", { class: `job-status ${j.status}`, text: j.status }),
       el("div", { class: "what" },
         el("div", {}, el("b", { text: j.ticker }), ` ${kind}`, date ? el("span", { class: "meta", text: `  ${date}` }) : null),
-        prog ? el("div", { class: "bar", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": prog[2], "aria-valuenow": prog[1], "aria-label": `${j.ticker} ${kind}` },
-          el("i", { style: `width:${Math.round((prog[1] / prog[2]) * 100)}%` })) : null,
-        j.detail ? el("div", { class: "meta", text: j.detail }) : null,
+        p && j.status === "running" ? el("div", { class: "bar", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(Math.round(p.pct)), "aria-label": `${j.ticker} ${kind}` },
+          el("i", { style: `width:${Math.round(p.pct)}%` })) : null,
+        doing ? el("div", { class: "meta", text: doing }) : null,
         j.status === "failed" && j.error ? el("div", { class: "err", text: j.error }) : null,
         j.status === "done" && file ? el("div", { class: "meta", text: file }) : null),
       el("time", { datetime: j.updated_at, title: when(j.updated_at), text: ago(j.updated_at) }),
@@ -864,7 +947,7 @@ $("#send-paste").addEventListener("click", (e) => {
   $("#paste").readOnly = true;
   // the video the label names, not whichever is active when it arrives
   const video = STATE?.active ? { ticker: STATE.active.ticker, workdate: STATE.active.workdate } : null;
-  act(label, () => post("/api/text", video ? { text, video } : { text }), e.currentTarget).then((ok) => {
+  act(label, () => post("/api/text", video ? { text, video, origin: label } : { text, origin: label }), e.currentTarget).then((ok) => {
     $("#paste").readOnly = false;
     if (ok) $("#paste").value = "";
   });
@@ -891,21 +974,87 @@ function upload(file) {
   $("#drop").setAttribute("aria-disabled", "true");
   BUSY++;
   const xhr = new XMLHttpRequest();
-  xhr.open("POST", `/api/upload?name=${encodeURIComponent(file.name)}` +
+  xhr.open("POST", `/api/upload?name=${encodeURIComponent(file.name)}&o=${encodeURIComponent(origin)}` +
     (a ? `&t=${encodeURIComponent(a.ticker)}&d=${encodeURIComponent(a.workdate)}` : ""));
   xhr.setRequestHeader("X-Panel-Key", KEY);
   xhr.upload.onprogress = (e) => { if (e.lengthComputable) bar.value = e.loaded / e.total; };
   xhr.onloadend = () => {
-    BUSY--;
     bar.hidden = true;
     $("#drop").removeAttribute("aria-disabled");
-    let data = {};
-    try { data = JSON.parse(xhr.responseText || "{}"); } catch { /* empty */ }
-    if (xhr.status === 200 && data.reply) fillReply(box, data.reply, origin);
-    else failReply(box, new Error(data.error || `upload failed (${xhr.status})`), origin);
-    refresh(true);
+    sent(xhr, box, origin).finally(() => { BUSY--; refresh(true); });
   };
   xhr.send(file);
+}
+
+// A file's answer: at once, or, when the bot is slow with it, by its id.
+async function sent(xhr, box, origin) {
+  let data = {};
+  try { data = JSON.parse(xhr.responseText || "{}"); } catch { /* empty */ }
+  if (xhr.status === 202 && data.pending) data = await waitFor(data.pending, box, origin);
+  else if (xhr.status !== 200) data = { error: data.error || (xhr.status ? `upload failed (${xhr.status})` : "the bot could not be reached") };
+  if (data.error) failReply(box, new Error(data.error), origin);
+  else fillReply(box, data.reply || { text: "Done." }, origin);
+}
+
+// ---------------------------------------------------------------- pending
+// An action the bot is still on (`Panel.act`): its box says for how long and
+// what the bot has said so far, and is filled when a look by its id finds it
+// done. A page opened while one runs picks it up.
+const PENDING = new Map();        // id -> { box, origin, resolve }
+let ACT_TIMER = 0;                // one look-again at a time, however many wait
+function waitFor(pending, box, origin) {
+  box.dataset.started = String(Date.now() - (pending.seconds || 0) * 1000);
+  showSaid(box, pending.notes);
+  return new Promise((resolve) => {
+    PENDING.set(pending.id, { box, origin, resolve });
+    pollActions();
+  });
+}
+const pollActions = single(async () => {
+  for (const [id, p] of [...PENDING]) {
+    let a;
+    try { a = (await api(`/api/action?id=${encodeURIComponent(id)}`)).action; } catch { continue; }
+    if (!a) {
+      PENDING.delete(id);
+      p.resolve({ error: "The bot was restarted while this ran, and it did not finish. Run it again." });
+      continue;
+    }
+    showSaid(p.box, a.notes);
+    if (a.done) { PENDING.delete(id); p.resolve(a); }
+  }
+  clearTimeout(ACT_TIMER);
+  if (PENDING.size) ACT_TIMER = setTimeout(pollActions, 1500);
+});
+function showSaid(box, notes) {
+  const list = box.querySelector(".said");
+  if (!list || !notes) return;
+  setKids(list, notes.map((n) => el("li", { text: n.split("\n")[0] })));
+}
+async function restoreActions() {
+  let open = [];
+  try { open = (await api("/api/action")).actions || []; } catch { return; }
+  open.forEach((a) => {
+    const box = addReply(a.origin || "An action", Date.now() - a.seconds * 1000);
+    BUSY++;
+    waitFor(a, box, a.origin).then((done) => {
+      if (done.error) failReply(box, new Error(done.error), a.origin);
+      else fillReply(box, done.reply || { text: "Done." }, a.origin);
+    }).finally(() => { BUSY--; refresh(true); });
+  });
+}
+
+// Once a second: how long each waiting action has run, and how the bot is
+// answering.
+function tick() {
+  $$("#replies .reply.pending").forEach((box) => {
+    const s = Math.round((Date.now() - Number(box.dataset.started || Date.now())) / 1000);
+    const w = box.querySelector(".working");
+    if (w) w.textContent = s < 2 ? "working…" : `working… ${s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${s % 60} s`}`;
+    const hint = box.querySelector(".wait-hint");
+    if (hint) hint.hidden = s < 6;
+  });
+  if (typeof tickVideo === "function") tickVideo();
+  renderLink();
 }
 $("#file").addEventListener("change", (e) => { const f = e.target.files[0]; if (f) upload(f); e.target.value = ""; });
 const drop = $("#drop");
@@ -1086,7 +1235,8 @@ $("#feed-filter").addEventListener("click", (e) => {
   renderFeed();
 });
 
-async function pollFeed() {
+const pollFeed = single(pollFeedNow);
+async function pollFeedNow() {
   if (document.hidden) return;
   try {
     const data = await api(`/api/feed?since=${FEED_SEQ}`);

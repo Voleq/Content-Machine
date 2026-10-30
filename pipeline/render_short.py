@@ -1736,7 +1736,8 @@ def perform_3d(result: BuildResult, reg, words, settings, *, aspect: str,
     fps = performer.fps
     done: list[dict] = []
     try:
-        for h in hosts:
+        for k, h in enumerate(hosts, 1):
+            performer.at = ("shot", k, len(hosts))
             room = rooms[h.name]
             box = _scaled(room, scale)
             shot = host_shot(reg, h.entry_key)
@@ -1852,8 +1853,12 @@ def render_frames(result: BuildResult, resolver, duration: float,
     ordered = [_scaled(l, scale)
                for l in sorted(result.layers, key=lambda l: (l.z, l.t_start))]
     lost: dict[str, int] = {}
+    from pipeline.jobs import report
+
     try:
         for i in range(n):
+            # where the page's bar is, and where a Stop lands
+            report("frames", i, n)
             t = i / FPS
             canvas = Image.new("RGBA", (w, h), (*paper, 255))
             for layer in ordered:
@@ -1887,6 +1892,7 @@ def render_frames(result: BuildResult, resolver, duration: float,
         err_file.unlink(missing_ok=True)
     if rc != 0:
         raise RenderError(f"encode failed ({rc}): {err[-800:]}")
+    report("frames", n, n)
     render_frames.last_text_overflow = dict(lost)     # type: ignore[attr-defined]
     render_frames.last_faces = dict(face_reports)     # type: ignore[attr-defined]
     return out_video
@@ -2336,8 +2342,12 @@ def _render_short(script, tts, workspace: Path, settings, *,
         duration=duration, windows=bands), encoding="utf-8")
     # Always run, captions or not: the frames' file is lossless, and this is
     # the encode that makes the picture the viewer gets.
+    from pipeline.jobs import report
+
+    report("encode", 0, 1)
     silent = final_encode(silent, workdir / "video.mp4", settings,
                           captions=ass if spoken else None)
+    report("encode", 1, 1)
 
     # Write beside the target and `os.replace` into position (D2). Muxing
     # straight over the existing file meant any failure past this point left

@@ -51,8 +51,12 @@ log = logging.getLogger(__name__)
 
 STATIC = Path(__file__).resolve().parent / "panel_static"
 # A paste or an angle pick can take minutes (the plan fetches clips, the
-# gates call the model); an upload can be a long clip. The page waits.
-ACTION_TIMEOUT_S = 20 * 60
+# gates call the model). The request waits this long for the answer and
+# then hands the page the action's id to look again by: a request held for
+# minutes held one of the six connections a browser opens to one address,
+# and a few of them froze every other click on the page (his "it gets
+# stuck", 30 Oct 2026).
+QUICK_S = 3.0
 
 
 def panel_token(settings) -> str:
@@ -123,6 +127,8 @@ class Panel:
         self.roots = [Path(r).resolve() for r in roots]
         self.asks: dict[str, dict] = {}     # the page's questions, newest last
         self._asks_lock = threading.Lock()
+        self.actions: dict[str, dict] = {}  # the page's actions, newest last
+        self._acts_lock = threading.Lock()
 
     # ---- the page's questions
     # A question runs on its own thread, not on the page's request: the local
@@ -168,40 +174,114 @@ class Panel:
                     "seconds": round((done or now) - entry["started"]),
                     "answered_ago": None if done is None else round(now - done)}
 
-    # ---- the bridge to the bot's loop
-    def run(self, coro, timeout: float = ACTION_TIMEOUT_S,
-            video: tuple[str, str] | None = None):
-        """The action's reply, or TimeoutError after `timeout`. The page
-        then says the result will appear in Activity, so it is put there
-        when the action does finish: a long's upload outlasts the wait,
-        and its link was thrown away (scan, 24 Oct 2026).
+    # ---- the page's actions
+    # Every button, command, paste and upload runs on the bot's loop as it
+    # always did. The request waits `QUICK_S` for the answer; a slower one
+    # answers with the action's id, and the page looks again by it
+    # (`GET /api/action`) while the action carries on. What the bot says on
+    # the way ("⏳ re-checking…") is kept on the action, so the page shows it
+    # where it waits. An answer no page came back for goes to Activity.
+    ACTIONS_KEPT = 40
+    UNCLAIMED_S = 15.0          # a finished answer no page took, to Activity
 
-        `video` is the one the page named: the action runs on it whatever
-        is made active elsewhere while it runs."""
+    def act(self, make, origin: str = "", video: tuple[str, str] | None = None,
+            quick: float | None = None) -> dict:
+        """`{"reply": Reply}` when the action answers within `quick`, or
+        `{"pending": view}`. `make(say)` is the action's coroutine, given
+        where to say what it is doing; `video` is the one the page named,
+        which the action runs on whatever is made active meanwhile. An
+        action that raised within `quick` raises here."""
+        entry = {"id": secrets.token_hex(6), "origin": origin[:200],
+                 "started": time.time(), "finished": None, "reply": None,
+                 "error": None, "notes": [], "seen": time.time(),
+                 "claimed": False}
+
+        async def say(reply: Reply) -> None:
+            # Activity keeps it, as before; the waiting page shows it too.
+            self.feed.add("reply", reply.text, files=reply.files,
+                          keyboard=reply.keyboard)
+            with self._acts_lock:
+                entry["notes"] = (entry["notes"] + [reply.text])[-5:]
+
+        coro = make(say)
         if video is not None:
             coro = _on_video(coro, video)
+        with self._acts_lock:
+            self.actions[entry["id"]] = entry
+            while len(self.actions) > self.ACTIONS_KEPT:
+                self.actions.pop(next(iter(self.actions)))
         fut = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        fut.add_done_callback(lambda f: self._finished(entry, f))
         try:
-            return fut.result(timeout)
+            reply = fut.result(QUICK_S if quick is None else quick)
         except TimeoutError:
-            fut.add_done_callback(self._late_reply)
-            raise
+            return {"pending": self.action_view(entry["id"], claim=False)}
+        finally:
+            if fut.done():          # this request answers it, either way
+                with self._acts_lock:
+                    entry["claimed"] = True
+        return {"reply": reply}
 
-    def _late_reply(self, fut) -> None:
+    def _finished(self, entry: dict, fut) -> None:
         try:
-            reply = fut.result()
+            reply, error = fut.result(), None
+        except ValueError as e:     # a refusal: the page says it, as a 400 did
+            reply, error = None, str(e)
         except Exception as e:                          # noqa: BLE001
-            self.feed.add("reply", f"💥 {e}")
-            return
-        if isinstance(reply, Reply) and (reply.text or reply.files):
+            log.warning("panel action %s failed", entry["origin"], exc_info=True)
+            reply, error = None, f"💥 {e}"
+        with self._acts_lock:
+            entry.update(reply=reply, error=error, finished=time.time())
+            # The page looks every second or two; one that has not looked
+            # for ten has gone (reloaded, closed).
+            gone = not entry["claimed"] and time.time() - entry["seen"] > 10
+        if gone:
+            self._unclaimed(entry)
+        else:
+            t = threading.Timer(self.UNCLAIMED_S, self._unclaimed, args=(entry,))
+            t.daemon = True
+            t.start()
+
+    def _unclaimed(self, entry: dict) -> None:
+        with self._acts_lock:
+            if entry["claimed"]:
+                return
+            entry["claimed"] = True
+        reply = entry["reply"]
+        if entry["error"]:
+            self.feed.add("reply", f"{entry['origin']}: {entry['error']}")
+        elif isinstance(reply, Reply) and (reply.text or reply.files):
             self.feed.add("reply", reply.text, files=reply.files,
                           keyboard=reply.keyboard)
 
-    async def say(self, reply: Reply) -> None:
-        """An interim message ("⏳ got it…") goes to the feed, where the
-        page shows it while the action is still running."""
-        self.feed.add("reply", reply.text, files=reply.files,
-                      keyboard=reply.keyboard)
+    def action_view(self, action_id: str, claim: bool = True) -> dict | None:
+        """One action as the page shows it: `done`, then `reply` or `error`.
+        Looking at a finished one hands its answer to that page."""
+        with self._acts_lock:
+            entry = self.actions.get(action_id)
+            if entry is None:
+                return None
+            now = time.time()
+            entry["seen"] = now
+            done = entry["finished"] is not None
+            if done and claim:
+                entry["claimed"] = True
+            out = {"id": entry["id"], "origin": entry["origin"],
+                   "seconds": round((entry["finished"] or now) - entry["started"]),
+                   "notes": list(entry["notes"]), "done": done,
+                   "error": entry["error"], "reply": None}
+            reply = entry["reply"]
+        if done and isinstance(reply, Reply):
+            out["reply"] = self.reply_json(reply)
+        return out
+
+    def open_actions(self) -> list[dict]:
+        """What a page opened (or reloaded) now should pick up: every action
+        still running, and any finished one no page has taken."""
+        with self._acts_lock:
+            ids = [a["id"] for a in self.actions.values()
+                   if a["finished"] is None or not a["claimed"]]
+        return [v for v in (self.action_view(i, claim=False) for i in ids) if v]
 
     # ---- what a reply looks like to the page
     def file_url(self, path) -> str:
@@ -413,13 +493,20 @@ def _handler_for(panel: Panel):
                 if url.path == "/api/ask":
                     return self._json({"ask": panel.ask_view(
                         (query.get("id") or [""])[0])})
+                if url.path == "/api/action":
+                    aid = (query.get("id") or [""])[0]
+                    if not aid:
+                        return self._json({"actions": panel.open_actions()})
+                    return self._json({"action": panel.action_view(aid)})
                 if url.path == "/api/file":
                     return self._file((query.get("path") or [""])[0])
                 if url.path == "/api/video":
                     from bot.panel_views import video_view
+                    step = query.get("step")
                     return self._json(video_view(
                         panel, (query.get("t") or [""])[0],
-                        (query.get("d") or [""])[0]))
+                        (query.get("d") or [""])[0],
+                        step=step[0] if step else None))
                 if url.path in ("/api/ideas", "/api/calendar", "/api/stats",
                                 "/api/library", "/api/settings"):
                     from bot import panel_pages
@@ -481,6 +568,15 @@ def _handler_for(panel: Panel):
                 return _video(v.get("ticker"), v.get("workdate")) \
                     if isinstance(v, dict) else None
 
+            def _act(make, video, origin) -> Reply | None:
+                """The action's reply, or None once the page has been told
+                it is still running and where to look (202)."""
+                out = panel.act(make, str(origin or url.path), video)
+                if "pending" in out:
+                    self._json({"pending": out["pending"]}, 202)
+                    return None
+                return out["reply"]
+
             try:
                 if url.path == "/api/run":
                     p = self._payload()
@@ -492,26 +588,24 @@ def _handler_for(panel: Panel):
                     if "\n" in head:
                         head, _, rest = head.partition("\n")
                         raw = rest + (" " + raw if raw else "")
-                    reply = panel.run(cmds.run_command(
-                        core, chat, head[1:], raw.split(), raw=raw,
-                        say=panel.say), video=video)
+                    reply = _act(lambda say: cmds.run_command(
+                        core, chat, head[1:], raw.split(), raw=raw, say=say),
+                        video, p.get("origin") or text[:80])
                 elif url.path == "/api/callback":
                     p = self._payload()
                     video = _named(p)
                     data = str(p.get("data") or "")
-                    reply = panel.run(cmds.handle_callback(core, chat, data,
-                                                           say=panel.say),
-                                      video=video)
+                    reply = _act(lambda say: cmds.handle_callback(
+                        core, chat, data, say=say), video, p.get("origin") or data)
                 elif url.path == "/api/text":
                     p = self._payload()
                     text = str(p.get("text") or "")
                     if not text.strip():
                         return self._json({"error": "nothing to send"}, 400)
                     video = _named(p)
-                    reply = panel.run(cmds.handle_text(core, chat, text,
-                                                       say=panel.say,
-                                                       from_page=True),
-                                      video=video)
+                    reply = _act(lambda say: cmds.handle_text(
+                        core, chat, text, say=say, from_page=True), video,
+                        p.get("origin") or f"Paste · {len(text):,} characters")
                 elif url.path == "/api/upload":
                     name = Path((query.get("name") or ["upload.bin"])[0]).name
                     video = _video((query.get("t") or [""])[0],
@@ -519,9 +613,9 @@ def _handler_for(panel: Panel):
                     data = self._body()
                     if not data:
                         return self._json({"error": "empty file"}, 400)
-                    reply = panel.run(cmds.handle_upload(core, chat, name,
-                                                         data, say=panel.say),
-                                      video=video)
+                    reply = _act(lambda say: cmds.handle_upload(
+                        core, chat, name, data, say=say), video,
+                        (query.get("o") or [""])[0] or f"Upload · {name}")
                 elif url.path == "/api/thumbnail":
                     reply = panel.core.set_thumbnail(
                         (query.get("t") or [""])[0], (query.get("d") or [""])[0],
@@ -569,12 +663,11 @@ def _handler_for(panel: Panel):
                 return self._json({"error": str(e)}, 400)
             except NoSuchVideo as e:
                 return self._json({"error": str(e)}, 404)
-            except TimeoutError:
-                return self._json({"error": "still running — the result will "
-                                            "appear in Activity"}, 504)
             except Exception as e:  # noqa: BLE001 - the page shows it
                 log.exception("panel POST %s", url.path)
                 return self._json({"error": f"💥 {e}"}, 500)
+            if reply is None:
+                return                    # still running: the page looks again
             if not self._json({"reply": panel.reply_json(reply)}) \
                     and (reply.text or reply.files):
                 # the page that asked has gone: Activity keeps the reply

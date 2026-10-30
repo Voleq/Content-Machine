@@ -199,6 +199,12 @@ class Performer:
         self._err = None
         self._lines: "queue.Queue[str | None] | None" = None
         self.shots: list[dict] = []          # what each shot cost, for the manifest
+        self._asked = 0                      # shots asked of the worker, for the page
+        self._counted_at = 0.0
+        # Where in the video the shot being drawn is, for the page's bar:
+        # ("shot", 2, 3) for the short's second of three host shots,
+        # ("beat", 12, 40) for the long's twelfth beat. Set by the caller.
+        self.at: tuple[str, int, int] | None = None
 
     @property
     def fps(self) -> int:
@@ -236,10 +242,21 @@ class Performer:
         frames = 1 if job.get("still") else (
             float(job.get("duration") or 0) * float(job.get("fps") or DEFAULT_FPS) + 1)
         deadline = time.monotonic() + SHOT_BASE_TIMEOUT_S + frames * FRAME_TIMEOUT_S
+        # HOW FAR HE IS, for the page: the frames the worker has written so
+        # far, counted while it is waited on. The worker says nothing until
+        # the shot is done, and a shot of him takes minutes (his "it doesn't
+        # say anything" while a proof rendered, 30 Oct 2026).
+        shot = job.get("op") is None and not job.get("still") and job.get("out")
+        if shot:
+            self._asked += 1
+            log.info("drawing Dennis in 3D: shot %d (%s), %d frames",
+                     self._asked, job.get("angle"), int(round(frames)))
         try:
             proc.stdin.write(json.dumps(job) + "\n")
             proc.stdin.flush()
             while True:
+                if shot:
+                    self._report(Path(job["out"]), int(round(frames)), job.get("angle"))
                 left = deadline - time.monotonic()
                 if left <= 0:
                     self._kill()
@@ -265,6 +282,23 @@ class Performer:
         self._err.flush()
         tail = (self.cache / "worker.log").read_text(encoding="utf-8", errors="replace")[-2000:]
         raise RenderError(f"the 3D Dennis worker stopped (exit {proc.poll()}):\n{tail}")
+
+    def _report(self, out: Path, total: int, angle) -> None:
+        from pipeline.jobs import report
+
+        # Blender talks many lines a frame: the folder is counted once in two
+        # seconds, not once a line.
+        now = time.monotonic()
+        if now - self._counted_at < 2.0:
+            return
+        self._counted_at = now
+        try:
+            done = sum(1 for _ in out.glob("d_[0-9][0-9][0-9][0-9].png"))
+        except OSError:
+            done = 0
+        where = (f"{self.at[0]} {self.at[1]} of {self.at[2]}" if self.at
+                 else f"shot {self._asked}")
+        report("dennis", min(done, total), total, f"{where}, {angle}")
 
     def _kill(self) -> None:
         if self._proc is not None and self._proc.poll() is None:

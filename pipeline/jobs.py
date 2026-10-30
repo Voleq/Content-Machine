@@ -8,8 +8,10 @@ that were RUNNING when the process died are marked INTERRUPTED on boot
 so a re-run costs nothing that was already paid for).
 
 Cancellation is cooperative: `/cancel` flips the persisted status and the
-executor checks it between stages (TTS -> b-roll -> render -> delivery).
-An ffmpeg encode already in flight finishes its stage first.
+executor checks it between stages (TTS -> b-roll -> render -> delivery),
+and inside the long stages at every `report` (each 3D frame of Dennis,
+each composed frame of a short). An ffmpeg encode already in flight
+finishes first.
 """
 
 from __future__ import annotations
@@ -18,11 +20,14 @@ import asyncio
 import logging
 import re
 import threading
+import time
 import uuid
 from collections import deque
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Iterator
 
 from config import Settings
 from pipeline import journal
@@ -60,15 +65,81 @@ def _start(job: JobRecord) -> None:
 # --------------------------------------------------------------------------
 
 LOG_KEEP = 200
-_DETAIL_RE = re.compile(r"^(?P<stage>[a-z]+)\s+(?P<done>\d+)/(?P<total>\d+)")
+_DETAIL_RE = re.compile(r"^(?P<stage>[a-z]+)\s+(?P<done>\d+)/(?P<total>\d+)"
+                        r"(?:\s+\w+)?(?:\s+·\s+(?P<note>.*))?")
 # Where each stage the render's checkpoints name sits, as a share of the
 # whole job: the voice and the storyboard are quick, the cut is most of it.
+# A SHORT's cut is three stages of its own (`render_short`): Dennis drawn
+# in 3D, every frame put together, the encode with its captions.
+_AT_RE = re.compile(r"\b(?:shot|beat) (?P<k>\d+) of (?P<n>\d+)")
 STAGE_SPAN = {"tts": (0, 8), "storyboard": (8, 12), "render": (12, 96),
-              "proof": (12, 96), "draft": (12, 96), "deliver": (96, 100)}
+              "proof": (12, 96), "draft": (12, 96),
+              # Dennis in 3D is most of a render's time (66 min a minute of
+              # him in a long, ~10 for the short's shot, his 25 Oct bench).
+              "dennis": (12, 75), "frames": (75, 92), "encode": (92, 96),
+              # the long's beats, encoded once he is drawn ("render 5/40 segments")
+              "segments": (75, 96),
+              "deliver": (96, 100), "delivery": (96, 100)}
+# What each stage is, in his words, for the page (his "it doesn't say
+# anything" while a proof rendered, 30 Oct 2026).
+STAGE_WORDS = {
+    "queued": "Waiting its turn in the queue",
+    "tts": "Making the voice",
+    "storyboard": "Drawing the storyboard of the planned cut",
+    "render": "Planning the cut: shots, rooms, boards, clips",
+    "dennis": "Drawing Dennis in 3D (Blender), frame by frame",
+    "frames": "Putting every frame of the picture together",
+    "encode": "Encoding the video and burning in the captions",
+    "deliver": "Saving the finished video",
+    "delivery": "Saving the finished video",
+    "repurpose": "Cutting shorts out of the long",
+}
 _SECRET_RE = re.compile(
     r"(?i)\b((?:api[_-]?)?key|token|secret|password|access_token|"
     r"refresh_token|client_secret|signature|sig)=([^&\s\"']+)")
 _BEARER_RE = re.compile(r"(?i)\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]{8,}")
+
+
+# What the running job is doing INSIDE a long stage: the render calls
+# `report` from deep down (each 3D frame of Dennis, each composed frame of a
+# short), where nothing knows which job it is. The job's runner sets where
+# the report goes, on the job's own thread (`reporting`).
+_REPORT: ContextVar[Callable[[str], None] | None] = ContextVar(
+    "job_report", default=None)
+
+
+def report(stage: str, done: int, total: int, note: str = "") -> None:
+    """`stage done/total` for the running job, if this thread runs one.
+    Raises `JobCancelled` once the job has been cancelled, so a Stop lands
+    within a frame rather than after the stage."""
+    fn = _REPORT.get()
+    if fn is not None:
+        fn(f"{stage} {int(done)}/{int(total)}" + (f" · {note}" if note else ""))
+
+
+@contextmanager
+def reporting(checkpoint: Callable[[str], None],
+              every_s: float = 3.0) -> Iterator[None]:
+    """Send this thread's `report`s to `checkpoint`, at most one every
+    `every_s` within a stage (each one writes the job's file and edits the
+    chat's card), but always the first of a new stage and the last of one."""
+    last = {"stage": "", "at": 0.0}
+
+    def send(detail: str) -> None:
+        stage = detail.split(" ", 1)[0]
+        m = _DETAIL_RE.match(detail)
+        finished = bool(m) and m["done"] == m["total"]
+        now = time.monotonic()
+        if stage == last["stage"] and not finished and now - last["at"] < every_s:
+            return
+        last.update(stage=stage, at=now)
+        checkpoint(detail)
+
+    token = _REPORT.set(send)
+    try:
+        yield
+    finally:
+        _REPORT.reset(token)
 
 
 def log_path(settings: Settings, job_id: str) -> Path:
@@ -176,21 +247,43 @@ def progress(job: dict, est_render_min: float | None = None,
     m = _DETAIL_RE.match(detail)
     stage = m["stage"] if m else (detail.split()[0] if detail else status)
     if status == "queued":
-        return {"stage": "queued", "pct": 0, "eta_s": None}
+        return {"stage": "queued", "pct": 0, "eta_s": None,
+                "words": STAGE_WORDS["queued"], "done": None, "total": None,
+                "note": "", "elapsed_s": None}
     if detail.startswith("delivered"):
         stage = "deliver"
-    lo, hi = STAGE_SPAN.get(stage, (0, 0))
+    lo, hi = STAGE_SPAN.get("segments" if m and stage in ("render", "proof", "draft")
+                            else stage, (0, 0))
     pct = float(lo)
+    done = total = None
+    moving = True
     if m and int(m["total"]):
-        pct = lo + (hi - lo) * min(int(m["done"]) / int(m["total"]), 1.0)
+        done, total = int(m["done"]), int(m["total"])
+        share = min(done / total, 1.0)
+        if stage == "dennis":
+            # His frames count up shot by shot: the job's bar moves by where
+            # the shot is in the video ("shot 2 of 3", "beat 12 of 40"), and
+            # holds where that is not said, rather than run back each shot.
+            at = _AT_RE.search(m["note"] or "")
+            moving = at is not None
+            share = ((int(at["k"]) - 1 + share) / max(int(at["n"]), 1)) if at else 0.0
+        pct = lo + (hi - lo) * min(share, 1.0)
     elapsed = _seconds_since(str(job.get("started_at") or ""), now)
     eta = None
-    if elapsed is not None and pct >= 15:
+    if elapsed is not None and pct >= 15 and moving:
         eta = elapsed * (100 - pct) / pct
     elif est_render_min:
         eta = max(est_render_min * 60 - (elapsed or 0.0), 0.0)
+    words = STAGE_WORDS.get(stage) or (detail or status).capitalize()
+    if stage in ("render", "proof", "draft") and done is not None:
+        words = "Encoding the video, beat by beat"       # the long's segments
+    elif stage in ("proof", "draft"):
+        words = "The stand-in voice is made; the cut starts next"
     return {"stage": stage, "pct": round(pct, 1),
-            "eta_s": None if eta is None else round(eta)}
+            "eta_s": None if eta is None else round(eta),
+            "words": words, "done": done, "total": total,
+            "note": (m["note"] or "") if m else "",
+            "elapsed_s": None if elapsed is None else round(elapsed)}
 
 
 def _cancelled(job: JobRecord) -> None:

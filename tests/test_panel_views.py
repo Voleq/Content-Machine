@@ -330,8 +330,11 @@ def test_the_proof_step_says_what_the_render_found(tmp_path):
     assert _proof_checks(short, tmp_path / "short_proof.mp4") == []
 
 
-def test_an_action_that_outlasts_the_page_lands_in_activity(core):
-    """The page says the result will appear in Activity; it now does."""
+def test_a_slow_action_hands_the_page_an_id_and_lets_go(core):
+    """His page froze while things ran (30 Oct 2026): every slow action held
+    one of the browser's six connections to the bot for as long as it took.
+    Now the request answers within `quick` with the action's id; the page
+    looks again by it, and sees what the bot said on the way."""
     import asyncio
     import threading
 
@@ -342,13 +345,58 @@ def test_an_action_that_outlasts_the_page_lands_in_activity(core):
     t.start()
     try:
         panel = Panel(core, loop=loop)
+        go = threading.Event()
 
-        async def slow():
+        async def slow(say):
+            await say(Reply("⏳ re-checking before approval…"))
+            while not go.is_set():
+                await asyncio.sleep(0.02)
+            return Reply("✅ approved")
+
+        out = panel.act(slow, "Approve · EXMPL", quick=0.05)
+        view = out["pending"]
+        assert view["done"] is False and view["origin"] == "Approve · EXMPL"
+        assert [a["id"] for a in panel.open_actions()] == [view["id"]]
+        for _ in range(50):
+            got = panel.action_view(view["id"])
+            if got["notes"]:
+                break
+            threading.Event().wait(0.02)
+        assert got["notes"] == ["⏳ re-checking before approval…"]
+        go.set()
+        for _ in range(100):
+            got = panel.action_view(view["id"])
+            if got["done"]:
+                break
+            threading.Event().wait(0.02)
+        assert got["reply"]["text"] == "✅ approved" and got["error"] is None
+        assert panel.open_actions() == []          # this page took it
+        assert panel.act(slow, "again", quick=1.0)["reply"].text == "✅ approved"
+        assert panel.action_view("nope") is None
+    finally:
+        loop.call_soon_threadsafe(loop.stop)
+        t.join(5)
+
+
+def test_an_action_that_outlasts_the_page_lands_in_activity(core, monkeypatch):
+    """No page came back for it (reloaded, closed): Activity keeps it."""
+    import asyncio
+    import threading
+
+    from bot.handlers import Reply
+
+    loop = asyncio.new_event_loop()
+    t = threading.Thread(target=loop.run_forever, daemon=True)
+    t.start()
+    try:
+        panel = Panel(core, loop=loop)
+        monkeypatch.setattr(panel, "UNCLAIMED_S", 0.1)
+
+        async def slow(_say):
             await asyncio.sleep(0.3)
             return Reply("📺 EXMPL: uploaded PRIVATE")
 
-        with pytest.raises(TimeoutError):
-            panel.run(slow(), timeout=0.05)
+        assert "pending" in panel.act(slow, "Upload", quick=0.05)
         for _ in range(50):
             if any("uploaded PRIVATE" in e.text for e in panel.feed.since(0)):
                 break
@@ -379,3 +427,56 @@ def test_the_upload_step_shows_an_upload_under_way(core, panel, xlsx_bytes,
     finally:
         youtube._SENDING.clear()
         core._uploading.clear()
+
+
+def test_the_page_is_given_only_the_step_it_shows(core, panel, xlsx_bytes,
+                                                  short_valid_json):
+    """Ten steps built every four seconds, the script parsed and its claims
+    listed each time, was most of what a rendering bot was asked to do
+    (30 Oct 2026). The rail still says where every step is."""
+    ws = _approved_short(core, xlsx_bytes, short_valid_json)
+    full = video_view(panel, "EXMPL", ws.workdate)
+    one = video_view(panel, "EXMPL", ws.workdate, step="check")
+    assert one["step"] == "check" and "check" in one
+    assert not any(k in one for k in ("data", "write", "proof", "upload", "voice"))
+    assert one["steps"] == full["steps"]
+    now = video_view(panel, "EXMPL", ws.workdate, step="now")
+    assert now["step"] == now["now"] and now["now"] in now
+    assert video_view(panel, "EXMPL", ws.workdate, step="../x")["step"] == now["now"]
+
+
+def test_a_proof_under_way_shows_on_its_step(core, panel, xlsx_bytes,
+                                             short_valid_json):
+    """His proof rendered while its step said "No proof yet" and offered the
+    button again (30 Oct 2026)."""
+    from pipeline.jobs import JobStore
+    from pipeline.models import JobKind, JobRecord, JobStatus
+
+    ws = _approved_short(core, xlsx_bytes, short_valid_json)
+    store = JobStore(core.settings)
+    store.save(JobRecord(id="aaaaaa0001", kind=JobKind.RENDER_LONG, ticker="OTHER",
+                         workdate="2026-10-29", status=JobStatus.RUNNING,
+                         detail="render 4/40 segments", created_at="2026-10-30T09:00:00Z"))
+    store.save(JobRecord(id="bbbbbb0002", kind=JobKind.RENDER_PROOF_SHORT, ticker="EXMPL",
+                         workdate=ws.workdate, status=JobStatus.QUEUED,
+                         created_at="2026-10-30T10:00:00Z"))
+    view = video_view(panel, "EXMPL", ws.workdate, step="now")
+    assert view["now"] == "proof"
+    run = view["proof"]["running"]
+    assert run["job"]["id"] == "bbbbbb0002"
+    assert run["progress"]["words"] == "Waiting its turn in the queue"
+    assert [a["ticker"] for a in run["ahead"]] == ["OTHER"]
+    assert any(b["data"].startswith("j|") for row in run["cancel"] for b in row)
+
+    def running(j):
+        j.status, j.detail = JobStatus.RUNNING, "dennis 30/91 · shot 1, desk-wide"
+        j.started_at = "2026-10-30T10:01:00Z"
+
+    store.update("aaaaaa0001", lambda j: setattr(j, "status", JobStatus.DONE))
+    store.update("bbbbbb0002", running)
+    run = video_view(panel, "EXMPL", ws.workdate, step="proof")["proof"]["running"]
+    assert run["ahead"] == [] and run["progress"]["done"] == 30
+    assert "3D" in run["progress"]["words"]
+    rail = {s["id"]: s["summary"] for s in
+            video_view(panel, "EXMPL", ws.workdate, step="data")["steps"]}
+    assert rail["proof"] == "running…"

@@ -247,6 +247,14 @@ button.pill:hover { border-color: var(--accent); background: var(--surface); }
   padding: 2px 7px; border-radius: 4px; background: var(--warn); color: var(--surface);
 }
 #waiting-text { min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* how the bot is answering: slow (a render shares its process) or not at all */
+.link-state {
+  display: flex; align-items: center; gap: 10px; padding: 6px 16px; font-size: 12.5px;
+  border-bottom: 1px solid var(--line); background: var(--warn-tint); color: var(--warn);
+}
+.link-state.bad { background: var(--bad-tint); color: var(--bad); }
+.link-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+@media (prefers-reduced-motion: no-preference) { .link-dot { animation: pulse 1.6s ease-in-out infinite; } }
 
 /* ---------------------------------------------------------------- layout */
 .layout {
@@ -528,6 +536,10 @@ pre.text {
 .reply:first-child { border-color: var(--accent-line); }
 .reply.new { animation: flash 1.2s ease-out; }
 .reply.pending { border-style: dashed; border-color: var(--accent); }
+.reply .said { list-style: none; margin: 6px 0 0; padding: 0; font-size: 13px; color: var(--ink-2); }
+.reply .said:empty { display: none; }
+.reply .said li::before { content: "↳ "; color: var(--muted); }
+.reply .wait-hint { margin: 6px 0 0; font-size: 12.5px; }
 .reply.error { border-color: var(--bad-line); background: var(--bad-tint); }
 .reply.has-money { border-left: 4px solid var(--money-line); }
 .reply .origin {
@@ -772,6 +784,19 @@ button.link:hover { background: none; }
 .compare audio { width: 100%; }
 .progress-box { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; background: var(--surface-2); border-radius: var(--r); }
 .progress-box progress { width: 100%; height: 12px; }
+.progress-box.running { gap: 8px; margin-bottom: 14px; border: 1px solid var(--accent-line); }
+.progress-box .stage-words { margin: 0; font-size: 15px; font-weight: 600; }
+.progress-box .stage-bar { display: flex; flex-direction: column; gap: 2px; }
+.progress-box .stage-bar.all progress { height: 6px; }
+.progress-box .banner { margin: 0; }
+.render-stages { display: flex; flex-wrap: wrap; gap: 4px 14px; list-style: none; margin: 0; padding: 0; font-size: 13px; color: var(--muted); }
+.render-stages li::before { content: "○ "; }
+.render-stages li.done { color: var(--ok); }
+.render-stages li.done::before { content: "✓ "; }
+.render-stages li.now { color: var(--ink); font-weight: 600; }
+.render-stages li.now::before { content: "● "; color: var(--accent); }
+.log-box summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.log-box pre.log { margin-top: 6px; }
 /* Ask the bot (Home) */
 .ask-form { display: flex; gap: 8px; }
 .ask-form input { flex: 1 1 auto; min-width: 0; }

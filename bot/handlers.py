@@ -45,7 +45,7 @@ from pipeline.corpus import INDEX_PROXIES
 from pipeline.delivery import deliver
 from pipeline.filing_brief import FilingReader
 from pipeline.gates import run_gates
-from pipeline.jobs import JobCancelled, JobRecord, RenderJobQueue
+from pipeline.jobs import JobCancelled, JobRecord, RenderJobQueue, reporting
 from pipeline.llm import llm_scope
 from pipeline.models import JobKind, TagType
 from pipeline.parser_long import LongScriptError, parse_long_script, validate_long_script
@@ -2007,6 +2007,13 @@ class BotCore:
 
                 store.update(job.id, note)
 
+        # Inside the long stages the render reports on its own (each 3D frame
+        # of Dennis, each frame of a short put together), so the page can say
+        # where it is and a Stop lands within a frame (`jobs.report`).
+        with reporting(checkpoint):
+            return self._execute_kind(job, ws, checkpoint)
+
+    def _execute_kind(self, job: JobRecord, ws: Workspace, checkpoint) -> str:
         if job.kind in (JobKind.RENDER_PROOF_SHORT, JobKind.RENDER_PROOF_LONG):
             return self._run_proof(job, ws, checkpoint)
 
