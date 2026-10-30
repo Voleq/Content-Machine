@@ -540,7 +540,7 @@ def test_a_relative_period_label_is_refused_with_the_fix(settings, label):
     from pathlib import Path
 
     raw = (Path(__file__).resolve().parents[1] / "fixtures" / "scripts"
-           / "short_ba_earnings.json").read_text("utf-8")
+           / "short_ba_earnings.json").read_text(encoding="utf-8")
     script = json.loads(raw)
     script["headlines"][0]["text"] = f"Boeing {label} revenue $24.19B vs $24.37B consensus"
     with pytest.raises(ScriptParseError) as err:

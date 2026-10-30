@@ -3242,7 +3242,7 @@ def trusted_findings(workspace: Path | None) -> set[str]:
     try:
         import json
 
-        got = json.loads((Path(workspace) / TRUSTED_FILE).read_text("utf-8"))
+        got = json.loads((Path(workspace) / TRUSTED_FILE).read_text(encoding="utf-8"))
         return {str(k) for k in got} if isinstance(got, list) else set()
     except (OSError, ValueError):
         return set()
@@ -3252,7 +3252,7 @@ def trust_finding(workspace: Path, key: str) -> None:
     import json
 
     keys = sorted(trusted_findings(workspace) | {key})
-    (Path(workspace) / TRUSTED_FILE).write_text(json.dumps(keys), "utf-8")
+    (Path(workspace) / TRUSTED_FILE).write_text(json.dumps(keys), encoding="utf-8")
 
 
 def _let_through(findings: list[Finding], trusted: set[str]) -> list[Finding]:

@@ -80,7 +80,7 @@ def test_a_percentage_said_with_today_is_the_price(ba):
 def test_his_short_passes_its_checks(settings, ba):
     from pipeline.parser_short import parse_short_script
 
-    raw = (ROOT / "fixtures" / "scripts" / "short_ba_earnings.json").read_text("utf-8")
+    raw = (ROOT / "fixtures" / "scripts" / "short_ba_earnings.json").read_text(encoding="utf-8")
     script, _ = parse_short_script(raw, settings)
     report = run_gates(script, settings, data=ba, skeptic=False,
                        as_of="2026-10-29", format_name="earnings")
@@ -208,7 +208,7 @@ def test_a_block_he_lets_through_becomes_a_note(settings, ba, tmp_path):
     block = next(f for f in first.findings
                  if f.gate == "fact-check" and f.severity == "block")
     trust_finding(tmp_path, finding_key(block.render()))
-    assert json.loads((tmp_path / TRUSTED_FILE).read_text())
+    assert json.loads((tmp_path / TRUSTED_FILE).read_text(encoding="utf-8"))
     again = run_gates(script, settings, data=ba, skeptic=False,
                       workspace=tmp_path)
     assert not [f for f in again.findings
@@ -237,12 +237,12 @@ def test_the_bot_lets_a_block_through_and_checks_again(settings):
     shutil.copy(ROOT / "fixtures" / "company_data" / "dennis_data.xlsx",
                 ws.path / "dennis_data.xlsx")
     s = json.loads((ROOT / "fixtures" / "scripts" / "short_ba_earnings.json")
-                   .read_text("utf-8"))
+                   .read_text(encoding="utf-8"))
     s["ticker"] = "EXMPL"      # Boeing's figures against Example Corp's sheet
     core.intake_script(7, json.dumps(s))
 
     def fact_blocks():
-        rep = json.loads((ws.path / "report_short.json").read_text("utf-8"))
+        rep = json.loads((ws.path / "report_short.json").read_text(encoding="utf-8"))
         return [t for t in rep["blocking"] if t.startswith("[fact-check]")]
 
     before = fact_blocks()
