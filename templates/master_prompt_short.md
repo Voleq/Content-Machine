@@ -44,6 +44,9 @@ Peer percentiles (OPTIONAL — where THIS ticker ranks vs its peers; the gut che
 
 Chartable metrics present in THIS data — every `numbers` row you feature MUST be one of these (they have a multi-year series for the trend bars): {{chart_metrics}}
 
+### WHY IT MOVED — what kind of day this is, and the record of it
+{{why_it_moved}}
+
 ## THE KIT — for reference, not for placement
 
 A SHORT'S VISUALS ARE NOT YOURS TO PLACE. The shot template decides every
@@ -59,11 +62,13 @@ look like as you write to it — the frames a viewer will actually see:
 ## THE FORMAT — "Noise or signal?"
 A trending stock gets ~45–55 seconds. **The video opens on the hook card — your `hook_text`, the ticker and the move — and ends on the sign-off card, which prints your `conclusion`. Dennis is on camera for one shot in the middle, between the news and the numbers.** Everything else is the evidence. Your words run under all of it, so the first sentence IS the hook, heard from the first frame. Five beats — what each part of the short does; the ORDER this video is cut in is under THE CUT below:
 
-1. HOOK — the first sentence, spoken over the hook card; then the price chart, which is the hero. Write it as a spoken line, not a caption. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe.
-2. WHY — the headline(s) that caused the move go on screen on their own card; you say what each actually means for the stock (usually less than the crowd thinks; occasionally more).
-3. GUT CHECK — the MULTI-YEAR numbers appear on a designed numbers sheet, **held ~4–5 seconds so they can be read**. Comment on them AS A WHOLE: is the business actually going anywhere, or is this just a move? If the PEER PERCENTILES sharpen the read, you MAY drop a SINGLE percentile one-liner here — at most one, never a table.
+1. HOOK — the first sentence, spoken over the hook card; then the price, which is the hero. Write it as a spoken line, not a caption. `hook_text` states the move and plants the doubt, and when the cause is known it names it in a few words ("down 11% on the cash guide, not the miss") — never a trailing-twelve-month total, which is not what moved today. Must land with sound OFF: ≤ 90 characters, mute-safe.
+2. WHY — the cause of the move goes on screen on its own card: the headline(s), and what each actually means for the stock (usually less than the crowd thinks; occasionally more). This is the question the viewer came with; WHY IT MOVED above has the record and the rules.
+3. GUT CHECK — the numbers appear on a designed sheet, **held ~4–5 seconds so they can be read**. On a trending day, the MULTI-YEAR rows: is the business actually going anywhere, or is this just a move? On an EARNINGS day, the quarter against the same quarter a year earlier: did this quarter change anything? Comment on them AS A WHOLE. If the PEER PERCENTILES sharpen the read, you MAY drop a SINGLE percentile one-liner here — at most one, never a table.
 4. CHEAP OR TRAP — the value-trap beat, **also held ~4–5 seconds**. Is the multiple a bargain or a trap? Name the multiple, then say what would have to be true for it to be cheap. Cheap and trapped look identical from the front; this is the beat that separates them. Goes in `cheap_or_trap`.
 5. PAYOFF — noise (just market activity) or signal (actually one to watch). Deadpan free text, spoken over the payoff figure; the sign-off card then prints it. There is NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
+
+On an earnings day the cut also has the print (`reported`), the street's figure (`expected`) and the guide (`guidance`) as beats of their own — THE CUT below lists this video's.
 
 ## THE OPENER — WHICH KIND THIS ONE IS
 {{hook_type}}
@@ -118,7 +123,7 @@ asks. Write the fields the template binds.
 1. `audio_script`: 140–160 spoken words, ≤ 1100 characters, first sentence = the hook, a `[BEAT: key]` marker at the start of every beat in the order under THE CUT, ONE mid-point re-hook (~20–25s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — delivery tags and beat markers are stripped before counting.
 2. `move_summary`: how much / how active, e.g. "+34% today · 6× average volume". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the on-screen headline (short, as reported). `meaning` = what it actually means for the stock, in your voice.
-4. `numbers`: 1–4 rows from the history table above. Name each one's History row in `field`, by the table's own key (`revenue`, `net_income`, `fcf`, `diluted_shares`): the bot draws that row's figures straight from the operator's workbook, so the screen cannot disagree with it. Still type its SIX values OLDEST → NEWEST — the table's six periods: four fiscal years, the last full year, LTM — as display strings ("$1.2B", "-18%", "365M"); they are used only where the workbook has no such row. Set `years` to those six period heads as the table labels them. Where the table has no figure, write "" in that place rather than closing the gap: five figures under six heads put every one under the wrong year, and the bot refuses the script. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. EACH ROW IS ITS OWN CARD on screen, coming up as you say its name, so say the rows in the order you list them and name each one when you get to it. A fifth is never drawn. Don't pad.
+{{numbers_rule}}
 5. `numbers_comment`: the holistic read of the trend, ≤ 150 chars, and SPOKEN WORD FOR WORD in `audio_script` right after the numbers: it is printed on a card as the line being said, with no captions under it, so a card that says one thing while the voice says another reads as a mistake.
 5b. `payoff_row` (optional): the `numbers` row the verdict turns on, by its label or its `field`. The payoff card shows that row's latest figure; leave it out and it shows the first row's.
 6. `conclusion`: free text, ≤ 220 chars, opening with the call the way you'd mutter it ("Noise." / "Signal, unfortunately." / "Mostly noise, one number worth watching."). NEVER a label from a taxonomy.
@@ -160,15 +165,12 @@ Put the four prose sections in the chat and the JSON object in the `.txt` file.
   "headlines": [
     {"text": "<on-screen headline>", "meaning": "<what it actually means>"}
   ],
-  "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
-  "numbers": [
-    {"label": "Revenue", "field": "revenue", "values": ["<oldest>", "<...>", "<...>", "<...>", "<...>", "<LTM>"]}
-  ],
+{{numbers_skeleton}}
   "payoff_row": "<the row the verdict turns on, optional>",
   "numbers_comment": "<holistic read of the trend, <= 150 chars, spoken word for word>",
   "cheap_or_trap": "<the value-trap beat: name the multiple, then what would have to be true for it to be cheap; <= 260 chars>",
   "conclusion": "<noise-or-signal, free text>",
-  "sources": {"numbers": "<the filing the rows are from, <= 40 chars>"}
+{{kind_skeleton}}  "sources": {"numbers": "<the filing the rows are from, <= 40 chars>"}
 }
 
 ## STRUCTURE EXAMPLE — illustrative only, replace every value (do not reuse these numbers)

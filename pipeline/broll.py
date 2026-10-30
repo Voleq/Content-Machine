@@ -359,6 +359,18 @@ class MockPexelsClient:
 # ---------------------------------------------------------------------------
 
 
+# WIKIMEDIA REFUSES A USER-AGENT WITH NO CONTACT IN IT. Its 2026 rate limits
+# give an unidentified bot 10 requests a minute and a 403 past them, and its
+# User-Agent policy asks for a name, a contact (an email or a full URL) and the
+# library: "CoolBot/0.0 (https://example.org/coolbot/) generic-library/0.0".
+# "dennis-content-machine/1.0 (offline video pipeline)" had no contact, and
+# every company-photo search on his BA short came back 403 (30 Oct 2026). The
+# contact is the project's page, never the operator's address.
+WIKIMEDIA_AGENT = (f"DennisContentMachine/1.0 "
+                   f"(https://github.com/Voleq/Content-Machine) "
+                   f"httpx/{httpx.__version__}")
+
+
 class WikimediaImageClient:
     """Commons search via the public API; polite UA, no key needed."""
 
@@ -389,7 +401,7 @@ class WikimediaImageClient:
                 "prop": "imageinfo", "iiprop": "url|extmetadata",
                 "iiurlwidth": 1600,
             },
-            headers={"User-Agent": "dennis-content-machine/1.0 (offline video pipeline)"},
+            headers={"User-Agent": WIKIMEDIA_AGENT},
             timeout=30,
         )
         if r.status_code != 200:
@@ -417,7 +429,7 @@ class WikimediaImageClient:
         self._respect_interval()
         dest.parent.mkdir(parents=True, exist_ok=True)
         with httpx.stream("GET", url, timeout=120, follow_redirects=True,
-                          headers={"User-Agent": "dennis-content-machine/1.0"}) as r:
+                          headers={"User-Agent": WIKIMEDIA_AGENT}) as r:
             if r.status_code != 200:
                 raise httpx.HTTPStatusError(f"download failed {r.status_code}",
                                             request=r.request, response=r)

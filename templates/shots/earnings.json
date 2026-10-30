@@ -90,6 +90,51 @@
       "notes": "A REAL PICTURE (item 34). Every other frame of a short is drawn type on the paper ground; this is the company itself, a photograph of its stores or its building off the same chain the long searches (cache, Wikimedia Commons, the company's site). It plays FULL SCREEN, held still, like everything the long takes from the net (Valentin, 10-17: \"Full screen\"), cropped from the full-size copy kept at fetch so a landscape picture is not blown up. The name and the credit sit on two strips of paper cut to their words, low on the picture, with the caption in its usual place under them. With no picture found the shot is dropped: a strip round \"imagery unavailable\" is not a picture. The credit also goes out with the video's other credits."
     },
     {
+      "id": "the-move",
+      "plate": "figures/move-on-the-day-9x16",
+      "anchor": "move",
+      "max_hold_s": 6,
+      "bind": {
+        "kicker": "?chart.move_kicker",
+        "value": "chart.move_down",
+        "label": "?chart.move_price|chart.move_detail",
+        "unit": "?chart.session.unit6",
+        "plot-area": "?chart.session.path-6",
+        "caption": "?chart.move_caption"
+      },
+      "notes": "WHAT THE PRINT DID TO THE PRICE (30 Oct 2026). An earnings day on `/short` is cut as earnings, and a print the stock fell 10.7% on is the reason the video exists, so the move has its beat: the figure with its arrow, where it took the price and from where (`chart.move_price`, \"$168.18 at the close, from $188.31\", off the move's own session or that day's closes), and the session under it. Falls and rises are two drawings, each eligible only on a move summary that leads with its sign, so a `/headline` print with no move in its summary takes the session chart or the closes, or nothing.",
+      "alts": [
+        {
+          "plate": "figures/move-on-the-day-up-9x16",
+          "bind": {
+            "kicker": "?chart.move_kicker",
+            "value": "chart.move_up",
+            "label": "?chart.move_price|chart.move_detail",
+            "unit": "?chart.session.unit6",
+            "plot-area": "?chart.session.path-6",
+            "caption": "?chart.move_caption"
+          },
+          "notes": "The rising twin."
+        },
+        {
+          "plate": "charts/intraday-9x16",
+          "bind": {
+            "kicker": "?chart.session.kicker",
+            "unit": "?chart.session.unit",
+            "figure": "chart.session.figure",
+            "plot-area": "chart.session.plot-area",
+            "head-1": "chart.session.head-1",
+            "head-3": "chart.session.head-3",
+            "head-5": "chart.session.head-5",
+            "head-7": "chart.session.head-7",
+            "event-label": "?chart.session.event-label",
+            "caption": "?chart.session.caption"
+          },
+          "notes": "The session the print was read in, open to close against the prior close, with the price on the line and in the caption. Never synthetic, and withheld when it disagrees with the narrated move by more than three points."
+        }
+      ]
+    },
+    {
       "id": "the-print",
       "plate": "figures/big-number-l1-9x16",
       "max_hold_s": 7,
@@ -158,6 +203,37 @@
           },
           "prefer": true,
           "notes": "THE PRINT AGAINST THE STREET, AS ONE GAP (item 3): the Quarters sheet's street-basis actual against its consensus mean, and the beat or miss between them, so the viewer is not left to subtract two big numbers. EPS unless the script's print is an amount, then revenue. Taken whenever the workbook has the consensus rows."
+        }
+      ]
+    },
+    {
+      "id": "the-why",
+      "plate": "paper/headline-band-t1-9x16",
+      "enter": "wipe",
+      "anchor": "headline",
+      "max_hold_s": 7,
+      "bind": {
+        "headline": "script.headlines.0.text",
+        "sub": "?script.headlines.0.meaning"
+      },
+      "notes": "WHY IT MOVED (30 Oct 2026, Valentin: the short \"does not at all explain why the movement occurred\"). A small miss does not take a stock down ten percent; what the market read is usually in the release or on the call, a guide, a charge, a cash figure, and this is its card: the writer's headline for the cause and what it means.",
+      "alts": [
+        {
+          "plate": "paper/headline-band-t2-9x16"
+        },
+        {
+          "plate": "paper/headline-band-t3-9x16"
+        },
+        {
+          "plate": "paper/press-release-9x16",
+          "bind": {
+            "source": "news.release.source",
+            "date": "?news.release.date",
+            "headline": "news.release.headline",
+            "body": "news.release.body"
+          },
+          "prefer": true,
+          "notes": "The release itself, opened from the News sheet's link for this headline, as in the stock short."
         }
       ]
     },
@@ -382,8 +458,10 @@
         "open",
         "the-picture",
         "guidance",
+        "the-move",
         "the-print",
         "vs-expected",
+        "the-why",
         "the-quarter",
         "the-sheet",
         "the-turn",
@@ -397,8 +475,10 @@
       "shots": [
         "open",
         "the-picture",
+        "the-move",
         "the-print",
         "vs-expected",
+        "the-why",
         "the-quarter",
         "the-turn",
         "the-sheet",
@@ -407,6 +487,24 @@
         "close"
       ],
       "notes": "The pivot before the years: Dennis says what the beat does not tell you, then the sheet proves it. Cut only for a script marked in this order."
+    },
+    {
+      "name": "why-first",
+      "shots": [
+        "open",
+        "the-picture",
+        "the-why",
+        "the-move",
+        "the-print",
+        "vs-expected",
+        "the-quarter",
+        "the-sheet",
+        "guidance",
+        "the-turn",
+        "so-what",
+        "close"
+      ],
+      "notes": "The cause straight after the hook, then what it did to the price and the print it came out of: for a day when the reason is the story and the figures are its evidence. Cut only for a script marked in this order."
     }
   ],
   "safe": {

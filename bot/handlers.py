@@ -545,6 +545,86 @@ class BotCore:
             return f"{live} · {cached}"
         return live or cached
 
+    def _read_day(self, ws: Workspace, data):
+        """Read what kind of day this short is about, and keep it.
+
+        The operator's `/kind` stays on the workspace and wins every re-read;
+        everything else is asked again, so a workbook uploaded the evening
+        after a print still finds the print.
+        """
+        from pipeline.move_kind import detect
+
+        override = str((ws.move_kind() or {}).get("override") or "")
+        try:
+            today = date.fromisoformat(ws.workdate)
+        except ValueError:
+            today = date.today()
+        # The workbook's headlines with the free feeds' (an IR release posted
+        # this morning is often the only dated word on the day).
+        news = list(getattr(data, "news", None) or [])
+        try:
+            from pipeline.company_data import merge_free_news
+
+            news = merge_free_news(news, ws.ticker,
+                                   str(data.get("website") or ""), self.settings)
+        except Exception as e:                           # noqa: BLE001
+            log.warning("free-news merge for %s failed: %s", ws.ticker, e)
+        day = detect(ws.ticker, today, self.settings, news=news,
+                     override=override)
+        ws.set_move_kind({**day.to_json(), "override": override})
+        journal.note(self.settings, "video",
+                     f"read the day as {day.kind}: {day.why}",
+                     ticker=ws.ticker, workdate=ws.workdate, day=day.kind)
+        return day
+
+    @staticmethod
+    def _day_line(ws: Workspace, day) -> str:
+        """The day's kind, for the operator, with how to change it."""
+        from pipeline.move_kind import EARNINGS, KINDS, kind_name
+
+        cut = ("Cut as the EARNINGS short: the print against the street, the "
+               "quarter against the same quarter a year before, the guide."
+               if day.kind == EARNINGS else
+               "Cut as the usual short: the move, the news, the years, the "
+               "price.")
+        others = " · ".join(f"/kind {ws.ticker} {k}" for k in KINDS
+                            if k != day.kind)
+        return (f"🗞 {kind_name(day.kind).capitalize()}. {day.why}\n   {cut}\n"
+                f"   Not right? {others}")
+
+    def kind_command(self, chat_id: int, args: list[str]) -> Reply:
+        """`/kind [TICKER] earnings|news|move`: set what kind of day it is.
+
+        The bot reads it off the SEC and the headlines; this is for the day
+        it reads wrong. The prompt is made again with the new kind.
+        """
+        from pipeline.move_kind import KINDS, kind_name
+
+        words = [a.strip() for a in args if a.strip()]
+        want = next((w.lower() for w in words if w.lower() in KINDS), "")
+        ticker = next((w for w in words if w.lower() not in KINDS), "")
+        ws = self._active_ws(chat_id)
+        if ticker and (ws is None or ws.ticker != ticker.upper()):
+            ws = Workspace.latest_for(self.settings, ticker.upper())
+        if ws is None or not ws.path.exists():
+            return Reply("No short open for that — /short TICKER first.")
+        if not want:
+            got = ws.move_kind() or {}
+            now = kind_name(got.get("kind", "")) if got else "not read yet"
+            return Reply(f"{ws.ticker}: {now}.\nUsage: /kind {ws.ticker} "
+                         + "|".join(KINDS))
+        ws.set_move_kind({**(ws.move_kind() or {}), "override": want})
+        self.context.set(chat_id, ws.ticker, ws.workdate)
+        head = f"🗞 {ws.ticker} set as {kind_name(want)}."
+        if ws.load_short() is not None:
+            head += (" The script already saved keeps the cut it was written "
+                     "for; paste one written to the new prompt to change it.")
+        if ws.lane() != "short" or not any(ws.path.glob("dennis_data.*")):
+            return Reply(head)
+        reply = self.prompts_reply(chat_id)
+        reply.text = f"{head}\n\n" + reply.text
+        return reply
+
     # ------------------------------------------------------------ /prompts
     def prompts_reply(self, chat_id: int) -> Reply:
         ws = self._active_ws(chat_id)
@@ -570,10 +650,15 @@ class BotCore:
         wanted = (["update"] if ws.is_update() else
                   {"short": ["short"], "long": ["long_angle"]}.get(
                       lane, ["short", "long_angle"]))
+        # WHAT KIND OF DAY IT IS decides what the short argues (30 Oct 2026):
+        # an earnings reaction is the print against the street and the
+        # quarter against a year before, not six years of annual figures.
+        day = self._read_day(ws, data) if "short" in wanted else None
         files = []
         for fmt in wanted:
             text = fill_prompt(fmt, ws.ticker, data, ws.path, self.settings,
-                               move_context=move_context)
+                               move_context=move_context,
+                               move_kind=day if fmt == "short" else None)
             f = ws.path / f"prompt_{fmt}.md"
             f.write_text(text, encoding="utf-8")
             files.append(f)
@@ -594,6 +679,8 @@ class BotCore:
         if data.warning_missing:
             warn += f"\n⚠️ optional fields missing: {', '.join(data.warning_missing[:6])}"
         lines = [f"📋 {ws.ticker} (as of {data.get('as_of_date')})"]
+        if day is not None:
+            lines.append(self._day_line(ws, day))
         if "short" in wanted:
             lines.append("• SHORT: run prompt_short.md, paste the output back.")
         if "long_angle" in wanted:
@@ -1494,6 +1581,15 @@ class BotCore:
             checked, notes = fill_numbers(script, data)
             warnings = warnings + notes
         fmt_name = self.short_format_name(ws)
+        day = ws.move_kind() or {}
+        if day.get("kind") == "earnings" and fmt_name == "short":
+            warnings = warnings + [
+                "the day was read as an EARNINGS reaction and this script is "
+                "written to the plain short's beats (no `reported`, "
+                "`expected` or `guidance`), so it renders as the plain short: "
+                "years, not quarters. For the earnings cut, run the latest "
+                "prompt_short.md again; if it is not an earnings day, "
+                f"/kind {ws.ticker} news"]
         if fmt_name == "macro":
             # The print against FRED's own latest reading (item 6), before
             # approval: the macro chart draws FRED's series, so a typed print
@@ -3259,15 +3355,33 @@ class BotCore:
         different arguments with different beat orders. `short` is "noise or
         signal" — chart first, then the news, then multi-year numbers, then a
         valuation judgement. `earnings` is "did they beat, and does it
-        matter" — the print against expectations, then guidance, and no price
-        chart at all. `macro` is "what happened and who does it hurt" — the
+        matter" — the move and why it happened, the print against expectations, the
+        quarter against a year before, then guidance. `macro` is "what happened and who does it hurt" — the
         print, the statement, a mechanism, a who-it-hits beat, and no company
         numbers sheet, because there is no company. An earnings script landed
         on the plain short's chart-first ten beats and the mismatch was
         silent.
         """
         mode = str((ws.headline() or {}).get("mode") or "")
-        return mode if mode in ("earnings", "macro") else "short"
+        if mode in ("earnings", "macro"):
+            return mode
+        # AN EARNINGS DAY ON `/short` (30 Oct 2026). The day is read when the
+        # prompt is made (`pipeline/move_kind.py`) and the prompt asks for
+        # the earnings cut's beats; the script then says which cut it was
+        # written for. One written to the plain short's beats (before this,
+        # or after a `/kind` change) keeps the plain cut: its markers are
+        # that cut's, and the earnings cut would put its pictures over the
+        # wrong sentences.
+        if (ws.move_kind() or {}).get("kind") == "earnings":
+            from pipeline.move_kind import earnings_shaped
+
+            try:
+                script = ws.load_short()
+            except Exception:                            # noqa: BLE001
+                script = None
+            if script is None or earnings_shaped(script):
+                return "earnings"
+        return "short"
 
     @staticmethod
     def _has_video(wanted: str):

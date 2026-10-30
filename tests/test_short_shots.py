@@ -58,6 +58,16 @@ class StubResolver:
         parts = set(src.split("."))
         if {"series", "figures"} & parts:
             return ",".join(str(10 + i * 3) for i in range(6))
+        # Today's session: six points on the move plates, seven on
+        # `charts/intraday`, a move figure and clock times.
+        if "path-6" in parts:
+            return ",".join(str(10 + i * 3) for i in range(6))
+        if src == "chart.session.plot-area":
+            return ",".join(str(10 + i * 3) for i in range(7))
+        if src == "chart.session.figure":
+            return "+3.4%"
+        if src.startswith("chart.session.head-"):
+            return "09:30"
         # The heads are however many the plate declares — four on the dense
         # chart, six on a per-period one.
         if {"heads", "axis"} & parts:
@@ -503,11 +513,13 @@ def test_a_host_shot_holds_and_is_never_split(fmt):
 
 
 def test_a_run_too_long_for_its_evidence_gives_the_slack_to_the_host():
-    """With nothing anchored, the whole cut is one run. An even share of 72
-    seconds puts every earnings plate over its ceiling; the host shot is the
-    frame that is alive at any length, so it takes the difference."""
+    """With nothing anchored, the whole cut is one run. An even share of 100
+    seconds puts every earnings plate over its ceiling (72 did, until the cut
+    gained the move and the why on 30 Oct 2026 and the share fell under it);
+    the host shot is the frame that is alive at any length, so it takes the
+    difference."""
     fmt = load_format("earnings")
-    spans = resolve_spans(fmt, _words(72.0), 72.0, {})
+    spans = resolve_spans(fmt, _words(100.0), 100.0, {})
     for sp in spans:
         if sp.shot is fmt.opener:
             # The cold open is cut to its own length, never given slack.
@@ -516,7 +528,7 @@ def test_a_run_too_long_for_its_evidence_gives_the_slack_to_the_host():
             assert sp.dur > sp.shot.max_hold_s
         else:
             assert sp.dur <= sp.shot.max_hold_s + 1e-6, sp.shot.id
-    assert spans[-1].end == pytest.approx(72.0)
+    assert spans[-1].end == pytest.approx(100.0)
     for a, b in zip(spans, spans[1:]):
         assert a.end == pytest.approx(b.start)
 

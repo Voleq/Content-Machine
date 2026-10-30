@@ -19,6 +19,7 @@ the file is drawn at `short_delivery_height` (1440x2560).
 
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import logging
 import os
@@ -103,6 +104,12 @@ def _latest_index(row) -> int | None:
 _CARD_FIELDS = frozenset({"kicker", "title", "cell", "axis", "first",
                           "first_label", "last", "last_label", "change",
                           "since"})
+
+# How much of a metric card's scale stays empty above its tallest bar, as a
+# share of the bars' span. On `charts/bars-6y-9x16` the gap between the top
+# gridline's label and the next one down is the caption's clear row, and a
+# bar reaching into it leaves the caption nowhere but over the bars.
+METRIC_HEADROOM = 1 / 3
 
 
 def _unit_of(rows) -> str:
@@ -297,19 +304,46 @@ class ShortResolver:
         """`chart.session.<slot>`: today's session against the prior close
         (item 4), for `charts/intraday`. None without a real session, or when
         the session disagrees with the move the writer narrates."""
-        from pipeline.prices import get_intraday
         from pipeline.short_data import session_card
 
         if "_session_card" not in self.__dict__:
             try:
                 self.__dict__["_session_card"] = session_card(
-                    get_intraday(self.script.ticker, self.settings),
-                    self.script)
+                    self._the_session(), self.script)
             except Exception as e:                       # noqa: BLE001
                 log.warning("the session chart could not be filled: %s", e)
                 self.__dict__["_session_card"] = None
         card = self.__dict__["_session_card"] or {}
         return card.get(".".join(rest)) or None
+
+    def _move_day(self) -> dict | None:
+        """The session the narrated move happened on, off the daily closes."""
+        from pipeline.short_data import claimed_move, move_day
+
+        if "_move_day_got" not in self.__dict__:
+            self.__dict__["_move_day_got"] = (
+                move_day(self.prices, claimed_move(self.script))
+                if self.prices is not None else None)
+        return self.__dict__["_move_day_got"]
+
+    def _the_session(self):
+        """The intraday session the short is about: the latest, or the one
+        the narrated move happened on when that is an earlier day (a short
+        about Tuesday's fall cut on Wednesday evening)."""
+        from pipeline.prices import get_intraday
+        from pipeline.short_data import session_card
+
+        if "_the_session_got" in self.__dict__:
+            return self.__dict__["_the_session_got"]
+        got = get_intraday(self.script.ticker, self.settings)
+        if got is None or session_card(got, self.script) is None:
+            day = self._move_day()
+            if day and (got is None or got.day != day["day"]):
+                earlier = get_intraday(self.script.ticker, self.settings,
+                                       on=day["day"])
+                got = earlier if earlier is not None else got
+        self.__dict__["_the_session_got"] = got
+        return got
 
     def _news(self, rest: list[str]) -> str | None:
         """The news beat's own material (item 5).
@@ -547,13 +581,18 @@ class ShortResolver:
 
     def _since(self, row, years: list[str]) -> str | None:
         """`from $400M in FY21`: where a row started, for a card that shows
-        where it is now."""
-        first = next((k for k, v in enumerate(row.values) if str(v).strip()), None)
-        last = _latest_index(row)
-        if first is None or last is None or first == last:
+        where it is now. On a sheet of quarters, where it was the same
+        quarter a year earlier: `from $23.3B in Q3 FY25, a year before`."""
+        from pipeline.short_data import is_quarterly, year_ago_index
+
+        quarterly = is_quarterly(self.script, self.data)
+        first = year_ago_index(row.values, years, quarterly)
+        if first is None:
             return None
         when = years[first] if first < len(years) else ""
-        return f"from {row.values[first]} in {when}" if when else f"from {row.values[first]}"
+        tail = ", a year before" if quarterly else ""
+        return (f"from {row.values[first]} in {when}{tail}" if when
+                else f"from {row.values[first]}")
 
     def _metric_card(self, field: str, row, rest: list[str]) -> str | None:
         """One row as a card of its own (item 26): its bars, its axis, where it
@@ -572,6 +611,10 @@ class ShortResolver:
         last = _latest_index(row)
         figs = [sd.parse_figure(v) for v in row.values]
         wb_field = sd.field_for(row.label, getattr(row, "field", None))
+        # WHAT THE LATEST FIGURE IS SET AGAINST: the first year on an annual
+        # sheet, the same quarter a year earlier on a sheet of quarters.
+        quarterly = sd.is_quarterly(self.script, self.data)
+        base = sd.year_ago_index(row.values, years, quarterly)
         if field == "kicker":
             return row.label.upper()
         if field == "title":
@@ -587,26 +630,30 @@ class ShortResolver:
             present = [f for f in figs if f is not None]
             if k is None or len(present) < 2:
                 return None
-            ticks = sd.axis_ticks(present)
+            ticks = sd.axis_ticks(present, headroom=METRIC_HEADROOM)
             if k >= len(ticks):
                 return None
             like = next((v for v in row.values if str(v).strip()), "")
             return sd.tick_label(wb_field, ticks[k], like)
         if field in ("first", "first_label", "last", "last_label"):
-            at = first if field.startswith("first") else last
-            if at is None or (first == last):
+            at = base if field.startswith("first") else last
+            if at is None or base is None or base == last:
                 return None
             if field.endswith("_label"):
-                return years[at] if at < len(years) else None
+                head = years[at] if at < len(years) else None
+                if head and quarterly:
+                    head += (", a year earlier" if at == base
+                             else ", this quarter")
+                return head
             return str(row.values[at]).strip() or None
         if field == "change":
-            if first is None or last is None or first == last:
+            if base is None or last is None or base == last:
                 return None
             if wb_field:
-                return sd.change(wb_field, figs[first], figs[last])
+                return sd.change(wb_field, figs[base], figs[last])
             rate = str(row.values[last]).strip().endswith("%")
             return sd.change("gross_margin" if rate else "revenue",
-                             figs[first], figs[last])
+                             figs[base], figs[last])
         if field == "since":
             return self._since(row, years)
         return None
@@ -623,6 +670,37 @@ class ShortResolver:
         field = rest[0]
         if field == "session":
             return self._session(rest[1:])
+        # WHERE THE MOVE TOOK THE PRICE (30 Oct 2026: the move card showed a
+        # percentage over a line and never a price). `move_price` is "$168.18
+        # at the close, from $188.31" off the move's own session or its day's
+        # closes; `move_caption` is then the rest of the summary, which the
+        # label carried before; `move_kicker` dates the move.
+        if field in ("move_price", "move_caption", "move_kicker"):
+            from pipeline.short_data import move_price
+            try:
+                price = move_price(self._the_session(), self._move_day(),
+                                   self.script)
+            except Exception as e:                       # noqa: BLE001
+                log.warning("the move's price could not be read: %s", e)
+                price = None
+            if field == "move_price":
+                return price
+            if field == "move_caption":
+                lead = move_lead(str(getattr(self.script, "move_summary", "") or ""))
+                return (lead[2] or None) if (price and lead) else None
+            # The day drawn: the session's own when it is the move's, else
+            # the day the daily closes made the move.
+            from pipeline.short_data import session_card
+
+            session, day = self._the_session(), self._move_day()
+            iso = (session.day if session is not None
+                   and session_card(session, self.script) is not None
+                   else (day or {}).get("day"))
+            ticker = str(self.script.ticker or "").upper()
+            if iso:
+                when = _dt.date.fromisoformat(iso)
+                return f"{ticker} · {when.day} {when:%B}".upper()
+            return ticker or None
         # THE MOVE, which is the writer's figure and needs no price data: a
         # short with no prices loaded still has one, in its move summary.
         if field in ("move_up", "move_down", "move_detail"):
@@ -728,6 +806,20 @@ class ShortResolver:
         # the beat takes its other plate or none.
         figures = [v for v in pick.values if str(v).strip()]
         if which in ("heavy", "light") and len(figures) < 2:
+            return None
+        from pipeline.short_data import is_quarterly, year_ago_index
+
+        if is_quarterly(self.script, self.data):
+            # The quarter against the same quarter a year before, never
+            # against the sheet's first column six quarters back.
+            base = year_ago_index(pick.values, list(self.script.years or []),
+                                  True)
+            if base is None:
+                return None
+            if which == "heavy":
+                return f"{pick.label} is {figures[-1]} this quarter."
+            if which == "light":
+                return f"It was {pick.values[base]} a year earlier."
             return None
         if which == "heavy":
             return f"{pick.label} is {figures[-1]} now."

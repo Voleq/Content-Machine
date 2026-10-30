@@ -129,20 +129,24 @@
         {
           "plate": "figures/move-on-the-day-up-9x16",
           "bind": {
-            "kicker": "?script.ticker",
+            "kicker": "?chart.move_kicker",
             "value": "chart.move_up",
-            "label": "?chart.move_detail",
-            "plot-area": "?chart.session.path-6"
+            "label": "?chart.move_price|chart.move_detail",
+            "unit": "?chart.session.unit6",
+            "plot-area": "?chart.session.path-6",
+            "caption": "?chart.move_caption"
           },
-          "notes": "THE MOVE AS ONE FIGURE, WITH ITS ARROW. The arrow is drawn, so the plate has to match the sign: `chart.move_up` is the move summary's leading figure only when it opens on a `+`, and nothing otherwise, which makes this plate ineligible on a fall. The rest of the summary is the label. It needs no price data, so a short rendered without prices still has a picture for this beat. The box under the figure is drawn for ONE SESSION, so it takes today's session in six points (`chart.session.path-6`, the same tape and the same agreement check as `charts/intraday`), never the daily closes, which would read as a day. Without a session it stays empty, as it always did (2 Oct 2026: it was empty on every cut, and read as half a frame of nothing)."
+          "notes": "THE MOVE AS ONE FIGURE, WITH ITS ARROW. The arrow is drawn, so the plate has to match the sign: `chart.move_up` is the move summary's leading figure only when it opens on a `+`, and nothing otherwise, which makes this plate ineligible on a fall. THE PRICE IS THE LABEL (30 Oct 2026, Valentin: the move card \"doesn't show any price, it just shows a line that went down\"): where the move took it and from where, off the move's own session or that day's closes (`chart.move_price`, \"$168.18 at the close, from $188.31\"), with the rest of the summary moved to the caption; the kicker dates the move and the unit line says the box is the session, open to close. With no prices the label is the rest of the summary, as before, so a short rendered without prices still has a picture for this beat. The box under the figure is drawn for ONE SESSION, so it takes today's session in six points (`chart.session.path-6`, the same tape and the same agreement check as `charts/intraday`), never the daily closes, which would read as a day. Without a session it stays empty, as it always did (2 Oct 2026: it was empty on every cut, and read as half a frame of nothing)."
         },
         {
           "plate": "figures/move-on-the-day-9x16",
           "bind": {
-            "kicker": "?script.ticker",
+            "kicker": "?chart.move_kicker",
             "value": "chart.move_down",
-            "label": "?chart.move_detail",
-            "plot-area": "?chart.session.path-6"
+            "label": "?chart.move_price|chart.move_detail",
+            "unit": "?chart.session.unit6",
+            "plot-area": "?chart.session.path-6",
+            "caption": "?chart.move_caption"
           },
           "notes": "The falling twin, eligible only on a move summary that opens on a minus."
         },

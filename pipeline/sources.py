@@ -104,6 +104,15 @@ class Filing:
     accession: str
     url: str
     title: str = ""
+    # What an 8-K is ABOUT, as the SEC lists it: "2.02,9.01" is results of
+    # operations, which is how an earnings day is told from any other 8-K.
+    items: str = ""
+    # When EDGAR took it, in UTC ("2026-10-27T11:30:23.000Z"): before the
+    # open, during the session or after the close is the day it moved.
+    accepted: str = ""
+    # The period a 10-Q or 10-K covers ("2026-09-30"); an 8-K's is the day of
+    # the event it reports.
+    period: str = ""
 
     def to_json(self) -> dict:
         return asdict(self)
@@ -131,6 +140,13 @@ def _filings_of(ticker: str, settings: Settings, forms: Sequence[str],
     accns = recent.get("accessionNumber") or []
     docs = recent.get("primaryDocument") or []
     dates = recent.get("filingDate") or []
+    items = recent.get("items") or []
+    accepted = recent.get("acceptanceDateTime") or []
+    periods = recent.get("reportDate") or []
+
+    def at(col: list, i: int) -> str:
+        return str(col[i] or "") if i < len(col) else ""
+
     for i, form in enumerate(names):
         if form not in forms:
             continue
@@ -139,10 +155,12 @@ def _filings_of(ticker: str, settings: Settings, forms: Sequence[str],
         nodash = accns[i].replace("-", "")
         out.append(Filing(
             ticker=ticker.upper(), form=form,
-            filed=dates[i] if i < len(dates) else "",
+            filed=at(dates, i),
             accession=accns[i],
             url=(f"{settings.sec_base_url}/Archives/edgar/data/"
-                 f"{int(cik)}/{nodash}/{docs[i]}")))
+                 f"{int(cik)}/{nodash}/{docs[i]}"),
+            items=at(items, i), accepted=at(accepted, i),
+            period=at(periods, i)))
         if len(out) >= limit:
             break
     return out
@@ -182,6 +200,62 @@ def latest_8k(ticker: str, settings: Settings) -> dict:
         payload["exhibit_url"] = exhibit["url"]
         payload["exhibit_text"] = exhibit["text"][:20000]
     return store(settings, "8k", key, payload)
+
+
+# The 8-K item for an earnings release: "Results of Operations and Financial
+# Condition". Every quarterly print a US filer makes is furnished under it.
+EARNINGS_ITEM = "2.02"
+
+
+def earnings_release(ticker: str, settings: Settings, *,
+                     since: str = "") -> dict:
+    """The latest EARNINGS 8-K (item 2.02) filed on or after `since`, with
+    its EX-99.1 press release and the 10-Q or 10-K that covers the quarter.
+
+    `latest_8k` is the latest 8-K of any kind, and a company files several a
+    month (a director leaving, a bond, a vote), so the newest one is not the
+    print. This is the one the market read on an earnings day: what the
+    company said, the day and minute it said it, and which quarter it was.
+
+    `{"status": "ok", form, filed, accepted, items, url, exhibit_url,
+    exhibit_text, period}` where `period` is the quarter's end from the
+    report filed with it; `{"status": "unavailable", reason}` otherwise.
+    """
+    key = f"{ticker.upper()}-{since or 'any'}"
+    hit = cached(settings, "8k", f"202-{key}")
+    if hit is not None:
+        return hit
+    filings = _filings_of(ticker, settings, ("8-K", "8-K/A"), limit=12)
+    if filings is None:
+        return {"status": UNAVAILABLE, "ticker": ticker.upper(),
+                "reason": "the SEC could not be read"}
+    prints = [f for f in filings
+              if EARNINGS_ITEM in [x.strip() for x in f.items.split(",")]
+              and (not since or f.filed >= since)]
+    if not prints:
+        return store(settings, "8k", f"202-{key}", {
+            "status": UNAVAILABLE, "ticker": ticker.upper(),
+            "reason": (f"no earnings 8-K since {since}" if since
+                       else "no earnings 8-K on file")})
+    f = prints[0]
+    # An 8-K's own `period` is the day of the event, not the quarter: only a
+    # report filed with or after it may name the quarter.
+    payload = {"status": "ok", **f.to_json(), "exhibit_url": "",
+               "exhibit_text": "", "period": ""}
+    # The quarter: the 10-Q (or the 10-K, for a fourth quarter) filed with or
+    # soon after the release reports the period it closed.
+    reports = _filings_of(ticker, settings, ("10-Q", "10-K"), limit=4) or []
+    for r in reports:
+        if r.filed >= f.filed and r.period:
+            payload["period"] = r.period
+    exhibit = _find_exhibit(Filing(**{k: v for k, v in f.to_json().items()}),
+                            settings)
+    if exhibit is _EXHIBIT_UNREAD:
+        return payload
+    if exhibit:
+        payload["exhibit_url"] = exhibit["url"]
+        payload["exhibit_text"] = exhibit["text"][:20000]
+    return store(settings, "8k", f"202-{key}", payload)
 
 
 # `_find_exhibit` when the SEC did not answer, as against an 8-K that has no

@@ -366,6 +366,16 @@ class _Stub:
         parts = set(src.split("."))
         if {"series", "figures"} & parts:
             return ",".join(str(10 + i * 3) for i in range(6))
+        # Today's session: six points on the move plates, seven on
+        # `charts/intraday`, a move figure and clock times.
+        if "path-6" in parts:
+            return ",".join(str(10 + i * 3) for i in range(6))
+        if src == "chart.session.plot-area":
+            return ",".join(str(10 + i * 3) for i in range(7))
+        if src == "chart.session.figure":
+            return "+3.4%"
+        if src.startswith("chart.session.head-"):
+            return "09:30"
         if {"heads", "axis"} & parts:
             return "a,b,c,d"
         if "years" in parts:

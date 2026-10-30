@@ -356,6 +356,10 @@ def c_new_headline(c: Call):
     return c.core.headline_command(c.chat_id, c.args)
 
 
+def c_new_kind(c: Call):
+    return c.core.kind_command(c.chat_id, c.args)
+
+
 # ---- /script
 def c_script(c: Call):
     return c.core.script_listing(c.chat_id)
@@ -832,6 +836,18 @@ COMMANDS: tuple[Command, ...] = (
                 "`[company]`, `[earnings]` or `[macro]` (or `[a]`/`[b]`/`[c]`). "
                 "The mode sets the lane and picks the shot template."),
             ack="⏳ reading the headline…"),
+    Command("new", "kind", "[TICKER] earnings|news|move",
+            "say what kind of day a SHORT is about", c_new_kind,
+            aliases=("kind",), example="{T} earnings", doc=(
+                "A SHORT reads its day when the prompt is made: an **earnings "
+                "reaction** when the SEC has an 8-K under item 2.02 (results) "
+                "from the last four days or a headline says so, **company "
+                "news** when other headlines are dated then, otherwise a "
+                "**move** nothing public explains. An earnings day is cut as "
+                "the earnings short (the print against the street, the "
+                "quarter against the same quarter a year before, the guide). "
+                "This sets it by hand and makes the prompt again; with no "
+                "kind it says what the day was read as.")),
     # /script
     Command("script", "", "", "the stored script, numbered", c_script, doc=(
         "The stored script, numbered, so `/script edit N` and it agree.")),

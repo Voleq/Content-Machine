@@ -914,13 +914,20 @@ def expand_sequences(fmt: Format, items_for) -> Format:
 _MOVE_FIELDS = frozenset({"move", "move_rest", "move_up", "move_down",
                           "move_detail"})
 
+# The `chart.*` fields drawn from real prices or not at all: the session
+# (`chart.session.*`; `prices.get_intraday` never invents one) and where the
+# move took the price, which refuses a synthetic or degraded series
+# (`short_data.move_day`). A dead feed leaves them empty; it cannot put an
+# invented price on screen, so it is nothing to block a render on.
+_REAL_OR_NOTHING = frozenset({"move_price", "move_caption", "move_kicker"})
+
 
 def draws_prices(fmt: Format) -> bool:
     """Whether any beat of this format can put the price series on screen.
 
     The plain short's move beat is a price line; `earnings` and `macro` show
-    the move as the writer's figure and draw no prices at all, so a dead
-    price feed is nothing to them.
+    the move as the writer's figure, with a price or a session only where a
+    real one was read, so a dead price feed is nothing to them.
     """
     for shot in fmt.shots:
         binds = [v.bind or {} for v in shot.variants]
@@ -928,9 +935,13 @@ def draws_prices(fmt: Format) -> bool:
             binds.append(shot.repeat.bind)
         srcs = [str(s) for b in binds for s in b.values()]
         srcs += [t.src for t in shot.text]
+        # `a|b` is two sources, the first that has text winning.
+        srcs = [alt for src in srcs for alt in src.lstrip("?").split("|")]
         for src in srcs:
-            head, _, name = src.lstrip("?").partition(".")
-            if head == "chart" and name not in _MOVE_FIELDS:
+            head, _, name = src.partition(".")
+            if (head == "chart" and name not in _MOVE_FIELDS
+                    and name not in _REAL_OR_NOTHING
+                    and not name.startswith("session.")):
                 return True
     return False
 

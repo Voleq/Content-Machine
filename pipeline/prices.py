@@ -292,13 +292,25 @@ INTRADAY_MAX_AGE_DAYS = 4
 INTRADAY_TTL_S = 900
 
 
-def _yahoo_session(ticker: str) -> IntradaySession | None:
+def _yahoo_session(ticker: str, on: str = "") -> IntradaySession | None:
     import yfinance as yf
 
     t = yf.Ticker(yahoo_symbol(ticker))
-    bars = t.history(period="1d", interval="5m", auto_adjust=False,
-                     prepost=False)
-    days = t.history(period="5d", interval="1d", auto_adjust=False)
+    if on:
+        # A PAST SESSION, by its day: a short about Tuesday's fall is often
+        # cut on Wednesday evening, when the latest session is Wednesday's.
+        # Yahoo keeps five-minute bars for about sixty days.
+        first = date.fromisoformat(on)
+        bars = t.history(start=first.isoformat(),
+                         end=(first + timedelta(days=1)).isoformat(),
+                         interval="5m", auto_adjust=False, prepost=False)
+        days = t.history(start=(first - timedelta(days=7)).isoformat(),
+                         end=(first + timedelta(days=1)).isoformat(),
+                         interval="1d", auto_adjust=False)
+    else:
+        bars = t.history(period="1d", interval="5m", auto_adjust=False,
+                         prepost=False)
+        days = t.history(period="5d", interval="1d", auto_adjust=False)
     if bars is None or bars.empty or days is None or len(days) < 2:
         return None
     day = bars.index[-1].date()
@@ -317,8 +329,12 @@ def _yahoo_session(ticker: str) -> IntradaySession | None:
                            complete=times[-1] >= "15:55")
 
 
-def get_intraday(ticker: str, settings: Settings) -> IntradaySession | None:
+def get_intraday(ticker: str, settings: Settings,
+                 on: str = "") -> IntradaySession | None:
     """Today's session for `ticker`, or None. Never raises, never invents.
+
+    `on` asks for one past session by its ISO day instead: the day the move
+    the short is about happened, when that is not the latest one.
 
     MOCK_MODE reads fixtures/prices/<TICKER>_intraday.json and nothing else:
     with no fixture there is no session, where the daily history would fall
@@ -336,21 +352,26 @@ def get_intraday(ticker: str, settings: Settings) -> IntradaySession | None:
         except (ValueError, KeyError, OSError) as e:
             log.warning("intraday fixture for %s unreadable: %s", ticker, e)
             return None
+        if on and got.day != on:
+            return None
         got.source = "fixture"
         return got
 
-    cfile = settings.cache_dir / "prices" / f"{ticker}_intraday.json"
+    name = f"{ticker}_intraday_{on}.json" if on else f"{ticker}_intraday.json"
+    cfile = settings.cache_dir / "prices" / name
     try:
-        if cfile.exists() and time.time() - cfile.stat().st_mtime < INTRADAY_TTL_S:
+        # A past session is finished and keeps; today's moves.
+        if cfile.exists() and (on or time.time() - cfile.stat().st_mtime
+                               < INTRADAY_TTL_S):
             return IntradaySession.from_json(cfile.read_text(encoding="utf-8"))
     except (ValueError, KeyError, OSError):
         pass
     try:
-        got = _yahoo_session(ticker)
+        got = _yahoo_session(ticker, on)
     except Exception as e:                                # noqa: BLE001
         log.warning("intraday for %s failed (%s); no session chart", ticker, e)
         return None
-    if got is None:
+    if got is None or (on and got.day != on):
         return None
     age = (date.today() - date.fromisoformat(got.day)).days
     if age > INTRADAY_MAX_AGE_DAYS:

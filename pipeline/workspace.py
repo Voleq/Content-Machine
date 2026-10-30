@@ -316,6 +316,25 @@ class Workspace:
         except json.JSONDecodeError:
             return {}
 
+    # ------------------------------------------------- what kind of day (short)
+    # An earnings reaction, company news, or a move nothing public explains
+    # (`pipeline/move_kind.py`). Read when the short prompt is made, and what
+    # decides the cut it renders through. `override` is the operator's own
+    # call (`/kind`), kept apart so a re-read cannot undo it.
+    def _move_kind_file(self) -> Path:
+        return self.path / "move_kind.json"
+
+    def set_move_kind(self, payload: dict) -> None:
+        _write(self._move_kind_file(), json.dumps(payload, indent=2))
+
+    def move_kind(self) -> dict:
+        f = self._move_kind_file()
+        try:
+            got = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+        except json.JSONDecodeError:
+            return {}
+        return got if isinstance(got, dict) else {}
+
     # ------------------------------------------------ the operator's own words
     #
     # WHY THIS ONE, IN THE OPERATOR'S WORDS (03). The thesis exists inside the

@@ -23,7 +23,7 @@ import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 from config import Settings
 from pipeline.broll import PALETTE, palette_keys
@@ -916,6 +916,9 @@ class _Ctx:
     headline: str = ""
     article_summary: str = ""
     headline_mode: str = ""
+    # What kind of day a SHORT is about (`pipeline.move_kind.MoveKind`), or
+    # None when it was not read.
+    move_kind: Any = None
 
 
 def _macro(ctx: "_Ctx") -> bool:
@@ -955,9 +958,14 @@ BEAT_BRIEFS: dict[str, dict[str, str]] = {
     "earnings": {
         "hook": "the first sentence: the print and the doubt, over the hook "
                 "card",
+        "move": "what the print did to the price: how far, to what, on what "
+                "volume, over the move card",
         "reported": "what they reported (`reported`)",
         "expected": "what was expected, and the gap (`expected`)",
-        "numbers": "the multi-year figures behind the quarter (`numbers`)",
+        "headline": "WHY it moved: the thing in the release or on the call "
+                    "the market read, and what it means (`headlines`)",
+        "numbers": "the figures behind the print, a row at a time "
+                   "(`numbers`)",
         "guidance": "the guide and what changed in it (`guidance`)",
         "turn": "the one line the video pivots on (`turn_line`), Dennis on "
                 "camera",
@@ -989,7 +997,13 @@ def _shot_format(ctx: "_Ctx") -> str:
     """
     if ctx.fmt == "headline" and ctx.headline_mode in ("earnings", "macro"):
         return ctx.headline_mode
+    if ctx.fmt == "short" and _earnings_day(ctx):
+        return "earnings"
     return "short"
+
+
+def _earnings_day(ctx: "_Ctx") -> bool:
+    return bool(getattr(ctx.move_kind, "is_earnings", False))
 
 
 def beat_order_block(ctx: "_Ctx") -> str:
@@ -1020,6 +1034,155 @@ def beat_order_block(ctx: "_Ctx") -> str:
     lines.append("The sign-off card takes no marker; it follows the last "
                  "beat.")
     return "\n".join(lines)
+
+
+# WHY IT MOVED (30 Oct 2026). The short prompt asked "why did it move?" and
+# handed the writer a quote and a screener line: no release, no dated
+# headline, no word on whether the day was a print. Gemini's Boeing short on
+# the morning BA reported said revenue rose from $62B in FY21 to $95B and
+# never said what the market reacted to. These are what every kind of day is
+# told about the cause; the evidence for it comes from `pipeline/move_kind`.
+WHY_RULE = """\
+WHY IT MOVED IS THE FIRST THING THE VIEWER WANTS, so it is the first thing you
+answer: by the end of the second beat, in plain words, with the specific thing
+and its figure. Name what the market actually read — a guide cut, a margin, a
+charge, deliveries, cash burn, a regulator, a deal, a downgrade. Then check the
+SIZE of the cause against the size of the move: a 0.7% revenue miss does not
+take a stock down 10.7%. When the headline figures are small next to the move,
+the reason is elsewhere — the guidance, the cash, a charge, something said on
+the call — and you search the release, the call transcript and the coverage
+until you find it. If nothing public explains the move, say exactly that, in
+his voice. Never invent a cause, and never fill the gap with a trailing-
+twelve-month total: the year to date is not what moved today."""
+
+WHY_BY_KIND = {
+    "earnings": """\
+THIS IS AN EARNINGS REACTION, and the video is cut as the EARNINGS short (its
+beats are under THE CUT). One session is about THIS QUARTER: the print against
+what the street expected, the quarter against the SAME quarter a year earlier,
+and the guide. Six years of annual figures do not explain a day; they stay out
+unless one of them is the reason. Fill `reported` and `expected` with the print
+and the street's figure for the number that moved the stock (EPS or revenue —
+the one you talk about), and `guidance` with what changed in the outlook. The
+STRUCTURE EXAMPLE at the end is a trending short: take its voice, not its
+rows or its beats.""",
+    "news": """\
+THIS IS A COMPANY-NEWS DAY: the headline beat is the cause. Say what the news
+literally changes — a contract's size and length, a ruling's cost, a guide's
+new number — and whether that is worth the move.""",
+    "move": """\
+NOTHING ON FILE EXPLAINS THIS MOVE YET. Before you write, search for the cause:
+today's coverage, a peer's results, a sector or index move, a filing, a rating
+change, an options or short-squeeze story. If the whole sector moved, that is
+the cause, and you say so. If you find nothing, the honest hook is that nobody
+has said why — say it; do not guess.""",
+}
+
+
+def why_it_moved_block(ctx: "_Ctx") -> str:
+    """{{why_it_moved}}: the kind of day, the record of it, the rules."""
+    from pipeline.move_kind import MOVE, kind_name
+
+    day = ctx.move_kind
+    if day is None:
+        return (f"(the day was not read for {ctx.ticker.upper()} — search for "
+                f"why it moved before you write)\n\n{WHY_RULE}")
+    lines = [f"WHAT KIND OF DAY THIS IS — {kind_name(day.kind).upper()}. "
+             f"{day.why}"]
+    if day.release_text:
+        when = " ".join(b for b in (day.reported_on, day.timing) if b)
+        lines += ["", f"THE RELEASE — the company's own words, the start of "
+                      f"the press release it filed ({when}; 8-K exhibit "
+                      f"99.1). The market read this; quote it, never the "
+                      f"coverage of it. The figures in it are the reported "
+                      f"ones, which the workbook may not carry yet:",
+                  f"\"{day.release_text}\""]
+    if day.headlines:
+        lines += ["", "HEADLINES DATED AROUND THE MOVE (newest first):"]
+        lines += [f"  {h.get('date', '')} · {h.get('source') or 'source n/a'}"
+                  f" · {h.get('headline', '')}" for h in day.headlines]
+    lines += ["", WHY_RULE, "", WHY_BY_KIND.get(day.kind, WHY_BY_KIND[MOVE])]
+    return "\n".join(lines)
+
+
+ANNUAL_NUMBERS_RULE = """\
+4. `numbers`: 1–4 rows from the history table above. Name each one's History row in `field`, by the table's own key (`revenue`, `net_income`, `fcf`, `diluted_shares`): the bot draws that row's figures straight from the operator's workbook, so the screen cannot disagree with it. Still type its SIX values OLDEST → NEWEST — the table's six periods: four fiscal years, the last full year, LTM — as display strings ("$1.2B", "-18%", "365M"); they are used only where the workbook has no such row. Set `years` to those six period heads as the table labels them. Where the table has no figure, write "" in that place rather than closing the gap: five figures under six heads put every one under the wrong year, and the bot refuses the script. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. EACH ROW IS ITS OWN CARD on screen, coming up as you say its name, so say the rows in the order you list them and name each one when you get to it. A fifth is never drawn. Don't pad."""
+
+
+def _six_quarters(ctx: "_Ctx") -> list[str]:
+    """The last six quarter heads as the prompt's table labels them."""
+    from pipeline.short_data import quarter_labels
+
+    if ctx.data is None or not getattr(ctx.data, "has_quarters", False):
+        return []
+    heads = quarter_labels(ctx.data)
+    return heads[-6:] if len(heads) >= 6 else []
+
+
+def numbers_rule_block(ctx: "_Ctx") -> str:
+    """{{numbers_rule}}: the sheet's rows — years, or on an earnings day the
+    last six quarters, each read against the same quarter a year earlier."""
+    heads = _six_quarters(ctx) if _earnings_day(ctx) else []
+    if not heads:
+        if _earnings_day(ctx):
+            return ("(This workbook has no six quarters to draw, so the sheet "
+                    "falls back to the years — keep it to the rows that "
+                    "explain the print, and say the quarter's own figures "
+                    "from the release.)\n" + ANNUAL_NUMBERS_RULE)
+        return ANNUAL_NUMBERS_RULE
+    listed = ", ".join(f'"{h}"' for h in heads)
+    return (
+        "4. `numbers`: 1–4 rows from the QUARTERS table above — this is an "
+        "earnings day, and every row is read against the SAME QUARTER A YEAR "
+        "EARLIER. Name each one's row in `field` by the table's own key "
+        "(`revenue`, `operating_income`, `operating_margin`, `fcf`, `eps`): "
+        "the bot draws that row's figures straight from the workbook's "
+        "Quarters sheet, so the screen cannot disagree with it. Set `years` "
+        f"to these six heads, the table's LAST SIX quarters by name, oldest → "
+        f"newest: [{listed}]. The second of them is the same quarter a year "
+        f"before the last. Still type each row's six values in that "
+        f"order as display strings (\"$24.2B\", \"-$1.4B\", \"7.1%\"); they "
+        f"are used only where the workbook has no such row, and where the "
+        f"table has no figure write \"\" in that place. EACH ROW IS ITS OWN "
+        f"CARD on screen — the six quarters as bars, and the latest against "
+        f"a year earlier — coming up as you say its name, so say the rows in "
+        f"the order you list them and, for each, where it was a year earlier "
+        f"and where it is now. Pick the rows that explain the move: revenue "
+        f"against the street, the margin or operating income, the cash. A "
+        f"fifth is never drawn. If the table's last quarter is not the one "
+        f"just reported, the workbook is behind the release: say the "
+        f"release's figures aloud and keep the rows to what the table has.")
+
+
+def numbers_skeleton_block(ctx: "_Ctx") -> str:
+    """{{numbers_skeleton}}: `years` and one `numbers` row in the JSON."""
+    heads = _six_quarters(ctx) if _earnings_day(ctx) else []
+    if not heads:
+        return ('  "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],\n'
+                '  "numbers": [\n'
+                '    {"label": "Revenue", "field": "revenue", "values": '
+                '["<oldest>", "<...>", "<...>", "<...>", "<...>", "<LTM>"]}\n'
+                '  ],')
+    listed = ", ".join(f'"{h}"' for h in heads)
+    return (f'  "years": [{listed}],\n'
+            '  "numbers": [\n'
+            '    {"label": "Revenue", "field": "revenue", "values": '
+            '["<oldest quarter>", "<the same quarter a year before the '
+            'latest>", "<...>", "<...>", "<...>", "<the quarter just '
+            'reported>"]}\n'
+            '  ],')
+
+
+def kind_skeleton_block(ctx: "_Ctx") -> str:
+    """{{kind_skeleton}}: the earnings cut's own fields, or nothing."""
+    if not _earnings_day(ctx):
+        return ""
+    return ('  "reported": "<the print that moved it, <= 6 chars: \\"$1.42\\" '
+            'or \\"$24.2B\\">",\n'
+            '  "expected": "<the street\'s figure for the same number, <= 6 '
+            'chars>",\n'
+            '  "guidance": "<the guide and what changed in it, <= 140 '
+            'chars>",\n')
 
 
 def angle_number(chosen: str) -> int | None:
@@ -1091,6 +1254,10 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{move_context}}", ("short",), lambda c: c.move_context or (
         "(no live quote and no screener context — fill in how much it moved "
         "today, on what volume, and the headline that did it)")),
+    PayloadBlock("{{why_it_moved}}", ("short",), why_it_moved_block),
+    PayloadBlock("{{numbers_rule}}", ("short",), numbers_rule_block),
+    PayloadBlock("{{numbers_skeleton}}", ("short",), numbers_skeleton_block),
+    PayloadBlock("{{kind_skeleton}}", ("short",), kind_skeleton_block),
     PayloadBlock("{{headline}}", ("headline",),
                  lambda c: c.headline.strip() or "(no headline text supplied)"),
     PayloadBlock("{{article_summary}}", ("headline",),
@@ -1179,7 +1346,7 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                  lambda c: plate_catalogue(
                      c.settings, fmt="short" if c.fmt == "short" else "long",
                      sector=_sector(c),
-                     only=(template_plates(c.settings, "short")
+                     only=(template_plates(c.settings, _shot_format(c))
                            if c.fmt == "short" else None))),
     # The writer's menu of rooms and poses for [SCENE]: the long is the
     # writer's to direct, so the prompt lists every angle and pose the kit
@@ -1234,6 +1401,7 @@ def fill_prompt(
     headline: str = "",
     article_summary: str = "",
     headline_mode: str = "",
+    move_kind: Any = None,
 ) -> str:
     """Fill one master prompt from `PAYLOAD`.
 
@@ -1253,7 +1421,8 @@ def fill_prompt(
     ctx = _Ctx(fmt=fmt, ticker=ticker, data=data, workspace=workspace,
                settings=settings, move_context=move_context,
                chosen_angle=chosen_angle, headline=headline,
-               article_summary=article_summary, headline_mode=headline_mode)
+               article_summary=article_summary, headline_mode=headline_mode,
+               move_kind=move_kind)
     # ONE PASS over the template. Filling the tokens one after another meant
     # text a block put in — a headline, an article summary, a filing quote,
     # none of it written here — was searched again for the tokens after it,

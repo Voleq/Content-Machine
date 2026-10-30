@@ -64,9 +64,16 @@ class StubResolver:
         if src == "numbers.headline_figure":
             return "$1.2B"
         parts = set(src.split("."))
-        # Today's session in the six points the move plates draw.
+        # Today's session in the six points the move plates draw, and in the
+        # seven `charts/intraday` draws.
         if {"series", "figures", "path-6"} & parts:
             return ",".join(str(10 + i * 3) for i in range(6))
+        if src == "chart.session.plot-area":
+            return ",".join(str(10 + i * 3) for i in range(7))
+        if src == "chart.session.figure":
+            return "+3.4%"
+        if src.startswith("chart.session.head-"):
+            return "09:30"
         if {"heads", "axis"} & parts:
             return "a,b,c,d"
         if "years" in parts:

@@ -759,6 +759,7 @@ and checks every name the bot registers against them in both directions.
 | `/new long TICKER` | Opens a LONG (16:9 deep dive) **and starts reading the filings immediately** — the latest 10-K, the prior year's and the quarterly pair, in parallel with you refreshing the workbook. Two steps: Step 1 returns ranked angles (pick one with its button, or reply with a tweak), Step 2 is the writing prompt. |
 | `/new update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Gets the same filing brief, additionally **graded against what the last video claimed**. Refuses (and points at `/new long`) when no thesis is on file. |
 | `/new headline TICKER <text or URL>` | A SHORT about one specific headline. `/new headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `[company]`, `[earnings]` or `[macro]` (or `[a]`/`[b]`/`[c]`). The mode sets the lane and picks the shot template. |
+| `/new kind [TICKER] earnings\|news\|move` | A SHORT reads its day when the prompt is made: an **earnings reaction** when the SEC has an 8-K under item 2.02 (results) from the last four days or a headline says so, **company news** when other headlines are dated then, otherwise a **move** nothing public explains. An earnings day is cut as the earnings short (the print against the street, the quarter against the same quarter a year before, the guide). This sets it by hand and makes the prompt again; with no kind it says what the day was read as. |
 
 ### /script — Reviewing and editing the script
 
@@ -907,6 +908,7 @@ Every name the bot answered before the families still works, as a hidden alias o
 | `/headline` | `/new headline` |
 | `/hooks` | `/stats hooks` |
 | `/idea` | `/ideas add` |
+| `/kind` | `/new kind` |
 | `/kit` | `/admin kit` |
 | `/lessons` | `/stats lessons` |
 | `/lines` | `/stats lines` |

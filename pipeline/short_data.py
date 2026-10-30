@@ -358,16 +358,79 @@ def history_values(data, field: str) -> list[float | None] | None:
     return vals
 
 
+# A period head that names a quarter: `Q3 FY26`, `Q3 '26`, `Q3 2026`, `3Q26`.
+_QUARTER_HEAD = re.compile(
+    r"^(?:Q[1-4]\s*(?:FY)?\s*'?\d{2}(?:\d{2})?|[1-4]Q\s*'?\d{2}(?:\d{2})?)$", re.I)
+
+
+def is_quarterly(script, data=None) -> bool:
+    """Whether a SHORT's sheet is quarters rather than years.
+
+    An EARNINGS short reads the quarter against the same quarter a year
+    earlier (Valentin, 30 Oct 2026: "it should've compared year to year,
+    revenue by quarters, not the revenue from 2021 onwards"), so its writer
+    sets `years` to the last six quarter heads of the Quarters table. Told by
+    those heads: the workbook's own last six, or six heads that each name a
+    quarter.
+    """
+    years = [str(y).strip() for y in getattr(script, "years", []) or []]
+    if len(years) < 2:
+        return False
+    if data is not None:
+        labels = quarter_labels(data)
+        if len(labels) >= len(years) and years == labels[-len(years):]:
+            return True
+    return all(_QUARTER_HEAD.match(y) for y in years)
+
+
+def year_ago_index(values: list, years: list[str] | None = None,
+                   quarterly: bool | None = None) -> int | None:
+    """Which column a row's latest figure is compared with.
+
+    On a quarterly sheet the same quarter a year earlier, four columns back:
+    the quarter before it is a seasonal comparison, and the first column is
+    six quarters ago, which is neither. On an annual sheet the first figure
+    the row has, as it always was. None when there is nothing to compare.
+    """
+    cells = [str(v).strip() for v in values]
+    last = next((k for k in range(len(cells) - 1, -1, -1) if cells[k]), None)
+    if last is None:
+        return None
+    if quarterly is None:
+        quarterly = bool(years) and all(
+            _QUARTER_HEAD.match(str(y).strip()) for y in years)
+    if quarterly:
+        k = last - 4
+        return k if k >= 0 and cells[k] else None
+    first = next((k for k, c in enumerate(cells) if c), None)
+    return first if first is not None and first != last else None
+
+
+def quarter_values(data, field: str, n: int) -> list[float | None] | None:
+    """The last `n` quarters of a Quarters row, or None with fewer than two."""
+    if data is None or not field:
+        return None
+    vals = list((getattr(data, "quarters", {}) or {}).get(field) or [])[-n:]
+    if len(vals) != n or sum(1 for v in vals if v is not None) < 2:
+        return None
+    return vals
+
+
 def fill_numbers(script, data) -> tuple[Any, list[str]]:
     """`script` with every sheet row it can match taken from the workbook.
 
     The writer names the rows; the figures on screen are the History sheet's,
-    so the sheet cannot disagree with the workbook. A row that names no field
+    so the sheet cannot disagree with the workbook — or the Quarters sheet's,
+    for an earnings short whose heads are quarters. A row that names no field
     and whose label matches none keeps the figures typed for it, and is
     reported. Returns `(script, notes)`; the script is a copy.
     """
     rows = list(getattr(script, "numbers", []) or [])
-    if data is None or not rows or not getattr(data, "has_history", False):
+    if data is None or not rows:
+        return script, []
+    if is_quarterly(script, data):
+        return _fill_quarters_rows(script, data, rows)
+    if not getattr(data, "has_history", False):
         return script, []
     heads = year_labels(data, list(getattr(script, "years", []) or []))
     notes: list[str] = []
@@ -390,6 +453,37 @@ def fill_numbers(script, data) -> tuple[Any, list[str]]:
         new_rows.append(row.model_copy(update={"values": figures, "field": f}))
     update: dict = {"numbers": new_rows}
     if len(heads) == len(new_rows[0].values) and heads != list(script.years or []):
+        update["years"] = heads
+    return script.model_copy(update=update), notes
+
+
+def _fill_quarters_rows(script, data, rows) -> tuple[Any, list[str]]:
+    """`fill_numbers` for a sheet of quarters: the Quarters sheet's figures
+    under the workbook's own quarter heads."""
+    if not getattr(data, "has_quarters", False):
+        return script, ["the sheet is quarters and the workbook has no "
+                        "Quarters sheet: the typed figures are shown"]
+    n = len(getattr(script, "years", []) or [])
+    heads = quarter_labels(data)[-n:]
+    notes: list[str] = []
+    new_rows = []
+    for row in rows:
+        f = field_for(row.label, getattr(row, "field", None))
+        vals = quarter_values(data, f, n) if f else None
+        if vals is None:
+            notes.append(f"{row.label}: no quarterly row by that name in the "
+                         f"workbook; the typed figures are shown")
+            new_rows.append(row)
+            continue
+        figures = [fmt(f, v) for v in vals]
+        typed = [str(x).strip() for x in row.values]
+        if typed and any(t and t != g for t, g in zip(typed, figures)):
+            notes.append(f"{row.label}: shown from the workbook's quarters "
+                         f"({', '.join(g for g in figures if g)}) instead of "
+                         f"the typed {', '.join(t for t in typed if t)}")
+        new_rows.append(row.model_copy(update={"values": figures, "field": f}))
+    update: dict = {"numbers": new_rows}
+    if len(heads) == n and heads != list(script.years or []):
         update["years"] = heads
     return script.model_copy(update=update), notes
 
@@ -425,11 +519,21 @@ def _nice_step(span: float) -> float:
     return 10 * mag
 
 
-def axis_ticks(values: list[float]) -> list[float]:
-    """Five evenly spaced gridline values that hold every bar and zero."""
+def axis_ticks(values: list[float], headroom: float = 0.0) -> list[float]:
+    """Five evenly spaced gridline values that hold every bar and zero.
+
+    `headroom` is how much of the scale above the tallest bar stays empty, as
+    a share of the bars' span: 1/3 keeps the tallest bar at three quarters of
+    the top gridline or lower. A short's metric card asks for it so its
+    caption has a clear row between the figures printed along the top and
+    the bars (30 Oct 2026: on a card whose tallest bar reached the top
+    gridline, the caption went over the bars).
+    """
     lo, hi = min([0.0] + values), max([0.0] + values)
     if hi == lo:
         hi = lo + 1.0
+    if headroom > 0 and hi > 0:
+        hi += (hi - lo) * headroom
     step = _nice_step(hi - lo)
     base = math.floor(lo / step) * step
     ticks = [base + i * step for i in range(5)]
@@ -771,6 +875,9 @@ def _signed_pct(frac: float) -> str:
     return f"{'+' if v > 0 else '−' if v < 0 else ''}{abs(v):.1f}%"
 
 
+SESSION_KICKER_CHARS = 17
+
+
 def session_card(session, script=None) -> dict[str, str] | None:
     """`charts/intraday`: today's session against the prior close.
 
@@ -794,14 +901,27 @@ def session_card(session, script=None) -> dict[str, str] | None:
         return None
     when = _dt.date.fromisoformat(session.day)
     ticker = (session.ticker or str(getattr(script, "ticker", "") or "")).upper()
+    now = session.prices[-1]
+    # THE DAY AND WHAT THE LINE IS, in what `charts/intraday` holds: its
+    # kicker takes 17 characters and its unit 14, so "EXMPL · 11 SEPTEMBER"
+    # and "price, one session" were dropped and the card went up undated.
+    kicker = f"{ticker} · {when.day} {when:%B}".upper()
+    if len(kicker) > SESSION_KICKER_CHARS:
+        kicker = f"{ticker} · {when.day} {when:%b}".upper()
     out = {
-        "kicker": f"{ticker} · {when.day} {when:%B}".upper()[:25],
-        "unit": "price, one session" if session.complete else "price, so far today",
+        "kicker": kicker,
+        "unit": "price, one day" if session.complete else "price so far",
         "figure": _signed_pct(move),
         "plot-area": ",".join(f"{(p / session.prior_close - 1) * 100:.2f}"
                               for _t, p in pts),
-        "event-label": f"At {pts[2][0]}, {_signed_pct(pts[2][1] / session.prior_close - 1)}",
-        "caption": f"The line across is the prior close, ${session.prior_close:,.2f}",
+        # A PRICE ON THE LINE, not only a percentage (30 Oct 2026: "it just
+        # shows a line that went down").
+        "event-label": (f"{pts[2][0]} · ${pts[2][1]:,.2f} · "
+                        f"{_signed_pct(pts[2][1] / session.prior_close - 1)}"),
+        "caption": (f"${now:,.2f} {'close' if session.complete else 'now'}; "
+                    f"the line across is ${session.prior_close:,.2f}"),
+        # What the six-point box under a move figure is, in words.
+        "unit6": f"the session, {session.times[0]} to {session.times[-1]}",
     }
     for i in (1, 3, 5, 7):
         out[f"head-{i}"] = pts[i - 1][0]
@@ -814,6 +934,70 @@ def session_card(session, script=None) -> dict[str, str] | None:
         out["path-6"] = ",".join(f"{(p / session.prior_close - 1) * 100:.2f}"
                                  for _t, p in six)
     return out
+
+
+def claimed_move(script) -> float | None:
+    """The move the writer narrates, in percent, off `move_summary`'s lead."""
+    summary = str(getattr(script, "move_summary", "") or "")
+    m = re.match(r"^\s*([+\-−–])\s*(\d+(?:\.\d+)?)\s*%", summary)
+    if not m:
+        return None
+    return float(m.group(2)) * (1 if m.group(1) == "+" else -1)
+
+
+# How close a day's close-to-close change must come to the narrated move to be
+# the day the short is about.
+MOVE_DAY_PTS = 1.5
+
+
+def move_day(prices, claimed: float | None, *, look_back: int = 6
+             ) -> dict | None:
+    """The session the narrated move happened on, off the daily closes.
+
+    `{"day", "close", "prior", "move"}` for the latest of the last few
+    sessions whose change matches the move within `MOVE_DAY_PTS`, and the
+    latest session when nothing is claimed. None without two closes or a
+    match: a price printed beside a move it did not make is worse than none.
+    """
+    dates = list(getattr(prices, "dates", []) or [])
+    closes = list(getattr(prices, "closes", []) or [])
+    if len(dates) < 2 or len(dates) != len(closes):
+        return None
+    if getattr(prices, "degraded", False) or \
+            str(getattr(prices, "source", "")) == "synthetic":
+        return None
+    for i in range(len(closes) - 1, max(0, len(closes) - 1 - look_back), -1):
+        prior, close = closes[i - 1], closes[i]
+        if not prior or close is None:
+            continue
+        moved = (close / prior - 1.0) * 100.0
+        if claimed is None or abs(moved - claimed) <= MOVE_DAY_PTS:
+            return {"day": str(dates[i])[:10], "close": float(close),
+                    "prior": float(prior), "move": moved}
+    return None
+
+
+def money_price(v: float) -> str:
+    """A share price as a card prints it: `$168.18`, `$1,204.50`."""
+    from pipeline.chart import _price_text
+
+    return f"${_price_text(float(v), 9)}"
+
+
+def move_price(session, day: dict | None, script=None) -> str | None:
+    """`$168.18 at the close, from $188.31`: the price the move took it to.
+
+    Off the session when it is the move's own (it agrees with the narration),
+    else off the daily closes of the move's day. None with neither.
+    """
+    if session is not None and session_card(session, script) is not None:
+        now = session.prices[-1]
+        when = "at the close" if session.complete else "now"
+        return f"{money_price(now)} {when}, from {money_price(session.prior_close)}"
+    if day:
+        return (f"{money_price(day['close'])} at the close, from "
+                f"{money_price(day['prior'])}")
+    return None
 
 
 CARDS = {
