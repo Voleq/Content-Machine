@@ -393,6 +393,10 @@ def c_coldread(c: Call):
     return c.core.cold_read(c.chat_id, c.raw or " ".join(c.args))
 
 
+def c_trust(c: Call):
+    return c.core.trust_fact(c.chat_id, c.args[0] if c.args else "")
+
+
 def c_swap(c: Call):
     ws = c.core.context.get(c.chat_id)
     if ws is None:
@@ -863,6 +867,14 @@ COMMANDS: tuple[Command, ...] = (
                 "(lost me, landed, fell flat, I'd click away, didn't "
                 "believe). Send the answer back after the command and it is "
                 "saved beside the script, each quote linked to its line.")),
+    Command("script", "trust", "KEY",
+            "let one fact-check block through: you checked the figure",
+            c_trust, ack="⏳ re-checking…", doc=(
+                "For a fact-check that blocks a figure you know is right: "
+                "the Check step's “It's right, let it through” button sends "
+                "it with the finding's key. The block comes back as a note "
+                "on every later check, until the sentence or the workbook "
+                "changes; then the figure is checked again.")),
     Command("script", "swap", "", "the swap-clip menu (LONG)", c_swap, doc=(
         "One button per swappable visual in the LONG; each tap rotates that "
         "beat to its next take and re-prices the report.")),

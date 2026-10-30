@@ -383,6 +383,26 @@ _METRIC_WORDS = {
     "net_margin": ("net margin",),
 }
 
+# CASH FLOW, SAID BARE, IS ONE OF TWO ROWS. "Quarterly cash flow hit three
+# hundred thirty two million" names neither free nor operating cash flow, and
+# with no metric of its own in reach the figure was handed to the revenue
+# named a clause earlier and blocked (BA short, 30 Oct 2026). A spoken name
+# only: a sheet row says which one it is.
+_EITHER_METRIC = {"cash_flow": ("fcf", "operating_cf")}
+_SPOKEN_METRIC_WORDS = {**_METRIC_WORDS, "cash_flow": ("cash flow", "cash flows")}
+
+# What a finding calls a row. Field names are for code; "fcf" on the Check
+# step read like a typo.
+_METRIC_NAMES = {
+    "fcf": "free cash flow", "fcf_margin": "free cash flow margin",
+    "operating_cf": "operating cash flow", "ebitda": "EBITDA",
+    "sbc": "stock comp", "cash_flow": "cash flow",
+}
+
+
+def _metric_name(metric: str) -> str:
+    return _METRIC_NAMES.get(metric, metric.replace("_", " "))
+
 # Spoken figures are rounded ("four hundred million" for 400.2M), so a claim
 # counts as supported when it lands inside this band of any real value.
 _TOLERANCE = 0.02
@@ -587,8 +607,13 @@ _ATTACHED_RE = re.compile(r"^\s*(?:on|for|in|per|across|toward|towards)\s+"
 # "A loss of 89 million" is a minus without the word: the figure is a loss and
 # the sheet holds it as -89M.
 _NEGATIVE_RE = re.compile(
-    r"(?:minus|negative|-|\b(?:loss(?:es)?|deficit) of"
+    r"(?:minus|negative|-|\b(?:loss(?:es)?|deficit|outflow|burn) of"
     r"(?: about| around| roughly| nearly| almost)?)\s*$")
+# ...and a minus said AFTER the figure: "a three hundred million loss",
+# "three fifty seven million of cash burn", "eighty million in the red".
+_NEGATIVE_AFTER_RE = re.compile(
+    r"^\s*(?:dollars?\s+)?(?:in\s+the\s+red\b|(?:of\s+)?(?:net\s+|cash\s+)?"
+    r"(?:loss|losses|burn|outflows?)\b)")
 
 # A FIGURE ABOUT THE FUTURE is not on the sheet. The long's guidance chapter
 # and the earnings short's expected beat are invited to say what management
@@ -619,7 +644,11 @@ _FALL_RE = re.compile(
     r"\b(?:fell|falls?|falling|dropped|drops?|dropping|declined|declines?|"
     r"declining|down|shrank|shrunk|shrinks?|shrinking|slid|slides?|sliding|"
     r"slipped|slips?|decreased|decreases?|contracted|contracts?|plunged|"
-    r"plunges?|sank|sinks?|tumbled|tumbles?|lost|loses?|losing)"
+    r"plunges?|sank|sinks?|tumbled|tumbles?|lost|loses?|losing|"
+    # Cash BURNED is cash gone: "free cash flow burned three fifty seven
+    # million" against a sheet holding -357M was compared as +357M and
+    # blocked a true sentence (BA short, 30 Oct 2026).
+    r"burn(?:ed|t|s|ing)?(?:\s+through)?|bled|bleeds?|bleeding)"
     r"(?:\s+(?:by|about|around|roughly|nearly|almost|some|just|over|another|"
     r"more\s+than|less\s+than))*\s*$")
 
@@ -637,12 +666,61 @@ _MOVE_TAIL = (r"\s+(?:(?:is|was|are|were|has|have|had|'s)\s+)?(?:been\s+)?"
               r"(?:\s+(?:by|about|around|nearly|almost|over|some))?\s*$")
 
 
-def _price_move_re(ticker: str) -> re.Pattern:
-    """The stock as the subject of a move, ending where the number starts."""
+def _price_move_re(ticker: str, names: tuple[str, ...] = ()) -> re.Pattern:
+    """The stock as the subject of a move, ending where the number starts.
+
+    THE COMPANY'S NAME IS THE STOCK TOO. "Boeing is down ten point seven
+    percent today" never matched, because only the ticker, "the stock" and
+    "shares" did, and the day's move was read as operating income growth and
+    blocked the render (BA short, 30 Oct 2026). Every hook names the company.
+    """
     subjects = [r"(?:the\s+)?stock", r"(?:the\s+)?shares", r"(?:the\s+)?share\s+price"]
     if ticker.strip():
         subjects.append(re.escape(ticker.strip().lower()))
+    subjects += [re.escape(n) + r"(?:'s|’s)?(?:\s+(?:stock|shares))?"
+                 for n in names if n]
     return re.compile(r"\b(?:" + "|".join(subjects) + r")" + _MOVE_TAIL)
+
+
+# The words a company name carries that a script drops: "The Boeing Company"
+# is "Boeing" out loud.
+_LEGAL_WORDS_RE = re.compile(
+    r"\b(?:the|inc|incorporated|corp|corporation|co|company|companies|"
+    r"holdings?|group|plc|ltd|limited|llc|lp|sa|ag|nv|se|class\s+[a-z])\b\.?")
+
+
+def _company_names(data) -> tuple[str, ...]:
+    """How a script says the company: the name without its legal words, and
+    its first word when that reads as a name on its own (four letters or
+    more, and not a word like "General" that starts many names)."""
+    raw = data.get("company_name") if hasattr(data, "get") else None
+    if not isinstance(raw, str) or not raw.strip():
+        return ()
+    clean = " ".join(re.sub(r"[^\w\s&'-]", " ",
+                            _LEGAL_WORDS_RE.sub(" ", raw.lower())).split())
+    out = [clean] if len(clean) >= 3 else []
+    first = clean.split()[0] if clean else ""
+    if len(first) >= 4 and first not in out and first not in _COMMON_FIRST:
+        out.append(first)
+    return tuple(out)
+
+
+# A first word that is a word before it is a name: "General Motors" is not
+# "General is down", "American Express" not "American".
+_COMMON_FIRST = frozenset({
+    "general", "american", "united", "first", "national", "international",
+    "global", "new", "royal", "western", "eastern", "southern", "northern",
+    "public", "union", "federal", "advanced", "applied", "digital",
+})
+
+
+# A FIGURE SAID WITH THE SESSION IS THE PRICE. "Down ten point seven percent
+# today", "up four percent after hours": in a clause naming no line of the
+# workbook, a percentage that happened today is the stock's move.
+_SESSION_RE = re.compile(
+    r"\b(?:today|tonight|this morning|this afternoon|intraday|"
+    r"pre-?market|after[- ]hours|overnight|on the day|at the open|"
+    r"at the close|in one session|since the (?:print|report|call|open))\b")
 
 
 def _unit_scale(series: list[float]) -> float:
@@ -681,31 +759,6 @@ def _shorthand(value: float, target: float) -> float:
     while abs(v) > limit * 1000:
         v /= 1000
     return v
-
-
-def _comparison_values(series: list[float], *, rate: bool) -> list[float]:
-    """Everything a script can legitimately say about this series.
-
-    Levels, and the period-over-period CHANGE between consecutive levels —
-    "five million of revenue" against a sheet going 491 to 496 is a true
-    statement, and a gate that could only see levels called it a fabrication.
-    """
-    scale = 1.0 if rate else _unit_scale(series)
-    values = [v * scale for v in series]
-    values += [b - a for a, b in zip(values, values[1:])]
-    return values
-
-
-def _growth_rates(series: list[float]) -> list[float]:
-    """Period-over-period growth, in percent — what a spoken percentage
-    against a currency metric ("revenue grew eleven percent") is claiming."""
-    out: list[float] = []
-    for a, b in zip(series, series[1:]):
-        if a:
-            out.append((b - a) / abs(a) * 100.0)
-    if len(series) >= 2 and series[0]:
-        out.append((series[-1] - series[0]) / abs(series[0]) * 100.0)
-    return out
 
 
 def _matches_scaled(value: float, candidates: list[float]) -> bool:
@@ -961,7 +1014,8 @@ def _mask_decoys(text: str) -> str:
     return text
 
 
-def _metric_spans(masked: str) -> list[tuple[str, int, int]]:
+def _metric_spans(masked: str, words: dict | None = None
+                  ) -> list[tuple[str, int, int]]:
     """Every metric word in `masked` as (metric, start, end).
 
     A word that sits INSIDE a longer word of another metric is not a mention
@@ -970,18 +1024,21 @@ def _metric_spans(masked: str) -> list[tuple[str, int, int]]:
     free-cash-flow margin against free cash flow itself.
     """
     spans = [(metric, at, at + len(w))
-             for metric, words in _METRIC_WORDS.items() for w in words
+             for metric, names in (words or _METRIC_WORDS).items()
+             for w in names
              for at in (m.start() for m in re.finditer(re.escape(w), masked))]
     return [s for s in spans
             if not any(o[0] != s[0] and o[1] <= s[1] and s[2] <= o[2]
                        and o[2] - o[1] > s[2] - s[1] for o in spans)]
 
 
-def _metrics_named(low: str) -> dict[str, tuple[int, int]]:
+def _metrics_named(low: str, words: dict | None = None
+                   ) -> dict[str, tuple[int, int]]:
     """metric -> (start, end) of its first mention, decoys removed."""
-    spans = _metric_spans(_mask_decoys(low))
+    words = words or _METRIC_WORDS
+    spans = _metric_spans(_mask_decoys(low), words)
     out: dict[str, tuple[int, int]] = {}
-    for metric in _METRIC_WORDS:
+    for metric in words:
         mine = [(start, end) for m, start, end in spans if m == metric]
         if mine:
             out[metric] = min(mine)
@@ -1026,48 +1083,358 @@ def _gap(mention: tuple[int, int], start: int, end: int) -> int:
 
 
 def _owner_of(number_start: int, number_end: int, tail: str,
-              named: dict[str, tuple[int, int]], low: str) -> str | None:
-    """Which metric a number is a claim about, or None if it is not one.
+              named: dict[str, tuple[int, int]], low: str,
+              figures=(), *, percent: bool = False) -> tuple[str | None, bool]:
+    """Which metric a number is a claim about, and whether that is KNOWN.
 
-    Two rules, in order:
+    Returns `(metric, sure)`, or `(None, False)` when the number is not a
+    claim about any metric. Rules, in order:
 
     1. A number attached to its own subject by a preposition belongs to that
        subject. "Two hundred and twelve million ON SALES AND MARKETING" is
        not a revenue figure, even in a sentence that goes on to mention
        revenue — and reading it as one is how a blocking gate blocks a
        correct script.
-    2. Otherwise the nearest metric mention owns it, which in the common
-       single-metric sentence means all of them — so a recital of a whole
-       series is checked rather than only its first number. Nearest is the
-       gap between the number and the metric's NAME, not between the number
-       and where the name starts: "free cash flow was negative fifteen
-       million, or about three percent of revenue" put the fifteen nearer to
-       "revenue" than to the start of "free cash flow".
+    2. A percentage that names its own subject belongs to it: "nine point
+       four percent perpetual cash growth" is nobody's EBITDA growth, and
+       "ten percent revenue growth" is revenue's.
+    3. Inside its own clause first. "Revenue sat at four hundred ninety six
+       million, free cash flow at negative fifteen million": the 496 is
+       nearer "free cash flow" by characters and is still revenue's. Nearest
+       is the gap to the metric's NAME, not to where the name starts.
+    4. A clause that is only the series going on ("…, to four fifty, then
+       four ninety six") belongs to the metric the series started with, so a
+       recital is checked through to its last number.
+    5. Anything else goes to the nearest metric in the sentence, and that is
+       a GUESS. "Boeing is down ten point seven percent today, with sixty
+       million of operating profit" handed the day's move to operating
+       income, a clause away, and blocked the render (BA short, 30 Oct
+       2026). A guess is still checked, and only ever warns.
     """
     if not named:
-        return None
+        return None, False
     if _MULTIPLE_RE.match(tail):
-        return None          # "eleven times earnings" is a multiple
+        return None, False   # "eleven times earnings" is a multiple
     attached = _ATTACHED_RE.match(tail)
     if attached and not _is_period_phrase(attached.group(1)):
-        owners = [m for m in _metrics_named(attached.group(1)) if m in named]
+        owners = [m for m in _metrics_named(attached.group(1),
+                                            _SPOKEN_METRIC_WORDS) if m in named]
         if not owners:
-            return None          # attached to something the export has no row for
-        return owners[0]
-    # 3. Inside its own clause first. "Revenue sat at four hundred ninety
-    #    six million, free cash flow at negative fifteen million": the 496 is
-    #    nearer "free cash flow" by characters and is still revenue's.
-    cuts = list(_CLAUSE_CUT_RE.finditer(low))
-    lo = max((c.end() for c in cuts if c.end() <= number_start), default=0)
-    hi = min((c.start() for c in cuts if c.start() >= number_end),
-             default=len(low))
+            return None, False   # attached to something the export has no row for
+        return owners[0], True
+    head = _OWN_HEAD_RE.match(tail) if percent else None
+    if head and not _neutral_head(head.group(1)):
+        owners = [m for m in _metrics_named(head.group(1), _SPOKEN_METRIC_WORDS)
+                  if m in named]
+        return (owners[0], True) if owners else (None, False)
+    lo, hi = _own_clause(low, number_start, number_end)
     mine = {m: at for m, at in named.items() if lo <= at[0] and at[1] <= hi}
-    pool = mine or named
-    return min(pool, key=lambda m: _gap(pool[m], number_start, number_end))
+    if mine:
+        return min(mine, key=lambda m: _gap(mine[m], number_start, number_end)), True
+    # "A hundred million shares became a hundred and twenty six": in a
+    # sentence that names the share count, a clause counting shares is it.
+    if "diluted_shares" in named and _SHARES_RE.search(low[lo:hi]):
+        return "diluted_shares", True
+    nearest = min(named, key=lambda m: _gap(named[m], number_start, number_end))
+    if _is_recital(low, lo, hi, figures):
+        before = {m: at for m, at in named.items() if at[1] <= number_start}
+        if before:
+            return max(before, key=lambda m: before[m][1]), True
+        return nearest, True
+    return nearest, False
 
 
-# Where one clause of a recital ends and the next begins.
-_CLAUSE_CUT_RE = re.compile(r"[,;:]|\s(?:and|but|while|whereas)\s")
+_SHARES_RE = re.compile(r"\bshares\b")
+
+# Where one clause of a recital ends and the next begins. "Yet", "though" and
+# "because" start a clause with a subject of its own as surely as "but" does.
+_CLAUSE_CUT_RE = re.compile(
+    r"[,;:]|\s(?:and|but|while|whereas|yet|though|although|because)\s")
+
+
+def _own_clause(low: str, start: int, end: int) -> tuple[int, int]:
+    """Where the clause holding the figure at `start:end` begins and ends."""
+    cuts = list(_CLAUSE_CUT_RE.finditer(low))
+    lo = max((c.end() for c in cuts if c.end() <= start), default=0)
+    hi = min((c.start() for c in cuts if c.start() >= end), default=len(low))
+    return lo, hi
+
+
+# A percentage followed by the thing it measures: "nine percent dividend
+# yield", "four percent perpetual cash growth", "fifty eight percent gross
+# margin". The words before the head noun say whose it is.
+_OWN_HEAD_RE = re.compile(
+    r"^\s*(?:percent\b|%)?\s*((?:[a-z][\w'-]*\s+){0,3}?"
+    r"(?:growth|cagr|margins?|yields?|returns?|rates?|discount|premium|stake|"
+    r"dilution)\b)")
+# Words that say WHEN or HOW a growth was measured, not WHAT grew: "nine
+# percent annual growth" is still the growth of the metric the sentence names.
+_HEAD_NEUTRAL = frozenset({
+    "annual", "annualised", "annualized", "yearly", "quarterly", "year",
+    "over", "sequential", "compound", "compounded", "average", "total",
+    "organic", "top", "line", "growth", "cagr", "rate", "rates", "a", "an",
+    "the", "of", "its", "their", "his", "her",
+})
+
+
+def _neutral_head(phrase: str) -> bool:
+    return all(w in _HEAD_NEUTRAL for w in re.findall(r"[a-z]+", phrase))
+
+
+# What a clause of a spoken series is made of besides its figure. "To four
+# fifty", "then minus twenty five", "and finally ninety six": a clause holding
+# only these is the series going on.
+_RECITAL_WORDS = frozenset({
+    "to", "then", "and", "from", "at", "about", "around", "roughly", "nearly",
+    "almost", "just", "over", "under", "a", "an", "the", "of", "in", "on",
+    "by", "dollars", "dollar", "percent", "per", "cent", "minus", "negative",
+    "plus", "positive", "up", "down", "was", "were", "is", "it", "its",
+    "finally", "now", "or", "more", "less", "than", "still", "only",
+    "another", "again", "back", "so", "after", "before", "million", "billion",
+    "thousand", "trillion", "hundred", "point", "bn", "m", "b", "k", "s",
+}) | _PERIOD_WORDS
+
+
+def _is_recital(low: str, lo: int, hi: int, figures) -> bool:
+    text = list(low[lo:hi])
+    for n in figures:
+        if lo <= n.start and n.end <= hi:
+            text[n.start - lo:n.end - lo] = " " * (n.end - n.start)
+    words = re.findall(r"[a-z]+", "".join(text))
+    return all(w in _RECITAL_WORDS for w in words)
+
+
+# A PERCENTAGE THE PRICE IMPLIES is not one the company reported. "Seventy
+# times EBITDA assumes nine point four percent perpetual cash growth" is the
+# reverse DCF talking, and was checked as EBITDA's growth and blocked (BA
+# short, 30 Oct 2026).
+_IMPLIED_RE = re.compile(
+    r"\b(?:assum(?:es|ed|ing|ptions?)|impl(?:ies|ied|y|ying)|priced (?:for|in)|"
+    r"baked in|perpetual|perpetuity|terminal|reverse dcf|discount rate|"
+    r"to justify)\b")
+
+# THE PERIOD A SENTENCE SAYS WITHOUT NAMING A COLUMN. "Quarterly cash flow hit
+# three hundred thirty two million" is a quarter's figure, and comparing it
+# with the yearly rows is what made the check read a quarter as a year.
+_QUARTERLY_RE = re.compile(
+    r"\b(?:quarterly|this quarter|the quarter|that quarter|last quarter|"
+    r"latest quarter|most recent quarter|per quarter|quarter[- ]over[- ]quarter|"
+    r"sequential(?:ly)?|qoq)\b")
+_YEARLY_RE = re.compile(
+    r"\b(?:yearly|annual|annually|full[- ]year|for the year|fiscal year|"
+    r"per year|trailing twelve months)\b")
+
+
+def _said_period(low: str) -> str:
+    """"quarterly", "yearly", or "" when the sentence says neither (or both)."""
+    q, y = bool(_QUARTERLY_RE.search(low)), bool(_YEARLY_RE.search(low))
+    return "quarterly" if q and not y else "yearly" if y and not q else ""
+
+
+_BEAT_TAG_RE = re.compile(r"\[BEAT\b[^\]]*\]", re.IGNORECASE)
+
+
+def _sentences(line: str) -> list[str]:
+    """A narration line as sentences. A `[BEAT]` mark ends one too: the
+    writer starts a new beat where the voice starts a new thought, full stop
+    or not, and "…of sales [BEAT: headline] Revenue missed…" read as one
+    sentence handed the headline's figure to the hook's metric."""
+    out: list[str] = []
+    for chunk in _BEAT_TAG_RE.split(line):
+        out += [s for s in re.split(r"(?<=[.!?])\s+", chunk.strip()) if s]
+    return out
+
+
+def _raw_row(data, which: str, field_name: str) -> list:
+    """One row of the History or Quarters sheet as stored, blanks and all,
+    so position i is still column i."""
+    if which == "history":
+        getter = getattr(data, "history_for", None)
+        if callable(getter):
+            try:
+                got = getter(field_name)
+            except Exception:                      # noqa: BLE001
+                got = None
+            if isinstance(got, (list, tuple)):
+                return list(got)
+    rows = getattr(data, which, None)
+    if not hasattr(rows, "get") and hasattr(data, "get"):
+        rows = data.get(which)
+    series = rows.get(field_name) if hasattr(rows, "get") else None
+    return list(series) if isinstance(series, (list, tuple)) else []
+
+
+def _latest_value(data, field_name: str) -> float | None:
+    snap = getattr(data, "dashboard", None)
+    got = snap.get(field_name) if hasattr(snap, "get") else (
+        data.get(field_name) if hasattr(data, "get") else None)
+    return float(got) if isinstance(got, (int, float)) and not isinstance(got, bool) else None
+
+
+def _num(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _pct(a: float, b: float) -> float | None:
+    return (b - a) / abs(a) * 100.0 if a else None
+
+
+@dataclass
+class _Verdict:
+    """What one figure was compared with, and whether it landed."""
+
+    ok: bool
+    flipped: bool        # it lands with the other sign
+    where: str           # " for Q4 FY25", a column the sentence named
+    shown: str
+    when: str = ""       # "quarterly " / "yearly ", a period it said
+
+
+def _show_levels(run: list[tuple[str, float]], rate: bool, n: int) -> str:
+    def one(v: float) -> str:
+        if rate:
+            return f"{v:,.1f}%"
+        from pipeline.models import _mag
+        return _mag(v)
+    picked = run[-n:] if len(run) > n else run
+    return " · ".join(f"{label} {one(v)}" for label, v in picked)
+
+
+def _judge(data, metric: str, sentence: str, value: float, percent: bool,
+           period: str) -> _Verdict | str | None:
+    """One figure against one metric's rows.
+
+    A `_Verdict`, a reason to list the sentence as not checked, or None when
+    there is nothing to hold it to.
+
+    EACH SHEET IS ITS OWN SERIES. The rows used to be poured into one bag —
+    the years, then the quarters, then the dashboard — and growth was taken
+    between neighbours in the bag, so the step from the last year to the
+    first quarter was a "growth rate", and a quarter's growth on the same
+    quarter a year earlier, the number an earnings video leads with, was not
+    a candidate at all.
+    """
+    rate = metric in _RATE_METRICS
+    ylab, qlab = _history_labels(data), _quarter_labels(data)
+    yrow, qrow = _raw_row(data, "history", metric), _raw_row(data, "quarters", metric)
+    ylab = ylab if len(ylab) == len(yrow) else [f"year {i + 1}" for i in range(len(yrow))]
+    qlab = qlab if len(qlab) == len(qrow) else [f"quarter {i + 1}" for i in range(len(qrow))]
+    latest = _latest_value(data, metric)
+
+    def scaled(row: list) -> list:
+        nums = [v for v in row if _num(v)]
+        k = 1.0 if rate else _unit_scale(nums)
+        return [float(v) * k if _num(v) else None for v in row]
+
+    ys, qs = scaled(yrow), scaled(qrow)
+    years = [(lab, v) for lab, v in zip(ylab, ys) if v is not None]
+    quarters = [(lab, v) for lab, v in zip(qlab, qs) if v is not None]
+    if latest is not None:
+        latest *= 1.0 if rate else _unit_scale([latest])
+        if any(abs(latest - v) <= abs(v) * 1e-9 for _l, v in years):
+            latest = None
+
+    idx = _period_index(sentence, _history_labels(data)) if yrow else None
+    qidx = _quarter_indices(sentence, _quarter_labels(data)) if qrow and len(
+        _quarter_labels(data)) == len(qrow) else []
+    growth = percent and not rate
+
+    levels: list[tuple[str, float]] = []
+    moves: list[tuple[str, float]] = []      # (label, change) — level deltas
+    # (label, % growth, shown?) — a quarter's growth is listed for the latest
+    # quarter only, on the quarter before and the same quarter a year ago;
+    # the rest are compared and not printed.
+    rates: list[tuple[str, float, bool]] = []
+
+    def run_moves(run: list, *, quarterly: bool) -> None:
+        cols = [(lab, v) for lab, v in run]
+        last = len(cols) - 1
+        for i, ((la, a), (lb, b)) in enumerate(zip(cols, cols[1:]), 1):
+            moves.append((f"{la}→{lb}", b - a))
+            g = _pct(a, b)
+            if g is not None:
+                rates.append((f"{lb} vs {la}", g, not quarterly or i == last))
+        if quarterly:
+            for i in range(4, len(cols)):
+                g = _pct(cols[i - 4][1], cols[i][1])
+                if g is not None:
+                    rates.append((f"{cols[i][0]} vs {cols[i - 4][0]}", g,
+                                  i == last))
+        elif len(cols) >= 3 and cols[0][1]:
+            g = _pct(cols[0][1], cols[-1][1])
+            if g is not None:
+                rates.append((f"{cols[-1][0]} vs {cols[0][0]}", g, True))
+            a, b, n = cols[0][1], cols[-1][1], len(cols) - 1
+            if a > 0 and b > 0:
+                rates.append((f"a year since {cols[0][0]}",
+                              ((b / a) ** (1 / n) - 1) * 100.0, True))
+
+    when = ""
+    if qidx:
+        where = " for " + "/".join(qlab[i] for i in qidx)
+        for i in qidx:
+            if qs[i] is None:
+                continue
+            levels.append((qlab[i], qs[i]))
+            for back in (1, 4):
+                j = i - back
+                if j >= 0 and qs[j] is not None:
+                    moves.append((f"{qlab[j]}→{qlab[i]}", qs[i] - qs[j]))
+                    g = _pct(qs[j], qs[i])
+                    if g is not None:
+                        rates.append((f"{qlab[i]} vs {qlab[j]}", g, True))
+        shown_levels = levels
+    elif idx is not None and idx < len(ys):
+        where = f" for {ylab[idx]}"
+        if ys[idx] is None:
+            return None
+        levels = [(ylab[idx], ys[idx])]
+        shown_levels = levels
+        if growth:
+            return None      # a growth INTO a named year: nothing safe to hold it to
+    elif period == "quarterly":
+        if not quarters:
+            return (f"a quarterly figure, and the workbook has no quarterly "
+                    f"{_metric_name(metric)} row to check it against")
+        where, when = "", "quarterly "
+        levels = list(quarters)
+        run_moves(quarters, quarterly=True)
+        shown_levels = quarters
+    elif period == "yearly":
+        if not years and latest is None:
+            return None
+        where, when = "", "yearly "
+        levels = years + ([("latest", latest)] if latest is not None else [])
+        run_moves(years, quarterly=False)
+        shown_levels = levels
+    else:
+        where = ""
+        levels = years + quarters + ([("latest", latest)] if latest is not None else [])
+        run_moves(years, quarterly=False)
+        run_moves(quarters, quarterly=True)
+        shown_levels = []
+
+    if growth:
+        candidates = [g for _l, g, _s in rates]
+        shown = " · ".join(f"{lab} {g:+,.1f}%" for lab, g, s in rates if s)
+    else:
+        candidates = [v for _l, v in levels] + [d for _l, d in moves]
+        if shown_levels:
+            shown = _show_levels(shown_levels, rate, 8)
+        else:
+            parts = []
+            if years:
+                parts.append(_show_levels(years, rate, 6))
+            if quarters:
+                parts.append("quarters " + _show_levels(quarters, rate, 4))
+            if latest is not None:
+                parts.append(_show_levels([("latest", latest)], rate, 1))
+            shown = "; ".join(parts)
+    if not candidates:
+        return None
+    return _Verdict(ok=_matches_scaled(value, candidates),
+                    flipped=bool(value) and _matches_scaled(-value, candidates),
+                    where=where, shown=shown, when=when)
 
 
 def fact_check(narration: str, data, *,
@@ -1093,22 +1460,24 @@ def fact_check(narration: str, data, *,
     - **Percentages are checked.** Every one was skipped, so a wrong margin
       or growth rate was never examined. A rate metric is checked against its
       own series; a percentage against a currency metric is checked against
-      that metric's period-over-period growth.
-    - **A year-specific claim checks that year.** The comparison ran against
-      the whole series at once, so a figure from the wrong column passed.
+      that metric's period-over-period growth (and a quarter's against the
+      same quarter a year earlier).
+    - **A period-specific claim checks that period.** A named column checks
+      that column; "quarterly" checks the Quarters sheet and "annual" the
+      History sheet, so a quarter's figure is never held to a year's.
     - **Derived claims are claims.** Levels alone could not verify "five
       million of revenue" against a sheet going 491 to 496, so consecutive
       deltas are in the comparison set.
 
     Sentence-level attribution is the one thing a regex cannot do, and it is
-    handled conservatively: a number attached to its own subject by a
-    preposition is not read as a claim about a metric named elsewhere, a
-    bare number that counts something ("three years", "two hundred
-    layoffs") is not a figure, and a percentage OF something ("three percent
-    of revenue") is a share of it, not a measure of a metric named beside it.
-    The coreference case the tighter rule still cannot reach — a figure whose
-    metric was named in the PREVIOUS sentence — is deliberately out of scope
-    here rather than approximated.
+    handled conservatively: a number attached to its own subject is not read
+    as a claim about a metric named elsewhere, a bare number that counts
+    something ("three years", "two hundred layoffs") is not a figure, a
+    percentage OF something is a share of it, the day's move is the price's,
+    and a figure whose only metric is in another clause of the sentence is
+    a guess, which warns and never blocks (`_owner_of`). The coreference case
+    — a figure whose metric was named in the PREVIOUS sentence — is
+    deliberately out of scope rather than approximated.
     """
     findings: list[Finding] = []
     if data is None:
@@ -1124,13 +1493,15 @@ def fact_check(narration: str, data, *,
 
     known, unreadable = _known_series(data)
     findings.extend(unreadable)
-    price_move = _price_move_re(ticker)
+    for name, parts in _EITHER_METRIC.items():
+        known[name] = [v for p in parts for v in known.get(p) or []]
+    price_move = _price_move_re(ticker, _company_names(data))
     labels = _history_labels(data)
-    qlabels = _quarter_labels(data)
     for lineno, line in enumerate(narration.splitlines(), 1):
-        for sentence in re.split(r"(?<=[.!?])\s+", line):
+        for sentence in _sentences(line):
             low = sentence.lower()
-            named = {m: pos for m, pos in _metrics_named(low).items()
+            named = {m: pos for m, pos in
+                     _metrics_named(low, _SPOKEN_METRIC_WORDS).items()
                      if known.get(m)}
             ratio = next((r for r in _RATIO_PHRASES if r in low), "")
             if ratio and spoken_figures(_mask_labels(sentence, labels)):
@@ -1143,7 +1514,9 @@ def fact_check(narration: str, data, *,
             # labels are masked out before anything is extracted.
             # Figures only: "there is one reason revenue stalled" states no
             # revenue of one (`spoken_figures`).
-            for num in spoken_figures(_mask_labels(sentence, labels)):
+            figures = spoken_figures(_mask_labels(sentence, labels))
+            period = _said_period(low)
+            for num in figures:
                 # The span the extractor recorded, never a re-`find`: a
                 # hyphenated spoken run does not appear verbatim in the
                 # sentence and used to collapse to position 0.
@@ -1152,11 +1525,23 @@ def fact_check(narration: str, data, *,
                     continue
                 if _counts_things(low, num):
                     continue
-                if _FORWARD_CLAUSE_RE.search(_clause(low, pos, end)):
+                clause = _clause(low, pos, end)
+                if _FORWARD_CLAUSE_RE.search(clause):
                     _skip(lineno, sentence, "guidance or an estimate: the "
                                             "workbook only has what was reported")
                     continue
-                metric = _owner_of(pos, end, low[end:], named, low)
+                if num.is_percent and _IMPLIED_RE.search(clause):
+                    _skip(lineno, sentence, "what the price implies: a "
+                                            "valuation, not a figure the "
+                                            "company reported")
+                    continue
+                lo, hi = _own_clause(low, pos, end)
+                if (num.is_percent and _SESSION_RE.search(low[lo:hi])
+                        and not any(lo <= at[0] and at[1] <= hi
+                                    for at in named.values())):
+                    continue         # "down ten percent today": the price
+                metric, sure = _owner_of(pos, end, low[end:], named, low,
+                                         figures, percent=num.is_percent)
                 if metric is None:
                     continue
                 # A margin IS a share of revenue; only a level's growth is
@@ -1165,52 +1550,54 @@ def fact_check(narration: str, data, *,
                         and _SHARE_OF_RE.match(low[end:])):
                     continue
 
-                series = known[metric]
-                hist = _history_for(data, metric)
-                idx = _period_index(sentence, labels) if hist else None
-                where = ""
-                quarters = _quarters_for(data, metric)
-                # A NAMED QUARTER WINS over a named year (O4). "Q4 FY-0
-                # revenue" says both, and the quarterly column is the one
-                # the sentence is actually about — checking it against the
-                # FY-0 annual total would block a correct print.
-                qidx = (_quarter_indices(sentence, qlabels)
-                        if quarters and len(quarters) == len(qlabels) else [])
-                if qidx:
-                    series = [quarters[i] for i in qidx if i < len(quarters)]
-                    where = " for " + "/".join(qlabels[i] for i in qidx)
-                elif idx is not None and idx < len(hist):
-                    series, where = [hist[idx]], f" for {labels[idx]}"
-
-                is_rate = metric in _RATE_METRICS
-                if num.is_percent and not is_rate:
-                    candidates = _growth_rates(series)
-                    shown = ", ".join(f"{v:+,.1f}%" for v in candidates[:6])
-                    kind = f"{metric} growth"
-                elif is_rate:
-                    candidates = _comparison_values(series, rate=True)
-                    shown = ", ".join(f"{v:,.1f}%" for v in series[:6])
-                    kind = metric
-                else:
-                    candidates = _comparison_values(series, rate=False)
-                    shown = ", ".join(
-                        f"{v * _unit_scale(series):,.0f}" for v in series[:6])
-                    kind = metric
-                if not candidates:
-                    continue
-
                 value = num.value
                 before = low[:pos].rstrip() if pos >= 0 else ""
                 if _NEGATIVE_RE.search(before) or (
-                        _FALL_RE.search(before) and value > 0):
+                        value > 0 and (_FALL_RE.search(before) or (
+                            not num.is_percent
+                            and _NEGATIVE_AFTER_RE.match(low[end:])))):
                     value = -value
-                if not _matches_scaled(value, candidates):
-                    findings.append(Finding(
-                        gate="fact-check", severity=severity, line=lineno,
-                        message=(f"“{num.text}” is stated for {kind}{where} "
-                                 f"but the data has {shown}"),
-                        excerpt=sentence.strip()[:140],
-                    ))
+                verdicts, reasons = [], []
+                for part in _EITHER_METRIC.get(metric, (metric,)):
+                    if not known.get(part):
+                        continue
+                    got = _judge(data, part, sentence, value, num.is_percent,
+                                 period)
+                    if isinstance(got, str):
+                        reasons.append(got)
+                    elif got is not None:
+                        verdicts.append(got)
+                if not verdicts:
+                    if reasons:
+                        _skip(lineno, sentence, reasons[0])
+                    continue
+                if any(v.ok for v in verdicts):
+                    continue
+                v = verdicts[0]
+                kind = _metric_name(metric)
+                if metric in _EITHER_METRIC:
+                    kind += " (free or operating)"
+                if num.is_percent and metric not in _RATE_METRICS:
+                    kind += " growth"
+                message = (f"“{num.text}” is stated for {v.when}{kind}{v.where} "
+                           f"but your workbook has {v.shown}")
+                if v.flipped:
+                    message += (" — the size matches, the sign does not: if "
+                                "it is a loss or an outflow, say “negative”, "
+                                "“a loss of” or “burned”" if value > 0 else
+                                " — the size matches, the sign does not: the "
+                                "workbook has it above zero")
+                level = severity
+                if not sure:
+                    at = named[metric]
+                    message += (f" — a guess: “{low[at[0]:at[1]]}” is the "
+                                f"nearest figure name, but it is in another "
+                                f"part of the sentence, so this does not block")
+                    level = "warn" if severity == "block" else severity
+                findings.append(Finding(
+                    gate="fact-check", severity=level, line=lineno,
+                    message=message, excerpt=sentence.strip()[:140],
+                ))
     return findings
 
 
@@ -2817,6 +3204,63 @@ def skeptic_notes(narration: str, settings: Settings,
 # --------------------------------------------------------------------------
 
 
+def _beats_marked(script, text: str) -> str:
+    """A SHORT's narration with its `[BEAT]` marks back in, for the
+    fact-check's sentence split. The parser lifts them out of `audio_script`
+    and keeps their offsets; without them two beats with no full stop between
+    them read as one sentence (`_sentences`)."""
+    marks = getattr(script, "beat_marks", None) or []
+    if not marks or text != getattr(script, "audio_script", None):
+        return text
+    out = text
+    for at in sorted({m.char_offset for m in marks}, reverse=True):
+        if 0 < at < len(out):
+            out = f"{out[:at]} [BEAT] {out[at:]}"
+    return out
+
+
+# WHEN THE CHECK IS WRONG AND HE KNOWS IT. A fact-check block he has read and
+# called right is kept in the video's folder by its key, and comes back as a
+# note on every later run of the checks — until the sentence or the workbook
+# changes, which changes the key, and the check gets its say again.
+TRUSTED_FILE = "fact_check_trusted.json"
+
+
+def finding_key(rendered: str) -> str:
+    """A finding's key, from its rendered text as the report stores it."""
+    import hashlib
+
+    return hashlib.sha1(rendered.strip().encode("utf-8")).hexdigest()[:10]
+
+
+def trusted_findings(workspace: Path | None) -> set[str]:
+    if workspace is None:
+        return set()
+    try:
+        import json
+
+        got = json.loads((Path(workspace) / TRUSTED_FILE).read_text("utf-8"))
+        return {str(k) for k in got} if isinstance(got, list) else set()
+    except (OSError, ValueError):
+        return set()
+
+
+def trust_finding(workspace: Path, key: str) -> None:
+    import json
+
+    keys = sorted(trusted_findings(workspace) | {key})
+    (Path(workspace) / TRUSTED_FILE).write_text(json.dumps(keys), "utf-8")
+
+
+def _let_through(findings: list[Finding], trusted: set[str]) -> list[Finding]:
+    if not trusted:
+        return findings
+    return [Finding(f.gate, "note", f"you let this through: {f.message}",
+                    f.line, f.excerpt)
+            if f.severity == "block" and finding_key(f.render()) in trusted
+            else f for f in findings]
+
+
 def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
               skeptic: bool = True, workspace: Path | None = None,
               final: bool = True, format_name: str = "") -> GateReport:
@@ -2839,15 +3283,17 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     # never ran, and for a record whose whole purpose is honesty about what
     # happened, those cannot render the same way.
     unread: list = []
-    report.findings += report.record("fact-check", fact_check(
-        narration, data, ticker=str(getattr(script, "ticker", "") or ""),
-        unchecked=unread))
+    trusted = trusted_findings(workspace)
+    report.findings += report.record("fact-check", _let_through(fact_check(
+        _beats_marked(script, narration), data,
+        ticker=str(getattr(script, "ticker", "") or ""),
+        unchecked=unread), trusted))
     # Listed, so "the fact-check passed it" never stands for "it was read".
     report.findings += [Finding("fact-check", "note", f"not checked — {why}",
                                 line=n, excerpt=text[:90])
                         for n, text, why in unread]
-    report.findings += report.record("on-screen",
-                                     onscreen_fact_check(script, data))
+    report.findings += report.record("on-screen", _let_through(
+        onscreen_fact_check(script, data), trusted))
     report.findings += report.record("voice", voice_lint(delivery_text(script)))
     # Bible v3's checks (10-18): machine phrasing (S1) and the swearing
     # limits. Both warn; neither can stop a render.

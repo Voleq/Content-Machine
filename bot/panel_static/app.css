@@ -723,6 +723,14 @@ button.link:hover { background: none; }
 .findings li.bad { border-left-color: var(--bad); }
 .findings li.warn { border-left-color: var(--warn); }
 .findings q { display: block; color: var(--muted); font-style: italic; margin-top: 2px; }
+.findings .sev { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.findings li.bad .sev { color: var(--bad); }
+.findings li.warn .sev { color: var(--warn); }
+.findings .finding-actions { margin-top: 6px; gap: 6px; }
+.script-lines .findings.in-edit li { display: block; font-size: 13px; cursor: default; }
+.how-to { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px; margin-bottom: 12px; font-size: 14px; }
+.how-to summary { cursor: pointer; font-weight: 600; }
+.how-to ul { margin: 8px 0 2px; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); }
 .prompt-card { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; background: var(--surface-2); border-radius: var(--r); }
 .check-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
 .script-lines { list-style: none; margin: 8px 0 0; padding: 0; font-size: 14.5px; line-height: 1.55; }

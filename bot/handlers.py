@@ -1120,6 +1120,49 @@ class BotCore:
                             note=f"✏️ {result.summary}",
                             diff=diff_lines(raw, result.text))[0]
 
+    def trust_fact(self, chat_id: int, key: str) -> Reply:
+        """`/script trust KEY`: a fact-check block he has checked and calls
+        right is let through, and the checks run again on the same script.
+
+        Only a block that is on the report NOW, and only the fact-check's: a
+        key from an old report, or another gate's block, is refused rather
+        than written down and forgotten.
+        """
+        import json
+
+        from pipeline.gates import finding_key, trust_finding
+
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active workspace — /short TICKER or /long TICKER first.")
+        key = key.strip().lower()
+        with self._script_lock(ws):
+            fmt = ws.current_format()
+            raw = ws.raw_script(fmt) if fmt else None
+            if not raw:
+                return Reply("No script on file — paste one first.")
+            try:
+                report = json.loads((ws.path / f"report_{fmt}.json")
+                                    .read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                report = {}
+            hit = next((t for t in report.get("blocking") or []
+                        if finding_key(str(t)) == key), None)
+            if hit is None or not str(hit).startswith("[fact-check]"):
+                return Reply("⛔ That finding is not a fact-check block on the "
+                             "current report, so nothing was let through. "
+                             "The Check step shows the ones that are.")
+            trust_finding(ws.path, key)
+            try:
+                reply = (self._intake_short(ws, raw) if fmt == "short"
+                         else self._intake_long(ws, raw))
+            except (ScriptParseError, LongScriptError) as e:
+                return Reply(f"Let through, but the script no longer parses:\n{e}")
+        first = str(hit).splitlines()[0]
+        reply.text = (f"✅ Let through (it stays a note until that sentence or "
+                      f"the workbook changes):\n{first}\n\n{reply.text}")
+        return reply
+
     def undo_edit(self, chat_id: int) -> Reply:
         """Step back one revision. The stack survives a restart."""
         ws = self._active_ws(chat_id)

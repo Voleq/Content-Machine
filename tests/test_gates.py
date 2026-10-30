@@ -811,7 +811,7 @@ def test_a_wrong_margin_is_caught(settings, data):
     """Every percentage used to be skipped, so no margin was ever checked."""
     assert not fact_check("Gross margin is fifty eight percent.", data)
     out = fact_check("Gross margin is eighty one percent.", data)
-    assert out and "gross_margin" in out[0].message
+    assert out and "gross margin" in out[0].message
 
 
 def test_a_wrong_growth_rate_is_caught(settings, data):
@@ -917,11 +917,11 @@ def test_ebitda_is_not_read_as_ebit(data):
     OPERATING INCOME: a correct figure blocked and EBIT's passed as EBITDA's."""
     assert not fact_check("EBITDA was minus forty five million.", data)
     wrong = fact_check("EBITDA was minus sixty million.", data)   # that is EBIT's
-    assert wrong and "ebitda" in wrong[0].message
+    assert wrong and "EBITDA" in wrong[0].message
     # EBIT is still operating income.
     assert not fact_check("EBIT was minus sixty million.", data)
     out = fact_check("EBIT was minus forty five million.", data)
-    assert out and "operating_income" in out[0].message
+    assert out and "operating income" in out[0].message
 
 
 def test_an_ebitda_row_on_screen_is_checked_against_ebitda(data):
@@ -1000,7 +1000,7 @@ def test_a_long_metric_name_does_not_lose_its_number_to_the_next_metric(data):
             "percent of revenue.")
     assert fact_check(line, data) == []
     out = fact_check(line.replace("fifteen", "forty"), data)
-    assert len(out) == 1 and "fcf" in out[0].message
+    assert len(out) == 1 and "free cash flow" in out[0].message
 
 
 def test_a_margin_stated_as_a_share_of_revenue_is_still_checked(data):
@@ -1010,7 +1010,7 @@ def test_a_margin_stated_as_a_share_of_revenue_is_still_checked(data):
     assert fact_check("Gross margin was fifty eight percent of revenue.",
                       data) == []
     out = fact_check("Gross margin was eighty one percent of revenue.", data)
-    assert out and "gross_margin" in out[0].message
+    assert out and "gross margin" in out[0].message
     # A share of a level is still not a growth rate.
     assert fact_check("Operating expenses were about three percent of revenue.",
                       data) == []
@@ -1024,10 +1024,10 @@ def test_fcf_margin_is_not_fcf_growth(data):
     assert fact_check("Free cash flow margin was minus three percent.",
                       data) == []
     out = fact_check("FCF margin was minus nine percent.", data)
-    assert out and "fcf_margin" in out[0].message
+    assert out and "free cash flow margin" in out[0].message
     # Free cash flow itself is still free cash flow.
     out = fact_check("Free cash flow grew forty percent.", data)
-    assert out and "fcf growth" in out[0].message
+    assert out and "free cash flow growth" in out[0].message
 
 
 def test_a_loss_is_a_negative_figure(data):

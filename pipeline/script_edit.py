@@ -176,6 +176,32 @@ def _clip(text: str, n: int = 48) -> str:
     return repr(flat if len(flat) <= n else flat[: n - 1] + "…")
 
 
+def _changed_part(x: str, y: str, room: int = 160, around: int = 50
+                  ) -> tuple[str, str]:
+    """Two versions of one long line cut down to where they differ.
+
+    A SHORT is stored as JSON on one line, so a one-sentence edit printed the
+    whole script twice in the reply, and the change was somewhere in nine
+    hundred characters of it (30 Oct 2026). A line that fits is left whole.
+    """
+    if len(x) <= room and len(y) <= room:
+        return x, y
+    lo = 0
+    while lo < min(len(x), len(y)) and x[lo] == y[lo]:
+        lo += 1
+    hi = 0
+    while (hi < min(len(x), len(y)) - lo
+           and x[len(x) - 1 - hi] == y[len(y) - 1 - hi]):
+        hi += 1
+    start = max(0, lo - around)
+
+    def cut(t: str) -> str:
+        end = min(len(t), len(t) - hi + around)
+        return (("…" if start else "") + t[start:end]
+                + ("…" if end < len(t) else ""))
+    return cut(x), cut(y)
+
+
 def diff_lines(before: str, after: str, context: int = 0) -> str:
     """A compact before/after for the chat reply.
 
@@ -187,6 +213,7 @@ def diff_lines(before: str, after: str, context: int = 0) -> str:
     if len(a) == len(b):
         for i, (x, y) in enumerate(zip(a, b), 1):
             if x != y:
+                x, y = _changed_part(x, y)
                 out.append(f"{i:>3} −  {x}")
                 out.append(f"{i:>3} +  {y}")
     else:

@@ -8,7 +8,7 @@ const STEP_HELP = {
   data: "The workbook you filled in Capital IQ. Drop it here; the bot checks it before anything else.",
   angle: "LONG only: the bot's prompt asks your Claude chat for three angles. Paste the answer, then pick one.",
   write: "Paste the bot's prompt into your Claude chat, then paste the script it writes back here.",
-  check: "The script line by line, with what the checks found beside the line it is about. Click a line to change it.",
+  check: "Your script one sentence a row, with what the checks found beside it. Red stops Approve, yellow is worth a look. Click a sentence to change it; every check runs again when you save.",
   proof: "A free full-size look with the free voice. Press n while it plays to note a fault at that moment.",
   approve: "Approving fixes this exact script for the paid render. Nothing is spent yet.",
   voice: "The paid voice, as it landed. Redo one sentence, or teach it how a word is said.",
@@ -318,20 +318,47 @@ function lineText(text) {
 // A LONG's line is replaced by its number (`/script edit N`); a SHORT's
 // sentence by its own words (`/script replace old => new`), as it is stored.
 const jsonInner = (t) => JSON.stringify(t).slice(1, -1);
-function editLine(row, n, text, raw = "") {
+function editLine(row, n, text, raw = "", fs = []) {
   const ta = el("textarea", { rows: Math.max(2, Math.ceil(text.length / 90)), spellcheck: "true", "data-dirty": "1" });
   ta.value = text;
   const what = raw ? "sentence" : "line";
   const cmd = (next) => (raw ? `/script replace ${raw} => ${jsonInner(next)}` : `/script edit ${n}${next ? " " + next : ""}`);
-  const save = el("button", { type: "button", class: "primary sm", text: `Save ${what}`, title: `Replaces the ${what} and re-runs the checks`,
-    onclick: (e) => vRun(cmd(ta.value.replace(/\n+/g, " ").trim()), e.currentTarget, `Edit ${what} ${n} · ${VID.t}`).then(() => loadVideo(true)) });
+  const status = el("span", { class: "meta", text: "" });
+  const save = el("button", { type: "button", class: "primary sm", text: `Save ${what}`, title: `Stores the new ${what} and runs every check again`,
+    onclick: (e) => {
+      status.textContent = "Saving, then running every check again…";
+      vRun(cmd(ta.value.replace(/\n+/g, " ").trim()), e.currentTarget, `Edit ${what} ${n} · ${VID.t}`).then(() => loadVideo(true));
+    } });
   const del = el("button", { type: "button", class: "danger sm", text: `Delete ${what}`, onclick: async (e) => {
     if (await askConfirm(`Delete this ${what}?`, `${what[0].toUpperCase() + what.slice(1)} ${n} goes; Undo brings it back.`, "Delete")) vRun(cmd(""), e.currentTarget, `Delete ${what} ${n} · ${VID.t}`).then(() => loadVideo(true));
   } });
   const cancel = el("button", { type: "button", class: "ghost sm", text: "Cancel", onclick: () => renderPanel("check") });
   ta.addEventListener("keydown", (e) => { if (e.key === "Escape") cancel.click(); if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) save.click(); });
-  setKids(row, el("span", { class: "ln", text: String(n) }), el("div", { class: "edit" }, ta, el("div", { class: "row" }, save, cancel, del)));
+  // What he is fixing, above the words, so the finding is not a scroll away.
+  const said = fs.length ? el("ul", { class: "findings in-edit" }, fs.map((f) => el("li", { class: f.severity === "block" ? "bad" : f.severity === "note" ? "" : "warn" },
+    el("b", { text: `${SEV_WORD[f.severity] || ""} · ${f.gate}: ` }), f.message))) : null;
+  const tags = /\[[A-Z]/.test(text) ? el("p", { class: "meta", text: "Words in [BRACKETS] are marks, not spoken: [BEAT: …] starts a part of the video, and ones like [CURIOUS] set how the voice says the words after them. Keep them where they are." }) : null;
+  setKids(row, el("span", { class: "ln", text: String(n) }), el("div", { class: "edit" }, said, ta, tags,
+    el("p", { class: "meta", text: `Save stores this as a new version (Undo goes back to the old one) and runs every check again. Ctrl+Enter saves, Esc cancels.` }),
+    el("div", { class: "row" }, save, cancel, del, status)));
   ta.focus();
+}
+
+const SEV_WORD = { block: "Stops Approve", warn: "Worth a look", note: "For the record" };
+
+// What this step is and how to use it, once, at the top.
+function checkHowTo(blocking, unit) {
+  let open = blocking > 0;
+  try { if (localStorage.getItem("check-howto") === "closed") open = false; } catch { /* private window */ }
+  const box = el("details", { class: "how-to", open },
+    el("summary", { text: "How this step works" }),
+    el("ul", {},
+      el("li", { text: "The checks are rules the bot runs on your script, not an AI. The fact-check finds every figure the voice says, works out which row of your workbook it is about (revenue, free cash flow, …) and which period (a year or a quarter), and compares it with your workbook." }),
+      el("li", { text: "Red stops Approve. Yellow is worth a look and does not stop anything. Plain ones are for the record: a figure it could not check, and why. When the check is unsure which row a figure belongs to it says “a guess”, and a guess is only ever yellow." }),
+      el("li", { text: `To fix one: press “Edit ${unit}” on the finding, or click the ${unit}. Change the words and press Save ${unit}. The bot keeps the new version, runs every check again (a few seconds), and this page updates. “Undo last change” goes back one save.` }),
+      el("li", { text: "When a red fact-check is wrong and you know the figure is right, press “It's right, let it through” on it. It turns into a note until that sentence or your workbook changes; then it is checked again." })));
+  box.addEventListener("toggle", () => { try { localStorage.setItem("check-howto", box.open ? "open" : "closed"); } catch { /* fine */ } });
+  return box;
 }
 
 STEPS_UI.check = (d) => {
@@ -339,12 +366,14 @@ STEPS_UI.check = (d) => {
   (d.findings || []).forEach((f) => { if (f.raw_line) (byLine[f.raw_line] ||= []).push(f); });
   const claimLines = new Set((d.claims || []).map((c) => c.line));
   const sentences = d.mode === "sentences";
+  const openers = {};
   const lineRow = (ln, idPrefix, raw) => {
     const fs = idPrefix === "line" ? byLine[ln.n] || [] : [];
     const row = el("li", { id: `${idPrefix}-${ln.n}`, class: `${fs.some((f) => f.severity === "block") ? "bad" : fs.some((f) => f.severity === "warn") ? "warn" : ""}${idPrefix === "line" && claimLines.has(ln.n) ? " claim" : ""}`,
       tabindex: "0", title: `Click to change this ${raw ? "sentence" : "line"}`, "data-n": ln.n },
       el("span", { class: "ln", text: String(ln.n) }), el("span", { class: "tx" }, lineText(ln.text) || " "));
-    const open = () => editLine(row, ln.n, ln.text, raw ? ln.raw : "");
+    const open = () => { if (!row.querySelector("textarea")) editLine(row, ln.n, ln.text, raw ? ln.raw : "", fs); };
+    if (idPrefix === "line") openers[ln.n] = open;
     row.addEventListener("click", (e) => { if (!row.querySelector("textarea")) open(); e.stopPropagation(); });
     row.addEventListener("keydown", (e) => { if (e.key === "Enter" && !row.querySelector("textarea")) { e.preventDefault(); open(); } });
     return row;
@@ -355,6 +384,20 @@ STEPS_UI.check = (d) => {
     el("ol", { class: "script-lines" }, d.data_lines.map((ln) => lineRow(ln, "data", false)))) : null;
   const goLine = (n) => { const r = $(`#line-${n}`); if (r) { r.scrollIntoView({ block: "center", behavior: REDUCED.matches ? "auto" : "smooth" }); r.classList.remove("flash"); void r.offsetWidth; r.classList.add("flash"); r.focus({ preventScroll: true }); } };
   const unit = sentences ? "sentence" : "line";
+  const editAt = (n) => { goLine(n); if (openers[n]) openers[n](); };
+  // Under each finding: what he can do about it, by name.
+  const findingActions = (f) => {
+    const btns = [];
+    if (f.raw_line && f.severity !== "note") btns.push(el("button", { type: "button", class: "sm", text: `Edit ${unit} ${f.raw_line}`, onclick: () => editAt(f.raw_line) }));
+    if (f.trustable && f.key) btns.push(el("button", { type: "button", class: "sm ghost", text: "It's right, let it through",
+      title: "You checked the figure yourself: this stops blocking until the sentence or the workbook changes",
+      onclick: async (e) => {
+        const b = e.currentTarget;
+        if (await askConfirm("Let this figure through?", "Only if you checked it against your workbook or the filing and it is right. It stops blocking Approve and shows as a note. If you change this sentence or upload a new workbook, it is checked again.", "It's right"))
+          vRun(`/script trust ${f.key}`, b, `Let through · ${VID.t}`).then(() => loadVideo(true));
+      } }));
+    return btns.length ? el("div", { class: "row finding-actions" }, btns) : null;
+  };
   const groups = {};
   (d.findings || []).forEach((f) => (groups[f.gate || "other"] ||= []).push(f));
   const side = [];
@@ -369,8 +412,10 @@ STEPS_UI.check = (d) => {
   Object.entries(groups).forEach(([gate, fs]) => side.push(el("details", { open: fs.some((f) => f.severity === "block") || Object.keys(groups).length < 4, class: "gate" },
     el("summary", {}, el("b", { text: gate }), el("span", { class: "meta", text: ` ${fs.length}` })),
     el("ul", { class: "findings" }, fs.map((f) => el("li", { class: f.severity === "block" ? "bad" : f.severity === "note" ? "" : "warn" },
+      el("small", { class: "sev", text: SEV_WORD[f.severity] || "" }), " ",
       f.raw_line ? el("button", { type: "button", class: "link", text: `${unit} ${f.raw_line}`, onclick: () => goLine(f.raw_line) }) : null, " ", f.message,
-      f.excerpt ? el("q", { text: f.excerpt }) : null))))));
+      f.excerpt ? el("q", { text: f.excerpt }) : null,
+      findingActions(f)))))));
   if ((d.claims || []).length) {
     side.push(el("details", { class: "gate" }, el("summary", {}, el("b", { text: "Claims to check" }), el("span", { class: "meta", text: ` ${d.claims.length}` })),
       el("ul", { class: "findings" }, d.claims.map((c) => el("li", {},
@@ -397,13 +442,14 @@ STEPS_UI.check = (d) => {
     if (why.value.trim()) vRun(`/script why ${why.value.replace(/\n+/g, " ")}`, e.currentTarget, `Why → ${VID.t}`).then(() => delete why.dataset.dirty);
   } })));
   const tools = el("div", { class: "row" },
-    el("button", { type: "button", class: "sm", text: "Undo last change", title: "Steps back one revision", disabled: !d.revisions,
+    el("button", { type: "button", class: "sm", text: "Undo last change", title: "Puts back the script as it was before your last save, and runs the checks on it", disabled: !d.revisions,
       onclick: (e) => vRun("/script undo", e.currentTarget, `Undo · ${VID.t}`).then(() => loadVideo(true)) }),
-    el("span", { class: "meta", text: `${d.revisions || 0} edits so far · Ctrl+Enter saves a line, Esc cancels` }));
+    el("span", { class: "meta", text: d.revisions ? `${d.revisions} saved edit${d.revisions === 1 ? "" : "s"}; Undo goes back one.` : "No edits yet: this is the script as you pasted it." }));
+  const stops = blocking.length ? el("div", { class: "banner bad", text: `${blocking.length} ${blocking.length === 1 ? "thing stops" : "things stop"} Approve. Fix the words with “Edit ${unit}”, or, for a fact-check whose figure you know is right, press “It's right, let it through”.` }) : null;
   return {
-    main: blocking.length ? mainButton(blocking[0].raw_line ? `Fix ${unit} ${blocking[0].raw_line}` : "Fix what blocks", () => blocking[0].raw_line && goLine(blocking[0].raw_line), "danger")
+    main: blocking.length ? mainButton(blocking[0].raw_line ? `Fix ${unit} ${blocking[0].raw_line}` : "Fix what blocks", () => blocking[0].raw_line && editAt(blocking[0].raw_line), "danger")
       : d.lines?.length ? mainButton("Next: the proof", () => openVideo(VID.t, VID.d, "proof")) : null,
-    body: [el("div", { class: "check-grid" }, el("div", { class: "script-col" }, tools, lines, dataLines), el("aside", { class: "side-col" }, side))],
+    body: [checkHowTo(blocking.length, unit), stops, el("div", { class: "check-grid" }, el("div", { class: "script-col" }, tools, lines, dataLines), el("aside", { class: "side-col" }, side))],
   };
 };
 

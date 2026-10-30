@@ -1,0 +1,83 @@
+{
+  "ticker": "BA",
+  "format": "short",
+  "hook_text": "BA is down 10.7% today after making $60M operating profit on $95B of sales.",
+  "audio_script": "[BEAT: hook] Boeing is down ten point seven percent today, with sixty million dollars of operating profit on ninety five billion of sales [BEAT: headline] Revenue missed estimates, though quarterly cash flow hit three hundred thirty two million. [BEAT: move] Shares fell to one sixty eight on seven times volume. [BEAT: turn] But here is the part nobody screenshots. [BEAT: numbers] Revenue rose from sixty two billion to ninety five billion. Operating income barely scraped sixty million. Free cash flow burned three fifty seven million. Diluted shares [CURIOUS] jumped from five eighty eight million to seven eighty eight million, as the planes stay grounded while the share count flies. [BEAT: numbers_comment] Gross margin sits in the fourth percentile, so dilution funds the factory. [BEAT: cheap_or_trap] Debt fell, yet seventy times EBITDA assumes nine point four percent perpetual cash growth. [BEAT] Cheap needs deliveries to double. [BEAT: conclusion] Mostly noise, one number worth watching. Until yearly free cash flow stays positive, it is a repair job priced like a growth stock.",
+  "move_summary": "-10.7% today · 6.7× average volume",
+  "headlines": [
+    {
+      "text": "Boeing Q0 revenue $24.19B vs $24.37B consensus",
+      "meaning": "Missed top-line estimates by $180M and posted another $116M quarterly net loss."
+    },
+    {
+      "text": "Quarterly free cash flow turns positive at $332M",
+      "meaning": "One positive quarter after burning $912M the prior quarter is a pulse, not a turnaround."
+    }
+  ],
+  "years": [
+    "FY21",
+    "FY22",
+    "FY23",
+    "FY24",
+    "FY25",
+    "LTM"
+  ],
+  "numbers": [
+    {
+      "label": "Revenue",
+      "field": "revenue",
+      "values": [
+        "$62.3B",
+        "$66.6B",
+        "$77.8B",
+        "$66.5B",
+        "$89.5B",
+        "$94.9B"
+      ]
+    },
+    {
+      "label": "Operating income",
+      "field": "operating_income",
+      "values": [
+        "-$473M",
+        "-$817M",
+        "$780M",
+        "-$10.0B",
+        "-$5.19B",
+        "$60M"
+      ]
+    },
+    {
+      "label": "Free cash flow",
+      "field": "fcf",
+      "values": [
+        "-$4.40B",
+        "$2.29B",
+        "$4.43B",
+        "-$14.3B",
+        "-$1.88B",
+        "-$357M"
+      ]
+    },
+    {
+      "label": "Diluted shares",
+      "field": "diluted_shares",
+      "values": [
+        "588M",
+        "595M",
+        "606M",
+        "647M",
+        "762M",
+        "788M"
+      ]
+    }
+  ],
+  "payoff_row": "Free cash flow",
+  "numbers_comment": "Gross margin sits in the fourth percentile, so dilution funds the factory.",
+  "turn_line": "But here is the part nobody screenshots.",
+  "cheap_or_trap": "At 69.7x EV/EBITDA (98th percentile vs peers), the price implies 9.4% perpetual FCF growth vs -19.2% delivered. Cheap needs deliveries to double cleanly.",
+  "conclusion": "Mostly noise, one number worth watching. Until yearly free cash flow stays positive, it is a repair job priced like a growth stock.",
+  "sources": {
+    "numbers": "10-K and 10-Q filings, FY21–LTM"
+  }
+}

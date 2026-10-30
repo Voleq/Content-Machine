@@ -296,9 +296,15 @@ def _step_check(v: _Video) -> dict:
         out["lines"] = [{"n": i, "text": r["text"], "raw": r["raw"]}
                         for i, r in enumerate(rows, 1)]
     rep = _report(v)
+    from pipeline.gates import finding_key
+
     for sev, key in (("block", "blocking"), ("warn", "warnings"), ("note", "notes")):
         for text in rep.get(key) or []:
             f = parse_finding(str(text), sev)
+            # The key `/script trust` takes, for the one kind of block he can
+            # overrule: a fact-check figure he has checked himself.
+            f["key"] = finding_key(str(text))
+            f["trustable"] = sev == "block" and f["gate"] == "fact-check"
             # A gate numbers the narration's lines; the editor numbers the
             # stored script's, the ones `/script edit N` takes.
             probe = (narr[f["line"] - 1] if 0 < f["line"] <= len(narr)

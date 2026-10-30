@@ -771,6 +771,7 @@ and checks every name the bot registers against them in both directions.
 | `/script report` | The validation and cost report on file, with its Approve / Swap / Edit buttons — without re-running the intake. |
 | `/script claims` | The sentences no gate can verify — a date, a deal, a departure, a fine — by line, so `/edit N` fixes one. The same list prints at the bottom of the report. |
 | `/script coldread [the answer]` | With nothing after it: a prompt file to paste into a fresh chat — the narration, numbered, and five questions a viewer who has never seen the channel answers by quoting the line (lost me, landed, fell flat, I'd click away, didn't believe). Send the answer back after the command and it is saved beside the script, each quote linked to its line. |
+| `/script trust KEY` | For a fact-check that blocks a figure you know is right: the Check step's “It's right, let it through” button sends it with the finding's key. The block comes back as a note on every later check, until the sentence or the workbook changes; then the figure is checked again. |
 | `/script swap` | One button per swappable visual in the LONG; each tap rotates that beat to its next take and re-prices the report. |
 | `/script prompts` | Re-sends the active video's pre-filled prompt. |
 | `/script why [TICKER] [<your sentence>]` | Why this one is worth making, in your own words. Prints above Approve and rides the description. With no sentence it reads back what is recorded. |
