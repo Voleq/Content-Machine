@@ -98,7 +98,13 @@ CHECKS: dict[str, str] = {
     "voice": "what the voice bible forbids",
     "phrasing": "machine-made phrasing from the editable list",
     "swearing": "strong swears past the limit (four in a LONG, never two "
-                "in a minute, one in a SHORT, none in a title)",
+                "in a minute, one in a SHORT, none in a title or the first "
+                "ten seconds)",
+    "joke-floor": "the jokes the writer listed: at least three in a SHORT, "
+                  "about one a minute in a LONG with no long dry stretch, "
+                  "and every listed one really said",
+    "prompt-words": "the prompt's own words said aloud or printed on a "
+                    "plate (\"the four-step valuation walk\", \"STEP 1\")",
     "copy": "a sentence repeating a voice bible example or a style "
             "reference word for word",
     "jokes": "a joke, analogy or callback already used on the channel, "

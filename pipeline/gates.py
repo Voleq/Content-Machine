@@ -1641,6 +1641,12 @@ _CONSTRUCTIONS: tuple[tuple[str, str, "re.Pattern[str]"], ...] = (
                 r"was)\s+(?:also|still|been)\b", re.I)),
 )
 
+# How many of each a script may carry before the next is flagged (bible v4
+# §4). The reframe and the fake-out stay at one: the first is the phrase a
+# machine reaches for, the second stops working once it can be heard coming.
+# A joke-dense script uses more similes than v3's did, so three of those.
+CONSTRUCTION_LIMITS: dict[str, int] = {"reframe": 1, "fake-out": 1, "simile": 3}
+
 # A TURN, for the twenty-second rule. Not "anything interesting happened" —
 # the four things the bible names: an aside, a number anchored, a mode shift,
 # a question. A bare figure is not one of them: this register states figures
@@ -1732,8 +1738,9 @@ def delivery_text(script) -> str:
 
 
 def voice_lint(narration: str) -> list[Finding]:
-    """Flags what the bible forbids. Never a joke quota — density is the
-    writer's call and a linter that policed it would flatten the voice.
+    """Flags what the bible forbids. The joke floor is not here: it is
+    counted off the writer's declared list (`writing_checks.joke_floor_lint`),
+    because a regex cannot find a joke and guessing would flatten the voice.
 
     Two of the flags are structural rather than lexical, and they are the two
     the bible asks for by name: a construction used twice in one script, and a
@@ -1744,16 +1751,19 @@ def voice_lint(narration: str) -> list[Finding]:
     """
     findings: list[Finding] = []
 
-    # A construction used a second time. The FIRST is the licence; the second
-    # is the finding, and it carries both line numbers so the writer can see
-    # what it is repeating rather than hunting for it.
+    # A construction used past its allowance. The allowance is the licence;
+    # the next one is the finding, and it carries the first's line number so
+    # the writer can see what it is repeating rather than hunting for it.
     for name, described, pattern in _CONSTRUCTIONS:
+        allowed = CONSTRUCTION_LIMITS.get(name, 1)
         hits = [(n, ln) for n, ln in enumerate(narration.splitlines(), 1)
                 if pattern.search(ln)]
-        for lineno, line in hits[1:]:
+        for lineno, line in hits[allowed:]:
             findings.append(Finding(
                 gate="voice", severity="warn", line=lineno,
-                message=(f"{described} again — one {name} per script. "
+                message=(f"{described} again — "
+                         f"{'one' if allowed == 1 else allowed} {name}"
+                         f"{'' if allowed == 1 else 's'} per script. "
                          f"The first is on line {hits[0][0]}; no individual "
                          f"one is bad, the repeat is what reads as tired"),
                 excerpt=line.strip()[:140]))
@@ -3299,15 +3309,21 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
         onscreen_fact_check(script, data), trusted))
     report.findings += report.record("voice", voice_lint(delivery_text(script)))
     # Bible v3's checks (10-18): machine phrasing (S1) and the swearing
-    # limits. Both warn; neither can stop a render.
-    from pipeline.writing_checks import (chapter_title_swears, phrasing_lint,
+    # limits; v4's (30 Oct): the joke floor and the prompt said aloud. All
+    # warn; none can stop a render.
+    from pipeline.writing_checks import (chapter_title_swears, joke_floor_lint,
+                                         phrasing_lint, prompt_words_lint,
                                          swear_lint)
 
+    lane = "long" if hasattr(script, "chapter_list") else "short"
     report.findings += report.record(
         "phrasing", phrasing_lint(delivery_text(script), settings))
-    report.findings += report.record("swearing", swear_lint(
-        narration, "long" if hasattr(script, "chapter_list") else "short")
-        + chapter_title_swears(script))
+    report.findings += report.record("swearing", swear_lint(narration, lane)
+                                     + chapter_title_swears(script))
+    report.findings += report.record("joke-floor",
+                                     joke_floor_lint(script, lane))
+    report.findings += report.record("prompt-words",
+                                     prompt_words_lint(script))
     # A bible example or another creator's line, said again (S2).
     from pipeline.writing_checks import copy_check
 

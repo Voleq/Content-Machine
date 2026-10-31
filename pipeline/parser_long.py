@@ -141,6 +141,83 @@ _CONFESSION_TRAILER_RE = re.compile(r"^\s*=+\s*CONFESSION\s*=+\s*$",
                                     re.IGNORECASE | re.MULTILINE)
 
 
+# The `=== JOKES ===` trailer (bible v4 §7): `move | the line` per joke, in
+# the order said. Declared, like the confession, because a joke is not
+# reliably findable in prose and a floor nobody can count is not a floor.
+_JOKES_TRAILER_RE = re.compile(r"^\s*[*_#]*\s*=+\s*JOKES\s*=+\s*[*_]*\s*$",
+                               re.IGNORECASE | re.MULTILINE)
+# Any trailer marker, so a block cut from the middle ends at the next one.
+_ANY_TRAILER_RE = re.compile(r"^\s*[*_#]*\s*=+\s*(?:CHAPTERS|CONFESSION|JOKES)"
+                             r"\s*=+\s*[*_]*\s*$", re.IGNORECASE | re.MULTILINE)
+# The Step-2 prompt asks for a `=== BIT PLAN ===` in the chat, before the
+# script. A chat that puts it in the file put it above the narration, where
+# it would be spoken and captioned like the hook menu was.
+_BIT_PLAN_RE = re.compile(r"^\s*[*_#]*\s*=+\s*BIT PLAN\s*=+\s*[*_]*\s*$",
+                          re.IGNORECASE | re.MULTILINE)
+_JOKE_BULLET_RE = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s*")
+
+
+def _split_jokes_trailer(raw: str) -> tuple[str, str]:
+    """Cut the `=== JOKES ===` block out, wherever it sits among the
+    trailers: it runs to the next trailer's marker or to the end."""
+    m = _JOKES_TRAILER_RE.search(raw)
+    if not m:
+        return raw, ""
+    nxt = _ANY_TRAILER_RE.search(raw, m.end())
+    end = nxt.start() if nxt else len(raw)
+    return raw[: m.start()] + raw[end:], raw[m.end():end].strip()
+
+
+def _strip_bit_plan(raw: str) -> str:
+    """Cut a `=== BIT PLAN ===` block: the marker and the lines under it,
+    up to the first blank line after them or the first line that opens on
+    a tag, which is where the prompt has the narration begin."""
+    m = _BIT_PLAN_RE.search(raw)
+    if not m:
+        return raw
+    lines = raw[m.end():].split("\n")
+    k, seen = 0, False
+    while k < len(lines):
+        line = lines[k].strip()
+        if line.startswith("["):
+            break
+        if not line:
+            if seen:
+                break
+        else:
+            seen = True
+        k += 1
+    return raw[: m.start()] + "\n".join(lines[k:]).lstrip("\n ")
+
+
+def parse_jokes(text: str) -> tuple[list, list[str]]:
+    """`move | the line` per line -> ScriptJokes. Returns (jokes, warnings).
+
+    The move is optional: a bare line is a joke with no move named. Like the
+    confession, a malformed line is dropped with a warning and never fails
+    the parse — the jokes are bookkeeping, the video is the deliverable.
+    """
+    from pipeline.models import JOKE_MAX_CHARS, ScriptJoke
+
+    jokes, warnings = [], []
+    for raw_line in (text or "").splitlines():
+        line = _JOKE_BULLET_RE.sub("", raw_line).strip()
+        if not line or line.startswith("#"):
+            continue
+        move, bar, said = line.partition("|")
+        if not bar:
+            move, said = "", line
+        said = re.sub(r"\[[A-Z][A-Za-z :=_-]*\]", " ", said)
+        said = " ".join(said.split()).strip("\"“”'")
+        move = " ".join(move.split()).lower()[:60]
+        if len(said.split()) < 2:
+            warnings.append(f"joke line {line!r} has no line to read back — "
+                            f"skipped. The shape is `move | the line`.")
+            continue
+        jokes.append(ScriptJoke(move=move, text=said[:JOKE_MAX_CHARS]))
+    return jokes, warnings
+
+
 def _split_chapters_trailer(raw: str) -> tuple[str, str]:
     """Cut the `=== CHAPTERS ===` trailer off the narration.
 
@@ -260,6 +337,9 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
         raise LongScriptError("Empty message — expected the tagged LONG narration.")
 
     raw = _FENCE_LINE_RE.sub("", raw)
+    # The jokes block first: it may sit before, between or after the other
+    # two trailers, and it ends at whichever marker follows it.
+    raw, jokes_text = _split_jokes_trailer(raw)
     raw, chapters = _split_chapters_trailer(raw)
     # The confession block may sit before or after the chapter trailer, so it
     # is cut from both halves rather than from a position.
@@ -267,6 +347,7 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
     chapters, more = _split_confession_trailer(chapters)
     confession_text = confession_text or more
     raw = _strip_hook_options(raw)
+    raw = _strip_bit_plan(raw)
     if not raw.strip():
         raise LongScriptError("Narration is empty (only a chapter trailer was sent).")
 
@@ -457,9 +538,12 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
     confession, confession_warnings = parse_confession(confession_text)
     warnings.extend(confession_warnings)
 
+    jokes, joke_warnings = parse_jokes(jokes_text)
+    warnings.extend(joke_warnings)
+
     script = LongScript(ticker=ticker, narration=narration, events=events,
                         chapter_list=chapter_list, chapters=chapters,
-                        confession=confession)
+                        confession=confession, jokes=jokes)
 
     if script.word_count < 800:
         warnings.append(

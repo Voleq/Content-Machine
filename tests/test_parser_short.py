@@ -441,10 +441,10 @@ def test_an_unmarked_script_parses_as_it_always_did(short_valid_json,
 
     script, warnings = parse_short_script(short_valid_json, settings)
     assert script.beat_marks == []
-    # The script as it serialised before the beat marks, the sources and the
-    # long lane's `beside` on the tag existed.
+    # The script as it serialised before the beat marks, the sources, the
+    # jokes and the long lane's `beside` on the tag existed.
     old = hashlib.sha256(script.model_dump_json(
-        exclude={"beat_marks": True, "sources": True,
+        exclude={"beat_marks": True, "sources": True, "jokes": True,
                  "inline_events": {"__all__": {"beside"}}}
     ).encode("utf-8")).hexdigest()[:16]
     assert script.content_sha() == old

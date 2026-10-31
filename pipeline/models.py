@@ -26,6 +26,8 @@ from pipeline.plates import PERIOD_COUNT
 # Design's source tag holds forty characters: "10-K filings, FY20-FY25", "BLS,
 # August CPI". Both lanes' writers are held to it before anything is drawn.
 SOURCE_MAX_CHARS = 40
+# One declared joke: the punchline sentence or clause, never a paragraph.
+JOKE_MAX_CHARS = 400
 
 # The data vendors whose names never reach the screen or the voice (§3):
 # on screen everything is "from the 10-K". One list, so the short's block,
@@ -518,6 +520,26 @@ class ShortScript(BaseModel):
     # payoff card shows that row's latest figure; with none named it shows the
     # first row's, as it always did (item 2).
     payoff_row: str | None = Field(default=None, max_length=40)
+    # THE JOKES, DECLARED (bible v4 §7). The writer lists every joke word for
+    # word from `audio_script`, so the floor of three can be counted and the
+    # operator can read them without hunting. Never drawn, never spoken.
+    jokes: list[str] = Field(default_factory=list)
+
+    @field_validator("jokes", mode="before")
+    @classmethod
+    def _norm_jokes(cls, v) -> list[str]:
+        # Bookkeeping, so it never refuses a script: a chat that sent one
+        # string or listed fifteen still parses, cut to the first twelve.
+        if v is None:
+            return []
+        if isinstance(v, str):
+            v = v.splitlines()
+        out = []
+        for line in v if isinstance(v, (list, tuple)) else [v]:
+            line = " ".join(str(line).split())[:JOKE_MAX_CHARS]
+            if line:
+                out.append(line)
+        return out[:12]
 
     @model_validator(mode="after")
     def _six_periods(self):
@@ -626,7 +648,8 @@ class ShortScript(BaseModel):
         # approval is recorded against and what every render seed is drawn
         # from, so a new empty field changing it would un-approve every script
         # on disk and re-roll the plates of every video re-rendered from one.
-        exclude: dict = {name: True for name in ("beat_marks", "sources")
+        exclude: dict = {name: True for name in ("beat_marks", "sources",
+                                                 "jokes")
                          if not getattr(self, name)}
         # The tag's `beside` (a long-lane field) is empty on every short.
         if not any(e.beside for e in self.inline_events):
@@ -708,6 +731,21 @@ class ScriptConfession(BaseModel):
         return got
 
 
+class ScriptJoke(BaseModel):
+    """One line of the `=== JOKES ===` trailer: the move and the line.
+
+    Declared for the same reason the confession is: a joke is not reliably
+    findable in prose, and a floor nobody can count is not a floor. The line
+    is the writer's copy of the punchline; the checks read it back against
+    the narration rather than trusting it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    move: str = Field(default="", max_length=60)
+    text: str = Field(min_length=1, max_length=JOKE_MAX_CHARS)
+
+
 class LongScript(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -718,6 +756,9 @@ class LongScript(BaseModel):
     # roughly one video in three does, and a mandatory confession is the rule
     # the bible deleted.
     confession: ScriptConfession | None = None
+    # The `=== JOKES ===` trailer (bible v4 §7): every joke, declared, so the
+    # floor of one a minute can be counted. Empty on a script written before.
+    jokes: list[ScriptJoke] = Field(default_factory=list)
     # The `=== CHAPTERS ===` trailer, parsed: a type and a display title per
     # chapter. Metadata for YouTube AND the source of every on-screen chapter
     # title, so the two can no longer disagree — which they did, silently,
@@ -757,8 +798,12 @@ class LongScript(BaseModel):
         # A SCRIPT THAT ASKS FOR NO TWO-SHOT KEEPS THE HASH IT HAD: the sha is
         # what an approval is recorded against and what the render's seeds
         # are drawn from, so the new empty `beside` must not change it.
-        exclude = (None if any(e.beside for e in self.events)
-                   else {"events": {"__all__": {"beside"}}})
+        exclude: dict = ({} if any(e.beside for e in self.events)
+                         else {"events": {"__all__": {"beside"}}})
+        # Nor does one written before the jokes trailer existed.
+        if not self.jokes:
+            exclude["jokes"] = True
+        exclude = exclude or None
         return hashlib.sha256(
             self.model_dump_json(exclude=exclude).encode("utf-8")
         ).hexdigest()[:16]

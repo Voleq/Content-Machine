@@ -10,8 +10,10 @@ The confession ledger already solved this for one kind of line — "a
 repetition rule someone has to remember will fail; a ledger makes it
 impossible" — and this is the same idea for two more:
 
-* **Used jokes.** At ship time the local model lists the script's jokes,
-  analogies and callbacks, verbatim. Without the model, the lines the voice
+* **Used jokes.** At ship time the jokes the writer declared (bible v4: the
+  short's `jokes`, the long's `=== JOKES ===`) are kept, the ones the script
+  really says. A script that declared none falls back to the local model
+  listing the script's jokes, analogies and callbacks, verbatim. Without the model, the lines the voice
   linter already recognises as constructions are kept, plus the line after
   each `[BEAT]`, which is where this register puts its punchlines. The next
   prompt is handed the latest forty, and a check warns when one comes back,
@@ -43,13 +45,17 @@ JOKES_FILE = "used_jokes.json"
 FACTS_FILE = "dennis_facts.json"
 
 # How many used jokes the next prompt is handed. Enough to cover the last
-# month or so of videos; more is a wall the writer skims.
-PROMPT_JOKES = 40
+# month or so of videos; more is a wall the writer skims. Doubled with bible
+# v4, whose floor puts twenty-odd jokes in one long.
+PROMPT_JOKES = 80
 # How many facts. The facts list is the record and is kept whole; the prompt
 # is handed the newest of it.
 PROMPT_FACTS = 60
 # Per video, so a model that lists the whole script cannot flood the book.
 MAX_PER_VIDEO = 15
+# The writer's own list is checked against the script before it is kept, so
+# it may run longer: a long at the floor declares one a minute.
+MAX_DECLARED_PER_VIDEO = 40
 
 # Dennis's cast, as his story names them. A sentence naming one of them is a
 # sentence about his life, not about the company.
@@ -140,7 +146,10 @@ class _Book:
                 clean.append(line)
         rows = self._rows()
         stamp = _now()
-        for line in clean[:MAX_PER_VIDEO]:
+        # The extractors cap themselves; the writer's checked list may be
+        # longer, so the book holds up to that.
+        clean = clean[:MAX_DECLARED_PER_VIDEO]
+        for line in clean:
             rows.append(Remembered(text=line, key=key, ticker=ticker.upper(),
                                    workdate=workdate, fmt=fmt,
                                    added_at=stamp).to_json())
@@ -149,7 +158,7 @@ class _Book:
             rows.append({"text": "", "key": key, "ticker": ticker.upper(),
                          "workdate": workdate, "fmt": fmt, "added_at": stamp})
         _write(self.path, rows)
-        return len(clean[:MAX_PER_VIDEO])
+        return len(clean)
 
     def replace_all(self, texts: list[str], was: list[str] | None = None) -> int:
         """The panel's edit: the list as he left it. Lines he kept keep their
@@ -278,11 +287,29 @@ def fallback_jokes(script) -> list[str]:
     return out[:MAX_PER_VIDEO]
 
 
+def declared_jokes_said(script) -> list[str]:
+    """The jokes the writer listed that the script really says."""
+    from pipeline.writing_checks import _norm, declared_jokes, find_joke
+
+    narration = getattr(script, "narration", None) or getattr(
+        script, "audio_script", "")
+    words = _norm(narration).split()
+    out: list[str] = []
+    for _move, line in declared_jokes(script):
+        line = " ".join(line.split())
+        if line not in out and find_joke(line, words) is not None:
+            out.append(line)
+    return out[:MAX_DECLARED_PER_VIDEO]
+
+
 def extract_jokes(script, settings: Settings) -> list[str]:
     narration = getattr(script, "narration", None) or getattr(
         script, "audio_script", "")
     if not narration.strip():
         return []
+    declared = declared_jokes_said(script)
+    if declared:
+        return declared
     got = _model_lines(f"Script:\n\n{narration[:14000]}", settings,
                        system=_JOKES_SYSTEM, purpose="jokes")
     if got is None:

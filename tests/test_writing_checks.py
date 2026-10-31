@@ -50,17 +50,30 @@ def test_four_spread_out_is_fine():
     assert wc.swear_lint(_spread(4), "long") == []
 
 
+# Ten seconds of the voice before the first swear, so these read as the
+# rule they test and not as the opening rule (v4 §10).
+_OPENING = " ".join(["the margin held"] * 10) + "\n"
+
+
 def test_two_swears_within_a_minute_warn():
-    text = "This is fucking grim.\nTruly fucked, the debt schedule."
+    text = _OPENING + "This is fucking grim.\nTruly fucked, the debt schedule."
     found = wc.swear_lint(text, "long")
-    assert len(found) == 1 and found[0].line == 2
+    assert len(found) == 1 and found[0].line == 3
     assert "minute" in found[0].message
 
 
 def test_short_second_swear_warns():
-    text = "Fuck. " + " ".join(["the margin held"] * 60) + " Fucking grim."
+    text = (_OPENING + "Fuck. " + " ".join(["the margin held"] * 60)
+            + " Fucking grim.")
     found = wc.swear_lint(text, "short")
     assert len(found) == 1
+
+
+def test_a_swear_in_the_first_ten_seconds_warns():
+    """v4 §10: never in the opening, where the ad review reads hardest."""
+    found = wc.swear_lint("Fucking hell, the margin. " + _OPENING, "short")
+    assert len(found) == 1 and "first 10 seconds" in found[0].message
+    assert wc.swear_lint(_OPENING + "Fucking hell, the margin.", "short") == []
 
 
 def test_mild_words_are_not_counted():

@@ -45,13 +45,15 @@ def test_remember_is_idempotent(settings):
     assert len(cm.FactBook(settings).all()) == 1
 
 
-def test_recent_is_newest_40(settings):
+def test_recent_is_the_newest_the_prompt_holds(settings):
     book = cm.JokeBook(settings)
-    for n in range(45):
+    over = cm.PROMPT_JOKES + 5
+    for n in range(over):
         book.add(f"T{n}/2026-07-01/long", [f"joke number {n} about margins"],
                  ticker=f"T{n}", workdate="2026-07-01", fmt="long")
     got = book.recent(cm.PROMPT_JOKES)
-    assert len(got) == 40 and got[-1].text == "joke number 44 about margins"
+    assert len(got) == cm.PROMPT_JOKES
+    assert got[-1].text == f"joke number {over - 1} about margins"
 
 
 def test_reworded_joke_is_flagged(settings):

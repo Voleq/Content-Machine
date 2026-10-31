@@ -1,4 +1,4 @@
-"""Writing checks added with voice bible v3. Every one of them warns.
+"""Writing checks added with voice bible v3 and v4. Every one of them warns.
 
 The voice linter in `pipeline.gates` polices what the bible forbids. These
 police what makes a script read as written by a machine, or lifted, or the
@@ -16,6 +16,12 @@ viewer's trust faster than one without:
   meant to be reused, the sentence never.
 * **Chapter order (S9).** A long whose chapters run in the order one of the
   last three did.
+* **Jokes (v4 §7).** The writer declares every joke; a short under three, a
+  long under one a minute, a long dry stretch, or a declared line the script
+  never says. The bible's floor, counted off the writer's own list.
+* **The prompt said aloud (v4).** "The mandatory four-step valuation walk",
+  "our first touch on the question": the prompt's scaffolding read into the
+  narration or onto a plate, which no host would ever say.
 
 None of these blocks. The sameness gate is the one writing check that may
 stop a render, and it only does when a script is effectively a previous one
@@ -86,7 +92,7 @@ def phrasing_lint(narration: str, settings: Settings) -> list[Finding]:
 
 
 # --------------------------------------------------------------------------
-# Swearing — bible v3 §10.
+# Swearing — bible §10.
 # --------------------------------------------------------------------------
 
 # Strong swearing as YouTube's advertiser guidelines mean it: the f-word and
@@ -102,6 +108,8 @@ PACKAGE_SWEARS: tuple[str, ...] = STRONG_SWEARS + (
 )
 LONG_SWEAR_LIMIT = 4
 SHORT_SWEAR_LIMIT = 1
+# None this early (v4 §10): the opening is where the ad review looks hardest.
+SWEAR_OPENING_S = 10.0
 # Two strong swears closer than this read as a habit rather than a delivery.
 SWEAR_GAP_S = 60.0
 
@@ -126,6 +134,7 @@ def swear_lint(narration: str, fmt: str) -> list[Finding]:
     """
     limit = SHORT_SWEAR_LIMIT if fmt == "short" else LONG_SWEAR_LIMIT
     gap_words = SWEAR_GAP_S * SPOKEN_WPS
+    opening_words = SWEAR_OPENING_S * SPOKEN_WPS
     findings: list[Finding] = []
     seen: list[tuple[int, int]] = []          # (word position, line)
     position = 0
@@ -135,7 +144,15 @@ def swear_lint(narration: str, fmt: str) -> list[Finding]:
                 continue
             at = position + k
             seen.append((at, lineno))
-            if len(seen) > limit:
+            if at < opening_words:
+                findings.append(Finding(
+                    gate="swearing", severity="warn", line=lineno,
+                    message=(f"a strong swear in the first "
+                             f"{SWEAR_OPENING_S:.0f} seconds — YouTube's ad "
+                             f"review reads the opening hardest; move it "
+                             f"later"),
+                    excerpt=_excerpt(line)))
+            elif len(seen) > limit:
                 findings.append(Finding(
                     gate="swearing", severity="warn", line=lineno,
                     message=(f"strong swear number {len(seen)} — a {fmt} "
@@ -178,6 +195,252 @@ def chapter_title_swears(script) -> list[Finding]:
 
 
 # --------------------------------------------------------------------------
+# Jokes — bible v4 §7, counted off the writer's own list.
+# --------------------------------------------------------------------------
+
+# The floor. A short: three, at three targets. A long: one a minute, which
+# is counted in words: the voice reads about a hundred and sixty a minute
+# (a short's hundred and fifty words run fifty-odd seconds). The linter's
+# slower SPOKEN_WPS is right for "twenty seconds of explanation" and would
+# make a minute of this register a minute and ten.
+SHORT_JOKE_FLOOR = 3
+WORDS_PER_MINUTE = 160
+# The longest a long should run without a listed joke. The bible allows one
+# straight stretch of about a minute; past two, the chapter has gone dry.
+DRY_STRETCH_MIN = 2.0
+# How close a declared line has to be to something the script says.
+JOKE_MATCH_RATIO = 0.8
+# How many unmatched lines are named before the rest are summed up.
+_MAX_UNMATCHED_SHOWN = 5
+
+_NORM_RE = re.compile(r"[^a-z0-9' ]+")
+
+
+def _norm(text: str) -> str:
+    text = _TAG_RE.sub(" ", str(text or "")).lower().replace("’", "'")
+    return " ".join(_NORM_RE.sub(" ", text).split())
+
+
+def declared_jokes(script) -> list[tuple[str, str]]:
+    """(move, line) for every joke the writer listed, either lane."""
+    out = []
+    for j in getattr(script, "jokes", None) or []:
+        if isinstance(j, str):
+            out.append(("", j))
+        else:
+            out.append((getattr(j, "move", "") or "", getattr(j, "text", "")))
+    return [(m, t) for m, t in out if t.strip()]
+
+
+def _spoken(script) -> str:
+    return (getattr(script, "narration", None)
+            or getattr(script, "audio_script", "") or "")
+
+
+def find_joke(line: str, said_words: list[str]) -> int | None:
+    """Where `line` is said, as a word index into the narration, or None.
+
+    Exact first (the line, normalised, inside the narration); then the best
+    window of the same length, so a comma moved or a word changed between
+    the script and the writer's copy still finds it.
+    """
+    want = _norm(line).split()
+    if len(want) < 2 or not said_words:
+        return None
+    n = len(want)
+    for i in range(len(said_words) - n + 1):
+        if said_words[i:i + n] == want:
+            return i
+    best, where = 0.0, None
+    sm = difflib.SequenceMatcher(None, autojunk=False)
+    sm.set_seq2(want)
+    have = set(want)
+    sizes = sorted({max(2, n - 1), n, n + 1})
+    for i in range(0, max(1, len(said_words) - n + 2)):
+        if len(have & set(said_words[i:i + n + 1])) / len(have) < 0.6:
+            continue
+        for size in sizes:
+            sm.set_seq1(said_words[i:i + size])
+            r = sm.ratio()
+            if r > best:
+                best, where = r, i
+    return where if best >= JOKE_MATCH_RATIO else None
+
+
+def joke_floor_lint(script, fmt: str) -> list[Finding]:
+    """The bible's floor, against the jokes the writer declared.
+
+    It cannot tell whether a joke is funny, and does not pretend to. What it
+    can tell is that the list is short, that a listed line is not in the
+    script, or that a long stretch of the long has nothing listed in it —
+    which is exactly how the Gemini scripts of 30 Oct 2026 read: a long with
+    six polite jokes in twenty-six minutes and a short with one.
+    """
+    said = _spoken(script)
+    words = _norm(said).split()
+    if not words:
+        return []
+    declared = declared_jokes(script)
+    where = "the `jokes` field" if fmt == "short" else "a `=== JOKES ===` trailer"
+    if not declared:
+        return [Finding(
+            gate="joke-floor", severity="warn",
+            message=(f"no jokes listed — the prompt asks for every joke in "
+                     f"{where}, word for word, so they can be counted and "
+                     f"read at a glance. A script with none listed usually "
+                     f"has none written"))]
+
+    findings: list[Finding] = []
+    found: list[tuple[int, int]] = []          # (first word, last word + 1)
+    missing: list[str] = []
+    for _move, line in declared:
+        at = find_joke(line, words)
+        if at is None:
+            missing.append(line)
+        else:
+            found.append((at, at + len(_norm(line).split())))
+    for line in missing[:_MAX_UNMATCHED_SHOWN]:
+        findings.append(Finding(
+            gate="joke-floor", severity="warn",
+            message=("listed as a joke, and the script never says it — the "
+                     "line in the list has to be copied from the narration"),
+            excerpt=_excerpt(line)))
+    if len(missing) > _MAX_UNMATCHED_SHOWN:
+        findings.append(Finding(
+            gate="joke-floor", severity="warn",
+            message=(f"and {len(missing) - _MAX_UNMATCHED_SHOWN} more listed "
+                     f"lines the script never says")))
+
+    count = len({a for a, _b in found})
+    minutes = len(words) / WORDS_PER_MINUTE
+    if fmt == "short":
+        floor = SHORT_JOKE_FLOOR
+        if count < floor:
+            findings.append(Finding(
+                gate="joke-floor", severity="warn",
+                message=(f"{count} joke{'s' if count != 1 else ''} in the "
+                         f"script — a short carries at least {floor}: one at "
+                         f"Dennis, one at the crowd, one on the number")))
+    else:
+        floor = max(1, int(minutes))
+        if count < floor:
+            findings.append(Finding(
+                gate="joke-floor", severity="warn",
+                message=(f"{count} jokes in about {minutes:.0f} minutes — the "
+                         f"floor is one a minute, so at least {floor}")))
+        # The stretches with nothing listed in them: from the end of one
+        # joke to the start of the next, and the two ends of the script.
+        marks = sorted(set(found))
+        gaps = list(zip([0] + [b for _a, b in marks],
+                        [a for a, _b in marks] + [len(words)]))
+        limit = DRY_STRETCH_MIN * WORDS_PER_MINUTE
+        lines = said.splitlines()
+        ends, pos = [], 0
+        for ln in lines:
+            pos += len(_norm(ln).split())
+            ends.append(pos)
+        for a, b in gaps:
+            if b - a <= limit:
+                continue
+            lineno = next((k for k, end in enumerate(ends, 1) if a < end), 0)
+            findings.append(Finding(
+                gate="joke-floor", severity="warn", line=lineno,
+                message=(f"about {(b - a) / WORDS_PER_MINUTE:.1f} minutes "
+                         f"without a listed joke — the bible allows one "
+                         f"straight minute, once; this stretch needs its "
+                         f"punchlines"),
+                excerpt=_excerpt(lines[lineno - 1]) if lineno else ""))
+    # The count, always: the operator reads this line to see the jokes are
+    # there before he reads the script.
+    rate = (f", {count / minutes:.1f} a minute" if fmt != "short" and minutes
+            else "")
+    findings.append(Finding(
+        gate="joke-floor", severity="note",
+        message=(f"{count} of {len(declared)} listed jokes are in the "
+                 f"script{rate}: " + " · ".join(
+                     (f"{m}: " if m else "") + t[:70]
+                     for m, t in declared[:6])
+                 + (" · …" if len(declared) > 6 else ""))))
+    return findings
+
+
+# --------------------------------------------------------------------------
+# The prompt, said aloud (v4).
+# --------------------------------------------------------------------------
+
+# The writing prompt's own scaffolding. Each is a word or phrase the prompt
+# uses to organise the writer, read back into the narration or onto a plate
+# by a writer taking it literally. No host says any of them to a viewer.
+PROMPT_WORDS: tuple[tuple[str, str], ...] = (
+    ("mandatory", r"\bmandatory (?:valuation|beat|chapter|walk|step|segment|"
+                  r"section|framework)\b"),
+    ("four-step", r"\bfour[- ]step\b"),
+    # Numbering the valuation chapter's four moves, not a list in a joke.
+    ("step one, step two",
+     r"\bstep (?:one|two|three|four)\b[^.]{0,40}?\b(?:multiples?|valuation|"
+     r"walk|bridge|percentile|reverse|dcf|strip)"),
+    ("in exact order", r"\bin exact order\b"),
+    ("a touch on the question", r"\b(?:first|second|third|final|last) touch\b"
+                                r"|\btouch on the (?:spine|question|board)\b"),
+    ("the spine", r"\b(?:the|our|this) spine\b"),
+    ("open loop", r"\bopen[- ]loop\b"),
+    ("running gag", r"\brunning gag\b"),
+    ("narrative frame", r"\bnarrative frame\b"),
+    ("recurring segment", r"\brecurring segment\b"),
+    ("re-hook", r"\bre-?hook\b"),
+    ("the one framework", r"\bone framework\b"
+                          r"|\bframework (?:of|for|in|that decides) this video\b"),
+    ("epistemic", r"\bepistemic\b"),
+)
+_PROMPT_RES = [(name, re.compile(rx, re.IGNORECASE)) for name, rx in PROMPT_WORDS]
+# On a plate only: a step number in a kicker ("STEP 1: TRAILING MULTIPLES").
+_PLATE_STEP_RE = re.compile(r"\bstep\s*[1-4]\b", re.IGNORECASE)
+
+
+def _printed_texts(script) -> list[tuple[str, str]]:
+    """(where, text) for the words that are printed on screen."""
+    out: list[tuple[str, str]] = []
+    for e in getattr(script, "events", None) or []:
+        for slot, value in (getattr(e, "values", None) or {}).items():
+            out.append((f"[{e.type.value}] {slot}", str(value)))
+    for name in ("hook_text", "numbers_comment", "turn_line", "cheap_or_trap",
+                 "conclusion"):
+        v = getattr(script, name, None)
+        if v:
+            out.append((name, str(v)))
+    for h in getattr(script, "headlines", None) or []:
+        out.append(("headline", f"{getattr(h, 'text', '')} "
+                                f"{getattr(h, 'meaning', '')}"))
+    return out
+
+
+def prompt_words_lint(script) -> list[Finding]:
+    """The prompt's scaffolding, spoken or printed."""
+    findings: list[Finding] = []
+    for lineno, line in enumerate(_spoken(script).splitlines(), 1):
+        for name, rx in _PROMPT_RES:
+            if rx.search(line):
+                findings.append(Finding(
+                    gate="prompt-words", severity="warn", line=lineno,
+                    message=(f"“{name}” is the prompt's word, read out loud — "
+                             f"a host never says it; do the thing instead of "
+                             f"naming it"),
+                    excerpt=_excerpt(line)))
+                break
+    for where, text in _printed_texts(script):
+        hit = next((name for name, rx in _PROMPT_RES if rx.search(text)), None)
+        if hit is None and where.startswith("["):
+            hit = "step" if _PLATE_STEP_RE.search(text) else None
+        if hit:
+            findings.append(Finding(
+                gate="prompt-words", severity="warn",
+                message=(f"“{hit}” is the prompt's word, printed in {where} — "
+                         f"it would be on screen"),
+                excerpt=_excerpt(text)))
+    return findings
+
+
+# --------------------------------------------------------------------------
 # S2 — a bible example or a style reference, said again.
 # --------------------------------------------------------------------------
 
@@ -196,9 +459,46 @@ def _words(text: str) -> list[str]:
     return _WORDS_RE.findall(text.lower().replace("’", "'"))
 
 
+# Lines the short prompts' worked examples used to carry, which writers
+# copied word for word into real scripts: the BA short of 30 Oct 2026 turned
+# on "But here is the part nobody screenshots" and closed on "Mostly noise,
+# one number worth watching." Still checked after the examples changed.
+RETIRED_EXAMPLE_LINES: tuple[str, ...] = (
+    "But here is the part nobody screenshots.",
+    "But here is the part you never see in the screenshots.",
+    "But here's the part the headline skips.",
+    "Mostly noise, one number worth watching.",
+    "That is not growth, that is a plateau in a costume, and you pay them to own it.",
+)
+_EXAMPLE_PROMPTS = ("master_prompt_short.md", "master_prompt_headline.md")
+
+
+def example_lines(settings: Settings) -> list[str]:
+    """The spoken lines and declared jokes of the short prompts' worked
+    examples. A writer copies an example's shape first and, given half a
+    chance, its sentences too."""
+    import json
+
+    out: list[str] = list(RETIRED_EXAMPLE_LINES)
+    for name in _EXAMPLE_PROMPTS:
+        try:
+            text = (settings.templates_dir / name).read_text(encoding="utf-8")
+            example = text[text.index("## STRUCTURE EXAMPLE"):]
+            obj = json.loads(example[example.index("{"):])
+        except (OSError, ValueError) as e:
+            log.debug("no worked example in %s (%s)", name, e)
+            continue
+        said = _TAG_RE.sub(" ", re.sub(r"\[BEAT:[^\]]*\]", " ",
+                                       str(obj.get("audio_script", ""))))
+        out += [s for s in _SENTENCE_RE.split(" ".join(said.split())) if s]
+        out += [str(j) for j in obj.get("jokes") or []]
+    return out
+
+
 def reference_lines(settings: Settings) -> list[tuple[str, str]]:
     """(where it is from, the sentence) for everything Dennis must not
-    repeat: the bible's quoted examples and the style references."""
+    repeat: the bible's quoted examples, the prompts' worked examples and
+    the style references."""
     from pipeline.writing_files import list_lines, read_file
 
     out: list[tuple[str, str]] = []
@@ -215,6 +515,7 @@ def reference_lines(settings: Settings) -> list[tuple[str, str]]:
     for ref in list_lines(settings, "style_references"):
         out += [("style reference", s) for s in _SENTENCE_RE.split(ref)
                 if s.strip()]
+    out += [("prompt example", s) for s in example_lines(settings)]
     return out
 
 
