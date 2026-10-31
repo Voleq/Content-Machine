@@ -456,8 +456,10 @@ def _step_approve(v: _Video) -> dict:
            "blockers": st.blockers, "sha8": st.sha8, "mtd": mtd,
            "cap": v.settings.monthly_spend_cap_usd, "buttons": []}
     if st.approved:
+        # No price once the voice is in the cache, as the card says.
         out["buttons"] = keyboard_rows(kb.approved_keyboard(
-            v.fmt, v.ws.ticker, v.ws.workdate, st.est_usd))
+            v.fmt, v.ws.ticker, v.ws.workdate,
+            None if st.tts_cached else st.est_usd))
     elif st.sha8 and st.report_ok:
         out["buttons"] = [[{"text": "Approve ✅",
                             "data": f"a|{v.fmt}|{v.ws.ticker}|{v.ws.workdate}|{st.sha8}"}]]
@@ -532,7 +534,8 @@ def _step_render(v: _Video) -> dict:
                    cancel=out["running"]["cancel"])
     elif v.st.approved and "final" not in v.st.renders:
         code = kb.FMT_CODES.get(v.fmt, "s")
-        price = f" ~${v.st.est_usd:.2f}" if v.st.est_usd else ""
+        price = (f" ~${v.st.est_usd:.2f}"
+                 if v.st.est_usd and not v.st.tts_cached else "")
         out["render"] = [[{"text": f"Render the final 💰{price}",
                            "data": f"r!|{code}|{v.ws.ticker}|{v.ws.workdate}"}]]
     return out

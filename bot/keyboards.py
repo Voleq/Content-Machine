@@ -22,10 +22,14 @@ The next-step buttons (one tap to the obvious next thing):
     rt|<ticker>[|<video id>]          retention for that upload (the newest without)
     cr|<ticker>[|<video id>]          pin a correction on it (asks for the text)
     cp|<ticker>[|<video id>]          post the correction shown
+    cx                                drop the correction shown, unposted
     c|<ticker>|<date>                 the video card
     j|<ticker>|<date>                 cancel that video's jobs
+    jx|<job id>                       cancel that one job (a queue row)
     z                                 undo the last cancel (within a minute)
     ib                                the inbox
+    kz / kz! / kz-                    `/admin usage`'s prune: ask, prune, keep
+    pq                                drop the question the bot is waiting on
 """
 
 from __future__ import annotations

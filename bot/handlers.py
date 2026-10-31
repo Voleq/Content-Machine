@@ -20,7 +20,7 @@ import threading
 import uuid
 from concurrent.futures import CancelledError
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Callable
 
@@ -221,17 +221,25 @@ def telegram_send_kind(path: Path, settings: Settings) -> str:
     suffix = p.suffix.lower()
     if suffix in (".mp4", ".mov", ".mkv", ".webm"):
         return "video"
-    if suffix in (".png", ".jpg", ".jpeg", ".webp") \
-            and size <= TELEGRAM_PHOTO_MAX_BYTES:
-        try:
-            with Image.open(p) as im:
-                w, h = im.size
-        except Exception:  # noqa: BLE001 - unreadable goes as a file
-            return "document"
-        if (w + h <= TELEGRAM_PHOTO_MAX_SIDES
-                and max(w, h) <= TELEGRAM_PHOTO_MAX_RATIO * max(min(w, h), 1)):
-            return "photo"
+    if suffix in (".png", ".jpg", ".jpeg", ".webp") and fits_photo(p):
+        return "photo"
     return "document"
+
+
+def fits_photo(path: Path) -> bool:
+    """Whether Telegram's photo endpoint takes this picture as it is: 10 MB,
+    width + height ≤ 10,000, sides no more than 20:1. Anything else, or a
+    file that cannot be read as a picture, goes as a document."""
+    p = Path(path)
+    try:
+        if p.stat().st_size > TELEGRAM_PHOTO_MAX_BYTES:
+            return False
+        with Image.open(p) as im:
+            w, h = im.size
+    except Exception:  # noqa: BLE001 - unreadable goes as a file
+        return False
+    return (w + h <= TELEGRAM_PHOTO_MAX_SIDES
+            and max(w, h) <= TELEGRAM_PHOTO_MAX_RATIO * max(min(w, h), 1))
 
 
 def _frame_holds(manifest_path) -> str:
@@ -325,6 +333,25 @@ def _what_it_said(script, fmt: str) -> dict:
     except Exception as e:  # noqa: BLE001 — bookkeeping, never the video
         log.warning("could not read back what the %s said: %s", fmt, e)
         return {}
+
+
+def _local_stamp(iso) -> str:
+    """A stored ISO time as this machine's clock reads it, with the zone
+    ("2026-10-31 10:05 EDT"), or the text as it is when it is not a time.
+
+    What the site readers keep is UTC, and `/site` printed it as stored —
+    no zone — beside coverage kept in New York time. A stamp without an
+    offset is read as UTC, which is how they are written."""
+    raw = str(iso or "").strip()
+    if not raw:
+        return ""
+    try:
+        when = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return raw
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return when.astimezone().strftime("%Y-%m-%d %H:%M %Z")
 
 
 def _bytes(n: int) -> str:
@@ -547,17 +574,13 @@ class BotCore:
             return f"{live} · {cached}"
         return live or cached
 
-    def _site_pack(self, ws: Workspace, lane: str, *, refresh: bool = False,
-                   if_missing: bool = False) -> dict | None:
+    def _site_pack(self, ws: Workspace, lane: str, *,
+                   refresh: bool = False) -> dict | None:
         """Read what this video takes from stockanalysis.com and keep it on
         the workspace (`pipeline/site_pack.py`). Never fatal: a site that does
         not answer is a prompt that says so."""
         from pipeline import site_pack
 
-        if if_missing:
-            kept = site_pack.load(ws.path)
-            if kept is not None:
-                return kept
         try:
             today = date.fromisoformat(ws.workdate)
         except ValueError:
@@ -675,7 +698,7 @@ class BotCore:
             return Reply("\n".join(lines))
         for r in site_pack.summary(pack):
             mark = "✓" if r["status"] == "ok" else "✗"
-            when = str(r.get("fetched_at") or "")[:16].replace("T", " ")
+            when = _local_stamp(r.get("fetched_at"))
             lines.append(f"{mark} {r['name']}: {r['what'] or r['why'] or r['status']}"
                          + (f" · read {when}" if when else ""))
         try:
@@ -709,14 +732,9 @@ class BotCore:
             return Reply(f"📈 The movers could not be read: "
                          f"{snap.get('why') or snap.get('status')}.")
         lists = snap.get("lists") or {}
-        names = (("gainers", "Up today"), ("losers", "Down today"),
-                 ("premarket_up", "Up before the open"),
-                 ("premarket_down", "Down before the open"),
-                 ("afterhours_up", "Up after the close"),
-                 ("afterhours_down", "Down after the close"))
         lines = ["📈 Today's movers (stockanalysis.com; the screener's price "
                  "and size floors)"]
-        for key, title in names:
+        for key, title in sa.MOVER_LISTS:
             rows = sa.tradeable(lists.get(key) or [], self.settings, 5)
             if rows:
                 lines.append(f"{title}: " + ", ".join(
@@ -796,8 +814,11 @@ class BotCore:
         # coverage, the call, the analysts, the company's own KPIs, kept on
         # the workspace before the prompt is made. The workbook is read again
         # after it, because the site's headlines join the News sheet and its
-        # quarters fill the workbook's blank cells.
-        pack = self._site_pack(ws, "short" if "short" in wanted else "long")
+        # quarters fill the workbook's blank cells. A long's pack holds a
+        # short's and more (three weeks of coverage, the call a year
+        # earlier), so a lane-less folder making both prompts reads that one.
+        long_prompt = any(p in wanted for p in ("long_angle", "update"))
+        pack = self._site_pack(ws, "long" if long_prompt else "short")
         if pack is not None:
             try:
                 data = load_company_data(ws.path)
@@ -1475,7 +1496,8 @@ class BotCore:
         # An "Angle 2" tap (or a typed 2) names an angle only the writing
         # chat can see; the quote flagger used to get "2" as the thesis.
         self._auto_filings(ws, angle_words(text))  # best-effort; never blocks
-        return self._long_write_reply(ws, header=f"✅ Angle locked for {ws.ticker}.")
+        return self._long_write_reply(ws, header=f"✅ Angle locked for {ws.ticker}.",
+                                      data=data)
 
     # ------------------------------------------------ the pre-angle brief
     def _filing_read_key(self, ws: Workspace) -> tuple[str, str]:
@@ -1626,12 +1648,17 @@ class BotCore:
             log.warning("auto-filings failed for %s: %s", ws.ticker, e)
             return []
 
-    def _long_write_reply(self, ws: Workspace, header: str) -> Reply:
+    def _long_write_reply(self, ws: Workspace, header: str,
+                          data=None) -> Reply:
         """Build the Step-2 writing prompt reply, attaching a contact sheet +
-        veto keyboard for whatever auto-pulled filing shots are on file."""
+        veto keyboard for whatever auto-pulled filing shots are on file.
+
+        `data` is the workbook as the caller already read it, if it did."""
+        from pipeline import site_pack
         from pipeline.filings import load_manifest
 
-        data = self._company_data(ws)
+        if data is None:
+            data = self._company_data(ws)
         if data is None:
             # `header` says what just happened — a crop was dropped, an angle
             # was locked — and this branch used to throw it away, so a veto
@@ -1640,8 +1667,12 @@ class BotCore:
             return Reply(
                 (f"{header}\n" if header else "")
                 + "⛔ No data export on file — upload dennis_data.xlsx first.")
-        # A long whose angle was picked before the site was read gets it now.
-        if self._site_pack(ws, "long", if_missing=True) is not None:
+        # A long whose angle was picked before the site was read gets it now,
+        # and only then is the workbook read again (the site's headlines and
+        # quarters join it on load). With the pack already on file, it was
+        # read again for nothing.
+        if site_pack.load(ws.path) is None and \
+                self._site_pack(ws, "long") is not None:
             data = self._company_data(ws) or data
         prompt = fill_prompt("long_write", ws.ticker, data, ws.path, self.settings,
                              chosen_angle=ws.chosen_angle())
@@ -2931,7 +2962,9 @@ class BotCore:
         """
         from pipeline.standing import BatchQueue
 
-        submittable, skipped, note = self.batch_plan()
+        # Off the loop, as every command body is (M9): planning reads each
+        # entry's workspace, script and approval from disk.
+        submittable, skipped, note = await asyncio.to_thread(self.batch_plan)
         queued = 0
         for kind, ws, item in submittable:
             try:
@@ -2944,7 +2977,8 @@ class BotCore:
             except ValueError as e:
                 # The queue already has this render: follow that job instead
                 # of submitting a second copy behind it.
-                active = next((j for j in self.queue.store.all()
+                jobs = await asyncio.to_thread(self.queue.store.all)
+                active = next((j for j in jobs
                                if j.ticker == ws.ticker and j.kind == kind
                                and j.workdate == ws.workdate
                                and j.status.value in ("queued", "running")),
@@ -4790,6 +4824,22 @@ class BotCore:
 # ---------------------------------------------------------------------------
 
 
+async def _tell_operators(core: BotCore, bot, text: str) -> None:
+    """A scheduled push, to every operator chat and to the page's Activity.
+
+    Each chat is tried on its own, as `notify` and the morning inbox try
+    theirs: one chat that failed (blocked the bot, left the group) stopped
+    every chat after it from hearing, and the pass still counted as said.
+    """
+    if core.feed is not None:
+        core.feed.add("notice", text)
+    for chat_id in core.settings.operator_chat_ids:
+        try:
+            await bot.send_message(chat_id, text)
+        except Exception:  # noqa: BLE001 - the next chat still hears
+            log.exception("could not send to chat %s", chat_id)
+
+
 def schedule_batch(application, core: BotCore) -> None:
     """Open the overnight window (the README's "the window picks it up").
 
@@ -4821,8 +4871,7 @@ def schedule_batch(application, core: BotCore) -> None:
         if not queued and (not skipped or said in reported):
             return              # nothing new: entries still rendering, say nothing
         reported.add(said)
-        for chat_id in settings.operator_chat_ids:
-            await ctx.bot.send_message(chat_id, text)
+        await _tell_operators(core, ctx.bot, text)
 
     application.job_queue.run_repeating(
         batch_job, interval=15 * 60, first=60, name="overnight_batch")
@@ -4861,11 +4910,11 @@ def schedule_retention_notes(application, core: BotCore) -> None:
         if not any((notes.get(f) or {}).get("status") == "ok"
                    for f in ("short", "long")):
             return
-        for chat_id in settings.operator_chat_ids:
-            await ctx.bot.send_message(
-                chat_id, f"📝 Weekly note to the writer rewritten ({summary}). "
-                         f"/lessons shows it; the next prompt carries it. "
-                         f"A lane needs {NOTE_FLOOR} videos before it counts.")
+        await _tell_operators(
+            core, ctx.bot,
+            f"📝 Weekly note to the writer rewritten ({summary}). /lessons "
+            f"shows it; the next prompt carries it. A lane needs "
+            f"{NOTE_FLOOR} videos before it counts.")
 
     application.job_queue.run_repeating(
         notes_job, interval=6 * 3600, first=10 * 60, name="retention_notes")
@@ -4929,8 +4978,14 @@ async def _ship(reply: Reply | str, text_fn, photo_fn, doc_fn):
         if not text:
             carrier = msg
     if reply.photo is not None:
+        # A picture outside the photo endpoint's limits goes as a file: a
+        # LONG's contact sheet of a hundred and fifty visuals is over 10,000
+        # pixels tall, and Telegram refused it after the text had gone.
         with open(reply.photo, "rb") as f:
-            await photo_fn(f)
+            if fits_photo(reply.photo):
+                await photo_fn(f)
+            else:
+                await doc_fn(f, filename=Path(reply.photo).name)
     for path in reply.files:
         with open(path, "rb") as f:
             await doc_fn(f, filename=Path(path).name)
@@ -4969,6 +5024,10 @@ def angle_words(angle: str) -> str:
 # The commands that must answer while something slow holds the chat: the
 # queue's view and its cancel. Everything else keeps arrival order.
 _CONTROL_COMMANDS = frozenset({"jobs", "status", "cancel"})
+# The Cancel buttons: the report's (`x|`, withdraws the approval), and the
+# ones that stop a render — the Cancel 🚫 under a queued or running video
+# (`j|`) and a queue row's own (`jx|`).
+_CONTROL_BUTTONS = ("x|", "j|", "jx|")
 
 
 def is_queue_control(update) -> bool:
@@ -4980,7 +5039,7 @@ def is_queue_control(update) -> bool:
     """
     q = getattr(update, "callback_query", None)
     if q is not None:
-        return str(getattr(q, "data", "") or "").startswith("x|")
+        return str(getattr(q, "data", "") or "").startswith(_CONTROL_BUTTONS)
     msg = getattr(update, "message", None) or getattr(update, "edited_message", None)
     text = str(getattr(msg, "text", "") or "").strip()
     if not text.startswith("/"):
@@ -5163,15 +5222,22 @@ def build_application(settings: Settings, core: BotCore):
         builder = builder.base_url(f"{settings.telegram_api_base_url}/bot")
     app = builder.build()
 
+    # A NEW MESSAGE IS AN INSTRUCTION; AN EDIT OF AN OLD ONE IS NOT. The
+    # library hands edited messages to every one of these by default, so
+    # fixing a typo in an old `/render XYZ` queued the paid render again, and
+    # an edited paste ran the intake again or answered whatever question the
+    # bot had asked since. To act again, send it again.
+    fresh = filters.UpdateType.MESSAGE
     for name in cmds.telegram_names():
-        app.add_handler(CommandHandler(name, command(name)))
+        app.add_handler(CommandHandler(name, command(name), filters=fresh))
     app.add_handler(CallbackQueryHandler(on_callback))
-    app.add_handler(MessageHandler(filters.Document.ALL, on_document))
-    app.add_handler(MessageHandler(filters.PHOTO, on_photo))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
+    app.add_handler(MessageHandler(fresh & filters.Document.ALL, on_document))
+    app.add_handler(MessageHandler(fresh & filters.PHOTO, on_photo))
+    app.add_handler(MessageHandler(fresh & filters.TEXT & ~filters.COMMAND,
+                                   on_text))
     # Last: a command none of the above answered gets "did you mean…"
     # rather than silence.
-    app.add_handler(MessageHandler(filters.COMMAND, on_unknown))
+    app.add_handler(MessageHandler(fresh & filters.COMMAND, on_unknown))
 
     async def send_to(chat_id: int, reply: Reply) -> int | None:
         msg = await send_reply(app.bot, chat_id, reply)

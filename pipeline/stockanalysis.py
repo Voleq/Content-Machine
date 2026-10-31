@@ -64,10 +64,28 @@ WIRES = ("prnewswire", "pr newswire", "business wire", "businesswire",
 
 _lock = threading.Lock()
 _last = 0.0
+# A SITE THAT DID NOT ANSWER IS LEFT ALONE FOR A WHILE. Nothing that failed
+# is kept, so with the site down every part of a gather — robots, the terms,
+# then the page itself — waited out its own twenty-second timeout, on every
+# workbook upload and every /prompts. One timeout, a refused connection, a
+# 429 or a 5xx now pauses the source; a page that is merely missing does not.
+DOWN_PAUSE_S = 300.0
+_down_until = 0.0
 
 
 def enabled(settings: Settings) -> bool:
     return bool(getattr(settings, "stockanalysis_enabled", True))
+
+
+def _site_down() -> bool:
+    return time.monotonic() < _down_until
+
+
+def _pause(why: object) -> None:
+    global _down_until
+    _down_until = time.monotonic() + DOWN_PAUSE_S
+    log.info("%s did not answer (%s); left alone for %.0f min", NAME, why,
+             DOWN_PAUSE_S / 60)
 
 
 # --------------------------------------------------------------------------
@@ -127,6 +145,8 @@ def _raw_get(path: str, settings: Settings) -> str | None:
 
     gap = float(getattr(settings, "stockanalysis_gap_s", 2.0) or 0.0)
     with _lock:
+        if _site_down():
+            return None
         wait = gap - (time.monotonic() - _last)
         if wait > 0:
             time.sleep(wait)
@@ -136,10 +156,13 @@ def _raw_get(path: str, settings: Settings) -> str | None:
                           headers={"User-Agent": USER_AGENT,
                                    "Accept": "text/html,text/plain"})
         except Exception as e:                           # noqa: BLE001
-            log.info("%s%s did not answer (%s)", NAME, path, e)
+            _pause(f"{path}: {e}")
             return None
         finally:
             _last = time.monotonic()
+        if r.status_code == 429 or r.status_code >= 500:
+            _pause(f"{path} answered {r.status_code}")
+            return None
     if r.status_code != 200:
         log.info("%s%s answered %s", NAME, path, r.status_code)
         return None
@@ -184,6 +207,9 @@ def allowed(path: str, settings: Settings) -> tuple[bool, str]:
     """(may this page be read, why not). The order is the cheap one first."""
     if not enabled(settings):
         return False, "switched off (STOCKANALYSIS=false)"
+    if _site_down():
+        return False, (f"{NAME} did not answer; it is asked again in a few "
+                       f"minutes")
     if terms_still_allow(settings) is False:
         return False, "its terms no longer allow crawlers that follow robots.txt"
     rp = _robots(settings)
@@ -709,6 +735,13 @@ def transcript(path: str, settings: Settings) -> dict:
 MOVER_PAGES = {"gainers": "/markets/gainers/", "losers": "/markets/losers/",
                "premarket": "/markets/premarket/",
                "afterhours": "/markets/afterhours/"}
+# The lists `movers` makes of those pages, in the order every reader shows
+# them (`/movers`, Home), each with its title.
+MOVER_LISTS = (("gainers", "Up today"), ("losers", "Down today"),
+               ("premarket_up", "Up before the open"),
+               ("premarket_down", "Down before the open"),
+               ("afterhours_up", "Up after the close"),
+               ("afterhours_down", "Down after the close"))
 
 
 def movers(settings: Settings, which: tuple[str, ...] = tuple(MOVER_PAGES)) -> dict:
@@ -733,8 +766,21 @@ def movers(settings: Settings, which: tuple[str, ...] = tuple(MOVER_PAGES)) -> d
     return out
 
 
+def _market_day() -> str:
+    """Today in New York, the calendar's own day.
+
+    The calendar is kept under it: kept under "today" for six hours, the
+    calendar read at 22:00 was still the day's reporters at 02:00."""
+    try:
+        from zoneinfo import ZoneInfo
+
+        return _dt.datetime.now(ZoneInfo("America/New_York")).date().isoformat()
+    except (ImportError, KeyError):      # no zone data here: the machine's day
+        return _dt.date.today().isoformat()
+
+
 def earnings_calendar(settings: Settings) -> dict:
-    return _read("sa_calendar", "today", "/stocks/earnings-calendar/",
+    return _read("sa_calendar", _market_day(), "/stocks/earnings-calendar/",
                  parse_earnings_calendar, settings)
 
 
@@ -774,7 +820,8 @@ def market_today(settings: Settings, *, refresh: bool = False) -> dict:
     if refresh:
         from pipeline.sources import _cache_path
 
-        for kind, key in [("sa_movers", n) for n in MOVER_PAGES] + [("sa_calendar", "today")]:
+        for kind, key in ([("sa_movers", n) for n in MOVER_PAGES]
+                          + [("sa_calendar", _market_day())]):
             try:
                 _cache_path(settings, kind, key).unlink()
             except OSError:
@@ -812,6 +859,10 @@ def tradeable(rows: list[dict], settings: Settings, n: int) -> list[dict]:
     and size floors, so the page does not lead with penny stocks."""
     out = []
     for r in rows or []:
+        # A change the page printed as "-" is no move to show: it reached
+        # /movers as None and raised there, and the page drew it as +0.0%.
+        if not isinstance(r.get("change"), (int, float)):
+            continue
         price, cap = r.get("price") or 0, r.get("market_cap") or 0
         if price >= settings.screen_min_price and cap >= settings.screen_min_market_cap:
             out.append(r)

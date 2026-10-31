@@ -119,7 +119,8 @@ function renderMovers() {
   const again = el("button", { type: "button", class: "ghost sm", text: m ? "Read again" : "Read the movers",
     title: "Reads the day's gainers, losers and earnings calendar off stockanalysis.com",
     onclick: (e) => runCommand("/movers refresh", e.currentTarget) });
-  $("#movers-note").textContent = m && m.fetched_at ? `stockanalysis.com · read ${String(m.fetched_at).slice(11, 16)} on ${String(m.fetched_at).slice(0, 10)}` : "stockanalysis.com";
+  // `fetched_at` is UTC; shown in this computer's time, as every time here is.
+  $("#movers-note").textContent = m && m.fetched_at ? `stockanalysis.com · read ${when(m.fetched_at)}` : "stockanalysis.com";
   if (!m || m.status !== "ok") {
     setKids(box, empty(m ? "The movers could not be read" : "Not read yet", m ? (m.why || m.status) : "The day's movers show here once they are read.", m ? "warn" : "", "·", again));
     return;

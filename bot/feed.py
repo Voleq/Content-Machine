@@ -9,6 +9,7 @@ durable record of what happened is the journal and the job store.
 
 from __future__ import annotations
 
+import secrets
 import threading
 import time
 from collections import deque
@@ -45,6 +46,11 @@ class Feed:
         self._events: deque[FeedEvent] = deque(maxlen=size)
         self._seq = 0
         self._lock = threading.Lock()
+        # Which run of the bot this is. The numbers start again at one when
+        # it restarts, and a page still holding the old run's count asked
+        # for the events after it and never saw the new run's first ones;
+        # a new epoch tells the page to read from the start.
+        self.epoch = secrets.token_hex(4)
 
     def add(self, kind: str, text: str = "", files=None,
             keyboard=None) -> FeedEvent:

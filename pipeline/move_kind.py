@@ -49,6 +49,12 @@ KINDS = (EARNINGS, NEWS, MOVE)
 # after; a week-old print is not today's news.
 WINDOW_DAYS = 4
 
+# Every headline dated in the window is kept, up to a sane bound. The prompt
+# lists the first eight its coverage block does not already carry; cut to
+# eight here, the site's own stories took every slot and the workbook's
+# headlines never reached the prompt at all.
+HEADLINES_KEPT = 40
+
 # Words that make a headline a print. Narrower than `/headline`'s list on
 # purpose: there the operator has already said the item is news, here a
 # headline that merely mentions revenue ("wins a contract worth…") must not
@@ -211,7 +217,7 @@ def classify(ticker: str, today: _dt.date, *,
                           "source": str(item.get("source") or "").strip()})
     dated.sort(key=lambda d: d["date"], reverse=True)
 
-    out = MoveKind(headlines=dated[:8],
+    out = MoveKind(headlines=dated[:HEADLINES_KEPT],
                    site_earnings=dict(site_earnings or {}))
     site_day, site_timing = _site_clock(site_earnings, today)
     rel = release or {}
