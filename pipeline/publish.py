@@ -316,7 +316,8 @@ def build_package(script, settings, *, ticker: str = "",
                   transcript: str = "",
                   timestamps: "Sequence[tuple[str, str]]" = (),
                   why: str = "", duration_s: float = 0.0,
-                  with_chapters: bool = True) -> UploadPackage:
+                  with_chapters: bool = True,
+                  credit: str = "") -> UploadPackage:
     """Title options, description with chapters, tags and a pinned comment.
 
     Deliberately mechanical: it assembles what the script already decided
@@ -365,6 +366,10 @@ def build_package(script, settings, *, ticker: str = "",
         "footage and images are credited where they appear. No sponsor, "
         "no position unless stated, no price targets.",
     ]
+    if credit:
+        # A research source the video read (stockanalysis.com's terms ask
+        # for the credit), said here rather than on screen.
+        body.append(credit)
 
     # The transcript last, and only if the whole description still fits.
     # A truncated transcript is worse than none: it reads as a video that

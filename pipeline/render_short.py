@@ -249,6 +249,8 @@ class ShortResolver:
             return self._picture_line(parts[1:])
         if parts[0] == "fred":
             return self._fred(parts[1:])
+        if parts[0] == "site":
+            return self._site(parts[1:])
         if parts[0] != "script":
             return None
         obj: object = self.script
@@ -385,6 +387,25 @@ class ShortResolver:
         if not rows or i >= len(rows):
             return None
         return rows[i].get(slot) or None
+
+    def _site(self, rest: list[str]) -> str | None:
+        """`site.quote.<text|attribution|source>`: the writer's `call_quote`,
+        only when it is in the call the bot read word for word
+        (`pipeline.site_pack.quote_card`). Otherwise nothing, and the beat
+        keeps its own card."""
+        from pipeline import site_pack
+
+        if len(rest) != 2 or rest[0] != "quote":
+            return None
+        if "_site_quote" not in self.__dict__:
+            try:
+                card = site_pack.quote_card(Path(self.workdir).parent,
+                                            getattr(self.script, "call_quote", None))
+            except Exception as e:                       # noqa: BLE001
+                log.warning("the call quote could not be checked: %s", e)
+                card = None
+            self.__dict__["_site_quote"] = card
+        return (self.__dict__["_site_quote"] or {}).get(rest[1]) or None
 
     def _picture(self, what: str):
         """The picture for `what` (item 34), as the content chain resolved it,

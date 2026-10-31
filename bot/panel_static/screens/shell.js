@@ -110,6 +110,28 @@ function renderWeek() {
   }));
 }
 
+// ------------------------------------------------------------ the movers
+// What `/movers` last read off stockanalysis.com, to the screener's floors.
+// The page reads the bot's file; the button reads the site again.
+function renderMovers() {
+  const box = $("#movers");
+  const m = STATE.movers;
+  const again = el("button", { type: "button", class: "ghost sm", text: m ? "Read again" : "Read the movers",
+    title: "Reads the day's gainers, losers and earnings calendar off stockanalysis.com",
+    onclick: (e) => runCommand("/movers refresh", e.currentTarget) });
+  $("#movers-note").textContent = m && m.fetched_at ? `stockanalysis.com · read ${String(m.fetched_at).slice(11, 16)} on ${String(m.fetched_at).slice(0, 10)}` : "stockanalysis.com";
+  if (!m || m.status !== "ok") {
+    setKids(box, empty(m ? "The movers could not be read" : "Not read yet", m ? (m.why || m.status) : "The day's movers show here once they are read.", m ? "warn" : "", "·", again));
+    return;
+  }
+  const names = [["gainers", "Up today"], ["losers", "Down today"], ["premarket_up", "Up before the open"], ["premarket_down", "Down before the open"], ["afterhours_up", "Up after the close"], ["afterhours_down", "Down after the close"]];
+  const cols = names.filter(([k]) => (m.lists[k] || []).length).map(([k, title]) => el("div", {}, el("h3", { text: title }),
+    el("ul", {}, m.lists[k].map((r) => el("li", {},
+      el("button", { type: "button", class: "link", text: r.symbol, title: `${r.name} — open a SHORT on it`, onclick: (e) => runCommand(`/short ${r.symbol}`, e.currentTarget) }),
+      el("span", { class: r.change >= 0 ? "up" : "down", text: ` ${r.change >= 0 ? "+" : ""}${(r.change * 100).toFixed(1)}%` }))))));
+  setKids(box, cols.length ? el("div", { class: "movers" }, cols) : el("p", { class: "meta", text: "Nothing on the lists clears the screener's price and size floors." }), again);
+}
+
 // ------------------------------------------------- the finder (Ctrl+K)
 const SCREENS = [["home", "Home"], ["chat", "Chat"], ["videos", "Videos"], ["ideas", "Ideas"], ["calendar", "Calendar"], ["stats", "Stats"], ["library", "Library"], ["settings", "Settings"], ["activity", "Activity"], ["commands", "Commands"]];
 let PAL = [];

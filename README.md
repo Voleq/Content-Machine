@@ -764,6 +764,7 @@ and checks every name the bot registers against them in both directions.
 | `/new update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Gets the same filing brief, additionally **graded against what the last video claimed**. Refuses (and points at `/new long`) when no thesis is on file. |
 | `/new headline TICKER <text or URL>` | A SHORT about one specific headline. `/new headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `[company]`, `[earnings]` or `[macro]` (or `[a]`/`[b]`/`[c]`). The mode sets the lane and picks the shot template. |
 | `/new kind [TICKER] earnings\|news\|move` | A SHORT reads its day when the prompt is made: an **earnings reaction** when the SEC has an 8-K under item 2.02 (results) from the last four days or a headline says so, **company news** when other headlines are dated then, otherwise a **move** nothing public explains. An earnings day is cut as the earnings short (the print against the street, the quarter against the same quarter a year before, the guide). This sets it by hand and makes the prompt again; with no kind it says what the day was read as. |
+| `/new site [TICKER] [refresh]` | What the video took from **stockanalysis.com** when its prompt was made: the news and press releases around the move, the earnings date, twenty quarters of statements, the company's KPIs, the analysts' target changes, the profile, and the latest earnings call with the passages picked from it (a long also gets the call a year earlier). Each part with the time it was read, then where the workbook's last five quarters disagree with the site and which blank cells the site filled. `refresh` reads it all again. `STOCKANALYSIS=false` switches the source off. |
 
 ### /script — Reviewing and editing the script
 
@@ -843,6 +844,7 @@ The paid voice goes to the chat the moment it lands, and the render has already 
 | `/ideas drop TICKER` | Drops one. |
 | `/ideas screen [trending\|value\|all]` | Ranked candidates. Trending → SHORT, value → LONG, plus the update lane (covered names whose thesis has moved). Each candidate is a button that opens it in its lane. |
 | `/ideas watch [TICKER \| drop TICKER \| list]` | Intraday watch, in `SCREEN_TIMEZONE` rather than the machine clock. Published names join automatically. |
+| `/ideas movers [refresh]` | The day's gainers and losers, before the open and after the close, from **stockanalysis.com**, kept to the screener's price and size floors, and who reports today with how many report on the days after. The page's Home and Calendar show what this last read; a live `/screen` reads it too and adds the names Yahoo's screens missed. `refresh` reads it again. |
 | `/ideas earnings TICKER YYYY-MM-DD [bmo\|amc]` | Records a print date so the bot flags it both sides. |
 | `/ideas thesis [TICKER]` | What we said about a name, re-checked against today's numbers. No ticker lists every thesis on file with its status. |
 
@@ -880,7 +882,7 @@ Both read what the bot has already saved: every script, filing brief, check repo
 | `/admin cost [explain\|reconciled]` | Month-to-date spend against the cap, the hosted AI model's against LLM_MONTHLY_CAP, ElevenLabs' own count of the characters left, and how long ago anyone checked the spend against the provider. `explain`: where the month went, per video and tier. `reconciled`: stamp today after comparing against the provider's dashboard. |
 | `/admin kit doctor` | Unresolved tag keys, artwork nothing has ever used, PNGs with no registry entry. |
 | `/admin keys` | Asks each service once, with a call that costs nothing, whether its key works: ElevenLabs (and how many characters are left, and whether both voice ids are on the account), Pexels, Giphy, Tenor, FRED, Telegram, OpenAI, GitHub Models, the SEC (with SEC_USER_AGENT), YouTube and Google Drive. Keys are never shown. Also the page's Settings, "Test the keys". |
-| `/admin usage` | Requests a day to the SEC and Pexels (today, yesterday and the busiest day this week), so a coming block shows before the filings or the b-roll go quiet. Then what each folder of the cache holds, and a button that prunes the 3D Dennis shots and segment clips nobody has written in a week, after asking. The voice cache is paid for and never pruned. |
+| `/admin usage` | Requests a day to the SEC, Pexels and stockanalysis.com (today, yesterday and the busiest day this week), so a coming block shows before the filings, the b-roll or the calls go quiet. Then what each folder of the cache holds, and a button that prunes the 3D Dennis shots and segment clips nobody has written in a week, after asking. The voice cache is paid for and never pruned. |
 | `/admin quiet [on\|off]` | Keeps only finished, failed and needs-you pushes (no "started", no progress). On its own it toggles. |
 | `/admin switch [NAME on\|off]` | The four settings that wait on your call, also on the page's Settings: `short_meme`, `viewer_questions`, `voice_room`, `voice_deess`. A flip takes effect at once and is kept across restarts, over what `.env` says. On its own it lists them. |
 | `/admin panel` | The link to the web control panel, when it is running. |
@@ -917,6 +919,7 @@ Every name the bot answered before the families still works, as a hidden alias o
 | `/lessons` | `/stats lessons` |
 | `/lines` | `/stats lines` |
 | `/long` | `/new long` |
+| `/movers` | `/ideas movers` |
 | `/probe` | `/publish probe` |
 | `/prompts` | `/script prompts` |
 | `/proof` | `/render proof` |
@@ -935,6 +938,7 @@ Every name the bot answered before the families still works, as a hidden alias o
 | `/screen` | `/ideas screen` |
 | `/short` | `/new short` |
 | `/shots` | `/stats shots` |
+| `/site` | `/new site` |
 | `/start` | `/help` |
 | `/status` | `/jobs` |
 | `/stillness` | `/stats stillness` |

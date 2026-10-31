@@ -48,10 +48,11 @@ def test_a_script_with_no_sources_keeps_its_hash(short_valid_json, settings):
     """The hash is what an approval is recorded against and every render seed
     comes from, so a new empty field must not change it."""
     script, _ = parse_short_script(short_valid_json, settings)
-    # As it serialised before the beat marks, the sources, the jokes and the
-    # long lane's `beside` on the tag existed.
+    # As it serialised before the beat marks, the sources, the jokes, the call
+    # quote and the long lane's `beside` on the tag existed.
     old = hashlib.sha256(script.model_dump_json(
         exclude={"beat_marks": True, "sources": True, "jokes": True,
+                 "call_quote": True,
                  "inline_events": {"__all__": {"beside"}}}
     ).encode("utf-8")).hexdigest()[:16]
     assert script.sources == {} and script.content_sha() == old
@@ -190,7 +191,7 @@ def test_a_shot_too_short_for_its_source_hands_it_on(short_valid_json, settings,
     assert plan.tags[0].shot_id != tried[0]
 
 
-SUPPLIED_PROVENANCE = ("news", "fred", "pic", "data")
+SUPPLIED_PROVENANCE = ("news", "fred", "pic", "data", "site")
 
 
 @pytest.mark.parametrize("fmt_name", ["short", "earnings", "macro"])

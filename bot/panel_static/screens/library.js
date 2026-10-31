@@ -176,7 +176,7 @@ SCREEN_LOAD.settings = async () => {
   const diskCard = card("Disk", "", disk.map((x) => el("p", {}, el("b", { text: `${x.free_gb} GB free` }), el("span", { class: "meta", text: ` of ${x.total_gb} GB · ${x.name} (${x.path})` }))),
     disk.some((x) => x.free_gb < 20) ? el("div", { class: "banner warn", text: "Under 20 GB free: a LONG render can run out. Requests and caches, below, shows what the old caches hold and prunes them." }) : null,
     el("div", { class: "row" },
-      el("button", { type: "button", class: "sm", text: "Requests and caches", title: "SEC and Pexels requests a day, what each cache folder holds, and a prune of the week-old 3D shots and segment clips (it asks first)",
+      el("button", { type: "button", class: "sm", text: "Requests and caches", title: "SEC, Pexels and stockanalysis.com requests a day, what each cache folder holds, and a prune of the week-old 3D shots and segment clips (it asks first)",
         onclick: (e) => pageRun("/admin usage", e.currentTarget, "Requests and caches") })));
   const fails = Array.isArray(d.failures) ? d.failures : [];
   const failCard = card("Renders that failed", fails.length ? `the last ${fails.length}` : "none", sectionError(d.failures),

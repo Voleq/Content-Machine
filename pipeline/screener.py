@@ -264,6 +264,8 @@ def score_trending(
             reasons.append(f"vol {ratio:.1f}× avg")
         if sym in st_rank:
             reasons.append(f"ST #{st_rank[sym]} trending")
+        if q.get("_from"):
+            reasons.append(str(q["_from"]))
         out.append(Candidate(
             ticker=sym, lane=Lane.TRENDING, score=round(score, 4),
             reasons=reasons, price=q.get("regularMarketPrice"),
@@ -371,6 +373,20 @@ def run_screen(settings: Settings, lane: str = "all") -> dict[str, list[Candidat
             log.warning("market source blew up: %s", e)
             movers = []
             health["yahoo"] = "failed"
+        # A SECOND LIST OF THE DAY'S MOVERS (item 11 of the stockanalysis
+        # picks): the names Yahoo's screens did not carry, and the whole lane
+        # on a morning Yahoo does not answer. Live screens only; the mock
+        # screen stays the fixture's.
+        if not settings.mocking_screener:
+            try:
+                from pipeline.stockanalysis import screener_quotes
+
+                extra, health["stockanalysis"] = screener_quotes(
+                    settings, {str(q.get("symbol") or "").upper() for q in movers})
+                movers = movers + extra
+            except Exception as e:  # noqa: BLE001
+                log.warning("the site's movers were not read: %s", e)
+                health["stockanalysis"] = "failed"
         cands = [c for c in score_trending(movers, st_symbols, settings)
                  if c.ticker not in cooled]
         result["trending"] = cands[: settings.screen_top_n]

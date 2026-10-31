@@ -52,6 +52,21 @@ TTL_SECONDS = {
     # 2026). One submissions file serves both of a poll's readings.
     "sec_tickers": 86400,
     "sec_submissions": 300,
+    # stockanalysis.com (`pipeline/stockanalysis.py`): the news moves by the
+    # minute, a filed quarter or a held call does not.
+    "sa_robots": 86400,
+    "sa_terms": 86400 * 7,
+    "sa_news": 900,
+    "sa_stats": 3600 * 6,
+    "sa_income_q": 86400,
+    "sa_cash_q": 86400,
+    "sa_metrics": 86400,
+    "sa_forecast": 3600 * 6,
+    "sa_company": 86400 * 7,
+    "sa_calls": 3600 * 6,
+    "sa_call": 86400 * 30,
+    "sa_movers": 900,
+    "sa_calendar": 3600 * 6,
 }
 
 

@@ -19,6 +19,7 @@ validate-then-fail.
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from datetime import date
@@ -31,6 +32,7 @@ from pipeline.company_data import list_screenshots
 from pipeline.memes import MEME_ROTATION_WINDOW, MemeLibrary, recent_memes
 from pipeline.models import CompanyData
 
+log = logging.getLogger(__name__)
 
 def voice_bible(settings: Settings) -> str:
     """The tone anchor, injected verbatim: his edit from the page when he
@@ -1101,8 +1103,38 @@ def why_it_moved_block(ctx: "_Ctx") -> str:
         lines += ["", "HEADLINES DATED AROUND THE MOVE (newest first):"]
         lines += [f"  {h.get('date', '')} · {h.get('source') or 'source n/a'}"
                   f" · {h.get('headline', '')}" for h in day.headlines]
+    coverage = _coverage(ctx)
+    if coverage:
+        lines += ["", "THE COVERAGE BY THE MINUTE (oldest first, New York time; "
+                      "the outlet that ran each one, and what it said). Read "
+                      "the order: what came out before the open is what the "
+                      "market traded on, and what came after is the press "
+                      "explaining a move already made. A press release is "
+                      "the company's own words:", *coverage]
     lines += ["", WHY_RULE, "", WHY_BY_KIND.get(day.kind, WHY_BY_KIND[MOVE])]
     return "\n".join(lines)
+
+
+def _coverage(ctx: "_Ctx") -> list[str]:
+    """The site's coverage in the day's window (`pipeline.site_pack`)."""
+    from datetime import timedelta
+
+    from pipeline import site_pack
+
+    # From the day it reported, or the day before this one: the first
+    # stories after the news are the ones the market traded on, so a long
+    # list keeps its head.
+    try:
+        since = date.fromisoformat(str(getattr(ctx.move_kind, "reported_on", "")))
+    except ValueError:
+        try:
+            since = date.fromisoformat(Path(ctx.workspace).name) - timedelta(days=1)
+        except ValueError:
+            since = date.today() - timedelta(days=1)
+    try:
+        return site_pack.coverage_lines(ctx.workspace, since)[:14]
+    except Exception:                                    # noqa: BLE001
+        return []
 
 
 ANNUAL_NUMBERS_RULE = """\
@@ -1310,6 +1342,21 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                  ("long_angle", "long_write", "update"),
                  lambda c: screenshots_line(c.workspace)),
 
+    # --- what stockanalysis.com gave this video (the 30 Oct picks): the
+    # call in management's own words, what they said a year earlier, the
+    # analysts, the company's own KPIs, who runs it. Read once onto the
+    # workspace (`pipeline/site_pack.py`); a part it did not get says so.
+    PayloadBlock("{{call_transcript}}", ("short", "long_angle", "long_write", "update"),
+                 lambda c: _site(c, "call_block", c.fmt)),
+    PayloadBlock("{{call_promises}}", ("long_angle", "long_write", "update"),
+                 lambda c: _site(c, "promises_block")),
+    PayloadBlock("{{analyst_moves}}", ("short", "long_angle", "long_write", "update"),
+                 lambda c: _site(c, "analysts_block")),
+    PayloadBlock("{{business_kpis}}", ("short", "long_angle", "long_write", "update"),
+                 lambda c: _site(c, "kpis_block")),
+    PayloadBlock("{{company_facts}}", ("short", "long_angle", "long_write", "update"),
+                 lambda c: _site(c, "company_block")),
+
     # --- voice
     PayloadBlock("{{voice_bible}}", _WRITING,
                  lambda c: voice_bible(c.settings)),
@@ -1383,6 +1430,17 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
 )
 
 PROMPT_FORMATS = _ALL
+
+
+def _site(ctx: "_Ctx", name: str, *args) -> str:
+    """One of `pipeline.site_pack`'s prompt blocks, never an exception."""
+    from pipeline import site_pack
+
+    try:
+        return getattr(site_pack, name)(ctx.workspace, *args)
+    except Exception as e:                               # noqa: BLE001
+        log.warning("the site block %s failed: %s", name, e)
+        return "(not available for this video)"
 
 
 def payload_tokens(fmt: str) -> set[str]:

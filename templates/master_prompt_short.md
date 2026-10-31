@@ -49,6 +49,17 @@ Chartable metrics present in THIS data — every `numbers` row you feature MUST 
 ### WHY IT MOVED — what kind of day this is, and the record of it
 {{why_it_moved}}
 
+### MANAGEMENT'S OWN WORDS, AND WHO ELSE MOVED — read by the bot
+{{call_transcript}}
+
+{{analyst_moves}}
+
+{{business_kpis}}
+
+{{company_facts}}
+
+Never name the site these came from aloud or on screen: it is "on the call", "in the release", or the outlet and the firm by name.
+
 ## THE KIT — for reference, not for placement
 
 A SHORT'S VISUALS ARE NOT YOURS TO PLACE. The shot template decides every

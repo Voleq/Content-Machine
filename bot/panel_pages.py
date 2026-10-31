@@ -93,6 +93,23 @@ def _instant(iso: str) -> datetime | None:
     return t if t.tzinfo else t.replace(tzinfo=timezone.utc)
 
 
+def _reporting(settings) -> dict | None:
+    """Who reports today and how many report on the days after, as `/movers`
+    last read them off stockanalysis.com's earnings calendar."""
+    from pipeline import stockanalysis as sa
+
+    cal = (sa.market_saved(settings) or {}).get("calendar") or {}
+    if not cal.get("rows") and not cal.get("days"):
+        return None
+    big = sorted(cal.get("rows") or [], key=lambda r: -(r.get("market_cap") or 0))
+    return {"date": cal.get("date", ""),
+            "rows": [{"symbol": r.get("symbol"), "name": r.get("name", ""),
+                      "time": r.get("time", "")} for r in big[:20]],
+            "count": len(cal.get("rows") or []),
+            "days": [d for d in cal.get("days") or []
+                     if str(d.get("date", "")) > str(cal.get("date") or "")][:6]}
+
+
 def calendar_view(panel, month: str = "", now: datetime | None = None) -> dict:
     """One month of what went out and what is scheduled, the days with
     nothing marked, and the finished videos not yet uploaded that a free
@@ -151,6 +168,7 @@ def calendar_view(panel, month: str = "", now: datetime | None = None) -> dict:
     return {"month": first.strftime("%Y-%m"), "title": first.strftime("%B %Y"),
             "today": today.isoformat(), "prev": prev, "next": nxt,
             "days": days, "ready": ready,
+            "reporting": _reporting(s),
             "error": states.get("error") if isinstance(states, dict) else None,
             "publish_hour": int(getattr(s, "publish_hour", 17)),
             "timezone": str(s.publish_timezone)}

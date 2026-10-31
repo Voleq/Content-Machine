@@ -9,8 +9,10 @@ there still has it.
 A flip is written to `state/switches.json` and set on the running bot's
 settings at once: the next render, prompt or weekly read sees it with no
 restart. At start the file is laid over `.env`, so the page's last word wins
-over a line he wrote once and forgot. Only these four: a key, a path or the
-3D Dennis is never a switch.
+over a line he wrote once and forgot. Only these: a key, a path or the 3D
+Dennis is never a switch. The fifth, stockanalysis.com, ships on: it is the
+research source he asked for (30 Oct 2026), and off is for a day the site
+misbehaves.
 """
 
 from __future__ import annotations
@@ -47,6 +49,10 @@ SWITCHES: dict[str, Switch] = {s.name: s for s in (
     Switch("voice_deess", "VOICE_DEESS", "De-esser",
            "Softens the sharp s sounds in the voice. Hear /voice compare on a "
            "paid voice first."),
+    Switch("stockanalysis_enabled", "STOCKANALYSIS", "stockanalysis.com",
+           "Reads the news around a move, the earnings call, the quarters, the "
+           "analysts and the day's movers off stockanalysis.com for every "
+           "prompt. Off, nothing is asked and the prompts say so."),
 )}
 
 

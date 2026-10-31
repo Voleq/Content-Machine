@@ -3353,6 +3353,15 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     report.findings += report.record("valuation",
                                      valuation_moves(script, settings))
     report.findings += report.record("budgets", budget_check(script, settings))
+    # WHAT THE SITE SAYS (the stockanalysis picks, 30 Oct 2026): a quote
+    # said to be management's that is not in the call, and the workbook's
+    # quarters where they disagree with the site's. Both warn.
+    from pipeline import site_pack
+
+    report.findings += report.record("call-quote",
+                                     site_pack.quote_findings(script, workspace))
+    report.findings += report.record("site-figures",
+                                     site_pack.cross_check_findings(data, workspace))
     # A MACRO short has no company workbook by design: it is anchored on
     # FRED's series and an index proxy, both fetched live. Asking it for a
     # workbook as-of date blocked every macro short under the production

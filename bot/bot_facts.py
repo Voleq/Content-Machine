@@ -28,8 +28,9 @@ SCREENS: dict[str, str] = {
     "home": "Home: the big Next up button (the most urgent thing across all "
             "videos), the inbox, Start a video (ticker, lane, drop the "
             "workbook), the render queue with time left, this week's "
-            "publishing and the month's spend. The Ask box opens a "
-            "conversation in Chat.",
+            "publishing, today's movers off stockanalysis.com (click one "
+            "to open a SHORT; Read again or /movers fetches them) and the "
+            "month's spend. The Ask box opens a conversation in Chat.",
     "chat": "Chat: a conversation with the local AI about the bot, every "
             "conversation kept in a list (rename, delete, new). It shows "
             "what it is doing while it answers, writes the answer as it "
@@ -43,7 +44,9 @@ SCREENS: dict[str, str] = {
              "Start on every row.",
     "calendar": "Calendar: a month of published and scheduled videos with "
                 "the empty days marked; click a free day to schedule a "
-                "finished video into it.",
+                "finished video into it. Above it, who reports today and "
+                "how many on the days after, from stockanalysis.com's "
+                "earnings calendar.",
     "stats": "Stats: openers (hooks), the writing rules, length, retention "
              "by chapter, experiments and the scoreboard.",
     "library": "Library: the writing files (edit and save, or reset to the "
@@ -51,7 +54,7 @@ SCREENS: dict[str, str] = {
                "recurring bits), memes with their labels, b-roll, sounds "
                "and the rooms with the kit doctor.",
     "settings": "Settings: the switches (memes in SHORTs, viewer questions, "
-                "the voice room, the de-esser) and quiet mode, which apply "
+                "the voice room, the de-esser, stockanalysis.com) and quiet mode, which apply "
                 "at once with no restart; the health checks, disk space and "
                 "failed renders. Keys and passwords are never shown there.",
     "activity": "Activity: everything the bot said, newest first, as in "
@@ -62,7 +65,11 @@ SCREENS: dict[str, str] = {
 # A video's workspace steps, in order (pinned to `panel_views.STEPS`).
 STEP_GUIDE: dict[str, str] = {
     "data": "drop the refreshed workbook (dennis_data.xlsx); it shows the "
-            "as-of date, freshness, key figures and warnings.",
+            "as-of date, freshness, key figures and warnings, then what "
+            "the video took from stockanalysis.com (each part with when it "
+            "was read, the coverage, the call passages, where the "
+            "workbook's quarters and the site's disagree, the blank cells "
+            "it filled) with Fetch again (/site).",
     "angle": "LONGs only: copy the angle prompt into your own Claude chat, "
              "paste the angles back and pick one. The filing brief is here.",
     "write": "copy the full writing prompt (or download it) into your own "
@@ -118,6 +125,11 @@ CHECKS: dict[str, str] = {
     "valuation": "the valuation chapter's four moves, in order; blocks on a "
                  "skipped third move",
     "budgets": "copy that does not fit the box the kit drew for it; blocks",
+    "call-quote": "a line said to be management's that is not in the "
+                  "earnings call the bot read word for word (the quote card "
+                  "is then not drawn); warns",
+    "site-figures": "the workbook's last five quarters against "
+                    "stockanalysis.com's, where they disagree; warns",
     "freshness": "a workbook too old to state its numbers as current",
     "audio": "sound files that are still synthesised placeholders",
     "prices": "whether the price chart is drawn from real prices",

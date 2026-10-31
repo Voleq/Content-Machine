@@ -34,6 +34,19 @@ CHECK THE BRIEF FIRST. Every numbered point at the bottom of the brief carries t
 Verbatim filing quotes for a chosen thesis — the receipts, pulled AFTER an angle is picked, so normally empty at this step:
 {{filing_quotes}}
 
+## WHAT THE COMPANY AND THE STREET SAID — read by the bot, word for word where quoted
+{{call_transcript}}
+
+{{call_promises}}
+
+{{analyst_moves}}
+
+{{business_kpis}}
+
+{{company_facts}}
+
+Never name the site these came from in the script, on a card or in a [SOURCE]: on screen and aloud it is "on the call", "in the release", or the outlet and the firm by name.
+
 ## YOUR JOB
 Read the whole dataset. Find the ONE core tension that decides whether this stock is interesting. Then propose 2–3 DISTINCT angles into it, ranked, and tell me which to make and which to skip. Each angle is a different thesis about the same company — not a different company.
 

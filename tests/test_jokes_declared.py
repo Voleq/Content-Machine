@@ -125,6 +125,8 @@ def test_a_short_without_jokes_keeps_its_hash(settings):
     exclude: dict = {name: True for name in ("beat_marks", "sources")
                      if not getattr(script, name)}
     exclude["jokes"] = True
+    # Nor by the call quote, which came after it and is empty here too.
+    exclude["call_quote"] = True
     if not any(e.beside for e in script.inline_events):
         exclude["inline_events"] = {"__all__": {"beside"}}
     old = hashlib.sha256(script.model_dump_json(exclude=exclude).encode(

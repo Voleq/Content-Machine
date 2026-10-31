@@ -16,6 +16,9 @@ The day is read off the free record, newest and most certain first:
 1. **The operator's word.** `/kind TICKER earnings|news|move` wins.
 2. **The SEC.** An 8-K furnished under item 2.02 (results of operations) in
    the last few days IS an earnings day, with the minute it was filed.
+   **The earnings date stockanalysis.com lists** is a second clock beside it
+   (item 6 of the site picks): it agrees or it says so, and when the 8-K is
+   late or filed under another item it still names the day and the session.
 3. **The headlines** dated in the same days (the News sheet, the 8-K and IR
    feeds merged into it): an earnings headline is an earnings day; any other
    is company news.
@@ -78,6 +81,9 @@ class MoveKind:
     release_text: str = ""     # the EX-99.1, cut for the prompt
     # Headlines dated in the window, newest first: {date, headline, source}.
     headlines: list[dict] = field(default_factory=list)
+    # THE SECOND CLOCK: the earnings date stockanalysis.com lists, as
+    # {which: last|next, date, timing}, or {} when it was not read.
+    site_earnings: dict = field(default_factory=dict)
 
     def to_json(self) -> dict:
         return asdict(self)
@@ -153,14 +159,48 @@ def release_excerpt(text: str, limit: int = 3000) -> str:
     return (cut[:stop + 1] if stop > limit // 2 else cut).rstrip() + " …"
 
 
+SITE = "stockanalysis.com's earnings date"
+
+
+def _site_clock(site: dict | None, today: _dt.date) -> tuple[str, str]:
+    """(day, timing) of the last report the site lists, when it is in the
+    window; ("", "") otherwise."""
+    site = site or {}
+    when = _day(site.get("date"))
+    if site.get("which", "last") != "last" or not _in_window(when, today):
+        return "", ""
+    return when.isoformat(), str(site.get("timing") or "")
+
+
+def _site_note(site: dict | None, today: _dt.date, reported_on: str) -> str:
+    """One sentence on what the second clock says, beside the first."""
+    site = site or {}
+    when = _day(site.get("date"))
+    if when is None:
+        return ""
+    timing = f", {site['timing']}" if site.get("timing") else ""
+    if site.get("which") == "next" or when > today:
+        return (f" The next report is due {when:%a %-d %b}{timing} "
+                f"(stockanalysis.com).")
+    if not reported_on:
+        return ""
+    if when.isoformat() == reported_on:
+        return " stockanalysis.com's earnings date agrees."
+    return (f" stockanalysis.com lists the last report on {when:%a %-d %b}"
+            f"{timing}, which does not match: check which day the market "
+            f"read it.")
+
+
 def classify(ticker: str, today: _dt.date, *,
              release: dict | None = None,
              news: list[dict] | None = None,
-             override: str = "") -> MoveKind:
+             override: str = "",
+             site_earnings: dict | None = None) -> MoveKind:
     """The kind of day, from what was found. Pure: every input is handed in.
 
     `release` is `sources.earnings_release(...)`'s payload; `news` the
-    workbook's headlines with the free feeds merged in.
+    workbook's headlines with the free feeds merged in; `site_earnings` the
+    earnings date stockanalysis.com lists (`{which, date, timing}`).
     """
     dated = []
     for item in news or []:
@@ -171,7 +211,9 @@ def classify(ticker: str, today: _dt.date, *,
                           "source": str(item.get("source") or "").strip()})
     dated.sort(key=lambda d: d["date"], reverse=True)
 
-    out = MoveKind(headlines=dated[:8])
+    out = MoveKind(headlines=dated[:8],
+                   site_earnings=dict(site_earnings or {}))
+    site_day, site_timing = _site_clock(site_earnings, today)
     rel = release or {}
     filed = _day(rel.get("filed")) if rel.get("status") == "ok" else None
     if filed is not None and _in_window(filed, today):
@@ -184,6 +226,8 @@ def classify(ticker: str, today: _dt.date, *,
     if override in KINDS:
         out.kind, out.source = override, "operator"
         out.why = f"You set this one as {_NAMES[override]}."
+        if override == EARNINGS and not out.reported_on and site_day:
+            out.reported_on, out.timing = site_day, site_timing
         return out
     if out.reported_on:
         out.kind, out.source = EARNINGS, f"SEC 8-K item 2.02"
@@ -193,25 +237,37 @@ def classify(ticker: str, today: _dt.date, *,
         out.why = (f"{ticker.upper()} reported its results{quarter} on "
                    f"{when:%a %-d %b}"
                    + (f", {out.timing}" if out.timing else "")
-                   + " (SEC 8-K, item 2.02). This is an earnings reaction.")
+                   + " (SEC 8-K, item 2.02). This is an earnings reaction."
+                   + _site_note(site_earnings, today, out.reported_on))
         return out
+    if site_day:
+        out.kind, out.source = EARNINGS, SITE
+        out.reported_on, out.timing = site_day, site_timing
+        when = _dt.date.fromisoformat(site_day)
+        out.why = (f"{ticker.upper()} reported on {when:%a %-d %b}"
+                   + (f", {site_timing}" if site_timing else "")
+                   + " (the earnings date stockanalysis.com lists; no SEC "
+                   "8-K item 2.02 found yet). This is an earnings reaction.")
+        return out
+    note = _site_note(site_earnings, today, "")
     earn = [d for d in dated if _looks_like_earnings(d["headline"])]
     if earn:
         out.kind, out.source = EARNINGS, "headlines"
         out.reported_on = earn[0]["date"]
         out.why = (f"An earnings headline is dated {earn[0]['date']}: "
                    f"\"{earn[0]['headline'][:120]}\". This is an earnings "
-                   f"reaction.")
+                   f"reaction." + note)
         return out
     if dated:
         out.kind, out.source = NEWS, "headlines"
         out.why = (f"{len(dated)} headline{'s' if len(dated) > 1 else ''} "
                    f"dated in the last {WINDOW_DAYS} days, newest "
-                   f"\"{dated[0]['headline'][:120]}\" ({dated[0]['date']}).")
+                   f"\"{dated[0]['headline'][:120]}\" ({dated[0]['date']})."
+                   + note)
         return out
     out.why = (f"No earnings filing and no headline dated in the last "
                f"{WINDOW_DAYS} days: nothing public on file explains this "
-               f"move yet.")
+               f"move yet." + note)
     return out
 
 
@@ -220,7 +276,8 @@ _NAMES = {EARNINGS: "an earnings reaction", NEWS: "a company-news day",
 
 
 def detect(ticker: str, today: _dt.date, settings: Any, *,
-           news: list[dict] | None = None, override: str = "") -> MoveKind:
+           news: list[dict] | None = None, override: str = "",
+           site_earnings: dict | None = None) -> MoveKind:
     """`classify`, with the SEC asked for the latest earnings 8-K.
 
     The 8-K is asked for even when the operator has set the kind, so an
@@ -235,7 +292,7 @@ def detect(ticker: str, today: _dt.date, settings: Any, *,
     except Exception as e:                               # noqa: BLE001
         log.warning("the SEC could not say whether %s reported (%s)", ticker, e)
     return classify(ticker, today, release=release, news=news,
-                    override=override)
+                    override=override, site_earnings=site_earnings)
 
 
 # The beats only the earnings cut has. A script that marks one of them, or

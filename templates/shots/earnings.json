@@ -234,6 +234,16 @@
           },
           "prefer": true,
           "notes": "The release itself, opened from the News sheet's link for this headline, as in the stock short."
+        },
+        {
+          "plate": "cards/quote-pull-9x16",
+          "bind": {
+            "body": "site.quote.text",
+            "attribution": "site.quote.attribution",
+            "source": "?site.quote.source"
+          },
+          "prefer": true,
+          "notes": "MANAGEMENT'S OWN WORDS (item 4 of the stockanalysis picks, 30 Oct 2026): the line from the latest earnings call the writer chose as `call_quote`, drawn only when it is in the transcript the bot read word for word. The source line names the call, never the site."
         }
       ]
     },

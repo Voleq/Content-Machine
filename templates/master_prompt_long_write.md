@@ -48,6 +48,19 @@ PEER PERCENTILES — where THIS ticker ranks within its peer set (fold the strik
 Auto-extracted filing quotes (the receipts for the smoking-gun walk, when present):
 {{filing_quotes}}
 
+## WHAT THE COMPANY AND THE STREET SAID — read by the bot, word for word where quoted
+{{call_transcript}}
+
+{{call_promises}}
+
+{{analyst_moves}}
+
+{{business_kpis}}
+
+{{company_facts}}
+
+Never name the site these came from in the script, on a card or in a [SOURCE]: on screen and aloud it is "on the call", "in the release", or the outlet and the firm by name.
+
 ## VISUAL CATALOGS — use ONLY keys that appear below (every key is validated on paste-back; unknown keys are flagged before render)
 Vetted b-roll palette — [CLIP: key] / [BROLL: key]:
 {{broll_palette}}
@@ -70,7 +83,7 @@ Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below.
 
 ## SEARCH FOR THE PRIMARY SOURCES (you have the web; the bot does not)
 You are running in a web-search-capable model, so do the reading the pipeline cannot. Before writing:
-1. Find {{ticker}}'s **most recent earnings-call transcript** (or the IR press release / 8-K exhibit if no transcript is public) and pull 1–3 SHORT verbatim quotes from management — the ones where they explain, deflect, or commit to something measurable.
+1. The **latest earnings call** is above, already read: take 1–3 SHORT verbatim quotes from those passages — the ones where management explains, deflects, or commits to something measurable — and hold the year-earlier promises against what happened. Search for the transcript only when the block above says there is none, and then pull the quotes yourself (or from the IR press release / 8-K exhibit if no transcript is public).
 2. Find the latest **investor-relations release** for anything the spreadsheet cannot know: a refinancing, a guidance change, a segment reorganisation, a departure.
 3. Prefer the company's own words over any commentary about them. Quote exactly, attribute plainly ("on the last call", "in the release"), and never name a data terminal.
 4. If a search turns up nothing usable, say so in one line and write from the data — do NOT invent a quote. A fabricated management quote is the one error that ends the channel.

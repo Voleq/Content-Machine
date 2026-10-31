@@ -67,6 +67,9 @@ PURPOSES: dict[str, str] = {
     "retention-note": "reads the sentences viewers left on across recent "
                       "videos and says what they share, for the next "
                       "writing prompt",
+    "transcript-passages": "picks which passages of the last earnings call "
+                           "a writer is shown, by number; the words stay "
+                           "the call's own (local model only)",
     "llm": "an unnamed pass",
 }
 

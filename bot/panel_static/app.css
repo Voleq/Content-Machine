@@ -1077,3 +1077,16 @@ button.toggle.on i { left: 20px; }
   .health li { grid-template-columns: 12px 1fr; }
   .health li .meta { grid-column: 2; }
 }
+
+/* The Data step's stockanalysis.com block, Home's movers, the Calendar's reporters. */
+.site-block { margin: 16px 0; padding-top: 12px; border-top: 1px solid var(--line); }
+.site-block .row { align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.site-block details { margin-top: 8px; }
+.site-block ol, .site-news { padding-left: 20px; }
+.site-block li { margin: 4px 0; overflow-wrap: anywhere; }
+.movers { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 16px; }
+.movers h3 { font-size: 13px; margin: 0 0 4px; color: var(--ink-2); }
+.movers .up { color: var(--ok, inherit); }
+.movers .down { color: var(--bad); }
+.cal-reporting { margin: 8px 0 12px; overflow-wrap: anywhere; }
+.movers ul { list-style: none; padding: 0; margin: 0; }

@@ -118,8 +118,19 @@ SCREEN_LOAD.calendar = async () => {
         onclick: (e) => scheduleOn(day.date, d, e.currentTarget) }) : null));
   });
   const gaps = d.days.filter((x) => x.gap).length;
+  // Who reports, off stockanalysis.com's earnings calendar (`/movers`).
+  const rep = d.reporting;
+  const reporting = el("div", { class: "cal-reporting" },
+    rep ? el("p", {}, el("b", { text: `Reporting ${rep.date || "today"} (${rep.count}): ` }),
+      rep.rows.flatMap((r, i) => [i ? ", " : "", el("button", { type: "button", class: "link", text: r.symbol, title: `${r.name}${r.time ? ` · ${r.time}` : ""} — open a SHORT on it`,
+        onclick: (e) => pageRun(`/short ${r.symbol}`, e.currentTarget) })]),
+      rep.days.length ? el("span", { class: "meta", text: ` · coming: ${rep.days.map((x) => `${x.day.slice(0, 3)} ${x.count}`).join(", ")}` }) : null)
+      : el("span", { class: "meta", text: "Who reports today comes from stockanalysis.com's calendar. " }),
+    el("button", { type: "button", class: "ghost sm", text: rep ? "Read again" : "Read it", title: "Reads the day's movers and earnings calendar off stockanalysis.com",
+      onclick: (e) => pageRun("/movers refresh", e.currentTarget, "Movers and reporters").then(() => SCREEN_LOAD.calendar()) }));
   setKids(box, head,
     el("p", { class: "meta", text: `${gaps} day${gaps === 1 ? "" : "s"} left this month with nothing going out. ${d.ready.length ? `${d.ready.length} finished video${d.ready.length === 1 ? "" : "s"} not uploaded yet.` : "No finished video is waiting for a slot."}` }),
+    reporting,
     sectionError(d),
     el("div", { class: "cal" }, names.map((n) => el("div", { class: "cal-head", text: n })), cells));
 };

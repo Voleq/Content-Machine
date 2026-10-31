@@ -26,8 +26,8 @@ log = logging.getLogger(__name__)
 
 FILE = "requests_by_day.json"
 KEEP_DAYS = 14
-SERVICES = ("sec", "pexels")
-LABELS = {"sec": "SEC", "pexels": "Pexels"}
+SERVICES = ("sec", "pexels", "stockanalysis")
+LABELS = {"sec": "SEC", "pexels": "Pexels", "stockanalysis": "stockanalysis.com"}
 
 _lock = threading.Lock()
 

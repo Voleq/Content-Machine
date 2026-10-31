@@ -551,6 +551,7 @@ async function refreshNow(force = false) {
     renderSummary();
     renderInbox();
     renderWeek();
+    renderMovers();
     renderJobs();
     renderVideos();
   });

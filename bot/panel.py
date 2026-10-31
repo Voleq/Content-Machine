@@ -324,10 +324,29 @@ class Panel:
             # browser's, when the two sit in different time zones.
             "today": today_str(),
             "week": self.week(),
+            "movers": self.movers(),
             # what the next plain message will be taken as, with a Cancel
             "waiting": cmds.waiting_for(self.core, self.chat_id),
             "max_upload_mb": self.settings.panel_max_upload_mb,
         }
+
+    def movers(self) -> dict | None:
+        """Home's movers: what `/movers` (or a live screen) last read off
+        stockanalysis.com, to the screener's floors. A file, never the site."""
+        from pipeline import stockanalysis as sa
+
+        snap = sa.market_saved(self.settings)
+        if not snap:
+            return None
+        lists = snap.get("lists") or {}
+        return {"status": snap.get("status", ""), "why": snap.get("why", ""),
+                "fetched_at": snap.get("fetched_at", ""),
+                "lists": {k: [{"symbol": r.get("symbol"), "name": r.get("name", ""),
+                               "change": r.get("change"), "price": r.get("price")}
+                              for r in sa.tradeable(lists.get(k) or [], self.settings, 5)]
+                          for k in ("gainers", "losers", "premarket_up",
+                                    "premarket_down", "afterhours_up",
+                                    "afterhours_down")}}
 
     def week(self) -> list[dict]:
         """What went out in the last seven days and goes out in the next

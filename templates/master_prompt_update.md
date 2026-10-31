@@ -75,6 +75,19 @@ Auto-extracted filing quotes (receipts, when present):
 Operator-uploaded screenshots available for [SHOW FILING: file]:
 {{available_screenshots}}
 
+## WHAT THE COMPANY AND THE STREET SAID — read by the bot, word for word where quoted
+{{call_transcript}}
+
+{{call_promises}}
+
+{{analyst_moves}}
+
+{{business_kpis}}
+
+{{company_facts}}
+
+Never name the site these came from in the script, on a card or in a [SOURCE]: on screen and aloud it is "on the call", "in the release", or the outlet and the firm by name.
+
 ## VISUAL CATALOGS — use ONLY keys that appear below (validated on paste-back; unknown keys are flagged before render)
 Vetted b-roll palette — [CLIP: key] / [BROLL: key]:
 {{broll_palette}}

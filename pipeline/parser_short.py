@@ -188,6 +188,8 @@ def _text_surfaces(script: ShortScript) -> dict[str, str]:
         surfaces[f"numbers[{i}]"] = f"{row.label} {' '.join(row.values)}"
     for key, text in script.sources.items():
         surfaces[f"sources[{key}]"] = text
+    if script.call_quote is not None:
+        surfaces["call_quote"] = f"{script.call_quote.text} {script.call_quote.speaker}"
     # The plates the writer tagged inline: their slots are drawn in shot, and
     # `audio_script` has been stripped of the tags that carried them.
     for i, e in enumerate(script.inline_events):

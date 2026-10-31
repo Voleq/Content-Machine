@@ -313,6 +313,14 @@ class Settings(BaseSettings):
     broll_rewrite_offpalette: bool = Field(default=True,
                                            alias="BROLL_REWRITE_OFFPALETTE")
 
+    # ---------------------------------------------- stockanalysis.com (point 7)
+    # Its free public pages: the coverage around a move, press releases, the
+    # earnings calls, quarterly statements, KPIs, analysts, movers. Read the
+    # way its terms allow (`pipeline/stockanalysis.py`): robots.txt obeyed,
+    # a few pages per video, one every `stockanalysis_gap_s`, never logged in.
+    stockanalysis_enabled: bool = Field(default=True, alias="STOCKANALYSIS")
+    stockanalysis_gap_s: float = 2.0
+
     # ---------------------------------------------- filings (10-K auto-screenshot)
     # Pull the latest 10-K from SEC EDGAR, flag smoking-gun quotes with a cheap
     # LLM, and Playwright-screenshot each — replacing the manual PNG upload.

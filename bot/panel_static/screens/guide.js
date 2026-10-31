@@ -19,6 +19,7 @@ const GUIDE = {
       "Everything you press answers in Replies on the right. A slow one shows “working…” with a timer and what the bot says on the way; you can keep using the page, and the answer arrives there, or in Activity if you left.",
       "Ask the bot opens a conversation with the local AI in Chat, where every conversation is kept; the last few are one click away under the box.",
       "The Render queue runs one render at a time. Each row says what it is doing in words (making the voice, drawing Dennis in 3D, putting the frames together) and how far it is.",
+      "Today's movers are the day's gainers and losers (and before the open, after the close) from stockanalysis.com, kept to the screener's price and size floors. Click a ticker to open a SHORT on it; Read again fetches the lists (or /movers in the chat). A live screen adds the names Yahoo's lists missed.",
     ],
   },
   chat: {
@@ -52,6 +53,7 @@ const GUIDE = {
     how: [
       "What went out, what is scheduled to go public, and the days with nothing on them.",
       "On a free day, “+ schedule” offers the finished videos not yet uploaded and the time it goes public.",
+      "Reporting today is stockanalysis.com's earnings calendar: the biggest names reporting, before the open or after the close, and how many report on the days after. Click one to open a SHORT on it; Read again fetches it.",
     ],
   },
   stats: {
@@ -97,6 +99,8 @@ const GUIDE = {
       "What: the workbook you fill in your Capital IQ terminal (dennis_data.xlsx), one per video.",
       "Why: every figure Dennis says comes from it, and the checks compare the script with it line by line. For a SHORT it also tells the bot what kind of day it is (an earnings print, news, or just a move), which decides what the script argues.",
       "How: drop the file here or press Upload. The bot checks the ticker matches, the numbers are recent (10 days at most by default), and the figures it needs are filled in. Problems are listed here; red ones stop the video until a fixed workbook is uploaded.",
+      "From stockanalysis.com: when the prompt is made, the bot also reads the news and press releases around the move (outlet and minute), the earnings date, twenty quarters of statements, the company's own KPIs, the analysts' target changes, who runs it, and the latest earnings call, with the passages the writer is shown (the local AI picks them; the words stay the call's). A LONG also gets the call a year earlier, for said against did. Each part says when it was read; Fetch again reads it all again, and the next prompt uses it.",
+      "The quarter check: where the workbook's last five quarters and the site's disagree, it is listed here and on the Check step, so you can fix the workbook before a wrong figure goes on screen. A quarter the workbook left blank is filled from the site, and named here.",
       "Next: the bot writes the prompt for your Claude chat. A LONG goes to Angle first; a SHORT or an UPDATE goes straight to Write.",
     ],
   },

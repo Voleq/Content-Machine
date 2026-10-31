@@ -547,6 +547,57 @@ class BotCore:
             return f"{live} · {cached}"
         return live or cached
 
+    def _site_pack(self, ws: Workspace, lane: str, *, refresh: bool = False,
+                   if_missing: bool = False) -> dict | None:
+        """Read what this video takes from stockanalysis.com and keep it on
+        the workspace (`pipeline/site_pack.py`). Never fatal: a site that does
+        not answer is a prompt that says so."""
+        from pipeline import site_pack
+
+        if if_missing:
+            kept = site_pack.load(ws.path)
+            if kept is not None:
+                return kept
+        try:
+            today = date.fromisoformat(ws.workdate)
+        except ValueError:
+            today = date.today()
+        try:
+            return site_pack.gather(ws.path, ws.ticker, self.settings,
+                                    lane=lane, refresh=refresh,
+                                    busy=self.render_busy(), today=today)
+        except Exception as e:                           # noqa: BLE001
+            log.warning("stockanalysis.com could not be read for %s: %s",
+                        ws.ticker, e)
+            return None
+
+    @staticmethod
+    def _site_line(pack: dict | None) -> str:
+        """One line for the operator: what the site gave this video."""
+        if not pack:
+            return ""
+        if pack.get("status") != "ok":
+            return f"📰 stockanalysis.com: nothing read ({pack.get('why') or 'off'})."
+        bits = []
+        news = pack.get("news") or []
+        if news:
+            rel = sum(1 for n in news if n.get("kind") == "release")
+            bits.append(f"{len(news)} news items"
+                        + (f" ({rel} press release{'s' if rel != 1 else ''})" if rel else ""))
+        call = pack.get("call") or {}
+        if call.get("passages"):
+            bits.append(f"{call.get('title', 'the call')} "
+                        f"({len(call['passages'])} passages, picked by "
+                        f"{call.get('picked_by') or 'keyword scoring'})")
+        if pack.get("year_ago_call"):
+            bits.append("the call a year earlier")
+        if (pack.get("analysts") or {}).get("actions"):
+            bits.append("analyst moves")
+        if pack.get("kpis"):
+            bits.append("company KPIs")
+        return ("📰 stockanalysis.com: " + (", ".join(bits) or "read")
+                + ". Details on the page's Data step; /site refresh reads it again.")
+
     def _read_day(self, ws: Workspace, data):
         """Read what kind of day this short is about, and keep it.
 
@@ -571,8 +622,11 @@ class BotCore:
                                    str(data.get("website") or ""), self.settings)
         except Exception as e:                           # noqa: BLE001
             log.warning("free-news merge for %s failed: %s", ws.ticker, e)
+        from pipeline import site_pack
+
+        site_earnings = (site_pack.load(ws.path) or {}).get("earnings") or None
         day = detect(ws.ticker, today, self.settings, news=news,
-                     override=override)
+                     override=override, site_earnings=site_earnings)
         ws.set_move_kind({**day.to_json(), "override": override})
         journal.note(self.settings, "video",
                      f"read the day as {day.kind}: {day.why}",
@@ -593,6 +647,92 @@ class BotCore:
                             if k != day.kind)
         return (f"🗞 {kind_name(day.kind).capitalize()}. {day.why}\n   {cut}\n"
                 f"   Not right? {others}")
+
+    def site_command(self, chat_id: int, args: list[str]) -> Reply:
+        """`/site [TICKER] [refresh]`: what stockanalysis.com gave a video,
+        part by part with the time it was read; `refresh` reads it again."""
+        from pipeline import site_pack
+        from pipeline.company_data import load_company_data as _load
+
+        again = ("refresh", "again", "fetch")
+        words = [a.strip() for a in args if a.strip()]
+        refresh = any(w.lower() in again for w in words)
+        ticker = next((w for w in words if w.lower() not in again), "")
+        ws = self._active_ws(chat_id)
+        if ticker and (ws is None or ws.ticker != ticker.upper()):
+            ws = self._ws_or_error(ticker.upper())
+        if ws is None or not ws.path.exists():
+            return Reply("No video open for that — /short TICKER or /long "
+                         "TICKER first.")
+        lane = "long" if ws.lane() == "long" or ws.is_update() else "short"
+        pack = site_pack.load(ws.path)
+        if refresh or pack is None:
+            pack = self._site_pack(ws, lane, refresh=refresh)
+        lines = [f"📰 {ws.ticker} · stockanalysis.com{self._from_date(ws)}"]
+        if not pack or pack.get("status") == "off":
+            lines.append("Switched off (STOCKANALYSIS=false)." if pack else
+                         "Nothing could be read.")
+            return Reply("\n".join(lines))
+        for r in site_pack.summary(pack):
+            mark = "✓" if r["status"] == "ok" else "✗"
+            when = str(r.get("fetched_at") or "")[:16].replace("T", " ")
+            lines.append(f"{mark} {r['name']}: {r['what'] or r['why'] or r['status']}"
+                         + (f" · read {when}" if when else ""))
+        try:
+            raw = _load(ws.path, site=False)
+        except CompanyDataError:
+            raw = None
+        if raw is not None:
+            diffs = site_pack.cross_check(raw, pack)
+            filled = site_pack.fill_quarter_gaps(raw, ws.path)
+            if diffs:
+                lines.append("⚠️ The workbook and the site disagree:")
+                lines += [f"   {d['quarter']} {d['label'].lower()}: workbook "
+                          f"{d['workbook']}, site {d['site']}" for d in diffs[:8]]
+            else:
+                lines.append("The workbook's last five quarters agree with the site.")
+            if filled:
+                lines.append("Filled from the site where the workbook was blank: "
+                             + ", ".join(filled[:10]))
+        if refresh:
+            lines.append("/prompts makes the prompt again with it.")
+        return Reply("\n".join(lines))
+
+    def movers_text(self, args: list[str]) -> Reply:
+        """`/movers [refresh]`: the day's movers and who reports today, off
+        stockanalysis.com, kept for the page's Home and Calendar."""
+        from pipeline import stockanalysis as sa
+
+        refresh = any(a.strip().lower() in ("refresh", "again") for a in args)
+        snap = sa.market_today(self.settings, refresh=refresh)
+        if snap.get("status") != "ok":
+            return Reply(f"📈 The movers could not be read: "
+                         f"{snap.get('why') or snap.get('status')}.")
+        lists = snap.get("lists") or {}
+        names = (("gainers", "Up today"), ("losers", "Down today"),
+                 ("premarket_up", "Up before the open"),
+                 ("premarket_down", "Down before the open"),
+                 ("afterhours_up", "Up after the close"),
+                 ("afterhours_down", "Down after the close"))
+        lines = ["📈 Today's movers (stockanalysis.com; the screener's price "
+                 "and size floors)"]
+        for key, title in names:
+            rows = sa.tradeable(lists.get(key) or [], self.settings, 5)
+            if rows:
+                lines.append(f"{title}: " + ", ".join(
+                    f"{r['symbol']} {r['change'] * 100:+.1f}%" for r in rows))
+        cal = snap.get("calendar") or {}
+        if cal.get("rows"):
+            big = sorted(cal["rows"], key=lambda r: -(r.get("market_cap") or 0))[:8]
+            lines.append(f"Reporting {cal.get('date') or 'today'}: "
+                         + ", ".join(f"{r['symbol']} ({r['time'].lower()})"
+                                     if r.get("time") else r["symbol"] for r in big))
+        coming = [d for d in cal.get("days") or [] if d.get("date", "") > (cal.get("date") or "")]
+        if coming:
+            lines.append("Coming: " + ", ".join(f"{d['day'][:3]} {d['count']}"
+                                                for d in coming[:5]))
+        lines.append("/short TICKER opens one.")
+        return Reply("\n".join(lines))
 
     def kind_command(self, chat_id: int, args: list[str]) -> Reply:
         """`/kind [TICKER] earnings|news|move`: set what kind of day it is.
@@ -652,6 +792,17 @@ class BotCore:
         wanted = (["update"] if ws.is_update() else
                   {"short": ["short"], "long": ["long_angle"]}.get(
                       lane, ["short", "long_angle"]))
+        # WHAT THE SITE SAYS (the stockanalysis picks, 30 Oct 2026): the
+        # coverage, the call, the analysts, the company's own KPIs, kept on
+        # the workspace before the prompt is made. The workbook is read again
+        # after it, because the site's headlines join the News sheet and its
+        # quarters fill the workbook's blank cells.
+        pack = self._site_pack(ws, "short" if "short" in wanted else "long")
+        if pack is not None:
+            try:
+                data = load_company_data(ws.path)
+            except CompanyDataError as e:
+                return Reply(f"⛔ {e}")
         # WHAT KIND OF DAY IT IS decides what the short argues (30 Oct 2026):
         # an earnings reaction is the print against the street and the
         # quarter against a year before, not six years of annual figures.
@@ -683,6 +834,9 @@ class BotCore:
         lines = [f"📋 {ws.ticker} (as of {data.get('as_of_date')})"]
         if day is not None:
             lines.append(self._day_line(ws, day))
+        site = self._site_line(pack)
+        if site:
+            lines.append(site)
         if "short" in wanted:
             lines.append("• SHORT: run prompt_short.md, paste the output back.")
         if "long_angle" in wanted:
@@ -1486,6 +1640,9 @@ class BotCore:
             return Reply(
                 (f"{header}\n" if header else "")
                 + "⛔ No data export on file — upload dennis_data.xlsx first.")
+        # A long whose angle was picked before the site was read gets it now.
+        if self._site_pack(ws, "long", if_missing=True) is not None:
+            data = self._company_data(ws) or data
         prompt = fill_prompt("long_write", ws.ticker, data, ws.path, self.settings,
                              chosen_angle=ws.chosen_angle())
         f = ws.path / "prompt_long_write.md"
@@ -2244,13 +2401,16 @@ class BotCore:
             extra.append(write_srt(tts.words, path("captions")))
             write_words(tts.words, path("words"))
             extra.append(write_transcript(tts.words, path("transcript")))
+            from pipeline import site_pack
+
             pkg = build_package(
                 self._retimed(script, fmt, Path(manifest)), self.settings,
                 ticker=job.ticker,
                 runtime_min=tts.duration_s / 60.0,
                 transcript=transcript_text(tts.words),
                 timestamps=timestamps_from_cues(group_cues(tts.words)),
-                why=ws.why, duration_s=tts.duration_s)
+                why=ws.why, duration_s=tts.duration_s,
+                credit=site_pack.credit(ws.path))
             pkg_path = path("package")
             pkg_path.write_text(pkg.render_text(), encoding="utf-8")
             extra.append(pkg_path)
@@ -3163,11 +3323,13 @@ class BotCore:
             if words:
                 transcript = transcript_text(words)
                 timestamps = timestamps_from_cues(group_cues(words))
+        from pipeline import site_pack
+
         return build_package(
             script, self.settings, ticker=ws.ticker,
             runtime_min=duration / 60.0, transcript=transcript,
             timestamps=timestamps, why=ws.why, duration_s=duration,
-            with_chapters=fmt != "clip")
+            with_chapters=fmt != "clip", credit=site_pack.credit(ws.path))
 
     @staticmethod
     def _retimed(script, fmt: str, manifest: Path | None):

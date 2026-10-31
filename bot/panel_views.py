@@ -166,6 +166,7 @@ def _step_data(v: _Video) -> dict:
         _CHECKS[key] = cached
     out.update(problems=cached["problems"], figures=cached["figures"],
                missing=cached["missing"])
+    out["site"] = _site_section(v, export)
     out["as_of"] = out["as_of"] or cached["as_of"]
     if out["as_of"]:
         from pipeline.gates import check_freshness
@@ -178,6 +179,54 @@ def _step_data(v: _Video) -> dict:
             out["freshness"] = [{"severity": "warn",
                                  "message": f"freshness not checked: {e}"}]
     return out
+
+
+_SITE: dict = {}
+
+
+def _site_section(v: _Video, export: Path) -> dict | None:
+    """What this video took from stockanalysis.com: each part and when it
+    was read, the coverage, the call, where the workbook and the site
+    disagree, and the blank cells the site filled (`pipeline/site_pack.py`).
+    None until the prompt has been made once."""
+    from pipeline import site_pack
+    from pipeline.company_data import CompanyDataError, load_company_data
+
+    p = site_pack.path(v.ws.path)
+    if not p.exists():
+        return None
+    key = (str(p), p.stat().st_mtime, str(export), export.stat().st_mtime)
+    got = _SITE.get(key)
+    if got is not None:
+        return got
+    pack = site_pack.load(v.ws.path) or {}
+    diffs, filled = [], []
+    try:
+        raw = load_company_data(v.ws.path, site=False)
+        diffs = site_pack.cross_check(raw, pack)
+        filled = site_pack.fill_quarter_gaps(raw, v.ws.path)
+    except CompanyDataError:
+        pass
+    call = pack.get("call") or {}
+    news = sorted((n for n in pack.get("news") or []
+                   if n.get("kind") in ("article", "release")),
+                  key=lambda n: str(n.get("time", "")), reverse=True)
+    got = {
+        "status": pack.get("status", ""), "why": pack.get("why", ""),
+        "fetched_at": pack.get("fetched_at", ""),
+        "parts": site_pack.summary(pack),
+        "earnings": pack.get("earnings") or {},
+        "news": [{k: n.get(k, "") for k in ("time", "source", "title", "kind", "url")}
+                 for n in news[:10]],
+        "call": ({"title": call.get("title", ""), "date": call.get("date", ""),
+                  "url": call.get("url", ""), "picked_by": call.get("picked_by", ""),
+                  "passages": call.get("passages") or []} if call else None),
+        "diffs": diffs, "filled": filled,
+        "refresh": f"/site {v.ws.ticker}@{v.ws.workdate} refresh",
+    }
+    _SITE.clear()
+    _SITE[key] = got
+    return got
 
 
 def _prompt(v: _Video, name: str) -> dict:

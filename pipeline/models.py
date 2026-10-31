@@ -32,8 +32,11 @@ JOKE_MAX_CHARS = 400
 # The data vendors whose names never reach the screen or the voice (§3):
 # on screen everything is "from the 10-K". One list, so the short's block,
 # the long's block and the narration lint cannot disagree about a name.
+# stockanalysis.com is a research source too (30 Oct 2026): the bot reads
+# calls, news and figures off it, and the video names the outlet, the call or
+# the filing; the credit goes in the description (`pipeline/publish.py`).
 VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "capital iq", "factset",
-                "bloomberg terminal")
+                "bloomberg terminal", "stockanalysis")
 
 # A workbook's RELATIVE period headers, which are positions and not periods:
 # `Q-0` is the latest quarter and `FY-0` the latest year. A writer handed one
@@ -472,6 +475,17 @@ class BeatMark(BaseModel):
     char_offset: int = Field(ge=0)
 
 
+class CallQuote(BaseModel):
+    """A line from the latest earnings call for the quote card over the why
+    beat. Drawn only when it is in the call word for word
+    (`pipeline.site_pack.quote_card`); otherwise the beat keeps its card."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    text: str = ""
+    speaker: str = ""
+
+
 class ShortScript(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -524,6 +538,24 @@ class ShortScript(BaseModel):
     # word from `audio_script`, so the floor of three can be counted and the
     # operator can read them without hunting. Never drawn, never spoken.
     jokes: list[str] = Field(default_factory=list)
+    # MANAGEMENT'S OWN WORDS, from the call the bot read (item 4 of the
+    # stockanalysis picks). Bookkeeping like the jokes: a quote that is too
+    # long or not in the call is a warning and an undrawn card, never a
+    # refused script.
+    call_quote: CallQuote | None = None
+
+    @field_validator("call_quote", mode="before")
+    @classmethod
+    def _norm_call_quote(cls, v):
+        if isinstance(v, str):
+            v = {"text": v}
+        if not isinstance(v, dict):
+            return None
+        text = " ".join(str(v.get("text") or "").split())[:600]
+        if not text:
+            return None
+        return {"text": text,
+                "speaker": " ".join(str(v.get("speaker") or "").split())[:80]}
 
     @field_validator("jokes", mode="before")
     @classmethod
@@ -649,7 +681,7 @@ class ShortScript(BaseModel):
         # from, so a new empty field changing it would un-approve every script
         # on disk and re-roll the plates of every video re-rendered from one.
         exclude: dict = {name: True for name in ("beat_marks", "sources",
-                                                 "jokes")
+                                                 "jokes", "call_quote")
                          if not getattr(self, name)}
         # The tag's `beside` (a long-lane field) is empty on every short.
         if not any(e.beside for e in self.inline_events):

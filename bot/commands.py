@@ -360,6 +360,10 @@ def c_new_kind(c: Call):
     return c.core.kind_command(c.chat_id, c.args)
 
 
+def c_new_site(c: Call):
+    return c.core.site_command(c.chat_id, c.args)
+
+
 # ---- /script
 def c_script(c: Call):
     return c.core.script_listing(c.chat_id)
@@ -590,6 +594,10 @@ async def c_screen(c: Call):
 
 def c_watch(c: Call):
     return c.core.watch_command(c.args)
+
+
+def c_movers(c: Call):
+    return c.core.movers_text(c.args)
 
 
 def c_earnings(c: Call):
@@ -848,6 +856,20 @@ COMMANDS: tuple[Command, ...] = (
                 "quarter against the same quarter a year before, the guide). "
                 "This sets it by hand and makes the prompt again; with no "
                 "kind it says what the day was read as.")),
+    Command("new", "site", "[TICKER] [refresh]",
+            "what stockanalysis.com gave this video; refresh reads it again",
+            c_new_site, aliases=("site",), ack="⏳ reading stockanalysis.com…",
+            example="{T} refresh", doc=(
+                "What the video took from **stockanalysis.com** when its "
+                "prompt was made: the news and press releases around the "
+                "move, the earnings date, twenty quarters of statements, the "
+                "company's KPIs, the analysts' target changes, the profile, "
+                "and the latest earnings call with the passages picked from "
+                "it (a long also gets the call a year earlier). Each part "
+                "with the time it was read, then where the workbook's last "
+                "five quarters disagree with the site and which blank cells "
+                "the site filled. `refresh` reads it all again. "
+                "`STOCKANALYSIS=false` switches the source off.")),
     # /script
     Command("script", "", "", "the stored script, numbered", c_script, doc=(
         "The stored script, numbered, so `/script edit N` and it agree.")),
@@ -1070,6 +1092,15 @@ COMMANDS: tuple[Command, ...] = (
             aliases=("watch",), doc=(
                 "Intraday watch, in `SCREEN_TIMEZONE` rather than the "
                 "machine clock. Published names join automatically.")),
+    Command("ideas", "movers", "[refresh]",
+            "the day's movers and who reports today", c_movers,
+            aliases=("movers",), ack="⏳ reading the movers…", doc=(
+                "The day's gainers and losers, before the open and after the "
+                "close, from **stockanalysis.com**, kept to the screener's "
+                "price and size floors, and who reports today with how many "
+                "report on the days after. The page's Home and Calendar show "
+                "what this last read; a live `/screen` reads it too and adds "
+                "the names Yahoo's screens missed. `refresh` reads it again.")),
     Command("ideas", "earnings", "TICKER YYYY-MM-DD [bmo|amc]",
             "so the bot flags the print both sides", c_earnings,
             aliases=("earnings",),
@@ -1179,11 +1210,13 @@ COMMANDS: tuple[Command, ...] = (
                 "Models, the SEC (with SEC_USER_AGENT), YouTube and Google Drive. Keys are "
                 "never shown. Also the page's Settings, \"Test the keys\".")),
     Command("admin", "usage", "",
-            "SEC and Pexels requests a day, the caches' sizes, a prune",
+            "SEC, Pexels and stockanalysis.com requests a day, the caches' "
+            "sizes, a prune",
             c_usage, ack="⏳ measuring the caches…", doc=(
-                "Requests a day to the SEC and Pexels (today, yesterday and "
-                "the busiest day this week), so a coming block shows before "
-                "the filings or the b-roll go quiet. Then what each folder "
+                "Requests a day to the SEC, Pexels and stockanalysis.com "
+                "(today, yesterday and the busiest day this week), so a "
+                "coming block shows before the filings, the b-roll or the "
+                "calls go quiet. Then what each folder "
                 "of the cache holds, and a button that prunes the 3D Dennis "
                 "shots and segment clips nobody has written in a week, after "
                 "asking. The voice cache is paid for and never pruned.")),

@@ -357,9 +357,36 @@ STEPS_UI.data = (d) => {
   if ((d.figures || []).length) {
     body.push(el("dl", { class: "figures" }, d.figures.map((f) => el("div", {}, el("dt", { text: f.label }), el("dd", { text: f.value })))));
   }
+  body.push(siteBlock(d.site));
   body.push(zone);
   return { main: mainButton(d.file ? "Upload a newer workbook" : "Upload the workbook", () => zone.pick()), body };
 };
+
+// What the video took from stockanalysis.com (`/site`): each part with when
+// it was read, where the workbook and the site disagree, the coverage, and
+// the call passages the writer is shown.
+function siteBlock(x) {
+  if (!x) return el("p", { class: "meta", text: "stockanalysis.com is read when the prompt is made." });
+  const read = (t) => (t || "").slice(0, 16).replace("T", " ");
+  const again = el("button", { type: "button", class: "sm", text: "Fetch again", title: "Reads every part again; then make the prompt again to use it",
+    onclick: (e) => vRun(x.refresh, e.currentTarget, `stockanalysis.com · ${VID.t}`).then(() => loadVideo(true)) });
+  const head = el("div", { class: "row" }, el("b", { text: "From stockanalysis.com" }),
+    el("span", { class: "meta", text: x.status === "ok" ? ` · read ${read(x.fetched_at)}` : ` · ${x.why || x.status}` }), again);
+  const parts = el("ul", { class: "findings" }, (x.parts || []).map((r) => el("li", { class: r.status === "ok" ? "" : "warn" },
+    el("b", { text: r.name }), " ", r.status === "ok" ? r.what : (r.why || r.status), r.fetched_at ? el("span", { class: "meta", text: ` · ${read(r.fetched_at)}` }) : null)));
+  const diffs = (x.diffs || []).length
+    ? el("div", { class: "banner warn" }, el("b", { text: "The workbook and the site disagree — check before it goes on screen:" }),
+      el("ul", {}, x.diffs.map((r) => el("li", { text: `${r.quarter} ${r.label.toLowerCase()}: workbook ${r.workbook}, site ${r.site}` }))))
+    : el("p", { class: "meta", text: "The workbook's last five quarters agree with the site." });
+  const filled = (x.filled || []).length ? el("p", { class: "meta", text: `Filled from the site where the workbook was blank: ${x.filled.join(", ")}` }) : null;
+  const news = (x.news || []).length ? el("details", {}, el("summary", { text: `The coverage (${x.news.length} newest)` }),
+    el("ul", { class: "site-news" }, x.news.map((n) => el("li", {}, el("span", { class: "meta", text: `${read(n.time)} · ${n.source}${n.kind === "release" ? " · press release" : ""} · ` }),
+      n.url ? el("a", { href: n.url, target: "_blank", rel: "noopener", text: n.title }) : n.title)))) : null;
+  const c = x.call;
+  const call = c && (c.passages || []).length ? el("details", {}, el("summary", { text: `${c.title} (${c.date}): ${c.passages.length} passages, picked by ${c.picked_by || "keyword scoring"}` }),
+    el("ol", {}, c.passages.map((p) => el("li", {}, el("b", { text: `${p.speaker}${p.role ? ` (${p.role})` : ""}: ` }), `“${p.text}”`)))) : null;
+  return el("section", { class: "site-block" }, head, parts, diffs, filled, news, call);
+}
 
 function promptCard(p, what) {
   if (!p || !p.url) return el("p", { class: "meta", text: `The ${what} prompt is written when the step before it is done.` });

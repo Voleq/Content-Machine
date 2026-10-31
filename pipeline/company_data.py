@@ -1339,10 +1339,16 @@ def _repair(values: dict, years: list[str], history: dict, quarters: dict,
                 item[key] = None
 
 
-def load_company_data(workspace: Path) -> CompanyData:
+def load_company_data(workspace: Path, *, site: bool = True) -> CompanyData:
     """Load + type-coerce the v3 export (all sheets, by name). Raises
     CompanyDataError if absent or unreadable; missing-field policy lives on
-    the model."""
+    the model.
+
+    `site` adds what this video read off stockanalysis.com
+    (`pipeline/site_pack.py`, a file on the workspace, so no request goes
+    out): its headlines after the News sheet's, and its quarters in the
+    workbook's blank cells. `site=False` is the workbook alone, as the page
+    shows it when it says what was filled."""
     src = find_export(workspace)
     if src is None:
         raise CompanyDataError(
@@ -1407,12 +1413,21 @@ def load_company_data(workspace: Path) -> CompanyData:
     if scale != 1.0:
         _to_units(scale, values, history, quarters, dashboard)
     _repair(values, history_years, history, quarters, dashboard, valuation, news)
-    return CompanyData(values=values, history_years=history_years,
+    data = CompanyData(values=values, history_years=history_years,
                        history=history, quarter_labels=quarter_labels,
                        quarters=quarters, dashboard=dashboard,
                        valuation=valuation, peers=peers,
                        peer_percentiles=peer_percentiles, news=news,
                        source_file=str(src))
+    if site:
+        try:
+            from pipeline import site_pack
+
+            site_pack.apply(data, workspace)
+        except Exception as e:  # noqa: BLE001 - the workbook stands alone
+            log.warning("the site's figures were not added for %s: %s",
+                        workspace, e)
+    return data
 
 
 # ---------------------------------------------------------------------------
