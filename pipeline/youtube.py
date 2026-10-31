@@ -27,6 +27,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import threading
 import time
 import logging
 from dataclasses import asdict, dataclass, field
@@ -794,6 +795,12 @@ def upload_video(video: Path, package, settings: Settings, *,
 
 
 class VideoLog:
+    # One change at a time. An upload finishing, the weekly retention pull
+    # and a correction each read `published.json` whole and write it whole,
+    # from threads of their own: the second save threw the first one's row
+    # away, and two saves at once collided on the one temp file.
+    _lock = threading.Lock()
+
     def __init__(self, settings: Settings):
         self.settings = settings
         self.path = settings.state_dir / RECORDS_FILE
@@ -815,16 +822,17 @@ class VideoLog:
         # In place when the video is already on record: removing it and
         # appending it again moved a corrected video to the end of the log,
         # where readers that take the last row as "the latest upload" found it.
-        rows = self._all()
-        known = False
-        for i, r in enumerate(rows):
-            if r.get("video_id") == video.video_id:
-                rows[i] = video.to_json()
-                known = True
-                break
-        if not known:
-            rows.append(video.to_json())
-        self._save(rows)
+        with self._lock:
+            rows = self._all()
+            known = False
+            for i, r in enumerate(rows):
+                if r.get("video_id") == video.video_id:
+                    rows[i] = video.to_json()
+                    known = True
+                    break
+            if not known:
+                rows.append(video.to_json())
+            self._save(rows)
         if not known:
             from pipeline import journal
 
@@ -854,14 +862,30 @@ class VideoLog:
     def for_ticker(self, ticker: str) -> list[VideoRecord]:
         return [v for v in self.all() if v.ticker == ticker.upper()]
 
+    def update(self, video_id: str, change) -> "VideoRecord | None":
+        """Read one row, `change(record)`, write it back — as one step, so a
+        write made while the caller was busy (a retention pull while a
+        correction posts) is not overwritten with the row as it was."""
+        with self._lock:
+            rows = self._all()
+            for i, r in enumerate(rows):
+                if isinstance(r, dict) and r.get("video_id") == video_id:
+                    record = self._record(r)
+                    change(record)
+                    rows[i] = record.to_json()
+                    self._save(rows)
+                    return record
+            return None
+
     def update_retention(self, video_id: str, retention: dict) -> bool:
-        rows = self._all()
-        for r in rows:
-            if r.get("video_id") == video_id:
-                r["retention"] = retention
-                self._save(rows)
-                return True
-        return False
+        with self._lock:
+            rows = self._all()
+            for r in rows:
+                if r.get("video_id") == video_id:
+                    r["retention"] = retention
+                    self._save(rows)
+                    return True
+            return False
 
     def scheduled(self, now: datetime | None = None) -> list[VideoRecord]:
         """Uploads still waiting to go public. A scheduled row is never
@@ -1167,10 +1191,14 @@ def pin_correction(ticker: str, text: str, settings: Settings, *,
         except Exception as e:  # noqa: BLE001 — the comment is the correction
             log.warning("correction posted, description not amended (%s)", e)
             amended = str(e)
-    rows = list(record.corrections or [])
-    rows.append({"at": stamp, "text": text.strip()})
-    record.corrections = rows
-    log_.record(record)
+
+    def _add(rec: VideoRecord) -> None:
+        rec.corrections = [*(rec.corrections or []),
+                           {"at": stamp, "text": text.strip()}]
+
+    # Re-read and written as one step: the posts above take seconds, and the
+    # row read before them is not the row on disk after them.
+    record = log_.update(record.video_id, _add) or record
     # Posted, not pinned: the API cannot pin a comment (the upload reply
     # says the same), and this used to tell the operator it had. And said
     # "in the description" when the description edit had failed.

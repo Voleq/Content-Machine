@@ -144,6 +144,9 @@ def _spoken(m: "re.Match[str]") -> str:
             said += f" and {say_integer(cents)} {minor if cents == 1 else minors}"
         return _finish(said, m)
 
+    # A trailing zero is typed, never said: "12.30%" is "twelve point three
+    # percent", "$5.00bn" is "five billion dollars", "10.0%" is "ten percent".
+    frac = frac.rstrip("0")
     said = say_integer(whole) + (f" {say_decimals(frac)}" if frac else "")
     if scale:
         said += f" {scale}"
@@ -151,6 +154,17 @@ def _spoken(m: "re.Match[str]") -> str:
         major, majors, _, _ = _CURRENCY[symbol]
         said += f" {major if (whole == 1 and not frac and not scale) else majors}"
     return _finish(said, m)
+
+
+def said_words(text: str) -> list[str]:
+    """The first figure in `text` as it is said, word by word, its sign left
+    off — "down", "a loss of" and "minus" all say it, and what follows is the
+    figure. `[]` when there is no figure."""
+    m = FIGURE_RE.search(str(text or ""))
+    if not m or not m.group("digits"):
+        return []
+    said = _spoken(m)
+    return (said.removeprefix("minus ") if m.group("sign") else said).split()
 
 
 def _finish(said: str, m: "re.Match[str]") -> str:

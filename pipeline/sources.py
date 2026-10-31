@@ -26,6 +26,7 @@ re-asking for a quarterly filing every fifteen minutes is rude.
 
 from __future__ import annotations
 
+import html as _html
 import json
 import logging
 import re
@@ -309,8 +310,12 @@ def _find_exhibit(filing: Filing, settings: Settings) -> dict | None:
 def _strip_html(html: str) -> str:
     text = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", html)
     text = re.sub(r"(?s)<[^>]+>", " ", text)
-    text = (text.replace("&nbsp;", " ").replace("&amp;", "&")
-                .replace("&lt;", "<").replace("&gt;", ">").replace("&#8217;", "'"))
+    # Every entity, not the five decoded by hand: `&#8220;`, `&mdash;` and
+    # `&#x25;` reached the prompt and the release card as written. The
+    # apostrophe stays plain, as it always was: a quote is matched against
+    # this text, and a writer types `'`.
+    text = (_html.unescape(text).replace("\u00a0", " ")
+            .replace("\u2019", "'"))
     return re.sub(r"\s+", " ", text).strip()
 
 

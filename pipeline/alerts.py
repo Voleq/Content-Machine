@@ -37,6 +37,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from typing import Iterable, Sequence
 
 from config import Settings
+from pipeline.standing import _write, locked
 
 log = logging.getLogger(__name__)
 
@@ -91,8 +92,11 @@ def evaluate(quote: dict, settings: Settings) -> list[Alert]:
 
     pct = _float(quote.get("regularMarketChangePercent"))
     # Between the poll's start and the open, the change is the last
-    # session's, and it was sent as "today".
-    if quote.get("sessionStarted") is False:
+    # session's, and it was sent as "today". So is the volume: the last
+    # session's whole day, which every morning re-announced a name that
+    # traded heavily yesterday as "something is going on".
+    before_open = quote.get("sessionStarted") is False
+    if before_open:
         pct = None
     if pct is not None and abs(pct) >= settings.alert_move_pct:
         direction = "up" if pct > 0 else "down"
@@ -102,7 +106,7 @@ def evaluate(quote: dict, settings: Settings) -> list[Alert]:
                          headline=f"{direction} {abs(pct):.1f}% today",
                          detail=detail, magnitude=abs(pct)))
 
-    vol = _float(quote.get("regularMarketVolume"))
+    vol = None if before_open else _float(quote.get("regularMarketVolume"))
     avg = _float(quote.get("averageDailyVolume3Month")) or _float(
         quote.get("averageDailyVolume10Day"))
     if vol and avg and avg > 0:
@@ -145,22 +149,26 @@ class Watchlist:
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return []
 
+    # Through `standing`'s lock and its write-then-rename: `/watch` and the
+    # page each read the list whole and wrote it whole, and a write cut short
+    # read back as an empty watchlist.
+    @locked
     def add(self, ticker: str) -> list[str]:
         rows = self._pinned()
         t = ticker.strip().upper()
         if t and t not in rows:
             rows.append(t)
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.path.write_text(json.dumps(sorted(rows), indent=2), encoding="utf-8")
+            _write(self.path, sorted(rows))
         return rows
 
+    @locked
     def remove(self, ticker: str) -> bool:
         rows = self._pinned()
         t = ticker.strip().upper()
         if t not in rows:
             return False
         rows.remove(t)
-        self.path.write_text(json.dumps(sorted(rows), indent=2), encoding="utf-8")
+        _write(self.path, sorted(rows))
         return True
 
     def all(self) -> list[str]:
@@ -199,8 +207,9 @@ class AlertLog:
             return {}
 
     def _save(self, rows: dict) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(rows, indent=2, sort_keys=True), encoding="utf-8")
+        # Whole or not at all: rewritten in place, a write cut short read
+        # back as nothing said, and every name was alerted again.
+        _write(self.path, rows)
 
     def should_send(self, alert: Alert, now: datetime | None = None) -> bool:
         """Is this worth interrupting for, given what we already said?
@@ -229,6 +238,7 @@ class AlertLog:
         prev_mag = float(prev.get("magnitude") or 0.0)
         return alert.magnitude >= prev_mag * self.settings.alert_escalation_factor
 
+    @locked
     def record(self, alert: Alert, now: datetime | None = None) -> None:
         rows = self._all()
         stamped = alert.to_json()
@@ -242,6 +252,7 @@ class AlertLog:
         rows[alert.ticker] = stamped
         self._save(rows)
 
+    @locked
     def clear(self) -> int:
         rows = self._all()
         self._save({})
@@ -302,6 +313,9 @@ def in_quiet_hours(settings: Settings, now: datetime | None = None) -> bool:
 
 # When the numbers a `bmo` name puts out are public. US regular session.
 MARKET_OPEN = time(hour=9, minute=30)
+# ...and an `amc` name's: the close is 16:00 and the release follows within
+# minutes, nearly always by half past.
+AFTER_CLOSE_OUT = time(hour=16, minute=30)
 
 # How many days after a print the reaction alert may still fire: a Friday
 # print is still news on the Tuesday after a long weekend.
@@ -341,11 +355,10 @@ class EarningsCalendar:
             return {}
 
     def _save(self, entries: dict) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(
-            {"updated": datetime.now(timezone.utc).isoformat(),
-             "entries": entries}, indent=2, sort_keys=True), encoding="utf-8")
+        _write(self.path, {"updated": datetime.now(timezone.utc).isoformat(),
+                           "entries": entries})
 
+    @locked
     def set(self, ticker: str, when_date: str, when: str = "") -> EarningsEntry:
         entries = self._all()
         entry = EarningsEntry(ticker=ticker.upper(), date=when_date, when=when)
@@ -419,6 +432,7 @@ class EarningsCalendar:
         else:
             today, clock = now, time(0, 0)
         after_open = clock >= MARKET_OPEN
+        after_close = clock >= AFTER_CLOSE_OUT
 
         out: list[Alert] = []
         for ticker, row in self._all().items():
@@ -435,10 +449,14 @@ class EarningsCalendar:
                 # as "the numbers are out" on the next poll.
                 continue
             when = str(row.get("when") or "")
-            # A `bmo` print is out by the open; everything else is out the
-            # next day. The setup alert only makes sense while the print is
-            # still ahead, so it closes at the same moment.
-            reported = delta < 0 or (delta == 0 and when == "bmo" and after_open)
+            # A `bmo` print is out by the open and an `amc` one by half past
+            # four; one with no time given, the next day. The setup alert only
+            # makes sense while the print is still ahead, so it closes at the
+            # same moment. An `amc` print waited for the next calendar day, so
+            # its reaction — the fast one — went out the next morning.
+            reported = delta < 0 or (delta == 0 and (
+                (when == "bmo" and after_open)
+                or (when == "amc" and after_close)))
             if reported and not row.get("flagged_post"):
                 out.append(Alert(ticker=ticker, kind="earnings",
                                  headline=REPORTED,
@@ -455,6 +473,7 @@ class EarningsCalendar:
             self.mark_sent(out)
         return out
 
+    @locked
     def mark_sent(self, alerts: Iterable[Alert]) -> None:
         """Flag the earnings alerts that went out, so each fires once."""
         sent = [a for a in alerts if a.kind == "earnings"]

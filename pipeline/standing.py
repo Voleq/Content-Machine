@@ -25,17 +25,39 @@ failure is a reboot mid-week, not a schema migration.
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 import re
+import threading
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Iterable, Sequence
 
 from config import Settings
+from pipeline.models import RATE_FIELDS
 
 log = logging.getLogger(__name__)
+
+# ONE WRITER AT A TIME. Every store here reads its whole file, changes it and
+# writes it back, and they are written from more than one thread: the alert
+# poll re-checks a thesis while a delivery pins one, the screen feeds the
+# idea queue while `/ideas` drops one, the overnight window marks a job while
+# `/jobs batch` adds one. Unlocked, the second write lost the first. One lock
+# for every file: the writes are small and rare, and a lock per store would
+# be four things to keep straight for no gain. Reentrant, because `extend`
+# calls `add`. `channel_memory` and `recurring_bits` write through it too.
+_LOCK = threading.RLock()
+
+
+def locked(fn):
+    """Run `fn` holding the standing-state lock."""
+    @functools.wraps(fn)
+    def inner(*args, **kwargs):
+        with _LOCK:
+            return fn(*args, **kwargs)
+    return inner
 
 THESES_FILE = "theses.json"
 CONFESSIONS_FILE = "confessions.json"
@@ -48,7 +70,7 @@ BATCH_FILE = "batch.json"
 _MOVE_THRESHOLDS: dict[str, float] = {
     "price": 0.20,              # 20% — the market changed its mind
     "market_cap": 0.20,
-    "revenue_ltm": 0.10,
+    "revenue": 0.10,
     "fcf": 0.25,                # cash flow is lumpy; a small move is noise
     "net_income": 0.25,
     "gross_margin": 0.05,       # margins are the thesis for most businesses
@@ -61,9 +83,22 @@ _MOVE_THRESHOLDS: dict[str, float] = {
 }
 _DEFAULT_MOVE = 0.25
 
+# A RATE MOVES IN POINTS (O2), as everywhere else a margin is compared
+# (`CompanyData.quarter_moves`, `short_data.change`). Judged as a share of
+# itself, half a point on a 10% margin was a 5% move, material, and pushed as
+# "gross_margin ↑5%"; a margin from -2% to 1% read "↑150%". The History sheet
+# holds a rate as a percent (58.0), so these are points of it.
+_POINT_THRESHOLDS: dict[str, float] = {
+    "gross_margin": 3.0,
+    "operating_margin": 3.0,
+}
+_DEFAULT_POINTS = 3.0
+
 # Metrics worth pinning to a thesis by default — the ones a Dennis video is
-# usually *about*.
-DEFAULT_TRACKED = ("price", "market_cap", "revenue_ltm", "gross_margin",
+# usually *about*. REVENUE, off the History sheet, whose last column is LTM: it
+# was `revenue_ltm`, a name no sheet carries, so the number most videos are
+# about was never pinned and a 30% fall in it could not move a thesis.
+DEFAULT_TRACKED = ("price", "market_cap", "revenue", "gross_margin",
                    "operating_margin", "fcf", "shares_out", "net_debt",
                    "pe_ttm")
 
@@ -111,13 +146,35 @@ class Move:
         return (self.after - self.before) / abs(self.before)
 
     @property
+    def rate(self) -> bool:
+        """A margin or a return, which moves in points (`_POINT_THRESHOLDS`)."""
+        return self.field in RATE_FIELDS
+
+    @property
+    def points(self) -> float:
+        if self.before is None or self.after is None:
+            return 0.0
+        return self.after - self.before
+
+    @property
     def material(self) -> bool:
+        if self.rate:
+            return abs(self.points) >= _POINT_THRESHOLDS.get(self.field,
+                                                             _DEFAULT_POINTS)
         return abs(self.change) >= _MOVE_THRESHOLDS.get(self.field, _DEFAULT_MOVE)
 
-    def render(self) -> str:
+    def shift(self) -> str:
+        """How far it went, as the push, the prompt and the scoreboard say
+        it: `↓4.0 pts` for a rate, `↑25%` for anything else."""
+        if self.rate:
+            pts = self.points
+            return f"{'↑' if pts > 0 else '↓'}{abs(pts):.1f} pts"
         pct = self.change * 100
-        arrow = "↑" if pct > 0 else "↓"
-        return f"{self.field} {arrow}{abs(pct):.0f}% ({_num(self.before)} → {_num(self.after)})"
+        return f"{'↑' if pct > 0 else '↓'}{abs(pct):.0f}%"
+
+    def render(self) -> str:
+        return (f"{self.field} {self.shift()} "
+                f"({_num(self.before)} → {_num(self.after)})")
 
 
 def _num(v: float) -> str:
@@ -243,6 +300,7 @@ class ConfessionLedger:
         got = [c for c in self.entries() if c.kind and c.text]
         return got[:limit] if limit else got
 
+    @locked
     def note(self, ticker: str, *, kind: str = "", text: str = "",
              fmt: str = "", workdate: str = "") -> Confession:
         """Record what this video did, INCLUDING when it confessed nothing."""
@@ -320,6 +378,7 @@ class ThesisBook:
     def tickers(self) -> list[str]:
         return sorted(self._all())
 
+    @locked
     def record(self, ticker: str, summary: str, data, *,
                workdate: str = "", tracked: Sequence[str] = (),
                hook: str = "", conclusion: str = "",
@@ -349,6 +408,7 @@ class ThesisBook:
         log.info("thesis recorded for %s on %d number(s)", t.ticker, len(numbers))
         return t
 
+    @locked
     def check(self, ticker: str, data) -> tuple[Thesis | None, list[Move]]:
         """Re-read the pinned numbers. Returns (thesis, material moves).
 
@@ -468,6 +528,7 @@ class IdeaQueue:
         rows = _read(self.path, [])
         return rows if isinstance(rows, list) else []
 
+    @locked
     def add(self, ticker: str, reason: str, source: str = "screener", *,
             score: float = 0.0, lane: str = "") -> Idea:
         """Add or refresh an idea. One row per ticker — the newest reason wins.
@@ -505,6 +566,7 @@ class IdeaQueue:
                                 i.added_at))
         return out[:limit]
 
+    @locked
     def mark_seen(self, ticker: str) -> bool:
         rows = self._all()
         hit = False
@@ -516,6 +578,7 @@ class IdeaQueue:
             _write(self.path, rows)
         return hit
 
+    @locked
     def drop(self, ticker: str) -> bool:
         rows = self._all()
         keep = [r for r in rows if r.get("ticker") != ticker.upper()]
@@ -524,6 +587,7 @@ class IdeaQueue:
         _write(self.path, keep)
         return True
 
+    @locked
     def prune(self, max_age_days: int = 30) -> int:
         """Drop stale ideas. A three-week-old "it moved 9% today" is not an idea."""
         cutoff = _now() - timedelta(days=max_age_days)
@@ -587,6 +651,7 @@ class BatchQueue:
         rows = _read(self.path, [])
         return rows if isinstance(rows, list) else []
 
+    @locked
     def add(self, ticker: str, fmt: str) -> BatchItem:
         item = BatchItem(ticker=ticker.upper(), fmt=fmt,
                          added_at=_now().isoformat())
@@ -603,6 +668,7 @@ class BatchQueue:
                 for r in self._all()
                 if isinstance(r, dict) and not r.get("done_at")]
 
+    @locked
     def mark_submitted(self, ticker: str, fmt: str, job_id: str) -> None:
         rows = self._all()
         for r in rows:
@@ -613,6 +679,7 @@ class BatchQueue:
                 break
         _write(self.path, rows)
 
+    @locked
     def reopen(self, ticker: str, fmt: str, error: str) -> None:
         """The submitted job failed: the entry waits for the next window."""
         rows = self._all()
@@ -624,6 +691,7 @@ class BatchQueue:
                 break
         _write(self.path, rows)
 
+    @locked
     def mark_done(self, ticker: str, fmt: str, error: str = "") -> None:
         rows = self._all()
         for r in rows:
@@ -634,6 +702,7 @@ class BatchQueue:
                 break
         _write(self.path, rows)
 
+    @locked
     def clear(self) -> int:
         """Drop what is still queued; the record of what ran stays. Returns
         how many queued entries went (not the history's length)."""

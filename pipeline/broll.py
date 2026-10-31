@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import logging
 import re
 import time
@@ -557,16 +558,25 @@ def normalize_clip(src: Path, dest: Path, settings: Settings,
     project fps, duration cap, audio stripped."""
     W, H = resolution or settings.long_resolution
     dest.parent.mkdir(parents=True, exist_ok=True)
-    run_ffmpeg([
-        "-i", str(src),
-        "-t", f"{settings.broll_max_clip_s:.2f}",
-        "-vf",
-        f"scale={W}:{H}:force_original_aspect_ratio=increase,"
-        f"crop={W}:{H},fps={settings.fps},setsar=1",
-        "-an",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
-        str(dest),
-    ])
+    # INTO A PART FILE, THEN RENAMED. The cache is "does the file exist", so
+    # an encode stopped half way (an update stops the bot mid-render, a kill,
+    # a failure) left half a clip that was a cache hit for every later
+    # render of it, and each of them failed on it.
+    part = dest.with_name(f"{dest.stem}.part{dest.suffix}")
+    try:
+        run_ffmpeg([
+            "-i", str(src),
+            "-t", f"{settings.broll_max_clip_s:.2f}",
+            "-vf",
+            f"scale={W}:{H}:force_original_aspect_ratio=increase,"
+            f"crop={W}:{H},fps={settings.fps},setsar=1",
+            "-an",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+            str(part),
+        ])
+        os.replace(part, dest)
+    finally:
+        part.unlink(missing_ok=True)
     return dest
 
 
@@ -589,7 +599,19 @@ def normalize_image(src: Path, dest: Path, settings: Settings, *,
                              ground=role(settings, "ground"),
                              line=role(settings, "structure"), border=False)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    frame.save(dest, format="PNG")
+    save_whole(frame, dest)
+    return dest
+
+
+def save_whole(image, dest: Path) -> Path:
+    """`image` saved as a PNG at `dest` whole or not at all, as a cached
+    picture must be: its cache is "does the file exist" (`normalize_clip`)."""
+    part = dest.with_name(f"{dest.stem}.part{dest.suffix}")
+    try:
+        image.save(part, format="PNG")
+        os.replace(part, dest)
+    finally:
+        part.unlink(missing_ok=True)
     return dest
 
 

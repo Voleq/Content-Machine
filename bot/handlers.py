@@ -649,7 +649,8 @@ class BotCore:
 
         site_earnings = (site_pack.load(ws.path) or {}).get("earnings") or None
         day = detect(ws.ticker, today, self.settings, news=news,
-                     override=override, site_earnings=site_earnings)
+                     override=override, site_earnings=site_earnings,
+                     names=getattr(data, "names_company", None))
         ws.set_move_kind({**day.to_json(), "override": override})
         journal.note(self.settings, "video",
                      f"read the day as {day.kind}: {day.why}",
@@ -4142,12 +4143,14 @@ class BotCore:
         if not video_id:
             return usage
         log_ = VideoLog(self.settings)
-        known = log_.get(video_id)
-        if known is not None:
-            known.privacy = privacy
+
+        def _mark(rec) -> None:
+            rec.privacy = privacy
             if fmt:
-                known.fmt = fmt
-            log_.record(known)
+                rec.fmt = fmt
+
+        known = log_.update(video_id, _mark)
+        if known is not None:
             from pipeline import journal
 
             journal.note(self.settings, "uploaded",
@@ -4824,7 +4827,8 @@ class BotCore:
 # ---------------------------------------------------------------------------
 
 
-async def _tell_operators(core: BotCore, bot, text: str) -> None:
+async def _tell_operators(core: BotCore, bot, text: str, *,
+                          reply_markup=None) -> None:
     """A scheduled push, to every operator chat and to the page's Activity.
 
     Each chat is tried on its own, as `notify` and the morning inbox try
@@ -4832,10 +4836,10 @@ async def _tell_operators(core: BotCore, bot, text: str) -> None:
     every chat after it from hearing, and the pass still counted as said.
     """
     if core.feed is not None:
-        core.feed.add("notice", text)
+        core.feed.add("notice", text, keyboard=reply_markup)
     for chat_id in core.settings.operator_chat_ids:
         try:
-            await bot.send_message(chat_id, text)
+            await bot.send_message(chat_id, text, reply_markup=reply_markup)
         except Exception:  # noqa: BLE001 - the next chat still hears
             log.exception("could not send to chat %s", chat_id)
 

@@ -1402,7 +1402,13 @@ class CompanyData(BaseModel):
         name = str(self.values.get("company_name") or "")
         words = [w for w in re.findall(r"[A-Za-z0-9&'.-]+", name)
                  if w.lower().strip(".,") not in _NAME_FILLER]
-        return bool(words) and words[0].lower().strip(".,") in text.lower()
+        if not words:
+            return False
+        # A WORD, as the ticker is: matched as letters, "Metals rally" was a
+        # headline about Meta and "pineapple" one about Apple.
+        first = re.escape(words[0].lower().strip(".,"))
+        return re.search(rf"(?<![a-z0-9]){first}(?![a-z0-9])",
+                         text.lower()) is not None
 
     def as_prompt_block(self) -> str:
         """Render as the {{company_data}} block for the master prompts —

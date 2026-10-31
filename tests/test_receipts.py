@@ -249,7 +249,7 @@ def test_the_scoreboard_leads_with_what_was_wrong(settings):
     assert board.scored == 2
     assert "1 of 2 calls are wrong" in board.headline()
     assert board.rows[0].ticker == "AAA", "worst first"
-    assert "margin moved -31%" in board.rows[0].line()
+    assert "margin moved ↓31%" in board.rows[0].line()
 
 
 def test_the_board_shows_what_moved_on_a_row_the_book_really_wrote(settings):
@@ -262,8 +262,10 @@ def test_the_board_shows_what_moved_on_a_row_the_book_really_wrote(settings):
 
     board = build(settings, "2026-Q3")
 
-    assert "margin moved -31%" in board.rows[0].line()
-    assert "margin: -31.0%" in board.script_brief()
+    # Through `Move`, the one formatter: off the row's own numbers (0.4 to
+    # 0.28 is 30%), not a cached figure a second formatter printed.
+    assert "margin moved ↓30%" in board.rows[0].line()
+    assert "margin: ↓30%" in board.script_brief()
 
 
 def test_a_thesis_from_another_quarter_is_not_on_this_board(settings):

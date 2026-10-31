@@ -809,8 +809,12 @@ def schedule_digest(application, core) -> None:
         text = head + digest_text(result)
         seen = _candidate_lanes(result)
         kb = candidates_keyboard(seen) if seen else None
-        for chat_id in settings.operator_chat_ids:
-            await ctx.bot.send_message(chat_id, text, reply_markup=kb)
+        # Every chat on its own, and the page's Activity: one chat that had
+        # blocked the bot stopped the digest at it, the day was never marked
+        # sent, and every restart sent it again.
+        from bot.handlers import _tell_operators
+
+        await _tell_operators(core, ctx.bot, text, reply_markup=kb)
         mark_digest_sent(settings, datetime.now(tz).date())
 
     application.job_queue.run_daily(
@@ -885,9 +889,9 @@ def schedule_alerts(application, core) -> None:
             return
         if not alerts:
             return
-        text = digest(alerts, settings)
-        for chat_id in settings.operator_chat_ids:
-            await ctx.bot.send_message(chat_id, text)
+        from bot.handlers import _tell_operators
+
+        await _tell_operators(core, ctx.bot, digest(alerts, settings))
 
     interval = max(1, settings.alert_poll_minutes) * 60
     application.job_queue.run_repeating(

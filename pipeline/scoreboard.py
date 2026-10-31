@@ -55,6 +55,23 @@ def quarter_bounds(quarter: str) -> tuple[date, date]:
     return start, end
 
 
+
+def _shift(move: dict) -> str:
+    """A stored move as the push says it, through `Move` itself: a margin in
+    points, anything else as a percentage of itself. This printed
+    `change * 100` as a percentage for every row, so a margin that fell four
+    points read "-6%"."""
+    from pipeline.standing import Move
+
+    try:
+        return Move(field=str(move.get("field") or ""),
+                    before=float(move["before"]),
+                    after=float(move["after"])).shift()
+    except (KeyError, TypeError, ValueError):
+        pct = float(move.get("change") or 0) * 100
+        return f"{'↑' if pct > 0 else '↓'}{abs(pct):.0f}%"
+
+
 @dataclass
 class Row:
     """One thesis on the scoreboard."""
@@ -79,7 +96,7 @@ class Row:
         if material:
             first = material[0]
             moved = (f" — {first.get('field', 'a tracked number')} moved "
-                     f"{first.get('change', 0) * 100:+.0f}%")
+                     f"{_shift(first)}")
         return (f"  {self.ticker:<6} {self.verdict:<16} {self.workdate}"
                 f"{moved}")
 
@@ -154,8 +171,7 @@ class Scoreboard:
                 for move in row.moves:
                     if move.get("material", True):
                         lines.append(
-                            f"    {move.get('field', '?')}: "
-                            f"{move.get('change', 0) * 100:+.1f}%")
+                            f"    {move.get('field', '?')}: {_shift(move)}")
         lines += ["",
                   "Lead with the ones that were wrong. The point of this "
                   "episode is the record, not the hit rate."]

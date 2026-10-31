@@ -197,25 +197,43 @@ def _site_note(site: dict | None, today: _dt.date, reported_on: str) -> str:
             f"read it.")
 
 
+# The feeds that are the company's own (`company_data.merge_free_news`): what
+# they carry is about it, whatever the title says ("Third Quarter Results").
+OWN_FEEDS = ("8-K filing", "company IR")
+
+
 def classify(ticker: str, today: _dt.date, *,
              release: dict | None = None,
              news: list[dict] | None = None,
              override: str = "",
-             site_earnings: dict | None = None) -> MoveKind:
+             site_earnings: dict | None = None,
+             names=None) -> MoveKind:
     """The kind of day, from what was found. Pure: every input is handed in.
 
     `release` is `sources.earnings_release(...)`'s payload; `news` the
     workbook's headlines with the free feeds merged in; `site_earnings` the
     earnings date stockanalysis.com lists (`{which, date, timing}`).
+
+    `names(headline)` says whether a headline names the company
+    (`CompanyData.names_company`). ONLY THOSE, and the company's own feeds,
+    decide the day: the News sheet carries market stories that merely tag a
+    name, and every headline dated in the window used to count — "Nvidia Q3
+    earnings beat" in META's feed cut META's short as an earnings reaction,
+    and any headline at all made the day company news. The rest are still
+    listed, marked, for the writer (`named`).
     """
     dated = []
     for item in news or []:
         head = " ".join(str(item.get("headline") or "").split())
         when = _day(item.get("date"))
         if head and _in_window(when, today):
+            source = str(item.get("source") or "").strip()
+            named = (names is None or source in OWN_FEEDS
+                     or bool(names(head)))
             dated.append({"date": when.isoformat(), "headline": head,
-                          "source": str(item.get("source") or "").strip()})
+                          "source": source, "named": named})
     dated.sort(key=lambda d: d["date"], reverse=True)
+    mine = [d for d in dated if d.get("named", True)]
 
     out = MoveKind(headlines=dated[:HEADLINES_KEPT],
                    site_earnings=dict(site_earnings or {}))
@@ -256,7 +274,7 @@ def classify(ticker: str, today: _dt.date, *,
                    "8-K item 2.02 found yet). This is an earnings reaction.")
         return out
     note = _site_note(site_earnings, today, "")
-    earn = [d for d in dated if _looks_like_earnings(d["headline"])]
+    earn = [d for d in mine if _looks_like_earnings(d["headline"])]
     if earn:
         out.kind, out.source = EARNINGS, "headlines"
         out.reported_on = earn[0]["date"]
@@ -264,16 +282,18 @@ def classify(ticker: str, today: _dt.date, *,
                    f"\"{earn[0]['headline'][:120]}\". This is an earnings "
                    f"reaction." + note)
         return out
-    if dated:
+    if mine:
         out.kind, out.source = NEWS, "headlines"
-        out.why = (f"{len(dated)} headline{'s' if len(dated) > 1 else ''} "
+        out.why = (f"{len(mine)} headline{'s' if len(mine) > 1 else ''} "
                    f"dated in the last {WINDOW_DAYS} days, newest "
-                   f"\"{dated[0]['headline'][:120]}\" ({dated[0]['date']})."
+                   f"\"{mine[0]['headline'][:120]}\" ({mine[0]['date']})."
                    + note)
         return out
-    out.why = (f"No earnings filing and no headline dated in the last "
-               f"{WINDOW_DAYS} days: nothing public on file explains this "
-               f"move yet." + note)
+    others = len(dated)
+    out.why = (f"No earnings filing and no headline naming {ticker.upper()} "
+               f"dated in the last {WINDOW_DAYS} days"
+               + (f" ({others} more that only mention it)" if others else "")
+               + ": nothing public on file explains this move yet." + note)
     return out
 
 
@@ -283,7 +303,7 @@ _NAMES = {EARNINGS: "an earnings reaction", NEWS: "a company-news day",
 
 def detect(ticker: str, today: _dt.date, settings: Any, *,
            news: list[dict] | None = None, override: str = "",
-           site_earnings: dict | None = None) -> MoveKind:
+           site_earnings: dict | None = None, names=None) -> MoveKind:
     """`classify`, with the SEC asked for the latest earnings 8-K.
 
     The 8-K is asked for even when the operator has set the kind, so an
@@ -298,7 +318,8 @@ def detect(ticker: str, today: _dt.date, settings: Any, *,
     except Exception as e:                               # noqa: BLE001
         log.warning("the SEC could not say whether %s reported (%s)", ticker, e)
     return classify(ticker, today, release=release, news=news,
-                    override=override, site_earnings=site_earnings)
+                    override=override, site_earnings=site_earnings,
+                    names=names)
 
 
 # The beats only the earnings cut has. A script that marks one of them, or

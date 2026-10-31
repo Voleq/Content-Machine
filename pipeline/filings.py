@@ -465,12 +465,23 @@ def download_filing(ref: FilingRef, workspace: Path, settings: Settings) -> Path
         if not src.exists():
             log.warning("filings: no sample_10k.html fixture")
             return None
-        dest.write_bytes(src.read_bytes())
-        return dest
+        return _write_whole(dest, src.read_bytes())
     resp = _sec_get(ref.url, settings)
     if resp is None:
         return None
-    dest.write_bytes(resp.content)
+    return _write_whole(dest, resp.content)
+
+
+def _write_whole(dest: Path, body: bytes) -> Path:
+    """The filing at `dest` whole or not at all. Its cache is "a file with
+    something in it", so a download written straight there and cut short
+    (a full disk, a kill) was the filing from then on."""
+    part = dest.with_name(dest.name + ".part")
+    try:
+        part.write_bytes(body)
+        part.replace(dest)
+    finally:
+        part.unlink(missing_ok=True)
     return dest
 
 

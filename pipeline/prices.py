@@ -240,9 +240,24 @@ def get_price_history(ticker: str, settings: Settings,
         series = synthetic_series(ticker, days)
         series.degraded = True
 
-    cdir.mkdir(parents=True, exist_ok=True)
-    cfile.write_text(series.to_json(), encoding="utf-8")
+    _keep(cfile, series.to_json())
     return series
+
+
+def _keep(cfile: Path, text: str) -> None:
+    """Cache a series, whole or not at all, and never at the chart's cost.
+
+    `get_price_history` never raises: a chart must never abort a render,
+    and the price gate reads it. Its last line wrote the cache unguarded, so
+    a full disk raised out of both after the series was already in hand."""
+    part = cfile.with_name(cfile.name + ".part")
+    try:
+        cfile.parent.mkdir(parents=True, exist_ok=True)
+        part.write_text(text, encoding="utf-8")
+        part.replace(cfile)
+    except OSError as e:
+        log.warning("price cache %s not written (%s)", cfile.name, e)
+        part.unlink(missing_ok=True)
 
 
 # ---------------------------------------------------------------------------
@@ -377,7 +392,6 @@ def get_intraday(ticker: str, settings: Settings,
     if age > INTRADAY_MAX_AGE_DAYS:
         log.info("intraday for %s is %s days old; no session chart", ticker, age)
         return None
-    cfile.parent.mkdir(parents=True, exist_ok=True)
-    cfile.write_text(got.to_json(), encoding="utf-8")
+    _keep(cfile, got.to_json())
     return got
 

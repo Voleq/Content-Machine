@@ -22,6 +22,7 @@ import json
 import logging
 import re
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
@@ -43,6 +44,32 @@ class TTSError(Exception):
 # The answers a paid request is retried on: the provider throttling or
 # failing, both before anything is billed.
 RETRYABLE_STATUS = (429, 500, 502, 503, 504)
+
+
+def _retry_after_s(value, default: float) -> float:
+    """How long a 429 or a 503 asks to be left, in seconds; `default` when
+    it does not say or says nonsense.
+
+    `Retry-After` is seconds OR an HTTP date (RFC 9110 §10.2.3). Read as
+    `float()` alone, a date raised a ValueError out of the voice and failed
+    the job on a reply that is only ever a request to wait.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return default
+    try:
+        secs = float(text)
+    except ValueError:
+        from email.utils import parsedate_to_datetime
+
+        try:
+            when = parsedate_to_datetime(text)
+        except (TypeError, ValueError, IndexError):
+            return default
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        secs = (when - datetime.now(timezone.utc)).total_seconds()
+    return secs if secs > 0 else default
 
 
 def _same_words(cached: list[WordTimestamp], chunk: str) -> bool:
@@ -913,7 +940,8 @@ class TTSEngine:
                             f"so ${spent:.2f} is counted against the cap.") from e
                     if resp.status_code not in RETRYABLE_STATUS or attempt == 2:
                         break
-                    wait = float(resp.headers.get("retry-after") or 0) or 2.0 * 2 ** attempt
+                    wait = _retry_after_s(resp.headers.get("retry-after"),
+                                          2.0 * 2 ** attempt)
                     log.warning("ElevenLabs %s on chunk %d — retrying in %.0fs",
                                 resp.status_code, i, wait)
                     time.sleep(min(wait, 30.0))

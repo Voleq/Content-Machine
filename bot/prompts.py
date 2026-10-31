@@ -1104,12 +1104,26 @@ def why_it_moved_block(ctx: "_Ctx") -> str:
     # story read as two sources. It is listed once, with its minute, below.
     coverage = _coverage(ctx)
     covered = {_story(n.get("title")) for n in coverage}
-    headlines = [h for h in day.headlines
-                 if _story(h.get("headline")) not in covered][:HEADLINES_SHOWN]
-    if headlines:
+    fresh = [h for h in day.headlines
+             if _story(h.get("headline")) not in covered]
+    # The ones naming the company first; the rest marked as what they are
+    # (`move_kind.classify`), the way the company-data block marks them.
+    named = [h for h in fresh if h.get("named", True)][:HEADLINES_SHOWN]
+    other = [h for h in fresh
+             if not h.get("named", True)][:HEADLINES_SHOWN - len(named)]
+
+    def line(h: dict) -> str:
+        return (f"  {h.get('date', '')} · {h.get('source') or 'source n/a'}"
+                f" · {h.get('headline', '')}")
+
+    if named or other:
         lines += ["", "HEADLINES DATED AROUND THE MOVE (newest first):"]
-        lines += [f"  {h.get('date', '')} · {h.get('source') or 'source n/a'}"
-                  f" · {h.get('headline', '')}" for h in headlines]
+        lines += [line(h) for h in named]
+        if other:
+            lines += ["  not naming the company (market news that may only "
+                      "mention it; never the reason for its move unless a "
+                      "named headline says so):"]
+            lines += ["  " + line(h) for h in other]
     if coverage:
         from pipeline.site_pack import coverage_line
 
