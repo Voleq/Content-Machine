@@ -1,4 +1,15 @@
 {
+ "ai-real-customer-test-closes-tab-at-pricing": {
+  "tags": [
+   "pricing-page",
+   "churn",
+   "conversion",
+   "pricing-power",
+   "saas",
+   "ai-agents"
+  ],
+  "use_when": "a SaaS or subscription business whose real customers do exactly this: see the price and leave"
+ },
  "altman-jensen-sell-me-this-pen-circular-financing": {
   "tags": [
    "circular-financing",
@@ -49,6 +60,17 @@
   ],
   "use_when": "contrasting patient compounding with the retail account blowing up"
  },
+ "buffett-spam-email-giving-away-millions": {
+  "tags": [
+   "scam",
+   "too-good-to-be-true",
+   "spam-email",
+   "free-money",
+   "impersonation"
+  ],
+  "use_when": "a promise of free money that is plainly a scam, 'Warren Buffett' picking you at random",
+  "shorts": false
+ },
  "buy-the-dip-dippity-dip": {
   "tags": [
    "buy-the-dip",
@@ -91,6 +113,16 @@
    "resistance"
   ],
   "use_when": "the plain double-top pattern when you want the shape without the joke"
+ },
+ "chatbot-country-with-hi-chile-china": {
+  "tags": [
+   "chatbot",
+   "confidently-wrong",
+   "ai-hype",
+   "ai-reasoning",
+   "llm"
+  ],
+  "use_when": "an AI product sold as genius talking itself in circles over something a child could answer"
  },
  "costco-hotdog-1.50-buy-now-pay-later": {
   "tags": [
@@ -271,6 +303,18 @@
   ],
   "use_when": "leverage turns a bad day into a margin call"
  },
+ "mcrib-returns-bitcoin-buy-signal": {
+  "tags": [
+   "mcrib",
+   "spurious-correlation",
+   "buy-signal",
+   "seasonal-indicator",
+   "data-mining",
+   "bitcoin"
+  ],
+  "use_when": "a 'reliable indicator' that is really a coincidence: the McRib calling every Bitcoin bottom",
+  "shorts": false
+ },
  "meta-73b-metaverse-horizon-workrooms": {
   "tags": [
    "meta",
@@ -281,6 +325,16 @@
    "empty-product"
   ],
   "use_when": "billions burned on a moonshot with little to show"
+ },
+ "mount-rushmore-trump-behind-bars": {
+  "tags": [
+   "mount-rushmore",
+   "legacy",
+   "behind-bars",
+   "legal-risk",
+   "presidential"
+  ],
+  "use_when": "a legacy meant to be carved in stone that ends behind bars; political, so only where the story is"
  },
  "nvidia-merchant-infinite-loop-card": {
   "tags": [

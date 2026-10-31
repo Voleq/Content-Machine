@@ -7,7 +7,7 @@ from pathlib import Path
 from pipeline import memes
 from pipeline.memes import MemeLibrary, MemeManager, MockMemeClient
 
-ROOT_INDEX_KEYS = 36  # the committed library ships 36 indexed memes
+ROOT_INDEX_KEYS = 41  # the committed library ships 41 indexed memes
 
 
 def test_committed_index_shape(settings):
