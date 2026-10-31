@@ -199,14 +199,24 @@ class Chats:
                 chat = {"id": secrets.token_hex(6), "title": title_of(text),
                         "created": now, "updated": now, "seen": 0,
                         "messages": []}
+            answer = {"id": _mid(), "role": "assistant", "status": QUEUED,
+                      "text": "", "stage": "", "at": now}
             chat["messages"] += [
                 {"id": _mid(), "role": "user", "text": text, "at": now},
-                {"id": _mid(), "role": "assistant", "status": QUEUED,
-                 "text": "", "stage": "", "at": now}]
+                answer]
             chat["updated"] = now
             self._save(chat)
+            self._join_line(answer["id"])
         self.wake()
         return self.view(chat["id"], seen=False)
+
+    def _join_line(self, mid: str) -> None:
+        """Put a question at the back of the line now, not when the worker
+        next looks: it rebuilds the order between answers only, so one asked
+        while another was being written had no place in it (`ahead`) until
+        that answer was done."""
+        if mid not in self._order:
+            self._order = [*self._order, mid]
 
     def stop(self, cid: str, mid: str) -> dict:
         """Stop an answer: one being written ends where it has got to, one
@@ -236,6 +246,7 @@ class Chats:
                 m.update(status=QUEUED, text="", stage="", at=now)
                 chat["updated"] = now
                 self._save(chat)
+                self._join_line(mid)
         self.wake()
         return self.view(cid)
 
@@ -316,8 +327,11 @@ class Chats:
     def _step(self) -> float | None:
         """Answer the oldest question. 0: look again at once; None: nothing
         to do until woken; seconds: a render holds the card, look again."""
-        queue = self._pending()
-        self._order = [mid for _at, _cid, mid, _st in queue]
+        # Read and set as one step, under the lock `say` holds: a question
+        # asked between the two was put in line and then written out of it.
+        with self._lock:
+            queue = self._pending()
+            self._order = [mid for _at, _cid, mid, _st in queue]
         if not queue:
             return None
         if self.core.render_busy():

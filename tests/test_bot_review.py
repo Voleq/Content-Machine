@@ -543,3 +543,42 @@ def test_the_page_scripts_declare_each_global_once():
                 twice.append(f"{name}: {seen[name]} and {f.name}")
             seen[name] = f.name
     assert seen and not twice
+
+
+# --------------------------------------------------------------------------
+# The page's chat
+# --------------------------------------------------------------------------
+
+def test_a_question_asked_while_one_is_answered_knows_its_place(settings,
+                                                                monkeypatch):
+    """The page shows a waiting question's place in line, read off the order
+    only the worker rebuilt, between answers: one asked while the local
+    model answered another (a minute, often) had no place until that answer
+    was done. CI caught it as `KeyError: 'ahead'` (31 Oct 2026)."""
+    import time as _time
+
+    from pipeline import recall
+
+    asked = threading.Event()
+    gate = threading.Event()
+
+    def slow(settings, question, **kw):
+        asked.set()
+        gate.wait(5)
+        return recall.Answer(question.upper(), body=question.upper(),
+                             reason="ok")
+
+    monkeypatch.setattr(recall, "ask", slow)
+    chats = BotCore(settings).chats
+    chats.start()
+    try:
+        chats.say(None, "first")
+        assert asked.wait(5), "the worker took the first question"
+        b = chats.say(None, "second")
+        waiting = b["messages"][1]
+        assert waiting["status"] == "queued"
+        assert waiting.get("ahead") == 1
+    finally:
+        gate.set()
+        chats.close()
+        _time.sleep(0.1)

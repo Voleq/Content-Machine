@@ -59,6 +59,7 @@ has a regression test in `tests/test_bot_review.py` that failed before it.
 | A restarted bot counts its feed from one again, so the page missed the new run's first pushes | the feed's `epoch` |
 | The Check step's Save why sent no ticker: a reason starting with another video's ticker was saved there, first word gone | sends `TICKER@DATE` |
 | The page priced Render buttons when the voice was already paid for | `_step_approve`, `_step_render` |
+| A question asked on the page's chat while another was being answered had no place in line until that answer was done (the worker rebuilt the order between answers only); CI caught it as an intermittent `KeyError: 'ahead'` | `Chats._join_line`, the order built under the chat lock |
 
 ## Review of everything outside the bot (31 Oct 2026)
 
