@@ -247,6 +247,8 @@ bot/
                          the buttons' dispatch, the /go wizard, live cards
   feed.py                the activity feed the web panel reads
   panel.py               the web control panel (stdlib HTTP, key-protected)
+  chat.py                its Chat: conversations with the local AI, each
+                         kept as a file, answered one at a time on the bot
   panel_static/          its page: index.html, app.js, app.css (no build step)
   prompts.py             master-prompt filling + the plate catalogue, generated
                          from the registry (never a hand-kept list)
@@ -863,7 +865,7 @@ Every command here is a read. None spends, none renders, none can fail a job. Th
 
 | command | what it does |
 |---|---|
-| `/search <question>` | The local model answers from the bot's own records and from the bot as it is right now (the videos and their steps, the queue, spend, switches, settings, the library, health and the page's manual), citing what it read, or says it has nothing on file. It only reads. Counts and totals are worked out by code and never reach the model. While a render runs the model waits: the search answers at once and the full answer follows when the render ends. Also on Home as Ask the bot. |
+| `/search <question>` | The local model answers from the bot's own records and from the bot as it is right now (the videos and their steps, the queue, spend, switches, settings, the library, health and the page's manual), citing what it read, or says it has nothing on file. It only reads. Counts and totals are worked out by code and never reach the model. While a render runs the model waits: the search answers at once and the full answer follows when the render ends. On the web page it is the Chat screen: a conversation, every one kept, follow-ups read with what came before. |
 | `/search find <words>` | Every saved record with those words, ranked, no AI involved. Works with Ollama off. |
 | `/search said <phrase>` | Every earlier use of a line, across every script ever shipped. |
 
@@ -990,6 +992,13 @@ cannot do anything the chat cannot.
   panel and finish in Telegram.
 - **Without Telegram:** `python -m bot.panel` runs the panel and the render
   queue on their own; pushes go to its Activity tab.
+- **Chat:** `/ask` as a conversation with the local AI. Every conversation is
+  kept in `state/chats/` (one JSON file each); a question is answered on the
+  bot, one at a time, and the page shows the step it is on and the words as
+  Ollama streams them. A follow-up is read with the turns before it. While a
+  render holds the graphics card the question waits and is answered in the
+  same conversation when the queue empties; one a restart cut off is asked
+  again at the next start.
 
 ### The data contract (private, no API)
 

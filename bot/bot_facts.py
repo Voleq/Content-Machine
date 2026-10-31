@@ -28,8 +28,14 @@ SCREENS: dict[str, str] = {
     "home": "Home: the big Next up button (the most urgent thing across all "
             "videos), the inbox, Start a video (ticker, lane, drop the "
             "workbook), the render queue with time left, this week's "
-            "publishing and the month's spend. The Ask box answers questions "
-            "about the bot.",
+            "publishing and the month's spend. The Ask box opens a "
+            "conversation in Chat.",
+    "chat": "Chat: a conversation with the local AI about the bot, every "
+            "conversation kept in a list (rename, delete, new). It shows "
+            "what it is doing while it answers, writes the answer as it "
+            "comes, lists the records it used, and reads a follow-up with "
+            "the conversation. One question at a time; it waits while a "
+            "render uses the graphics card and still answers there.",
     "videos": "Videos: every recent video as a card; a card opens its "
               "workspace, which walks through the steps below.",
     "ideas": "Ideas: the backlog as a table you add to and drop from, the "

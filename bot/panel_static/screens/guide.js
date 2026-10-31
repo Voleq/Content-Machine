@@ -17,7 +17,17 @@ const GUIDE = {
       "Start a video: type a ticker and pick a lane. Guided SHORT walks you through one SHORT and asks for one thing at a time. SHORT is the 9:16 clip on a stock that moved today. LONG is the 16:9 deep dive on a value name. UPDATE is a LONG that follows up a name you already covered: what the last video said, and what has moved since.",
       "Send to says which video a dropped file or a paste goes to. Drop your Capital IQ workbook, a screengrab or a script file on the box; paste a script, an angle pick, or the answer to a question the bot asked (the yellow “Waiting for” line under the top bar says what it is waiting for).",
       "Everything you press answers in Replies on the right. A slow one shows “working…” with a timer and what the bot says on the way; you can keep using the page, and the answer arrives there, or in Activity if you left.",
+      "Ask the bot opens a conversation with the local AI in Chat, where every conversation is kept; the last few are one click away under the box.",
       "The Render queue runs one render at a time. Each row says what it is doing in words (making the voice, drawing Dennis in 3D, putting the frames together) and how far it is.",
+    ],
+  },
+  chat: {
+    title: "How Chat works",
+    how: [
+      "What: a conversation with the local AI (Gemma, on the render box) about the bot itself: what is waiting on you, why a render failed, what an earlier script said, which memes there are, what a switch does.",
+      "Why: the answers come from the bot's own records and how it is right now, not from the AI's memory, so it can tell you what the bot did and where to look. It never changes anything.",
+      "How: type a question and press Enter. You see what it is doing (searching, reading, writing) and the answer appears as it is written; under it, the records it used. A follow-up such as “and the one before?” reads the conversation. Every conversation is kept on the left: rename one, delete one, or start a new one.",
+      "Good to know: it answers one question at a time, and waits while a render is using the graphics card; the answer still lands here, even if you close the page. The first question after a while takes longest, while the model loads. Counts and totals (“how many shorts this month?”) are worked out by the bot's code, never by the AI.",
     ],
   },
   videos: {
@@ -169,7 +179,7 @@ function howTo(key) {
 
 // Each screen's box, once, at its top: the screens redraw what is under it.
 (function placeScreenGuides() {
-  const at = { home: "#next-up", videos: "#videos", activity: ".feed-card", commands: ".cmdbar" };
+  const at = { home: "#next-up", videos: "#videos", activity: ".feed-card", commands: ".cmdbar", chat: ".chat-layout" };
   Object.keys(GUIDE).forEach((key) => {
     const tab = $(`#tab-${key}`);
     if (!tab || !GUIDE[key].title) return;

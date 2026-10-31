@@ -12,6 +12,8 @@ What it adds over the chat:
 - the inbox, every recent video as a card with its next step on a button,
   the queue and the month's spend, on one screen (`/api/state`);
 - the activity feed — every push the bot made (`/api/feed`);
+- a chat with the local AI, every conversation kept (`/api/chats`,
+  `/api/chat`; `bot.chat`);
 - files of any size (the cloud Bot API stops at 20 MB), and renders played
   in the page rather than downloaded (`/api/file`, with Range support).
 
@@ -125,54 +127,12 @@ class Panel:
                  assets / "meme_library", assets / "broll_library",
                  assets / "sfx", assets / "score", assets / "plates" / "room"]
         self.roots = [Path(r).resolve() for r in roots]
-        self.asks: dict[str, dict] = {}     # the page's questions, newest last
-        self._asks_lock = threading.Lock()
         self.actions: dict[str, dict] = {}  # the page's actions, newest last
         self._acts_lock = threading.Lock()
-
-    # ---- the page's questions
-    # A question runs on its own thread, not on the page's request: the local
-    # model took two minutes, his page stopped waiting, and the answer had
-    # nowhere to go (his /ask, 25 Oct 2026). The page asks, then looks again
-    # by id, and a page opened later finds the newest question with no id.
-    ASKS_KEPT = 5
-
-    def ask(self, question: str) -> dict:
-        entry = {"id": secrets.token_hex(6), "question": question,
-                 "started": time.time(), "finished": None, "text": None}
-        with self._asks_lock:
-            self.asks[entry["id"]] = entry
-            while len(self.asks) > self.ASKS_KEPT:
-                self.asks.pop(next(iter(self.asks)))
-        threading.Thread(target=self._answer, args=(entry,), daemon=True,
-                         name="panel-ask").start()
-        return self.ask_view(entry["id"])
-
-    def _answer(self, entry: dict) -> None:
-        try:
-            text = self.core.ask_text(entry["question"].split())
-        except Exception as e:                          # noqa: BLE001
-            log.exception("panel ask")
-            text = f"💥 {e}"
-        self.feed.add("reply", f"❓ {entry['question']}\n\n{text}")
-        with self._asks_lock:
-            entry["text"] = text
-            entry["finished"] = time.time()
-
-    def ask_view(self, ask_id: str = "") -> dict | None:
-        """The question `ask_id`, or the newest; `text` is None until the
-        answer is in."""
-        with self._asks_lock:
-            entry = self.asks.get(ask_id) if ask_id else \
-                next(reversed(self.asks.values()), None)
-            if entry is None:
-                return None
-            now = time.time()
-            done = entry["finished"]
-            return {"id": entry["id"], "question": entry["question"],
-                    "text": entry["text"],
-                    "seconds": round((done or now) - entry["started"]),
-                    "answered_ago": None if done is None else round(now - done)}
+        # The chat with the local AI answers on the bot, one question at a
+        # time, whether or not a page is open to see it (`bot.chat`).
+        self.chats = core.chats
+        self.chats.start()
 
     # ---- the page's actions
     # Every button, command, paste and upload runs on the bot's loop as it
@@ -490,8 +450,10 @@ def _handler_for(panel: Panel):
                     fam = (query.get("family") or [""])[0]
                     return self._json({"text": cmds.help_text(
                         fam, panel.core, panel.chat_id)})
-                if url.path == "/api/ask":
-                    return self._json({"ask": panel.ask_view(
+                if url.path == "/api/chats":
+                    return self._json({"chats": panel.chats.list()})
+                if url.path == "/api/chat":
+                    return self._json({"chat": panel.chats.view(
                         (query.get("id") or [""])[0])})
                 if url.path == "/api/action":
                     aid = (query.get("id") or [""])[0]
@@ -629,13 +591,8 @@ def _handler_for(panel: Panel):
                     name = str(p.get("name") or "")
                     reply = (core.reset_writing(name) if p.get("reset") else
                              core.save_writing(name, str(p.get("text") or "")))
-                elif url.path == "/api/ask":
-                    # Read-only. Answered at once with the question's id;
-                    # the model answers on its own thread (`Panel.ask`).
-                    question = " ".join(str(self._payload().get("question") or "").split())
-                    if not question:
-                        return self._json({"error": "ask a question"}, 400)
-                    return self._json({"ask": panel.ask(question)})
+                elif url.path.startswith("/api/chat"):
+                    return self._chat(url.path, self._payload())
                 elif url.path == "/api/memory":
                     p = self._payload()
                     texts = p.get("texts")
@@ -673,6 +630,29 @@ def _handler_for(panel: Panel):
                 # the page that asked has gone: Activity keeps the reply
                 panel.feed.add("reply", reply.text, files=reply.files,
                                keyboard=reply.keyboard)
+
+        def _chat(self, path: str, p: dict) -> bool:
+            """The chat with the local AI. Read-only: a question is answered
+            on the bot (`bot.chat`), and the page looks again by its id."""
+            chats, cid = panel.chats, str(p.get("id") or "")
+            mid = str(p.get("message") or "")
+            try:
+                if path == "/api/chat":
+                    chat = chats.say(cid or None, str(p.get("text") or ""))
+                elif path == "/api/chat/stop":
+                    chat = chats.stop(cid, mid)
+                elif path == "/api/chat/retry":
+                    chat = chats.retry(cid, mid)
+                elif path == "/api/chat/rename":
+                    chat = chats.rename(cid, str(p.get("title") or ""))
+                elif path == "/api/chat/delete":
+                    chats.delete(cid)
+                    return self._json({"deleted": cid})
+                else:
+                    return self._json({"error": "not found"}, 404)
+            except LookupError as e:
+                return self._json({"error": str(e)}, 404)
+            return self._json({"chat": chat})
 
         # ---- files
         def _static(self, name: str) -> None:

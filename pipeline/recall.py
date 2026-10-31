@@ -756,6 +756,28 @@ _RULES = (
     "markdown headings. It is read in Telegram.\n"
     "- Never invent a ticker, a date, a link or a quote.")
 
+# On the page's chat (30 Oct 2026) the answer is read in a browser, after the
+# conversation it belongs to: markdown lists are drawn, and it may run longer.
+_RULES_CHAT = (
+    "\n\nRULES FOR ANSWERING:\n"
+    "- This is a conversation on the bot's web page. The earlier questions "
+    "and answers come first; answer the LAST question. It may point back "
+    "(\"that one\", \"why?\"): read it with the conversation.\n"
+    "- Answer only from FACTS, NOW and SOURCES in the last message, which "
+    "were read fresh for it, and from your own earlier answers. NOW is the "
+    "bot as it is this minute: trust it over an older record. If none of "
+    "them contain the answer, say \"I don't have that on file\" and name "
+    "the command or the page screen that would know, if one would.\n"
+    "- Put the source number in brackets, like [2], after each sentence that "
+    "uses it. The numbers are this message's SOURCES and NOW, not an earlier "
+    "message's.\n"
+    "- Never count, add, subtract or average anything yourself. Every number "
+    "you write must be copied from FACTS, NOW or SOURCES.\n"
+    "- Plain words, short paragraphs; a list when there are several things. "
+    "Markdown bold and lists are fine; no tables. At most about fifteen "
+    "lines unless asked for more.\n"
+    "- Never invent a ticker, a date, a link or a quote.")
+
 _EXPAND_SYSTEM = (
     "You turn a question about a financial-video bot's records into search "
     "words. The records are video scripts, SEC filing summaries, investment "
@@ -777,6 +799,13 @@ class Answer:
     model: str = ""
     reason: str = ""
     by_code: bool = False
+    # The parts of `text`, for the page's chat to lay out on its own: the
+    # model's words alone, the records it cited (number, name, where he
+    # sees it) and the numbers it read nowhere. `body` is empty when no
+    # model answered; `text` is then the fallback.
+    body: str = ""
+    cited: list[dict] = field(default_factory=list)
+    loose: list[str] = field(default_factory=list)
 
 
 def mentioned_tickers(question: str, known: set[str]) -> set[str]:
@@ -790,12 +819,30 @@ def mentioned_tickers(question: str, known: set[str]) -> set[str]:
     return out
 
 
-def expand(settings: Settings, question: str) -> tuple[list[str], str]:
+def _earlier(history, *, turns: int = 2, chars: int = 500) -> str:
+    """The last few turns of a conversation, cut short, for a prompt that
+    needs to know what "that one" points back to."""
+    lines = []
+    for q, a in list(history)[-turns:]:
+        a = " ".join(str(a).split())
+        lines += [f"Q: {q}", f"A: {a[:chars]}{' …' if len(a) > chars else ''}"]
+    return "\n".join(lines)
+
+
+def expand(settings: Settings, question: str,
+           history=()) -> tuple[list[str], str]:
     """The question in the records' own words, from the local model.
-    Returns the words and the model's outcome (an `llm` reason)."""
+    Returns the words and the model's outcome (an `llm` reason).
+
+    In a conversation the model sees the last turns too, so a follow-up
+    ("and the second one?") is searched for what it points back to."""
     from pipeline import llm
 
-    out = llm.chat_result(question, settings, system=_EXPAND_SYSTEM,
+    prompt = question
+    if history:
+        prompt = (f"The conversation so far, for what the question points "
+                  f"back to:\n{_earlier(history)}\n\nThe question: {question}")
+    out = llm.chat_result(prompt, settings, system=_EXPAND_SYSTEM,
                           purpose="ask-expand",
                           providers=ask_providers(settings))
     if not out:
@@ -899,6 +946,7 @@ def unsupported_numbers(answer: str, given: str) -> list[str]:
 _WHY_NOT = {
     "mock": "MOCK_MODE is on, so the model is never called",
     "no_daemon": "nothing answered at the Ollama address — is Ollama running?",
+    "model_error": "Ollama answered with an error",
     "timeout": "the model took too long",
     "no_provider": "no model is configured for /ask (ASK_PROVIDER_ORDER)",
     "empty": "the model came back empty",
@@ -908,10 +956,12 @@ _WHY_NOT = {
 
 
 def _fallback(question: str, hits: list[Hit], reason: str,
-              settings: Settings, live: list[Hit] = ()) -> str:
+              settings: Settings, live: list[Hit] = (), detail: str = "") -> str:
     why = _WHY_NOT.get(reason, reason or "no model answered")
     if reason == "timeout":
         why += f" (over {settings.ollama_timeout_s:.0f}s)"
+    if detail:
+        why += f": “{detail}”"
     if reason == "waiting":
         lines = ["⏳ A render is using the graphics card, so the local AI "
                  "answers when it finishes. Meanwhile, this is on file:"]
@@ -934,18 +984,67 @@ def _fallback(question: str, hits: list[Hit], reason: str,
     return "\n".join(lines)
 
 
+def _history_turns(history, budget: int) -> list[dict]:
+    """A conversation's earlier turns as the model reads them, newest kept
+    first, inside `budget` characters. An answer is sent without the lines
+    the bot added under it (the sources, the model's name)."""
+    out: list[dict] = []
+    used = 0
+    for q, a in reversed(list(history)):
+        a = _answer_only(str(a))
+        if len(a) > _HISTORY_ANSWER_CHARS:
+            a = a[:_HISTORY_ANSWER_CHARS] + " …"
+        size = len(q) + len(a) + 20
+        if used + size > budget:
+            break
+        out[:0] = [{"role": "user", "content": str(q)},
+                   {"role": "assistant", "content": a}]
+        used += size
+    return out
+
+
+def _answer_only(text: str) -> str:
+    """An answer without the bot's own lines under it."""
+    keep = []
+    for line in text.splitlines():
+        if re.match(r"\s*(Read: \[|\(It read \d+ records|— answered |⚠️ Not in "
+                    r"anything it read)", line):
+            continue
+        keep.append(line)
+    return "\n".join(keep).strip()
+
+
+# A conversation's earlier turns get at most this much of the model's room;
+# the records for the new question come first.
+_HISTORY_MAX_CHARS = 6000
+_HISTORY_ANSWER_CHARS = 1500
+
+
 def ask(settings: Settings, question: str, *,
         today: date | None = None, drawers=(),
-        wait: bool = False) -> Answer:
+        wait: bool = False, history=(), on_text=None,
+        on_stage=None) -> Answer:
     """One question, answered from the bot's own records and, when the bot
     passes its `drawers`, its live state (see `Drawer`).
 
     `wait`: a render holds the graphics card, so the model is not called at
     all; the answer is what the search and the drawers found, and the bot
-    asks again once the card is free (`BotCore.answer_waiting`)."""
+    asks again once the card is free (`BotCore.answer_waiting`).
+
+    The page's chat (`bot.chat`) passes the conversation so far as
+    `history`, `(question, answer)` pairs oldest first, and two callbacks:
+    `on_stage(words)` as the answer moves through its steps, and
+    `on_text(text_so_far, thinking)` as the model writes (`llm.chat_result`).
+    """
     from pipeline import llm, tally
 
+    def stage(words: str) -> None:
+        if on_stage is not None:
+            on_stage(words)
+
     question = " ".join(question.split())
+    history = [(" ".join(str(q).split()), str(a)) for q, a in (history or ())
+               if str(q).strip() and str(a).strip()]
     if not question:
         return Answer(
             "usage: /ask a question about the bot's own work\n"
@@ -955,8 +1054,15 @@ def ask(settings: Settings, question: str, *,
             "Counts and totals are worked out by code, never by the AI. "
             "/find lists matches without the AI.")
 
+    stage("Searching the bot's records")
     index = Index(settings).refresh()
-    tickers = mentioned_tickers(question, index.tickers())
+    known = index.tickers()
+    tickers = mentioned_tickers(question, known)
+    # A follow-up that names no ticker is about the one asked of last.
+    for q, _a in reversed(history):
+        if tickers:
+            break
+        tickers = mentioned_tickers(q, known)
     direct = tally.answer(settings, question,
                           ticker=next(iter(tickers)) if len(tickers) == 1 else "",
                           today=today)
@@ -964,7 +1070,7 @@ def ask(settings: Settings, question: str, *,
         journal.note(settings, "asked", f"asked: {question[:200]} "
                      f"(answered by code)", answered_by="code")
         return Answer(direct + "\n\n(counted by the bot's code, not the AI)",
-                      by_code=True)
+                      by_code=True, body=direct)
 
     if wait:
         hits = retrieve(index, question, tickers=tickers)
@@ -977,7 +1083,8 @@ def ask(settings: Settings, question: str, *,
         return Answer(_fallback(question, hits, "waiting", settings, live),
                       hits, reason="waiting")
 
-    expansion, reason = expand(settings, question)
+    stage("Turning your question into search words (the local AI)")
+    expansion, reason = expand(settings, question, history)
     hits = retrieve(index, question, expansion, tickers=tickers)
     terms = terms_of(question) + [w for e in expansion for w in e.split()]
     opened = pick_drawers(drawers, terms, tickers)
@@ -992,12 +1099,16 @@ def ask(settings: Settings, question: str, *,
         return Answer(_fallback(question, hits, reason, settings, live), hits,
                       reason=reason)
 
+    stage("Opening the parts of the bot the question is about")
     facts = "\n".join(tally.facts(settings, today=today))
-    system = self_description(settings) + _RULES
+    rules = _RULES_CHAT if (history or on_text is not None) else _RULES
+    system = self_description(settings) + rules
     fixed = len(facts) + len(question) + 200
     if _budget(settings, fixed + len(system)) < _SOURCES_MIN_CHARS:
-        system = self_description(settings, with_commands=False) + _RULES
-    budget = _budget(settings, fixed + len(system))
+        system = self_description(settings, with_commands=False) + rules
+    room = _budget(settings, fixed + len(system))
+    turns = _history_turns(history, min(_HISTORY_MAX_CHARS, room // 4))
+    budget = room - sum(len(t["content"]) + 20 for t in turns)
     # The drawers take up to half the room; the records get the rest.
     live = open_drawers(opened, terms, budget // 2)
     now = "\n\n".join(f"[{n}] {h.title} (seen on {h.place})\n{h.body}"
@@ -1009,13 +1120,23 @@ def ask(settings: Settings, question: str, *,
               + (f"NOW (the bot as it is this minute):\n{now}\n\n" if live else "")
               + f"SOURCES:\n{sources}\n\nQUESTION: {question}")
     hits = live + hits
+    stage(f"Reading {_count(len(hits), 'record')} and writing the answer "
+          f"(the local AI)")
+    # Only what was asked for: the passes' stand-ins in the tests take the
+    # plain call.
+    extra = {}
+    if turns:
+        extra["history"] = turns
+    if on_text is not None:
+        extra["on_text"] = on_text
     out = llm.chat_result(prompt, settings, system=system, purpose="ask",
-                          providers=ask_providers(settings))
+                          providers=ask_providers(settings), **extra)
     if not out:
         journal.note(settings, "asked", f"asked: {question[:200]} "
                      f"(the model did not answer: {out.reason})",
                      answered_by="none", reason=out.reason)
-        return Answer(_fallback(question, hits, out.reason, settings), hits,
+        return Answer(_fallback(question, hits, out.reason, settings,
+                                detail=getattr(out, "detail", "")), hits,
                       provider=out.provider, model=out.model,
                       reason=out.reason)
 
@@ -1027,10 +1148,13 @@ def ask(settings: Settings, question: str, *,
                      f"Treat those as the model's guesses.")
     cited = sorted({int(n) for n in re.findall(r"\[(\d+)\]", text)
                     if 0 < int(n) <= len(hits)})
+    named = [{"n": n, "title": hits[n - 1].title if hits[n - 1].kind == "now"
+              else hits[n - 1].label(),
+              "about": "" if hits[n - 1].kind == "now" else hits[n - 1].title,
+              "where": hits[n - 1].place} for n in cited]
     if cited:
-        lines.append("\nRead: " + " · ".join(
-            f"[{n}] {hits[n - 1].title if hits[n - 1].kind == 'now' else hits[n - 1].label()}"
-            for n in cited))
+        lines.append("\nRead: " + " · ".join(f"[{c['n']}] {c['title']}"
+                                             for c in named))
     elif hits:
         lines.append(f"\n(It read {len(hits)} records and cited none of "
                      f"them. /find shows what they were.)")
@@ -1040,4 +1164,9 @@ def ask(settings: Settings, question: str, *,
                  answered_by=out.provider, model=out.model,
                  sources=len(hits), cited=len(cited))
     return Answer("\n".join(lines), hits, provider=out.provider,
-                  model=out.model, reason=out.reason)
+                  model=out.model, reason=out.reason, body=text,
+                  cited=named, loose=loose)
+
+
+def _count(n: int, word: str) -> str:
+    return f"{n} {word}{'' if n == 1 else 's'}"

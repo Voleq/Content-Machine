@@ -584,6 +584,7 @@ def panel(core):
 
     call.base, call.key = base, key
     yield call
+    core.chats.close()
     server.shutdown()
     loop.call_soon_threadsafe(loop.stop)
     thread.join(timeout=5)
@@ -645,53 +646,79 @@ def test_the_ideas_calendar_and_stats_screens_are_served(panel):
         assert panel(path, key_="")[0] == 401, path
 
 
-def _answered(panel, ask_id: str) -> dict:
+def _answered(panel, cid: str) -> dict:
     import time
 
-    for _ in range(100):
-        got = json.loads(panel(f"/api/ask?id={ask_id}")[2])["ask"]
-        if got["text"] is not None:
+    for _ in range(200):
+        got = json.loads(panel(f"/api/chat?id={cid}")[2])["chat"]
+        if got["messages"][-1]["status"] not in ("queued", "waiting", "thinking"):
             return got
-        time.sleep(0.1)
+        time.sleep(0.05)
     raise AssertionError("the question was never answered")
 
 
-def test_the_page_asks_the_bot(panel, core):
-    status, _h, body = panel("/api/ask", {"question": "which memes do we have?"})
-    ask = json.loads(body)["ask"]
-    assert status == 200 and ask["question"] == "which memes do we have?"
-    # Mock mode: no model, so the drawer the question reached is shown.
-    assert "The meme library:" in _answered(panel, ask["id"])["text"]
-    assert any("❓ which memes do we have?" in e["text"]
-               for e in json.loads(panel("/api/feed")[2])["events"])
-    assert panel("/api/ask", {"question": "  "})[0] == 400
-    assert panel("/api/ask", {"question": "x"}, key_="")[0] == 401
-    assert panel("/api/ask?id=nope", key_="")[0] == 401
-    assert json.loads(panel("/api/ask?id=nope")[2])["ask"] is None
+def test_the_page_chats_with_the_bot(panel, core):
+    """His 30 Oct 2026 ask: the answer had nowhere to show. A question is a
+    turn in a conversation kept on the bot; the page looks again by its id."""
+    status, _h, body = panel("/api/chat", {"text": "which memes do we have?"})
+    chat = json.loads(body)["chat"]
+    assert status == 200 and chat["title"] == "which memes do we have?"
+    assert chat["messages"][0] == dict(chat["messages"][0], role="user",
+                                       text="which memes do we have?")
+    done = _answered(panel, chat["id"])
+    answer = done["messages"][-1]
+    # Mock mode: no model, so the drawer the question reached is shown,
+    # and the page is told no AI answered.
+    assert answer["answered"] == "none" and "The meme library:" in answer["text"]
+    listed = json.loads(panel("/api/chats")[2])["chats"]
+    assert [c["id"] for c in listed] == [chat["id"]]
+    # a follow-up goes in the same conversation
+    panel("/api/chat", {"id": chat["id"], "text": "and the sounds?"})
+    assert len(_answered(panel, chat["id"])["messages"]) == 4
+    renamed = json.loads(panel("/api/chat/rename", {"id": chat["id"], "title": "Library"})[2])
+    assert renamed["chat"]["title"] == "Library"
+    assert panel("/api/chat", {"text": "  "})[0] == 400
+    assert panel("/api/chat", {"id": "0123456789ab", "text": "x"})[0] == 404
+    assert panel("/api/chat", {"text": "x"}, key_="")[0] == 401
+    assert panel("/api/chats", key_="")[0] == 401
+    assert panel(f"/api/chat?id={chat['id']}", key_="")[0] == 401
+    assert json.loads(panel("/api/chat?id=nope")[2])["chat"] is None
+    assert panel("/api/chat/delete", {"id": chat["id"]})[0] == 200
+    assert json.loads(panel("/api/chats")[2])["chats"] == []
 
 
 def test_a_slow_answer_outlives_the_page_that_asked(panel, core, monkeypatch):
     """His /ask (25 Oct 2026): the local model took two minutes, the page
     had gone by then, and the answer was written to a closed connection.
-    The request now only starts the question; the page looks again by id,
-    and a page opened later finds the newest question with no id."""
+    The request only starts the question; the page looks again by the
+    conversation's id, and the words so far show while it is written."""
     import time
+
+    from pipeline import recall
 
     gate = threading.Event()
 
-    def slow(args):
+    def slow(settings, question, *, on_text=None, **_kw):
+        on_text("the margins", False)
         gate.wait(10)
-        return "the margins held"
+        return recall.Answer("the margins held", body="the margins held",
+                             reason="ok", provider="ollama", model="gemma")
 
-    monkeypatch.setattr(core, "ask_text", slow)
+    monkeypatch.setattr(recall, "ask", slow)
     t = time.monotonic()
-    ask = json.loads(panel("/api/ask", {"question": "did the margins hold?"})[2])["ask"]
-    assert time.monotonic() - t < 5 and ask["text"] is None
-    again = json.loads(panel("/api/ask")[2])["ask"]          # a reloaded page
-    assert again["id"] == ask["id"] and again["text"] is None
+    chat = json.loads(panel("/api/chat", {"text": "did the margins hold?"})[2])["chat"]
+    assert time.monotonic() - t < 5
+    for _ in range(100):
+        again = json.loads(panel(f"/api/chat?id={chat['id']}")[2])["chat"]   # a reloaded page
+        if again["messages"][-1].get("text"):
+            break
+        time.sleep(0.05)
+    live = again["messages"][-1]
+    assert live["status"] == "thinking" and live["text"] == "the margins"
+    assert json.loads(panel("/api/chats")[2])["chats"][0]["pending"] == "thinking"
     gate.set()
-    got = _answered(panel, ask["id"])
-    assert got["text"] == "the margins held" and got["answered_ago"] >= 0
+    got = _answered(panel, chat["id"])["messages"][-1]
+    assert got["text"] == "the margins held" and got["answered"] == "model"
 
 
 def test_a_reply_the_page_left_before_lands_in_activity(panel, core, monkeypatch, capsys):

@@ -106,6 +106,15 @@ NO_PROVIDER = "no_provider"
 # The paid hosted tier was skipped because this month's hosted LLM spend has
 # reached `LLM_MONTHLY_CAP`, or the spend ledger cannot be read.
 CAPPED = "capped"
+# The daemon was there and said no: an unknown model name, a model that does
+# not fit, a bad request. Told apart from NO_DAEMON so the page can say what
+# Ollama said rather than "is it running?" (30 Oct 2026).
+MODEL_ERROR = "model_error"
+
+
+class Stop(Exception):
+    """Raised from an `on_text` callback to stop a streamed answer: the
+    page's Stop button. It is the one exception a provider lets through."""
 
 
 @dataclass(frozen=True)
@@ -124,6 +133,8 @@ class LLMResult:
     # What a hosted provider reported it billed, when it said (`usage`).
     tokens_in: int = 0
     tokens_out: int = 0
+    # What the provider said when it refused (MODEL_ERROR), in its words.
+    detail: str = ""
 
     def __bool__(self) -> bool:
         return bool(self.text)
@@ -132,37 +143,68 @@ class LLMResult:
         return self.text
 
 
-def _try_ollama(prompt: str, system: str, settings: Settings) -> LLMResult:
-    """A local Ollama daemon. Absent one, this fails fast and we move on."""
-    model = settings.ollama_model
+def _messages(system: str, history, prompt: str) -> list[dict]:
+    """The chat as a provider reads it: the instructions, the earlier turns
+    of a conversation (`{"role", "content"}`, oldest first), the new one."""
+    out = [{"role": "system", "content": system}] if system else []
+    out += [{"role": m["role"], "content": m["content"]} for m in history or ()
+            if m.get("role") in ("user", "assistant") and m.get("content")]
+    return out + [{"role": "user", "content": prompt}]
+
+
+def _refused(e: Exception) -> str:
+    """What an HTTP error from the daemon said, or "" when it was not one
+    (nothing listening, a dropped connection)."""
+    resp = getattr(e, "response", None)
+    if resp is None:
+        return ""
     try:
-        data = _post(
-            settings.ollama_base_url.rstrip("/") + "/api/chat",
-            {
-                "model": model,
-                "messages": [{"role": "system", "content": system},
-                             {"role": "user", "content": prompt}],
-                "stream": False,
-                # `num_ctx` IS PASSED (K2). Ollama's default context has
-                # historically been 2048-4096 tokens, the per-section filing
-                # budget is `filings_llm_max_chars = 24000` (~6,000 tokens),
-                # and Ollama does not error on an overflowing prompt — it
-                # drops the front and summarises what remains. The result is
-                # a plausible, confident brief built from partial text, with
-                # nothing anywhere indicating it happened: B1's failure mode
-                # in a new place.
-                #
-                # In config.py rather than an Ollama Modelfile. A Modelfile
-                # works and hides a load-bearing value somewhere the
-                # repository cannot see, audit or test — and the whole reason
-                # this defect existed is that the budget lived in one place
-                # and the context limit in another.
-                "options": {"temperature": 0.2,
-                            "num_ctx": settings.ollama_num_ctx},
-            },
-            {"Content-Type": "application/json"},
-            settings.ollama_timeout_s,
-        )
+        said = resp.json().get("error") or ""
+    except Exception:  # noqa: BLE001 - not JSON: the status will do
+        said = ""
+    return str(said or f"HTTP {resp.status_code}")[:300]
+
+
+def _try_ollama(prompt: str, system: str, settings: Settings,
+                history=(), on_text=None) -> LLMResult:
+    """A local Ollama daemon. Absent one, this fails fast and we move on.
+
+    `on_text(text_so_far, thinking)` streams the answer as the model writes
+    it (the page's chat shows it word by word); `thinking` is True while a
+    thinking model is still working before its first word. The callback may
+    raise `Stop`."""
+    model = settings.ollama_model
+    payload = {
+        "model": model,
+        "messages": _messages(system, history, prompt),
+        "stream": on_text is not None,
+        # `num_ctx` IS PASSED (K2). Ollama's default context has
+        # historically been 2048-4096 tokens, the per-section filing
+        # budget is `filings_llm_max_chars = 24000` (~6,000 tokens),
+        # and Ollama does not error on an overflowing prompt — it
+        # drops the front and summarises what remains. The result is
+        # a plausible, confident brief built from partial text, with
+        # nothing anywhere indicating it happened: B1's failure mode
+        # in a new place.
+        #
+        # In config.py rather than an Ollama Modelfile. A Modelfile
+        # works and hides a load-bearing value somewhere the
+        # repository cannot see, audit or test — and the whole reason
+        # this defect existed is that the budget lived in one place
+        # and the context limit in another.
+        "options": {"temperature": 0.2,
+                    "num_ctx": settings.ollama_num_ctx},
+    }
+    url = settings.ollama_base_url.rstrip("/") + "/api/chat"
+    try:
+        if on_text is None:
+            data = _post(url, payload, {"Content-Type": "application/json"},
+                         settings.ollama_timeout_s)
+            text = (data.get("message") or {}).get("content") or ""
+        else:
+            text = _stream_ollama(url, payload, settings, on_text)
+    except Stop:
+        raise
     except Exception as e:  # noqa: BLE001 — absence is the normal case
         # A TIMEOUT AND A MISSING DAEMON ARE DIFFERENT INFORMATION (K2).
         # Both were caught here as "unavailable" at debug level, so a pass
@@ -171,11 +213,57 @@ def _try_ollama(prompt: str, system: str, settings: Settings) -> LLMResult:
             log.warning("ollama timed out after %.0fs (%s) — the pass did "
                         "not run", settings.ollama_timeout_s, e)
             return LLMResult(provider=OLLAMA, model=model, reason=TIMEOUT)
+        said = _refused(e) or (str(e) if isinstance(e, _OllamaSaid) else "")
+        if said:
+            log.warning("ollama refused (%s)", said)
+            return LLMResult(provider=OLLAMA, model=model, reason=MODEL_ERROR,
+                             detail=said)
         log.debug("ollama unavailable (%s)", e)
         return LLMResult(provider=OLLAMA, model=model, reason=NO_DAEMON)
-    text = (data.get("message") or {}).get("content") or ""
     return LLMResult(text=text, provider=OLLAMA, model=model,
                      reason=OK if text else EMPTY)
+
+
+class _OllamaSaid(Exception):
+    """An error line in the middle of a streamed answer."""
+
+
+def _stream_ollama(url: str, payload: dict, settings: Settings,
+                   on_text) -> str:
+    """The answer, read a line at a time as Ollama writes it. The timeout is
+    the longest wait for the NEXT line, so a slow model that keeps writing
+    is never cut off, and one that goes silent is."""
+    import json
+
+    import httpx
+
+    timeout = httpx.Timeout(settings.ollama_timeout_s, connect=10.0)
+    text, thought = "", False
+    with httpx.stream("POST", url, json=payload, timeout=timeout,
+                      headers={"Content-Type": "application/json"}) as resp:
+        if resp.status_code >= 400:
+            resp.read()
+            resp.raise_for_status()
+        for line in resp.iter_lines():
+            if not line.strip():
+                continue
+            try:
+                part = json.loads(line)
+            except ValueError:
+                continue
+            if part.get("error"):
+                raise _OllamaSaid(str(part["error"])[:300])
+            msg = part.get("message") or {}
+            piece = msg.get("content") or ""
+            if piece:
+                text += piece
+                on_text(text, False)
+            elif msg.get("thinking") and not text and not thought:
+                thought = True
+                on_text("", True)
+            if part.get("done"):
+                break
+    return text
 
 
 def _looks_like_timeout(exc: Exception) -> bool:
@@ -185,15 +273,15 @@ def _looks_like_timeout(exc: Exception) -> bool:
 
 def _try_openai_compatible(prompt: str, system: str, settings: Settings,
                            base: str, token: str, model: str,
-                           path: str, provider: str = "") -> LLMResult:
+                           path: str, provider: str = "",
+                           history=()) -> LLMResult:
     if not token:
         return LLMResult(provider=provider, model=model, reason=NO_DAEMON)
     try:
         data = _post(
             base.rstrip("/") + path,
             {"model": model,
-             "messages": [{"role": "system", "content": system},
-                          {"role": "user", "content": prompt}],
+             "messages": _messages(system, history, prompt),
              "temperature": 0.2},
             {"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
             45.0,
@@ -263,7 +351,8 @@ def _record_hosted(result: LLMResult, prompt: str, system: str,
 
 def chat_result(prompt: str, settings: Settings, *, system: str = "",
                 purpose: str = "llm",
-                providers: list[str] | None = None) -> LLMResult:
+                providers: list[str] | None = None,
+                history=(), on_text=None) -> LLMResult:
     """One completion from the first provider that answers, with its reason.
 
     `chat` is this, narrowed to the text — every existing caller keeps
@@ -283,6 +372,12 @@ def chat_result(prompt: str, settings: Settings, *, system: str = "",
     `providers` narrows the routing for one caller. `/ask` passes its own
     order, local-only by default, so a question typed in passing never
     becomes hosted spend.
+
+    `history` is a conversation's earlier turns (`{"role", "content"}`,
+    oldest first), sent before `prompt`; `on_text(text_so_far, thinking)`
+    streams the local model's answer as it is written (see `_try_ollama`).
+    The page's chat passes both. A hosted provider takes the history and
+    answers in one piece.
     """
     if settings.mock_mode:
         log.info("%s: MOCK_MODE — LLM pass skipped", purpose)
@@ -300,12 +395,12 @@ def chat_result(prompt: str, settings: Settings, *, system: str = "",
     for provider in (providers if providers is not None
                      else provider_order(settings)):
         if provider == OLLAMA:
-            out = _try_ollama(prompt, system, settings)
+            out = _try_ollama(prompt, system, settings, history, on_text)
         elif provider == GITHUB:
             out = _try_openai_compatible(
                 prompt, system, settings, settings.github_models_endpoint,
                 settings.github_models_token, settings.filings_llm_model,
-                "/chat/completions", provider=GITHUB)
+                "/chat/completions", provider=GITHUB, history=history)
         elif provider == OPENAI:
             if settings.openai_api_key and not _hosted_headroom(settings):
                 log.warning("%s: the paid hosted LLM is capped for this month "
@@ -316,7 +411,7 @@ def chat_result(prompt: str, settings: Settings, *, system: str = "",
             out = _try_openai_compatible(
                 prompt, system, settings, settings.openai_base_url,
                 settings.openai_api_key, settings.filings_llm_model,
-                "/v1/chat/completions", provider=OPENAI)
+                "/v1/chat/completions", provider=OPENAI, history=history)
             if out.reason in (OK, EMPTY, PARSE_ERROR):
                 # It answered, so it billed — whether or not the text helps.
                 _record_hosted(out, prompt, system, settings)
@@ -440,6 +535,7 @@ _OUTCOME_WORDS = {
     MOCK: "skipped (MOCK_MODE)",
     NO_PROVIDER: "no model configured",
     CAPPED: "skipped (hosted LLM monthly cap reached)",
+    MODEL_ERROR: "refused by the model",
 }
 
 

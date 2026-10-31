@@ -111,7 +111,7 @@ function renderWeek() {
 }
 
 // ------------------------------------------------- the finder (Ctrl+K)
-const SCREENS = [["home", "Home"], ["videos", "Videos"], ["ideas", "Ideas"], ["calendar", "Calendar"], ["stats", "Stats"], ["library", "Library"], ["settings", "Settings"], ["activity", "Activity"], ["commands", "Commands"]];
+const SCREENS = [["home", "Home"], ["chat", "Chat"], ["videos", "Videos"], ["ideas", "Ideas"], ["calendar", "Calendar"], ["stats", "Stats"], ["library", "Library"], ["settings", "Settings"], ["activity", "Activity"], ["commands", "Commands"]];
 let PAL = [];
 let PAL_I = 0;
 function paletteItems(q) {
@@ -142,61 +142,12 @@ function paletteItems(q) {
     scored.unshift({ kind: "run", label: `Run ${text}`, sub: "Enter runs it as typed", go: () => runCommand(text) });
   } else if (text) {
     // Anything else can be asked: first when it reads like a question.
-    const ask = { kind: "ask", label: `Ask: ${text}`, sub: "the local AI answers on Home", go: () => { showTab("home", true); askBot(text); } };
+    const ask = { kind: "ask", label: `Ask: ${text}`, sub: "a new conversation in Chat; the local AI answers there", go: () => askInChat(text) };
     if (/\?$/.test(text) || text.split(/\s+/).length >= 3) scored.unshift(ask); else scored.push(ask);
   }
   return scored.slice(0, 40);
 }
 
-// ------------------------------------------------- ask the bot
-// The question runs on the bot, not on this page's request: the page asks,
-// then looks again every two seconds, so a reload or a closed tab loses
-// nothing (his /ask, 25 Oct 2026: the answer came after the page had gone).
-let ASKING = "";
-async function askBot(q) {
-  q = (q || "").trim();
-  if (!q || ASKING) return;
-  $("#ask-q").value = q;
-  try {
-    showAsk((await post("/api/ask", { question: q })).ask);
-  } catch (e) {
-    $("#ask-answer").hidden = false;
-    setKids($("#ask-answer"), [el("p", { class: "bad", text: String(e.message || e) })]);
-  }
-}
-function showAsk(a) {
-  if (!a) return;
-  const box = $("#ask-answer"), done = a.text !== null;
-  box.hidden = false;
-  $("#ask-form button").disabled = !done;
-  ASKING = done ? "" : a.id;
-  setKids(box, [el("p", { class: "ask-q", text: `You asked: ${a.question}` }), done
-    ? el("pre", { class: "ask-text", text: a.text || "No answer came back." })
-    : el("p", { class: "meta", text: `Reading the records and the bot's state: ${a.seconds} s so far. The local AI can take a few minutes. The answer lands here, and in Activity under Replies, even if you leave the page.` })]);
-  if (!done) setTimeout(() => pollAsk(a.id), 2000);
-}
-async function pollAsk(id) {
-  if (ASKING !== id) return;
-  try {
-    const r = await api(`/api/ask?id=${encodeURIComponent(id)}`);
-    if (r.ask) return showAsk(r.ask);
-    ASKING = "";                         // the bot restarted: it is gone
-    $("#ask-form button").disabled = false;
-  } catch {
-    setTimeout(() => pollAsk(id), 5000);
-  }
-}
-// A page opened while a question runs picks it up; a recent answer stays.
-async function restoreAsk() {
-  try {
-    const a = (await api("/api/ask")).ask;
-    if (a && (a.text === null || a.answered_ago < 3600)) {
-      $("#ask-q").value = a.question;
-      showAsk(a);
-    }
-  } catch { /* the box stays empty */ }
-}
-$("#ask-form").addEventListener("submit", (e) => { e.preventDefault(); askBot($("#ask-q").value); });
 function renderPalette() {
   PAL = paletteItems($("#palette-input").value);
   PAL_I = Math.min(PAL_I, Math.max(PAL.length - 1, 0));

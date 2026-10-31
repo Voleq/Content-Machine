@@ -227,7 +227,7 @@ async function start() {
   feed.events.forEach((ev) => { ev._id = ++FEED_ID; FEED.push(ev); });
   FEED_SEQ = feed.seq;
   renderFeed();
-  restoreAsk();
+  chatBoot();
   restoreActions();
   every(5000, refresh);
   every(2500, pollFeed);
@@ -1054,6 +1054,7 @@ function tick() {
     if (hint) hint.hidden = s < 6;
   });
   if (typeof tickVideo === "function") tickVideo();
+  if (typeof tickChat === "function") tickChat();
   renderLink();
 }
 $("#file").addEventListener("change", (e) => { const f = e.target.files[0]; if (f) upload(f); e.target.value = ""; });

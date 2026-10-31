@@ -361,6 +361,8 @@ class BotCore:
         self.queue: RenderJobQueue | None = None  # attached in main.py
         # /ask questions put off while a render holds the graphics card.
         self._ask_lock = threading.Lock()
+        # The page's chat with the local AI (`chats`), made on first use.
+        self._chats = None
         # FILING READINGS IN FLIGHT, keyed (ticker, workdate) → Future (K3).
         #
         # Its own single worker rather than the render queue: a reading is
@@ -3769,6 +3771,16 @@ class BotCore:
             self._ask_later(question)
         return answer.text
 
+    @property
+    def chats(self):
+        """The page's conversations with the local AI (`bot.chat`): the
+        panel starts its worker, and the end of a render wakes it."""
+        if self._chats is None:
+            from bot.chat import Chats
+
+            self._chats = Chats(self)
+        return self._chats
+
     # Questions put off by a render, answered when the queue empties.
     ASK_WAITING = "ask_waiting.json"
 
@@ -3842,6 +3854,8 @@ class BotCore:
         status = getattr(getattr(job, "status", None), "value", "")
         if status in ("queued", "running"):
             return
+        if self._chats is not None:
+            self._chats.wake()            # the page's questions that waited
         self.answer_waiting_soon()
 
     def answer_waiting_soon(self) -> None:

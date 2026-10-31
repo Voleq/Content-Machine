@@ -41,6 +41,7 @@
 <div id="app" class="layout" hidden>
   <nav class="tabs" id="tabs" role="tablist" aria-label="Sections" aria-orientation="vertical">
     <button type="button" role="tab" id="tab-btn-home" aria-controls="tab-home" aria-selected="true" tabindex="0" data-tab="home" class="on" title="What waits on you, the queue, and starting a video"><span class="ico" aria-hidden="true">⌂</span><span class="lbl">Home</span><span id="home-count" class="badge soft" hidden></span></button>
+    <button type="button" role="tab" id="tab-btn-chat" aria-controls="tab-chat" aria-selected="false" tabindex="-1" data-tab="chat" title="Ask the local AI about the bot; every conversation is kept"><span class="ico" aria-hidden="true">?</span><span class="lbl">Chat</span><span id="chat-count" class="badge" hidden></span></button>
     <button type="button" role="tab" id="tab-btn-videos" aria-controls="tab-videos" aria-selected="false" tabindex="-1" data-tab="videos" title="Every recent video; open one to work through its steps"><span class="ico" aria-hidden="true">▶</span><span class="lbl">Videos</span></button>
     <button type="button" role="tab" id="tab-btn-ideas" aria-controls="tab-ideas" aria-selected="false" tabindex="-1" data-tab="ideas" title="The backlog, the last screen, the watch list and earnings dates"><span class="ico" aria-hidden="true">✦</span><span class="lbl">Ideas</span></button>
     <button type="button" role="tab" id="tab-btn-calendar" aria-controls="tab-calendar" aria-selected="false" tabindex="-1" data-tab="calendar" title="What went out, what is scheduled, and the free days"><span class="ico" aria-hidden="true">▦</span><span class="lbl">Calendar</span></button>
@@ -93,14 +94,14 @@
           <div class="row end"><button id="send-paste" class="primary" type="button">Send</button></div>
         </section>
         <section class="card span2 ask" aria-labelledby="ask-h">
-          <div class="card-head"><h2 id="ask-h">Ask the bot</h2><span class="meta">the local AI, reading the bot's records and its state right now · it never changes anything</span></div>
+          <div class="card-head"><h2 id="ask-h">Ask the bot</h2><span class="meta">the local AI reads the bot's records and its state right now, and never changes anything · the answer opens in Chat, where every conversation is kept</span></div>
           <form id="ask-form" class="ask-form">
             <label for="ask-q" class="sr-only">Your question</label>
             <input id="ask-q" class="grow" autocomplete="off" required
                    placeholder="What's waiting on me? Which memes do we have? Why did the last render fail?">
-            <button class="primary" type="submit" title="Ctrl+K also asks: type a question and pick Ask">Ask</button>
+            <button class="primary" type="submit" title="Opens a new conversation in Chat. Ctrl+K also asks: type a question and pick Ask">Ask</button>
           </form>
-          <div id="ask-answer" class="ask-answer" aria-live="polite" hidden></div>
+          <div id="ask-recent" class="ask-recent" hidden></div>
         </section>
         <section class="card" aria-labelledby="week-h">
           <div class="card-head"><h2 id="week-h">This week</h2><span class="meta">out in the last 7 days and the next 7</span></div>
@@ -109,6 +110,34 @@
         <section class="card span2" aria-labelledby="queue-h">
           <div class="card-head"><h2 id="queue-h">Render queue</h2><span id="queue-note" class="meta"></span></div>
           <div id="jobs" class="list"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-chat" class="tab" role="tabpanel" aria-labelledby="tab-btn-chat" hidden>
+      <div class="chat-layout">
+        <aside class="chat-side" aria-labelledby="chat-list-h">
+          <div class="chat-side-head">
+            <h2 id="chat-list-h">Conversations <span id="chat-list-count" class="meta"></span></h2>
+            <button id="chat-new" class="sm" type="button" title="Start a new conversation; the old ones stay in this list">+ New</button>
+          </div>
+          <ul id="chat-list" class="chat-list"></ul>
+        </aside>
+        <section class="chat-main" aria-labelledby="chat-title">
+          <div class="chat-head">
+            <h2 id="chat-title">New conversation</h2>
+            <button id="chat-rename" class="ghost sm" type="button" hidden>Rename</button>
+            <button id="chat-delete" class="ghost sm" type="button" hidden>Delete</button>
+          </div>
+          <div id="chat-log" class="chat-log" role="log" aria-label="The conversation"></div>
+          <p id="chat-error" class="chat-error" role="alert" hidden></p>
+          <form id="chat-form" class="chat-form">
+            <label for="chat-q" class="sr-only">Your question</label>
+            <textarea id="chat-q" rows="1" spellcheck="true" autocomplete="off"
+              placeholder="Ask about a video, a render, the library, the settings… Follow-ups read the conversation."></textarea>
+            <button id="chat-send" class="primary" type="submit">Send</button>
+          </form>
+          <p class="meta chat-foot">Enter sends · Shift+Enter for a new line · answered by the local AI on the render box, one question at a time; it never changes anything.</p>
         </section>
       </div>
     </section>
@@ -228,5 +257,6 @@
 <script src="/static/screens/shell.js"></script>
 <script src="/static/screens/pages.js"></script>
 <script src="/static/screens/library.js"></script>
+<script src="/static/screens/chat.js"></script>
 </body>
 </html>

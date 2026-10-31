@@ -1142,8 +1142,9 @@ COMMANDS: tuple[Command, ...] = (
                 "nothing on file. It only reads. Counts and totals are worked "
                 "out by code and never reach the model. While a render runs "
                 "the model waits: the search answers at once and the full "
-                "answer follows when the render ends. Also on Home as Ask "
-                "the bot.")),
+                "answer follows when the render ends. On the web page it is "
+                "the Chat screen: a conversation, every one kept, follow-ups "
+                "read with what came before.")),
     Command("search", "find", "<words>",
             "search everything the bot has saved, no AI", c_find,
             aliases=("find",), doc=(
