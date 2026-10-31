@@ -202,7 +202,9 @@ function renderChat(top = false) {
   const keep = new Map($$(".msg", log).map((n) => [n.dataset.id, n]));
   let prev = null;
   c.messages.forEach((m) => {
-    const sig = `${m.status || ""}|${(m.text || "").length}|${m.stage || ""}|${m.thinking ? 1 : 0}|${m.ahead ?? ""}|${m.note ? 1 : 0}`;
+    // a waiting answer names the render it waits for, and its time left
+    const run = m.status === "waiting" ? (STATE?.jobs || []).find((j) => j.status === "running") : null;
+    const sig = `${m.status || ""}|${(m.text || "").length}|${m.stage || ""}|${m.thinking ? 1 : 0}|${m.ahead ?? ""}|${m.note ? 1 : 0}|${run ? `${run.id}${Math.round((run.progress?.eta_s || 0) / 60)}` : ""}`;
     let node = keep.get(m.id);
     if (!node || node.dataset.sig !== sig) {
       const fresh = m.role === "user" ? userMsg(m) : aiMsg(m);
@@ -227,7 +229,8 @@ function userMsg(m) {
 
 function aiMsg(m) {
   const pending = CHAT_PENDING.includes(m.status);
-  const node = el("article", { class: `msg ai ${m.status || ""}${m.answered === "none" ? " fallback" : ""}`, "data-id": m.id,
+  // "is-" because .waiting, .done and the like already style other things
+  const node = el("article", { class: `msg ai is-${m.status || "done"}${m.answered === "none" ? " is-fallback" : ""}`, "data-id": m.id,
     "aria-busy": pending ? "true" : null, "data-started": String(((m.started || m.at) || Date.now() / 1000) * 1000) });
   const who = m.answered === "code" ? "Counted by the bot's code" : m.answered === "none" ? "The bot (no AI answer)" : "Local AI";
   const bits = [m.answered === "model" && m.model ? m.model : null, m.answered === "model" && m.provider && m.provider !== "ollama" ? "HOSTED" : null,
@@ -245,7 +248,12 @@ function aiMsg(m) {
     node.append(el("p", { class: "meta", text: "This is what the bot found without the AI. Ask again once it is fixed; Settings shows whether the local AI is reachable." }));
   } else if (m.text) {
     const body = el("div", { class: "md" }, md(m.text, cites));
-    if (m.status === "thinking") body.append(el("span", { class: "caret", "aria-hidden": "true" }));
+    if (m.status === "thinking") {
+      // at the end of the last line written, not on a line of its own
+      let at = body.lastElementChild || body;
+      while (at.lastElementChild && /^(UL|OL)$/.test(at.tagName)) at = at.lastElementChild;
+      at.append(el("span", { class: "caret", "aria-hidden": "true" }));
+    }
     node.append(body);
   }
   if (m.status === "failed") node.append(el("p", { class: "msg-why", text: `It broke while answering: ${m.error || "no reason given"}. Ask again; if it keeps failing, the bot's log has the details.` }));
@@ -418,6 +426,7 @@ function renderHomeChats() {
 
 // ------------------------------------------------------------- the screen
 SCREEN_LOAD.chat = () => {
+  sizeBox();
   renderChat(true);
   loadChats();
   if (CHAT_ID) openChat(CHAT_ID, { quiet: true }); else newChat({ quiet: true });

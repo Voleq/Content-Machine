@@ -59,6 +59,12 @@ def _mid() -> str:
     return "m" + secrets.token_hex(5)
 
 
+def _plain(text) -> str:
+    """An answer on one line without its markdown, for the list."""
+    text = re.sub(r"[*`]+|^#+\s*|^\s*[-•]\s+", "", str(text or ""), flags=re.M)
+    return " ".join(text.split())
+
+
 def title_of(text: str) -> str:
     """A conversation's name: its first question, cut at a word."""
     t = " ".join(text.split())
@@ -141,7 +147,7 @@ class Chats:
                 "questions": sum(1 for m in msgs if m.get("role") == "user"),
                 "pending": pending.get("status") if pending else None,
                 "unread": bool(answered) and max(answered) > (chat.get("seen") or 0),
-                "last": " ".join(str((last or {}).get("text", "")).split())[:90],
+                "last": _plain((last or {}).get("text", ""))[:90],
             })
         rows.sort(key=lambda r: r["updated"], reverse=True)
         return rows[:LISTED]
