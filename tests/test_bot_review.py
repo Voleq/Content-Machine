@@ -582,3 +582,30 @@ def test_a_question_asked_while_one_is_answered_knows_its_place(settings,
         gate.set()
         chats.close()
         _time.sleep(0.1)
+
+
+def test_the_inbox_retention_button_opens_the_video_on_the_line(settings):
+    """The inbox lists each video whose retention is ready; its button sent
+    the ticker alone, which `/stats retention` reads as the ticker's newest
+    upload — a clip or a short gone up since, often too new to have any. The
+    upload card's buttons carry the video since 24 Oct; this one did not."""
+    from datetime import datetime, timedelta, timezone
+
+    from bot.keyboards import inbox_keyboard
+    from pipeline.video_state import inbox
+    from pipeline.youtube import VideoLog, VideoRecord
+
+    now = datetime.now(timezone.utc)
+    log_ = VideoLog(settings)
+    log_.record(VideoRecord(ticker="EXMPL", video_id="longvid0001",
+                            title="the long", privacy="public", fmt="long",
+                            uploaded_at=(now - timedelta(days=5)).isoformat(),
+                            workdate="2026-10-20"))
+    log_.record(VideoRecord(ticker="EXMPL", video_id="shortvid001",
+                            title="the short", privacy="public", fmt="short",
+                            uploaded_at=(now - timedelta(hours=20)).isoformat(),
+                            workdate="2026-10-30"))
+    items = [i for i in inbox(settings, now=now) if i.section == "retention"]
+    assert [i.text.split(" (")[0] for i in items] == ["the long"]
+    button = inbox_keyboard(items).inline_keyboard[0][0]
+    assert button.callback_data == "rt|EXMPL|longvid0001"

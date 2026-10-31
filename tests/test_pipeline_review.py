@@ -747,3 +747,88 @@ def test_before_the_open_yesterday_s_volume_is_not_news(settings):
     assert evaluate({**q, "sessionStarted": False}, settings) == []
     assert [a.kind for a in evaluate({**q, "sessionStarted": True},
                                      settings)] == ["volume"]
+
+
+# --------------------------------------------------------------------------
+# Cleanup
+# --------------------------------------------------------------------------
+
+def test_a_video_delivered_yesterday_is_kept_whatever_its_folder_date(settings):
+    """`_delivered/` is the local backend's only copy, pruned by the folder's
+    date — the day the video was STARTED. A long started three weeks ago and
+    delivered last night went at 04:30. The workspace pass learnt this on
+    24 Oct (a folder written to inside the window is in use); this one had
+    not."""
+    import os as _os
+    from datetime import date, timedelta
+
+    from pipeline.cleanup import cleanup
+
+    live = settings.model_copy(update={"delivered_retention_days": 14})
+    started = (date.today() - timedelta(days=21)).isoformat()
+    fresh = live.workspace_dir / "_delivered" / "EXMPL" / started
+    fresh.mkdir(parents=True)
+    (fresh / "long_final.mp4").write_bytes(b"video")
+    stale = live.workspace_dir / "_delivered" / "OLDCO" / started
+    stale.mkdir(parents=True)
+    old = stale / "long_final.mp4"
+    old.write_bytes(b"video")
+    month_ago = time.time() - 30 * 86400
+    _os.utime(old, (month_ago, month_ago))
+    _os.utime(stale, (month_ago, month_ago))
+    cleanup(live)
+    assert (fresh / "long_final.mp4").exists(), "delivered yesterday"
+    assert not stale.exists(), "a month untouched is past the window"
+
+
+def test_tags_are_counted_the_way_youtube_counts_them():
+    """YouTube counts a tag with a space in it as if it were quoted, and the
+    commas between tags: "Foo Baz" is nine characters, "Foo-Baz" seven. The
+    check counted a comma per tag and no quotes, so a list it passed could
+    be refused at upload."""
+    from pipeline.youtube import TAGS_MAX_CHARS, tags_length, validate_package
+
+    assert tags_length(["Foo Baz"]) == 9
+    assert tags_length(["Foo-Baz"]) == 7
+    assert tags_length(["a b", "c"]) == 5 + 1 + 1
+    tags = ["free cash flow"] * 30          # 14 chars each, 16 as counted
+    assert sum(len(t) + 1 for t in tags) <= TAGS_MAX_CHARS < tags_length(tags)
+    assert any("tags" in p for p in validate_package("A title", "", tags))
+
+
+# --------------------------------------------------------------------------
+# The sameness gate
+# --------------------------------------------------------------------------
+
+_SCAFFOLD = (
+    "{name} is down {move} percent today. Revenue grew from {r0} to {r1} over "
+    "four years, and the margin went from {m0} percent to {m1} percent. The "
+    "market is paying {pe} times earnings for a company that has not made "
+    "money since twenty eighteen. {name} says the recovery is on track. I have "
+    "read the ten K twice and I still do not see it. Noise or signal? My "
+    "answer is noise, and I will come back to it when the next quarter prints.")
+
+
+def test_a_script_re_tickered_with_its_figures_spoken_is_still_the_same():
+    """The gate masked figures written in digits, and narration is written
+    for the ear: "sixty two billion". The same script with a new ticker and
+    new figures — the case the gate exists for — scored 0.40, a warning,
+    where the docstring's own calibration says the same scaffolding scores
+    above 0.8."""
+    from pipeline.corpus import SAMENESS_BLOCK, SAMENESS_WARN, jaccard, shingles
+
+    boeing = _SCAFFOLD.format(
+        name="Boeing", move="ten point seven", r0="sixty two billion",
+        r1="ninety five billion", m0="minus four", m1="minus two", pe="sixty")
+    apple = _SCAFFOLD.format(
+        name="Apple", move="three point two",
+        r0="three hundred and sixty five billion",
+        r1="three hundred ninety one billion", m0="twenty five",
+        m1="thirty one", pe="thirty")
+    other = ("Costco raised its membership fee and nobody left. That is the "
+             "whole thesis, and it has been for a decade: people pay to shop "
+             "there and then shop there more. The stock trades at fifty times "
+             "earnings, which is expensive for a supermarket and cheap for a "
+             "habit.")
+    assert jaccard(shingles(boeing), shingles(apple)) >= SAMENESS_BLOCK
+    assert jaccard(shingles(boeing), shingles(other)) < SAMENESS_WARN

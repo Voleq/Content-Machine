@@ -99,7 +99,8 @@ def test_jaccard_of_an_empty_side_is_zero():
 
 
 def test_a_script_shorter_than_the_window_still_shingles():
-    assert shingles("Two words") == {("two", "words")}
+    # Not a number word: those are masked like digits ("two" is "#").
+    assert shingles("Short words") == {("short", "words")}
 
 
 # ---------------------------------------------------------------- comparison

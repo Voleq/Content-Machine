@@ -145,10 +145,19 @@ def validate_package(title: str, description: str,
     if size > DESCRIPTION_MAX:
         problems.append(
             f"the description is {size} bytes (max {DESCRIPTION_MAX})")
-    total_tags = sum(len(t) + 1 for t in tags)
+    total_tags = tags_length(tags)
     if total_tags > TAGS_MAX_CHARS:
         problems.append(f"tags total {total_tags} chars (max {TAGS_MAX_CHARS})")
     return problems
+
+
+def tags_length(tags: Sequence[str]) -> int:
+    """The tag list's length as YouTube counts it against `TAGS_MAX_CHARS`:
+    the commas between tags, and a tag with a space in it as if it were
+    quoted ("Foo Baz" is nine characters, "Foo-Baz" seven)."""
+    tags = [str(t) for t in tags]
+    return (sum(len(t) + (2 if " " in t else 0) for t in tags)
+            + max(len(tags) - 1, 0))
 
 
 def local_time(when: str, settings) -> str:

@@ -58,15 +58,30 @@ _SENTENCE_END_RE = re.compile(
     r"(?:(?<=[.!?])|(?<=[.!?][\"')\]]))\s+|\n+")
 
 
+# A FIGURE SAID IN WORDS, as narration is written ("sixty two billion",
+# "three hundred and ninety one"): a run of number words, "and" allowed
+# inside it. Only digits were masked, so the same script with a new ticker
+# and its own figures scored 0.40 — a warning — where the calibration below
+# has the same scaffolding above 0.8.
+_SAID_NUMBER = (r"(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|"
+                r"eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|"
+                r"eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|"
+                r"eighty|ninety|hundred|thousand|million|billion|trillion|"
+                r"point)")
+_SAID_NUM_RE = re.compile(
+    rf"\b{_SAID_NUMBER}(?:(?:[\s-]+|\s+and\s+){_SAID_NUMBER})*\b", re.I)
+
+
 def mask_data(text: str) -> str:
     """The script with its figures and names replaced by placeholders.
 
     What survives is the scaffolding: the connectives, the framing, the
     rhetorical moves. Two scripts that say the same thing about different
     companies collapse onto the same text here, which is the whole point —
-    that collapse is the signal.
+    that collapse is the signal. Figures in digits and in words both go.
     """
     masked = _NUM_RE.sub(" # ", text)
+    masked = _SAID_NUM_RE.sub(" # ", masked)
     masked = _TICKER_RE.sub(" # ", masked)
     return masked
 

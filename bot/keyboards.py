@@ -192,7 +192,10 @@ def inbox_keyboard(items: list, limit: int = 6) -> InlineKeyboardMarkup:
         elif it.action == "upload" and d:
             data, label = f"c|{t}|{d}", f"{t}: upload…"
         elif it.action == "retention":
-            data, label = f"rt|{t}", f"{t}: retention"
+            # The video on the line, as the upload card's button does: the
+            # ticker alone is its newest upload.
+            vid = getattr(it, "video_id", "")
+            data, label = f"rt|{t}" + (f"|{vid}" if vid else ""), f"{t}: retention"
         elif d:
             data, label = f"c|{t}|{d}", f"{t}: card"
         else:

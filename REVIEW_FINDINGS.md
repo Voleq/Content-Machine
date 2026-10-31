@@ -60,6 +60,7 @@ has a regression test in `tests/test_bot_review.py` that failed before it.
 | The Check step's Save why sent no ticker: a reason starting with another video's ticker was saved there, first word gone | sends `TICKER@DATE` |
 | The page priced Render buttons when the voice was already paid for | `_step_approve`, `_step_render` |
 | A question asked on the page's chat while another was being answered had no place in line until that answer was done (the worker rebuilt the order between answers only); CI caught it as an intermittent `KeyError: 'ahead'` | `Chats._join_line`, the order built under the chat lock |
+| The inbox's retention button sent the ticker alone, which reads as its newest upload — not the video on the line, and often one too new to have any retention | `InboxItem.video_id`, `inbox_keyboard` |
 
 ## Review of everything outside the bot (31 Oct 2026)
 
@@ -88,6 +89,9 @@ engine, after the bot's. Each fix has a regression test in
 | Filing and IR excerpts kept `&#8220;`, `&mdash;` and the rest as written | `sources._strip_html` (`html.unescape`, apostrophe kept plain) |
 | A yield or ownership share written as text ("1.5%", a CSV) read as 1.5, a 150% yield | `company_data._as_fraction` |
 | The company's name was matched as letters: "Metals rally" was a headline about Meta | `CompanyData.names_company` |
+| The sameness gate masked figures written in digits, and narration spells them out: the same script with a new ticker and new figures scored 0.40, a warning, where its own calibration puts the same scaffolding above 0.8 (0.70 now, a block; a different script stays at 0) | `corpus.mask_data` masks figures said in words |
+| With `DELIVERED_RETENTION_DAYS` set, `_delivered/` (the local backend's only copy) was pruned by the folder's date — when the video was started — so a long delivered last night went at 04:30, the mistake the workspace pass had already been cured of | `cleanup`: by the folder's last write |
+| Tags were counted with a comma each and no quotes, where YouTube counts a tag with a space as quoted ("Foo Baz" is nine): a list the check passed could be refused (today's eight tags are far under) | `youtube.tags_length` |
 
 Three older tests changed with the fixes. `test_standing.py` built margins
 as fractions (0.40) where the History sheet holds percents (58.0), and pinned
