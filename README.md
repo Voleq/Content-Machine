@@ -1187,7 +1187,7 @@ env var, case-insensitive).
   authored narrow (≤ ~22 chars/line) so the 9:16 repurpose crop keeps
   them intact.
 - **Owned meme library first**: `assets/meme_library/meme_index.json`
-  maps 36 descriptively-named memes to tags + a one-line "use when";
+  maps 41 descriptively-named memes to tags + a one-line "use when";
   `[MEME: key]` matches by stem or tag. Giphy/Tenor/imgflip are only
   consulted on a miss, and only when configured. A meme on screen in one of
   the last six videos (either lane) is left off the writer's list and blocked
