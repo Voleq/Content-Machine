@@ -605,7 +605,7 @@ def test_the_repurpose_job_asks_for_reuse_only(settings):
 
     from bot.handlers import BotCore
 
-    src = inspect.getsource(BotCore._execute_job)
+    src = inspect.getsource(BotCore._execute_kind)
     repurpose = src.split("no finished LONG render to repurpose")[1][:900]
     assert "cached_only=True" in repurpose
     assert "self.tts.is_cached" not in repurpose, \
