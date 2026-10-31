@@ -1000,6 +1000,102 @@ def move_price(session, day: dict | None, script=None) -> str | None:
     return None
 
 
+# ---------------------------------------------------------------------------
+# The multiple the cheap-or-trap line is about
+# ---------------------------------------------------------------------------
+
+# The valuation multiples a writer names, most specific first: the Snapshot
+# field that holds today's figure, the peer table's name for it, and the ways
+# it is written or said ("EV/EBITDA", "seventy times EBITDA").
+_MULTIPLES: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
+    ("EV/EBITDA", "ev_ebitda", "EV/EBITDA",
+     (r"ev\s*/\s*ebitda", r"enterprise value to ebitda", r"ebitda multiple",
+      r"times\s+(?:its\s+|the\s+)?ebitda")),
+    ("EV/sales", "ev_sales", "",
+     (r"ev\s*/\s*(?:sales|revenue)", r"enterprise value to (?:sales|revenue)")),
+    ("EV/FCF", "ev_fcf", "",
+     (r"ev\s*/\s*(?:fcf|free cash flow)",)),
+    ("P/FCF", "p_fcf", "",
+     (r"p\s*/\s*fcf", r"price to free cash flow",
+      r"times\s+(?:its\s+)?free cash flow")),
+    ("P/S", "ps_ttm", "P/S (TTM)",
+     (r"p\s*/\s*s(?![a-z])", r"price to sales",
+      r"times\s+(?:its\s+)?(?:sales|revenue)")),
+    ("forward P/E", "forward_pe", "",
+     (r"forward\s+p\s*/\s*e(?![a-z])", r"times\s+forward\s+earnings")),
+    ("P/E", "pe_ttm", "P/E (TTM)",
+     (r"p\s*/\s*e(?![a-z])", r"(?<![a-z])pe(?![a-z])", r"price to earnings",
+      r"earnings multiple", r"times\s+(?:its\s+)?earnings")),
+    ("P/B", "pb", "",
+     (r"p\s*/\s*b(?![a-z])", r"price to book", r"times\s+(?:its\s+)?book")),
+)
+
+
+def named_multiple(text: str) -> tuple[str, str, str] | None:
+    """The valuation multiple a line names first: `(label, field, peer name)`.
+
+    "Net debt is 9.8 times EBITDA" is leverage, not a price, so a mention
+    in the same clause as "debt" just before it does not count ("debt fell,
+    yet seventy times EBITDA" is a price).
+    """
+    low = " ".join(str(text or "").lower().split())
+    best = None
+    for label, fld, peer, pats in _MULTIPLES:
+        for pat in pats:
+            for m in re.finditer(pat, low):
+                before = low[max(0, m.start() - 25):m.start()]
+                if "debt" in before and not re.search(
+                        r"[,;:]|\.(?!\d)", before[before.rfind("debt"):]):
+                    continue
+                if best is None or m.start() < best[0]:
+                    best = (m.start(), (label, fld, peer))
+                break
+    return best[1] if best else None
+
+
+def times(v: float) -> str:
+    """A multiple as a card prints it: 70x, 9.1x."""
+    return f"{v:.0f}×" if abs(v) >= 10 else f"{v:.1f}×"
+
+
+def multiple_statements(data, text: str) -> dict[str, str] | None:
+    """`structure/both-true`'s two lines for a cheap-or-trap line that names a
+    multiple (31 Oct 2026, Valentin: the card showed revenue then and now
+    while the voice was on EV/EBITDA and the growth it implies).
+
+    `heavy` is the multiple today, off the Snapshot; `light` is what that
+    price asks for, off the reverse DCF, or else where the peers trade.
+    `{}` when the line names a multiple the workbook cannot put a figure to
+    (nothing is better than another figure under those words); None when it
+    names none.
+    """
+    named = named_multiple(text)
+    if named is None:
+        return None
+    label, fld, peer = named
+    vals = getattr(data, "values", {}) or {} if data is not None else {}
+    v = vals.get(fld)
+    if not isinstance(v, (int, float)) or v <= 0:
+        return {}
+    light = None
+    ig = ((getattr(data, "valuation", {}) or {}).get("implied_growth")
+          if data is not None else None)
+    if isinstance(ig, (int, float)):
+        # Short enough for the statement boxes on both cards (34 characters
+        # on `structure/confession-statement`): the reverse DCF's growth is
+        # in cash, every year, for good.
+        light = f"Priced for {_pct(ig)} growth, forever."
+    elif peer:
+        row = next((r for r in (getattr(data, "peer_percentiles", None) or [])
+                    if isinstance(r, dict) and r.get("metric") == peer), None)
+        med = (row or {}).get("median")
+        if isinstance(med, (int, float)) and med > 0:
+            light = f"Its peers trade at {times(med)}."
+    if light is None:
+        return {}
+    return {"heavy": f"{label} is {times(v)} today.", "light": light}
+
+
 CARDS = {
     "implied": implied,
     "week52": week52,

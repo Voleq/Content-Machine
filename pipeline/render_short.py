@@ -806,6 +806,19 @@ class ShortResolver:
             if re.search(r"(?<![a-z])(p/e|pe|p/s|p/b|p/fcf|multiple|ev/\w*|price)(?![a-z])", lab):
                 pick = r
                 break
+        # NO ROW IS A MULTIPLE, BUT THE LINE NAMES ONE (31 Oct 2026). The
+        # card took the sheet's first row, so "seventy times EBITDA assumes
+        # nine point four percent growth" was said over "Revenue is $94.9B
+        # now. It was $62.3B." The multiple the line names is put up instead,
+        # with what that price asks for; one the workbook has no figure for
+        # leaves the card to its other drawing, never to another figure.
+        if pick is None and which in ("heavy", "light"):
+            from pipeline.short_data import multiple_statements
+
+            said = multiple_statements(
+                self.data, str(getattr(self.script, "cheap_or_trap", "") or ""))
+            if said is not None:
+                return said.get(which)
         pick = pick or (rows[0] if rows else None)
         if pick is None:
             return None
