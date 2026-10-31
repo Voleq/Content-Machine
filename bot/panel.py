@@ -344,9 +344,7 @@ class Panel:
                 "lists": {k: [{"symbol": r.get("symbol"), "name": r.get("name", ""),
                                "change": r.get("change"), "price": r.get("price")}
                               for r in sa.tradeable(lists.get(k) or [], self.settings, 5)]
-                          for k in ("gainers", "losers", "premarket_up",
-                                    "premarket_down", "afterhours_up",
-                                    "afterhours_down")}}
+                          for k, _title in sa.MOVER_LISTS}}
 
     def week(self) -> list[dict]:
         """What went out in the last seven days and goes out in the next
@@ -464,7 +462,8 @@ def _handler_for(panel: Panel):
                     since = int((query.get("since") or ["0"])[0] or 0)
                     return self._json({"events": [e.to_json() for e in
                                                   panel.feed.since(since)],
-                                       "seq": panel.feed.last_seq})
+                                       "seq": panel.feed.last_seq,
+                                       "epoch": panel.feed.epoch})
                 if url.path == "/api/help":
                     fam = (query.get("family") or [""])[0]
                     return self._json({"text": cmds.help_text(

@@ -134,7 +134,19 @@ class _Book:
     def add(self, key: str, lines: list[str], *, ticker: str = "",
             workdate: str = "", fmt: str = "") -> int:
         """Remember one video's lines. A video already remembered adds
-        nothing, so a final rendered twice is not counted twice."""
+        nothing, so a final rendered twice is not counted twice.
+
+        Under `standing`'s lock: a delivery remembering its jokes and the
+        page saving the edited list each read the book whole and wrote it
+        whole, and the second write lost the first."""
+        from pipeline.standing import _LOCK
+
+        with _LOCK:
+            return self._add(key, lines, ticker=ticker, workdate=workdate,
+                             fmt=fmt)
+
+    def _add(self, key: str, lines: list[str], *, ticker: str,
+             workdate: str, fmt: str) -> int:
         from pipeline.standing import _write
 
         if not key or self.has(key):
@@ -169,6 +181,12 @@ class _Book:
         a tab left open, the edit dropped it (scan, 24 Oct 2026). And each
         video stays on record as remembered, its lines removed or not, so a
         final rendered again does not add them back."""
+        from pipeline.standing import _LOCK
+
+        with _LOCK:
+            return self._replace_all(texts, was)
+
+    def _replace_all(self, texts: list[str], was: list[str] | None) -> int:
         from pipeline.standing import _write
 
         clean = lambda t: " ".join(str(t or "").split())  # noqa: E731
@@ -193,8 +211,17 @@ class _Book:
 class JokeBook(_Book):
     filename = JOKES_FILE
 
+    def index(self) -> list[tuple[Remembered, set[str]]]:
+        """Every joke with its content words, worked out once: a check of a
+        whole script asks about every sentence, and each used to re-read the
+        file and re-split every joke in it (four seconds at a thousand
+        jokes, and the book is kept whole)."""
+        return [(joke, _content_words(joke.text)) for joke in self.all()]
+
     def repeats(self, sentence: str, *, overlap: float = 0.6,
-                skip: tuple[str, str] | None = None) -> list[Remembered]:
+                skip: tuple[str, str] | None = None,
+                index: list[tuple[Remembered, set[str]]] | None = None,
+                ) -> list[Remembered]:
         """Used jokes this sentence re-tells: most of the joke's own content
         words are back, in any order — the same analogy with its nouns moved
         is the same analogy. `skip` is (ticker, workdate) of the video being
@@ -203,10 +230,9 @@ class JokeBook(_Book):
         if len(have) < 3:
             return []
         hits = []
-        for joke in self.all():
+        for joke, want in (index if index is not None else self.index()):
             if skip and (joke.ticker.upper(), joke.workdate) == skip:
                 continue
-            want = _content_words(joke.text)
             if len(want) < 4:
                 continue
             if len(have & want) / len(want) >= overlap:
@@ -425,7 +451,8 @@ def joke_reuse_lint(narration: str, settings: Settings, *,
     24 Oct 2026)."""
     try:
         book = JokeBook(settings)
-        if not book.all():
+        index = book.index()
+        if not index:
             return []
     except Exception as e:                         # noqa: BLE001
         log.debug("used jokes unreadable (%s)", e)
@@ -433,7 +460,7 @@ def joke_reuse_lint(narration: str, settings: Settings, *,
     findings: list[Finding] = []
     for lineno, line in enumerate(narration.splitlines(), 1):
         for said in _sentences(line):
-            prior = book.repeats(said, skip=skip)
+            prior = book.repeats(said, skip=skip, index=index)
             if prior:
                 p = prior[-1]
                 where = (f"{p.ticker} on {p.workdate}" if p.ticker

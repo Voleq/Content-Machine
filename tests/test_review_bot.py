@@ -107,7 +107,8 @@ def test_the_angle_tap_flags_quotes_against_no_thesis(settings, monkeypatch):
     seen: list[str] = []
     monkeypatch.setattr(core, "_company_data", lambda ws: object())
     monkeypatch.setattr(core, "_auto_filings", lambda ws, angle: seen.append(angle))
-    monkeypatch.setattr(core, "_long_write_reply", lambda ws, header: header)
+    monkeypatch.setattr(core, "_long_write_reply",
+                        lambda ws, header, **kw: header)
     core._intake_angle(ws, "2")
     assert seen == [""] and ws.chosen_angle() == "2"
 

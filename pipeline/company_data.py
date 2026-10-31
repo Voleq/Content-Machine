@@ -58,6 +58,8 @@ from pipeline.models import (
     PERIOD_LABEL_FIELDS,
     QUARTER_FIELDS,
     CompanyData,
+    _FRACTION_DASHBOARD,
+    _FRACTION_FIELDS,
     _STRING_FIELDS,
 )
 
@@ -180,7 +182,21 @@ def _coerce(field: str, raw) -> str | float | None:
     val = _num(raw)
     if val is None:
         log.warning("company data field %s: cannot coerce %r to number", field, raw)
+    elif field in _FRACTION_FIELDS:
+        val = _as_fraction(raw, val)
     return val
+
+
+def _as_fraction(raw, val: float) -> float:
+    """A fraction field written as a percentage, read as the fraction.
+
+    A yield or an ownership share is held as a fraction (0.015), as a
+    percent-formatted cell reads. Written as text — a CSV export, a text
+    cell — "1.5%" coerced to 1.5: a 150% dividend yield in the prompt. Only
+    the fraction fields: a margin on the History sheet is held as a percent
+    already, and "58%" there is 58.
+    """
+    return val / 100.0 if isinstance(raw, str) and "%" in raw else val
 
 
 def _text_or_none(raw) -> str | None:
@@ -881,6 +897,8 @@ def _read_dashboard(ws) -> dict[str, object]:
             out[label] = text.lower()
         else:
             num = _num(raw)
+            if num is not None and label in _FRACTION_DASHBOARD:
+                num = _as_fraction(raw, num)
             out[label] = num if num is not None else text
     return out
 

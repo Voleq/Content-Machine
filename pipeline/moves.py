@@ -316,29 +316,39 @@ def _frames(reg, plate, move: str) -> tuple[int, str | None]:
 
 def _said_forms(figure: str) -> list[list[str]]:
     """How a figure may be heard: as the prompts ask ("twenty-nine percent",
-    "three point one billion") and as digits, for a script that slipped."""
-    from pipeline.spoken import say_decimals, say_integer
+    "three point one billion"), as `voice_lint` tells the writer to say it
+    ("one dollar and twenty cents"), and as digits, for a script that slipped.
+
+    A TRAILING ZERO IS NEVER SAID. A card prints a per-share figure to two
+    places ("$1.20") and a multiple to one ("12.0x"); listened for as "one
+    point two zero" and "twelve point zero times", neither was ever heard, and
+    each counted up when the shot opened instead of on its word."""
+    from pipeline.spoken import say_decimals, say_integer, said_words
 
     m = re.search(r"(\d[\d,]*)(?:\.(\d+))?", figure)
     if not m:
         return []
     whole = int(m.group(1).replace(",", ""))
-    said = say_integer(whole).split() + (say_decimals(m.group(2)).split()
-                                         if m.group(2) else [])
+    frac = (m.group(2) or "").rstrip("0")
+    said = say_integer(whole).split() + (say_decimals(frac).split()
+                                         if frac else [])
     tail = figure[m.end():].strip().lower().rstrip(")")
     unit = _UNIT_WORDS.get(tail[:3].strip(), _UNIT_WORDS.get(tail[:2].strip(),
                            _UNIT_WORDS.get(tail[:1], "")))
     words = [_norm(w) for w in said]
     if unit:
         words.append(unit)
-    forms = [words[:4]]
-    digits = m.group(0).replace(",", "")
-    forms.append([digits] + ([unit] if unit and unit != "percent" else []))
+    spoken = [_norm(w) for w in said_words(figure)]
+    forms = [f for f in (spoken[:4], words[:4]) if f]
     # A bare single word ("three", "ten") with no unit to follow it is too
     # common to hear as THE figure; it is only taken as digits.
-    if len(forms[0]) == 1 and whole < 100:
-        forms = forms[1:]
-    return [f for f in forms if f]
+    if whole < 100:
+        forms = [f for f in forms if len(f) > 1]
+    digits = m.group(0).replace(",", "")
+    for d in dict.fromkeys((digits, digits.rstrip("0").rstrip(".")
+                            if "." in digits else digits)):
+        forms.append([d] + ([unit] if unit and unit != "percent" else []))
+    return [list(f) for f in dict.fromkeys(tuple(f) for f in forms if f)]
 
 
 def _heard(words: Sequence, forms: list[list[str]], lo: float, hi: float) -> float | None:

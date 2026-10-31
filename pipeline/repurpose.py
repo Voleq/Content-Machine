@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Sequence
 
@@ -293,17 +294,25 @@ def _cut_window(long_mp4: Path, start: float, end: float, out_path: Path,
     # spent hours on the GPU did three more clips on the CPU. It uses the
     # same profile as a SHORT final now.
     profile = encode_profile(settings, "short")
-    run_ffmpeg([
-        "-ss", f"{start:.3f}", "-t", f"{length:.3f}", "-i", str(long_mp4),
-        "-vf",
-        f"crop=trunc(ih*{W}/{H}/2)*2:ih,scale={W}:{H}:flags=lanczos,setsar=1"
-        + (f",{_ass_filter(ass, settings)}" if ass is not None else ""),
-        "-af", f"afade=t=in:st=0:d=0.25,afade=t=out:st={max(length - 0.4, 0):.3f}:d=0.4",
-        *profile.video_args(),
-        "-c:a", "aac", "-b:a", settings.audio_bitrate,
-        "-movflags", "+faststart",
-        str(out_path),
-    ])
+    # INTO A PART FILE, THEN RENAMED. Encoded straight to its name, a clip
+    # stopped half way (an update stops the bot mid-job, a kill) was a half
+    # file named like a finished clip, and the video card counted it as one.
+    part = out_path.with_name(f"{out_path.stem}.part{out_path.suffix}")
+    try:
+        run_ffmpeg([
+            "-ss", f"{start:.3f}", "-t", f"{length:.3f}", "-i", str(long_mp4),
+            "-vf",
+            f"crop=trunc(ih*{W}/{H}/2)*2:ih,scale={W}:{H}:flags=lanczos,setsar=1"
+            + (f",{_ass_filter(ass, settings)}" if ass is not None else ""),
+            "-af", f"afade=t=in:st=0:d=0.25,afade=t=out:st={max(length - 0.4, 0):.3f}:d=0.4",
+            *profile.video_args(),
+            "-c:a", "aac", "-b:a", settings.audio_bitrate,
+            "-movflags", "+faststart",
+            str(part),
+        ])
+        os.replace(part, out_path)
+    finally:
+        part.unlink(missing_ok=True)
     return out_path, {
         "source": str(long_mp4),
         "window": [start, end],

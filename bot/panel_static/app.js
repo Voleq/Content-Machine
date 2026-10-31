@@ -17,6 +17,7 @@ let REGISTRY = null;
 let STATE = null;
 let LAST_RAW = "";
 let FEED_SEQ = 0;
+let FEED_EPOCH = "";              // which run of the bot FEED_SEQ counts in
 let FEED = [];                    // every event since boot, oldest first
 let FEED_FILTER = "pushes";
 let UNREAD = 0;
@@ -226,6 +227,7 @@ async function start() {
   const feed = await api("/api/feed?since=0");
   feed.events.forEach((ev) => { ev._id = ++FEED_ID; FEED.push(ev); });
   FEED_SEQ = feed.seq;
+  FEED_EPOCH = feed.epoch || "";
   renderFeed();
   chatBoot();
   restoreActions();
@@ -1241,7 +1243,14 @@ const pollFeed = single(pollFeedNow);
 async function pollFeedNow() {
   if (document.hidden) return;
   try {
-    const data = await api(`/api/feed?since=${FEED_SEQ}`);
+    let data = await api(`/api/feed?since=${FEED_SEQ}`);
+    // The bot restarted: its numbers start again at one, so the new run's
+    // feed is read from its start. Asked from the old run's count, its first
+    // pushes were skipped, and Activity never showed them.
+    if (data.epoch && data.epoch !== FEED_EPOCH) {
+      if (FEED_EPOCH) data = await api("/api/feed?since=0");
+      FEED_EPOCH = data.epoch;
+    }
     if (data.events.length) {
       data.events.forEach((ev) => { ev._id = ++FEED_ID; FEED.push(ev); });
       if (FEED.length > 600) FEED = FEED.slice(-600);

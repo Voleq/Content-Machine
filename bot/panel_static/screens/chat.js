@@ -309,10 +309,10 @@ function tickChat() {
   });
 }
 
-async function copyText(text, btn) {
-  try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; } catch { btn.textContent = "Select and copy it"; }
-  setTimeout(() => { btn.textContent = "Copy"; }, 1500);
-}
+// Copying an answer uses video.js's `copyText`, the page's one copy helper.
+// A second one declared here replaced it for every screen, being loaded
+// last: the workspace's copy buttons came back reading "Copy", whatever they
+// said before, and lost the copy that works without the clipboard API.
 
 async function chatAct(path, m, btn) {
   if (!CHAT) return;

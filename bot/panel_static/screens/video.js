@@ -367,7 +367,11 @@ STEPS_UI.data = (d) => {
 // the call passages the writer is shown.
 function siteBlock(x) {
   if (!x) return el("p", { class: "meta", text: "stockanalysis.com is read when the prompt is made." });
-  const read = (t) => (t || "").slice(0, 16).replace("T", " ");
+  // When each part was read is kept in UTC: shown in this computer's time,
+  // like every other time on the page. The coverage keeps the market's clock,
+  // New York, as the prompt does. Both used to print as stored, unlabelled.
+  const read = (t) => (t ? when(t) : "");
+  const et = (t) => (t ? `${String(t).slice(0, 16).replace("T", " ")} ET` : "");
   const again = el("button", { type: "button", class: "sm", text: "Fetch again", title: "Reads every part again; then make the prompt again to use it",
     onclick: (e) => vRun(x.refresh, e.currentTarget, `stockanalysis.com · ${VID.t}`).then(() => loadVideo(true)) });
   const head = el("div", { class: "row" }, el("b", { text: "From stockanalysis.com" }),
@@ -380,7 +384,7 @@ function siteBlock(x) {
     : el("p", { class: "meta", text: "The workbook's last five quarters agree with the site." });
   const filled = (x.filled || []).length ? el("p", { class: "meta", text: `Filled from the site where the workbook was blank: ${x.filled.join(", ")}` }) : null;
   const news = (x.news || []).length ? el("details", {}, el("summary", { text: `The coverage (${x.news.length} newest)` }),
-    el("ul", { class: "site-news" }, x.news.map((n) => el("li", {}, el("span", { class: "meta", text: `${read(n.time)} · ${n.source}${n.kind === "release" ? " · press release" : ""} · ` }),
+    el("ul", { class: "site-news" }, x.news.map((n) => el("li", {}, el("span", { class: "meta", text: `${et(n.time)} · ${n.source}${n.kind === "release" ? " · press release" : ""} · ` }),
       n.url ? el("a", { href: n.url, target: "_blank", rel: "noopener", text: n.title }) : n.title)))) : null;
   const c = x.call;
   const call = c && (c.passages || []).length ? el("details", {}, el("summary", { text: `${c.title} (${c.date}): ${c.passages.length} passages, picked by ${c.picked_by || "keyword scoring"}` }),
@@ -573,8 +577,11 @@ STEPS_UI.check = (d) => {
   const why = el("textarea", { rows: 3, placeholder: "In your own words: why this video is worth making. It prints above Approve and rides the description." });
   why.value = d.why || "";
   why.addEventListener("input", () => { why.dataset.dirty = "1"; });
+  // Named outright: `/script why` takes a first word that is a ticker with
+  // a folder as the video, so "TSLA is cheap because…" was saved on TSLA's
+  // newest folder without its first word.
   side.push(why, el("div", { class: "row end" }, el("button", { type: "button", class: "sm", text: "Save why", onclick: (e) => {
-    if (why.value.trim()) vRun(`/script why ${why.value.replace(/\n+/g, " ")}`, e.currentTarget, `Why → ${VID.t}`).then(() => delete why.dataset.dirty);
+    if (why.value.trim()) vRun(`/script why ${VID.t}@${VID.d} ${why.value.replace(/\n+/g, " ")}`, e.currentTarget, `Why → ${VID.t}`).then(() => delete why.dataset.dirty);
   } })));
   const tools = el("div", { class: "row" },
     el("button", { type: "button", class: "sm", text: "Undo last change", title: "Puts back the script as it was before your last save, and runs the checks on it", disabled: !d.revisions,

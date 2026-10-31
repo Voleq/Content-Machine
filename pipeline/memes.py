@@ -384,12 +384,14 @@ def normalize_meme(src: Path, dest: Path) -> Path:
     """
     from PIL import Image
 
+    from pipeline.broll import save_whole
+
     dest.parent.mkdir(parents=True, exist_ok=True)
     img = Image.open(src)
     if getattr(img, "is_animated", False):
         img.seek(0)
-    img.convert("RGB").save(dest, format="PNG")
-    return dest
+    # Whole or not at all: the meme cache is "does the file exist".
+    return save_whole(img.convert("RGB"), dest)
 
 
 class MemeManager:

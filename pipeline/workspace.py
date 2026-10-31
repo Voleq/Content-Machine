@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 from contextvars import ContextVar
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -418,6 +419,11 @@ PINNED: ContextVar[tuple[str, str] | None] = ContextVar("pinned_video", default=
 class ActiveContext:
     """Which workspace a chat's pasted scripts/uploads belong to."""
 
+    # One change at a time: the page's request threads and Telegram's
+    # command threads all set it, and the second save of two at once threw
+    # the first chat's video away.
+    _lock = threading.Lock()
+
     def __init__(self, settings: Settings):
         self.settings = settings
         self.path = settings.state_dir / "active_context.json"
@@ -429,9 +435,10 @@ class ActiveContext:
             return {}
 
     def set(self, chat_id: int, ticker: str, workdate: str) -> None:
-        data = self._load()
-        data[str(chat_id)] = {"ticker": ticker.upper(), "workdate": workdate}
-        _write(self.path, json.dumps(data, indent=2))
+        with self._lock:
+            data = self._load()
+            data[str(chat_id)] = {"ticker": ticker.upper(), "workdate": workdate}
+            _write(self.path, json.dumps(data, indent=2))
 
     def get(self, chat_id: int) -> Workspace | None:
         pinned = PINNED.get()

@@ -852,22 +852,30 @@ def company_block(workspace: Path) -> str:
     return "\n".join(lines)
 
 
-def coverage_lines(workspace: Path, since: _dt.date | None = None) -> list[str]:
-    """The coverage around the move, oldest first, with the minute it ran."""
+def coverage_items(workspace: Path, since: _dt.date | None = None) -> list[dict]:
+    """The coverage around the move (articles and press releases), oldest
+    first."""
     pack = load(workspace)
     items = [n for n in (pack or {}).get("news") or []
              if n.get("kind") in ("article", "release")]
     if since is not None:
         items = [n for n in items if str(n.get("date", "")) >= since.isoformat()]
-    out = []
-    for n in sorted(items, key=lambda n: str(n.get("time", ""))):
-        when = str(n.get("time", ""))[:16].replace("T", " ")
-        kind = " (press release)" if n.get("kind") == "release" else ""
-        line = f"  {when} ET · {n.get('source') or 'source n/a'}{kind} · {n.get('title', '')}"
-        if n.get("summary"):
-            line += f" — {n['summary'][:220]}"
-        out.append(line)
-    return out
+    return sorted(items, key=lambda n: str(n.get("time", "")))
+
+
+def coverage_line(n: dict) -> str:
+    """One story as the prompt lists it, with the minute it ran."""
+    when = str(n.get("time", ""))[:16].replace("T", " ")
+    kind = " (press release)" if n.get("kind") == "release" else ""
+    line = f"  {when} ET · {n.get('source') or 'source n/a'}{kind} · {n.get('title', '')}"
+    if n.get("summary"):
+        line += f" — {n['summary'][:220]}"
+    return line
+
+
+def coverage_lines(workspace: Path, since: _dt.date | None = None) -> list[str]:
+    """The coverage around the move, oldest first, with the minute it ran."""
+    return [coverage_line(n) for n in coverage_items(workspace, since)]
 
 
 def news_rows(workspace: Path | None) -> list[dict]:

@@ -46,11 +46,12 @@ class FakeData:
 
 def test_a_thesis_pins_the_numbers_it_rests_on(settings):
     book = ThesisBook(settings)
-    data = FakeData({"price": 10.0, "market_cap": 1e9, "gross_margin": 0.40})
+    # A margin as the History sheet holds it: a percent (O2).
+    data = FakeData({"price": 10.0, "market_cap": 1e9, "gross_margin": 40.0})
     t = book.record("exmpl", "cheap for a reason", data)
     assert t.ticker == "EXMPL"
     assert t.numbers["price"] == 10.0
-    assert t.numbers["gross_margin"] == 0.40
+    assert t.numbers["gross_margin"] == 40.0
     assert book.get("EXMPL").summary == "cheap for a reason"
 
 
@@ -63,8 +64,8 @@ def test_a_small_drift_is_not_reported(settings):
     """Reporting every wiggle is how you train the operator to ignore the
     notification — the real failure mode of anything that watches numbers."""
     book = ThesisBook(settings)
-    book.record("EXMPL", "t", FakeData({"price": 10.0, "gross_margin": 0.40}))
-    _, moves = book.check("EXMPL", FakeData({"price": 10.4, "gross_margin": 0.41}))
+    book.record("EXMPL", "t", FakeData({"price": 10.0, "gross_margin": 40.0}))
+    _, moves = book.check("EXMPL", FakeData({"price": 10.4, "gross_margin": 41.0}))
     assert moves == []
     assert book.get("EXMPL").status == "intact"
 
@@ -81,21 +82,21 @@ def test_a_material_move_is_reported_with_the_numbers(settings):
 def test_thresholds_differ_by_metric(settings):
     """A margin moving 3 points is not the same event as a price moving 3%."""
     book = ThesisBook(settings)
-    book.record("EXMPL", "t", FakeData({"price": 10.0, "gross_margin": 0.40}))
-    # +8% on both: nothing for the price, material for the margin
-    _, moves = book.check("EXMPL", FakeData({"price": 10.8, "gross_margin": 0.432}))
+    book.record("EXMPL", "t", FakeData({"price": 10.0, "gross_margin": 40.0}))
+    # +8% on the price is nothing; 3.2 points on the margin is material
+    _, moves = book.check("EXMPL", FakeData({"price": 10.8, "gross_margin": 43.2}))
     assert [m.field for m in moves] == ["gross_margin"]
 
 
 def test_the_status_escalates_with_the_damage(settings):
     book = ThesisBook(settings)
-    base = {"price": 10.0, "gross_margin": 0.40, "fcf": 100.0, "shares_out": 50.0}
+    base = {"price": 10.0, "gross_margin": 40.0, "fcf": 100.0, "shares_out": 50.0}
     book.record("EXMPL", "t", FakeData(base))
 
-    book.check("EXMPL", FakeData({**base, "gross_margin": 0.30}))
+    book.check("EXMPL", FakeData({**base, "gross_margin": 30.0}))
     assert book.get("EXMPL").status == "cracking"
 
-    book.check("EXMPL", FakeData({**base, "gross_margin": 0.20, "fcf": 40.0,
+    book.check("EXMPL", FakeData({**base, "gross_margin": 20.0, "fcf": 40.0,
                                   "shares_out": 70.0}))
     assert book.get("EXMPL").status == "broken"
 
@@ -569,20 +570,20 @@ def test_prior_coverage_carries_the_claims_and_what_moved(settings):
     from bot.prompts import prior_coverage
 
     book = ThesisBook(settings)
-    book.record("EXMPL", "the value trap", FakeData({"gross_margin": 0.744}),
+    book.record("EXMPL", "the value trap", FakeData({"gross_margin": 74.4}),
                 workdate="2026-05-01", fmt="long",
                 hook="Revenue has not moved in five years.",
                 conclusion="Noise. Set a reminder for the next 10-Q.",
                 claims=["Margins hold", "The buyback is real"])
-    book.check("EXMPL", FakeData({"gross_margin": 0.652}))
+    book.check("EXMPL", FakeData({"gross_margin": 65.2}))
 
     block = prior_coverage(settings, "EXMPL")
     assert "(LONG)" in block
     assert 'It concluded, VERBATIM: "Noise. Set a reminder for the next 10-Q."' in block
     assert "- Margins hold" in block and "- The buyback is real" in block
     assert "Thesis status: cracking" in block
-    # rendered by Move.render(), not by a second formatter
-    assert "gross_margin ↓12%" in block
+    # rendered by Move.render(), not by a second formatter, and in points
+    assert "gross_margin ↓9.2 pts" in block
     assert "NOT ON FILE" not in block
 
 
@@ -606,14 +607,14 @@ def covered(settings, workspace):
     """A workspace for a ticker with a real thesis on file, already checked."""
     book = ThesisBook(settings)
     book.record("EXMPL", "cheap for a reason, and the reason hasn't changed",
-                FakeData({"gross_margin": 0.744, "price": 10.0}),
+                FakeData({"gross_margin": 74.4, "price": 10.0}),
                 workdate="2026-05-01", fmt="long",
                 hook="Revenue has not moved in five years.",
                 conclusion="Noise. A press release and a squeeze, stapled to "
                            "five years of drift.",
                 claims=["The margin is the thesis",
                         "Capital allocation: the buyback that is not one"])
-    book.check("EXMPL", FakeData({"gross_margin": 0.652, "price": 13.4}))
+    book.check("EXMPL", FakeData({"gross_margin": 65.2, "price": 13.4}))
     return workspace
 
 
@@ -631,7 +632,7 @@ def test_the_update_prompt_fills_end_to_end(settings, covered):
     # the previous video is the SPINE, not an appendix
     assert "PRIOR COVERAGE" in text
     assert 'It concluded, VERBATIM: "Noise. A press release' in text
-    assert "gross_margin ↓12%" in text
+    assert "gross_margin ↓9.2 pts" in text
     # the four movements, in order
     for i, movement in enumerate(("WHAT I SAID", "WHAT HAPPENED",
                                   "WAS I RIGHT", "WHAT NOW")):
@@ -694,7 +695,7 @@ def test_an_uncovered_ticker_says_so_rather_than_faking_a_history(
 def test_the_notice_names_the_command_not_just_the_conclusion(settings):
     """"An update video is warranted" told the operator a conclusion and left
     them to work out what to type. What they typed was /long."""
-    moves = [Move(field="gross_margin", before=0.744, after=0.652)]
+    moves = [Move(field="gross_margin", before=74.4, after=65.2)]
     assert "/update EXMPL" in update_warranted(moves, "exmpl")
     # and it still stands alone when nobody passed a ticker
     assert "warranted" in update_warranted(moves)
@@ -785,8 +786,8 @@ def test_a_moved_thesis_is_exempt_from_the_cooldown(settings):
     _covered_recently(settings, "EXMPL")
     book = ThesisBook(settings)
     book.record("EXMPL", "the margin is the thesis",
-                FakeData({"gross_margin": 0.744}))
-    book.check("EXMPL", FakeData({"gross_margin": 0.652}))   # -12%, cracking
+                FakeData({"gross_margin": 74.4}))
+    book.check("EXMPL", FakeData({"gross_margin": 65.2}))    # -9.2 pts, cracking
 
     result = screener.run_screen(settings, "all")
     assert "EXMPL" in result["updates"]

@@ -212,7 +212,16 @@ def cleanup(settings: Settings, dry_run: bool = False) -> dict:
     if delivered_days > 0:
         delivered = settings.workspace_dir / "_delivered"
         d_cutoff = date.today() - timedelta(days=delivered_days)
+        d_written = time.time() - delivered_days * 86400
         for ddir in _old_date_dirs(delivered, d_cutoff):
+            # BY WHEN IT WAS DELIVERED, as the workspace pass above: the
+            # folder's date is when the video was STARTED, and a long begun
+            # three weeks ago and delivered last night went at 04:30.
+            try:
+                if _newest_write(ddir) >= d_written:
+                    continue
+            except OSError:
+                continue
             freed += sum(p.stat().st_size for p in ddir.rglob("*") if p.is_file())
             removed_dirs += 1
             log.info("prune delivered %s", ddir)

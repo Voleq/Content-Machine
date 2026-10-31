@@ -32,6 +32,7 @@ import difflib
 import inspect
 import json
 import logging
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -162,6 +163,10 @@ class ChatState:
     button is waiting for ("reply with the time to schedule it")."""
 
     PENDING_TTL_S = 15 * 60
+    # ONE CHANGE AT A TIME. The page and Telegram each run commands in a
+    # thread of their own; both read this file, and the second save threw
+    # away the first one's question or wizard step.
+    _lock = threading.Lock()
 
     def __init__(self, settings):
         self.path = Path(settings.state_dir) / "chat_state.json"
@@ -177,14 +182,15 @@ class ChatState:
         return self._load().get(str(chat_id), {}) or {}
 
     def _put(self, chat_id: int, key: str, value) -> None:
-        data = self._load()
-        entry = data.get(str(chat_id), {}) or {}
-        if value is None:
-            entry.pop(key, None)
-        else:
-            entry[key] = value
-        data[str(chat_id)] = entry
-        _write(self.path, json.dumps(data, indent=2))
+        with self._lock:
+            data = self._load()
+            entry = data.get(str(chat_id), {}) or {}
+            if value is None:
+                entry.pop(key, None)
+            else:
+                entry[key] = value
+            data[str(chat_id)] = entry
+            _write(self.path, json.dumps(data, indent=2))
 
     # the wizard
     def wizard(self, chat_id: int) -> dict:

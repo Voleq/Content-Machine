@@ -22,10 +22,14 @@ The next-step buttons (one tap to the obvious next thing):
     rt|<ticker>[|<video id>]          retention for that upload (the newest without)
     cr|<ticker>[|<video id>]          pin a correction on it (asks for the text)
     cp|<ticker>[|<video id>]          post the correction shown
+    cx                                drop the correction shown, unposted
     c|<ticker>|<date>                 the video card
     j|<ticker>|<date>                 cancel that video's jobs
+    jx|<job id>                       cancel that one job (a queue row)
     z                                 undo the last cancel (within a minute)
     ib                                the inbox
+    kz / kz! / kz-                    `/admin usage`'s prune: ask, prune, keep
+    pq                                drop the question the bot is waiting on
 """
 
 from __future__ import annotations
@@ -188,7 +192,10 @@ def inbox_keyboard(items: list, limit: int = 6) -> InlineKeyboardMarkup:
         elif it.action == "upload" and d:
             data, label = f"c|{t}|{d}", f"{t}: upload…"
         elif it.action == "retention":
-            data, label = f"rt|{t}", f"{t}: retention"
+            # The video on the line, as the upload card's button does: the
+            # ticker alone is its newest upload.
+            vid = getattr(it, "video_id", "")
+            data, label = f"rt|{t}" + (f"|{vid}" if vid else ""), f"{t}: retention"
         elif d:
             data, label = f"c|{t}|{d}", f"{t}: card"
         else:

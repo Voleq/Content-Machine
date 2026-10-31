@@ -495,14 +495,16 @@ def test_the_calendar_day_is_the_market_s_day_not_utc(settings):
 
     ny = ZoneInfo(settings.screen_timezone)
     cal = EarningsCalendar(settings)
-    cal.set("EXMPL", "2026-07-29", "amc")
+    # No time given, so nothing but the DAY decides it. (An `amc` print is
+    # out by 8pm, and reads as reported then: see test_pipeline_review.)
+    cal.set("EXMPL", "2026-07-29", "")
 
     evening = datetime(2026, 7, 29, 20, 0, tzinfo=ny)
     assert evening.astimezone(timezone.utc).date() == date(2026, 7, 30), \
         "fixture setup: the two calendars must disagree here"
 
     out = cal.due_alerts(evening)
-    assert len(out) == 1 and "after the close" in out[0].headline, \
+    assert len(out) == 1 and "reports today" in out[0].headline, \
         "it is still the 29th where the market is"
 
 

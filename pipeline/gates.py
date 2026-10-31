@@ -2874,9 +2874,18 @@ def reachable_plates(reg) -> dict[str, set[str]]:
     # media frames have no other route: a reader needs to know which of the
     # three reaches a plate, not which one got there first.
     by_code: set[str] = set()
+    # THE RENDERER'S OWN SOURCE, beside this file. `Path("pipeline")` was the
+    # working directory's: started anywhere but the repo, the scan read
+    # nothing and every plate the code reaches by name was reachable by none.
     source = "\n".join(
         path.read_text(encoding="utf-8", errors="ignore")
-        for path in sorted(Path("pipeline").glob("*.py")))
+        for path in sorted(Path(__file__).resolve().parent.glob("*.py")))
+    literals = _QuotedPrefixes(source)
+    # Every plate a slot names, collected once. Asked per plate, it walked
+    # every slot of the library for each of them: ten million steps and most
+    # of the twelve seconds `/kit doctor` took.
+    overlaid = {slot.overlay for other in reg.assets.values()
+                for slot in other.slots.values() if slot.overlay}
     for key, _stroke in SCRIBBLE_MARKS.values():
         if key in reg:
             by_code.add(key)
@@ -2884,8 +2893,7 @@ def reachable_plates(reg) -> dict[str, set[str]]:
         # Anchored on the OPENING quote, so `f"frames/capture-frame-{aspect}"`
         # counts and a key named in a comment does not.
         stem = key.rsplit("-16x9", 1)[0].rsplit("-9x16", 1)[0]
-        if any(f'{q}{name}' in source
-               for q in ('"', "'") for name in ({key, stem})):
+        if any(literals.opens(name) for name in {key, stem}):
             by_code.add(key)
         # AN OVERLAY FETCHED BY ITS MOVE'S NAME. The wipes are asked for as
         # `"wipe-sweep"` and prefixed where they are looked up
@@ -2899,10 +2907,8 @@ def reachable_plates(reg) -> dict[str, set[str]]:
         # A plate another plate's SLOT names. `overlays/row-band` is reached
         # by neither a template nor a source literal: a sheet's row slot
         # declares it as its `overlay`, and the renderer follows that.
-        for other in reg.assets.values():
-            if any(slot.overlay == key for slot in other.slots.values()):
-                by_code.add(key)
-                break
+        if key in overlaid:
+            by_code.add(key)
 
     # A POSE THE WORDS CAST. `host.cast_pose` stands him in one of these, in
     # either lane, when what he says gives its cue (a count, a "but", the
@@ -2941,6 +2947,32 @@ def reachable_plates(reg) -> dict[str, set[str]]:
         by_tag.update(k for k in (key, f"{key}-talk", f"{key}-idle",
                                   f"{key}-blink") if k in reg)
     return {"template": by_template, "tag": by_tag, "code": by_code}
+
+
+class _QuotedPrefixes:
+    """Does `"name` or `'name` appear in `source`? Asked of every plate.
+
+    Each key used to be searched for as a substring of all of `pipeline/`
+    (three megabytes, four searches a plate). The text after every opening
+    quote is taken once instead, as far as a plate key's own characters run,
+    and sorted: a name follows some quote exactly when one of those runs
+    starts with it, and in sorted order that run is the first one not below
+    the name.
+    """
+
+    _KEY = r"A-Za-z0-9/_.-"
+
+    def __init__(self, source: str):
+        self.source = source
+        self.runs = sorted(set(re.findall(rf"(?<=[\"'])[{self._KEY}]+", source)))
+
+    def opens(self, name: str) -> bool:
+        if not re.fullmatch(rf"[{self._KEY}]+", name):
+            return any(f"{q}{name}" in self.source for q in ('"', "'"))
+        import bisect
+
+        i = bisect.bisect_left(self.runs, name)
+        return i < len(self.runs) and self.runs[i].startswith(name)
 
 
 def kit_doctor(script, settings: Settings, *,

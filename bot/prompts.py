@@ -1099,23 +1099,54 @@ def why_it_moved_block(ctx: "_Ctx") -> str:
                       f"coverage of it. The figures in it are the reported "
                       f"ones, which the workbook may not carry yet:",
                   f"\"{day.release_text}\""]
-    if day.headlines:
-        lines += ["", "HEADLINES DATED AROUND THE MOVE (newest first):"]
-        lines += [f"  {h.get('date', '')} · {h.get('source') or 'source n/a'}"
-                  f" · {h.get('headline', '')}" for h in day.headlines]
+    # ONE STORY, ONE LINE. The site's coverage joins the workbook's News on
+    # load, so each of its stories was also a dated headline here: the same
+    # story read as two sources. It is listed once, with its minute, below.
     coverage = _coverage(ctx)
+    covered = {_story(n.get("title")) for n in coverage}
+    fresh = [h for h in day.headlines
+             if _story(h.get("headline")) not in covered]
+    # The ones naming the company first; the rest marked as what they are
+    # (`move_kind.classify`), the way the company-data block marks them.
+    named = [h for h in fresh if h.get("named", True)][:HEADLINES_SHOWN]
+    other = [h for h in fresh
+             if not h.get("named", True)][:HEADLINES_SHOWN - len(named)]
+
+    def line(h: dict) -> str:
+        return (f"  {h.get('date', '')} · {h.get('source') or 'source n/a'}"
+                f" · {h.get('headline', '')}")
+
+    if named or other:
+        lines += ["", "HEADLINES DATED AROUND THE MOVE (newest first):"]
+        lines += [line(h) for h in named]
+        if other:
+            lines += ["  not naming the company (market news that may only "
+                      "mention it; never the reason for its move unless a "
+                      "named headline says so):"]
+            lines += ["  " + line(h) for h in other]
     if coverage:
+        from pipeline.site_pack import coverage_line
+
         lines += ["", "THE COVERAGE BY THE MINUTE (oldest first, New York time; "
                       "the outlet that ran each one, and what it said). Read "
                       "the order: what came out before the open is what the "
                       "market traded on, and what came after is the press "
                       "explaining a move already made. A press release is "
-                      "the company's own words:", *coverage]
+                      "the company's own words:",
+                  *(coverage_line(n) for n in coverage)]
     lines += ["", WHY_RULE, "", WHY_BY_KIND.get(day.kind, WHY_BY_KIND[MOVE])]
     return "\n".join(lines)
 
 
-def _coverage(ctx: "_Ctx") -> list[str]:
+HEADLINES_SHOWN = 8
+
+
+def _story(title) -> str:
+    """A headline as two copies of one story compare equal."""
+    return " ".join(str(title or "").split()).lower()
+
+
+def _coverage(ctx: "_Ctx") -> list[dict]:
     """The site's coverage in the day's window (`pipeline.site_pack`)."""
     from datetime import timedelta
 
@@ -1132,7 +1163,7 @@ def _coverage(ctx: "_Ctx") -> list[str]:
         except ValueError:
             since = date.today() - timedelta(days=1)
     try:
-        return site_pack.coverage_lines(ctx.workspace, since)[:14]
+        return site_pack.coverage_items(ctx.workspace, since)[:14]
     except Exception:                                    # noqa: BLE001
         return []
 

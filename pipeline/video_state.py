@@ -408,6 +408,9 @@ class InboxItem:
     workdate: str
     text: str
     action: str = ""               # the button the card would offer
+    # THE VIDEO ON THE LINE, for a line about one upload: the ticker alone
+    # means its newest upload, which is not always the one listed.
+    video_id: str = ""
 
     def to_json(self) -> dict:
         return asdict(self)
@@ -479,7 +482,7 @@ def inbox(settings: Settings, now: datetime | None = None,
             continue
         items.append(InboxItem("retention", v.ticker, v.workdate,
                                f"{v.title[:50]} ({age / 24:.0f} days up)",
-                               "retention"))
+                               "retention", video_id=v.video_id))
     for b in BatchQueue(settings).pending():
         if b.error:
             items.append(InboxItem("failed", b.ticker, "",
