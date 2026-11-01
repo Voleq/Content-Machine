@@ -133,6 +133,57 @@ def normalize_slug(payload: str) -> str:
     return payload.strip().lower().replace(" ", "-")
 
 
+# A SCREEN IS NOT A PHOTOGRAPH (RDDT long, 1 Nov 2026). [IMG] and [PRODUCT]
+# search Wikimedia Commons for photographs, and a Reddit thread, an app's
+# feed or a page of Google results is never there: four beats drew a blank
+# card. Such a tag becomes a [CLIP] of the same words (someone scrolling a
+# feed, a search on a laptop), and the operator can drop a real screenshot
+# named for it, which then plays instead, as a [SCREENGRAB].
+# Words that only ever name a screen. Not "dashboard", "interface" or a bare
+# "feed": a car's dashboard and a sack of cattle feed are photographs.
+_SCREEN_WORDS_RE = re.compile(
+    r"\b(?:screens?|screenshots?|screen ?grabs?|websites?|web ?pages?|"
+    r"home ?pages?|(?:home|news|main|social|app|video) ?feeds?|apps?|"
+    r"search results?|results pages?|search pages?|thread pages?|"
+    r"threads? (?:page|view)|subreddits?|tweets?|browsers?|inbox|"
+    r"answer box|ai overviews?|chatbot (?:answer|window|reply))\b", re.I)
+_SLUG_STOP = frozenset({"a", "an", "the", "on", "of", "with", "and", "in",
+                        "at", "to", "for", "showing", "above", "below", "its"})
+
+
+def is_screen_query(query: str) -> bool:
+    """Whether an [IMG]/[PRODUCT] asks for a screen rather than a photo."""
+    return bool(_SCREEN_WORDS_RE.search(query or ""))
+
+
+def screen_slug(query: str) -> str:
+    """The file name a screenshot for this tag is dropped under:
+    "Reddit app home feed on a phone screen" -> `reddit-app-home-feed-phone`."""
+    words = [w for w in re.findall(r"[a-z0-9]+", (query or "").lower())
+             if w not in _SLUG_STOP]
+    return "-".join(words[:5]) or "screen"
+
+
+def _screen_tag(rt, settings: Settings, warnings: list[str]):
+    """An [IMG]/[PRODUCT] of a screen, turned into what can show one: the
+    operator's screenshot when it is there, a clip of the same words when it
+    is not. Returns (tag, slug) — the slug only while it is still a clip."""
+    import dataclasses
+
+    if rt.type not in (TagType.IMG, TagType.PRODUCT) or not is_screen_query(rt.payload):
+        return rt, ""
+    slug = screen_slug(rt.payload)
+    custom = settings.custom_assets_dir
+    if custom.is_dir() and list(custom.glob(f"{slug}.*")):
+        return dataclasses.replace(rt, type=TagType.SCREENGRAB, payload=slug), ""
+    warnings.append(
+        f"[{rt.type.value}: {rt.payload}] is a website or app screen, and "
+        f"[{rt.type.value}] only finds photographs, so it plays a stock clip "
+        f"of the same words. To show the real screen, drop a screenshot named "
+        f"{slug}.png on the page and paste the script again.")
+    return dataclasses.replace(rt, type=TagType.CLIP), slug
+
+
 # The optional `=== CONFESSION ===` trailer: `kind | the admission`, one line.
 # Declared rather than detected, because six kinds of admission phrased six
 # hundred ways are not reliably findable in prose, and a ledger that cannot say
@@ -364,10 +415,11 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
     # written after it must not quietly land on the plate before it.
     holder_type, holder_plate = "", ""
     for rt in raw_tags:
+        rt, screen = _screen_tag(rt, settings, warnings)
         payload = rt.payload
         style = ""
         hold = 0.0
-        values: dict[str, str] = {}
+        values: dict[str, str] = {"screen": screen} if screen else {}
         beside = ""
         if rt.type in (TagType.PLATE, TagType.CHART):
             # `with=` asks for Dennis beside the evidence (items 30 and 11).

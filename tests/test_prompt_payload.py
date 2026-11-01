@@ -78,7 +78,12 @@ def test_the_long_form_pair_agree_on_what_they_are(settings):
     # go, and its job on that prompt is grading the prior call: "what I
     # said → what happened → was I right → what now" (K5b). That is the
     # spine, not craft or catalogs.
-    spine = {"{{chosen_angle}}", "{{prior_coverage}}", "{{filing_brief}}"}
+    # `{{filing_sentences}}` is the brief's checked sentences without its
+    # survey: the update gets them inside `{{filing_brief}}`, and the write
+    # prompt had nothing to quote once the screenshots were rejected (RDDT
+    # long, 1 Nov 2026), so its writer searched the web for the 10-Q.
+    spine = {"{{chosen_angle}}", "{{prior_coverage}}", "{{filing_brief}}",
+             "{{filing_sentences}}"}
     only_write = payload_tokens("long_write") - payload_tokens("update")
     only_update = payload_tokens("update") - payload_tokens("long_write")
 
@@ -390,3 +395,29 @@ def test_the_short_catalogue_is_the_template_s_plates(settings):
               if ln.startswith("  ") and not ln.startswith("   ")}
     assert listed and all(any(k.endswith("/" + s) for k in only) for s in listed)
     assert len(text) < len(everything) / 5
+
+
+def test_the_write_prompt_quotes_the_filing_from_the_reading(tmp_path):
+    """RDDT long, 1 Nov 2026: with the three filing shots rejected, the write
+    prompt said "none uploaded", and the writer quoted the 10-Q from a web
+    search. The reading's checked sentences go to the writer instead."""
+    from bot.prompts import (filing_quotes_block, filing_sentences_block,
+                             screenshots_line)
+    from pipeline.filing_brief import FilingBrief, Point, save_brief
+
+    empty = filing_sentences_block(tmp_path)
+    assert "web search" in empty
+    assert "upload" not in screenshots_line(tmp_path)
+    assert "rejected" in filing_quotes_block(tmp_path, "long_write")
+    assert "CHOSEN angle" in filing_quotes_block(tmp_path, "long_angle")
+
+    brief = FilingBrief(ticker="RDDT", body="Search traffic fell.")
+    brief.points = [Point(n=1, filing="10-Q 2026-09-30", section="MD&A",
+                          text="AI summaries made referral traffic volatile.",
+                          source="However, the evolution of third-party "
+                                 "search has resulted in increased "
+                                 "volatility in referral traffic.")]
+    save_brief(tmp_path, brief)
+    text = filing_sentences_block(tmp_path)
+    assert "10-Q 2026-09-30 · MD&A" in text
+    assert "“However, the evolution of third-party search" in text

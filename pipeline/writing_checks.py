@@ -206,8 +206,17 @@ def chapter_title_swears(script) -> list[Finding]:
 SHORT_JOKE_FLOOR = 3
 WORDS_PER_MINUTE = 160
 # The longest a long should run without a listed joke. The bible allows one
-# straight stretch of about a minute; past two, the chapter has gone dry.
-DRY_STRETCH_MIN = 2.0
+# straight stretch of about a minute; past three, the chapter has gone dry.
+DRY_STRETCH_MIN = 3.0
+# A long's floor: one joke this many minutes (bible v5 §7). v4's one a minute
+# was met with fifty-six jokes nobody laughed at (RDDT long, 1 Nov 2026).
+LONG_MINUTES_PER_JOKE = 1.5
+# Jokes at Dennis's own expense a long may carry (bible v5 §5), and how often
+# any one declared move may be used (§4).
+SELF_OWNS_MAX = 3
+MOVE_REPEATS_MAX = 2
+# Declared moves that are Dennis being the joke.
+_SELF_OWN_MOVES = ("self-own", "self own", "family benchmark", "mock formula")
 # How close a declared line has to be to something the script says.
 JOKE_MATCH_RATIO = 0.8
 # How many unmatched lines are named before the rest are summed up.
@@ -267,6 +276,38 @@ def find_joke(line: str, said_words: list[str]) -> int | None:
     return where if best >= JOKE_MATCH_RATIO else None
 
 
+def _joke_shapes(declared: list[tuple[str, str]]) -> list[Finding]:
+    """Too many jokes at Dennis's expense, and the same move used past its
+    two (bible v5 §4, §5). The RDDT long listed ten self-owns, and four
+    each of self-own and escalation (1 Nov 2026)."""
+    out: list[Finding] = []
+    moves = [" ".join((m or "").lower().split()) for m, _t in declared]
+    selfish = [t for (m, t), low in zip(declared, moves)
+               if any(k in low for k in _SELF_OWN_MOVES)]
+    if len(selfish) > SELF_OWNS_MAX:
+        out.append(Finding(
+            gate="joke-floor", severity="warn",
+            message=(f"{len(selfish)} jokes at Dennis's own expense (self-owns, "
+                     f"family, his account) — two or three a video, never two "
+                     f"in a chapter; the rest belong to the company, the "
+                     f"market and the crowd. Keep the best "
+                     f"{SELF_OWNS_MAX} and aim the others somewhere else"),
+            excerpt=_excerpt(" · ".join(t[:50] for t in selfish[:6]))))
+    counts: dict[str, int] = {}
+    for low in moves:
+        if low:
+            counts[low] = counts.get(low, 0) + 1
+    over = sorted(((n, m) for m, n in counts.items() if n > MOVE_REPEATS_MAX),
+                  reverse=True)
+    if over:
+        out.append(Finding(
+            gate="joke-floor", severity="warn",
+            message=("the same move used past twice reads as a template: "
+                     + ", ".join(f"{m} ×{n}" for n, m in over)
+                     + " — keep the best two of each")))
+    return out
+
+
 def joke_floor_lint(script, fmt: str) -> list[Finding]:
     """The bible's floor, against the jokes the writer declared.
 
@@ -322,12 +363,14 @@ def joke_floor_lint(script, fmt: str) -> list[Finding]:
                          f"script — a short carries at least {floor}: one at "
                          f"Dennis, one at the crowd, one on the number")))
     else:
-        floor = max(1, int(minutes))
+        floor = max(1, int(minutes / LONG_MINUTES_PER_JOKE))
         if count < floor:
             findings.append(Finding(
                 gate="joke-floor", severity="warn",
                 message=(f"{count} jokes in about {minutes:.0f} minutes — the "
-                         f"floor is one a minute, so at least {floor}")))
+                         f"floor is one every minute and a half, so at least "
+                         f"{floor}")))
+        findings.extend(_joke_shapes(declared))
         # The stretches with nothing listed in them: from the end of one
         # joke to the start of the next, and the two ends of the script.
         marks = sorted(set(found))

@@ -547,6 +547,10 @@ STEPS_UI.check = (d) => {
     el("span", {}, "Runtime ", el("b", { text: d.est_runtime_min ? `${d.est_runtime_min.toFixed(1)} min` : "–" })),
     el("span", {}, "Render ", el("b", { text: d.est_render_min ? `~${Math.round(d.est_render_min)} min` : "–" })),
     d.words ? el("span", {}, "Words ", el("b", { text: String(d.words) })) : null));
+  // One message for the chat that wrote the script: every block and every
+  // warning about the words or the tags, so the writer fixes them in one pass.
+  if (d.fixup_prompt) side.push(el("div", { class: "row" }, copyBtn("Copy a fix-up prompt for your writer", d.fixup_prompt)),
+    el("p", { class: "meta", text: "Paste it into the chat that wrote this script, then paste the script it sends back here. Fact-checks you know are right: press “It's right, let it through” instead." }));
   side.push(el("h4", { text: `What the checks found (${(d.findings || []).length})` }));
   if (!(d.findings || []).length) side.push(el("p", { class: "ok-line", text: d.lines?.length ? "Nothing. Clean." : "No script yet." }));
   Object.entries(groups).forEach(([gate, fs]) => side.push(el("details", { open: fs.some((f) => f.severity === "block") || Object.keys(groups).length < 4, class: "gate" },

@@ -252,3 +252,112 @@ def test_the_bot_lets_a_block_through_and_checks_again(settings):
     after = fact_blocks()
     assert len(after) == len(before) - 1 and before[0] not in after
     assert "⛔" in core.trust_fact(7, "0123456789").text
+
+
+# ------------------------------------------- the RDDT long (1 Nov 2026)
+#
+# Eight blocks on one long, every one a correct figure read against the
+# wrong line: a figure per user or per share, a share of revenue, one
+# segment's revenue, a buyback set against the stock comp, what is left with
+# the stock comp taken out, and a four-year growth rate held to a five-step
+# span. Each test pins the true sentence passing AND a wrong one caught.
+
+
+@pytest.fixture()
+def rddt():
+    """A Reddit-shaped workbook: five years and an LTM, eight quarters."""
+    return CompanyData(
+        values={"company_name": "Reddit, Inc.", "ticker": "RDDT"},
+        history_years=["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
+        history={
+            "revenue": [484.92 * M, 666.7 * M, 804.03 * M, 1300 * M,
+                        2203 * M, 3089 * M],
+            "net_income": [-127.9 * M, -158.55 * M, -90.82 * M, -484.28 * M,
+                           529.72 * M, 991.7 * M],
+            "sbc": [48.73 * M, 55.31 * M, 47.6 * M, 801.65 * M, 343.18 * M,
+                    385.77 * M],
+        },
+        quarter_labels=["Q4 FY24", "Q1 FY25", "Q2 FY25", "Q3 FY25",
+                        "Q4 FY25", "Q1 FY26", "Q2 FY26", "Q3 FY26"],
+        quarters={
+            "revenue": [427.7 * M, 392.4 * M, 499.6 * M, 584.9 * M,
+                        725.61 * M, 663.41 * M, 804.9 * M, 894.96 * M],
+            "net_income": [71.04 * M, 26.16 * M, 89.3 * M, 162.66 * M,
+                           251.6 * M, 203.98 * M, 252.85 * M, 283.26 * M],
+            "sbc": [80 * M, 70 * M, 75 * M, 83.5 * M, 85.18 * M, 68.34 * M,
+                    100.95 * M, 131.31 * M],
+        },
+    )
+
+
+def _rblocks(text, data):
+    return [f for f in fact_check(text, data, ticker="RDDT")
+            if f.severity == "block"]
+
+
+def _notes(text, data):
+    out: list = []
+    fact_check(text, data, ticker="RDDT", unchecked=out)
+    return [why for _n, _s, why in out]
+
+
+def test_a_figure_per_user_or_per_share_is_not_the_line(rddt):
+    for line in ("So revenue per user went from five dollars oh four to six "
+                 "eighty-seven, up thirty-six percent.",
+                 "Revenue per user is up thirty-six percent in a year.",
+                 "Last quarter's earnings were a dollar forty a share.",
+                 "Revenue came to six dollars eighty-seven a head."):
+        assert _rblocks(line, rddt) == [], line
+        assert any("per" in n for n in _notes(line, rddt)), line
+    assert _rblocks("Revenue was up thirty-six percent on the same quarter "
+                    "a year ago.", rddt)
+    assert _rblocks("Last quarter's net income was three hundred and thirty "
+                    "million.", rddt)
+
+
+def test_a_share_of_revenue_is_not_revenue(rddt):
+    line = ("The stock comp line on its own went from fourteen point three "
+            "percent of revenue to fourteen point seven.")
+    assert _rblocks(line, rddt) == []
+    assert any("percent of revenue" in n for n in _notes(line, rddt))
+    # The amount beside the share is still the stock comp's.
+    wrong = _rblocks("Stock comp was fourteen point seven percent of revenue, "
+                     "or a hundred and ninety million dollars last quarter.",
+                     rddt)
+    assert len(wrong) == 1 and "stock comp" in wrong[0].message
+
+
+def test_one_segment_s_revenue_is_not_the_total(rddt):
+    line = ("The ad machine works: ad revenue up fifty-four percent to eight "
+            "hundred and forty-seven million.")
+    assert _rblocks(line, rddt) == []
+    assert any("ad revenue" in n for n in _notes(line, rddt))
+    assert _rblocks("The machine works: revenue up fifty-four percent to "
+                    "eight hundred and forty-seven million.", rddt)
+
+
+def test_a_figure_before_any_metric_is_a_guess_not_a_block(rddt):
+    line = ("Four hundred and eight million dollars over the last twelve "
+            "months, against three hundred and eighty-six million of stock "
+            "comp.")
+    found = fact_check(line, rddt, ticker="RDDT")
+    assert found and all(f.severity == "warn" for f in found)
+    # A recital after its metric is still that metric's, and still blocks.
+    assert _rblocks("Stock comp was forty eight million, then fifty five, "
+                    "then ninety.", rddt)
+
+
+def test_what_is_left_with_the_stock_comp_taken_out_is_not_stock_comp(rddt):
+    line = "Take out the stock comp, which you should, and it's about four sixty."
+    assert _rblocks(line, rddt) == []
+    assert any("take out the stock comp" in n for n in _notes(line, rddt))
+    assert _rblocks("Stock comp was about four sixty million over the last "
+                    "twelve months.", rddt)
+
+
+def test_growth_a_year_over_any_span_of_years_is_checked(rddt):
+    # FY21 to FY25 is 46.0% a year; the only span offered was FY21 to LTM.
+    assert _rblocks("It has grown revenue forty-six percent a year for four "
+                    "years.", rddt) == []
+    assert _rblocks("It has grown revenue a hundred percent a year for four "
+                    "years.", rddt)

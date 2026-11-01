@@ -1014,7 +1014,75 @@ def _mask_decoys(text: str) -> str:
     """Blank out phrases that contain a metric word but name another line."""
     for phrase in _DECOY_PHRASES:
         text = text.replace(phrase, "·" * len(phrase))
+    for _why, rx in _PART_PHRASES:
+        text = rx.sub(_blank, text)
     return text
+
+
+# A METRIC WORD THAT NAMES SOMETHING ELSE (RDDT long, 1 Nov 2026: eight
+# blocks, every one of them a correct figure read against the wrong line).
+# Each of these carries a metric's name and is not a line of the workbook:
+#
+# - a figure PER something: "revenue per user", "earnings per share",
+#   "six eighty-seven a head";
+# - a SHARE of a line: "fourteen point seven percent of revenue";
+# - a PART of a line: "ad revenue", "subscription sales" — the workbook
+#   holds the total, never the segment;
+# - a line TAKEN OUT: "take out the stock comp and it's about four sixty" is
+#   what is left, not the stock comp.
+#
+# All four are masked like the decoys above, so the metric is not named,
+# and the sentence is listed on the report as not checked, with why.
+_ALL_METRIC_WORDS = sorted({w for names in _SPOKEN_METRIC_WORDS.values()
+                            for w in names}, key=len, reverse=True)
+_METRIC_ALT = "|".join(re.escape(w) for w in _ALL_METRIC_WORDS)
+_PER_QUALIFIER = (r"(?:(?:daily|monthly|weekly|active|average|paying|"
+                  r"logged[- ]in|logged[- ]out|unique|diluted|basic|single|"
+                  r"new|u\.?s\.?|global|international|domestic)\s+){0,3}")
+_PER_UNIT = (r"(?:users?|heads?|shares?|subscribers?|customers?|members?|"
+             r"employees?|accounts?|visitors?|uniques?|persons?|people|units?|"
+             r"seats?|stores?|daus?|maus?|daqs?|daus?q|households?|"
+             r"vehicles?|deliver(?:y|ies)|orders?|rides?|trips?|"
+             r"square (?:foot|feet|metre|meter))")
+_PER_UNIT_RE = re.compile(
+    rf"\b(?:{_METRIC_ALT})\s+(?:per|a|an|each)\s+{_PER_QUALIFIER}{_PER_UNIT}\b")
+# "a dollar forty a share", "six eighty-seven a head", "$1.40 per diluted
+# share": the figure itself is per something.
+_PER_UNIT_TAIL_RE = re.compile(
+    rf"^\s*(?:dollars?|cents?|bucks)?\s*(?:per|a|an|each)\s+{_PER_QUALIFIER}"
+    rf"{_PER_UNIT}\b")
+_SHARE_OF_LINE_RE = re.compile(
+    rf"\b(?:percent|per cent|%|share|proportion|fraction|portion|slice)\s+of"
+    rf"\s+(?:(?:its|their|the|total|all|net|quarterly|annual|yearly)\s+)?"
+    rf"(?:{_METRIC_ALT})\b")
+_SEGMENT_RE = re.compile(
+    r"\b(?:ad|ads|advert|advertising|subscriptions?|licens(?:ing|e)|"
+    r"data[- ]licensing|other|segment|services?|product|cloud|hardware|"
+    r"software|recurring|transaction|commission|interest|fee|international|"
+    r"domestic|u\.s\.|north american|european|emea|apac|platform|"
+    r"marketplace|gaming|mobile|digital|retail|wholesale|merchandise|"
+    r"membership|royalty|royalties|licensing and other)\s+(?:revenues?|sales)\b")
+_TAKEN_OUT_RE = re.compile(
+    rf"\b(?:(?:take|takes|taking|took|strip|strips|stripping|stripped|leave|"
+    rf"leaves|leaving|back|backs|backing)\s+out|excluding|ex-|net of|"
+    rf"without|minus)\s+(?:the\s+|all\s+(?:the\s+)?|that\s+)?"
+    rf"(?:{_METRIC_ALT})\b")
+_PART_PHRASES: tuple[tuple[str, "re.Pattern[str]"], ...] = (
+    ("a figure per user, per share or per head", _PER_UNIT_RE),
+    ("a share of a line, not the line", _SHARE_OF_LINE_RE),
+    ("one part of revenue, which the workbook does not split out", _SEGMENT_RE),
+    ("what is left with a line taken out, not the line", _TAKEN_OUT_RE),
+)
+
+
+def _part_of_a_line(low: str) -> str:
+    """Why a sentence's metric word names something the workbook has no row
+    for, or "" when it names the line itself."""
+    for why, rx in _PART_PHRASES:
+        m = rx.search(low)
+        if m:
+            return f"“{m.group(0).strip()}”: {why}"
+    return ""
 
 
 def _metric_spans(masked: str, words: dict | None = None
@@ -1143,7 +1211,10 @@ def _owner_of(number_start: int, number_end: int, tail: str,
         before = {m: at for m, at in named.items() if at[1] <= number_start}
         if before:
             return max(before, key=lambda m: before[m][1]), True
-        return nearest, True
+        # A recital is the series GOING ON. With no metric before it there
+        # is no series: "Four hundred and eight million over the last twelve
+        # months, against three hundred and eighty-six million of stock
+        # comp" is a buyback set against the stock comp, not more of it.
     return nearest, False
 
 
@@ -1371,6 +1442,23 @@ def _judge(data, metric: str, sentence: str, value: float, percent: bool,
             if a > 0 and b > 0:
                 rates.append((f"a year since {cols[0][0]}",
                               ((b / a) ** (1 / n) - 1) * 100.0, True))
+        # EVERY SPAN OF YEARS, compared and not printed. "Forty-six percent a
+        # year for four years" is FY21 to FY25, and the only multi-year
+        # rate on offer was FY21 to the LTM column, five steps along (RDDT
+        # long, 1 Nov 2026).
+        if not quarterly:
+            for i in range(len(cols)):
+                for j in range(i + 2, len(cols)):
+                    if (i, j) == (0, len(cols) - 1):
+                        continue
+                    a, b = cols[i][1], cols[j][1]
+                    g = _pct(a, b)
+                    if g is not None:
+                        rates.append((f"{cols[j][0]} vs {cols[i][0]}", g, False))
+                    if a > 0 and b > 0:
+                        rates.append((f"a year, {cols[i][0]} to {cols[j][0]}",
+                                      ((b / a) ** (1 / (j - i)) - 1) * 100.0,
+                                      False))
 
     when = ""
     if qidx:
@@ -1509,8 +1597,12 @@ def fact_check(narration: str, data, *,
             ratio = next((r for r in _RATIO_PHRASES if r in low), "")
             if ratio and spoken_figures(_mask_labels(sentence, labels)):
                 _skip(lineno, sentence, f"{ratio}: a ratio, not a line of the workbook")
+            part = _part_of_a_line(low)
+            if part and spoken_figures(_mask_labels(sentence, labels)):
+                _skip(lineno, sentence, part)
             if not named:
                 continue
+            share_of = bool(_SHARE_OF_LINE_RE.search(low))
             # A period label is not a figure. "In FY-2, revenue was…" carries
             # a 2 that `extract_numbers` reads as a number, and the old
             # magnitude floor hid it — dropping the floor exposed it, so the
@@ -1527,6 +1619,15 @@ def fact_check(narration: str, data, *,
                 if num.is_percent and price_move.search(low[:pos]):
                     continue
                 if _counts_things(low, num):
+                    continue
+                # "A dollar forty a share": the run can end on the "a".
+                tail = low[end:]
+                if num.text.split()[-1] in ("a", "an"):
+                    tail = "a " + tail
+                if _PER_UNIT_TAIL_RE.match(tail):
+                    _skip(lineno, sentence, "a figure per share, per user or "
+                                            "per head, not a line of the "
+                                            "workbook")
                     continue
                 clause = _clause(low, pos, end)
                 if _FORWARD_CLAUSE_RE.search(clause):
@@ -1546,6 +1647,14 @@ def fact_check(narration: str, data, *,
                 metric, sure = _owner_of(pos, end, low[end:], named, low,
                                          figures, percent=num.is_percent)
                 if metric is None:
+                    continue
+                # "From fourteen point three percent of revenue to fourteen
+                # point seven": in a sentence about a share of a line, its
+                # small bare figures are the same share.
+                if (share_of and metric not in _RATE_METRICS
+                        and (num.is_percent or (
+                            not _SCALED_RE.search(num.text)
+                            and abs(num.value) < 100))):
                     continue
                 # A margin IS a share of revenue; only a level's growth is
                 # not what "three percent of revenue" says.

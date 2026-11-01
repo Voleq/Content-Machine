@@ -342,7 +342,6 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long",
     different kind of company than this one (`sector`, the workbook's own
     word for it, folded to GICS).
     """
-    from pipeline.plate_tags import _slot_summary
     from pipeline.plates import PlateError, fold_sector, load_plates
     from pipeline.series import data_menu
 
@@ -392,7 +391,7 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long",
                 lines.append(f"      for: {', '.join(plate.sectors)} companies only")
             if plate.caution:
                 lines.append(f"      caution: {plate.caution}")
-            slots = _slot_summary(plate)
+            slots = _slots_for_writer(plate)
             if slots:
                 lines.append(f"      slots: {slots}"
                              + (_move_marks(plate) if moves else ""))
@@ -416,15 +415,67 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long",
     return "\n".join(lines).strip() or "(no plates in the registry)"
 
 
+def _slots_for_writer(plate) -> str:
+    """The slots a writer fills, each with the characters its box holds:
+    `docref≤38, passage≤110, label-1…5≤22`.
+
+    THE BOX SIZE WAS NEVER SHOWN (RDDT long, 1 Nov 2026): six copy blocks
+    were refused for running past a width the writer could not see, a
+    74-character docref in a box that holds 38. And the areas the plate
+    DRAWS in rather than types in (`diverge-1…4`, a scale's bars, a plot
+    area) were listed beside the text boxes, so figures were typed into
+    them. Those are left off: the drawing is fed by the `data:` line, never
+    by a slot.
+    """
+    import re
+
+    from pipeline.plate_frames import budget
+    from pipeline.plate_tags import _never_typeset
+
+    stems: dict[str, list[tuple[int, int]]] = {}
+    plain: list[tuple[str, int]] = []
+    for name in sorted(plate.slots):
+        slot = plate.slots[name]
+        if _never_typeset(slot) and not slot.is_band:
+            continue
+        try:
+            limit = int(budget(plate, slot).get("maxChars") or 0)
+        except Exception:  # noqa: BLE001 — a size is a help, never a failure
+            limit = 0
+        m = re.match(r"^(.*?)-(\d+)$", name)
+        if m:
+            stems.setdefault(m.group(1), []).append((int(m.group(2)), limit))
+        else:
+            plain.append((name, limit))
+
+    def _fit(limit: int) -> str:
+        return f"≤{limit}" if limit else ""
+
+    parts = [f"{n}{_fit(lim)}" for n, lim in plain]
+    for stem, items in sorted(stems.items()):
+        idx = [i for i, _l in items]
+        limits = [lim for _i, lim in items if lim]
+        span = (f"{stem}-{min(idx)}…{max(idx)}" if len(idx) > 1
+                else f"{stem}-{idx[0]}")
+        parts.append(span + _fit(min(limits) if limits else 0))
+    return ", ".join(parts)
+
+
 # How the catalogue marks the moves. Two symbols on the slot line rather than
 # a "moves:" line per plate: the catalogue is already the largest block in the
 # prompt, and a mark costs a few characters where a line costs forty.
 _MOVE_LEGEND = (
+    "SLOTS — `docref≤38` is the most characters that box holds; longer copy",
+    "is refused. A slot with no number takes a short figure.",
     "MOVES — `[MOVE: name]` right before the word it lands on, acting on the",
     "[PLATE] already on screen (the last one before it). The slot each move",
-    "acts on is marked on the plate's slots line:",
-    "  ◆slot  count-up (counts up to the figure) and pen-circle (rings it) —",
-    "         only when that slot holds exactly one number: $3.1bn, −12%, 14x.",
+    "acts on is marked on the plate's slots line, and a plate does only the",
+    "moves marked on it:",
+    "  ◆slot  count-up (counts up to the figure) or pen-circle (rings it)",
+    "  ↑slot  count-up only: this plate cannot ring a figure",
+    "  ○slot  pen-circle only: this plate cannot count up",
+    "         — all three only when that slot holds exactly one number:",
+    "         $3.1bn, −12%, 14x.",
     "  ▭slot  highlight (marks the passage); zoom-to-slot (pushes into it) on",
     "         paper/ plates only, once a beat.",
     "pen-circle is for the single figure a chapter turns on: at most one a",
@@ -445,7 +496,14 @@ def _move_marks(plate) -> str:
     can = writer_moves(plate)
     number = {can[m] for m in NUMBER_MOVES if m in can}
     passage = {can[m] for m in ("highlight", "zoom-to-slot") if m in can}
-    marks = [f"◆{s}" for s in sorted(number)] + [f"▭{s}" for s in sorted(passage)]
+
+    def _number_mark(slot: str) -> str:
+        counts = can.get("count-up") == slot
+        rings = can.get("pen-circle") == slot
+        return "◆" if counts and rings else "↑" if counts else "○"
+
+    marks = ([f"{_number_mark(s)}{s}" for s in sorted(number)]
+             + [f"▭{s}" for s in sorted(passage)])
     if plate.slot("source") is None and not tag_clear(plate):
         marks.append("✕source")
     return ("  " + "  ".join(marks)) if marks else ""
@@ -730,7 +788,42 @@ def filing_brief_block(workspace: Path) -> str:
     return brief.render_text()
 
 
-def filing_quotes_block(workspace: Path) -> str:
+def filing_sentences_block(workspace: Path) -> str:
+    """The filing reading's checked sentences, for the WRITE prompt.
+
+    The brief went to the angle prompt only, and the write prompt's filing
+    slot held the screenshots' quotes alone. When there were none (RDDT
+    long, 1 Nov 2026: the three shots were rejected), the writer was told
+    "none uploaded", searched the web for the 10-Q's words and asked the
+    operator to check them. Every point the reading kept carries the whole
+    sentence it came from, matched against the filing, and those are the
+    quotes the writer may use.
+    """
+    from pipeline.filing_brief import load_brief
+
+    brief = load_brief(workspace)
+    points = [p for p in (brief.points if brief is not None else [])
+              if (p.source or "").strip()]
+    if not points:
+        why = (brief.reason if brief is not None and brief.reason
+               else "the reading did not finish")
+        return (f"(none — {why}. Quote no filing sentence you were not given "
+                f"here or above: a quote from a web search goes on screen "
+                f"as the company's own words and nobody has checked it.)")
+    lines = ["Each sentence below is the filing's own, matched word for word "
+             "against it by the bot. Quote these and only these: on a paper/ "
+             "plate (filing-page, language-shift, footnote-pull) when no "
+             "[SHOW FILING] screenshot carries it. Never a filing quote from "
+             "a web search."]
+    for p in points:
+        where = " · ".join(x for x in (p.filing, p.section) if x)
+        lines.append(f"  - ({where}) {p.text.strip()}" if where
+                     else f"  - {p.text.strip()}")
+        lines.append(f"      “{p.source.strip()}”")
+    return "\n".join(lines)
+
+
+def filing_quotes_block(workspace: Path, fmt: str = "") -> str:
     """Verbatim 10-K quotes for the smoking-gun walk (task 5), read from the
     workspace manifest `auto_filings` writes AFTER an angle is picked. Each
     line gives the quote, its section, the one-line why, and the exact
@@ -745,6 +838,13 @@ def filing_quotes_block(workspace: Path) -> str:
     from pipeline.filings import load_manifest
 
     shots = load_manifest(workspace).get("shots", [])
+    if not shots and fmt == "long_write":
+        # After the angle, an empty list means none were taken or the
+        # operator rejected them all — never "not yet".
+        return ("(no filing screenshots for this video: none were taken, or "
+                "the operator rejected them. Quote the filing from the "
+                "checked sentences under FILING SENTENCES below, on a paper/ "
+                "plate, and write no [SHOW FILING].)")
     if not shots:
         return ("(no verbatim quotes yet — these are pulled for a CHOSEN "
                 "angle, so they are normally absent at the angle step. The "
@@ -769,7 +869,11 @@ def filing_quotes_block(workspace: Path) -> str:
 
 def screenshots_line(workspace: Path) -> str:
     shots = list_screenshots(workspace)
-    return ", ".join(shots) if shots else "(none uploaded — upload filing PNGs first)"
+    # "Upload filing PNGs first" sent the writer looking for them on the web
+    # (RDDT long, 1 Nov 2026). None is an answer, not a to-do.
+    return (", ".join(shots) if shots else
+            "(none for this video — write no [SHOW FILING]; quote the filing "
+            "from the checked sentences on a paper/ plate)")
 
 
 # --------------------------------------------------------------------------
@@ -1396,7 +1500,9 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{filing_brief}}", ("long_angle", "update"),
                  lambda c: filing_brief_block(c.workspace)),
     PayloadBlock("{{filing_quotes}}", ("long_angle", "long_write", "update"),
-                 lambda c: filing_quotes_block(c.workspace)),
+                 lambda c: filing_quotes_block(c.workspace, c.fmt)),
+    PayloadBlock("{{filing_sentences}}", ("long_write",),
+                 lambda c: filing_sentences_block(c.workspace)),
     PayloadBlock("{{available_screenshots}}",
                  ("long_angle", "long_write", "update"),
                  lambda c: screenshots_line(c.workspace)),

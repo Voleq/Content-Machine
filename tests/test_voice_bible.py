@@ -1,4 +1,4 @@
-"""Voice bible v4: what the writer is handed, checked for what it must say."""
+"""Voice bible v5: what the writer is handed, checked for what it must say."""
 
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ def _bible(settings) -> str:
     return (settings.assets_dir / ROOT_BIBLE).read_text(encoding="utf-8")
 
 
-def test_it_is_v4(settings):
-    assert _bible(settings).splitlines()[0].strip() == "# Dennis — voice bible v4"
+def test_it_is_v5(settings):
+    assert _bible(settings).splitlines()[0].strip() == "# Dennis — voice bible v5"
 
 
 def test_it_names_the_register_he_asked_for(settings):
@@ -34,7 +34,20 @@ def test_density_is_a_floor_not_a_ceiling(settings):
     assert "a floor, not a ceiling" in low
     assert "ceiling, not a quota" not in low
     assert "lower density than a comedy channel" not in low
-    assert "a joke a minute" in para and "at least three" in para
+    assert "every minute or two" in para and "at least three" in para
+    assert "never padded" in para
+
+
+def test_fewer_self_owns_and_the_dark_detour(settings):
+    """RDDT long, 1 Nov 2026: ten self-owns in one long, none of them funny,
+    and none of the Laredo kind he asked for."""
+    text = _bible(settings)
+    five = text[text.index("## 5"):text.index("## 6")]
+    assert "Two or three self-owns in a long" in five
+    two = text[text.index("## 2"):text.index("## 3")]
+    assert "the dark detour" in two and "at least three" in two
+    four = text[text.index("## 4"):text.index("## 5")]
+    assert "at most twice in a long" in four
 
 
 def test_a_joke_that_teaches_nothing_is_not_cut_for_it(settings):

@@ -329,7 +329,7 @@ def _step_check(v: _Video) -> dict:
     out: dict = {"lines": [{"n": i, "text": t}
                            for i, t in enumerate(raw.splitlines(), 1)],
                  "findings": [], "claims": [], "cold_read": None,
-                 "cold_prompt": "", "why": v.ws.why[:600],
+                 "cold_prompt": "", "fixup_prompt": "", "why": v.ws.why[:600],
                  "revisions": v.st.revisions}
     if not raw:
         return out
@@ -364,6 +364,11 @@ def _step_check(v: _Video) -> dict:
             else:
                 f["raw_line"] = _raw_line(raw, probe) if probe else 0
             out["findings"].append(f)
+    # Everything the writer can fix, as one message for the chat that wrote
+    # the script (RDDT long, 1 Nov 2026).
+    from pipeline.fixup import fixup_prompt
+
+    out["fixup_prompt"] = fixup_prompt(out["findings"], v.fmt)
     out.update(dennis_alone=rep.get("dennis_alone", -1),
                dennis_alone_max=rep.get("dennis_alone_max"),
                est_runtime_min=rep.get("est_runtime_min"),

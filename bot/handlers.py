@@ -1069,11 +1069,19 @@ class BotCore:
                     if old.suffix.lower() != suffix:
                         old.unlink(missing_ok=True)
                 (custom / f"{stem}{suffix}").write_bytes(data)
-                remaining = [s for s in self._pending_custom_slugs(ws) if s != stem]
                 kind = pending[stem]
+                # A screen the writer asked for as [IMG] is optional: it
+                # plays a stock clip until one is dropped, so it is never
+                # listed as missing.
+                remaining = [s for s, k in self._pending_custom_slugs(ws).items()
+                             if s != stem and k == "screengrab"]
                 note = (f" Still missing: {', '.join(remaining)}." if remaining
                         else " All custom files present — re-paste the script "
                              "to refresh the report.")
+                if kind == "screen":
+                    return Reply(f"🎨 saved screenshot {stem}{suffix}. Paste the "
+                                 f"script again and it shows in place of the "
+                                 f"stock clip.{note if remaining else ''}")
                 return Reply(f"🎨 saved {kind} {stem}{suffix}.{note}")
 
         if suffix in (".png", ".jpg", ".jpeg", ".webp"):
@@ -1190,7 +1198,8 @@ class BotCore:
         # uploaded it, which does not scale to daily shorts and was the slowest
         # step in the loop. An operator-supplied CAPTURE of something real is a
         # different thing and still blocks.
-        for kind, slugs in (("screengrab", script.screengrab_slugs()),):
+        for kind, slugs in (("screengrab", script.screengrab_slugs()),
+                            ("screen", script.screen_slugs())):
             for slug in slugs:
                 if not (custom.is_dir() and list(custom.glob(f"{slug}.*"))):
                     out[slug] = kind

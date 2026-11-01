@@ -10,6 +10,8 @@ plate, slot and time on the real clock.
 
 from __future__ import annotations
 
+import re
+
 from pathlib import Path
 
 import pytest
@@ -365,13 +367,63 @@ def test_the_long_menu_marks_where_each_move_lands(settings):
         return next(l for l in lines[i:] if "slots:" in l)
 
     # The big figure fills the tag's spot, so a [SOURCE] has no room on it.
-    assert slots_line(long, "big-number-l1-16x9").endswith("◆value  ✕source")
+    # It counts up and cannot ring: the mark says which (RDDT long, 1 Nov
+    # 2026: ◆ promised both on 53 plates that only count up).
+    assert slots_line(long, "big-number-l1-16x9").endswith("↑value  ✕source")
     assert slots_line(long, "filing-page-16x9").endswith("◆kicker  ▭passage")
+    assert slots_line(long, "unit-economics-16x9").endswith("↑margin")
+    assert slots_line(long, "qoq-yoy-16x9").endswith("↑figure")
     assert "▭" not in slots_line(long, "big-number-l1-16x9")
 
     short = plate_catalogue(settings, fmt="short")
-    assert "◆" not in short and "[MOVE" not in short and "✕source" not in short, \
+    assert not any(m in short for m in "◆↑○"), "a short has no [MOVE] grammar"
+    assert "[MOVE" not in short and "✕source" not in short, \
         "a short has no [MOVE] or [SOURCE] grammar"
+
+
+def test_every_mark_the_menu_shows_is_a_move_the_plate_takes(settings):
+    from bot.prompts import plate_catalogue
+    from pipeline.plates import load_plates, writer_moves
+
+    reg = load_plates(settings.assets_dir)
+    lines = plate_catalogue(settings, fmt="long").splitlines()
+    for i, line in enumerate(lines):
+        if "slots:" not in line:
+            continue
+        name = lines[i - 1].strip().split(" — ")[0]
+        if not name.endswith("16x9"):
+            name = next(l.strip().split(" — ")[0] for l in reversed(lines[:i])
+                        if l.startswith("  ") and not l.startswith("      "))
+        key = next(k for k in reg.assets if k.split("/", 1)[1] == name)
+        can = writer_moves(reg.assets[key])
+        for mark, slot in re.findall(r"([◆↑○])([\w-]+)", line):
+            if mark in "◆↑":
+                assert can.get("count-up") == slot, (key, mark, slot)
+            if mark in "◆○":
+                assert can.get("pen-circle") == slot, (key, mark, slot)
+
+
+def test_the_menu_shows_what_each_box_holds_and_not_the_drawing_areas(settings):
+    """RDDT long, 1 Nov 2026: a 74-character docref in a box that holds 38,
+    and figures typed into a scale's bars and a said-happened's tie marks,
+    which the menu had listed beside the text boxes."""
+    from bot.prompts import plate_catalogue
+
+    long = plate_catalogue(settings, fmt="long")
+
+    def slots_line(name: str) -> str:
+        lines = long.splitlines()
+        i = next(i for i, l in enumerate(lines) if l.strip().startswith(name))
+        return next(l for l in lines[i:] if "slots:" in l)
+
+    assert "docref≤38" in slots_line("filing-page-16x9")
+    assert "passage≤110" in slots_line("filing-page-16x9")
+    assert "label-1…5≤22" in slots_line("revenue-mix-16x9")
+    assert "gap-label≤19" in slots_line("earnings-vs-cash-16x9")
+    assert "diverge" not in slots_line("said-happened-4-16x9")
+    scale = slots_line("scale-3-16x9")
+    assert "anchor-label" in scale and not re.search(r"\banchor\b(?!-)", scale)
+    assert not re.search(r"\bref-\d", scale)
 
 
 def test_the_chapter_types_carry_the_pen_circle_ration(settings):

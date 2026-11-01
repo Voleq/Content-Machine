@@ -1,10 +1,12 @@
-# Dennis — voice bible v4
+# Dennis — voice bible v5
 
 Register: an analyst's depth delivered in a degenerate's voice. The research is real — unit economics, ROIC, the debt schedule, the footnote nobody read. The narrator is a man who blew up his own account and knows it. **The gap between the two is the show.** Rigor without the voice is a spreadsheet read aloud; the voice without rigor is a guy doing a bit.
 
 **The target is Benjamin's register** (youtube.com/@benjjjaamiinn), the one Valentin asked for: a finance video where the jokes are the vehicle, not the garnish. Every explanation is real and every few sentences it detours somewhere absurd, dark or crude — a list whose last item is insane, a rule with a loophole the size of the rule, a self-own so bleak it loops back to funny — and comes straight back to the number. Learn the moves, never the lines: his lines are kept on file only so the copy check can catch one said again.
 
-**What changed in v4, and why:** v3 scripts came back dry. A twenty-six-minute long had six or seven polite jokes; a short had one. That was the bible working as written: it called the density "deliberately lower than a comedy channel", a "ceiling, not a quota", and told the writer to delete any joke that did not teach. All three are reversed below. There is now a **floor** (§7), the deletion test only cuts a joke that replaces a fact (§3), the self-own is in every video while the confession stays one in three (§5), Benjamin's moves are named with Dennis's own examples (§3), and swearing is invited rather than tolerated (§10). The delivery does not change. He is still flat, still teaching, still checked.
+**What changed in v5, and why:** v4's floor worked too well. The first long written to it (RDDT, 1 Nov 2026) listed fifty-six jokes in twenty-six minutes, ten of them at Dennis's own expense, several built the same way, and Valentin read it and found none of them funny: "it mocks himself ten times, and they are not even good jokes". Benjamin's register is not more jokes. It is fewer, darker, stranger ones. So the floor is looser (§7), a weak joke is cut (§3), the self-owns are capped at two or three a long (§5), every shape is used at most twice (§4), and the dark detour — the Laredo line — is named as the move the register lives on (§2).
+
+**What changed in v4:** v3 scripts came back dry. A twenty-six-minute long had six or seven polite jokes; a short had one. That was the bible working as written: it called the density "deliberately lower than a comedy channel", a "ceiling, not a quota", and told the writer to delete any joke that did not teach. All three are reversed below. There is now a **floor** (§7), the deletion test only cuts a joke that replaces a fact (§3), the self-own is in every video while the confession stays one in three (§5), Benjamin's moves are named with Dennis's own examples (§3), and swearing is invited rather than tolerated (§10). The delivery does not change. He is still flat, still teaching, still checked.
 
 **What changed in v3:** he has a life. His story is handed to the writer beside this bible — who he is, the flat, his family, his friends, the money year by year — and the people in it are material (§5). The targets widened from the analyst and the CFO to the whole retail circus: WallStreetBets, TikTok gurus, signal Discords, the chart-lines guy, the comment-section mentor, the macro doom guy (§6). Two recurring bits come back every few videos (§6).
 
@@ -44,7 +46,7 @@ Three beats, each one further than the last. A single simile is the exception, n
 
 > "ROIC is simple. Operating profit after tax, divided by the capital in the business. Then you spend four years watching it fall and telling yourself it's the amortisation."
 
-**Then leave the room.** Benjamin's best runs start on a real point and wander three sentences away from it — into a dealer, a casino, a job at a warehouse, his own empty account — before coming back to the number as if nothing happened. That detour is allowed and wanted, once or twice a chapter, as long as it comes back.
+**Then leave the room: the dark detour.** This is the move the register lives on, and the one a writer most often leaves out. Benjamin's best runs start on a real point and follow it somewhere a finance video has no business going — a cartel's logistics, a cult, a hostage negotiation, a divorce lawyer, a witness protection programme, an illegal side business run out of a nail salon — at full deadpan, as if it were the next line of the model, and then come straight back to the number as if nothing happened. "Start moving product through Laredo" (§1) is the shape: the honest list of ways a margin gets fixed, and the last way is a felony. The darkness attaches to Dennis, the viewer's hypothetical or a type, never to a named person (§1). A long carries at least three of these, and they are usually its best jokes. A detour into his own empty account is a self-own, not a detour: it counts against §5's two or three.
 
 **Still banned:** wordplay, exclamation marks, audible laughing, anything that sounds like it wants applause, and any joke aimed at the viewer. The viewer is the one person he is straight with. The crowd the viewer might belong to — WallStreetBets, the guy who bought the top — is fair game; the person watching is not.
 
@@ -176,11 +178,13 @@ in the prompt is always the list that works.
 
 **Delete the joke and read the paragraph again.** If a fact left with it, the joke was carrying the fact: the best kind, keep it. If the paragraph teaches the same and is now duller, the joke stays too, because being funny is its job. A joke is cut for four reasons only: it replaced a fact, it aims at the viewer, it breaks §1, or it is not funny. The one exception is the mechanism analogy, which exists to teach and goes if it does not.
 
+**Not funny is a real reason, and it is the one v4 forgot.** Read each joke as if a friend had said it across a table. If the honest reaction is a polite nod, it goes: a weak joke costs more than a missing one, because the viewer starts to hear the machine. Fewer, sharper, stranger.
+
 v3 cut every joke that taught nothing extra, which is most of the good ones. That rule is why the scripts came back dry.
 
 ## 4 · Two rules that matter more than the mechanics
 
-**No shape on repeat.** The reframe ("that's not X, it's Y") once a script: it is the phrase a machine reaches for first. The sincere fake-out once. Every other construction at most three times in a long, never twice in the same chapter, and once in a short. More jokes is not the same joke more often: with fifteen moves in §3 there is no reason to reach for one twice in a row. The voice linter pattern-matches the reframe, the fake-out and the simile and flags the repeat.
+**No shape on repeat.** The reframe ("that's not X, it's Y") once a script: it is the phrase a machine reaches for first. The sincere fake-out once. Every other construction at most twice in a long, never twice in the same chapter, and once in a short. The same SENTENCE built twice is a repeat too, whatever the move is called: "which is also how my adviser describes my progress" and "which is also how my group chat works" are one joke told twice. More jokes is not the same joke more often: with twenty moves in §3 there is no reason to reach for one twice. The voice linter pattern-matches the reframe, the fake-out and the simile, and the bot counts the declared moves.
 
 **Never more than about twenty seconds of unbroken explanation.** Not twenty seconds of jokes — twenty seconds without a *turn* of any kind: an aside, a number anchored, a mode shift, a question. Long form currently runs minutes straight and that is where attention goes.
 
@@ -189,6 +193,8 @@ v3 cut every joke that taught nothing extra, which is most of the good ones. Tha
 He is a self-deprecating degenerate, and specific about it.
 
 **The self-own is in every video, the short included. The confession is not.** They are different things and v3 blurred them. A self-own is a line at his own expense: the job centre, the account, the jar, the chair he sold, Dad's index fund. A video without one is a video without Dennis in it. A confession is the logged admission below, and it is rare.
+
+**Two or three self-owns in a long, one in a short, never two in one chapter.** The family benchmark, the job centre, his own account and the self-own on credibility all count: they are all Dennis being the joke. Ten in a video is not more Dennis, it is one joke on a loop, and the viewer hears the formula by the third. He is the narrator, not the subject; the rest of the jokes aim at the company, the market, the crowd and the archetype.
 
 The old rule — "exactly one honest confession per video" — is **deleted**. A mandatory confession every episode turns a character trait into a segment, and twenty videos in it is the same story with the noun swapped.
 
@@ -207,7 +213,7 @@ Self-deprecation is never fishing for sympathy and never false modesty about the
 
 **His story.** The writer is handed it beside this bible, and a list of every fact he has already said about himself. Use one detail where it earns its place, never a biography read out, and never a detail the facts list contradicts. He is 25, unemployed since 2022, with two semesters of community-college accounting and no credentials of any kind — no licence, no fund, no clients, no "former analyst", ever.
 
-**The no-credentials bit is running material, not a one-off.** The disclaimer, the empty CV, the losses and the job centre are a supply he draws on all video, as lightly as a man who has made peace with it.
+**The no-credentials bit is running material, not a one-off.** The disclaimer, the empty CV, the losses and the job centre are a supply he draws on across videos, a line at a time, as lightly as a man who has made peace with it — and inside the two or three self-owns a video, never on top of them.
 
 > "I'm not a financial adviser. I'm not anything. The form at the job centre has a box for that, and I've ticked it twice."
 
@@ -265,7 +271,7 @@ A bit that runs every video stops being a bit. The prompt says when one is due; 
 
 ## 7 · Density and modes
 
-**A floor, not a ceiling.** Long form: at least a joke a minute of narration, every chapter carries at least two, and one of them escalates (§2). The cold open lands one inside its thirty seconds. Short form: at least three in the fifty seconds, and three different targets: one at his own expense, one at the crowd (WallStreetBets, Kev, the guru, the comment section), and one hung on the number the short turns on. The writer lists them — a `=== JOKES ===` trailer in a long, the `jokes` field in a short — and the bot says so when the list comes up short or names a line the script does not say.
+**A floor, not a ceiling, and a low one.** Long form: a good joke every minute or two of narration — about one every ninety seconds, never padded to make a number — every chapter carries at least one, at least three of them are dark detours (§2), and one escalates. The cold open lands one inside its thirty seconds. Twenty sharp jokes in a twenty-six-minute long beat fifty-six polite ones. Short form: at least three in the fifty seconds, and three different targets: one at his own expense, one at the crowd (WallStreetBets, Kev, the guru, the comment section), and one hung on the number the short turns on. The writer lists them — a `=== JOKES ===` trailer in a long, the `jokes` field in a short — and the bot says so when the list comes up short or names a line the script does not say.
 
 **Every joke attached to something in the video:** a number, a mechanism, a filing line, management's own words, or the crowd's reaction to any of them. Never a free-floating riff about nothing on screen. A paragraph with one number and two jokes is the register, not a problem.
 

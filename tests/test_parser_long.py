@@ -559,3 +559,46 @@ def test_a_chapter_title_longer_than_the_card_is_named(long_valid_text,
                                     "the covenant, page 400")
     _, warnings = parse_long_script(fixed, "EXMPL", settings)
     assert not any(w.startswith("chapter title") for w in warnings)
+
+
+def test_an_img_of_a_screen_plays_a_clip_until_a_screenshot_is_dropped(settings):
+    """RDDT long, 1 Nov 2026: four [IMG] tags asked for a Reddit thread, an
+    app's feed and two pages of search results, which Wikimedia never has,
+    and each drew a blank card. A screen plays a clip of the same words, and
+    a screenshot dropped under its name plays instead."""
+    from pipeline.parser_long import is_screen_query, screen_slug
+
+    text = ("Reddit is forums. [IMG: Reddit thread page with upvote arrows] "
+            "Strangers write, strangers vote. [IMG: Reddit headquarters "
+            "building in San Francisco] And the best answer floats up.")
+    script, warnings = parse_long_script(text, "RDDT", settings)
+    clips = script.events_of(TagType.CLIP)
+    slug = "reddit-thread-page-upvote-arrows"
+    assert [c.values.get("screen") for c in clips] == [slug]
+    assert clips[0].payload == "Reddit thread page with upvote arrows"
+    assert [e.payload for e in script.events_of(TagType.IMG)] == [
+        "Reddit headquarters building in San Francisco"]
+    assert any(f"{slug}.png" in w for w in warnings)
+    assert script.screen_slugs() == [slug]
+
+    custom = settings.custom_assets_dir
+    custom.mkdir(parents=True, exist_ok=True)
+    grab = custom / f"{slug}.png"
+    grab.write_bytes(b"png")
+    try:
+        script2, _ = parse_long_script(text, "RDDT", settings)
+        assert [e.payload for e in script2.events_of(TagType.SCREENGRAB)] == [slug]
+        assert not script2.events_of(TagType.CLIP)
+    finally:
+        grab.unlink()
+
+    for query in ("Reddit app home feed on a phone screen",
+                  "search results page with an answer box above the links",
+                  "Google search results page showing an AI overview"):
+        assert is_screen_query(query), query
+    for query in ("Reddit headquarters building", "a data centre aisle",
+                  "the CEO speaking at a conference", "a car dashboard",
+                  "sacks of cattle feed", "EXMPL dispatch dashboard"):
+        assert not is_screen_query(query), query
+    assert screen_slug("Reddit app home feed on a phone screen") == \
+        "reddit-app-home-feed-phone"

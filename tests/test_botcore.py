@@ -251,6 +251,47 @@ def test_screengrab_flow_blocks_and_accepts_upload(core, xlsx_bytes):
             p.unlink()
 
 
+def test_a_screenshot_dropped_for_a_screen_tag_replaces_its_clip(core, xlsx_bytes):
+    """An [IMG] of a screen plays a stock clip, and never blocks; a
+    screenshot dropped under its name goes to the custom library and shows
+    instead on the next paste (RDDT long, 1 Nov 2026)."""
+    import io
+
+    from PIL import Image
+
+    raw = ("EXMPL is cheap and hated, which is the only interesting "
+           "combination there is, and it is why I am still reading the "
+           "filings at three in the morning instead of sleeping like a "
+           "person with a balanced life. The revenue line went four "
+           "hundred million to four ninety six over five years, which is "
+           "technically growth in the way a coma is technically rest. "
+           "[IMG: EXMPL app home feed on a phone screen] Here is the app, "
+           "for context, and it is exactly as busy as the share price. "
+           "I will be up at three a.m. either way. "
+           "See you at the next filing.")
+    slug = "exmpl-app-home-feed-phone"
+    core.start_lane(CHAT, "long", "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    custom = core.settings.custom_assets_dir
+    for stale in custom.glob(f"{slug}.*"):
+        stale.unlink()
+
+    reply = core.intake_script(CHAT, raw)
+    assert not any(line.startswith("⛔") and slug in line
+                   for line in reply.text.splitlines())
+    try:
+        buf = io.BytesIO()
+        Image.new("RGB", (1170, 2532), (18, 22, 28)).save(buf, format="PNG")
+        r = core.handle_upload(CHAT, f"{slug}.png", buf.getvalue())
+        assert "saved screenshot" in r.text and (custom / f"{slug}.png").exists()
+        core.intake_script(CHAT, raw)
+        ws = Workspace.latest_for(core.settings, "EXMPL")
+        assert ws.load_long().screengrab_slugs() == [slug]
+    finally:
+        for p in custom.glob(f"{slug}.*"):
+            p.unlink()
+
+
 def test_swap_key_invalidates_approval_and_rotates(core, xlsx_bytes, long_valid_text):
     from PIL import Image
     import io

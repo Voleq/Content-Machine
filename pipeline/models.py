@@ -841,6 +841,16 @@ class LongScript(BaseModel):
                 seen.append(e.payload)
         return seen
 
+    def screen_slugs(self) -> list[str]:
+        """Screens the writer asked for as [IMG] that play a stock clip until
+        the operator drops a screenshot by this name. Never blocking."""
+        seen: list[str] = []
+        for e in self.events_of(TagType.CLIP):
+            slug = (e.values or {}).get("screen", "")
+            if slug and slug not in seen:
+                seen.append(slug)
+        return seen
+
     def content_sha(self) -> str:
         # A SCRIPT THAT ASKS FOR NO TWO-SHOT KEEPS THE HASH IT HAD: the sha is
         # what an approval is recorded against and what the render's seeds

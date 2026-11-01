@@ -200,17 +200,17 @@ def _long(narration: str, jokes: list[str]) -> LongScript:
                       jokes=[ScriptJoke(text=j) for j in jokes])
 
 
-def test_a_long_under_one_a_minute_says_so():
+def test_a_long_under_one_every_minute_and_a_half_says_so():
     para = " ".join(["the margin held at forty percent"] * 40)   # 240 words
     narration = "\n\n".join([para] * 4)                          # ~6 minutes
     found = wc.joke_floor_lint(_long(narration + "\n\nAnd that is a joke.",
                                      ["And that is a joke."]), "long")
-    assert any("one a minute" in f.message for f in found)
+    assert any("one every minute and a half" in f.message for f in found)
 
 
 def test_a_long_dry_stretch_names_its_line():
     joke = "My nan is up forty percent and I am not."
-    dry = " ".join(["the margin held at forty percent"] * 70)    # ~2.6 minutes
+    dry = " ".join(["the margin held at forty percent"] * 100)   # ~3.8 minutes
     narration = f"{joke}\n\n{dry}\n\n{joke}"
     found = wc.joke_floor_lint(_long(narration, [joke]), "long")
     stretch = [f for f in found if "without a listed joke" in f.message]
@@ -300,3 +300,30 @@ def test_a_short_that_lists_too_many_or_one_string_still_parses(settings):
     assert len(_short(settings, jokes=many).jokes) == 12
     assert _short(settings, jokes="one line\nanother line").jokes == [
         "one line", "another line"]
+
+
+def test_ten_self_owns_and_the_same_move_four_times_say_so():
+    """RDDT long, 1 Nov 2026: fifty-six jokes, ten of them at Dennis's own
+    expense, and Valentin: "it mocks himself ten times, and they are not
+    even good jokes". Two or three a video (bible v5 §5), and no move past
+    twice (§4)."""
+    lines = [f"my own account did joke number {i} again" for i in range(4)]
+    lines += [f"my mum asked about joke number {i} again" for i in range(3)]
+    lines += [f"the crowd bought joke number {i} at the top" for i in range(2)]
+    moves = (["self-own"] * 4 + ["family benchmark"] * 3
+             + ["the crowd, roasted as a crowd"] * 2)
+    narration = " ".join(f"{t}." for t in lines)
+    script = _long(narration, lines)
+    script.jokes = [ScriptJoke(move=m, text=t) for m, t in zip(moves, lines)]
+    found = wc.joke_floor_lint(script, "long")
+    selfish = [f for f in found if "own expense" in f.message]
+    assert selfish and selfish[0].message.startswith("7 jokes")
+    shapes = [f for f in found if "past twice" in f.message]
+    assert shapes and "self-own ×4" in shapes[0].message
+    assert "family benchmark ×3" in shapes[0].message
+    assert "crowd" not in shapes[0].message
+
+    # Two or three is the register: nothing to say.
+    script.jokes = script.jokes[:2] + script.jokes[7:]
+    assert not [f for f in wc.joke_floor_lint(script, "long")
+                if "own expense" in f.message or "past twice" in f.message]
