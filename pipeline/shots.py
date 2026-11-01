@@ -291,6 +291,11 @@ class Shot:
     # rotation again and cutting to a different picture of the same beat.
     part: int = 0
     part_of: str = ""
+    # SET ON BOTH PARTS when the beat had nothing to move in on and part 2 is
+    # ANOTHER of its drawings instead (`_split_long_beats`): the implied-
+    # growth chart, then the two statements it rests on. Part 2 then draws
+    # its own plate, and its data draws on as on any new picture.
+    redrawn: bool = False
 
     @property
     def variants(self) -> tuple[Variant, ...]:
@@ -994,6 +999,7 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
                   ordered: bool = False,
                   punch_in: "Callable[[Shot], str | None] | None" = None,
                   host_lines: dict[str, str] | None = None,
+                  redraw: "Callable[[Shot], Variant | None] | None" = None,
                   ) -> list[Span]:
     """Give every shot a start and an end, off the spoken audio.
 
@@ -1015,8 +1021,9 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
     to the hook. An unmarked script searches the whole narration, as it
     always did.
 
-    `punch_in(shot)` names the slot a beat that runs long can move in on; see
-    `_split_long_beats`. Without it a long beat holds.
+    `punch_in(shot)` names the slot a beat that runs long can move in on, and
+    `redraw(shot)` the other drawing it cuts to when there is no such slot;
+    see `_split_long_beats`. Without either a long beat holds.
 
     `host_lines` maps a host shot's anchor to the line he says on camera
     (`{"turn": script.turn_line}`). His shot then ends when that line does,
@@ -1110,8 +1117,8 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
     # which `held_over_ceiling` measures on the frames and reports.
     if host_lines:
         spans = _host_says_his_line(spans, words, host_lines)
-    if punch_in is not None:
-        spans = _split_long_beats(spans, words, punch_in)
+    if punch_in is not None or redraw is not None:
+        spans = _split_long_beats(spans, words, punch_in, redraw)
     return spans
 
 
@@ -1291,14 +1298,24 @@ def _run_shares(run: Sequence[Shot], total: float) -> list[float]:
 
 
 def _split_long_beats(spans: list[Span], words: Sequence[Any],
-                      punch_in: "Callable[[Shot], str | None]") -> list[Span]:
-    """A beat that runs past its ceiling becomes two pictures of one drawing.
+                      punch_in: "Callable[[Shot], str | None] | None",
+                      redraw: "Callable[[Shot], Variant | None] | None" = None,
+                      ) -> list[Span]:
+    """A beat that runs past its ceiling becomes two pictures.
 
     Part 1 is the drawing wide; part 2 moves in on the slot being read —
-    `punch_in(shot)` says which, and a shot it names nothing for holds. The
-    composition changes, so the frame is no longer one held picture, and
-    nothing about the beat's timing moves: part 2 ends where the beat did,
-    and the next shot still starts on its own words.
+    `punch_in(shot)` says which. The composition changes, so the frame is no
+    longer one held picture, and nothing about the beat's timing moves: part
+    2 ends where the beat did, and the next shot still starts on its own
+    words.
+
+    A DRAWING WITH NOTHING TO MOVE IN ON CUTS TO ANOTHER OF THE BEAT'S
+    DRAWINGS (RBLX, 1 Nov 2026). The verdict went up as the implied-growth
+    chart, which has no passage to read and no figure that counts, and held
+    twelve seconds while the writer added a joke after it. `redraw(shot)`
+    names a drawing of the same beat that shows something part 1 does not
+    (the caller decides; a second layout of the same words is a glitch, not
+    a cut), and part 2 draws that. Nothing named, the beat holds.
 
     NEVER A HOST SHOT, A ROOM OR A REPEAT. He is alive at any length and is
     what `_run_shares` gives the slack to; a room is picked per role and its
@@ -1315,8 +1332,9 @@ def _split_long_beats(spans: list[Span], words: Sequence[Any],
                 or not sh.plate or sh.plate.startswith("room/")):
             out.append(sp)
             continue
-        slot = punch_in(sh)
-        if not slot:
+        slot = punch_in(sh) if punch_in is not None else None
+        other = redraw(sh) if not slot and redraw is not None else None
+        if not slot and other is None:
             out.append(sp)
             continue
         cut = _split_point(sp, words)
@@ -1324,7 +1342,22 @@ def _split_long_beats(spans: list[Span], words: Sequence[Any],
         # it: kept on both, the compositor took part 1's and an "end" meme
         # landed mid-beat, at the cut.
         at = sh.meme.at if sh.meme else ""
-        wide = replace(sh, part=1, meme=sh.meme if at == "start" else None)
+        wide = replace(sh, part=1, meme=sh.meme if at == "start" else None,
+                       redrawn=other is not None)
+        if other is not None:
+            # Its own picture, so its own binds and caption setting; no
+            # entrance, because the cut is the change, and no move in.
+            bind, lit, _focus = other.resolved(sh)
+            second = replace(
+                sh, id=f"{sh.id}-2", part=2, part_of=sh.id, redrawn=True,
+                plate=other.plate, alts=(), bind=bind, lit=lit, focus=None,
+                captions=(sh.captions if other.captions is None
+                          else other.captions),
+                anchor=None, enter=None, stagger_s=0.0, marks=(),
+                meme=sh.meme if at == "end" else None)
+            out.append(Span(wide, sp.start, cut, sp.anchored))
+            out.append(Span(second, cut, sp.end, False))
+            continue
         # Part 2 is a cut, not an entrance: whatever part 1 staggered in or
         # landed is already on screen, so none of it starts again.
         close = replace(

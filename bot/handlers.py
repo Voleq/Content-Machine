@@ -192,6 +192,32 @@ def _macro_index_for(symbol: str) -> str:
 # How often an upload waiting on the filing reading says how far it got.
 PROGRESS_EVERY_S = 60.0
 
+
+def reading_line(ticker: str, counters: dict, waited_s: float) -> str:
+    """What the filing reading is doing, in words, for the page and Activity:
+    which report, which part of it, whether Gemma is thinking or writing."""
+    mins = f"{waited_s / 60:.0f} min so far"
+    filing = counters.get("filing_label") or ""
+    if not filing:
+        return f"📄 Fetching {ticker}'s reports from the SEC… ({mins})"
+    of = (f" (report {counters.get('filing', 1)} of {counters['filings']})"
+          if counters.get("filings") else "")
+    if counters.get("condensing"):
+        where = "putting what it found in all the reports together"
+    elif counters.get("section"):
+        where = (f"the {counters['section']} section"
+                 + (f", part {counters.get('section_n')} of "
+                    f"{counters['sections_here']}"
+                    if counters.get("sections_here") else ""))
+    else:
+        where = "opening it"
+    doing = {True: "Gemma is thinking", False: "Gemma is writing its notes"
+             }.get(counters.get("thinking"), "Gemma is reading")
+    done = int(counters.get("parts_done", 0))
+    tally = f", {done} part{'s' if done != 1 else ''} read" if done else ""
+    return (f"📄 Reading {ticker}'s {filing}{of}: {where}. {doing}. "
+            f"({mins}{tally}.) The angle prompt comes when it is done.")
+
 # What the cloud Bot API accepts, so a push is refused HERE with a reason
 # rather than by Telegram with nobody listening (H2).
 TELEGRAM_PHOTO_MAX_BYTES = 10_000_000
@@ -1536,11 +1562,20 @@ class BotCore:
                                  if k in self._filing_reads}
         self._filing_progress[key] = counters
 
+        from time import monotonic
+
+        def _heard(thinking: bool) -> None:
+            # Once per streamed piece: two dict writes, nothing else.
+            counters["alive_at"] = monotonic()
+            counters["thinking"] = thinking
+
         def _run():
             # On the reader's OWN thread, so the scope the caller opened is
             # not visible here — this thread opens its own, or the brief's
             # calls land in whatever workspace the operator is pasting into.
-            with llm_scope(self._llm_scope(ws)):
+            from pipeline.llm import listening
+
+            with llm_scope(self._llm_scope(ws)), listening(_heard):
                 brief = build_brief(ws.ticker, ws.path, self.settings,
                                     counters=counters)
                 save_brief(ws.path, brief, self.settings)
@@ -1556,25 +1591,28 @@ class BotCore:
 
     def _wait_for_reading(self, ws: Workspace, fut,
                           progress: Callable[[str], None] | None) -> None:
-        """Wait for the reading to finish, saying how far it has got.
+        """Wait for the reading to come back, saying what it is doing.
 
-        WAITS FOR THE FILINGS (Valentin, 1 Nov 2026: read them before the
-        angle prompt, do not hand it over without them). It used to give up
-        after ten minutes flat, while a slow reading was still going. Now a
-        reading that keeps finishing parts is waited out, up to
-        `filing_brief_max_wait_s`; one that finishes no part for
-        `filing_brief_wait_s` is stalled and raises TimeoutError, as before.
+        WAITS UNTIL IT RETURNS (Valentin, 1 Nov 2026: read the filings
+        before the angle prompt; "don't move to the next step until it
+        returns"). It used to give up after ten minutes flat while Gemma was
+        still working. Every call is streamed now, so the reading always
+        comes back on its own: an answer, or a call that heard nothing for
+        `OLLAMA_TIMEOUT_S`, three of which in a row end it. The one thing
+        waited out no longer is a reading that has HUNG — no word from the
+        model and no part finished for `filing_brief_wait_s`, and never less
+        than twice the call's own silence limit — which raises TimeoutError.
         """
         import time
 
         counters = self._filing_progress.get(self._filing_read_key(ws), {})
-        stall = float(self.settings.filing_brief_wait_s)
-        ceiling = max(float(self.settings.filing_brief_max_wait_s), stall)
+        hung = max(float(self.settings.filing_brief_wait_s),
+                   2 * float(self.settings.ollama_timeout_s))
         t0 = moved = time.monotonic()
         seen, told = -1, 0.0
         while True:
             try:
-                fut.result(timeout=min(15.0, stall))
+                fut.result(timeout=min(15.0, hung))
                 return
             except TimeoutError:
                 pass
@@ -1582,21 +1620,13 @@ class BotCore:
             done = int(counters.get("parts_done", 0))
             if done != seen:
                 seen, moved = done, now
-            if now - moved >= stall or now - t0 >= ceiling:
+            heard = max(moved, float(counters.get("alive_at") or 0.0))
+            if now - heard >= hung:
                 raise TimeoutError
             if progress is not None and now - told >= PROGRESS_EVERY_S:
                 told = now
-                total = int(counters.get("parts_total", 0))
-                where = (f"filing {counters.get('filing', 1)} of "
-                         f"{counters['filings']}, " if counters.get("filings")
-                         else "")
-                more = "" if counters.get("filing") == counters.get("filings") \
-                    else "+"
-                parts = (f"{done} of {total}{more} parts read" if total
-                         else "fetching the filings")
                 try:
-                    progress(f"📄 reading the filings before the angle prompt: "
-                             f"{where}{parts}, {(now - t0) / 60:.0f} min so far.")
+                    progress(reading_line(ws.ticker, counters, now - t0))
                 except Exception:  # noqa: BLE001 — a note is never fatal
                     log.debug("filing progress note failed", exc_info=True)
 
@@ -1635,6 +1665,16 @@ class BotCore:
         if fut is not None:
             import time
 
+            if progress is not None and not fut.done():
+                try:
+                    progress(f"📄 Workbook saved. Gemma is now reading "
+                             f"{ws.ticker}'s latest annual and quarterly "
+                             f"reports (10-K and 10-Q). The angle prompt is "
+                             f"written once it has read them, however long "
+                             f"it thinks. Nothing to do meanwhile; you can "
+                             f"leave this page.")
+                except Exception:  # noqa: BLE001 — a note is never fatal
+                    log.debug("filing progress note failed", exc_info=True)
             t0 = time.monotonic()
             try:
                 self._wait_for_reading(ws, fut, progress)
@@ -1647,15 +1687,16 @@ class BotCore:
                         "below has no filing brief in it.")
             except TimeoutError:
                 waited_min = (time.monotonic() - t0) / 60
-                log.warning("filing brief: %s stalled or ran past the "
-                            "ceiling after %.0f min", ws.ticker, waited_min)
+                log.warning("filing brief: %s hung (nothing from the model "
+                            "for too long) after %.0f min", ws.ticker,
+                            waited_min)
                 # Still running: keep its future, so the re-upload waits on
                 # this reading rather than starting a second one.
                 self._filing_reads[self._filing_read_key(ws)] = fut
-                return (f"\n⚠️ the filing reading stopped moving after "
-                        f"{waited_min:.0f} min (the local model is not "
-                        f"answering) — the prompt below has no filing brief "
-                        f"in it. Re-upload the workbook to wait for it again.")
+                return (f"\n⚠️ the filing reading hung after {waited_min:.0f} "
+                        f"min: Gemma stopped saying anything. Check Ollama "
+                        f"(`ollama ps`). The prompt below has no filing brief "
+                        f"in it; re-upload the workbook to wait for it again.")
             except Exception as e:  # noqa: BLE001 — the reading itself failed
                 log.warning("filing brief: %s failed (%s: %s)",
                             ws.ticker, type(e).__name__, e)

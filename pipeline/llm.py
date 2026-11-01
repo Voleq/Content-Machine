@@ -198,20 +198,16 @@ def _try_ollama(prompt: str, system: str, settings: Settings,
         "options": {"temperature": 0.2,
                     "num_ctx": settings.ollama_num_ctx},
     }
-    # NO THINKING ON A BACKGROUND PASS (Valentin, 1 Nov 2026). A thinking
-    # model writes pages of reasoning before every answer; on the 3060
-    # every other filing section ran past the 300 s timeout and the RDDT
-    # brief never finished. The
-    # passes extract and pick, which thinking does not help enough to pay
-    # for. The page's chat (`on_text` set) keeps the model's own default.
-    # `OLLAMA_THINK_PASSES=true` puts it back.
+    # A background pass may think (Valentin, 1 Nov 2026: "i would rather it
+    # think but make sure that it doesn't time out"). `OLLAMA_THINK_PASSES=
+    # false` tells a thinking model to answer straight away instead: faster,
+    # a little less careful. The page's chat keeps the model's own default.
     if on_text is None and not settings.ollama_think_passes:
         payload["think"] = False
     url = settings.ollama_base_url.rstrip("/") + "/api/chat"
     try:
         if on_text is None:
-            data = _post_ollama(url, payload, settings)
-            text = (data.get("message") or {}).get("content") or ""
+            text = _post_ollama(url, payload, settings)
         else:
             text = _stream_ollama(url, payload, settings, on_text)
     except Stop:
@@ -221,7 +217,7 @@ def _try_ollama(prompt: str, system: str, settings: Settings,
         # Both were caught here as "unavailable" at debug level, so a pass
         # that nearly worked looked identical to one that never started.
         if _looks_like_timeout(e):
-            log.warning("ollama timed out after %.0fs (%s) — the pass did "
+            log.warning("ollama said nothing for %.0fs (%s) — the pass did "
                         "not run", settings.ollama_timeout_s, e)
             return LLMResult(provider=OLLAMA, model=model, reason=TIMEOUT)
         said = _refused(e) or (str(e) if isinstance(e, _OllamaSaid) else "")
@@ -235,36 +231,85 @@ def _try_ollama(prompt: str, system: str, settings: Settings,
                      reason=OK if text else EMPTY)
 
 
-def _post_ollama(url: str, payload: dict, settings: Settings) -> dict:
-    """One non-streamed answer. An Ollama that does not know `think` (older
-    than 0.9) or a model that refuses it is asked again without it, rather
-    than the pass going missing over a speed switch."""
-    headers = {"Content-Type": "application/json"}
+def _post_ollama(url: str, payload: dict, settings: Settings) -> str:
+    """A background pass's answer, STREAMED, so it is never cut off while
+    the model is working.
+
+    It used to be one request with a 300-second limit on the whole answer.
+    A thinking model reasons for minutes before its first word, and on the
+    3060 every other filing section ran out of time (RDDT, 1 Nov 2026).
+    Streamed, `OLLAMA_TIMEOUT_S` is the longest SILENCE: a model that keeps
+    thinking or writing is waited out however long it takes, and only one
+    that has said nothing at all for that long is given up on.
+
+    An Ollama that does not know `think` (older than 0.9) or a model that
+    refuses it is asked again without it."""
+    body = {**payload, "stream": True}
     try:
-        return _post(url, payload, headers, settings.ollama_timeout_s)
+        return _ollama_stream(url, body, settings.ollama_timeout_s)
     except Exception as e:  # noqa: BLE001
-        if "think" not in payload or "think" not in _refused(e).lower():
+        said = _refused(e) or (str(e) if isinstance(e, _OllamaSaid) else "")
+        if "think" not in body or "think" not in said.lower():
             raise
         log.info("ollama would not take think=false (%s) — asked again "
-                 "without it", _refused(e))
-        return _post(url, {k: v for k, v in payload.items() if k != "think"},
-                     headers, settings.ollama_timeout_s)
+                 "without it", said)
+        return _ollama_stream(url, {k: v for k, v in body.items()
+                                    if k != "think"},
+                              settings.ollama_timeout_s)
 
 
 class _OllamaSaid(Exception):
     """An error line in the middle of a streamed answer."""
 
 
+# WHO IS LISTENING TO THE MODEL WORK, on this thread. The filing reading
+# sets one, so the upload waiting on it can say "Gemma is thinking" and can
+# tell a model that is slow from one that has stopped.
+_HOOK = threading.local()
+
+
+@contextmanager
+def listening(fn):
+    """Call `fn(thinking)` on every piece a local model streams on this
+    thread while the block runs: `thinking` True while it reasons, False
+    once it writes the answer."""
+    previous = getattr(_HOOK, "fn", None)
+    _HOOK.fn = fn
+    try:
+        yield
+    finally:
+        _HOOK.fn = previous
+
+
+def _beat(thinking: bool) -> None:
+    fn = getattr(_HOOK, "fn", None)
+    if fn is None:
+        return
+    try:
+        fn(thinking)
+    except Exception:  # noqa: BLE001 — a listener never breaks an answer
+        log.debug("llm listener failed", exc_info=True)
+
+
 def _stream_ollama(url: str, payload: dict, settings: Settings,
                    on_text) -> str:
+    """The page's chat: the answer as the model writes it."""
+    return _ollama_stream(url, payload, settings.ollama_timeout_s, on_text)
+
+
+def _ollama_stream(url: str, payload: dict, timeout_s: float,
+                   on_text=None) -> str:
     """The answer, read a line at a time as Ollama writes it. The timeout is
-    the longest wait for the NEXT line, so a slow model that keeps writing
-    is never cut off, and one that goes silent is."""
+    the longest wait for the NEXT line, so a slow model that keeps thinking
+    or writing is never cut off, and one that goes silent is.
+
+    Every Ollama request goes through here, which makes it the one place a
+    test stands in for the daemon."""
     import json
 
     import httpx
 
-    timeout = httpx.Timeout(settings.ollama_timeout_s, connect=10.0)
+    timeout = httpx.Timeout(timeout_s, connect=10.0)
     text, thought = "", False
     with httpx.stream("POST", url, json=payload, timeout=timeout,
                       headers={"Content-Type": "application/json"}) as resp:
@@ -284,10 +329,14 @@ def _stream_ollama(url: str, payload: dict, settings: Settings,
             piece = msg.get("content") or ""
             if piece:
                 text += piece
-                on_text(text, False)
-            elif msg.get("thinking") and not text and not thought:
+                _beat(False)
+                if on_text is not None:
+                    on_text(text, False)
+            elif msg.get("thinking") and not text:
+                _beat(True)
+                if on_text is not None and not thought:
+                    on_text("", True)
                 thought = True
-                on_text("", True)
             if part.get("done"):
                 break
     return text

@@ -1637,7 +1637,7 @@ async def handle_upload(core: BotCore, chat_id: int, filename: str,
                         data: bytes, say: Say | None = None) -> Reply:
     progress = None
     if say is not None:
-        await say(Reply("⏳ got the file — reading it now."))
+        await say(Reply(f"⏳ got {Path(filename).name} — checking it."))
         loop = asyncio.get_running_loop()
 
         def progress(text: str) -> None:

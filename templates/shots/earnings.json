@@ -363,6 +363,30 @@
       ]
     },
     {
+      "id": "the-comment",
+      "plate": "cards/quote-pull-9x16",
+      "anchor": "numbers_comment",
+      "max_hold_s": 7,
+      "bind": {
+        "body": "script.numbers_comment",
+        "attribution": "?script.ticker",
+        "source": "?source.numbers_comment"
+      },
+      "notes": "What the sheet meant, on a card of its own (RBLX, 1 Nov 2026: with nowhere to go, the comment was said over the sheet's last card, and stock comp held eight seconds). The numbers comment is written at two hundred characters and there is nowhere on a sheet to put one. CAPTIONS OFF (item 8): the card IS the line being said, word for word, so the caption band would print it twice.",
+      "alts": [
+        {
+          "plate": "cards/definition-9x16",
+          "bind": {
+            "term": "script.ticker",
+            "body": "script.numbers_comment",
+            "example": "wrap.47.1.0.script.move_summary"
+          },
+          "notes": "The read as a term and its meaning. `definition` names its slots nothing like `quote-pull`, so it restates the binds. No kicker: the sheet's unit (\"$M\") said nothing over a sentence. The EXAMPLE IS DRAWN AS A BOX, and left unbound it went up empty under the read (24 Oct 2026): it carries the move, the thing the read is set against. Through `wrap` at its one line so a move summary too long for it takes the quote card instead, without narrowing what the writer is asked for."
+        }
+      ],
+      "captions": false
+    },
+    {
       "id": "guidance",
       "plate": "cards/definition-9x16",
       "max_hold_s": 7,
@@ -402,6 +426,7 @@
       "enter": "wipe",
       "max_hold_s": 7,
       "anchor": "cheap_or_trap",
+      "focus": "statement-2",
       "meme": {
         "at": "end",
         "notes": "The one place for a meme: the tail of the verdict, once both sides of it are on screen and before the close."
@@ -414,6 +439,24 @@
       },
       "alts": [
         {
+          "plate": "structure/implied-9x16",
+          "bind": {
+            "kicker": "?data.implied.kicker",
+            "statement": "data.implied.statement",
+            "demand": "data.implied.demand",
+            "demand-label": "?data.implied.demand-label",
+            "history-low": "data.implied.history-low",
+            "history-high": "data.implied.history-high",
+            "history-label": "?data.implied.history-label",
+            "axis-low": "data.implied.axis-low",
+            "axis-high": "data.implied.axis-high",
+            "marker": "data.implied.marker",
+            "band": "data.implied.band"
+          },
+          "prefer": true,
+          "notes": "THE VERDICT AS THE WORKBOOK ANSWERS IT, as the stock short's cheap-or-trap (item 1): the growth today's price needs against what the last four years delivered. RBLX said exactly that (“priced for six percent growth after delivering twenty-four”) over two sentences on a card. Taken whenever the sheet has them."
+        },
+        {
           "plate": "structure/confession-statement-9x16",
           "bind": {
             "kicker": "?compare.kicker",
@@ -421,28 +464,31 @@
             "happened": "compare.light",
             "caption": "?script.cheap_or_trap"
           },
-          "notes": "The two-sided beat as said-against-happened. Names its slots nothing like `both-true`, so it restates the binds; `wrong` and the three labels are the kit's own and take no binding."
+          "notes": "The two-sided beat as said-against-happened. Names its slots nothing like `both-true`, so it restates the binds; `wrong` and the three labels are the kit's own and take no binding.",
+          "focus": "happened"
         }
-      ]
+      ],
+      "notes": "It held twelve seconds as one card when the writer added a joke after the verdict (RBLX, 1 Nov 2026). Past its ceiling, the two lines move in on the second (`focus`), the line the voice is weighing; the implied-growth chart, which has nothing to move in on, cuts to the two lines instead (`second_drawing`)."
     },
     {
       "id": "close",
       "plate": "structure/closing-t2-9x16",
       "max_hold_s": 7,
+      "anchor": "conclusion",
       "bind": {
         "kicker": "?channel.handle",
         "statement": "script.conclusion"
       },
-      "notes": "ONE THING AT STATEMENT SIZE, FIRST (item 25). The three-line close drew a conclusion in `line-1` and two empty rules under it, which is the empty furniture the samples were full of. It is an alternate now, and only for a conclusion of exactly three sentences, one a line. The handle sits in the kicker: this plate's date label is in the caption band.",
+      "notes": "LISTENS FOR THE CONCLUSION (RBLX, 1 Nov 2026): unanchored, it went up as soon as the verdict's time ran out and sat ten seconds over a joke and then the last line. ONE THING AT STATEMENT SIZE, FIRST (item 25). The three-line close drew a conclusion in `line-1` and two empty rules under it, which is the empty furniture the samples were full of. It is an alternate now, and only for a conclusion of exactly three sentences, one a line. The handle sits in the kicker: this plate's date label is in the caption band.",
       "alts": [
         {
           "plate": "cards/quote-pull-9x16",
           "bind": {
             "body": "script.conclusion",
             "attribution": "?channel.handle",
-            "source": "?script.ticker"
+            "source": "?source.conclusion|script.ticker"
           },
-          "notes": "The conclusion as a pulled line."
+          "notes": "The conclusion as a pulled line. Anchored now, the beat can carry the writer's source for it, and this card prints its own source line, so that is where it goes; the ticker when there is none."
         },
         {
           "plate": "structure/closing-9x16",
@@ -471,6 +517,7 @@
         "the-why",
         "the-quarter",
         "the-sheet",
+        "the-comment",
         "the-turn",
         "so-what",
         "close"
@@ -489,6 +536,7 @@
         "the-quarter",
         "the-turn",
         "the-sheet",
+        "the-comment",
         "guidance",
         "so-what",
         "close"
@@ -506,6 +554,7 @@
         "vs-expected",
         "the-quarter",
         "the-sheet",
+        "the-comment",
         "guidance",
         "the-turn",
         "so-what",

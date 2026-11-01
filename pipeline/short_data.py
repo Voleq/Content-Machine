@@ -612,14 +612,20 @@ def implied(data, script=None) -> dict[str, str] | None:
     axis_lo = math.floor(bottom / step - 1e-9) * step if bottom < 0 else 0.0
     said = _pct(fcf) if fcf is not None else _pct(rev)
     what = "free cash flow" if fcf is not None else "revenue"
-    verb = "needs" if ig > (fcf if fcf is not None else rev) else "asks for only"
+    # WORDED TO FIT ITS OWN BOXES (1 Nov 2026). "The price asks for only
+    # 5.7% a year. The last four years of free cash flow did 24%." is 83
+    # characters for a 74-character box, and "revenue 27% a year" 18 for 17,
+    # so the card refused itself whenever the price asked for less than was
+    # delivered — the cheap side of every cheap-or-trap — and the beat fell
+    # back to two sentences.
+    verb = "needs" if ig > (fcf if fcf is not None else rev) else "asks only"
     out = {
         "kicker": f"{_ticker(data, script)} · what the price assumes",
-        "statement": (f"The price {verb} {_pct(ig)} a year. The last four "
-                      f"years of {what} did {said}."),
+        "statement": (f"The price {verb} {_pct(ig)} a year. Four years of "
+                      f"{what} did {said}."),
         "demand": f"{_pct(ig)} a year",
         "demand-label": "free cash flow growth today's price assumes, for good",
-        "history-label": "what the last four years delivered",
+        "history-label": "what the last four years did, a year",
         "axis-low": _pct(axis_lo),
         "axis-high": _pct(axis_hi),
         "marker": _pct(ig),
@@ -636,8 +642,8 @@ def implied(data, script=None) -> dict[str, str] | None:
 
 
 def b_or(pair) -> str:
-    """`(0.045, "FCF")` -> `FCF 4.5% a year`."""
-    return f"{pair[1]} {_pct(pair[0])} a year"
+    """`(0.045, "FCF")` -> `FCF 4.5%` (the label under it says "a year")."""
+    return f"{pair[1]} {_pct(pair[0])}"
 
 
 def week52(data, script=None) -> dict[str, str] | None:
@@ -1004,30 +1010,35 @@ def move_price(session, day: dict | None, script=None) -> str | None:
 # The multiple the cheap-or-trap line is about
 # ---------------------------------------------------------------------------
 
+# "Times", as said or as written: "seventy times", "18x", "18 ×". The RBLX
+# short wrote "18x free cash flow", which no pattern read, so the card fell
+# back to revenue then and now under the valuation line (1 Nov 2026).
+_TIMES = r"(?:times|(?<=\d)[x×]|(?<=\d )[x×])"
+
 # The valuation multiples a writer names, most specific first: the Snapshot
 # field that holds today's figure, the peer table's name for it, and the ways
-# it is written or said ("EV/EBITDA", "seventy times EBITDA").
+# it is written or said ("EV/EBITDA", "seventy times EBITDA", "18x EBITDA").
 _MULTIPLES: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
     ("EV/EBITDA", "ev_ebitda", "EV/EBITDA",
      (r"ev\s*/\s*ebitda", r"enterprise value to ebitda", r"ebitda multiple",
-      r"times\s+(?:its\s+|the\s+)?ebitda")),
+      _TIMES + r"\s+(?:its\s+|the\s+)?ebitda")),
     ("EV/sales", "ev_sales", "",
      (r"ev\s*/\s*(?:sales|revenue)", r"enterprise value to (?:sales|revenue)")),
     ("EV/FCF", "ev_fcf", "",
      (r"ev\s*/\s*(?:fcf|free cash flow)",)),
     ("P/FCF", "p_fcf", "",
      (r"p\s*/\s*fcf", r"price to free cash flow",
-      r"times\s+(?:its\s+)?free cash flow")),
+      _TIMES + r"\s+(?:its\s+)?free cash flow")),
     ("P/S", "ps_ttm", "P/S (TTM)",
      (r"p\s*/\s*s(?![a-z])", r"price to sales",
-      r"times\s+(?:its\s+)?(?:sales|revenue)")),
+      _TIMES + r"\s+(?:its\s+)?(?:sales|revenue)")),
     ("forward P/E", "forward_pe", "",
-     (r"forward\s+p\s*/\s*e(?![a-z])", r"times\s+forward\s+earnings")),
+     (r"forward\s+p\s*/\s*e(?![a-z])", _TIMES + r"\s+forward\s+earnings")),
     ("P/E", "pe_ttm", "P/E (TTM)",
      (r"p\s*/\s*e(?![a-z])", r"(?<![a-z])pe(?![a-z])", r"price to earnings",
-      r"earnings multiple", r"times\s+(?:its\s+)?earnings")),
+      r"earnings multiple", _TIMES + r"\s+(?:its\s+)?earnings")),
     ("P/B", "pb", "",
-     (r"p\s*/\s*b(?![a-z])", r"price to book", r"times\s+(?:its\s+)?book")),
+     (r"p\s*/\s*b(?![a-z])", r"price to book", _TIMES + r"\s+(?:its\s+)?book")),
 )
 
 

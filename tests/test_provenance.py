@@ -369,6 +369,9 @@ def test_a_hosted_fallback_is_named_and_counted(settings, monkeypatch):
         return {"choices": [{"message": {"content": "ok"}}]}
 
     monkeypatch.setattr(llm, "_post", _post)
+    # Every Ollama call is streamed (1 Nov 2026): refused the same way.
+    monkeypatch.setattr(llm, "_ollama_stream",
+                        lambda url, *a, **k: _post(url, {}, {}, 0))
     llm.reset_llm_calls()
     for _ in range(3):
         assert llm.chat("q", live, purpose="skeptic") == "ok"
@@ -394,8 +397,7 @@ def test_a_local_answer_is_not_reported_as_a_fallback(settings, monkeypatch):
     live = settings.model_copy(update={
         "mock_mode": False, "llm_provider_order": "ollama,github"})
 
-    monkeypatch.setattr(llm, "_post", lambda *a, **k: {
-        "message": {"content": "ok"}})
+    monkeypatch.setattr(llm, "_ollama_stream", lambda *a, **k: "ok")
     llm.reset_llm_calls()
     assert llm.chat("q", live, purpose="skeptic") == "ok"
     line = next(ln for ln in Provenance(
@@ -563,6 +565,9 @@ def test_a_second_video_does_not_inherit_the_first_one_s_llm_calls(settings, mon
         return {"choices": [{"message": {"content": "ok"}}]}
 
     monkeypatch.setattr(llm, "_post", _post)
+    # Every Ollama call is streamed (1 Nov 2026): refused the same way.
+    monkeypatch.setattr(llm, "_ollama_stream",
+                        lambda url, *a, **k: _post(url, {}, {}, 0))
     llm.reset_llm_calls()
 
     with llm.llm_scope("AAPL/2026-09-19"):
@@ -592,8 +597,7 @@ def test_a_scope_opened_on_another_thread_is_that_thread_s_own(settings, monkeyp
 
     live = settings.model_copy(update={"mock_mode": False,
                                        "llm_provider_order": "ollama"})
-    monkeypatch.setattr(llm, "_post",
-                        lambda *a, **k: {"message": {"content": "ok"}})
+    monkeypatch.setattr(llm, "_ollama_stream", lambda *a, **k: "ok")
     llm.reset_llm_calls()
 
     def _reader():
@@ -619,8 +623,7 @@ def test_the_tally_does_not_grow_without_bound(settings, monkeypatch):
 
     live = settings.model_copy(update={"mock_mode": False,
                                        "llm_provider_order": "ollama"})
-    monkeypatch.setattr(llm, "_post",
-                        lambda *a, **k: {"message": {"content": "ok"}})
+    monkeypatch.setattr(llm, "_ollama_stream", lambda *a, **k: "ok")
     llm.reset_llm_calls()
     for i in range(llm._MAX_SCOPES + 10):
         with llm.llm_scope(f"T{i}/d"):

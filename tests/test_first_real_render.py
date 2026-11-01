@@ -10,7 +10,10 @@ what went wrong on Valentin's box, each pinned so it stays fixed.
 - the workbook's operating cash flow was one quarter behind its labels;
 - the call's outlook warning never reached the writer;
 - Gemma timed out reading the filings, and the angle prompt went out
-  without them.
+  without them;
+- in the clip itself: revenue under the "18x free cash flow" line
+  (test_cheap_or_trap), the stock-comp card held eight seconds, the end card
+  went up ten seconds early, and the verdict then held twelve.
 """
 from __future__ import annotations
 
@@ -308,19 +311,20 @@ def test_benjamin_s_lines_go_to_every_writing_prompt(settings):
 
 # ------------------------------------------------------------- the local model
 
-def test_a_background_pass_asks_the_model_not_to_think(settings, monkeypatch):
+def test_a_background_pass_thinks_unless_told_not_to(settings, monkeypatch):
+    """Valentin, 1 Nov 2026: "i would rather it think". Streamed, always."""
     import pipeline.llm as llm
 
     live = settings.model_copy(update={"mock_mode": False,
                                        "llm_provider_order": "ollama"})
     seen: list[dict] = []
-    monkeypatch.setattr(llm, "_post", lambda url, payload, headers, timeout: (
-        seen.append(payload) or {"message": {"content": "ok"}}))
+    monkeypatch.setattr(llm, "_ollama_stream", lambda url, payload, timeout,
+                        on_text=None: seen.append(payload) or "ok")
     assert llm.chat("q", live, purpose="filing-brief-section") == "ok"
+    assert "think" not in seen[-1] and seen[-1]["stream"] is True
+    quick = live.model_copy(update={"ollama_think_passes": False})
+    assert llm.chat("q", quick, purpose="skeptic") == "ok"
     assert seen[-1]["think"] is False
-    thinking = live.model_copy(update={"ollama_think_passes": True})
-    assert llm.chat("q", thinking, purpose="skeptic") == "ok"
-    assert "think" not in seen[-1]
     llm.reset_llm_calls()
 
 
@@ -338,19 +342,60 @@ def test_an_ollama_that_refuses_think_is_asked_again_without_it(settings,
         response = _Resp()
 
     live = settings.model_copy(update={"mock_mode": False,
-                                       "llm_provider_order": "ollama"})
+                                       "llm_provider_order": "ollama",
+                                       "ollama_think_passes": False})
     calls: list[dict] = []
 
-    def _post(url, payload, headers, timeout):
+    def _stream(url, payload, timeout, on_text=None):
         calls.append(payload)
         if "think" in payload:
             raise _Refused("400")
-        return {"message": {"content": "answered"}}
+        return "answered"
 
-    monkeypatch.setattr(llm, "_post", _post)
+    monkeypatch.setattr(llm, "_ollama_stream", _stream)
     assert llm.chat("q", live, purpose="filing-brief-section") == "answered"
     assert len(calls) == 2 and "think" not in calls[1]
     llm.reset_llm_calls()
+
+
+def test_a_model_that_keeps_thinking_is_never_cut_off():
+    """The timeout is the longest SILENCE. A model that thinks for longer
+    than it, a little at a time, is waited out, and whoever is listening
+    hears it think and then write."""
+    import http.server
+
+    import pipeline.llm as llm
+
+    class _Slow(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):                                # noqa: N802
+            self.rfile.read(int(self.headers.get("Content-Length") or 0))
+            self.send_response(200)
+            self.send_header("Content-Type", "application/x-ndjson")
+            self.end_headers()
+            for _ in range(6):
+                self.wfile.write(b'{"message":{"thinking":"hm"}}\n')
+                self.wfile.flush()
+                time.sleep(0.15)
+            self.wfile.write(b'{"message":{"content":"the answer"}}\n')
+            self.wfile.write(b'{"done":true}\n')
+            self.wfile.flush()
+
+        def log_message(self, *a):
+            pass
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Slow)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    heard: list[bool] = []
+    try:
+        url = f"http://127.0.0.1:{server.server_address[1]}/api/chat"
+        t0 = time.monotonic()
+        with llm.listening(heard.append):
+            got = llm._ollama_stream(url, {"stream": True}, timeout_s=0.5)
+        assert got == "the answer"
+        assert time.monotonic() - t0 > 0.5, "the whole answer outlasted the limit"
+    finally:
+        server.shutdown()
+    assert heard[0] is True and heard[-1] is False
 
 
 def test_three_empty_parts_in_a_row_stop_the_reading(settings, monkeypatch):
@@ -377,25 +422,29 @@ def core(settings):
     from bot.handlers import BotCore
 
     c = BotCore(settings.model_copy(update={"filing_brief_wait_s": 0.6,
-                                            "filing_brief_max_wait_s": 20.0}))
+                                            "ollama_timeout_s": 0.1}))
     yield c
 
 
-def _reading(core, ws, steps: int, step_s: float, counters: dict):
+def _reading(core, ws, steps: int, step_s: float, counters: dict, *,
+             parts: bool = True):
     def _run():
+        counters.update(filings=4, filing=1, filing_label="10-K for 2025",
+                        section="Risk Factors", section_n=1, sections_here=5)
         for i in range(steps):
             time.sleep(step_s)
-            counters["parts_done"] = i + 1
-            counters["parts_total"] = steps
-            counters["filings"], counters["filing"] = 4, 1
+            if parts:
+                counters["parts_done"] = i + 1
+            else:
+                counters["alive_at"], counters["thinking"] = time.monotonic(), True
     core._filing_progress[core._filing_read_key(ws)] = counters
     return core.filing_reader.submit(f"{ws.ticker} {ws.workdate}", _run)
 
 
 def test_a_reading_that_keeps_moving_is_waited_out(core, monkeypatch):
     """RDDT: the prompt went out without the brief after ten minutes flat
-    while the reading was still going. Now the wait lasts as long as parts
-    keep finishing, past FILING_BRIEF_WAIT_S, and says how far it got."""
+    while the reading was still going. Now the upload waits until it
+    returns, and says what it is doing."""
     import bot.handlers as handlers
     from pipeline.workspace import Workspace
 
@@ -407,11 +456,21 @@ def test_a_reading_that_keeps_moving_is_waited_out(core, monkeypatch):
     core._wait_for_reading(ws, fut, notes.append)
     assert time.monotonic() - t0 > core.settings.filing_brief_wait_s
     assert fut.done()
-    assert notes and "reading the filings" in notes[-1]
-    assert "parts read" in notes[-1]
+    assert notes and "Reading RDDT's 10-K for 2025" in notes[-1]
 
 
-def test_a_stalled_reading_lets_the_prompt_go(core):
+def test_one_long_think_is_waited_out_too(core):
+    """One part Gemma thinks about for longer than the hang guard finishes
+    no part at all, and is still not a hang: it is heard thinking."""
+    from pipeline.workspace import Workspace
+
+    ws = Workspace(core.settings, "RDDT", "2026-11-03").create()
+    fut = _reading(core, ws, steps=8, step_s=0.2, counters={}, parts=False)
+    core._wait_for_reading(ws, fut, None)
+    assert fut.done()
+
+
+def test_a_hung_reading_lets_the_prompt_go(core):
     from pipeline.workspace import Workspace
 
     ws = Workspace(core.settings, "RDDT", "2026-11-02").create()
@@ -424,3 +483,69 @@ def test_a_stalled_reading_lets_the_prompt_go(core):
     assert time.monotonic() - t0 < 5
     stuck.set()
     fut.result(timeout=10)
+
+
+def test_the_page_says_what_the_reading_is_doing():
+    from bot.handlers import reading_line
+
+    line = reading_line("RDDT", {
+        "filings": 4, "filing": 2, "filing_label": "10-K for 2024",
+        "section": "Risk Factors", "section_n": 2, "sections_here": 5,
+        "thinking": True, "parts_done": 6}, 7 * 60)
+    assert line.startswith("📄 Reading RDDT's 10-K for 2024 (report 2 of 4)")
+    assert "Risk Factors section, part 2 of 5" in line
+    assert "Gemma is thinking" in line and "7 min so far, 6 parts read" in line
+    assert "angle prompt comes when it is done" in line
+    assert "SEC" in reading_line("RDDT", {}, 30)
+
+
+# ---------------------------------------------------------------- the clip
+
+def test_the_comment_has_its_own_card_and_the_close_waits_for_its_line():
+    """The numbers comment was said over the sheet's last card (stock comp,
+    eight seconds), and the close, unanchored, went up as soon as the
+    verdict's share ran out and sat ten seconds over a joke."""
+    from pipeline.shots import load_format
+
+    fmt = load_format("earnings")
+    ids = [s.id for s in fmt.shots]
+    assert ids.index("the-comment") == ids.index("the-sheet") + 1
+    assert fmt.shot("the-comment").anchor == "numbers_comment"
+    assert fmt.shot("the-comment").captions is False
+    for order in fmt.orders:
+        got = list(order.shots)
+        assert got.index("the-comment") == got.index("the-sheet") + 1, order.name
+    assert fmt.shot("close").anchor == "conclusion"
+
+
+def test_the_verdict_s_growth_card_fits_its_own_boxes():
+    """`implied()`'s copy was longer than the boxes the card reserves for it,
+    so the card refused itself on the cheap side of every cheap-or-trap and
+    the verdict fell back to two sentences."""
+    from types import SimpleNamespace as NS
+
+    from config import Settings
+    from pipeline import short_data
+    from pipeline.compose import _fillable, resolve_plate
+    from pipeline.plates import load_plates
+    from pipeline.shots import load_format
+
+    reg = load_plates(Settings(_env_file=None).assets_dir)
+    shot = load_format("earnings").shot("so-what")
+    card = next(v for v in shot.variants if v.plate == "structure/implied-9x16")
+    plate = resolve_plate(reg, card.plate, "9x16")
+    for ig, fcf, rev in ((0.057, 0.24, 0.27), (0.094, 0.031, 0.12),
+                         (0.181, -0.052, 0.334)):
+        got = short_data.implied(NS(get={"ticker": "RBLX"}.get, valuation={
+            "implied_growth": ig, "hist_fcf_cagr": fcf, "rev_cagr": rev}))
+
+        class Card:
+            def text_for(self, src):
+                return got.get(src.rsplit(".", 1)[-1]) \
+                    if src.startswith("data.implied.") else None
+
+            def image_for(self, src):
+                return None
+
+        assert _fillable(card, shot, plate, Card(), reg, safe=(1080, 1920)), got
+

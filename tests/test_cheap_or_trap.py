@@ -25,6 +25,13 @@ BOEING = ("Debt fell, yet seventy times EBITDA assumes nine point four "
     ("A P/E of 34 is cheap only if margins hold", "P/E"),
     ("Forward P/E of 20 assumes the guide holds", "forward P/E"),
     ("Eighteen times book for a software company", "P/B"),
+    # Written, not said (RBLX, 1 Nov 2026): the card showed revenue then and
+    # now under "18x free cash flow".
+    ("18x free cash flow, priced for 6% growth", "P/FCF"),
+    ("At 25× EBITDA nothing can go wrong", "EV/EBITDA"),
+    ("It trades at 9 x sales", "P/S"),
+    ("Net debt is 3x EBITDA.", None),
+    ("On 2x the volume, it fell.", None),
     # Leverage is not a price.
     ("Net debt is 9.8 times EBITDA, and the P/E is 40", "P/E"),
     ("Net debt is 9.8 times EBITDA.", None),

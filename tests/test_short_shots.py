@@ -583,6 +583,128 @@ def test_the_punch_in_is_the_shots_own_focus_then_where_the_kit_puts_the_eye(
     assert slot("the-turn") is None
 
 
+def test_a_long_beat_with_nothing_to_move_in_on_cuts_to_another_of_its_drawings(
+        fmt):
+    """RBLX (1 Nov 2026): the verdict went up as the implied-growth chart,
+    which has no passage to read and no figure that counts, and held twelve
+    seconds. A beat like that now cuts to another of its own drawings; the
+    beat's start and the next beat's start stay where the words are."""
+    from pipeline.shots import Variant
+
+    other = Variant(plate="paper/press-release-9x16",
+                    bind={"headline": "news.release.headline"}, captions=False)
+    words, duration, anchors = _narration({"headline": 50})
+    spans = resolve_spans(fmt, words, duration, anchors, ordered=True,
+                          punch_in=lambda sh: None, redraw=lambda sh: other)
+    ids = [s.shot.id for s in spans]
+    i = ids.index("the-news")
+    assert ids[i + 1] == "the-news-2"
+    wide, second, turn = spans[i], spans[i + 1], spans[ids.index("the-turn")]
+    assert (wide.shot.part, second.shot.part) == (1, 2)
+    assert wide.shot.redrawn and second.shot.redrawn
+    assert second.shot.part_of == "the-news"
+    assert (second.shot.plate, second.shot.bind) == (other.plate, other.bind)
+    assert second.shot.alts == () and second.shot.focus is None
+    assert second.shot.captions is False and second.shot.marks == ()
+    assert second.shot.anchor is None and not second.anchored
+    assert wide.anchored
+    assert wide.end == pytest.approx(second.start)
+    assert second.end == pytest.approx(turn.start)
+    assert turn.start == pytest.approx(_start_of(words, "delta four"))
+    # Nothing to move in on and nothing else to draw: the beat holds.
+    held = resolve_spans(fmt, words, duration, anchors, ordered=True,
+                         punch_in=lambda sh: None, redraw=lambda sh: None)
+    assert "the-news-2" not in {s.shot.id for s in held}
+    # And a move in, where there is one, is still the first choice.
+    closer = {s.shot.id for s in resolve_spans(
+        fmt, words, duration, anchors, ordered=True,
+        punch_in=lambda sh: "headline", redraw=lambda sh: other)}
+    assert "the-news-in" in closer and "the-news-2" not in closer
+
+
+class _Said:
+    """A resolver that knows the given lines and nothing else."""
+
+    def __init__(self, **said: str) -> None:
+        self.said = {k.replace("_", "."): v for k, v in said.items()}
+
+    def text_for(self, src: str) -> str | None:
+        return self.said.get(src)
+
+    def image_for(self, src: str):
+        return None
+
+
+def _beat(*alts):
+    from pipeline.shots import Shot
+
+    return Shot(id="beat", plate="cards/quote-pull-9x16",
+                bind={"body": "script.body", "attribution": "?script.ticker"},
+                alts=tuple(alts))
+
+
+def test_the_second_drawing_must_say_something_the_first_did_not(reg):
+    """Two layouts of one line cut mid-sentence read as the card glitching.
+    The second drawing of a beat shows new words and sets none of the first
+    one's lines or figures again; a kicker or a ticker on both is fine."""
+    from pipeline.compose import second_drawing
+    from pipeline.shots import Variant
+
+    said = _Said(script_body="Bookings guided down ten to fifteen percent.",
+                 script_ticker="RBLX", script_one="P/FCF is 18x today.",
+                 script_two="Priced for 5.7% growth, forever.")
+    same_line = Variant(plate="cards/definition-9x16",
+                        bind={"term": "?script.ticker", "body": "script.body"})
+    new_lines = Variant(plate="structure/both-true-9x16",
+                        bind={"kicker": "?script.ticker",
+                              "statement-1": "script.one",
+                              "statement-2": "script.two"})
+
+    def pick(shot):
+        return second_drawing(reg, shot, said, aspect="9x16", seed="test",
+                              variants={"beat": shot.variants[0]})
+
+    assert pick(_beat(same_line)) is None
+    assert pick(_beat(same_line, new_lines)) is new_lines
+    # A drawing this script cannot fill is never the second one.
+    assert pick(_beat(Variant(plate="structure/both-true-9x16",
+                              bind={"statement-1": "script.one",
+                                    "statement-2": "script.missing"}))) is None
+    # One plate is one drawing, however it is bound.
+    assert pick(_beat(Variant(plate="cards/quote-pull-9x16",
+                              bind={"body": "script.one"}))) is None
+
+
+def test_a_beat_cut_to_another_drawing_draws_both_and_keeps_every_invariant(
+        fmt, reg):
+    from pipeline.compose import second_drawing
+
+    words, duration, anchors = _narration({"headline": 50})
+    resolver = StubResolver()
+
+    def redraw(sh):
+        return second_drawing(reg, sh, resolver, aspect=fmt.aspect,
+                              seed="test", safe=fmt.safe)
+
+    spans = resolve_spans(fmt, words, duration, anchors, ordered=True,
+                          punch_in=lambda sh: None, redraw=redraw)
+    parts = [sp for sp in spans if sp.shot.redrawn and sp.shot.part == 2]
+    assert parts, "no beat was cut to another drawing"
+    result = build_layers(fmt, spans, resolver, reg, aspect=fmt.aspect,
+                          seed="test")
+    problems = check_invariants(
+        fmt, result, host_shots=[sid for sid in host_shots(fmt)
+                                if any(sp.shot.id == sid for sp in spans)])
+    assert problems == [], "\n".join(problems)
+    for sp in parts:
+        first = next(l for l in result.for_shot(sp.shot.part_of)
+                     if l.kind == "plate")
+        second = next(l for l in result.for_shot(sp.shot.id)
+                      if l.kind == "plate")
+        assert reg.base_key(second.entry_key) != reg.base_key(first.entry_key)
+        assert second.entry_key.startswith(sp.shot.plate.split("/")[0])
+
+
 def test_a_conclusion_heard_at_the_last_moment_keeps_its_card_and_one_shot_shows():
     """The tail pin swallowed the payoff when the conclusion was heard in the
     last moments, and the one-pass repair had measured the shot before it

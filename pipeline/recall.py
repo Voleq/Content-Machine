@@ -947,7 +947,7 @@ _WHY_NOT = {
     "mock": "MOCK_MODE is on, so the model is never called",
     "no_daemon": "nothing answered at the Ollama address — is Ollama running?",
     "model_error": "Ollama answered with an error",
-    "timeout": "the model took too long",
+    "timeout": "the model went silent",
     "no_provider": "no model is configured for /ask (ASK_PROVIDER_ORDER)",
     "empty": "the model came back empty",
     "parse_error": "the model's reply could not be read",
@@ -959,7 +959,7 @@ def _fallback(question: str, hits: list[Hit], reason: str,
               settings: Settings, live: list[Hit] = (), detail: str = "") -> str:
     why = _WHY_NOT.get(reason, reason or "no model answered")
     if reason == "timeout":
-        why += f" (over {settings.ollama_timeout_s:.0f}s)"
+        why += f" (nothing for {settings.ollama_timeout_s:.0f}s)"
     if detail:
         why += f": “{detail}”"
     if reason == "waiting":

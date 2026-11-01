@@ -983,6 +983,9 @@ def test_before_and_after_is_only_drawn_against_a_real_expectation(name, reg):
 @pytest.mark.parametrize("name, shot_id, card", [
     ("short", "cheap-or-trap", "structure/implied-9x16"),
     ("earnings", "vs-expected", "figures/print-vs-consensus-9x16"),
+    # The earnings verdict too (RBLX, 1 Nov 2026): the voice said "priced
+    # for six percent growth after delivering twenty-four" over two lines.
+    ("earnings", "so-what", "structure/implied-9x16"),
 ])
 def test_a_card_the_workbook_fills_is_drawn_wherever_it_can_be(
         name, shot_id, card, reg):

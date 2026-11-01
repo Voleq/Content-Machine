@@ -40,6 +40,7 @@ import logging
 import queue
 import re
 import threading
+import time
 import unicodedata
 from concurrent.futures import Future
 from dataclasses import dataclass, field, replace
@@ -622,9 +623,14 @@ def _summarise_sections(ref, sections: list[dict], settings: Settings,
     dropped = answered = 0
     filing = f"{ref.form} {ref.period or ref.filed}"
     budget = _budget(settings)
-    for section in sections:
+    counters["sections_here"] = len(sections)
+    for i, section in enumerate(sections, 1):
         if counters.get("gave_up"):
             break
+        # Where the reading is, for the upload waiting on it to say.
+        counters["section"], counters["section_n"] = section["title"], i
+        counters["alive_at"] = time.monotonic()
+        counters["thinking"] = None
         # ASK WHETHER THE SECTION FIT, not whether the packed result did.
         # `_compress_sections` clips to the budget, so the thing it hands
         # back always fits by construction — checking that would be checking
@@ -665,6 +671,9 @@ def _read_one(ref, workspace: Path, settings: Settings,
     from pipeline.filings import download_filing, segment_filing
 
     counters["download"] = counters.get("download", 0) + 1
+    counters["filing_label"] = f"{ref.form} for {ref.period or ref.filed}"
+    counters["section"] = ""
+    counters["alive_at"] = time.monotonic()
     path = download_filing(ref, workspace, settings)
     if path is None:
         log.info("filing brief: could not download %s", ref.label)
@@ -753,6 +762,8 @@ def build_brief(ticker: str, workspace: Path, settings: Settings, *,
             out.context_held = False
             joined = joined[:context_budget_chars(settings)]
         counters["llm"] = counters.get("llm", 0) + 1
+        counters["section"], counters["condensing"] = "", True
+        counters["alive_at"] = time.monotonic()
         body = chat(joined, settings, system=_DIFF_SYSTEM,
                     purpose="filing-brief-condense")
         if not body:

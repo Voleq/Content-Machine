@@ -34,7 +34,7 @@ from pipeline import look_alike, marks as mk
 from pipeline.compose import (MEDIA_PREFIX, MEME_SRC, BuildResult, Layer,
                               build_layers, check_budgets, check_invariants,
                               held_layer_spans, placed_meme, plan_variants,
-                              punch_in_slot)
+                              punch_in_slot, second_drawing)
 from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
 from pipeline.render_common import (RenderError, frame_count_check,
@@ -1104,6 +1104,8 @@ def _part_fields(shot) -> dict:
     out = {"part": shot.part}
     if shot.part_of:
         out["part_of"] = shot.part_of
+    if getattr(shot, "redrawn", False):
+        out["redrawn"] = True
     return out
 
 
@@ -2264,6 +2266,13 @@ def _render_short(script, tts, workspace: Path, settings, *,
                              aspect=fmt.aspect, seed=seed, avoid=recent,
                              variants=variants, safe=fmt.safe)
 
+    # And where there is nothing to move in on, another of the beat's own
+    # drawings that shows something the first does not (RBLX, 1 Nov 2026).
+    def redraw(shot):
+        return second_drawing(reg, shot, resolver, aspect=fmt.aspect,
+                              seed=seed, avoid=recent, variants=variants,
+                              safe=fmt.safe)
+
     # A marked script's anchors are searched IN ORDER, each after the last:
     # the words after a marker can also be said earlier, and the first place
     # they are said is not where that beat starts.
@@ -2275,7 +2284,7 @@ def _render_short(script, tts, workspace: Path, settings, *,
                           anchors if anchors is not None
                           else build_anchors(script),
                           ordered=bool(marks), punch_in=punch_in,
-                          host_lines=host_lines)
+                          host_lines=host_lines, redraw=redraw)
 
     # The recent plates (02). The seed alone makes two videos differ by
     # chance; nothing stopped three in a row opening on the same pose in the
@@ -2502,7 +2511,8 @@ def _render_short(script, tts, workspace: Path, settings, *,
         "delivered": {"w": delivered[0], "h": delivered[1]},
         # A beat split for running long shows as both its parts: `part` 1 is
         # the wide picture under the beat's own id, `part` 2 the move in,
-        # under `<id>-in` with `part_of` naming the beat. Unsplit shots carry
+        # under `<id>-in` with `part_of` naming the beat — or, `redrawn` on
+        # both, another drawing of the beat under `<id>-2`. Unsplit shots carry
         # neither key, so a manifest reader that knows nothing of parts reads
         # every shot as it always did.
         # THE COLD OPEN (V4): the number frame one carries and what it is.

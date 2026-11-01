@@ -340,18 +340,14 @@ class Settings(BaseSettings):
     # minutes. Ten minutes of dead time AFTER an upload is the difference
     # between a feature that gets used and one that gets switched off.
     filing_brief_enabled: bool = Field(default=True, alias="FILING_BRIEF_ENABLED")
-    # How long the upload reply will wait with no part of the reading
-    # finishing. A slow reading is waited out (see the next setting); a
-    # stalled one is not — past this the prompt goes out without the brief
-    # and says so, because a hung intake is worse than an absent brief.
+    # THE UPLOAD WAITS FOR THE READING (Valentin, 1 Nov 2026: "read the
+    # filings before that, don't hand me that without reading them"; "don't
+    # move to the next step until it returns"). However long Gemma thinks.
+    # This is only the guard against a reading that has hung: no word from
+    # the model and no part finished for this long (never less than twice
+    # `OLLAMA_TIMEOUT_S`, by which time the model's own call has given up),
+    # and the prompt goes out without the brief, saying so.
     filing_brief_wait_s: float = Field(default=600.0, alias="FILING_BRIEF_WAIT_S")
-    # THE UPLOAD WAITS FOR THE READING (Valentin, 1 Nov 2026: "i would like
-    # him to read fillings before that, not hand me that without reading
-    # them"). `filing_brief_wait_s` above is now how long it waits with NO
-    # part of the reading finishing — a stalled reading, not a slow one —
-    # and this is the ceiling on the whole wait, however well it is going.
-    filing_brief_max_wait_s: float = Field(default=3600.0,
-                                           alias="FILING_BRIEF_MAX_WAIT_S")
     # The filing passes route through `pipeline.llm.chat` like every other
     # LLM call, so `llm_provider_order` below decides WHERE they run. This
     # setting's only remaining job is the offline escape hatch: `mock`
@@ -533,17 +529,19 @@ class Settings(BaseSettings):
     #
     # `scripts/check_llm_context.py` proves it is actually taking effect.
     ollama_num_ctx: int = Field(default=16384, alias="OLLAMA_NUM_CTX")
-    # Raised from 120s (K2). Two full 10-Ks is a dozen-plus calls on a
-    # background job with no user waiting on it, and a timeout used to be
-    # swallowed as "unavailable" at debug level — indistinguishable from a
-    # missing daemon. It is logged at warning level now, because a pass that
-    # nearly worked is different information from one that never started.
-    ollama_timeout_s: float = Field(default=300.0, alias="OLLAMA_TIMEOUT_S")
+    # THE LONGEST SILENCE, not the longest answer (1 Nov 2026). Every call
+    # to the local model is streamed, so one that keeps thinking or writing
+    # is waited out however long it takes; this is how long it may say
+    # nothing at all — still loading, or queued behind another answer —
+    # before the call is given up on. It was a limit on the whole answer,
+    # 300 s, and a thinking Gemma on the 3060 ran past it on every other
+    # filing section.
+    ollama_timeout_s: float = Field(default=900.0, alias="OLLAMA_TIMEOUT_S")
     # Whether the background passes (filing brief, transcript pick, jokes,
-    # skeptic...) let a thinking model think first. Off (1 Nov 2026): the
-    # reasoning took minutes per call on the 3060 and the filing brief never
-    # finished. The page's chat is not affected.
-    ollama_think_passes: bool = Field(default=False, alias="OLLAMA_THINK_PASSES")
+    # skeptic...) let a thinking model think before it answers. On: Valentin
+    # would rather it thinks (1 Nov 2026). False is the faster, less careful
+    # read. The page's chat keeps the model's own default either way.
+    ollama_think_passes: bool = Field(default=True, alias="OLLAMA_THINK_PASSES")
     # headless Chromium for the screenshots; empty -> Playwright default, or the
     # pre-provisioned browser if present.
     playwright_chromium_path: str = Field(default="", alias="PLAYWRIGHT_CHROMIUM_PATH")

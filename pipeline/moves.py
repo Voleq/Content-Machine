@@ -704,7 +704,10 @@ def plan_short(fmt, result, reg, words: Sequence = (), *, seed: str = "",
     for span in result.spans:
         shot = span.shot
         beat = getattr(shot, "part_of", "") or shot.id
-        closer = getattr(shot, "part", 0) == 2
+        # Not a cut to ANOTHER drawing of the beat: that is a new picture,
+        # and its data draws on like any other.
+        closer = (getattr(shot, "part", 0) == 2
+                  and not getattr(shot, "redrawn", False))
         layer = plate_layers.get(shot.id)
         plate = reg.get(layer.entry_key) if layer is not None else None
         own = sources.get(shot.id) or sources.get(beat) \

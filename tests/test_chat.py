@@ -104,7 +104,9 @@ def test_without_a_callback_the_call_is_the_plain_one(settings, ollama):
     out = llm.chat_result("hi", _live(settings, ollama["url"]), purpose="ask",
                           providers=["ollama"])
     assert out.text == "Two switches are off [1]."
-    assert ollama["said"][0]["stream"] is False
+    # Streamed too since 1 Nov 2026, so a model that thinks for minutes is
+    # never cut off; the answer comes back whole all the same.
+    assert ollama["said"][0]["stream"] is True
     assert len(ollama["said"][0]["messages"]) == 1      # no system, no history
 
 

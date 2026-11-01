@@ -531,6 +531,10 @@ def test_the_filings_module_has_one_llm_path(settings, monkeypatch):
         return {"message": {"content": "routed"}}
 
     monkeypatch.setattr(llm, "_post", _post)
+    # Every Ollama call is streamed (1 Nov 2026); this is where it goes out.
+    monkeypatch.setattr(llm, "_ollama_stream", lambda url, payload, timeout,
+                        on_text=None: _post(url, payload, {}, timeout)
+                        ["message"]["content"])
     live = settings.model_copy(update={"mock_mode": False})
     assert F._llm_chat("q", live) == "routed"
     assert seen and "11434" in seen[0], \

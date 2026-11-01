@@ -1049,6 +1049,111 @@ def punch_in_slot(reg: Registry, shot: Shot, frame: tuple[int, int],
 
 
 
+# A drawing part 2 cuts to must say SOMETHING ELSE: at least half of what it
+# puts on screen is not on part 1 already. A source line under the same
+# guidance sentence is new words and the same card.
+REDRAW_NEW_SHARE = 0.5
+# And it may not set again what part 1 set: no line this long and no figure,
+# outside the slots that label a card rather than say anything on it. The
+# payoff's figure re-set on a second layout jumps across the frame.
+REDRAW_REPEAT_CHARS = 12
+REDRAW_FURNITURE = frozenset({"kicker", "attribution", "source", "date",
+                              "date-label", "unit"})
+
+
+def second_drawing(reg: Registry, shot: Shot, resolver: Resolver, *,
+                   aspect: str = "", seed: str = "",
+                   avoid: "Collection[str]" = (),
+                   variants: "dict[str, Any] | None" = None,
+                   safe: tuple[int, int] | None = None):
+    """Another of a beat's drawings to cut to when it runs long, or None.
+
+    `resolve_spans` asks this when `punch_in_slot` found nothing to move in on
+    (RBLX, 1 Nov 2026: the implied-growth chart has no passage and no
+    counting figure, and the verdict held it twelve seconds). The answer is
+    one of the shot's own variants, so the template still says every picture
+    a beat can have, and only one that:
+
+    * is not the drawing part 1 shows, by the drawing rather than the hour;
+    * this script can fill, in this kit, the way the rotation asks it;
+    * SHOWS WORDS PART 1 DOES NOT, for at least half of what it shows
+      (`REDRAW_NEW_SHARE`), and sets none of part 1's lines or figures again
+      (`REDRAW_REPEAT_CHARS`). Three layouts of one conclusion are three ways
+      to draw it once; cutting between two of them mid-sentence reads as the
+      card glitching, not as a new picture. Such a drawing is refused, and
+      the beat holds.
+
+    `prefer` drawings first, then the template's order.
+    """
+    if not shot.plate or shot.host or shot.plate.startswith("room/") \
+            or len(shot.variants) < 2:
+        return None
+    begin = getattr(resolver, "begin_shot", None)
+    if begin is not None:
+        begin(shot)
+    first = (variants.get(shot.id) if variants is not None
+             and shot.id in variants
+             else choose_variant(reg, shot, aspect, resolver, seed=seed,
+                                 avoid=avoid, safe=safe))
+    if first is None:
+        first = shot.variants[0]
+    from pipeline.moves import is_one_figure
+
+    shown = _shown_text(reg, first, shot, resolver, aspect)
+    if shown is None:
+        return None
+    joined = " ".join(shown.values())
+    try:
+        drawn = resolve_plate(reg, first.plate, aspect)
+    except TemplateError:
+        drawn = None
+    if drawn is None:
+        return None
+    ordered = sorted(shot.variants,
+                     key=lambda v: not getattr(v, "prefer", False))
+    for v in ordered:
+        try:
+            plate = resolve_plate(reg, v.plate, aspect)
+        except TemplateError:
+            continue
+        if plate is None or reg.base_key(plate.key) == reg.base_key(drawn.key):
+            continue
+        if not _fillable(v, shot, plate, resolver, reg, safe=safe):
+            continue
+        theirs = _shown_text(reg, v, shot, resolver, aspect)
+        if not theirs:
+            continue
+        again = [(n, t) for n, t in theirs.items() if t in joined]
+        if any(n not in REDRAW_FURNITURE
+               and (len(t) >= REDRAW_REPEAT_CHARS or is_one_figure(t))
+               for n, t in again):
+            continue
+        fresh = sum(len(t) for t in theirs.values() if t not in joined)
+        if fresh >= REDRAW_NEW_SHARE * sum(len(t) for t in theirs.values()):
+            return v
+    return None
+
+
+def _shown_text(reg: Registry, variant, shot: Shot, resolver: Resolver,
+                aspect: str) -> dict[str, str] | None:
+    """The words `variant` puts on screen for this script, by slot, or None."""
+    try:
+        plate = resolve_plate(reg, variant.plate, aspect)
+    except TemplateError:
+        return None
+    if plate is None:
+        return None
+    bind, lit, focus = variant.resolved(shot)
+    probe = replace(shot, plate=plate.key, bind=bind, lit=lit, focus=focus,
+                    alts=())
+    try:
+        values, _unfilled, _skipped = _bound_values(probe, plate, resolver, reg)
+    except Exception:                              # noqa: BLE001
+        return None
+    out = {n: " ".join(str(v).split()) for n, v in values.items()}
+    return {n: t for n, t in out.items() if t}
+
+
 def _type_size(plate: Plate, name: str) -> float:
     slot = plate.slot(name)
     return float(((plate.type_roles or {}).get(slot.role) or {}).get("size") or 0) if slot else 0.0
@@ -1188,7 +1293,11 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
         #    left to itself it would roll again and could cut from one headline
         #    band to a different one mid-sentence. It takes the plate, binds
         #    and lit band part 1 was drawn with, and keeps only its own focus.
-        first = drawn.get(shot.part_of) if shot.part == 2 else None
+        #    UNLESS IT IS ANOTHER DRAWING (`redrawn`): a beat with nothing to
+        #    move in on cuts to a different picture of itself, and that part
+        #    2 names its own plate and binds.
+        first = (drawn.get(shot.part_of)
+                 if shot.part == 2 and not shot.redrawn else None)
         if first is not None:
             # A sheet that lit its rows as they were read ends part 1 with
             # every row up, so the close-up opens on all of them lit.
@@ -1208,7 +1317,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
         # Part 1 is the WIDE picture: the move in is what part 2 is for, and
         # a part 1 already moved in would make the cut between them a cut to
         # the same frame.
-        if shot.part == 1:
+        if shot.part == 1 and not shot.redrawn:
             drawn[shot.id] = shot
             shot = replace(shot, focus=None)
 
@@ -1294,9 +1403,11 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
 
             # FILL THE PHONE (V8): a card on its own grows into the clear
             # area. Not under a move in, which frames its own picture, nor
-            # either half of a split beat, whose second half must be closer.
+            # either half of a split beat, whose second half must be closer —
+            # except one cut to another drawing, which is two cards.
             if (safe and fh > fw and plate.family != "room" and not shot.host
-                    and not host_column and not shot.focus and not shot.part):
+                    and not host_column and not shot.focus
+                    and (not shot.part or shot.redrawn)):
                 got = _fill_phone(plate, shot, values, reg, placed, frame, safe,
                                   aspect)
                 if got is not None:
