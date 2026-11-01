@@ -723,6 +723,12 @@ def c_panel(c: Call):
     if not url:
         return Reply("The web panel is not running. PANEL_ENABLED=true in "
                      ".env and restart the bot.")
+    remote = getattr(c.core, "panel_remote_url", "")
+    if remote:
+        return Reply(f"🖥 On this PC: {url}\n📱 From your phone: {remote}\n\n"
+                     f"Both links carry the panel's key — keep them in this "
+                     f"chat. The phone link opens only while the phone is on "
+                     f"your private network (Tailscale switched on).")
     return Reply(f"🖥 {url}\n\nThe link carries the panel's key — keep it in "
                  f"this chat. It answers only on {c.core.settings.panel_host}.")
 
@@ -1239,7 +1245,8 @@ COMMANDS: tuple[Command, ...] = (
                 "across restarts, over what `.env` says. On its own it lists "
                 "them.")),
     Command("admin", "panel", "", "the web panel's link", c_panel, doc=(
-        "The link to the web control panel, when it is running.")),
+        "The link to the web control panel, when it is running, and the "
+        "phone link too when PANEL_REMOTE_URL is set.")),
     # /help
     Command("help", "", "[FAMILY]", "this list; /help FAMILY for details",
             c_help, aliases=("start",), example="render",

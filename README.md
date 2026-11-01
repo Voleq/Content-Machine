@@ -885,7 +885,7 @@ Both read what the bot has already saved: every script, filing brief, check repo
 | `/admin usage` | Requests a day to the SEC, Pexels and stockanalysis.com (today, yesterday and the busiest day this week), so a coming block shows before the filings, the b-roll or the calls go quiet. Then what each folder of the cache holds, and a button that prunes the 3D Dennis shots and segment clips nobody has written in a week, after asking. The voice cache is paid for and never pruned. |
 | `/admin quiet [on\|off]` | Keeps only finished, failed and needs-you pushes (no "started", no progress). On its own it toggles. |
 | `/admin switch [NAME on\|off]` | The four settings that wait on your call, also on the page's Settings: `short_meme`, `viewer_questions`, `voice_room`, `voice_deess`. A flip takes effect at once and is kept across restarts, over what `.env` says. On its own it lists them. |
-| `/admin panel` | The link to the web control panel, when it is running. |
+| `/admin panel` | The link to the web control panel, when it is running, and the phone link too when PANEL_REMOTE_URL is set. |
 
 ### /help — Help
 
@@ -989,7 +989,10 @@ cannot do anything the chat cannot.
 - **Where:** `http://127.0.0.1:8765/` on the render box (`PANEL_HOST`,
   `PANEL_PORT`). `/admin panel` sends the link with its key. From another
   machine, tunnel it — `ssh -L 8765:127.0.0.1:8765 renderbox` — rather
-  than opening the port.
+  than opening the port. From a phone, Tailscale Serve inside Ubuntu
+  (`sudo tailscale serve --bg --https=443 127.0.0.1:8765`) keeps it private
+  to your own devices; put that address in `PANEL_REMOTE_URL` and
+  `/admin panel` sends the phone link as well.
 - **The key:** every API call needs `PANEL_TOKEN`, or the one generated on
   first start into `state/panel_token`. Files are served only from the
   workspace, the templates and `assets/custom/` — never `state/`.
@@ -1110,6 +1113,7 @@ number, which is exactly the case the gate exists to catch.
 | `STATUS_PAGE_ENABLED` / `STATUS_PAGE_PORT` | false / 8787 | read-only localhost view |
 | `PANEL_ENABLED` / `PANEL_HOST` / `PANEL_PORT` | true / 127.0.0.1 / 8765 | the web control panel (see "The web panel") |
 | `PANEL_TOKEN` | generated into `state/panel_token` | the panel's key; `/admin panel` sends the link |
+| `PANEL_REMOTE_URL` | empty | the panel's private-network address (Tailscale Serve); `/admin panel` adds the phone link |
 | `PANEL_CHAT_ID` | first operator chat | whose active video and wizard the panel shares |
 | `PANEL_MAX_UPLOAD_MB` | 500 | the largest file the panel takes |
 | `INBOX_ENABLED` / `INBOX_HOUR` | true / 8 | the morning list of what is waiting on you |

@@ -509,6 +509,56 @@ def served(core):
     thread.join(timeout=5)
 
 
+def test_the_phone_link_is_the_remote_address_with_the_key_on(settings):
+    """PANEL_REMOTE_URL (a Tailscale Serve address) becomes the phone link:
+    a slash or a fragment he pasted along does not double up, and a value
+    that is not a web address is left out rather than stopping the bot."""
+    from bot.panel import remote_link
+
+    def link(value):
+        return remote_link(settings.model_copy(
+            update={"panel_remote_url": value}), "k3y_-x")
+
+    assert link("") == ""
+    assert link("https://dennis.tail1234.ts.net") == \
+        "https://dennis.tail1234.ts.net/#k=k3y_-x"
+    assert link(" https://dennis.tail1234.ts.net/#k=old ") == \
+        "https://dennis.tail1234.ts.net/#k=k3y_-x"
+    assert link("dennis.tail1234.ts.net") == ""
+
+
+@pytest.mark.parametrize("remote", ["", "https://dennis.tail1234.ts.net/"])
+def test_admin_panel_sends_the_phone_link_when_there_is_one(settings, remote):
+    """He opens the panel from his phone by tapping the link `/admin panel`
+    sends; without PANEL_REMOTE_URL the reply is the PC link alone."""
+    from bot import commands as cmds
+    from bot.panel import start_panel
+
+    core = BotCore(settings.model_copy(update={
+        "operator_chat_ids": [CHAT], "panel_remote_url": remote}))
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=loop.run_forever, daemon=True)
+    thread.start()
+    server, url = start_panel(core, loop, host="127.0.0.1", port=0)
+    try:
+        key = url.split("#k=")[1]
+        text = asyncio.run(cmds.run_command(core, CHAT, "admin",
+                                            ["panel"])).text
+        assert url in text
+        if remote:
+            phone = f"https://dennis.tail1234.ts.net/#k={key}"
+            assert core.panel_remote_url == phone
+            assert f"From your phone: {phone}" in text
+        else:
+            assert core.panel_remote_url == ""
+            assert "phone" not in text
+    finally:
+        core.chats.close()
+        server.shutdown()
+        loop.call_soon_threadsafe(loop.stop)
+        thread.join(timeout=5)
+
+
 def test_the_feed_says_which_run_of_the_bot_it_is(core, served):
     """The page asks for the events after the last number it saw. A
     restarted bot counts from one again, so the page asked for events after

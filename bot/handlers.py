@@ -426,6 +426,7 @@ class BotCore:
         self.send_to = None
         self.feed = None
         self.panel_url = ""
+        self.panel_remote_url = ""
 
     # ------------------------------------------------------------- helpers
     def _ws_or_error(self, ticker: str, want=None) -> Workspace | None:
