@@ -430,12 +430,15 @@ def _shade_under_type(img: Image.Image, d, type_ops, pad: int) -> list[str]:
 def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
              size: tuple[int, int], orient: str,
              is_move: bool = False, dressing=None,
-             written: Path | None = None, performer=None) -> Image.Image:
+             written: Path | None = None, performer=None,
+             with_host: bool = True) -> Image.Image:
     """One cover. The room, a drawn border, the ticker, the number, Dennis.
 
     With a `performer` the video has the 3D Dennis, and so does its cover,
     never the drawn one: on his own spot as the video has him, or, where the
-    type is over that spot, rendered there and cut to himself."""
+    type is over that spot, rendered there and cut to himself. `with_host`
+    False draws the room and the type alone (a short's wide cover, which
+    nothing ships)."""
     from pipeline.host import place_on_room, stands_on
 
     W, H = size
@@ -490,9 +493,9 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
     type_ops = _type_ops(settings, d, ticker=ticker, metric=metric, kicker=kicker,
                          size=size, orient=orient, is_move=is_move, pad=pad)
 
-    fig, shot = _host(settings, f"{ticker}|{orient}")
+    fig, shot = _host(settings, f"{ticker}|{orient}") if with_host else (None, None)
     feet = None
-    if performer is not None:
+    if performer is not None and with_host:
         # THE VIDEO'S DENNIS IS 3D, SO THE COVER'S IS. He plays the pose
         # the drawn one would have; with no 3D room under the cover, or no
         # drawing of him, the cover goes without him rather than with the
@@ -631,7 +634,13 @@ def make_thumbnail(script, ws, settings: Settings) -> Path | None:
         # One performer per room aspect, each asked of ITS rooms: the wide
         # cover stands in a 16:9 room and the tall one in a 9:16 room, and a
         # kit can have the 3D room at one aspect while the other is drawn.
-        wide_perf = _performer(settings, "16x9")
+        #
+        # A SHORT SHIPS THE TALL COVER ONLY, so its wide one is the room and
+        # the type, with no Blender behind it. It used to start a second
+        # Blender in a 16:9 room for a cover nothing uploads, and that was
+        # most of the ten minutes his first real short sat on "Saving the
+        # finished video" (31 Oct 2026).
+        wide_perf = None if is_short else _performer(settings, "16x9")
         tall_perf = _performer(settings, "9x16") if is_short else None
         try:
             with at_episode_hour(settings, ws.path,
@@ -639,7 +648,8 @@ def make_thumbnail(script, ws, settings: Settings) -> Path | None:
                 _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
                          size=WIDE, orient="wide", is_move=is_move,
                          dressing=dressing, written=written,
-                         performer=wide_perf).save(out)
+                         performer=wide_perf,
+                         with_host=not is_short).save(out)
                 if is_short:
                     _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
                              size=TALL, orient="tall", is_move=is_move,

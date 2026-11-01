@@ -308,7 +308,20 @@ _MOVE_WORDS = (
     "margin", "free cash flow", "cash flow", "deliver", "demand", "backlog",
     "headwind", "pressure", "charge", "impair", "miss", "decline", "growth",
     "inventory", "tariff", "pricing", "orders", "weak", "strong", "risk",
-    "challeng", "disappoint", "uncertain", "slow")
+    "challeng", "disappoint", "uncertain", "slow",
+    # What a consumer or platform business blames a soft quarter on (RBLX:
+    # the CFO put the outlook down to a big game's release, and none of
+    # these words was here to find it).
+    "compet", "launch", "release", "engagement", "users", "players",
+    "bookings", "season", "impact", "softer", "moderat", "decelerat",
+    "next quarter", "fourth quarter", "second half", "back half")
+# Sentences every call opens with and none of them says anything: the
+# safe-harbor paragraph was RBLX's first "passage that bears on the move".
+_BOILERPLATE = re.compile(
+    r"forward[- ]looking|safe harbou?r|actual results (may|could|might)|"
+    r"risk factors|non-gaap|reconciliation|investor relations (web)?site|"
+    r"being recorded|replay|form 10-[kq]|securities and exchange commission|"
+    r"undertake no obligation", re.I)
 _PROMISE_WORDS = (
     "expect", "target", "guid", "will ", "plan", "by the end of", "next year",
     "we anticipate", "on track", "commit", "goal", "aim", "intend", "by 20")
@@ -331,7 +344,7 @@ def _windows(turns: list[dict]) -> list[dict]:
             continue
         sents = _sentences(turn.get("text", ""))
         for i, s in enumerate(sents):
-            if "forward-looking" in s.lower() or len(s) < 40:
+            if _BOILERPLATE.search(s) or len(s) < 40:
                 continue
             for width in (1, 2):
                 text = " ".join(sents[i:i + width])
@@ -353,6 +366,80 @@ def _score(w: dict, focus: str) -> float:
     elif "analyst" in role and focus == "move":
         score += 0.5 if "?" in w["text"] else 0
     return score - (0.3 if len(w["text"]) > 300 else 0)
+
+
+# --------------------------------------------------------------------------
+# What management said comes next.
+#
+# Five picked passages missed the line an earnings short most needed: the
+# RBLX CFO putting a slower quarter down to a big game's release. The
+# outlook is the move on an earnings day, so every executive sentence about
+# it goes to the writer word for word, best first up to a budget.
+# --------------------------------------------------------------------------
+
+OUTLOOK_CHARS = {"short": 2400, "long": 4000}
+_OUTLOOK = re.compile(
+    r"\b(guid\w*|outlook|expect\w*|anticipat\w*|forecast\w*|"
+    r"next (quarter|year)|(first|second|third|fourth) quarter|q[1-4]\b|"
+    r"(second|back) half|full[- ]year|headwind\w*|tailwind\w*|compet\w*|"
+    r"launch\w*|releas\w*|season\w*|moderat\w*|decelerat\w*|slow\w*|"
+    r"soft\w*|impact\w*|tough\w* comp\w*|lapping)", re.I)
+# Words that give a reason: the sentence that says WHY the guide is what it is.
+_BECAUSE = re.compile(
+    r"\b(because|due to|driven by|given|reflect\w*|as a result|on the back "
+    r"of|attribut\w*|caused by|related to|tied to|owing to)\b", re.I)
+_EXEC_ROLES = ("chief", "ceo", "cfo", "coo", "cto", "president", "founder",
+               "officer", "chair", "evp", "svp", "vice president", "head of",
+               "treasurer", "director")
+
+
+def _executives(turns: list[dict]) -> set[str]:
+    """Who on the call is management. By title where the page gave titles;
+    where it gave none (a page that would not parse), the three who spoke
+    most — the prepared remarks are management's, and an analyst asks a
+    question or two."""
+    roles: dict[str, str] = {}
+    talk: dict[str, int] = {}
+    for t in turns:
+        who = str(t.get("speaker") or "")
+        if not who or who.lower() == "operator":
+            continue
+        roles[who] = roles.get(who) or str(t.get("role") or "")
+        talk[who] = talk.get(who, 0) + len(str(t.get("text") or ""))
+    if any(roles.values()):
+        return {w for w, r in roles.items()
+                if "analyst" not in r.lower()
+                and any(k in r.lower() for k in _EXEC_ROLES)}
+    return set(sorted(talk, key=talk.get, reverse=True)[:3])
+
+
+def outlook_lines(turns: list[dict], limit: int = OUTLOOK_CHARS["long"]) -> list[dict]:
+    """Management's sentences about what comes next, verbatim, in the order
+    said: the ones that give a reason first in line for the budget."""
+    execs = _executives(turns)
+    found = []
+    for n, t in enumerate(turns):
+        who = str(t.get("speaker") or "")
+        if who not in execs:
+            continue
+        for i, sent in enumerate(_sentences(t.get("text", ""))):
+            if len(sent) < 40 or len(sent) > 600 or _BOILERPLATE.search(sent):
+                continue
+            hits = len(_OUTLOOK.findall(sent))
+            if not hits:
+                continue
+            score = (hits + 2.0 * bool(_BECAUSE.search(sent))
+                     + 1.0 * bool(_NUMBER.search(sent)))
+            found.append((score, n, i, {"speaker": who,
+                                        "role": str(t.get("role") or ""),
+                                        "text": sent}))
+    kept, used = [], 0
+    for score, n, i, line in sorted(found, key=lambda f: -f[0]):
+        if used + len(line["text"]) > limit:
+            continue
+        kept.append((n, i, line))
+        used += len(line["text"])
+    return [line for _n, _i, line in sorted(kept, key=lambda k: (k[0], k[1]))]
 
 
 def _diverse(ranked: list[dict], n: int) -> list[dict]:
@@ -646,12 +733,102 @@ def cross_check(data, pack: dict | None, last: int = 5) -> list[dict]:
 def cross_check_findings(data, workspace: Path | None) -> list:
     from pipeline.gates import Finding
 
+    notes = [Finding("site-figures", "note", n)
+             for n in (getattr(data, "site_notes", None) or [])]
     rows = cross_check(data, load(workspace))
-    return [Finding("site-figures", "warn",
-                    f"{r['quarter']} {r['label'].lower()}: the workbook says "
-                    f"{r['workbook']}, stockanalysis.com says {r['site']}. "
-                    f"Check which is right before it goes on screen.")
-            for r in rows[:8]]
+    return notes + [Finding("site-figures", "warn",
+                            f"{r['quarter']} {r['label'].lower()}: the workbook says "
+                            f"{r['workbook']}, stockanalysis.com says {r['site']}. "
+                            f"Check which is right before it goes on screen.")
+                    for r in rows[:8]]
+
+
+# ROWS THE WORKBOOK CAN HAVE A QUARTER LATE. The template asked Capital IQ for
+# operating cash flow as FILED (`IQ_CASH_OPER_CS`), which is keyed on the
+# filing and so waits for the 10-Q, while revenue, profit and capex come from
+# the release the day it is out. In earnings week every cell of the row held
+# the quarter before its label: his RBLX workbook's "Q4 FY25" was Q3 FY25's
+# $546M, and free cash flow (cash flow plus capex, in the sheet) mixed two
+# quarters, so the short said "$96M to $290M" (31 Oct 2026). Template v3.3
+# asks for `IQ_CASH_OPER`; a workbook filled from an older one is put right
+# here, when the site shows the row is exactly one quarter behind.
+LAGGING_ROWS = ("operating_cf",)
+_LAG_MATCHES = 2          # columns that must match the site's quarter before
+
+
+def _same(a: float, b: float) -> bool:
+    return abs(a - b) <= max(0.01 * max(abs(a), abs(b)), 0.5e6)
+
+
+def realign_lagged_rows(data, pack: dict | None) -> list[str]:
+    """Move a row that is one quarter behind its labels back into place,
+    rebuild free cash flow from it, and return what was done, in words.
+
+    Only when the site agrees with the move: at least two columns hold the
+    site's figure for the quarter BEFORE their label, and none holds the
+    site's figure for their own. The newest column is left blank (the
+    workbook does not have it); the site fills it if it has it."""
+    if not pack or data is None or not getattr(data, "quarter_labels", None):
+        return []
+    index = _site_index(pack)
+    labels = list(data.quarter_labels)
+    said = []
+    for field in LAGGING_ROWS:
+        ours = list(data.quarters.get(field) or [])
+        if len(ours) < len(labels):
+            ours += [None] * (len(labels) - len(ours))
+        lagged = same = 0
+        for qi in range(len(labels)):
+            if ours[qi] is None:
+                continue
+            here = _column(labels[qi], index)
+            before = _column(labels[qi - 1], index) if qi else None
+            mine = _site_value(pack, field, here) if here is not None else None
+            prev = _site_value(pack, field, before) if before is not None else None
+            if mine is not None and _same(float(ours[qi]), mine):
+                same += 1
+            elif prev is not None and _same(float(ours[qi]), prev):
+                lagged += 1
+        if lagged < _LAG_MATCHES or same:
+            continue
+        data.quarters[field] = ours[1:] + [None]
+        _rebuild_fcf(data)
+        name = QUARTER_ROWS[field].lower()
+        said.append(
+            f"Your workbook's {name} was one quarter behind its labels (its "
+            f"{labels[-1]} column held {labels[-2]}'s figure): Capital IQ's "
+            f"as-filed figure waits for the 10-Q. The bot moved it back to the "
+            f"right quarters and rebuilt free cash flow from it. A workbook "
+            f"from the new template (v3.3) asks for the right figure.")
+    data.site_notes = list(getattr(data, "site_notes", []) or []) + said
+    return said
+
+
+def _rebuild_fcf(data) -> None:
+    """Free cash flow (and its margin) from operating cash flow and capex,
+    as the sheet computes it, in each column that has both."""
+    q = data.quarters
+    ocf, capex = q.get("operating_cf") or [], q.get("capex") or []
+    rev = q.get("revenue") or []
+    old_fcf, old_margin = list(q.get("fcf") or []), list(q.get("fcf_margin") or [])
+    # The margin's scale as the sheet had it (a percent or a fraction).
+    scale = 100.0
+    for f, m, r in zip(old_fcf, old_margin, rev):
+        if f and m and r:
+            scale = 100.0 if abs(m / (f / r)) > 10 else 1.0
+            break
+    n = len(data.quarter_labels)
+    fcf, margin = [], []
+    for i in range(n):
+        o = ocf[i] if i < len(ocf) else None
+        c = capex[i] if i < len(capex) else None
+        f = None if o is None or c is None else float(o) - abs(float(c))
+        fcf.append(f)
+        r = rev[i] if i < len(rev) else None
+        margin.append(None if f is None or not r else f / float(r) * scale)
+    q["fcf"] = fcf
+    if "fcf_margin" in q:
+        q["fcf_margin"] = margin
 
 
 def apply(data, workspace: Path | None) -> list[str]:
@@ -667,7 +844,11 @@ def apply(data, workspace: Path | None) -> list[str]:
         if key and key not in seen:
             seen.add(key)
             data.news.append(row)
-    return fill_quarter_gaps(data, workspace)
+    realign_lagged_rows(data, load(workspace))
+    filled = fill_quarter_gaps(data, workspace)
+    if data.site_notes and any("operating cash flow" in f for f in filled):
+        _rebuild_fcf(data)       # the newest quarter's cash flow came from the site
+    return filled
 
 
 def fill_quarter_gaps(data, workspace: Path | None) -> list[str]:
@@ -736,6 +917,15 @@ def call_block(workspace: Path, fmt: str) -> str:
         for i, p in enumerate(call["passages"], 1):
             role = f" ({p['role']})" if p.get("role") else ""
             lines.append(f"  [{i}] {p['speaker']}{role}: {_q(p['text'])}")
+    outlook = outlook_lines(call.get("turns") or [],
+                            OUTLOOK_CHARS["short" if fmt == "short" else "long"])
+    if outlook:
+        lines.append("WHAT MANAGEMENT SAID COMES NEXT, word for word, in the "
+                     "order said (the outlook, the guidance, and what they "
+                     "put it down to):")
+        for p in outlook:
+            role = f" ({p['role']})" if p.get("role") else ""
+            lines.append(f"  - {p['speaker']}{role}: {_q(p['text'])}")
     for e in (pack or {}).get("since_call") or []:
         lines.append(f"Since then: {e.get('title')} ({e.get('date')}): "
                      f"{e.get('summary', '')}")
@@ -744,6 +934,14 @@ def call_block(workspace: Path, fmt: str) -> str:
         "and who said it (\"on the call, the CFO said…\"). Never put words in "
         "management's mouth that are not here.")
     if fmt == "short":
+        if outlook:
+            lines.append(
+                "ON AN EARNINGS DAY THE OUTLOOK IS THE MOVE. When management "
+                "warned of a slower quarter or set the guide below or above "
+                "what was expected, say so, and say what they put it down to "
+                "(a rival's launch, a season, a one-off), in their words or "
+                "plainly attributed. A short that gives the numbers and "
+                "misses the warning has missed why it moved.")
         lines.append(
             "ON SCREEN: when one of these lines says why it moved better than "
             "any headline, add it to the JSON as `\"call_quote\": {\"text\": "

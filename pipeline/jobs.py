@@ -79,7 +79,8 @@ STAGE_SPAN = {"tts": (0, 8), "storyboard": (8, 12), "render": (12, 96),
               "dennis": (12, 75), "frames": (75, 92), "encode": (92, 96),
               # the long's beats, encoded once he is drawn ("render 5/40 segments")
               "segments": (75, 96),
-              "deliver": (96, 100), "delivery": (96, 100)}
+              "cover": (96, 98), "deliver": (98, 100), "delivery": (98, 100),
+              "delivered": (100, 100)}
 # What each stage is, in his words, for the page (his "it doesn't say
 # anything" while a proof rendered, 30 Oct 2026).
 STAGE_WORDS = {
@@ -90,8 +91,12 @@ STAGE_WORDS = {
     "dennis": "Drawing Dennis in 3D (Blender), frame by frame",
     "frames": "Putting every frame of the picture together",
     "encode": "Encoding the video and burning in the captions",
+    "cover": "Drawing the cover (one still of Dennis in 3D)",
     "deliver": "Saving the finished video",
     "delivery": "Saving the finished video",
+    # Saved; what it said is being noted for the next videos (its jokes and
+    # Dennis's facts, the local AI may read it). It used to say "Saving".
+    "delivered": "Saved. Noting its jokes and facts for next time",
     "repurpose": "Cutting shorts out of the long",
 }
 _SECRET_RE = re.compile(
@@ -251,7 +256,7 @@ def progress(job: dict, est_render_min: float | None = None,
                 "words": STAGE_WORDS["queued"], "done": None, "total": None,
                 "note": "", "elapsed_s": None}
     if detail.startswith("delivered"):
-        stage = "deliver"
+        stage = "delivered"
     lo, hi = STAGE_SPAN.get("segments" if m and stage in ("render", "proof", "draft")
                             else stage, (0, 0))
     pct = float(lo)

@@ -67,6 +67,14 @@ log = logging.getLogger(__name__)
 
 _NA_VALUES = {"", "#N/A", "#N/A N/A", "N/A", "NA", "#VALUE!", "#REF!", "#NAME?",
               "NULL", "-", "#DIV/0!"}
+# "Not meaningful": Capital IQ's word for a ratio with nothing sensible to
+# say (a P/E on a loss, a growth rate off a negative base). Missing, quietly
+# (RBLX, 1 Nov 2026: the log warned once per such cell).
+_NOT_MEANINGFUL = {"nm", "nmf", "n/m", "nm%"}
+# A formula in the template with nothing to compute from — a growth rate
+# whose prior year is blank. The same as missing, and not the add-in failing,
+# so it is not reported as one.
+FORMULA_MATH_ERRORS = ("#value!", "#div/0!", "#num!", "#null!")
 # the add-in leaves this literal in cells whose mnemonic didn't resolve
 _FORMULA_ERR = "the formula must contain at least one field or function."
 
@@ -140,7 +148,15 @@ class CompanyDataError(Exception):
 
 def _is_na(text: str) -> bool:
     t = text.strip()
-    return t in _NA_VALUES or t.lower() == _FORMULA_ERR
+    return (t in _NA_VALUES or t.lower() == _FORMULA_ERR
+            or t.lower() in _NOT_MEANINGFUL)
+
+
+def formula_math_error(marker: str | None) -> bool:
+    """Whether an unresolved cell is only a formula with nothing to work on
+    (`#VALUE!`, `#DIV/0!`...), rather than the add-in failing."""
+    low = (marker or "").strip().lower()
+    return any(low.startswith(m) for m in FORMULA_MATH_ERRORS)
 
 
 def _num(raw) -> float | None:
@@ -168,8 +184,9 @@ def _coerce(field: str, raw) -> str | float | None:
     # field happily carries `#CIQINACTIVE` all the way onto the screen.
     marker = unresolved_marker(raw)
     if marker is not None:
-        log.warning("company data field %s did not resolve (%s) — treating as "
-                    "missing", field, marker)
+        (log.debug if formula_math_error(marker) else log.warning)(
+            "company data field %s did not resolve (%s) — treating as "
+            "missing", field, marker)
         return None
     text = str(raw).strip()
     if _is_na(text):
@@ -474,7 +491,11 @@ def _check_contents(check: ExportCheck, pairs: dict, expect_ticker: str,
     unresolved = {k: m for k in pairs
                   if (m := unresolved_marker(pairs.get(k))) is not None}
     required_unresolved = [k for k in DATA_REQUIRED if k in unresolved]
-    other_unresolved = [k for k in sorted(unresolved) if k not in DATA_REQUIRED]
+    # An optional derived cell with nothing to compute from is a gap, not
+    # the terminal failing: it is not listed (a required one still is).
+    other_unresolved = [k for k in sorted(unresolved)
+                        if k not in DATA_REQUIRED
+                        and not formula_math_error(unresolved[k])]
 
     if required_unresolved:
         shown = ", ".join(f"{k} ({unresolved[k]})"

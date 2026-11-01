@@ -2052,22 +2052,8 @@ def direction_lint(script, *, peers=()) -> list[Finding]:
                          f"script. Used more often it stops being the "
                          f"exception it is for")))
 
-    # 5. Dark calm is earned, not opened on. Chapters carry no offsets until
-    #    the timeline exists, so "the first chapter" is the opening share of
-    #    the narration by chapter count — approximate on purpose, and a
-    #    warning for exactly that reason.
-    from pipeline.models import TagType
-
-    chapters = getattr(script, "chapter_list", None) or []
-    if chapters and narration:
-        opening = len(narration) / max(len(chapters), 1)
-        for e in events:
-            if e.type is TagType.QUIET and getattr(e, "char_offset", 0) < opening:
-                findings.append(Finding(
-                    gate="direction", severity="warn",
-                    message=("[QUIET] in the opening chapter — dark calm is "
-                             "the register the video earns its way down to, "
-                             "and it has nothing to drop from yet")))
+    # 5. (Dark calm in the opening chapter.) [QUIET] is retired (31 Oct
+    #    2026): the tokenizer strips it, so there is nothing left to place.
     return findings
 
 

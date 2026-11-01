@@ -1635,9 +1635,16 @@ async def handle_text(core: BotCore, chat_id: int, text: str,
 
 async def handle_upload(core: BotCore, chat_id: int, filename: str,
                         data: bytes, say: Say | None = None) -> Reply:
+    progress = None
     if say is not None:
         await say(Reply("⏳ got the file — reading it now."))
-    reply = await asyncio.to_thread(core.handle_upload, chat_id, filename, data)
+        loop = asyncio.get_running_loop()
+
+        def progress(text: str) -> None:
+            # From the worker thread: the waiting page and Activity show it.
+            asyncio.run_coroutine_threadsafe(say(Reply(text)), loop)
+    reply = await asyncio.to_thread(core.handle_upload, chat_id, filename,
+                                    data, progress)
     ws = core.context.get(chat_id)
     if ws is not None and reply.text.startswith("💾 saved"):
         reply = _wizard_step(core, chat_id, ws.ticker, ws.workdate, "paste",

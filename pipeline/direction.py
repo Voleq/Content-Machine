@@ -28,7 +28,8 @@ from pipeline.models import TagType
 
 # Models that perform audio tags inline rather than reading them out: v3, and
 # v4, whose prompting guide lists every tag this table emits ([sighs],
-# [exhales], [sarcastic], [curious], [snorts], [whispers]).
+# [exhales], [sarcastic], [curious], [snorts]). [whispers] was [QUIET]'s, and
+# is gone with it: on his first real short it was unusable (31 Oct 2026).
 #
 # Substring-matched, because ElevenLabs ships dated and suffixed variants of a
 # model id and a new one must not silently lose the tags.
@@ -105,9 +106,25 @@ DIRECTIONS: dict[TagType, Direction] = {
     TagType.CURIOUS: Direction(
         v3="[curious] ", v2="", mode="rare genuine interest",
         why="the monotone lifts, and §7 says these lifts are the retention"),
-    TagType.QUIET: Direction(
-        v3="[whispers] ", v2="", mode="dark calm",
-        why="the register drops rather than rises — the opposite of emphasis"),
+    # FIVE MORE OF HIM (Valentin, 31 Oct 2026: "eleven labs has more tags
+    # than those ... tags that match his personality"). All five are in
+    # ElevenLabs' audio-tag guide for v3, and none of them is a laugh: §2
+    # still bans that. Each is capped (PER_SCRIPT_MAX) so it stays a moment.
+    TagType.ANNOYED: Direction(
+        v3="[annoyed] ", v2="", mode="quiet exasperation",
+        why="management said the quiet part, and he heard it"),
+    TagType.IMPRESSED: Direction(
+        v3="[impressed] ", v2="", mode="rare genuine interest",
+        why="grudging respect: the one clever thing in the filing"),
+    TagType.NERVOUS: Direction(
+        v3="[nervously] ", v2="", mode="the self-own",
+        why="his own position, his own bad call, said out loud"),
+    TagType.CLEAR_THROAT: Direction(
+        v3="[clears throat] ", v2='<break time="0.3s" /> ', mode="timing",
+        why="the beat before a correction, a confession or the disclaimer"),
+    TagType.GULP: Direction(
+        v3="[gulps] ", v2='<break time="0.3s" /> ', mode="tired explainer",
+        why="the breath before the number nobody wants to say"),
 }
 
 
@@ -231,9 +248,6 @@ TAGS_PER_1K_CHARS_WARN = 3.0
 # again.
 CURIOUS_MAX_PER_LONG = 2
 
-# Dark calm is earned, not opened on.
-QUIET_MAX = 1
-
 # One snort. A man reading a filing at 3am snorts; he does not laugh, and he
 # does not snort twice.
 SNORT_MAX = 1
@@ -242,8 +256,12 @@ SNORT_MAX = 1
 # reads them off one place and the prompts can be generated from the same.
 PER_SCRIPT_MAX: dict[TagType, int] = {
     TagType.CURIOUS: CURIOUS_MAX_PER_LONG,
-    TagType.QUIET: QUIET_MAX,
     TagType.SNORT: SNORT_MAX,
+    TagType.ANNOYED: 2,
+    TagType.IMPRESSED: 1,
+    TagType.NERVOUS: 2,
+    TagType.CLEAR_THROAT: 1,
+    TagType.GULP: 1,
 }
 
 

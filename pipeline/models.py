@@ -145,7 +145,14 @@ class TagType(str, Enum):
     SNORT = "SNORT"              # the joke he cannot let pass (capped at one)
     SARCASTIC = "SARCASTIC"      # the line means its opposite
     CURIOUS = "CURIOUS"          # rare genuine interest — §7's retention lift
-    QUIET = "QUIET"              # dark calm; the register drops, never rises
+    QUIET = "QUIET"              # RETIRED 31 Oct 2026 (RETIRED_TAG_TYPES)
+    # Five more of him (Valentin, 31 Oct 2026: "eleven labs has more tags
+    # than those ... tags that match his personality"). pipeline/direction.py.
+    ANNOYED = "ANNOYED"          # quiet exasperation at a line management said
+    IMPRESSED = "IMPRESSED"      # grudging respect for a mechanism
+    NERVOUS = "NERVOUS"          # the self-own: his own position, his own call
+    CLEAR_THROAT = "CLEAR THROAT"  # before the correction, the confession
+    GULP = "GULP"                # before the number nobody wants
     FLAT = "FLAT"                # hold the register flatter than baseline
     DRY = "DRY"
 
@@ -196,7 +203,9 @@ OVERLAY_TAG_TYPES = frozenset({TagType.SCRIBBLE})
 # is timing and the pipeline was sending flat text with none of it.
 DELIVERY_TAG_TYPES = frozenset({
     TagType.BEAT, TagType.LONG_BEAT, TagType.SIGH, TagType.EXHALE,
-    TagType.SNORT, TagType.SARCASTIC, TagType.CURIOUS, TagType.QUIET,
+    TagType.SNORT, TagType.SARCASTIC, TagType.CURIOUS,
+    TagType.ANNOYED, TagType.IMPRESSED, TagType.NERVOUS,
+    TagType.CLEAR_THROAT, TagType.GULP,
     TagType.FLAT, TagType.DRY,
 })
 
@@ -216,6 +225,12 @@ RETIRED_TAG_TYPES: dict[TagType, str] = {
     TagType.SHOW_ARTICLE: (
         "retired: nothing drew an article screenshot in either format. Say "
         "what the article says, or use [SCREENGRAB] with a capture"),
+    # ElevenLabs performs it as a whisper, and on his first real short the
+    # whisper was unusable: "get rid of it entirely" (Valentin, 31 Oct 2026).
+    # A script that still has it is read in the ordinary voice.
+    TagType.QUIET: (
+        "retired: the voice performed it as a whisper. The line is read in "
+        "the ordinary voice; a [BEAT] before it is the way to let it land"),
 }
 
 
@@ -1196,6 +1211,9 @@ class CompanyData(BaseModel):
     peer_percentiles: list = Field(default_factory=list)  # subject self-score vs peers
     news: list = Field(default_factory=list)              # recent headlines (optional)
     source_file: str = ""
+    # What the bot changed in the workbook's figures when it loaded them,
+    # in his words (a row moved back to its quarter), for the checks to say.
+    site_notes: list[str] = Field(default_factory=list)
 
     def get(self, field: str):
         return self.values.get(field)

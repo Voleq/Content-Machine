@@ -372,6 +372,65 @@ WIKIMEDIA_AGENT = (f"DennisContentMachine/1.0 "
                    f"httpx/{httpx.__version__}")
 
 
+# NOT A PHOTOGRAPH. A company's Commons results are as often its logo as its
+# building: "Roblox Corporation store" came back with the Roblox logo first,
+# and the short played a corner of it full screen, blown up, as a grey box
+# (his first real short, 31 Oct 2026). A file whose title or categories say it
+# is a logo, an icon, a screenshot or a chart is not a picture of the company.
+_NOT_A_PHOTO = re.compile(
+    r"\b(logos?|logotypes?|wordmarks?|icons?|emblems?|symbols?|favicons?|"
+    r"screenshots?|screen ?shots?|diagrams?|charts?|graphs?|maps?|flags?|"
+    r"coats? of arms|seals?|banners?|buttons?|avatars?|stickers?|"
+    r"infographics?|clip ?art|vector|rendering|render)\b", re.I)
+# Smaller than this is a thumbnail of something, not a picture to hold full
+# screen on a phone (the short is 1440x2560).
+PHOTO_MIN_SIDE = 800
+
+
+def _photo_rank(r: dict) -> float:
+    """Bigger first, and a JPEG (what cameras write) over a PNG (what logos
+    and screenshots are saved as)."""
+    w, h = int(r.get("width") or 0), int(r.get("height") or 0)
+    return (1.0 if r.get("mime") == "image/jpeg" else 0.0) * 10 + \
+        min(w * h, 12_000_000) / 1_000_000
+
+
+def photos_only(results: list[dict]) -> list[dict]:
+    """The results that are photographs big enough to hold full screen,
+    best first. A result with no size or type on it (a stand-in client) is
+    judged by its words alone."""
+    out = []
+    for r in results:
+        words = " ".join(str(r.get(k) or "") for k in ("title", "categories",
+                                                       "description"))
+        if _NOT_A_PHOTO.search(words.replace("_", " ")):
+            continue
+        w, h = r.get("width"), r.get("height")
+        if w and h and min(int(w), int(h)) < PHOTO_MIN_SIDE:
+            continue
+        if r.get("mime") and r["mime"] not in ("image/jpeg", "image/png",
+                                               "image/webp"):
+            continue
+        out.append(r)
+    return sorted(out, key=_photo_rank, reverse=True)
+
+
+def looks_like_a_photo(path: Path) -> bool:
+    """A last look at the file itself: a photograph has thousands of
+    colours, a logo or a flat graphic a few. Unreadable is no."""
+    from PIL import Image
+
+    try:
+        with Image.open(path) as im:
+            small = im.convert("RGB").resize((96, 96))
+    except Exception:                               # noqa: BLE001
+        return False
+    import numpy as np
+
+    levels = np.unique(np.asarray(small).reshape(-1, 3) >> 3, axis=0)
+    return len(levels) >= 400
+
+
 class WikimediaImageClient:
     """Commons search via the public API; polite UA, no key needed."""
 
@@ -399,7 +458,7 @@ class WikimediaImageClient:
                 "action": "query", "format": "json",
                 "generator": "search", "gsrnamespace": 6,
                 "gsrsearch": f"filetype:bitmap {query}", "gsrlimit": limit,
-                "prop": "imageinfo", "iiprop": "url|extmetadata",
+                "prop": "imageinfo", "iiprop": "url|size|mime|extmetadata",
                 "iiurlwidth": 1600,
             },
             headers={"User-Agent": WIKIMEDIA_AGENT},
@@ -423,8 +482,16 @@ class WikimediaImageClient:
             license_ = (meta.get("LicenseShortName") or {}).get("value", "")
             title = page.get("title", "").removeprefix("File:")
             attribution = f'"{title}" by {artist or "unknown"}, {license_ or "see source"}, via Wikimedia Commons'
-            results.append({"url": url, "attribution": attribution})
-        return results
+            results.append({
+                "url": url, "attribution": attribution, "title": title,
+                "width": info.get("width"), "height": info.get("height"),
+                "mime": info.get("mime", ""),
+                "categories": (meta.get("Categories") or {}).get("value", ""),
+                "description": re.sub(r"<[^>]+>", "", (meta.get(
+                    "ImageDescription") or {}).get("value", ""))[:300],
+                "index": page.get("index", 0)})
+        # In the order Commons ranked them: the pages come back keyed by id.
+        return sorted(results, key=lambda r: r["index"])
 
     def download(self, url: str, dest: Path) -> Path:
         self._respect_interval()
@@ -1026,7 +1093,9 @@ class ContentManager:
         """[IMG]/[PRODUCT]: cache -> Wikimedia Commons -> company site ->
         filler card. Attribution stored beside the cache entry."""
         try:
-            cdir = self.settings.cache_dir / "images" / content_cache_key(query, "img")
+            # "img-photo": picked by `photos_only` (31 Oct 2026). Under the old
+            # key a cached logo would have kept coming back.
+            cdir = self.settings.cache_dir / "images" / content_cache_key(query, "img-photo")
             norm = cdir / f"normalized_{choice}.png"
             meta = cdir / f"meta_{choice}.json"
             master = cdir / f"master_{choice}.jpg"
@@ -1041,7 +1110,7 @@ class ContentManager:
                               provider=provider,
                               master=master if master.exists() else None)
 
-            results = self.image_client.search(query)
+            results = photos_only(self.image_client.search(query))
             source = "wikimedia" if not self.settings.mock_mode else "mock"
             if not results and self.site_client is not None and website:
                 results = self.site_client.search(query, website=website)
@@ -1049,7 +1118,6 @@ class ContentManager:
             if not results:
                 return self.filler_image(query, kind)
 
-            pick = results[min(choice, len(results) - 1)]
             # The directory has to exist BEFORE anything is written into it
             # (H2). It used to be created after the download, the normalise
             # and the unlink had all already used it — which made the whole
@@ -1059,7 +1127,19 @@ class ContentManager:
             cdir.mkdir(parents=True, exist_ok=True)
             raw = cdir / f"raw_{choice}.bin"
             client = self.image_client if source != "company_site" else self.site_client
-            client.download(pick["url"], raw)
+            # From the chosen one on, the first whose file is a photograph:
+            # the words can miss a logo nobody named one.
+            pick = None
+            for cand in results[min(choice, len(results) - 1):]:
+                client.download(cand["url"], raw)
+                if self.settings.mock_mode or looks_like_a_photo(raw):
+                    pick = cand
+                    break
+                log.info("image %r: %s is not a photograph — next result",
+                         query, cand.get("title") or cand["url"])
+            if pick is None:
+                raw.unlink(missing_ok=True)
+                return self.filler_image(query, kind)
             normalize_image(raw, norm, self.settings)
             kept = keep_master(raw, master)
             raw.unlink(missing_ok=True)

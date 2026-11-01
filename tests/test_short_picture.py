@@ -78,15 +78,13 @@ def test_the_company_photo_fills_the_screen(reg, tmp_path):
     assert media[0].bleed
     # No frame plate around it any more.
     assert not [l for l in layers if l.kind == "plate"]
-    # The name and the credit are on strips, inside the caption's safe band
-    # and clear of the place a caption is looked for.
-    strips = [l for l in layers if l.kind == "text"]
-    assert [l.panel for l in strips] == [True, True]
-    assert all(170 <= l.y and l.y + l.h <= 1395 for l in strips), \
-        [(l.y, l.h) for l in strips]
-    # The picture is the ground the caption sits on, the strips are not.
+    # No words on it at all (Valentin, 31 Oct 2026: "do not caption it at
+    # all"): the name and the credit strips are gone, the credit stays in
+    # the description.
+    assert not [l for l in layers if l.kind == "text"]
+    # The picture is the ground the caption sits on.
     names = [n for n, _ in caption_obstacles(reg, layers)]
-    assert "media" not in names and "text:caption" in names
+    assert "media" not in names
 
 
 def test_no_picture_no_shot(settings, tmp_path):

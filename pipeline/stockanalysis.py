@@ -593,6 +593,11 @@ def parse_transcript(html: str) -> dict | None:
     if s:
         summary = _text(s.group(1))
     turns = []
+    # The live page leaves its framework's markers (`<!--[0-->`) between the
+    # name and the role, which no role was ever read past (RBLX, 1 Nov 2026):
+    # every speaker came out without a title, and the executives' lines
+    # scored as nobody's.
+    html = re.sub(r"<!--.*?-->", "", html, flags=re.S)
     for chunk in re.split(r'<div class="text-lg font-bold[^"]*">', html)[1:]:
         name = _text(chunk.split("</div>", 1)[0])
         rest = chunk.split("</div>", 1)[1] if "</div>" in chunk else ""

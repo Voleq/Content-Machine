@@ -340,11 +340,18 @@ class Settings(BaseSettings):
     # minutes. Ten minutes of dead time AFTER an upload is the difference
     # between a feature that gets used and one that gets switched off.
     filing_brief_enabled: bool = Field(default=True, alias="FILING_BRIEF_ENABLED")
-    # How long the upload reply will wait for a reading still in flight. A
-    # slow operator finds it done; a fast one waits. Past this the prompt
-    # goes out without the brief rather than the operator watching a silent
-    # bot — an absent brief is a normal outcome, a hung intake is not.
+    # How long the upload reply will wait with no part of the reading
+    # finishing. A slow reading is waited out (see the next setting); a
+    # stalled one is not — past this the prompt goes out without the brief
+    # and says so, because a hung intake is worse than an absent brief.
     filing_brief_wait_s: float = Field(default=600.0, alias="FILING_BRIEF_WAIT_S")
+    # THE UPLOAD WAITS FOR THE READING (Valentin, 1 Nov 2026: "i would like
+    # him to read fillings before that, not hand me that without reading
+    # them"). `filing_brief_wait_s` above is now how long it waits with NO
+    # part of the reading finishing — a stalled reading, not a slow one —
+    # and this is the ceiling on the whole wait, however well it is going.
+    filing_brief_max_wait_s: float = Field(default=3600.0,
+                                           alias="FILING_BRIEF_MAX_WAIT_S")
     # The filing passes route through `pipeline.llm.chat` like every other
     # LLM call, so `llm_provider_order` below decides WHERE they run. This
     # setting's only remaining job is the offline escape hatch: `mock`
@@ -532,6 +539,11 @@ class Settings(BaseSettings):
     # missing daemon. It is logged at warning level now, because a pass that
     # nearly worked is different information from one that never started.
     ollama_timeout_s: float = Field(default=300.0, alias="OLLAMA_TIMEOUT_S")
+    # Whether the background passes (filing brief, transcript pick, jokes,
+    # skeptic...) let a thinking model think first. Off (1 Nov 2026): the
+    # reasoning took minutes per call on the 3060 and the filing brief never
+    # finished. The page's chat is not affected.
+    ollama_think_passes: bool = Field(default=False, alias="OLLAMA_THINK_PASSES")
     # headless Chromium for the screenshots; empty -> Playwright default, or the
     # pre-provisioned browser if present.
     playwright_chromium_path: str = Field(default="", alias="PLAYWRIGHT_CHROMIUM_PATH")

@@ -153,6 +153,11 @@ _LONG_NO_CUE_REASONS: dict[TagType, str] = {
     TagType.SHOW_ARTICLE: (
         "[SHOW ARTICLE] is retired and draws nothing. Use [SCREENGRAB] with "
         "the capture, or cut the tag"),
+    # A delivery tag until 31 Oct 2026, never a picture; retired since (the
+    # voice whispered it). A script saved before then is read plainly.
+    TagType.QUIET: (
+        "[QUIET] is retired: the line is read in the ordinary voice and "
+        "nothing is drawn"),
 }
 
 

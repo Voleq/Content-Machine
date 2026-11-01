@@ -15,9 +15,17 @@ Nothing here writes a word. Every line on either card is a line that was
 published, and a page that cannot be read leaves the beat its typed band.
 
 Fetching is plain HTTP. A page that refuses a script is asked again as a
-browser would ask (`curl_cffi`, already installed for the price feed), and
-past that it is left alone: no headless browser, and nothing is ever
-scraped off a data terminal.
+browser would ask (`curl_cffi`, already installed for the price feed): his
+call, 31 Oct 2026, "let it act as a browser". Never for stockanalysis.com,
+whose terms admit bots only as themselves. No headless browser, and nothing
+is ever scraped off a data terminal.
+
+WHAT COMES BACK IS NOT TRUSTED TO BE THE STORY. On his first real short a
+TipRanks page gave its plug for itself ("Published first on TheFly – the
+ultimate source for real-time, market-moving breaking financial news. Try
+Now>>") and the release card set it as the news. A paragraph is the story
+only when it is about the headline: it shares words with it, and it reads as
+no advert.
 """
 from __future__ import annotations
 
@@ -45,8 +53,19 @@ inc corp corporation co ltd plc llc group holdings company""".split())
 # A paragraph that is page furniture rather than the release.
 _FURNITURE = re.compile(
     r"cookie|javascript|subscribe|sign up|newsletter|all rights reserved|"
-    r"privacy policy|terms of (use|service)|click here|advertisement",
+    r"privacy policy|terms of (use|service)|click here|advertisement|"
+    # A wire's plug for itself: "Published first on TheFly – the ultimate
+    # source for real-time, market-moving breaking financial news. Try Now>>"
+    # came onto his RBLX short's release card as the story (31 Oct 2026).
+    r"published first on|first published on|try (it )?now|free trial|"
+    r"the ultimate source|read more at|>>",
     re.I)
+
+# Who the bot says it is: the project's page, never the operator's address.
+USER_AGENT = ("DennisContentMachine/1.0 "
+              "(+https://github.com/Voleq/Content-Machine)")
+# Sites asked only as the bot it is, never as a browser (their terms).
+NO_BROWSER_HOSTS = ("stockanalysis.com",)
 
 
 def _words(text: str, drop: set[str]) -> set[str]:
@@ -96,10 +115,12 @@ def _mock_html(settings, url: str) -> str | None:
 
 
 def _get(url: str) -> str | None:
-    """The page, by plain HTTP, then as a browser; None when neither works."""
+    """The page, by plain HTTP as the bot, then as a browser; None when
+    neither works. Nothing personal goes in either request: no cookies, no
+    account, and the bot's own name is the project page."""
     import httpx
 
-    headers = {"User-Agent": "Mozilla/5.0 (compatible; dennis-content-machine/1.0)",
+    headers = {"User-Agent": USER_AGENT,
                "Accept": "text/html,application/xhtml+xml"}
     try:
         r = httpx.get(url, headers=headers, timeout=20.0, follow_redirects=True)
@@ -108,6 +129,11 @@ def _get(url: str) -> str | None:
         log.info("release %s: HTTP %s, asking as a browser", url, r.status_code)
     except httpx.HTTPError as e:
         log.info("release %s: %s, asking as a browser", url, e)
+    host = (urlparse(url).hostname or "").lower()
+    if any(host == h or host.endswith("." + h) for h in NO_BROWSER_HOSTS):
+        log.info("release %s: only ever asked as the bot; the beat keeps its "
+                 "band", url)
+        return None
     try:
         from curl_cffi import requests as creq
 
@@ -144,14 +170,31 @@ def read_page(html: str) -> dict[str, str]:
     title = (" ".join(h1.get_text(" ").split()) if h1 else "") \
         or meta("og:title", "twitter:title") \
         or (" ".join(soup.title.get_text(" ").split()) if soup.title else "")
+    # "Roblox sees Q4 bookings … - TipRanks.com": the site's name is the
+    # card's masthead already, not part of the headline.
+    site = meta("og:site_name")
+    title = re.sub(r"\s+[-|–—]\s+[\w .&']{2,40}\.(?:com|net|org|co\.uk|io)\s*$",
+                   "", title, flags=re.I)
+    if site and title.lower().endswith(site.lower()) and len(title) > len(site) + 8:
+        title = re.sub(r"\s*[-|–—:]\s*$", "", title[: -len(site)]).strip()
     body = ""
+    want = _words(title, set())
     for p in soup.find_all("p"):
         text = " ".join(p.get_text(" ").split())
         if len(text) >= 80 and len(text.split()) >= 12 \
-                and not _FURNITURE.search(text):
+                and not _FURNITURE.search(text) and about_the_headline(text, want):
             body = text
             break
-    return {"title": title, "site": meta("og:site_name"), "body": body}
+    return {"title": title, "site": site, "body": body}
+
+
+def about_the_headline(text: str, want: set[str]) -> bool:
+    """Whether a paragraph is about the story the headline names: two of
+    the headline's own words in it (a figure counts). A page's plug for
+    itself shares none. A page with no headline is taken at its word."""
+    if not want:
+        return True
+    return len(want & _words(text, set())) >= 2
 
 
 def fetch_release(url: str, settings) -> dict[str, str] | None:

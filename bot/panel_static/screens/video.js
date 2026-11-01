@@ -247,6 +247,7 @@ function phaseOf(p) {
   if (["render", "proof", "draft"].includes(p.stage) && p.total) return "segments";
   if (p.stage === "proof" || p.stage === "draft") return "after:tts";   // the stand-in voice is in
   if (p.stage === "deliver") return "delivery";
+  if (p.stage === "delivered") return "after:delivery";   // saved; noting what it said
   return p.stage;
 }
 const RATES = new Map();          // a stage's pace, from the looks so far
@@ -300,7 +301,7 @@ function jobBox(r, what) {
     allLine.textContent = queued ? "" : `The whole ${what}: about ${Math.round(p.pct || 0)}%` + (p.eta_s != null ? `, roughly ${dur(p.eta_s)} to go` : "") +
       ". The bar is a guess: drawing Dennis in 3D takes most of the time.";
     allBar.hidden = queued;
-    const list = RENDER_STAGES[fmt].concat(final ? [["delivery", "Save the video"]] : []);
+    const list = RENDER_STAGES[fmt].concat(final ? [["cover", "Draw the cover"], ["delivery", "Save the video"]] : []);
     const phase = phaseOf(p);
     const at = phase.startsWith("after:") ? list.findIndex(([k]) => k === phase.slice(6)) + 1 : list.findIndex(([k]) => k === phase);
     setKids(stages, list.map(([k, label], i) => el("li", {

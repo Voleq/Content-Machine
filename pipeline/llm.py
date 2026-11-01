@@ -198,11 +198,19 @@ def _try_ollama(prompt: str, system: str, settings: Settings,
         "options": {"temperature": 0.2,
                     "num_ctx": settings.ollama_num_ctx},
     }
+    # NO THINKING ON A BACKGROUND PASS (Valentin, 1 Nov 2026). A thinking
+    # model writes pages of reasoning before every answer; on the 3060
+    # every other filing section ran past the 300 s timeout and the RDDT
+    # brief never finished. The
+    # passes extract and pick, which thinking does not help enough to pay
+    # for. The page's chat (`on_text` set) keeps the model's own default.
+    # `OLLAMA_THINK_PASSES=true` puts it back.
+    if on_text is None and not settings.ollama_think_passes:
+        payload["think"] = False
     url = settings.ollama_base_url.rstrip("/") + "/api/chat"
     try:
         if on_text is None:
-            data = _post(url, payload, {"Content-Type": "application/json"},
-                         settings.ollama_timeout_s)
+            data = _post_ollama(url, payload, settings)
             text = (data.get("message") or {}).get("content") or ""
         else:
             text = _stream_ollama(url, payload, settings, on_text)
@@ -225,6 +233,22 @@ def _try_ollama(prompt: str, system: str, settings: Settings,
         return LLMResult(provider=OLLAMA, model=model, reason=NO_DAEMON)
     return LLMResult(text=text, provider=OLLAMA, model=model,
                      reason=OK if text else EMPTY)
+
+
+def _post_ollama(url: str, payload: dict, settings: Settings) -> dict:
+    """One non-streamed answer. An Ollama that does not know `think` (older
+    than 0.9) or a model that refuses it is asked again without it, rather
+    than the pass going missing over a speed switch."""
+    headers = {"Content-Type": "application/json"}
+    try:
+        return _post(url, payload, headers, settings.ollama_timeout_s)
+    except Exception as e:  # noqa: BLE001
+        if "think" not in payload or "think" not in _refused(e).lower():
+            raise
+        log.info("ollama would not take think=false (%s) — asked again "
+                 "without it", _refused(e))
+        return _post(url, {k: v for k, v in payload.items() if k != "think"},
+                     headers, settings.ollama_timeout_s)
 
 
 class _OllamaSaid(Exception):

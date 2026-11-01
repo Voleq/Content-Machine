@@ -42,6 +42,36 @@ def voice_bible(settings: Settings) -> str:
     return read_file(settings, "voice_bible").strip() or "(voice bible missing)"
 
 
+def benjamin_lines(settings: Settings) -> str:
+    """Benjamin's own lines, for the writer to hear the register in.
+
+    They were kept from the writer on purpose (S2: the copy check only), so a
+    style he learned from could never become a line he lifted. Valentin, 31
+    Oct 2026: "i just want him to be similar to that benjamin guy, you do have
+    his jokes ... why can't you do that". So the writer reads them now, as
+    the sound to match, with the rule that none is said; the copy check
+    still warns on a sentence that comes out almost word for word."""
+    from pipeline.writing_files import list_lines
+
+    lines = list_lines(settings, "style_references")
+    if not lines:
+        return "(no reference lines saved: the page's Writing library, Style references)"
+    body = "\n".join(f"- {ln}" for ln in lines)
+    return (
+        "This is the voice. Read all of it before you write a word, and write "
+        "Dennis so that someone who knows Benjamin's channel would think it "
+        "was his: the same flat delivery of an absurd line, the self-own "
+        "stated as a credential, the comparison nobody expected (arbitrage is "
+        "a Bumble profile, stat arb is the creature that meets you), the "
+        "rule with a rug-pull ending (\"unless you really want to\"), the "
+        "crowd roasted by name, the swear on the plain restatement, and back "
+        "on the number in the same breath.\n"
+        "Every joke is NEW and about THIS company's numbers. Take the moves, "
+        "never a line: a sentence that comes out close to one of these is "
+        "flagged on paste-back, and so is a joke with the same skeleton and "
+        "the nouns swapped.\n\n" + body)
+
+
 def confession_ledger(settings: Settings) -> str:
     """What he has already admitted to, and whether one is due.
 
@@ -547,8 +577,6 @@ HOW MUCH — a device used constantly stops being a device:
   - At most {MAX_TAGS_PER_SENTENCE} per sentence, and never two with nothing between them.
   - At most {TAGS_PER_1K_CHARS_WARN:.0f} per 1,000 characters across the whole script.
   - Per script: {caps}.
-  - [QUIET] never in the opening chapter — dark calm is the register the
-    video earns its way down to, so it has nothing to drop from yet.
   - Write them NOW. They change what gets generated, so adding one after the
     audio exists means paying for the generation twice.
 
@@ -1399,6 +1427,9 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                  lambda c: _memory("dennis_facts_block", c.settings)),
     PayloadBlock("{{used_jokes}}", _WRITING,
                  lambda c: _memory("used_jokes_block", c.settings)),
+    # Benjamin's own lines, to match (his call, 31 Oct 2026).
+    PayloadBlock("{{benjamin_lines}}", _WRITING,
+                 lambda c: benjamin_lines(c.settings)),
     # Kev's tip and the old trade come back every six to eight longs (S10).
     PayloadBlock("{{recurring_bits}}", _LONG_FORM,
                  lambda c: _bits("bits_block", c.settings)),

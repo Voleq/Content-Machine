@@ -99,7 +99,7 @@ def tokenize_tags(
         if tag_type in RETIRED_TAG_TYPES:
             warnings.append(
                 f"[{type_str}] is no longer part of the grammar — "
-                f"{RETIRED_TAG_TYPES[tag_type]}. Stripped, so nothing was drawn."
+                f"{RETIRED_TAG_TYPES[tag_type]}. Stripped."
             )
             continue
         if allowed is not None and tag_type not in allowed:

@@ -53,6 +53,13 @@ def _lines_digest() -> str:
 # twenty-five hours before anyone noticed.
 SHOT_BASE_TIMEOUT_S = 600.0
 FRAME_TIMEOUT_S = 120.0
+# A cover's still, Blender coming up included. A still is one frame, and it
+# used to get the shot's whole allowance (twelve minutes), up to four of them
+# after a short's render, with nothing on the page but "Saving the finished
+# video": his first real short sat there for ten minutes and more (31 Oct
+# 2026). A cover that cannot have him in five minutes goes without him, and
+# once one still has been given up on, the next is not tried.
+STILL_TIMEOUT_S = 300.0
 # The long side the 3D room is rendered at (room3d/build.py FULLS): the 10-K
 # pile is drawn no bigger, so it is as sharp as the room it is laid on and
 # scaled with it.
@@ -200,6 +207,7 @@ class Performer:
         self._lines: "queue.Queue[str | None] | None" = None
         self.shots: list[dict] = []          # what each shot cost, for the manifest
         self._asked = 0                      # shots asked of the worker, for the page
+        self.gave_up = False                 # a still ran out of time: no more stills
         self._counted_at = 0.0
         # Where in the video the shot being drawn is, for the page's bar:
         # ("shot", 2, 3) for the short's second of three host shots,
@@ -241,7 +249,9 @@ class Performer:
         proc = self._start()
         frames = 1 if job.get("still") else (
             float(job.get("duration") or 0) * float(job.get("fps") or DEFAULT_FPS) + 1)
-        deadline = time.monotonic() + SHOT_BASE_TIMEOUT_S + frames * FRAME_TIMEOUT_S
+        allowed = (STILL_TIMEOUT_S if job.get("still")
+                   else SHOT_BASE_TIMEOUT_S + frames * FRAME_TIMEOUT_S)
+        deadline = time.monotonic() + allowed
         # HOW FAR HE IS, for the page: the frames the worker has written so
         # far, counted while it is waited on. The worker says nothing until
         # the shot is done, and a shot of him takes minutes (his "it doesn't
@@ -260,10 +270,13 @@ class Performer:
                 left = deadline - time.monotonic()
                 if left <= 0:
                     self._kill()
+                    if job.get("still"):
+                        self.gave_up = True
                     raise RenderError(
                         f"the 3D Dennis worker took longer than "
-                        f"{SHOT_BASE_TIMEOUT_S + frames * FRAME_TIMEOUT_S:.0f}s "
-                        f"on one shot ({job.get('angle')}) and was stopped")
+                        f"{allowed:.0f}s on one "
+                        f"{'still' if job.get('still') else 'shot'} "
+                        f"({job.get('angle')}) and was stopped")
                 try:
                     line = self._lines.get(timeout=min(left, 5.0))
                 except queue.Empty:
@@ -423,6 +436,9 @@ class Performer:
         out = folder / "still.png"
         if out.exists():
             return out
+        if self.gave_up:
+            raise RenderError("an earlier still of him ran out of time; "
+                              "this cover goes without him")
         reply = self._ask({**job, "out": str(folder / "frames")})
         if not reply.get("ok"):
             raise RenderError(f"the 3D Dennis could not draw {angle}: {reply.get('error')}\n"

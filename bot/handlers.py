@@ -189,6 +189,9 @@ def _macro_index_for(symbol: str) -> str:
     return sym if sym in _INDEX_SYMS else "SPY"
 
 
+# How often an upload waiting on the filing reading says how far it got.
+PROGRESS_EVERY_S = 60.0
+
 # What the cloud Bot API accepts, so a push is refused HERE with a reason
 # rather than by Telegram with nobody listening (H2).
 TELEGRAM_PHOTO_MAX_BYTES = 10_000_000
@@ -406,6 +409,9 @@ class BotCore:
         # as the reading had left (P1). `shutdown()` is wired to the
         # application's post_shutdown in main.py.
         self._filing_reads: dict[tuple[str, str], object] = {}
+        # How far each reading has got (`build_brief`'s counters), so an
+        # upload waiting on one can say so.
+        self._filing_progress: dict[tuple[str, str], dict] = {}
         self.filing_reader = FilingReader()
         # When each chat last sent a paste refused as a FRAGMENT. Telegram
         # delivers a split message's parts within a second or two, and only
@@ -1007,7 +1013,8 @@ class BotCore:
             return text, ""
 
     # ------------------------------------------------------------- uploads
-    def handle_upload(self, chat_id: int, filename: str, data: bytes) -> Reply:
+    def handle_upload(self, chat_id: int, filename: str, data: bytes,
+                      progress: Callable[[str], None] | None = None) -> Reply:
         ws = self._active_ws(chat_id)
         if ws is None:
             return Reply("No active workspace — /short TICKER or /long TICKER first, then re-upload.")
@@ -1015,7 +1022,7 @@ class BotCore:
         suffix = Path(name).suffix.lower()
 
         if suffix in (".xlsx", ".csv"):
-            return self._ingest_export(chat_id, ws, suffix, data)
+            return self._ingest_export(chat_id, ws, suffix, data, progress)
 
         stem = Path(name).stem.lower().replace(" ", "-").replace("_", "-")
 
@@ -1057,7 +1064,8 @@ class BotCore:
         return Reply(f"Unsupported file type: {name}")
 
     def _ingest_export(self, chat_id: int, ws: Workspace, suffix: str,
-                       data: bytes) -> Reply:
+                       data: bytes,
+                       progress: Callable[[str], None] | None = None) -> Reply:
         """Take in an uploaded workbook — the primary data route.
 
         The numbers are refreshed outside the bot and pasted into a clean
@@ -1134,7 +1142,7 @@ class BotCore:
 
         # The workbook is here, so the half of the brief that needed it can
         # run: one call over material already summarised (K3).
-        note += self._finish_filing_read(ws)
+        note += self._finish_filing_read(ws, progress)
 
         reply = self.prompts_reply(chat_id)
         reply.text = f"💾 saved {dest.name} for {ws.ticker}.{note}\n\n" + reply.text
@@ -1523,12 +1531,18 @@ class BotCore:
                               if not getattr(f, "done", lambda: False)()}
         from pipeline.filing_brief import build_brief, save_brief
 
+        counters: dict = {}
+        self._filing_progress = {k: v for k, v in self._filing_progress.items()
+                                 if k in self._filing_reads}
+        self._filing_progress[key] = counters
+
         def _run():
             # On the reader's OWN thread, so the scope the caller opened is
             # not visible here — this thread opens its own, or the brief's
             # calls land in whatever workspace the operator is pasting into.
             with llm_scope(self._llm_scope(ws)):
-                brief = build_brief(ws.ticker, ws.path, self.settings)
+                brief = build_brief(ws.ticker, ws.path, self.settings,
+                                    counters=counters)
                 save_brief(ws.path, brief, self.settings)
                 return brief
 
@@ -1540,12 +1554,60 @@ class BotCore:
         self._filing_reads[key] = fut
         return fut
 
-    def _finish_filing_read(self, ws: Workspace) -> str:
+    def _wait_for_reading(self, ws: Workspace, fut,
+                          progress: Callable[[str], None] | None) -> None:
+        """Wait for the reading to finish, saying how far it has got.
+
+        WAITS FOR THE FILINGS (Valentin, 1 Nov 2026: read them before the
+        angle prompt, do not hand it over without them). It used to give up
+        after ten minutes flat, while a slow reading was still going. Now a
+        reading that keeps finishing parts is waited out, up to
+        `filing_brief_max_wait_s`; one that finishes no part for
+        `filing_brief_wait_s` is stalled and raises TimeoutError, as before.
+        """
+        import time
+
+        counters = self._filing_progress.get(self._filing_read_key(ws), {})
+        stall = float(self.settings.filing_brief_wait_s)
+        ceiling = max(float(self.settings.filing_brief_max_wait_s), stall)
+        t0 = moved = time.monotonic()
+        seen, told = -1, 0.0
+        while True:
+            try:
+                fut.result(timeout=min(15.0, stall))
+                return
+            except TimeoutError:
+                pass
+            now = time.monotonic()
+            done = int(counters.get("parts_done", 0))
+            if done != seen:
+                seen, moved = done, now
+            if now - moved >= stall or now - t0 >= ceiling:
+                raise TimeoutError
+            if progress is not None and now - told >= PROGRESS_EVERY_S:
+                told = now
+                total = int(counters.get("parts_total", 0))
+                where = (f"filing {counters.get('filing', 1)} of "
+                         f"{counters['filings']}, " if counters.get("filings")
+                         else "")
+                more = "" if counters.get("filing") == counters.get("filings") \
+                    else "+"
+                parts = (f"{done} of {total}{more} parts read" if total
+                         else "fetching the filings")
+                try:
+                    progress(f"📄 reading the filings before the angle prompt: "
+                             f"{where}{parts}, {(now - t0) / 60:.0f} min so far.")
+                except Exception:  # noqa: BLE001 — a note is never fatal
+                    log.debug("filing progress note failed", exc_info=True)
+
+    def _finish_filing_read(self, ws: Workspace,
+                            progress: Callable[[str], None] | None = None) -> str:
         """Wait out a reading still in flight, then cross-check the workbook.
 
-        Returns a line for the upload reply, or "". Bounded by
-        `filing_brief_wait_s`: past that the prompt goes out without the
-        brief rather than the operator watching a silent bot.
+        Returns a line for the upload reply, or "". Waits as long as the
+        reading keeps moving (`_wait_for_reading`); a stalled one sends the
+        prompt without the brief rather than the operator watching a silent
+        bot. `progress` gets a line now and then while it waits.
         """
         if not (self.settings.filings_enabled
                 and self.settings.filing_brief_enabled):
@@ -1575,7 +1637,7 @@ class BotCore:
 
             t0 = time.monotonic()
             try:
-                fut.result(timeout=self.settings.filing_brief_wait_s)
+                self._wait_for_reading(ws, fut, progress)
             except CancelledError:
                 # The bot is shutting down and the reading was dropped. Not
                 # an error, and not something to wait out.
@@ -1584,14 +1646,16 @@ class BotCore:
                 return ("\n⚠️ the filing reading was cancelled — the prompt "
                         "below has no filing brief in it.")
             except TimeoutError:
-                log.warning("filing brief: %s did not finish in %ss",
-                            ws.ticker, self.settings.filing_brief_wait_s)
+                waited_min = (time.monotonic() - t0) / 60
+                log.warning("filing brief: %s stalled or ran past the "
+                            "ceiling after %.0f min", ws.ticker, waited_min)
                 # Still running: keep its future, so the re-upload waits on
                 # this reading rather than starting a second one.
                 self._filing_reads[self._filing_read_key(ws)] = fut
-                return ("\n⚠️ the filing reading has not finished — the prompt "
-                        "below has no filing brief in it. Re-upload the "
-                        "workbook once it lands to pick it up.")
+                return (f"\n⚠️ the filing reading stopped moving after "
+                        f"{waited_min:.0f} min (the local model is not "
+                        f"answering) — the prompt below has no filing brief "
+                        f"in it. Re-upload the workbook to wait for it again.")
             except Exception as e:  # noqa: BLE001 — the reading itself failed
                 log.warning("filing brief: %s failed (%s: %s)",
                             ws.ticker, type(e).__name__, e)
@@ -2223,9 +2287,13 @@ class BotCore:
                 script, tts, ws.path, self.settings, content=self.content,
                 format_name=self.short_format_name(ws),
                 company_data=self._company_data(ws))
-            checkpoint("delivery")
+            # The cover is drawn before the video is saved, and it is its
+            # own step on the page: it can be a Blender still or two, and it
+            # used to sit under "Saving the finished video" for ten minutes.
+            checkpoint("cover")
             extra = self._publish_byproducts(job, ws, script, tts, manifest,
                                              "short")
+            checkpoint("delivery")
             result = deliver(out, job.ticker, job.workdate, self.settings,
                              attributions=self._attributions(manifest),
                              extra_files=extra)
@@ -2279,9 +2347,10 @@ class BotCore:
             if draft:
                 self._local_link(job, out)
                 return str(out)
-            checkpoint("delivery")
+            checkpoint("cover")
             extra = self._publish_byproducts(job, ws, script, tts, manifest,
                                              "long")
+            checkpoint("delivery")
             result = deliver(out, job.ticker, job.workdate, self.settings,
                              attributions=self._attributions(manifest),
                              extra_files=extra)

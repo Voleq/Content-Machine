@@ -110,6 +110,10 @@ _CARD_FIELDS = frozenset({"kicker", "title", "cell", "axis", "first",
 # gridline's label and the next one down is the caption's clear row, and a
 # bar reaching into it leaves the caption nowhere but over the bars.
 METRIC_HEADROOM = 1 / 3
+# A full-screen picture is cropped to the screen when the crop keeps at least
+# this share of it (a portrait or squarish photo); a wider one is shown whole
+# over a blurred copy of itself (`_Cache.bleed`).
+BLEED_KEEP_MIN = 0.7
 
 
 def _unit_of(rows) -> str:
@@ -456,9 +460,10 @@ class ShortResolver:
                 return "Photo: " + v.attribution
             return "Photo: " + who if who != "cache" else "Photo: see the credits"
         if rest[1] == "caption" and self.data is not None:
-            name = str(self.data.get("company_name") or "").strip()
-            what = str(self.data.get("industry") or "").strip().lower()
-            return f"{name} · {what}" if name and what else (name or None)
+            # The name alone. It carried the terminal's industry word after
+            # it, and "Roblox Corporation / interactive home entertainment"
+            # under a picture reads as a filing, not a caption (31 Oct 2026).
+            return str(self.data.get("company_name") or "").strip() or None
         return None
 
     def attributions(self) -> list[str]:
@@ -1334,6 +1339,22 @@ class _Cache:
             self._sized[key] = hit = cover_into(src, w, h)
         return hit
 
+    def bleed(self, path: Path, w: int, h: int, ground, line) -> Image.Image:
+        """A picture held full screen. One near the screen's shape fills it;
+        a landscape one is shown WHOLE across the width over a blurred copy
+        of itself. Cropping a 16:9 photo to 9:16 kept a third of it, blown up
+        2.4 times: on his first real short the Roblox picture came out as a
+        grey box with a black square on it (31 Oct 2026)."""
+        key = ("bleed", str(path), 0, (), w, h)
+        hit = self._sized.get(key)
+        if hit is None:
+            from pipeline.rasters import cover_fill_frame
+            with Image.open(path) as src:
+                frame = cover_fill_frame(src, w, h, ground=ground, line=line,
+                                         keep_min=BLEED_KEEP_MIN, border=False)
+            self._sized[key] = hit = frame.convert("RGBA")
+        return hit
+
     def file(self, path: Path, w: int, h: int) -> Image.Image:
         key = ("file", str(path), 0, (), w, h)
         hit = self._sized.get(key)
@@ -1416,8 +1437,13 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
     if layer.kind == "media":
         if layer.path is None or not Path(layer.path).exists():
             return
-        canvas.alpha_composite(cache.cover(Path(layer.path), layer.w, layer.h),
-                               (layer.x, layer.y))
+        if getattr(layer, "bleed", False):
+            from pipeline.rasters import role
+            img = cache.bleed(Path(layer.path), layer.w, layer.h,
+                              role(settings, "ground"), role(settings, "structure"))
+        else:
+            img = cache.cover(Path(layer.path), layer.w, layer.h)
+        canvas.alpha_composite(img, (layer.x, layer.y))
         return
 
     if layer.kind == "text":

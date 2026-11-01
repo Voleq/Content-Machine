@@ -23,6 +23,9 @@ The voice is Benjamin's (YouTube, @benjjjaamiinn), as the bible below has it: th
 ## ALREADY USED ON THIS CHANNEL — jokes, analogies and callbacks; none of them again, not even reworded
 {{used_jokes}}
 
+## BENJAMIN — the register you are matching, in his own lines (match the sound, never reuse a line)
+{{benjamin_lines}}
+
 ## WHAT YOU SAID LAST TIME (the spine of this video)
 {{prior_coverage}}
 

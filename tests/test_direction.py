@@ -75,7 +75,6 @@ def test_every_tag_the_writer_may_declare_has_a_definition():
     (TagType.SNORT, "[snorts]"),
     (TagType.SARCASTIC, "[sarcastic]"),
     (TagType.CURIOUS, "[curious]"),
-    (TagType.QUIET, "[whispers]"),
 ])
 def test_v3_gets_the_audio_tag(tag, expected):
     assert emission(tag, V3).strip() == expected
@@ -94,7 +93,7 @@ def test_the_timing_tags_fall_back_to_a_break(tag):
 
 
 @pytest.mark.parametrize("tag", [TagType.SNORT, TagType.SARCASTIC,
-                                 TagType.CURIOUS, TagType.QUIET])
+                                 TagType.CURIOUS])
 def test_a_performance_tag_is_dropped_rather_than_faked(tag):
     """There is no pause that means "sarcastic". On a model that cannot
     perform the direction, emitting nothing is correct and emitting the
@@ -205,7 +204,7 @@ def test_a_tag_never_steals_a_word_from_the_prose():
 def test_every_offset_points_at_its_own_word_with_the_whole_vocabulary():
     clean = ("The buyback is curious. A genuinely curious use of the cash, "
              "and the quiet part is that the flat line was the point.")
-    events = [ev(TagType.CURIOUS, 23), ev(TagType.QUIET, 61),
+    events = [ev(TagType.CURIOUS, 23), ev(TagType.SIGH, 61),
               ev(TagType.FLAT, 0), ev(TagType.SNORT, 100)]
     request, _, spans = expand_delivery(clean, events, V3)
     words = remap_to_clean(words_from_alignment(request, _alignment(request)),
@@ -452,18 +451,19 @@ def test_the_rate_ceiling_ignores_a_fragment():
     assert not [f for f in out if "per 1,000" in f.message]
 
 
-def test_quiet_may_not_open_the_video():
-    from pipeline.models import Chapter
+def test_quiet_is_retired_and_read_in_the_ordinary_voice():
+    """ElevenLabs performed [QUIET] as a whisper, and on his first real short
+    it was unusable: "get rid of it entirely" (31 Oct 2026). A script that
+    still carries it loses the tag, says why, and nothing reaches the voice."""
+    from bot.prompts import delivery_vocabulary
 
-    n = " ".join(f"Sentence number {i} is here." for i in range(40))
-    chapters = [Chapter(type="cold-open", title="One"),
-                Chapter(type="the-numbers", title="Two")]
-    early = direction_lint(_Script(n, [ev(TagType.QUIET, 10)], chapters=chapters))
-    assert any("opening chapter" in f.message for f in early)
-
-    late = direction_lint(_Script(n, [ev(TagType.QUIET, len(n) - 30)],
-                                  chapters=chapters))
-    assert not [f for f in late if "opening chapter" in f.message]
+    clean, tags, warnings = tokenize_tags("[QUIET] A platform is its players.")
+    assert clean.strip() == "A platform is its players."
+    assert not [t for t in tags if t.type is TagType.QUIET]
+    assert any("[QUIET]" in w and "whisper" in w for w in warnings)
+    assert TagType.QUIET not in DIRECTIONS
+    assert emission(TagType.QUIET, V3) == ""
+    assert "QUIET" not in delivery_vocabulary()
 
 
 # --------------------------------------------------------------------------

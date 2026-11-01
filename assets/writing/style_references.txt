@@ -1,8 +1,9 @@
-# S2 — lines from other creators, for the copy check ONLY.
+# S2 — lines from other creators: the register the writer matches.
 #
-# These are never sent to the writer. The copy check warns when a sentence
-# Dennis says repeats one of these almost word for word, so a style he
-# learned from never turns into a line he lifted. One line per entry.
+# Sent to the writer as the sound to match (Valentin, 31 Oct 2026: "i just
+# want him to be similar to that benjamin guy"), with the rule that none is
+# said. The copy check still warns when a sentence Dennis says repeats one of
+# these almost word for word. One line per entry.
 #
 # Benjamin (youtube.com/@benjjjaamiinn), as Gemini summarised his jokes
 # for Valentin on 2026-10-18. Paraphrases, not checked transcripts.

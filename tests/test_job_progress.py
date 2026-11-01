@@ -48,8 +48,10 @@ def test_a_short_says_which_of_its_stages_it_is_in():
     assert beat["pct"] == 75.0                   # where the long's beats take over
     assert progress({"status": "running", "detail": "dennis 30/91 · shot 2, wide"},
                     now=NOW)["pct"] == 12.0
-    # A final's delivery is the end of the bar, not its start.
-    assert progress({"status": "running", "detail": "delivery"}, now=NOW)["pct"] == 96.0
+    # A final's delivery is the end of the bar, not its start; the cover
+    # before it is its own stage (RBLX, 1 Nov 2026: it sat on "saving").
+    assert progress({"status": "running", "detail": "cover"}, now=NOW)["pct"] == 96.0
+    assert progress({"status": "running", "detail": "delivery"}, now=NOW)["pct"] == 98.0
 
 
 def test_reports_reach_the_running_job_and_no_other(monkeypatch):

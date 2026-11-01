@@ -569,6 +569,12 @@ def _reading_only(brief: FilingBrief) -> FilingBrief:
 # --------------------------------------------------------------------------
 
 
+# Parts in a row with no answer before the reading stops. A daemon that is
+# down answers nothing fast; one that times out costs `OLLAMA_TIMEOUT_S`
+# per part, and a whole reading of those is the better part of two hours.
+MISSES_TO_STOP = 3
+
+
 def context_budget_chars(settings: Settings) -> int:
     """How many characters of prompt the local model can actually hold."""
     tokens = max(int(settings.ollama_num_ctx) - _RESERVE_TOKENS, 256)
@@ -617,6 +623,8 @@ def _summarise_sections(ref, sections: list[dict], settings: Settings,
     filing = f"{ref.form} {ref.period or ref.filed}"
     budget = _budget(settings)
     for section in sections:
+        if counters.get("gave_up"):
+            break
         # ASK WHETHER THE SECTION FIT, not whether the packed result did.
         # `_compress_sections` clips to the budget, so the thing it hands
         # back always fits by construction — checking that would be checking
@@ -632,8 +640,16 @@ def _summarise_sections(ref, sections: list[dict], settings: Settings,
         out = chat(f"FILING: {ref.form} for {ref.period or ref.filed}\n{packed}",
                    settings, system=_SECTION_SYSTEM,
                    purpose="filing-brief-section")
+        # How far the reading has got, for the upload that is waiting on it.
+        counters["parts_done"] = counters.get("parts_done", 0) + 1
         if not out:
+            counters["misses_in_row"] = counters.get("misses_in_row", 0) + 1
+            if counters["misses_in_row"] >= MISSES_TO_STOP:
+                # The model is not answering: twenty more timeouts would
+                # hold the upload for an hour and end the same way.
+                counters["gave_up"] = True
             continue
+        counters["misses_in_row"] = 0
         answered += 1
         kept, lost = _check_points(_parse_points(out), packed, filing,
                                    section["title"])
@@ -658,6 +674,7 @@ def _read_one(ref, workspace: Path, settings: Settings,
     if not sections:
         log.info("filing brief: %s had no readable sections", ref.label)
         return [], 0, True, 0, 0
+    counters["parts_total"] = counters.get("parts_total", 0) + len(sections)
     points, held, dropped, answered = _summarise_sections(
         ref, sections, settings, counters)
     return points, len(sections), held, dropped, answered
@@ -697,7 +714,11 @@ def build_brief(ticker: str, workspace: Path, settings: Settings, *,
             return cached
 
         answered = 0
-        for ref in refs:
+        counters["filings"] = len(refs)
+        for i, ref in enumerate(refs, 1):
+            if counters.get("gave_up"):
+                break
+            counters["filing"] = i
             got, n, held, lost, heard = _read_one(ref, workspace, settings,
                                                   counters)
             out.points.extend(got)
@@ -710,6 +731,11 @@ def build_brief(ticker: str, workspace: Path, settings: Settings, *,
             # All three mean the same thing to the caller and none is an
             # error: a normal angle prompt, with the slot saying why.
             out.reason = "no LLM answered — the filing was not read"
+            return out
+        if counters.get("gave_up"):
+            out.reason = (f"the model stopped answering partway "
+                          f"({MISSES_TO_STOP} parts in a row came back "
+                          f"empty) — the filing was not read through")
             return out
         if not out.points:
             out.reason = ("the model answered, but none of its points named "

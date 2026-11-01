@@ -162,9 +162,9 @@ What the rest of the vocabulary buys is the thing §7 has always asked for and
 never had a mechanism for: `[CURIOUS]` is how the monotone lifts, and §7 says
 those lifts are the retention. `[SNORT]` is the one piece of audible amusement
 allowed anywhere in the register — a man reading a filing at 3am snorts; he
-does not laugh, and laughing is still banned outright by §2. `[QUIET]` is dark
-calm with the register dropping rather than rising, which is the opposite of
-every emphasis instinct and is why it is worth a tag.
+does not laugh, and laughing is still banned outright by §2. Dark calm has no
+tag: the voice performed `[QUIET]` as a whisper and it is gone. A `[BEAT]` and
+a short plain line drop the register better than any tag did.
 
 The same ceiling applies as to every mechanic here: **a device used constantly
 stops being a device.** One direction a sentence at most, and the lift spent on

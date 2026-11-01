@@ -150,7 +150,7 @@ def _voice(settings, report: Report, live: bool) -> None:
     # Not a failure: a cheaper model is a choice. But it is the difference
     # between Dennis sighing and Dennis pausing, so the row says which.
     tags = ("performs the direction tags" if performs_audio_tags(model) else
-            "drops [CURIOUS], [SARCASTIC], [SNORT] and [QUIET]; "
+            "drops [CURIOUS], [SARCASTIC] and [SNORT]; "
             "ELEVEN_MODEL_ID=eleven_v4 performs them")
     if not missing:
         report.add(PASS, "ElevenLabs", f"{model} ({tags}), short voice "
