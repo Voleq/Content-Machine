@@ -169,6 +169,11 @@ class Settings(BaseSettings):
     panel_host: str = Field(default="127.0.0.1", alias="PANEL_HOST")
     panel_port: int = Field(default=8765, alias="PANEL_PORT")
     panel_token: str = Field(default="", alias="PANEL_TOKEN")
+    # The panel's address from your phone, when a private network serves it
+    # there (Tailscale Serve: https://dennis.<your-tailnet>.ts.net). Only
+    # used to write the phone link into `/admin panel`: the panel itself
+    # still listens on PANEL_HOST.
+    panel_remote_url: str = Field(default="", alias="PANEL_REMOTE_URL")
     # Which chat the panel acts as: its active video, its wizard. 0 = the
     # first of OPERATOR_CHAT_IDS, so the panel and that chat share a context.
     panel_chat_id: int = Field(default=0, alias="PANEL_CHAT_ID")

@@ -23,7 +23,9 @@ as the `X-Panel-Key` header — or `?k=` on a file link, which an `<img>` or
 `<video>` cannot set a header for. Files are served only from the workspace,
 the templates and the custom-asset folder: never `state/`, which holds the
 YouTube credentials and this key. Reach it from another machine through an
-SSH tunnel or a private network; do not open the port.
+SSH tunnel or a private network; do not open the port. PANEL_REMOTE_URL
+(say a Tailscale Serve address) adds that address, key on, to
+`/admin panel`, so the phone opens it from the chat.
 
 Standalone, without Telegram (the queue runs, pushes go to the feed only):
 
@@ -750,6 +752,20 @@ def _handler_for(panel: Panel):
     return Handler
 
 
+def remote_link(settings, token: str) -> str:
+    """PANEL_REMOTE_URL with the panel's key on it, for `/admin panel`; ""
+    when it is unset or is not a web address (a typo must not stop the bot,
+    and a link that cannot open is worse than none)."""
+    base = (settings.panel_remote_url or "").strip().split("#")[0].rstrip("/")
+    if not base:
+        return ""
+    if not base.lower().startswith(("https://", "http://")):
+        log.warning("PANEL_REMOTE_URL is not a web address (%r): /admin "
+                    "panel leaves the phone link out", base)
+        return ""
+    return f"{base}/#k={quote(token, safe='')}"
+
+
 def start_panel(core: BotCore, loop: asyncio.AbstractEventLoop,
                 host: str | None = None, port: int | None = None
                 ) -> tuple[ThreadingHTTPServer, str]:
@@ -770,6 +786,7 @@ def start_panel(core: BotCore, loop: asyncio.AbstractEventLoop,
                               daemon=True)
     thread.start()
     core.panel_url = url
+    core.panel_remote_url = remote_link(core.settings, panel.token)
     log.info("web panel on http://%s:%d/ (the link with its key: /admin panel)",
              shown, server.server_address[1])
     return server, url
