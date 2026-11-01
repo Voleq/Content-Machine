@@ -23,10 +23,13 @@ _WARN_GATES = frozenset({"budget", "kit", "joke-floor", "jokes", "direction",
 # ...and by what an ungated report line says.
 _WARN_WORDS = ("Dennis is alone", "holds him in one shot", "tagging density",
                "below the floor of", "is a region the plate sets no type in",
-               "no imagery resolved")
+               "no imagery resolved",
+               # a [WEB] address the writer has to change
+               "is not opened:", "there is no page at that address")
 # Never: they are the bot's to fix or his to decide, not the writer's.
 _SKIP_WORDS = ("not in the vetted palette", "you let this through",
-               "is a website or app screen")
+               "is a website or app screen", "blocks the bot's browser",
+               "has no shot:")
 
 MAX_ITEMS = 60
 

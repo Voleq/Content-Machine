@@ -14,6 +14,7 @@ The Dennis tag grammar:
     [CHART: metric]                   a data path drawn into a charts/ plate
     [SHOW FILING: file.png]           unnamed-source data screenshot
     [SCREENGRAB: slug]                operator-supplied app/screen capture
+    [WEB: address | find=words]       a real web page, shot by the bot
     [SOUND: key]                      sfx palette
     [SCRIBBLE: mark -> target]        an annotations/ mark on a word or figure
     [MOVE: count-up]                  a design move on the plate on screen
@@ -182,6 +183,29 @@ def _screen_tag(rt, settings: Settings, warnings: list[str]):
         f"of the same words. To show the real screen, drop a screenshot named "
         f"{slug}.png on the page and paste the script again.")
     return dataclasses.replace(rt, type=TagType.CLIP), slug
+
+
+def _web_tag(rt, settings: Settings, warnings: list[str]):
+    """[WEB: address] -> the [SCREENGRAB] of its shot when there is one, a
+    stock [CLIP] that waits for it when there is not (pipeline/web_shots.py).
+    Returns (tag, slug, url): the slug and url only while it is a clip;
+    tag None when there is no address to shoot."""
+    import dataclasses
+
+    from pipeline.web_shots import STOCK_CLIP, parse_web, web_tag_outcome
+
+    ask = parse_web(rt.payload)
+    warnings.extend(ask.warnings)
+    if not ask.url:
+        warnings.append("[WEB] with no address in it — skipped")
+        return None, "", ""
+    state, sentence = web_tag_outcome(ask, settings)
+    if state == "shot":
+        return dataclasses.replace(rt, type=TagType.SCREENGRAB,
+                                   payload=ask.slug), "", ""
+    warnings.append(sentence)
+    return (dataclasses.replace(rt, type=TagType.CLIP, payload=STOCK_CLIP),
+            ask.slug, ask.url)
 
 
 # The optional `=== CONFESSION ===` trailer: `kind | the admission`, one line.
@@ -415,11 +439,19 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
     # written after it must not quietly land on the plate before it.
     holder_type, holder_plate = "", ""
     for rt in raw_tags:
-        rt, screen = _screen_tag(rt, settings, warnings)
+        page_url = ""
+        if rt.type is TagType.WEB:
+            rt, screen, page_url = _web_tag(rt, settings, warnings)
+            if rt is None:
+                continue
+        else:
+            rt, screen = _screen_tag(rt, settings, warnings)
         payload = rt.payload
         style = ""
         hold = 0.0
         values: dict[str, str] = {"screen": screen} if screen else {}
+        if page_url:
+            values["url"] = page_url
         beside = ""
         if rt.type in (TagType.PLATE, TagType.CHART):
             # `with=` asks for Dennis beside the evidence (items 30 and 11).
@@ -1174,7 +1206,8 @@ def validate_long_script(
     # approximate, and a warning rather than a block for exactly that reason.
     for e in script.events:
         if e.type in (TagType.CLIP, TagType.BROLL):
-            if e.payload not in palette:
+            # A screen's stand-in clip: its own warning has said why already.
+            if e.payload not in palette and not (e.values or {}).get("screen"):
                 warnings.append(
                     f'clip "{e.payload}" not in the vetted palette — will fetch '
                     f"it as a raw query (filler if that fails)"

@@ -1057,6 +1057,15 @@ class BotCore:
 
         if suffix in (".png", ".jpg", ".jpeg", ".webp", ".mp4", ".mov", ".mkv", ".webm"):
             pending = self._pending_custom_slugs(ws)
+            if stem not in pending:
+                # A screen already in (the bot's shot of a page, or his own)
+                # can be replaced by dropping another under its name.
+                from pipeline.web_shots import page_screens
+
+                script = ws.load_long()
+                if script is not None and stem in {
+                        d["slug"] for d in page_screens(script, self.settings)}:
+                    pending[stem] = "screen"
             if stem in pending:
                 # an operator capture ([SCREENGRAB]) — into the shared
                 # custom library, where pre-render validation looks for it
@@ -1079,9 +1088,24 @@ class BotCore:
                         else " All custom files present — re-paste the script "
                              "to refresh the report.")
                 if kind == "screen":
-                    return Reply(f"🎨 saved screenshot {stem}{suffix}. Paste the "
-                                 f"script again and it shows in place of the "
-                                 f"stock clip.{note if remaining else ''}")
+                    from pipeline.web_shots import mark_his
+
+                    mark_his(self.settings, stem)
+                    # Checked again at once, so the report and the contact
+                    # sheet show the screenshot where the stock clip was.
+                    raw = ws.raw_script("long")
+                    head = (f"🎨 saved screenshot {stem}{suffix}. It shows in "
+                            f"place of the stock clip.")
+                    if raw:
+                        try:
+                            rep = self._intake_long(ws, raw)
+                        except Exception as e:  # noqa: BLE001
+                            log.warning("re-check after a screenshot failed: %s", e)
+                        else:
+                            rep.text = f"{head}\n\n{rep.text}"
+                            return rep
+                    return Reply(f"{head} Paste the script again to see it in "
+                                 f"the report.")
                 return Reply(f"🎨 saved {kind} {stem}{suffix}.{note}")
 
         if suffix in (".png", ".jpg", ".jpeg", ".webp"):
@@ -1923,6 +1947,12 @@ class BotCore:
         )
 
     def _intake_long(self, ws: Workspace, raw: str) -> Reply:
+        # [WEB: address] shots first, so the parse finds them and the report
+        # shows them. A few seconds a page; never Google or Reddit; a page
+        # it could not shoot is not tried again on every paste.
+        from pipeline.web_shots import take_shots
+
+        take_shots(raw, self.settings)
         script, warnings = parse_long_script(raw, ws.ticker, self.settings)
         data = self._company_data(ws)
         data_metrics = data.available_chart_metrics() if data is not None else None

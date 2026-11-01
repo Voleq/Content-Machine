@@ -550,6 +550,11 @@ class Settings(BaseSettings):
     # headless Chromium for the screenshots; empty -> Playwright default, or the
     # pre-provisioned browser if present.
     playwright_chromium_path: str = Field(default="", alias="PLAYWRIGHT_CHROMIUM_PATH")
+    # [WEB: address] in a long script: the bot screenshots the page itself
+    # (pipeline/web_shots.py). Never Google, Reddit or the social sites, which
+    # block it; those are asked of the operator. False: every [WEB] waits for
+    # his own screenshot.
+    web_shots: bool = Field(default=True, alias="WEB_SHOTS")
 
     # ------------------------------------------------------------------ prices
     # Price history feeds the branded chart (rendered by the pipeline, never a

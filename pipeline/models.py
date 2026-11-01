@@ -98,6 +98,11 @@ class TagType(str, Enum):
     # only so a script saved with one still loads; the tokenizer strips it.
     SHOW_ARTICLE = "SHOW ARTICLE"
     SCREENGRAB = "SCREENGRAB"    # operator-supplied app/screen capture (blocks if missing)
+    # A REAL WEB PAGE, SHOT BY THE BOT — [WEB: address | find=words on it].
+    # Never an event: the parser turns it into the [SCREENGRAB] of the shot
+    # once there is one, and into a stock [CLIP] until then
+    # (pipeline/web_shots.py). LONG only.
+    WEB = "WEB"
     SOUND = "SOUND"              # sfx palette
     SCRIBBLE = "SCRIBBLE"        # an annotations/ mark on a number or a word
     # A DESIGN MOVE ON THE PLATE ALREADY ON SCREEN — [MOVE: count-up], placed

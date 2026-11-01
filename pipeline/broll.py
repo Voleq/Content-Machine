@@ -1330,8 +1330,11 @@ class ContentManager:
                     / f"grab_{slug}_{stamp}_whole.png")
             if not norm.exists():
                 normalize_image(src, norm, self.settings, keep_min=1.01)
+            # A [WEB] page's shot credits the site in the description.
+            from pipeline.web_shots import credit
+
             return Visual(key=slug, kind="screengrab", path=norm, is_video=False,
-                          source="local", attribution="")
+                          source="local", attribution=credit(self.settings, slug))
         log.warning("screengrab %r missing at render time — filler", slug)
         return self.filler_image(slug, "screengrab")
 

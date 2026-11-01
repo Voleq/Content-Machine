@@ -369,6 +369,15 @@ def _step_check(v: _Video) -> dict:
     from pipeline.fixup import fixup_prompt
 
     out["fixup_prompt"] = fixup_prompt(out["findings"], v.fmt)
+    # Every [WEB] page and [IMG] of a screen, with a box for his own shot.
+    out["screens"] = []
+    if v.fmt == "long" and script is not None:
+        from pipeline.web_shots import page_screens
+
+        try:
+            out["screens"] = page_screens(script, v.settings)
+        except Exception as e:  # noqa: BLE001 — a list, never the step
+            log.warning("screens for the check step: %s", e)
     out.update(dennis_alone=rep.get("dennis_alone", -1),
                dennis_alone_max=rep.get("dennis_alone_max"),
                est_runtime_min=rep.get("est_runtime_min"),

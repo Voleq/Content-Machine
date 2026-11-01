@@ -253,8 +253,9 @@ def test_screengrab_flow_blocks_and_accepts_upload(core, xlsx_bytes):
 
 def test_a_screenshot_dropped_for_a_screen_tag_replaces_its_clip(core, xlsx_bytes):
     """An [IMG] of a screen plays a stock clip, and never blocks; a
-    screenshot dropped under its name goes to the custom library and shows
-    instead on the next paste (RDDT long, 1 Nov 2026)."""
+    screenshot dropped under its name goes to the custom library and the
+    script is checked again at once, so it shows instead (RDDT long, 1 Nov
+    2026)."""
     import io
 
     from PIL import Image
@@ -284,7 +285,7 @@ def test_a_screenshot_dropped_for_a_screen_tag_replaces_its_clip(core, xlsx_byte
         Image.new("RGB", (1170, 2532), (18, 22, 28)).save(buf, format="PNG")
         r = core.handle_upload(CHAT, f"{slug}.png", buf.getvalue())
         assert "saved screenshot" in r.text and (custom / f"{slug}.png").exists()
-        core.intake_script(CHAT, raw)
+        # Checked again by itself: no second paste.
         ws = Workspace.latest_for(core.settings, "EXMPL")
         assert ws.load_long().screengrab_slugs() == [slug]
     finally:

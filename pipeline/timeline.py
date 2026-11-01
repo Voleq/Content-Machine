@@ -158,6 +158,11 @@ _LONG_NO_CUE_REASONS: dict[TagType, str] = {
     TagType.QUIET: (
         "[QUIET] is retired: the line is read in the ordinary voice and "
         "nothing is drawn"),
+    # Never an event: the parser turns a [WEB] into the [SCREENGRAB] of its
+    # shot, or into a stock [CLIP] until there is one (pipeline/web_shots.py).
+    TagType.WEB: (
+        "[WEB] is drawn as its screenshot or a stock clip; the parser decides "
+        "which, so this tag itself never reaches the timeline"),
 }
 
 

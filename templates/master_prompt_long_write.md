@@ -332,8 +332,18 @@ draws and where the drawing reads it from.
 [IMG: query]            a real PHOTOGRAPH of operations / facilities / people, found on Wikimedia Commons (literal query like "{{ticker}} distribution warehouse")
 [PRODUCT: query]        a real photograph of the product itself
                         Photographs only: a website, an app screen, a feed, a post or a page of search results is never
-                        there. For a screen, write [CLIP: someone scrolling the feed on a phone] — or [SCREENGRAB: slug]
-                        when the real screen is the point and the operator should capture it.
+                        there. For a screen, write [WEB: address] when you know the page, [CLIP: someone scrolling the
+                        feed on a phone] when any screen will do, or [SCREENGRAB: slug] for what only the operator can
+                        capture (his broker app, his P&L).
+[WEB: address | find=words on the page]
+                        a real web page, screenshot by the bot: the company's own site, a product or pricing page, an
+                        app store listing, a news article, an investor-relations page. Give the full address of a page
+                        you know exists (look it up), and with find= a few words the page really says: they are marked
+                        and brought to the middle of the shot. Google, Reddit, X, Facebook, Instagram, TikTok, LinkedIn
+                        and YouTube block the bot, so a page there costs the operator a screenshot by hand: one or two a
+                        video at most, and only where that exact screen is the point. A page behind a log-in or a
+                        paywall comes back refused. Never a private person's account or post. Until the shot exists a
+                        stock clip plays, so the line must still stand without it.
 [MEME: key]             from the meme catalog above. Optional and rare: most videos carry none, never more
                         than 2, and only where one fits the line exactly. A meme is STILL — the freeze is
                         the joke's timing.
@@ -349,7 +359,7 @@ draws and where the drawing reads it from.
                         One figure, one picture: after a chart [PLATE] of revenue, a [CHART: revenue] in the
                         same chapter is the same chart twice, and it is dropped.
 [SHOW FILING: file.png] a filing screenshot, framed. REACH FOR THIS WHENEVER YOU QUOTE A FILING — if the line is "it's in the risk factors, and it names a person", show the risk factor.
-[SCREENGRAB: slug]      an operator-supplied real screen capture (broker app, P&L, a website, an app's feed, a search page).
+[SCREENGRAB: slug]      an operator-supplied real screen capture (his broker app, his P&L, a logged-in app screen).
                         Blocks until the file exists, so use it only where the real screen is the point.
 [SOUND: key]            key ∈ windows_error · cash_register · record_scratch · sad_trombone · camera_shutter · vine_boom · coffee_slurp · keyboard_clack · paper_rustle · buzzer · ding
                         Use SPARSELY. The deadpan set (coffee_slurp, keyboard_clack, paper_rustle, buzzer, ding) is the room he's sitting in; it punctuates, it never announces.

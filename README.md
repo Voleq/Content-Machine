@@ -1186,6 +1186,16 @@ env var, case-insensitive).
   image or short screen-record dropped into `assets/custom/`, pad-fit
   (never cover-cropped). It blocks the render until the file exists; the bot
   routes a matching-slug upload straight into `custom/`.
+- **Web pages**: `[WEB: address | find=words]` (LONG) is a screenshot of a
+  real page, taken by the bot with Playwright when the script comes in
+  (`pipeline/web_shots.py`, `WEB_SHOTS`). The shot is checked before it is
+  kept: the status the site answered, block and paywall wording, an empty
+  page, a blank picture. Google, Reddit, X, Facebook, Instagram, TikTok,
+  LinkedIn and YouTube block a headless browser, so they are never tried:
+  the Check step gives the operator the link and a box for his own
+  screenshot. Until a shot exists the beat plays a stock clip, and nothing
+  blocks. Only public http(s) addresses are opened. The description credits
+  the site.
 - **Captions are libass karaoke** (`subtitles` filter) generated from the
   word timestamps — words punch in as they are spoken. LONG captions are
   authored narrow (≤ ~22 chars/line) so the 9:16 repurpose crop keeps

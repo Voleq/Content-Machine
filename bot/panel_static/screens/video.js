@@ -551,6 +551,24 @@ STEPS_UI.check = (d) => {
   // warning about the words or the tags, so the writer fixes them in one pass.
   if (d.fixup_prompt) side.push(el("div", { class: "row" }, copyBtn("Copy a fix-up prompt for your writer", d.fixup_prompt)),
     el("p", { class: "meta", text: "Paste it into the chat that wrote this script, then paste the script it sends back here. Fact-checks you know are right: press “It's right, let it through” instead." }));
+  // The screens: every [WEB] page and [IMG] of a screen. The bot shoots the
+  // pages it can; Google, Reddit and the social sites are his, with the link
+  // to open and a box that files his screenshot under the right name.
+  if ((d.screens || []).length) {
+    const SCREEN_STATE = { shot: "✓ shot by the bot", "yours-in": "✓ your screenshot", yours: "needs your screenshot",
+      refused: "the bot couldn't shoot it", waiting: "not shot yet", unsafe: "not opened" };
+    const asName = (s, f) => new File([f], s.slug + ((f.name.match(/\.[a-z0-9]+$/i) || [".png"])[0]).toLowerCase(), { type: f.type });
+    side.push(el("h4", { text: `Screens (${d.screens.length})` }),
+      el("p", { class: "meta", text: "Until a screen has a shot, a stock clip plays in its place. Drop a screenshot on a screen to use yours; the checks run again by themselves." }),
+      el("ul", { class: "findings screens" }, d.screens.map((s) => el("li", { class: s.state === "shot" || s.state === "yours-in" ? "" : "warn" },
+        el("b", { text: s.host || s.slug }), " ", el("small", { class: "sev", text: SCREEN_STATE[s.state] || s.state }),
+        s.why ? el("span", { class: "meta", text: ` · ${s.why}` }) : null,
+        el("div", { class: "row" },
+          s.url ? el("a", { href: s.url, target: "_blank", rel: "noopener noreferrer", class: "button sm", text: "Open the page" }) : null,
+          dropZone(s.state === "shot" || s.state === "yours-in" ? "Replace with your screenshot" : "Drop your screenshot", "image/*",
+            (f) => sendFile(asName(s, f), `/api/upload?name=${encodeURIComponent(asName(s, f).name)}`, `Screenshot · ${s.host || s.slug} → ${VID.t}`),
+            `filed as ${s.file}`))))));
+  }
   side.push(el("h4", { text: `What the checks found (${(d.findings || []).length})` }));
   if (!(d.findings || []).length) side.push(el("p", { class: "ok-line", text: d.lines?.length ? "Nothing. Clean." : "No script yet." }));
   Object.entries(groups).forEach(([gate, fs]) => side.push(el("details", { open: fs.some((f) => f.severity === "block") || Object.keys(groups).length < 4, class: "gate" },
