@@ -370,3 +370,93 @@ def test_every_sec_request_is_counted_on_its_day(settings, monkeypatch):
     request_count.count(fast, "pexels")
     kept = json.loads(path.read_text(encoding="utf-8"))
     assert len(kept) == 1 and kept[date.today().isoformat()] == {"sec": 3, "pexels": 1}
+
+
+# --------------------------------------------------------------- RDDT shots
+# 1 Nov 2026: three filing shots, each one line of the forward-looking
+# bullet list, a strip of unreadable type over a blur of itself. The quote
+# came from the safe-harbor note because a 10-Q's sections were never found
+# (they are numbered differently), and the shot was the one-line element.
+
+def _ixbrl(*blocks: str) -> str:
+    return ("<html><body>" + "".join(
+        f"<div><span>{b}</span></div>" for b in blocks) + "</body></html>")
+
+
+_LONG = ("Our advertising revenue depends on a small number of large "
+         "advertisers, and a cut in their budgets would reduce it.")
+
+
+def test_a_10q_s_sections_are_found_by_their_titles():
+    html = _ixbrl(
+        "Note Regarding Forward-Looking Statements",
+        "the development of AI agents allowing users to access content "
+        "without visiting our platform directly, and the timing of it;",
+        "PART I. FINANCIAL INFORMATION",
+        "Item 1. Financial Statements",
+        "Revenue was recognised when control of the promised services "
+        "transferred to customers in the period.",
+        "Item 2. Management's Discussion and Analysis of Financial "
+        "Condition and Results of Operations",
+        "Revenue grew 68% to $585.2 million, driven by advertising "
+        "revenue from our largest advertisers in the quarter.",
+        "Item 4. Controls and Procedures",
+        "Our disclosure controls were effective as of the end of the "
+        "period covered by this quarterly report on Form 10-Q.",
+        "PART II. OTHER INFORMATION",
+        "Item 1A.", "Risk Factors",
+        _LONG,
+        "See Item 1A, Risk Factors, in our annual report for more on these risks.")
+    got = {s["title"]: s["text"] for s in F.segment_filing(html)}
+    assert "AI agents" in got[F.FORWARD_LOOKING]
+    assert "Revenue grew 68%" in got["MD&A"]
+    assert "Revenue was recognised" in got["Financial Statements"]
+    assert "disclosure controls" in got["Other"]
+    assert "disclosure controls" not in got["MD&A"]
+    # "Item 1A." on one line and "Risk Factors" on the next is one header,
+    # and a sentence pointing at it is not a header at all.
+    assert _LONG in got["Risk Factors"]
+    assert "See Item 1A" in got["Risk Factors"]
+    assert "Business" not in got
+
+
+def test_the_quote_pick_never_sees_the_safe_harbor_list(settings,
+                                                        monkeypatch):
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "filings_llm_provider": "ollama"})
+    seen: list[str] = []
+    fragment = "agents allowing users to access content"
+    monkeypatch.setattr(F, "_llm_chat", lambda prompt, s: seen.append(prompt)
+                        or json.dumps([
+                            {"quote": fragment, "section": "x", "why": "y"},
+                            {"quote": _LONG, "section": "Risk Factors",
+                             "why": "concentration"}]))
+    sections = [
+        {"title": F.FORWARD_LOOKING, "text": "the safe-harbor bullet list"},
+        {"title": "Risk Factors", "text": _LONG},
+        {"title": "Financial Statements", "text": "the notes"},
+    ]
+    quotes = F.flag_quotes(sections, "advertiser concentration", live)
+    assert "safe-harbor" not in seen[0] and "the notes" not in seen[0]
+    assert _LONG in seen[0]
+    assert [q.quote for q in quotes] == [_LONG], \
+        "a fragment of a list is not a quote"
+
+
+def test_the_shot_is_a_16x9_window_on_the_page_not_one_line():
+    # One line of a list, 1,000 px wide and 18 tall.
+    one = F.clip_window(40, 3000, 1000, 18, 3009, 1100, 9000)
+    assert one["width"] == F.SHOT_MAX_W
+    assert abs(one["width"] / one["height"] - 16 / 9) < 0.01
+    assert one["y"] < 3000 < 3018 < one["y"] + one["height"]
+    # A paragraph in a 624-px column: the window is the column, padded.
+    col = F.clip_window(96, 1200, 624, 120, 1250, 816, 9000)
+    assert col["width"] == 624 + 2 * F.SHOT_PAD and col["x"] == 96 - F.SHOT_PAD
+    assert col["y"] < 1200 and col["y"] + col["height"] > 1320
+    # A paragraph taller than the window: held on the marked sentence.
+    tall = F.clip_window(96, 1000, 624, 2000, 2600, 816, 9000)
+    assert tall["y"] < 2600 < tall["y"] + tall["height"]
+    # Never off the page.
+    top = F.clip_window(0, 0, 300, 20, 10, 816, 400)
+    assert top["x"] >= 0 and top["y"] >= 0
+    assert top["y"] + top["height"] <= max(400, top["height"])

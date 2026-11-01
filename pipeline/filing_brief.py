@@ -84,6 +84,30 @@ _SECTION_SYSTEM = (
     "'nothing notable'."
 )
 
+# THE READING IS WHAT CHANGED (1 Nov 2026). Most of a 10-K is word for word
+# last year's, and the brief is a year-over-year survey: reading every
+# section whole, a 12B model on the 3060 thought for three to eight minutes a
+# section and six of nine came back blank. Code finds the paragraphs that
+# differ; the model reads only those, a few pieces per pair of reports.
+_CHANGES_SYSTEM = (
+    "You read what changed in a company's SEC filing since the same report a "
+    "year earlier, for a deadpan financial video. Only the paragraphs that "
+    "differ are given: NEW ones, CHANGED ones (BEFORE and NOW), and GONE "
+    "ones. Write at most six points, the changes that matter most: a risk "
+    "that is new or gone, a figure that moved, wording that got stronger or "
+    "softer. Start each point with NEW, CHANGED or GONE and state only what "
+    "the text says. No opinion, no hype, no investment advice, and never "
+    "name a data terminal or vendor.\n"
+    "Every point is exactly two lines:\n"
+    "POINT: <what changed, in your own words, with any figure>\n"
+    "SOURCE: \"<the one sentence it comes from, copied word for word>\"\n"
+    "For a NEW or CHANGED point copy the sentence from the new text; for a "
+    "GONE one, from the old. Copy the sentence exactly: no shortening, no "
+    "ellipsis, no rewording, and never the BEFORE or NOW label. Leave out "
+    "any point you cannot back with one sentence. If nothing that changed "
+    "is notable, write 'nothing notable'."
+)
+
 _DIFF_SYSTEM = (
     "You compare two years of one company's SEC filings for a deadpan "
     "financial video. Using ONLY the numbered points given, write four short "
@@ -384,6 +408,10 @@ class FilingBrief:
     dropped: int = 0
     # Contradiction lines that cited no point, and so were thrown out.
     unbacked: int = 0
+    # Paragraphs that changed but were left unread, to keep the reading to a
+    # few pieces a report. Said in the brief, so a quiet section is not
+    # mistaken for an unchanged one.
+    unread: int = 0
     # Why there is no body, when there is not one. `skipped` is a normal
     # outcome here, never an error.
     reason: str = ""
@@ -400,7 +428,7 @@ class FilingBrief:
                 "grading": self.grading,
                 "points": [p.to_json() for p in self.points],
                 "dropped": self.dropped, "unbacked": self.unbacked,
-                "reason": self.reason}
+                "unread": self.unread, "reason": self.reason}
 
     @classmethod
     def from_json(cls, data: dict) -> "FilingBrief":
@@ -417,6 +445,7 @@ class FilingBrief:
                     if isinstance(p, dict)],
             dropped=int(data.get("dropped") or 0),
             unbacked=int(data.get("unbacked") or 0),
+            unread=int(data.get("unread") or 0),
             reason=str(data.get("reason") or ""))
 
     def render_text(self) -> str:
@@ -447,6 +476,11 @@ class FilingBrief:
                          "the filing sentence behind them, so nothing below "
                          "can be checked: treat all of it as leads)")
         lines.append(self.body.strip())
+        if self.unread:
+            lines.append(f"({self.unread} more changed "
+                         f"{'paragraph was' if self.unread == 1 else 'paragraphs were'}"
+                         " left unread to keep the reading short, so a "
+                         "change not named above may still be there.)")
         if self.contradictions:
             lines.append("\nAGAINST OUR NUMBERS:\n"
                          + self.contradictions.strip())
@@ -517,8 +551,9 @@ def cache_path(accessions: list[str], settings: Settings) -> Path:
 
 # Part of the cache key. v2: points carry the filing sentence behind them, so
 # a brief cached before that has nothing for the writer to check and has to
-# be read again rather than served.
-_BRIEF_VERSION = 2
+# be read again rather than served. v3: the reading is what changed since the
+# year before.
+_BRIEF_VERSION = 3
 
 
 def _budget(settings: Settings) -> int:
@@ -601,8 +636,329 @@ def _sections_to_read(sections: list[dict], settings: Settings) -> list[dict]:
         if len(text) < 200:
             continue
         if title not in by_title or len(text) > len(by_title[title]["text"]):
-            by_title[title] = {"title": title, "text": text}
+            by_title[title] = {"title": title, "text": text,
+                               "paras": list(s.get("paras") or [text])}
     return [by_title[t] for t in _WANTED_SECTIONS if t in by_title]
+
+
+# --------------------------------------------------------------------------
+# What changed: the paragraphs a report does not share with the one a year
+# earlier, which is all the model reads where there is a year earlier.
+# --------------------------------------------------------------------------
+
+# One piece is one call. Smaller than a whole section ever was, so the model
+# has less to think about and the answer has room; a few of them a pair.
+PIECE_CHARS = 10_000
+MAX_PIECES_PER_PAIR = 4
+# No one section takes every piece: a year that rewrote its risk factors
+# still leaves MD&A something.
+SECTION_CAP_CHARS = 15_000
+# A table cell, a page number, a running head: not a paragraph that changed.
+_MIN_PARA_CHARS = 80
+# Two paragraphs sharing this much of their vocabulary are one paragraph
+# reworded; less, and they are one gone and one new.
+_REWORDED_MIN = 0.5
+# Room the labels around the paragraphs take in a piece.
+_PIECE_LABELS = 600
+
+
+@dataclass
+class Change:
+    """One paragraph that differs from the year before."""
+
+    section: str
+    kind: str            # "new" | "changed" | "gone"
+    now: str = ""
+    before: str = ""
+    likeness: float = 0.0
+
+    @property
+    def size(self) -> int:
+        return len(self.now) + len(self.before)
+
+
+def _shared(a: set[str], b: set[str]) -> float:
+    return len(a & b) / len(a | b) if a and b else 0.0
+
+
+def section_changes(title: str, now: list[str],
+                    before: list[str]) -> list[Change]:
+    """The paragraphs of one section that are not word for word last year's.
+
+    Same words in the same order (case, punctuation and spacing aside) is
+    the same paragraph. Of the rest, each new paragraph is paired with the
+    old one it shares most of its words with, if that is at least half of
+    them: the same risk with a figure or a hedge changed. What is left is
+    new this year or gone since.
+    """
+    now = [p for p in now if len(p) >= _MIN_PARA_CHARS]
+    before = [p for p in before if len(p) >= _MIN_PARA_CHARS]
+    old_left: dict[str, list[int]] = {}
+    for i, para in enumerate(before):
+        old_left.setdefault(" ".join(_words(para)), []).append(i)
+    taken: set[int] = set()
+    fresh: list[str] = []
+    for para in now:
+        same = old_left.get(" ".join(_words(para)))
+        if same:
+            taken.add(same.pop(0))
+        else:
+            fresh.append(para)
+    olds = [(i, set(_words(before[i]))) for i in range(len(before))
+            if i not in taken]
+    out: list[Change] = []
+    for para in fresh:
+        words = set(_words(para))
+        best, score = None, 0.0
+        for i, ow in olds:
+            if i in taken:
+                continue
+            got = _shared(words, ow)
+            if got > score:
+                best, score = i, got
+        if best is not None and score >= _REWORDED_MIN:
+            taken.add(best)
+            out.append(Change(title, "changed", now=para, before=before[best],
+                              likeness=score))
+        else:
+            out.append(Change(title, "new", now=para))
+    out += [Change(title, "gone", before=before[i]) for i, _ in olds
+            if i not in taken]
+    return out
+
+
+def _pack(changes: list[Change], piece_chars: int,
+          max_pieces: int) -> tuple[list[list[Change]], int, bool]:
+    """The changes, in the pieces the model reads: `(pieces, unread, held)`.
+
+    Section by section in the order they earn their place, and inside one:
+    what is new first, then what changed most, then what went. `held` is
+    False when a paragraph had to be clipped to fit a piece at all.
+    """
+    rank = {"new": 0, "changed": 1, "gone": 2}
+    chosen: list[Change] = []
+    unread = 0
+    held = True
+    room = max(piece_chars - _PIECE_LABELS, 200)
+    for title in _WANTED_SECTIONS:
+        items = sorted((c for c in changes if c.section == title),
+                       key=lambda c: (rank[c.kind], c.likeness))
+        used = 0
+        for c in items:
+            if c.size > room:
+                held = False
+                half = room // 2 if c.now and c.before else room
+                c = replace(c, now=c.now[:half], before=c.before[:half])
+            if used and used + c.size > SECTION_CAP_CHARS:
+                unread += 1
+                continue
+            chosen.append(c)
+            used += c.size
+    pieces: list[list[Change]] = []
+    size = 0
+    for i, c in enumerate(chosen):
+        if not pieces or size + c.size > room:
+            if len(pieces) == max_pieces:
+                unread += len(chosen) - i
+                break
+            pieces.append([])
+            size = 0
+        pieces[-1].append(c)
+        size += c.size
+    return pieces, unread, held
+
+
+def _piece_prompt(new, old, piece: list[Change]
+                  ) -> tuple[str, dict[str, str], dict[str, str]]:
+    """What the model reads for one piece, and the new and old text of each
+    section in it, which its sentences are checked against."""
+    now_at = new.period or new.filed
+    then = old.period or old.filed
+    lines = [f"FILING: {new.form} for {now_at}, against the {old.form} for "
+             f"{then}. Only the paragraphs that differ are below; every "
+             f"other paragraph reads the same in both."]
+    new_side: dict[str, str] = {}
+    old_side: dict[str, str] = {}
+    for title in _WANTED_SECTIONS:
+        here = [c for c in piece if c.section == title]
+        if not here:
+            continue
+        lines.append(f"\n## {title}")
+        added = [c for c in here if c.kind == "new"]
+        moved = [c for c in here if c.kind == "changed"]
+        gone = [c for c in here if c.kind == "gone"]
+        if added:
+            lines.append(f"NEW in {now_at}:")
+            lines += [c.now for c in added]
+        if moved:
+            lines.append(f"CHANGED between {then} and {now_at}:")
+            for c in moved:
+                lines += [f"BEFORE: {c.before}", f"NOW: {c.now}"]
+        if gone:
+            lines.append(f"GONE since {then}:")
+            lines += [c.before for c in gone]
+        new_side[title] = "\n".join(c.now for c in here if c.now)
+        old_side[title] = "\n".join(c.before for c in here if c.before)
+    return "\n".join(lines), new_side, old_side
+
+
+def _check_change_points(pairs: list[tuple[str, str]], new_side: dict,
+                         old_side: dict, new_label: str,
+                         old_label: str) -> tuple[list[Point], int]:
+    """Keep the points whose sentence is in the text the piece showed: the
+    new report's for what is new or changed, the old one's for what went.
+    The section is wherever the sentence was found."""
+    from pipeline.recall import unsupported_numbers
+
+    kept: list[Point] = []
+    dropped = 0
+    for text, quote in pairs:
+        hit = None
+        for label, side in ((new_label, new_side), (old_label, old_side)):
+            for title, body in side.items():
+                sentence = find_sentence(body, quote) if quote and body else None
+                if sentence:
+                    hit = (label, title, sentence)
+                    break
+            if hit:
+                break
+        if hit is None:
+            dropped += 1
+            continue
+        label, title, sentence = hit
+        kept.append(Point(filing=label, section=title, text=text,
+                          source=sentence,
+                          unmatched=unsupported_numbers(
+                              text, f"{sentence} {label}")))
+    return kept, dropped
+
+
+# --------------------------------------------------------------------------
+# Each answered piece is kept, so a reading that stops picks up where it was.
+# --------------------------------------------------------------------------
+
+_PART_VERSION = 1
+
+
+def _part_path(prompt: str, system: str, settings: Settings) -> Path:
+    material = "|".join((str(_PART_VERSION), settings.ollama_model,
+                         settings.llm_provider_order, system, prompt))
+    key = hashlib.sha256(material.encode()).hexdigest()[:20]
+    return settings.cache_dir / "filing_parts" / f"{key}.txt"
+
+
+def _ask(prompt: str, settings: Settings, *, system: str, purpose: str,
+         counters: dict) -> str:
+    """One piece's answer: the saved one if this exact piece was answered
+    before (a reading that stopped, the bot restarted, the same report
+    read for another video), else the model's, saved the moment it lands."""
+    from pipeline.llm import chat
+
+    path = _part_path(prompt, system, settings)
+    try:
+        saved = path.read_text(encoding="utf-8")
+    except OSError:
+        saved = ""
+    if saved.strip():
+        counters["saved_parts"] = counters.get("saved_parts", 0) + 1
+        return saved
+    counters["llm"] = counters.get("llm", 0) + 1
+    out = chat(prompt, settings, system=system, purpose=purpose)
+    if out and out.strip():
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(out, encoding="utf-8")
+        except OSError as e:
+            log.debug("filing brief: could not keep a part (%s)", e)
+    return out or ""
+
+
+def _missed(out: str, counters: dict) -> bool:
+    """Count a piece in; True when it came back empty."""
+    counters["parts_done"] = counters.get("parts_done", 0) + 1
+    if out:
+        counters["misses_in_row"] = 0
+        return False
+    counters["misses_in_row"] = counters.get("misses_in_row", 0) + 1
+    if counters["misses_in_row"] >= MISSES_TO_STOP:
+        # The model is not answering: twenty more timeouts would hold the
+        # upload for an hour and end the same way.
+        counters["gave_up"] = True
+    return True
+
+
+def _read_changes(new, old, workspace: Path, settings: Settings,
+                  counters: dict) -> tuple[list[Point], int, bool, int, int, int, int]:
+    """One report against the same report a year earlier, reading only what
+    changed. Returns `(points, sections, every_piece_fit, points_dropped,
+    pieces_answered, pieces_asked, unread)`; never raises."""
+    from pipeline.filings import download_filing, segment_filing
+
+    def _sections(ref) -> dict[str, dict] | None:
+        counters["download"] = counters.get("download", 0) + 1
+        path = download_filing(ref, workspace, settings)
+        if path is None:
+            log.info("filing brief: could not download %s", ref.label)
+            return None
+        html = path.read_text(errors="replace", encoding="utf-8")
+        return {s["title"]: s for s in
+                _sections_to_read(segment_filing(html), settings)}
+
+    counters["filing_label"] = (f"{new.form} for {new.period or new.filed}, "
+                                f"against {old.period or old.filed}")
+    counters["section"] = counters["where"] = ""
+    counters["alive_at"] = time.monotonic()
+    now, then = _sections(new), _sections(old)
+    if now is None:
+        return [], 0, True, 0, 0, 0, 0
+    if then is None:
+        # No year earlier to set it against: read it whole, as before.
+        points, n, held, dropped, answered = _read_whole(
+            new, list(now.values()), settings, counters)
+        return points, n, held, dropped, answered, n, 0
+    changes: list[Change] = []
+    for title in _WANTED_SECTIONS:
+        a, b = now.get(title), then.get(title)
+        if a is None and b is None:
+            continue
+        changes += section_changes(title, _paras(a), _paras(b))
+    pieces, unread, held = _pack(changes, min(PIECE_CHARS, _budget(settings)),
+                                 MAX_PIECES_PER_PAIR)
+    if unread:
+        log.info("filing brief: %s — %d changed paragraphs left unread",
+                 new.label, unread)
+    counters["parts_total"] = counters.get("parts_total", 0) + len(pieces)
+    new_label = f"{new.form} {new.period or new.filed}"
+    old_label = f"{old.form} {old.period or old.filed}"
+    points: list[Point] = []
+    dropped = answered = asked = 0
+    for k, piece in enumerate(pieces, 1):
+        if counters.get("gave_up"):
+            break
+        counters["where"] = (f"what changed since the {old.form} for "
+                             f"{old.period or old.filed}, "
+                             f"piece {k} of {len(pieces)}")
+        counters["alive_at"] = time.monotonic()
+        counters["thinking"] = None
+        prompt, new_side, old_side = _piece_prompt(new, old, piece)
+        asked += 1
+        out = _ask(prompt, settings, system=_CHANGES_SYSTEM,
+                   purpose="filing-brief-section", counters=counters)
+        if _missed(out, counters):
+            continue
+        answered += 1
+        kept, lost = _check_change_points(_parse_points(out), new_side,
+                                          old_side, new_label, old_label)
+        points.extend(kept)
+        dropped += lost
+    return (points, len(set(now) | set(then)), held, dropped, answered, asked,
+            unread)
+
+
+def _paras(section: dict | None) -> list[str]:
+    if section is None:
+        return []
+    return list(section.get("paras") or [section.get("text") or ""])
 
 
 def _summarise_sections(ref, sections: list[dict], settings: Settings,
@@ -616,7 +972,6 @@ def _summarise_sections(ref, sections: list[dict], settings: Settings,
     tight (K1, K2b).
     """
     from pipeline.filings import _compress_sections
-    from pipeline.llm import chat
 
     points: list[Point] = []
     held = True
@@ -629,6 +984,7 @@ def _summarise_sections(ref, sections: list[dict], settings: Settings,
             break
         # Where the reading is, for the upload waiting on it to say.
         counters["section"], counters["section_n"] = section["title"], i
+        counters["where"] = ""
         counters["alive_at"] = time.monotonic()
         counters["thinking"] = None
         # ASK WHETHER THE SECTION FIT, not whether the packed result did.
@@ -642,20 +998,12 @@ def _summarise_sections(ref, sections: list[dict], settings: Settings,
         if len(raw) > room:
             held = False
         packed = _compress_sections([section], budget)
-        counters["llm"] = counters.get("llm", 0) + 1
-        out = chat(f"FILING: {ref.form} for {ref.period or ref.filed}\n{packed}",
+        out = _ask(f"FILING: {ref.form} for {ref.period or ref.filed}\n{packed}",
                    settings, system=_SECTION_SYSTEM,
-                   purpose="filing-brief-section")
+                   purpose="filing-brief-section", counters=counters)
         # How far the reading has got, for the upload that is waiting on it.
-        counters["parts_done"] = counters.get("parts_done", 0) + 1
-        if not out:
-            counters["misses_in_row"] = counters.get("misses_in_row", 0) + 1
-            if counters["misses_in_row"] >= MISSES_TO_STOP:
-                # The model is not answering: twenty more timeouts would
-                # hold the upload for an hour and end the same way.
-                counters["gave_up"] = True
+        if _missed(out, counters):
             continue
-        counters["misses_in_row"] = 0
         answered += 1
         kept, lost = _check_points(_parse_points(out), packed, filing,
                                    section["title"])
@@ -683,20 +1031,48 @@ def _read_one(ref, workspace: Path, settings: Settings,
     if not sections:
         log.info("filing brief: %s had no readable sections", ref.label)
         return [], 0, True, 0, 0
+    return _read_whole(ref, sections, settings, counters)
+
+
+def _read_whole(ref, sections: list[dict], settings: Settings,
+                counters: dict) -> tuple[list[Point], int, bool, int, int]:
+    """A report with no year earlier to diff against, section by section."""
     counters["parts_total"] = counters.get("parts_total", 0) + len(sections)
     points, held, dropped, answered = _summarise_sections(
         ref, sections, settings, counters)
     return points, len(sections), held, dropped, answered
 
 
+def reading_pairs(fset) -> list[tuple[object, object | None]]:
+    """What the brief reads, as `(report, the same report a year earlier)`:
+    the annual pair, then the quarterly pair unless the latest quarter is
+    the annual report itself (Q4). A report with no year-earlier twin is
+    read whole, paired with None."""
+    out: list[tuple[object, object | None]] = []
+    seen: set[str] = set()
+    for new, old in ((fset.latest_annual, fset.prior_annual),
+                     (fset.latest_quarter, fset.year_ago_quarter)):
+        if new is None or new.accession in seen:
+            continue
+        seen.add(new.accession)
+        twin = old if old is not None and old.accession != new.accession \
+            else None
+        out.append((new, twin))
+    # A year-earlier report nothing newer was paired with is not read on its
+    # own: on its own it says nothing about what changed.
+    return out
+
+
 def build_brief(ticker: str, workspace: Path, settings: Settings, *,
                 counters: dict | None = None) -> FilingBrief:
     """The pre-angle pass. NEVER raises; every failure is a `reason`.
 
-    Reads the latest annual report, the prior year's, and the quarterly pair
-    beside them — with the Q4 case, where the 10-K is the filing that covers
-    the latest quarter, handled by `resolve_filings` rather than coming back
-    empty (O3).
+    Reads the latest annual report against the prior year's, and the latest
+    quarter against the same quarter a year earlier — with the Q4 case,
+    where the 10-K is the filing that covers the latest quarter, handled by
+    `resolve_filings` rather than coming back empty (O3). Where a report has
+    its year-earlier twin, only the paragraphs that changed are read
+    (`_read_changes`); where it has none, it is read whole.
     """
     from pipeline.filings import resolve_filings
     from pipeline.llm import chat
@@ -722,19 +1098,31 @@ def build_brief(ticker: str, workspace: Path, settings: Settings, *,
                      out.ticker, ", ".join(out.accessions))
             return cached
 
-        answered = 0
-        counters["filings"] = len(refs)
-        for i, ref in enumerate(refs, 1):
+        answered = asked = 0
+        pairs = reading_pairs(fset)
+        counters["filings"] = len(pairs)
+        for i, (new, old) in enumerate(pairs, 1):
             if counters.get("gave_up"):
                 break
             counters["filing"] = i
-            got, n, held, lost, heard = _read_one(ref, workspace, settings,
-                                                  counters)
+            if old is None:
+                got, n, held, lost, heard = _read_one(new, workspace,
+                                                      settings, counters)
+                tried, unread = n, 0
+            else:
+                got, n, held, lost, heard, tried, unread = _read_changes(
+                    new, old, workspace, settings, counters)
             out.points.extend(got)
             out.sections += n
             out.context_held = out.context_held and held
             out.dropped += lost
+            out.unread += unread
             answered += heard
+            asked += tried
+        if not asked and out.sections:
+            out.reason = ("the filings read word for word the same as a "
+                          "year earlier: nothing changed to read")
+            return out
         if not answered:
             # The daemon is down, the token is missing, or MOCK_MODE is on.
             # All three mean the same thing to the caller and none is an

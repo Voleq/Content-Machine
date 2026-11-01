@@ -242,20 +242,130 @@ def _post_ollama(url: str, payload: dict, settings: Settings) -> str:
     thinking or writing is waited out however long it takes, and only one
     that has said nothing at all for that long is given up on.
 
+    THINKING NEVER RUNS PAST THE ROOM IT HAS, AND NEVER COSTS THE ANSWER
+    (RDDT, 1 Nov 2026, the second try: six of nine filing sections thought
+    for three to eight minutes and came back blank). The answer is capped at
+    what is left of the context after the prompt (`num_predict`), so a model
+    that would think past its window stops there instead of losing the
+    prompt off the front; and an answer that comes back with thinking and
+    no words is asked again at once with thinking off. Careful when it
+    works, plain when it does not, never a hole.
+
+    NOR DOES IT GO ROUND IN CIRCLES (the script check, an hour later: a
+    b-roll query that takes 15-30 s thought for 7.7 minutes and came back
+    blank). Thinking that repeats itself is stopped the moment it does, and
+    thinking that runs past what the question is worth (`_think_budget`)
+    is stopped there; both are asked again plainly at once.
+
     An Ollama that does not know `think` (older than 0.9) or a model that
     refuses it is asked again without it."""
-    body = {**payload, "stream": True}
+    room = _room(payload, settings)
+    body = {**payload, "stream": True,
+            "options": {**(payload.get("options") or {}),
+                        "num_predict": room}}
+    meta: dict = {}
     try:
-        return _ollama_stream(url, body, settings.ollama_timeout_s)
+        text = _ollama_stream(url, body, settings.ollama_timeout_s, meta=meta,
+                              think_max=_think_budget(payload, room))
+    except _ThoughtStopped as e:
+        if body.get("think") is False:
+            return ""
+        log.info("ollama %s after %d characters of thinking — asked again "
+                 "without thinking", e, meta.get("thought_chars", 0))
+        return _plainly(url, body, settings)
     except Exception as e:  # noqa: BLE001
         said = _refused(e) or (str(e) if isinstance(e, _OllamaSaid) else "")
         if "think" not in body or "think" not in said.lower():
+            if meta.get("started"):
+                # Not a missing daemon: it was answering, and stopped.
+                log.warning("ollama stopped mid-answer after %d characters "
+                            "of thinking (%s: %s)", meta.get("thought_chars", 0),
+                            type(e).__name__, e)
             raise
         log.info("ollama would not take think=false (%s) — asked again "
                  "without it", said)
         return _ollama_stream(url, {k: v for k, v in body.items()
                                     if k != "think"},
                               settings.ollama_timeout_s)
+    if text.strip() or body.get("think") is False or not (
+            meta.get("thought") or meta.get("done_reason") == "length"):
+        return text
+    log.info("ollama thought for %d characters and wrote no answer (%s) — "
+             "asked again without thinking", meta.get("thought_chars", 0),
+             meta.get("done_reason") or "stopped")
+    return _plainly(url, body, settings)
+
+
+def _plainly(url: str, body: dict, settings: Settings) -> str:
+    """The same question with thinking off: the answer when thinking went
+    nowhere."""
+    try:
+        return _ollama_stream(url, {**body, "think": False},
+                              settings.ollama_timeout_s)
+    except Exception as e:  # noqa: BLE001
+        said = _refused(e) or (str(e) if isinstance(e, _OllamaSaid) else "")
+        if "think" in said.lower():
+            return ""     # a model that cannot stop thinking: nothing left
+        raise
+
+
+# A pessimistic guess at a token's worth of characters, for the room left
+# after a prompt: guessing the prompt bigger leaves the answer less room,
+# never more than the window holds.
+_ROOM_CHARS_PER_TOKEN = 3.0
+_ROOM_FLOOR = 1024
+
+
+def _prompt_chars(payload: dict) -> int:
+    return sum(len(str(m.get("content") or ""))
+               for m in payload.get("messages") or ())
+
+
+def _room(payload: dict, settings: Settings) -> int:
+    """How many tokens the answer, thinking included, may run to: what the
+    context window has left once the prompt is in it."""
+    used = (_prompt_chars(payload) / _ROOM_CHARS_PER_TOKEN
+            + 16 * len(payload.get("messages") or ()))
+    return max(_ROOM_FLOOR, int(settings.ollama_num_ctx - used))
+
+
+# HOW LONG A QUESTION MAY BE THOUGHT ABOUT (1 Nov 2026, the script check:
+# a b-roll query that usually takes 15-30 s thought for 7.7 minutes, until
+# the window was full, and came back blank). Thinking is worth more on a
+# bigger question, so the allowance grows with the prompt: at least
+# `_THINK_FLOOR` tokens (about a minute on the 3060), and three times the
+# prompt's own length above that. Past it the question is asked plainly.
+_THINK_FLOOR = 2048
+_THINK_PER_PROMPT = 3
+
+
+def _think_budget(payload: dict, room: int) -> int:
+    """The most tokens of thinking this question gets before it is asked
+    again with thinking off."""
+    asked = _prompt_chars(payload) / _ROOM_CHARS_PER_TOKEN
+    return min(room, max(_THINK_FLOOR, int(_THINK_PER_PROMPT * asked)))
+
+
+class _ThoughtStopped(Exception):
+    """Thinking cut short before a word of the answer: it went round in
+    circles, or ran past what the question is worth."""
+
+
+# THINKING THAT GOES ROUND IN CIRCLES (Gemma 4 has a known habit of it, at
+# any temperature: "thought thought thought..." or one paragraph over and
+# over). When the last `_LOOP_TAIL` characters of the thinking have already
+# appeared `_LOOP_SEEN` times, it is a loop, and it is stopped at once
+# rather than left to fill the window. Checked every `_LOOP_EVERY`
+# characters, so a long thought costs nothing to watch.
+_LOOP_TAIL = 200
+_LOOP_SEEN = 4
+_LOOP_EVERY = 400
+
+
+def _looping(thinking: str) -> bool:
+    if len(thinking) < _LOOP_TAIL * _LOOP_SEEN:
+        return False
+    return thinking.count(thinking[-_LOOP_TAIL:]) >= _LOOP_SEEN
 
 
 class _OllamaSaid(Exception):
@@ -293,15 +403,32 @@ def _beat(thinking: bool) -> None:
 
 def _stream_ollama(url: str, payload: dict, settings: Settings,
                    on_text) -> str:
-    """The page's chat: the answer as the model writes it."""
-    return _ollama_stream(url, payload, settings.ollama_timeout_s, on_text)
+    """The page's chat: the answer as the model writes it. Thinking may run
+    as long as it likes, unless it goes round in circles: then the question
+    is asked again with thinking off."""
+    try:
+        return _ollama_stream(url, payload, settings.ollama_timeout_s, on_text)
+    except _ThoughtStopped as e:
+        log.info("ollama %s in the chat — asked again without thinking", e)
+        return _ollama_stream(url, {**payload, "think": False},
+                              settings.ollama_timeout_s, on_text)
 
 
 def _ollama_stream(url: str, payload: dict, timeout_s: float,
-                   on_text=None) -> str:
+                   on_text=None, meta: dict | None = None,
+                   think_max: int | None = None) -> str:
     """The answer, read a line at a time as Ollama writes it. The timeout is
     the longest wait for the NEXT line, so a slow model that keeps thinking
     or writing is never cut off, and one that goes silent is.
+
+    `meta`, when given, is filled in as it goes: `started`, `thought`,
+    `thought_chars` and the daemon's `done_reason` ("length" when the
+    answer hit `num_predict`).
+
+    Thinking that goes round in circles raises `_ThoughtStopped`, and so
+    does thinking past `think_max` pieces (Ollama sends one token a piece)
+    before a word of the answer. Leaving the stream closes the connection,
+    and Ollama stops working on it.
 
     Every Ollama request goes through here, which makes it the one place a
     test stands in for the daemon."""
@@ -309,8 +436,10 @@ def _ollama_stream(url: str, payload: dict, timeout_s: float,
 
     import httpx
 
+    meta = meta if meta is not None else {}
     timeout = httpx.Timeout(timeout_s, connect=10.0)
     text, thought = "", False
+    thinking, checked, pieces = "", 0, 0
     with httpx.stream("POST", url, json=payload, timeout=timeout,
                       headers={"Content-Type": "application/json"}) as resp:
         if resp.status_code >= 400:
@@ -325,6 +454,7 @@ def _ollama_stream(url: str, payload: dict, timeout_s: float,
                 continue
             if part.get("error"):
                 raise _OllamaSaid(str(part["error"])[:300])
+            meta["started"] = True
             msg = part.get("message") or {}
             piece = msg.get("content") or ""
             if piece:
@@ -337,7 +467,19 @@ def _ollama_stream(url: str, payload: dict, timeout_s: float,
                 if on_text is not None and not thought:
                     on_text("", True)
                 thought = True
+                meta["thought"] = True
+                meta["thought_chars"] = (meta.get("thought_chars", 0)
+                                         + len(msg["thinking"]))
+                thinking += msg["thinking"]
+                pieces += 1
+                if len(thinking) - checked >= _LOOP_EVERY:
+                    checked = len(thinking)
+                    if _looping(thinking):
+                        raise _ThoughtStopped("went round in circles")
+                if think_max is not None and pieces > think_max:
+                    raise _ThoughtStopped(f"thought past {think_max} tokens")
             if part.get("done"):
+                meta["done_reason"] = part.get("done_reason") or ""
                 break
     return text
 

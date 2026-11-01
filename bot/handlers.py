@@ -204,6 +204,8 @@ def reading_line(ticker: str, counters: dict, waited_s: float) -> str:
           if counters.get("filings") else "")
     if counters.get("condensing"):
         where = "putting what it found in all the reports together"
+    elif counters.get("where"):
+        where = counters["where"]
     elif counters.get("section"):
         where = (f"the {counters['section']} section"
                  + (f", part {counters.get('section_n')} of "

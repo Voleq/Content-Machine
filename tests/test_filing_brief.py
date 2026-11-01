@@ -25,11 +25,26 @@ def _sourced(prompt: str,
              point: str = "revenue concentration is named for the first time"
              ) -> str:
     """A section answer in the shape the instruction asks for, whose SOURCE
-    is the first sentence of the section the prompt carries: a real one, so
-    the point survives the check that its sentence is in the filing."""
+    is the first sentence of the first paragraph the prompt carries: a real
+    one, so the point survives the check that its sentence is in the
+    filing. A piece of what changed labels its paragraphs ("NEW in …:",
+    "NOW: …"); the labels are not the filing's words."""
+    return _sourced_points(prompt, [point])
+
+
+def _sourced_points(prompt: str, points: list[str]) -> str:
+    """One point per paragraph, for as many paragraphs as there are points
+    and the prompt carries."""
     body = prompt.split("\n## ", 1)[1].split("\n", 1)[1]
-    first = body.split(". ", 1)[0] + "."
-    return f'POINT: {point}\nSOURCE: "{first}"'
+    lines = [ln for ln in body.splitlines()
+             if ln.strip() and not ln.rstrip().endswith(":")
+             and not ln.startswith(("## ", "BEFORE: "))]
+    out = []
+    for point, line in zip(points, lines):
+        line = line.removeprefix("NOW: ")
+        first = line.split(". ", 1)[0].rstrip(".") + "."
+        out.append(f'POINT: {point}\nSOURCE: "{first}"')
+    return "\n".join(out)
 
 
 @pytest.fixture()
@@ -47,7 +62,10 @@ def answering(monkeypatch):
     def _chat_result(prompt, settings, *, system="", purpose="llm"):
         calls.append(purpose)
         if purpose == "filing-brief-section":
-            body = _sourced(prompt)
+            body = _sourced_points(prompt, [
+                "revenue concentration is named for the first time",
+                "cash generation is called improving",
+                "the margin kept falling"])
         elif purpose == "filing-brief-condense":
             body = ("RISK SHIFT: a supplier-concentration factor is new. [P1]\n"
                     "LANGUAGE: 'expect' became 'may'. [P2]\n"
@@ -186,7 +204,8 @@ def test_a_second_run_downloads_nothing_and_asks_nothing(live, answering,
     a = build_brief("EXMPL", tmp_path / "ws1", live, counters=first)
     assert a.ok, a.reason
     assert first["download"] >= 2, "two annual reports should have been read"
-    assert first["llm"] >= 3
+    # What changed between them is one piece, then the condensation.
+    assert first["llm"] >= 2
     calls_after_first = len(answering)
 
     second: dict = {}
@@ -532,9 +551,10 @@ def test_the_filings_module_has_one_llm_path(settings, monkeypatch):
 
     monkeypatch.setattr(llm, "_post", _post)
     # Every Ollama call is streamed (1 Nov 2026); this is where it goes out.
-    monkeypatch.setattr(llm, "_ollama_stream", lambda url, payload, timeout,
-                        on_text=None: _post(url, payload, {}, timeout)
-                        ["message"]["content"])
+    monkeypatch.setattr(llm, "_ollama_stream",
+                        lambda url, payload, timeout, on_text=None, meta=None,
+                        think_max=None:
+                        _post(url, payload, {}, timeout)["message"]["content"])
     live = settings.model_copy(update={"mock_mode": False})
     assert F._llm_chat("q", live) == "routed"
     assert seen and "11434" in seen[0], \
@@ -898,3 +918,142 @@ def test_the_prompts_have_the_writer_check_each_point_first(
     assert "CHECK THE BRIEF FIRST" in update
     assert "Put the `Brief check:` and the HOOK OPTIONS menu in the chat" \
         in update
+
+
+# --------------------------------------------------------------------------
+# What changed (1 Nov 2026). RDDT, read whole on the 3060: three to eight
+# minutes a section, six of nine blank. A report with a year-earlier twin is
+# now read only where it differs, in a few pieces, and each answered piece is
+# kept.
+# --------------------------------------------------------------------------
+
+_PARA = ("We depend on a small number of carriers for a large share of our "
+         "revenue, and losing one would hurt us.")
+
+
+def test_only_the_paragraphs_that_differ_are_changes():
+    from pipeline.filing_brief import section_changes
+
+    same = ("Investing in our common stock involves a high degree of risk, "
+            "and you should consider the risks below.")
+    got = section_changes(
+        "Risk Factors",
+        [same, _PARA.replace("small", "very small"),
+         "Generative AI tools may let people use our content without "
+         "visiting our platform, which could reduce our traffic."],
+        [same.upper(), _PARA,
+         "Our offices are in one city, and an earthquake there could stop "
+         "our operations for weeks at a time."])
+    kinds = {c.kind: c for c in got}
+    assert sorted(kinds) == ["changed", "gone", "new"]
+    assert kinds["changed"].before == _PARA
+    assert "very small" in kinds["changed"].now
+    assert "AI tools" in kinds["new"].now
+    assert "earthquake" in kinds["gone"].before
+    assert all(same.lower() not in (c.now + c.before).lower() for c in got), \
+        "a paragraph that only changed case is the same paragraph"
+
+
+def test_the_model_reads_only_what_changed_and_gone_is_last_years(
+        live, monkeypatch, tmp_path):
+    """The fixture's 2024 10-K has a customer-concentration risk the 2025
+    one dropped, a stock-comp risk it added, and new figures in MD&A. The
+    business description is the same both years and is not read at all."""
+    seen: dict = {}
+    gone = ("A small number of large carriers account for a significant "
+            "share of our revenue, and the loss of any one of them could "
+            "materially reduce our revenue and slow our growth.")
+    _risk_only(monkeypatch, f'POINT: GONE the carrier concentration risk\n'
+                            f'SOURCE: "{gone}"', seen=seen)
+    brief = build_brief("EXMPL", tmp_path, live)
+    asked = seen["filing-brief-section"]
+    assert len(asked) == 1, "one piece holds everything that changed"
+    piece = asked[0]
+    assert "against the 10-K for 2024-12-31" in piece
+    assert "Example Corp designs and sells" not in piece, \
+        "an unchanged paragraph was sent to the model"
+    assert "NEW in 2025-12-31:\nStock-based compensation" in piece
+    assert "CHANGED between 2024-12-31 and 2025-12-31:" in piece
+    before = [ln for ln in piece.splitlines() if ln.startswith("BEFORE: ")]
+    assert any("Revenue for fiscal 2024 was $491.0 million" in ln
+               for ln in before)
+    assert f"GONE since 2024-12-31:\n{gone}" in piece
+    assert brief.ok, brief.reason
+    assert [(p.filing, p.section) for p in brief.points] == \
+        [("10-K 2024-12-31", "Risk Factors")]
+
+
+def test_a_report_with_no_year_earlier_is_read_whole(live):
+    from types import SimpleNamespace as NS
+
+    from pipeline.filing_brief import reading_pairs
+
+    k25, k24, q3, q3y = (NS(accession=a) for a in ("k25", "k24", "q3", "q3y"))
+    assert reading_pairs(NS(latest_annual=k25, prior_annual=k24,
+                            latest_quarter=q3, year_ago_quarter=q3y)) == \
+        [(k25, k24), (q3, q3y)]
+    # Q4: the latest quarter IS the annual report.
+    assert reading_pairs(NS(latest_annual=k25, prior_annual=k24,
+                            latest_quarter=k25, year_ago_quarter=k24)) == \
+        [(k25, k24)]
+    assert reading_pairs(NS(latest_annual=k25, prior_annual=None,
+                            latest_quarter=q3, year_ago_quarter=None)) == \
+        [(k25, None), (q3, None)]
+
+
+def test_too_much_change_is_read_in_a_few_pieces_and_says_what_it_left(
+        live):
+    from pipeline.filing_brief import (MAX_PIECES_PER_PAIR, SECTION_CAP_CHARS,
+                                       FilingBrief, Change, _pack)
+
+    para = "word " * 400                                  # 2,000 characters
+    risk = [Change("Risk Factors", "new", now=f"{i} {para}") for i in range(30)]
+    mdna = [Change("MD&A", "changed", now=f"{i} {para}", before=f"{i} x")
+            for i in range(3)]
+    pieces, unread, held = _pack(risk + mdna, 10_000, MAX_PIECES_PER_PAIR)
+    assert held
+    assert len(pieces) <= MAX_PIECES_PER_PAIR
+    read = [c for piece in pieces for c in piece]
+    assert sum(c.size for c in read if c.section == "Risk Factors") \
+        <= SECTION_CAP_CHARS
+    assert any(c.section == "MD&A" for c in read), \
+        "a rewritten risk section took every piece"
+    assert unread == len(risk) + len(mdna) - len(read)
+    text = FilingBrief(body="RISK SHIFT: x [P1]", unread=unread).render_text()
+    assert f"{unread} more changed paragraphs were left unread" in text
+
+
+def test_a_reading_that_stopped_picks_up_where_it_was(live, monkeypatch,
+                                                     tmp_path):
+    """Each answered piece is kept the moment it lands. A reading that
+    stopped (or a bot restarted mid-read) asks again only for what it had
+    not got, and the brief comes out the same."""
+    import pipeline.llm as llm
+    from pipeline.filing_brief import cache_path
+
+    asked: list[str] = []
+
+    def _chat_result(prompt, settings, *, system="", purpose="llm"):
+        asked.append(purpose)
+        if purpose == "filing-brief-condense":
+            # The first time round the condensation never comes back.
+            if asked.count(purpose) == 1:
+                return llm.LLMResult(reason=llm.TIMEOUT, provider="ollama")
+            return llm.LLMResult(text="RISK SHIFT: stock comp is new. [P1]",
+                                 provider="ollama", model="m", reason=llm.OK)
+        return llm.LLMResult(text=_sourced(prompt, "stock comp is a new risk"),
+                             provider="ollama", model="m", reason=llm.OK)
+
+    monkeypatch.setattr(llm, "chat_result", _chat_result)
+    first = build_brief("EXMPL", tmp_path / "a", live)
+    assert not first.ok
+    pieces = asked.count("filing-brief-section")
+    assert pieces >= 1
+
+    counters: dict = {}
+    again = build_brief("EXMPL", tmp_path / "b", live, counters=counters)
+    assert again.ok, again.reason
+    assert asked.count("filing-brief-section") == pieces, \
+        "the pieces already answered were asked again"
+    assert counters["saved_parts"] == pieces
+    assert cache_path(again.accessions, live).exists()

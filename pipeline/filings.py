@@ -461,7 +461,11 @@ def download_filing(ref: FilingRef, workspace: Path, settings: Settings) -> Path
         legacy.replace(dest)
         return dest
     if settings.mock_mode:
-        src = settings.fixtures_dir / "filings" / "sample_10k.html"
+        # A fixture of its own where one exists (the year-earlier 10-K the
+        # brief diffs against), else the one sample.
+        own = settings.fixtures_dir / "filings" / f"{dest.stem}.html"
+        src = own if own.exists() else (
+            settings.fixtures_dir / "filings" / "sample_10k.html")
         if not src.exists():
             log.warning("filings: no sample_10k.html fixture")
             return None
@@ -490,18 +494,40 @@ def _write_whole(dest: Path, body: bytes) -> Path:
 # --------------------------------------------------------------------------
 
 # 10-K item headers → friendly section names (order matters for the scan)
+# A header names its section by its TITLE, whatever its number: a 10-Q is
+# numbered differently from a 10-K (MD&A is Item 2, not 7; risk factors sit in
+# Part II), and keyed on the 10-K's numbers a 10-Q found none of them, so its
+# MD&A, its financial statements and its forward-looking boilerplate were all
+# read as "Business" (RDDT, 1 Nov 2026: three filing shots of the
+# forward-looking bullet list). Anchored at the start: "See Item 1A, Risk
+# Factors" in a sentence is a reference, not a header.
+_ITEM = r"^(?:part\s+[iv]+\W*)?item\s*\d+[a-z]?\b\W*"
 _ITEM_SECTIONS = [
-    (re.compile(r"item\s*1a\b.*risk\s*factors", re.I), "Risk Factors"),
-    (re.compile(r"item\s*7a\b", re.I), "Market Risk"),
-    (re.compile(r"item\s*7\b.*management", re.I), "MD&A"),
-    (re.compile(r"item\s*1\b.*business", re.I), "Business"),
-    (re.compile(r"item\s*3\b.*legal", re.I), "Legal Proceedings"),
-    (re.compile(r"item\s*8\b.*financial\s*statements", re.I), "Financial Statements"),
+    (re.compile(_ITEM + r"risk\s*factors", re.I), "Risk Factors"),
+    (re.compile(_ITEM + r"quantitative\s+and\s+qualitative", re.I), "Market Risk"),
+    (re.compile(_ITEM + r"management.s\s+discussion", re.I), "MD&A"),
+    (re.compile(_ITEM + r"legal\s+proceedings", re.I), "Legal Proceedings"),
+    (re.compile(_ITEM + r"financial\s+statements", re.I), "Financial Statements"),
+    (re.compile(_ITEM + r"business\b", re.I), "Business"),
+    # Any other item ends the one before it: Item 1B, 1C, 2, 4, 5, 9A ...
+    # read as risk factors or MD&A was most of what bled into them.
+    (re.compile(_ITEM + r"[a-z]", re.I), "Other"),
 ]
+# The safe-harbor note at the front of every 10-K and 10-Q: a list of every
+# risk in one line each, written to be quoted by nobody.
+_FORWARD = re.compile(
+    r"^(?:special\s+|cautionary\s+)?(?:note|statement)s?\s+(?:regarding|about|"
+    r"concerning|on|relating\s+to)\s+forward.looking\s+statements\W*$|"
+    r"^forward.looking\s+statements\W*$", re.I)
+FORWARD_LOOKING = "Forward-Looking Statements"
+# "Item 1A." on one line and "Risk Factors" on the next is one header.
+_ITEM_ALONE = re.compile(_ITEM + r"$", re.I)
 
 
 def _section_for(text: str, current: str) -> str:
     low = _norm(text).lower()
+    if _FORWARD.search(low):
+        return FORWARD_LOOKING
     for rx, name in _ITEM_SECTIONS:
         if rx.search(low):
             return name
@@ -534,6 +560,7 @@ def segment_filing(html: str) -> list[dict]:
     # or an iXBRL <td><div> was read twice, spending the brief's section
     # budget on duplicates and stating a figure twice.
     counted: set[int] = set()
+    item = ""            # an "Item 2." waiting for its title on the next line
     for el in soup.find_all(["h1", "h2", "h3", "h4", "h5", "div", "b", "strong",
                              "p", "li", "td"]):
         if counted and any(id(up) in counted for up in el.parents):
@@ -542,7 +569,12 @@ def segment_filing(html: str) -> list[dict]:
         if not txt:
             continue
         if len(txt) < 120:
-            new = _section_for(txt, current)
+            if _ITEM_ALONE.match(txt):
+                item = txt
+                continue
+            new = _section_for(f"{item} {txt}" if item else txt, current)
+            if item and txt.lower() != item.lower():
+                item = ""
             if new != current:
                 current = new
                 continue  # a header line — not body
@@ -551,7 +583,10 @@ def segment_filing(html: str) -> list[dict]:
                 and el.find(_BLOCKS) is None):
             sections.setdefault(current, []).append(txt)
             counted.add(id(el))
-    return [{"title": name, "text": " ".join(chunks)}
+    # `paras` keeps the blocks apart, for the brief's year-over-year diff:
+    # joined into one string, a paragraph that changed cannot be told from
+    # the forty around it that did not.
+    return [{"title": name, "text": " ".join(chunks), "paras": list(chunks)}
             for name, chunks in sections.items() if chunks]
 
 
@@ -564,9 +599,18 @@ _FLAG_SYSTEM = (
     "financial video. Given the filing text and a thesis/angle, return 2 to 4 "
     "VERBATIM quotes (copied exactly, so they can be located in the document) "
     "that most support or complicate the thesis. Prefer risk factors, MD&A "
-    "admissions, and concrete numbers. Respond ONLY with a JSON array of "
-    '{"quote","section","why"} objects; "why" is one short line.'
+    "admissions, and concrete numbers. Each quote is one whole sentence, "
+    "never a list item or a fragment. Respond ONLY with a JSON array of "
+    '{"quote","section","why"} objects; "section" is the section heading '
+    'given above the text ("Risk Factors", "MD&A"); "why" is one short line.'
 )
+
+# Never quoted on screen: the safe-harbor list (every risk in one line,
+# written to be quoted by nobody), the statements' notes, and the items that
+# are neither risk nor results.
+_NOT_QUOTED = {FORWARD_LOOKING, "Financial Statements", "Other"}
+# A "sentence" shorter than this is a list item or a fragment.
+_MIN_QUOTE_WORDS = 8
 
 
 def _mock_flagged(settings: Settings) -> list[FlaggedQuote]:
@@ -710,10 +754,12 @@ def flag_quotes(sections: list[dict], angle: str, settings: Settings,
     is recorded in the ledger."""
     if settings.mock_mode or settings.filings_llm_provider.lower() == "mock":
         return _mock_flagged(settings)
-    packed = _compress_sections(sections, settings.filings_llm_max_chars)
+    readable = [s for s in sections if s.get("title") not in _NOT_QUOTED]
+    packed = _compress_sections(readable, settings.filings_llm_max_chars)
     prompt = f"THESIS / ANGLE:\n{angle or '(none given — pick the most material items)'}\n\nFILING TEXT:\n{packed}"
     raw = _llm_chat(prompt, settings)
-    quotes = _parse_quote_json(raw or "")
+    quotes = [q for q in _parse_quote_json(raw or "")
+              if len(q.quote.split()) >= _MIN_QUOTE_WORDS]
     if quotes and ledger is not None:
         _record_llm_spend(ledger, settings)
     return quotes
@@ -780,8 +826,11 @@ def _shoot_blocks(html_path: Path, located: list[dict], out_dir: Path,
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True, executable_path=exe)
             try:
+                # A page as wide as the widest shot: a filing with no width
+                # of its own wraps to it rather than to 1,280 px of one line.
                 page = browser.new_page(device_scale_factor=2,
-                                        viewport={"width": 1280, "height": 1600})
+                                        viewport={"width": SHOT_MAX_W,
+                                                  "height": 1600})
                 page.goto(html_path.resolve().as_uri(), wait_until="load", timeout=15000)
                 for i, loc in enumerate(located):
                     results.append(None)
@@ -793,9 +842,18 @@ def _shoot_blocks(html_path: Path, located: list[dict], out_dir: Path,
                             "self::tr or self::blockquote][1]")
                         target = block.first if block.count() else el
                         target.scroll_into_view_if_needed(timeout=4000)
-                        _highlight(page, _needle(loc))
+                        try:
+                            root = target.element_handle(timeout=2000)
+                        except Exception:  # noqa: BLE001
+                            root = None
+                        _highlight(page, _norm(loc.get("quote", "")), root)
                         shot = out_dir / f"raw_{i:02d}.png"
-                        target.screenshot(path=str(shot), timeout=5000)
+                        clip = _clip_around(page, target)
+                        if clip is not None:
+                            page.screenshot(path=str(shot), clip=clip,
+                                            full_page=True, timeout=5000)
+                        else:
+                            target.screenshot(path=str(shot), timeout=5000)
                         results[i] = shot
                     except Exception as e:
                         log.warning("filings: shot %d failed (%s)", i, e)
@@ -807,36 +865,113 @@ def _shoot_blocks(html_path: Path, located: list[dict], out_dir: Path,
     return results
 
 
-def _highlight(page, needle: str) -> None:
-    """Best-effort soft highlight of the matched sentence before the shot.
+# THE SHOT IS A PIECE OF THE PAGE, NOT ONE LINE OF IT (RDDT, 1 Nov 2026).
+# The element was shot on its own: a list row is one line 1,280 px wide, and
+# fitted to a 16:9 frame it was a strip of unreadable type over a blur of
+# itself blown up. Now it is a 16:9 window on the page, as wide as the text
+# column (so the type is as large as the frame allows), held on the
+# paragraph, or on the marked sentence when the paragraph is taller.
+SHOT_ASPECT = 16 / 9
+SHOT_MIN_W, SHOT_MAX_W = 560, 900
+SHOT_PAD = 24
+
+
+def _clip_around(page, target) -> dict | None:
+    """The 16:9 window, in page coordinates, or None to shoot the element."""
+    try:
+        box = page.evaluate(
+            """(el) => {
+                const r = el.getBoundingClientRect();
+                const m = document.querySelector('mark[data-dennis]');
+                const k = m ? m.getBoundingClientRect() : null;
+                return {x: r.left + scrollX, y: r.top + scrollY,
+                        w: r.width, h: r.height,
+                        my: k ? k.top + scrollY + k.height / 2 : null,
+                        pw: document.documentElement.scrollWidth,
+                        ph: document.documentElement.scrollHeight};
+            }""",
+            target.element_handle(timeout=2000))
+    except Exception:  # noqa: BLE001 — the element shot is the fallback
+        return None
+    if not box or box["w"] <= 0 or box["h"] <= 0:
+        return None
+    return clip_window(box["x"], box["y"], box["w"], box["h"], box.get("my"),
+                       box["pw"], box["ph"])
+
+
+def clip_window(x: float, y: float, w: float, h: float, mark_y: float | None,
+                page_w: float, page_h: float) -> dict:
+    """A 16:9 window round a block at (x, y, w, h), kept on the page."""
+    cw = min(max(w + 2 * SHOT_PAD, SHOT_MIN_W), SHOT_MAX_W, max(page_w, 1))
+    ch = cw / SHOT_ASPECT
+    # Centred on a narrow block, from the left edge of a wide one.
+    left = x - SHOT_PAD - max(0.0, (cw - w - 2 * SHOT_PAD) / 2)
+    # The whole paragraph when it fits; the marked sentence when it does not.
+    mid = y + h / 2 if h + 2 * SHOT_PAD <= ch or mark_y is None else mark_y
+    top = mid - ch / 2
+    left = min(max(left, 0.0), max(page_w - cw, 0.0))
+    top = min(max(top, 0.0), max(page_h - ch, 0.0))
+    return {"x": round(left), "y": round(top), "width": round(cw),
+            "height": round(ch)}
+
+
+def _highlight(page, quote: str, root=None) -> None:
+    """Best-effort soft highlight of the quoted sentence before the shot.
+
+    THE SENTENCE, NOT THE PARAGRAPH, AND THE ONE BEING SHOT (1 Nov 2026).
+    It marked the first text node anywhere on the page holding the quote's
+    first thirty characters: in inline XBRL a whole paragraph is one span,
+    so the whole paragraph went yellow; and a phrase the safe-harbor list
+    repeats from a risk factor marked the risk factor while the list was
+    shot. Now the quote's own words are marked, inside the block being shot
+    first; where they cross two spans, the span holding their start is.
 
     The previous shot's highlight is taken off first: they used to pile up,
     so a later crop of a nearby paragraph showed an earlier quote marked too.
     """
     try:
         page.evaluate(
-            """(needle) => {
+            r"""([root, quote]) => {
                 document.querySelectorAll('mark[data-dennis]').forEach(m => {
                     while (m.firstChild) m.parentNode.insertBefore(m.firstChild, m);
                     m.remove();
                 });
-                const norm = s => s.replace(/\\s+/g,' ').trim();
-                const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-                let n;
-                while (n = w.nextNode()) {
-                    const t = norm(n.textContent);
-                    if (t && needle && t.includes(needle.slice(0, 30))) {
-                        const s = document.createElement('mark');
-                        s.dataset.dennis = '1';
-                        s.style.background = '#ffe27a';
-                        s.style.color = 'inherit';
-                        n.parentNode.replaceChild(s, n);
-                        s.appendChild(n);
-                        return;
+                const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                    .replace(/["\u201c\u201d]/g, '["\u201c\u201d]')
+                    .replace(/['\u2018\u2019]/g, "['\u2018\u2019]");
+                const words = quote.split(/\s+/).filter(Boolean);
+                if (!words.length) return false;
+                const whole = new RegExp(words.map(esc).join('\\s+'));
+                const head = new RegExp(words.slice(0, 6).map(esc).join('\\s+'));
+                const mark = () => {
+                    const s = document.createElement('mark');
+                    s.dataset.dennis = '1';
+                    s.style.background = '#ffe27a';
+                    s.style.color = 'inherit';
+                    return s;
+                };
+                for (const scope of (root ? [root, document.body] : [document.body])) {
+                    for (const rx of [whole, head]) {
+                        const w = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+                        let n;
+                        while ((n = w.nextNode())) {
+                            const m = rx.exec(n.textContent);
+                            if (!m) continue;
+                            const r = document.createRange();
+                            if (rx === whole) {
+                                r.setStart(n, m.index);
+                                r.setEnd(n, m.index + m[0].length);
+                            } else {
+                                r.selectNodeContents(n);
+                            }
+                            r.surroundContents(mark());
+                            return true;
+                        }
                     }
                 }
+                return false;
             }""",
-            needle,
+            [root, quote],
         )
     except Exception:
         pass

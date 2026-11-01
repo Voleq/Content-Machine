@@ -318,8 +318,9 @@ def test_a_background_pass_thinks_unless_told_not_to(settings, monkeypatch):
     live = settings.model_copy(update={"mock_mode": False,
                                        "llm_provider_order": "ollama"})
     seen: list[dict] = []
-    monkeypatch.setattr(llm, "_ollama_stream", lambda url, payload, timeout,
-                        on_text=None: seen.append(payload) or "ok")
+    monkeypatch.setattr(llm, "_ollama_stream",
+                        lambda url, payload, timeout, on_text=None, meta=None,
+                        think_max=None: seen.append(payload) or "ok")
     assert llm.chat("q", live, purpose="filing-brief-section") == "ok"
     assert "think" not in seen[-1] and seen[-1]["stream"] is True
     quick = live.model_copy(update={"ollama_think_passes": False})
@@ -346,7 +347,8 @@ def test_an_ollama_that_refuses_think_is_asked_again_without_it(settings,
                                        "ollama_think_passes": False})
     calls: list[dict] = []
 
-    def _stream(url, payload, timeout, on_text=None):
+    def _stream(url, payload, timeout, on_text=None, meta=None,
+                think_max=None):
         calls.append(payload)
         if "think" in payload:
             raise _Refused("400")
@@ -355,6 +357,50 @@ def test_an_ollama_that_refuses_think_is_asked_again_without_it(settings,
     monkeypatch.setattr(llm, "_ollama_stream", _stream)
     assert llm.chat("q", live, purpose="filing-brief-section") == "answered"
     assert len(calls) == 2 and "think" not in calls[1]
+    llm.reset_llm_calls()
+
+
+def test_a_thinking_answer_that_comes_back_blank_is_asked_again_plainly(
+        settings, monkeypatch):
+    """RDDT, the second try (1 Nov 2026): six of nine filing sections thought
+    for three to eight minutes and came back with no answer. A blank answer
+    after thinking is asked again at once with thinking off; the thinking
+    itself is capped at the room the prompt leaves in the window."""
+    import pipeline.llm as llm
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "llm_provider_order": "ollama",
+                                       "ollama_num_ctx": 16384})
+    calls: list[dict] = []
+
+    def _stream(url, payload, timeout, on_text=None, meta=None,
+                think_max=None):
+        calls.append(payload)
+        if payload.get("think") is False:
+            return "POINT: plain"
+        meta.update(started=True, thought=True, thought_chars=40000,
+                    done_reason="length")
+        return ""
+
+    monkeypatch.setattr(llm, "_ollama_stream", _stream)
+    prompt = "x" * 30000
+    assert llm.chat(prompt, live, purpose="filing-brief-section") == \
+        "POINT: plain"
+    assert len(calls) == 2 and "think" not in calls[0]
+    assert calls[1]["think"] is False
+    room = calls[0]["options"]["num_predict"]
+    assert 1024 <= room <= 16384 - 30000 // 4, room
+    assert calls[0]["options"]["num_ctx"] == 16384
+
+    # A model that answered nothing without thinking at all is not asked
+    # twice: there is no thinking to turn off.
+    calls.clear()
+    monkeypatch.setattr(llm, "_ollama_stream",
+                        lambda url, payload, timeout, on_text=None, meta=None,
+                        think_max=None:
+                        calls.append(payload) or "")
+    assert not llm.chat("q", live, purpose="filing-brief-section")
+    assert len(calls) == 1
     llm.reset_llm_calls()
 
 
@@ -396,6 +442,143 @@ def test_a_model_that_keeps_thinking_is_never_cut_off():
     finally:
         server.shutdown()
     assert heard[0] is True and heard[-1] is False
+
+
+def _thinking_daemon(thoughts):
+    """A stand-in Ollama: with thinking on it streams `thoughts` (a list of
+    pieces) and then "the thought answer"; with `think: false` it says "the
+    plain answer". Records each request and how many pieces it got out
+    before the bot hung up."""
+    import http.server
+
+    seen: list[dict] = []
+
+    class _Daemon(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):                                # noqa: N802
+            body = json.loads(self.rfile.read(
+                int(self.headers.get("Content-Length") or 0)) or b"{}")
+            entry = {"body": body, "sent": 0}
+            seen.append(entry)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/x-ndjson")
+            self.end_headers()
+            try:
+                if body.get("think") is not False:
+                    for piece in thoughts:
+                        self.wfile.write(json.dumps(
+                            {"message": {"thinking": piece}}).encode() + b"\n")
+                        self.wfile.flush()
+                        entry["sent"] += 1
+                    answer = "the thought answer"
+                else:
+                    answer = "the plain answer"
+                self.wfile.write(json.dumps(
+                    {"message": {"content": answer}}).encode() + b"\n")
+                self.wfile.write(b'{"done":true}\n')
+                self.wfile.flush()
+            except OSError:
+                pass                     # the bot hung up: that is the point
+
+        def log_message(self, *a):
+            pass
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Daemon)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, seen
+
+
+def _live_on(settings, server):
+    return settings.model_copy(update={
+        "mock_mode": False, "llm_provider_order": "ollama",
+        "ollama_base_url": f"http://127.0.0.1:{server.server_address[1]}",
+        "ollama_timeout_s": 5.0})
+
+
+def test_thinking_that_goes_round_in_circles_is_stopped_and_asked_plainly(
+        settings):
+    """The script check, 1 Nov 2026: a b-roll query that takes 15-30 s
+    thought for 7.7 minutes and came back blank. Gemma 4 can loop in its
+    thinking ("thought thought thought..."); the loop is caught within a
+    few hundred characters and the question asked again with thinking off.
+    """
+    import pipeline.llm as llm
+
+    server, seen = _thinking_daemon(["thought\n "] * 20000)
+    try:
+        t0 = time.monotonic()
+        got = llm.chat("a calm office shot", _live_on(settings, server),
+                       purpose="broll query")
+    finally:
+        server.shutdown()
+        llm.reset_llm_calls()
+    assert got == "the plain answer"
+    assert time.monotonic() - t0 < 5
+    assert len(seen) == 2 and "think" not in seen[0]["body"]
+    assert seen[1]["body"]["think"] is False
+    assert seen[0]["sent"] < 2000, "the loop ran on long after it was plain"
+
+    # The page's chat thinks as long as it likes, but not in circles.
+    server, seen = _thinking_daemon(["thought\n "] * 20000)
+    heard: list[str] = []
+    try:
+        got = llm.chat_result("why is the stock down?",
+                              _live_on(settings, server),
+                              purpose="ask",
+                              on_text=lambda text, _t: heard.append(text))
+    finally:
+        server.shutdown()
+        llm.reset_llm_calls()
+    assert got.text == "the plain answer" and heard[-1] == "the plain answer"
+    assert seen[1]["body"]["think"] is False
+
+
+def test_thinking_past_what_the_question_is_worth_is_asked_plainly(
+        settings, monkeypatch):
+    """No loop, just too long: past the allowance (at least `_THINK_FLOOR`
+    tokens, more for a bigger prompt) the question is asked plainly. Inside
+    it, the thought answer stands."""
+    import pipeline.llm as llm
+
+    monkeypatch.setattr(llm, "_THINK_FLOOR", 60)
+    server, seen = _thinking_daemon([f"step {i} of the reasoning, "
+                                     for i in range(400)])
+    try:
+        got = llm.chat("q", _live_on(settings, server), purpose="broll query")
+        assert got == "the plain answer"
+        assert seen[1]["body"]["think"] is False
+    finally:
+        server.shutdown()
+    server, seen = _thinking_daemon([f"step {i} of the reasoning, "
+                                     for i in range(50)])
+    try:
+        got = llm.chat("q", _live_on(settings, server), purpose="broll query")
+        assert got == "the thought answer" and len(seen) == 1
+    finally:
+        server.shutdown()
+        llm.reset_llm_calls()
+    # The allowance grows with the question, never past the window's room.
+    small = {"messages": [{"role": "user", "content": "q"}]}
+    big = {"messages": [{"role": "user", "content": "x" * 30000}]}
+    assert llm._think_budget(small, 16000) == 60
+    assert llm._think_budget(big, 16000) == 16000 > llm._think_budget(
+        {"messages": [{"role": "user", "content": "x" * 3000}]}, 16000)
+
+
+def test_long_honest_thinking_is_not_taken_for_a_loop():
+    import pipeline.llm as llm
+
+    assert llm._looping("thought\n " * 200)
+    assert llm._looping(("Let me reconsider the revenue line once more. " * 3
+                         + "\n") * 8)
+    reasoning = " ".join(f"Point {i}: revenue grew {i}% in quarter {i % 4}."
+                         for i in range(300))
+    assert not llm._looping(reasoning)
+    quote = ("Our advertising revenue depends on a small number of large "
+             "advertisers, and a cut in their budgets would reduce our "
+             "revenue and slow our growth over the coming year. ")
+    # The same long sentence quoted twice while reasoning is not a loop.
+    assert not llm._looping(reasoning[:3000] + quote + reasoning[3000:6000]
+                            + quote)
 
 
 def test_three_empty_parts_in_a_row_stop_the_reading(settings, monkeypatch):
