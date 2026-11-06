@@ -1526,10 +1526,12 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{voice_bible}}", _WRITING,
                  lambda c: voice_bible(c.settings)),
     # Who Dennis is, what he has said about himself, and the jokes the
-    # channel has already used (S8, S3). Remembered at ship time.
-    PayloadBlock("{{dennis_story}}", _WRITING,
+    # channel has already used (S8, S3). Remembered at ship time. His story
+    # goes to the long lanes only: a short says nothing about his own life
+    # (3 Nov 2026).
+    PayloadBlock("{{dennis_story}}", ("long_write", "update"),
                  lambda c: _memory("dennis_story_block", c.settings)),
-    PayloadBlock("{{dennis_facts}}", _WRITING,
+    PayloadBlock("{{dennis_facts}}", ("long_write", "update"),
                  lambda c: _memory("dennis_facts_block", c.settings)),
     PayloadBlock("{{used_jokes}}", _WRITING,
                  lambda c: _memory("used_jokes_block", c.settings)),

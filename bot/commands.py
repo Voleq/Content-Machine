@@ -826,9 +826,9 @@ COMMANDS: tuple[Command, ...] = (
         "retention ready to read, and anything that failed overnight — one "
         "button each. Also sent every morning at `INBOX_HOUR`.")),
     # /new
-    Command("new", "short", "TICKER", "start a SHORT (9:16, 45–55s)",
+    Command("new", "short", "TICKER", "start a SHORT (9:16, 55–65s)",
             c_new_short, aliases=("short",), example="{T}", doc=(
-                "Opens a SHORT (9:16, 45–55s), pulls a live quote for the "
+                "Opens a SHORT (9:16, 55–65s), pulls a live quote for the "
                 "move context, and asks for the refreshed workbook. "
                 "`prompt_short.md` follows the upload.")),
     Command("new", "long", "TICKER", "start a LONG (16:9 deep dive)",

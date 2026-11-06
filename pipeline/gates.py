@@ -3439,8 +3439,8 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     # limits; v4's (30 Oct): the joke floor and the prompt said aloud. All
     # warn; none can stop a render.
     from pipeline.writing_checks import (chapter_title_swears, joke_floor_lint,
-                                         phrasing_lint, prompt_words_lint,
-                                         swear_lint)
+                                         persona_lint, phrasing_lint,
+                                         prompt_words_lint, swear_lint)
 
     lane = "long" if hasattr(script, "chapter_list") else "short"
     report.findings += report.record(
@@ -3449,6 +3449,7 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
                                      + chapter_title_swears(script))
     report.findings += report.record("joke-floor",
                                      joke_floor_lint(script, lane))
+    report.findings += report.record("persona", persona_lint(script, lane))
     report.findings += report.record("prompt-words",
                                      prompt_words_lint(script))
     # A bible example or another creator's line, said again (S2).

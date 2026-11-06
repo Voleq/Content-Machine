@@ -476,16 +476,17 @@ def test_the_word_band_is_the_shorter_shorts(short_valid_json, settings):
     data = json.loads(short_valid_json)
     data["audio_script"] += " " + " ".join(["so"] * 20)
     _, warnings = parse_short_script(json.dumps(data), settings)
-    assert any("target ~140–160 for 45–55s" in w for w in warnings), warnings
-    _, warnings = parse_short_script(short_valid_json, settings)
-    assert not any("target ~140–160" in w for w in warnings), warnings
+    data["audio_script"] += " " + " ".join(["so"] * 40)
+    _, warnings = parse_short_script(json.dumps(data), settings)
+    assert any("target ~160–190 for 55–65s" in w for w in warnings), warnings
 
 
-def test_the_character_budget_is_eleven_hundred(short_valid_json, settings):
-    assert settings.max_chars("short") == 1100
+def test_the_character_budget_is_thirteen_hundred(short_valid_json, settings):
+    """55–65 seconds since 3 Nov 2026."""
+    assert settings.max_chars("short") == 1300
     data = json.loads(short_valid_json)
-    data["audio_script"] += " " + "x" * 400
-    with pytest.raises(ScriptParseError, match="over the SHORT budget of 1100"):
+    data["audio_script"] += " " + "x" * 600
+    with pytest.raises(ScriptParseError, match="over the SHORT budget of 1300"):
         parse_short_script(json.dumps(data), settings)
 
 

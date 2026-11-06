@@ -312,12 +312,13 @@ def test_the_headline_prompt_lists_the_beats_of_the_format_it_will_render(
 
 
 @pytest.mark.parametrize("fmt", ["short", "headline"])
-def test_both_short_prompts_ask_for_the_shorter_script(fmt):
+def test_both_short_prompts_ask_for_a_minute(fmt):
+    """55–65 seconds (his call, 3 Nov 2026)."""
     text = (TEMPLATES / f"master_prompt_{fmt}.md").read_text(encoding="utf-8")
-    assert "140–160 spoken words, ≤ 1100 characters" in text
-    assert "~20–25s" in text
-    assert "~45–55s" in text
-    for old in ("180–210", "180-210", "1400", "~30s", "60–75"):
+    assert "160–190 spoken words, ≤ 1300 characters" in text
+    assert "~25–30s" in text
+    assert "~55–65s" in text
+    for old in ("140–160", "1100", "45–55", "~20–25s"):
         assert old not in text, old
 
 
@@ -331,8 +332,8 @@ def test_the_prompt_example_is_marked_and_in_the_word_band(fmt):
     example = re.search(r'"audio_script": "(\[BEAT: hook\].*?)",\n', text)
     assert example, "the example audio_script opens on [BEAT: hook]"
     clean, _tags, _w = tokenize_tags(example.group(1))
-    assert 140 <= len(clean.split()) <= 160
-    assert len(clean) <= 1100
+    assert 160 <= len(clean.split()) <= 190
+    assert len(clean) <= 1300
 
 
 @pytest.mark.parametrize("fmt", ["short", "headline"])

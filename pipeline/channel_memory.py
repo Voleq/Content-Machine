@@ -392,6 +392,12 @@ def remember_video(settings: Settings, ticker: str, workdate: str, fmt: str,
         added["facts"] = facts.add(
             key, extract_facts(narration, settings, known),
             ticker=ticker, workdate=workdate, fmt=fmt)
+    try:
+        from pipeline.recurring_bits import AccountLedger
+
+        added["account"] = AccountLedger(settings).note(key, narration)
+    except Exception as e:                         # noqa: BLE001
+        log.debug("account ledger not written (%s)", e)
     if fmt == "long":
         from pipeline.recurring_bits import note_long
 

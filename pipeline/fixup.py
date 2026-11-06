@@ -19,7 +19,7 @@ import re
 
 # Warnings worth a writer's pass, by gate.
 _WARN_GATES = frozenset({"budget", "kit", "joke-floor", "jokes", "direction",
-                         "prompt-words", "density"})
+                         "prompt-words", "density", "persona"})
 # ...and by what an ungated report line says.
 _WARN_WORDS = ("Dennis is alone", "holds him in one shot", "tagging density",
                "below the floor of", "is a region the plate sets no type in",

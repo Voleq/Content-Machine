@@ -211,9 +211,10 @@ DRY_STRETCH_MIN = 3.0
 # A long's floor: one joke this many minutes (bible v5 §7). v4's one a minute
 # was met with fifty-six jokes nobody laughed at (RDDT long, 1 Nov 2026).
 LONG_MINUTES_PER_JOKE = 1.5
-# Jokes at Dennis's own expense a long may carry (bible v5 §5), and how often
-# any one declared move may be used (§4).
-SELF_OWNS_MAX = 3
+# Jokes at Dennis's own expense a long may carry (bible §5), and how often
+# any one declared move may be used (§4). Two since 3 Nov 2026 ("3 self owns
+# in a long are too much ... max 2 per video"); a short carries none.
+SELF_OWNS_MAX = 2
 MOVE_REPEATS_MAX = 2
 # Declared moves that are Dennis being the joke.
 _SELF_OWN_MOVES = ("self-own", "self own", "family benchmark", "mock formula")
@@ -288,10 +289,10 @@ def _joke_shapes(declared: list[tuple[str, str]]) -> list[Finding]:
         out.append(Finding(
             gate="joke-floor", severity="warn",
             message=(f"{len(selfish)} jokes at Dennis's own expense (self-owns, "
-                     f"family, his account) — two or three a video, never two "
-                     f"in a chapter; the rest belong to the company, the "
-                     f"market and the crowd. Keep the best "
-                     f"{SELF_OWNS_MAX} and aim the others somewhere else"),
+                     f"family, his account) — at most {SELF_OWNS_MAX} in a long, "
+                     f"never two in a chapter, and none is fine; the rest "
+                     f"belong to the company, the market and the crowd. Keep "
+                     f"the best and aim the others somewhere else"),
             excerpt=_excerpt(" · ".join(t[:50] for t in selfish[:6]))))
     counts: dict[str, int] = {}
     for low in moves:
@@ -697,3 +698,39 @@ def chapter_orders_block(settings: Settings, workspace: Path | None = None) -> s
              f"repeat one, or {CHAPTER_RUN} of them in a row:"]
     lines += [f"  - {where}: {' → '.join(types)}" for where, types in rows]
     return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------
+# A short says nothing about his own life (3 Nov 2026, Valentin: "Remove the
+# jokes about his persona in shorts").
+# --------------------------------------------------------------------------
+
+
+# His own past, narrower than the fact book's: "I tried to find a number in
+# it" is Dennis reading the release, not a story about his life.
+_PERSONA_PAST_RE = re.compile(
+    r"\bI(?:'d| had| was| have|'ve)?\s+(?:bought|sold|owned|traded|shorted|"
+    r"lived|grew up|studied|quit|moved)\b", re.IGNORECASE)
+
+
+def persona_lint(script, fmt: str) -> list[Finding]:
+    """The lines of a short about Dennis himself: his family, his friends,
+    his flat, his past trades, his account."""
+    if fmt != "short":
+        return []
+    from pipeline.channel_memory import _CAST_RE
+    from pipeline.recurring_bits import _ACCOUNT_RE
+
+    said = re.sub(r"\[[^\]]*\]", " ", _spoken(script))
+    hits = [s.strip() for s in re.split(r"(?<=[.!?])\s+", said)
+            if _CAST_RE.search(s) or _PERSONA_PAST_RE.search(s)
+            or _ACCOUNT_RE.search(s)]
+    if not hits:
+        return []
+    return [Finding(
+        gate="persona", severity="warn",
+        message=(f"{len(hits)} line(s) about Dennis's own life in a short — a "
+                 f"short carries no jokes about him (his account, family, flat "
+                 f"or past). Aim the joke at the crowd, the company or the "
+                 f"number"),
+        excerpt=_excerpt(" · ".join(h[:60] for h in hits[:3])))]

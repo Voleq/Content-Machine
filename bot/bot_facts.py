@@ -108,8 +108,9 @@ CHECKS: dict[str, str] = {
                 "in a minute, one in a SHORT, none in a title or the first "
                 "ten seconds)",
     "joke-floor": "the jokes the writer listed: at least three in a SHORT, "
-                  "about one a minute in a LONG with no long dry stretch, "
-                  "and every listed one really said",
+                  "about one every minute and a half in a LONG with no long "
+                  "dry stretch, at most two self-owns, and every listed one "
+                  "really said",
     "prompt-words": "the prompt's own words said aloud or printed on a "
                     "plate (\"the four-step valuation walk\", \"STEP 1\")",
     "copy": "a sentence repeating a voice bible example or a style "
@@ -117,7 +118,10 @@ CHECKS: dict[str, str] = {
     "jokes": "a joke, analogy or callback already used on the channel, "
              "even reworded",
     "bits": "a recurring bit (Kev's tip, Dennis's old trade) back too soon, "
-            "or both in one video",
+            "or both in one video; his own account in a LONG when it is not "
+            "due (about one video in twenty)",
+    "persona": "a line about Dennis's own life (account, family, flat, past) "
+               "in a SHORT, which carries none",
     "chapters": "chapter types in the same order as one of the last three "
                 "LONGs",
     "direction": "the delivery tags and the limits on using them",

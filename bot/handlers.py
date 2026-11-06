@@ -535,7 +535,7 @@ class BotCore:
             ws.clear_awaiting_angle()
 
         label = ("UPDATE (16:9 — grading the last call)" if update else
-                 "SHORT (9:16, 45–55s)" if lane == "short" else
+                 "SHORT (9:16, 55–65s)" if lane == "short" else
                  "LONG (16:9 deep dive)")
         head = f"📁 {ticker} / {ws.workdate} — {label}"
         warn = "" if update else self._lane_warning(ticker, lane)

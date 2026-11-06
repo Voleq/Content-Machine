@@ -281,9 +281,9 @@ def test_the_stock_turn_the_bot_used_to_suggest_is_flagged(settings):
 
 
 def test_an_example_joke_said_again_is_flagged(settings):
-    found = wc.copy_check("I lived in one in twenty twenty two, and it took "
-                          "the car, and then it came back for the fucking "
-                          "chair.", settings)
+    found = wc.copy_check("Today's bid is a man who read the headline off a "
+                          "screenshot of a screenshot, on his lunch break, and "
+                          "set a price alert called retirement.", settings)
     assert found and "prompt example" in found[0].message
 
 
@@ -305,7 +305,7 @@ def test_a_short_that_lists_too_many_or_one_string_still_parses(settings):
 def test_ten_self_owns_and_the_same_move_four_times_say_so():
     """RDDT long, 1 Nov 2026: fifty-six jokes, ten of them at Dennis's own
     expense, and Valentin: "it mocks himself ten times, and they are not
-    even good jokes". Two or three a video (bible v5 §5), and no move past
+    even good jokes". At most two a long (bible §5), and no move past
     twice (§4)."""
     lines = [f"my own account did joke number {i} again" for i in range(4)]
     lines += [f"my mum asked about joke number {i} again" for i in range(3)]
@@ -323,7 +323,7 @@ def test_ten_self_owns_and_the_same_move_four_times_say_so():
     assert "family benchmark ×3" in shapes[0].message
     assert "crowd" not in shapes[0].message
 
-    # Two or three is the register: nothing to say.
+    # Two is the most: nothing to say.
     script.jokes = script.jokes[:2] + script.jokes[7:]
     assert not [f for f in wc.joke_floor_lint(script, "long")
                 if "own expense" in f.message or "past twice" in f.message]

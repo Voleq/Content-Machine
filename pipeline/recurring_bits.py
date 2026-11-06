@@ -128,8 +128,8 @@ def due_bit(settings: Settings, *, confession_due: bool | None = None) -> str:
     return max(ready, key=lambda b: (late[b], b == "kev_tip"))
 
 
-def bits_block(settings: Settings) -> str:
-    """{{recurring_bits}}: what this long carries, and what it leaves out."""
+def _bit_block(settings: Settings) -> str:
+    """What this long carries, and what it leaves out."""
     due = due_bit(settings)
     tools = ("The footnote nobody read and said-versus-filed are tools, not "
              "bits: use either wherever the filing hands you one.")
@@ -138,8 +138,11 @@ def bits_block(settings: Settings) -> str:
             "THIS VIDEO CARRIES KEV'S TIP. Kev has texted Dennis a tip about "
             "this company at six in the morning, with \"thoughts?\" — the kind "
             "of claim that goes round TikTok or a barber's chair. Somewhere it "
-            "fits (not the hook), Dennis checks it against the filing, on "
-            "screen, and it falls apart. It debunks a kind of claim; it never "
+            "fits (not the hook), his text goes up on screen as Kev typed it — "
+            "[PLATE: quote-pull-16x9 | body=<Kev's text, his spelling> | "
+            "attribution=Kev, 6:04 am | source=text message] — and Dennis "
+            "checks it against the filing, on screen, and it falls apart. It "
+            "debunks a kind of claim; it never "
             "recommends anything, and Kev's source is a type, never a named "
             "person. Once. The old trade stays out of this one.\n" + tools)
     if due == "old_trade":
@@ -160,6 +163,11 @@ def bits_block(settings: Settings) -> str:
     return (f"No recurring bit is due ({ago}). Kev and the old trade stay out "
             f"of this video entirely — they come back every six to eight "
             f"longs, and this is not one.\n" + tools)
+
+
+def bits_block(settings: Settings) -> str:
+    """{{recurring_bits}}: the bit this long carries, and his account."""
+    return _bit_block(settings) + "\n" + account_line(settings)
 
 
 def old_trade_line(settings: Settings) -> str:
@@ -215,9 +223,14 @@ def note_long(settings: Settings, key: str, ticker: str, workdate: str,
 
 
 def bits_lint(script, settings: Settings) -> list[Finding]:
-    """Kev in a long that is not his: the bit came back too soon."""
+    """Kev in a long that is not his, or his account when it is not due."""
     if not hasattr(script, "chapter_list"):
         return []                                  # longs only
+    return _kev_lint(script, settings) + account_lint(script, settings)
+
+
+def _kev_lint(script, settings: Settings) -> list[Finding]:
+    """Kev in a long that is not his: the bit came back too soon."""
     narration = getattr(script, "narration", "") or ""
     m = None
     for lineno, line in enumerate(narration.splitlines(), 1):
@@ -236,3 +249,110 @@ def bits_lint(script, settings: Settings) -> list[Finding]:
                  f"six to eight longs, and the last one was {since} long(s) "
                  f"ago. Take Kev out, or keep him to a passing mention"),
         excerpt=line.strip()[:140])]
+
+
+# --------------------------------------------------------------------------
+# His own account: about one video in twenty (3 Nov 2026, Valentin: "make
+# him not talk about his empty account again and again, maybe one out of
+# twenty"). Every shipped video is noted, any lane, with whether it touched
+# the account; the prompt says whether this one may, and a long that does
+# when it may not is warned.
+# --------------------------------------------------------------------------
+
+ACCOUNT_FILE = "account_jokes.json"
+# Videos between two that touch the account: this one and nineteen without.
+ACCOUNT_EVERY = 20
+# His account, not anybody's: "the bagholder got margin called" is a joke at
+# the crowd, and "my position is" is an opinion, so neither counts.
+_ACCOUNT_RE = re.compile(
+    r"\bmy (?:own )?(?:trading )?(?:account|portfolio|brokerage|losses|"
+    r"positions|returns)\b"
+    r"|\b(?:I|I've|I was|I got|got me) (?:been )?liquidated\b"
+    r"|\bmy margin calls?\b|\bI(?: got| was| have been|'ve been) margin[- ]called\b"
+    r"|\bmy (?:money|savings) (?:went|is gone)\b",
+    re.IGNORECASE)
+
+
+def account_hits(narration: str) -> list[tuple[int, str]]:
+    """(line number, line) for each narration line that touches his account."""
+    return [(n, line.strip()) for n, line in enumerate((narration or "").splitlines(), 1)
+            if _ACCOUNT_RE.search(line)]
+
+
+class AccountLedger:
+    """One row per shipped video: {key, account}. Newest last."""
+
+    def __init__(self, settings: Settings):
+        self.path = settings.state_dir / ACCOUNT_FILE
+
+    def rows(self) -> list[dict]:
+        from pipeline.standing import _read
+
+        rows = _read(self.path, [])
+        if not isinstance(rows, list):
+            return []
+        return [r for r in rows if isinstance(r, dict) and r.get("key")]
+
+    def since(self) -> int | None:
+        """Videos shipped since the last one that touched the account; None
+        when none ever has."""
+        n = 0
+        for row in reversed(self.rows()):
+            if row.get("account"):
+                return n
+            n += 1
+        return None
+
+    def allowed(self) -> bool:
+        since = self.since()
+        return since is None or since >= ACCOUNT_EVERY - 1
+
+    def note(self, key: str, narration: str) -> bool:
+        from pipeline.standing import _now, _write
+
+        rows = self.rows()
+        if any(r.get("key") == key for r in rows):
+            return False
+        rows.append({"key": key, "account": bool(account_hits(narration)),
+                     "recorded_at": _now().isoformat()})
+        _write(self.path, rows)
+        return True
+
+
+def account_line(settings: Settings) -> str:
+    """The line the prompt carries about his own account."""
+    try:
+        led = AccountLedger(settings)
+        ok, since = led.allowed(), led.since()
+    except Exception:                              # noqa: BLE001
+        ok, since = False, None
+    if ok:
+        return ("HIS OWN ACCOUNT (the losses, the zero, the liquidation) MAY "
+                "come up in this video, once, if a line is better for it: it "
+                "comes back about one video in twenty. Find an angle not on "
+                "the used-jokes list.")
+    return (f"HIS OWN ACCOUNT (the losses, the zero, the liquidation, the "
+            f"margin call) STAYS OUT of this video: it comes back about one "
+            f"video in twenty, and the last one was {since} video(s) ago. A "
+            f"self-own, if this video needs one, is about something else.")
+
+
+def account_lint(script, settings: Settings) -> list[Finding]:
+    """A long that touches his account when it is not due."""
+    if not hasattr(script, "chapter_list"):
+        return []
+    hits = account_hits(getattr(script, "narration", "") or "")
+    try:
+        led = AccountLedger(settings)
+        ok, since = led.allowed(), led.since()
+    except Exception:                              # noqa: BLE001
+        return []
+    if not hits or ok:
+        return []
+    line, text = hits[0]
+    return [Finding(
+        gate="bits", severity="warn", line=line,
+        message=(f"his own account comes back about one video in twenty, and "
+                 f"the last one was {since} video(s) ago — aim this self-own "
+                 f"somewhere else, or cut it"),
+        excerpt=text[:140])]

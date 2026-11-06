@@ -238,7 +238,7 @@ _SYSTEM = (
 
 
 def _prompt(fmt: str, worst: list[LeftLine], counts: str) -> str:
-    lane = "SHORT (about 50 seconds, vertical)" if fmt == "short" else \
+    lane = "SHORT (about a minute, vertical)" if fmt == "short" else \
         "LONG (a deep dive of many minutes)"
     rows = []
     for w in worst:

@@ -1,4 +1,4 @@
-"""Voice bible v5: what the writer is handed, checked for what it must say."""
+"""The voice bible: what the writer is handed, checked for what it must say."""
 
 from __future__ import annotations
 
@@ -14,8 +14,28 @@ def _bible(settings) -> str:
     return (settings.assets_dir / ROOT_BIBLE).read_text(encoding="utf-8")
 
 
-def test_it_is_v5(settings):
-    assert _bible(settings).splitlines()[0].strip() == "# Dennis — voice bible v5"
+def test_it_says_how_things_are_not_how_they_were(settings):
+    """His note, 3 Nov 2026: "the prompts mention that v3 was how it was, v4
+    is how it is and so on, this fact being hard to catch by the llm". The
+    writer reads the rules as they stand, with no version history."""
+    text = _bible(settings)
+    assert text.splitlines()[0].strip() == "# Dennis — voice bible"
+    assert "What changed" not in text
+    assert not re.search(r"\bv[2-9]\b", text), re.search(r".{40}\bv[2-9]\b.{40}", text)
+
+
+def test_benjamins_bits_come_first_with_how_to_use_each(settings):
+    """3 Nov 2026: his lines "higher in the recommended examples", each with
+    what to do with it, in place of the recurring-cast section. The noose
+    bit and the slur-named one stay out until he says otherwise."""
+    text = _bible(settings)
+    bits = text[text.index("## Benjamin's bits"):text.index("## 1 ·")]
+    rows = [l for l in bits.splitlines() if l.startswith("- **")]
+    assert len(rows) >= 30
+    assert all("*Dennis:*" in r for r in rows)
+    low = text.lower()
+    assert "noose" not in low and "retard" not in low
+    assert "recurring cast" not in low
 
 
 def test_it_names_the_register_he_asked_for(settings):
@@ -43,7 +63,7 @@ def test_fewer_self_owns_and_the_dark_detour(settings):
     and none of the Laredo kind he asked for."""
     text = _bible(settings)
     five = text[text.index("## 5"):text.index("## 6")]
-    assert "Two or three self-owns in a long" in five
+    assert "At most two in a long" in five and "none is fine" in five
     two = text[text.index("## 2"):text.index("## 3")]
     assert "the dark detour" in two and "at least three" in two
     four = text[text.index("## 4"):text.index("## 5")]
@@ -60,11 +80,28 @@ def test_a_joke_that_teaches_nothing_is_not_cut_for_it(settings):
     assert "being funny is its job" in test
 
 
-def test_the_self_own_is_every_video_and_the_confession_is_not(settings):
+def test_no_self_own_in_a_short_and_rarely_the_account(settings):
+    """3 Nov 2026: no jokes about his persona in shorts; self-owns "not every
+    video", at most two in a long; his empty account about one video in
+    twenty; no job-centre puns; new relatable material."""
     text = _bible(settings)
     para = text[text.index("## 5"):text.index("## 6")]
-    assert "self-own is in every video, the short included" in para
-    assert "one video in three" in para.lower()
+    assert "A short carries none" in para
+    assert "self-own is in every video" not in para
+    assert "one video in twenty" in para
+    assert "Never a job-centre joke" in para
+    assert "sports" in para
+    assert "one long in three" in para.lower()
+    assert "job centre" not in text.lower()
+
+
+def test_the_bagholder_and_the_bad_company_are_moves(settings):
+    text = _bible(settings)
+    three = text[text.index("## 3"):text.index("## 4")]
+    assert "**The bagholder, specifically.**" in three
+    assert "forklift certification lunch break" in three
+    assert "salvage-title Maserati" in three
+    assert "**The bad company, trashed properly.**" in three
 
 
 def test_benjamins_moves_are_named(settings):
@@ -89,11 +126,13 @@ def test_the_swearing_numbers_are_the_agreed_ones(settings):
     assert "title" in para and "thumbnail" in para
 
 
-def test_the_new_cast_is_listed(settings):
-    text = _bible(settings).lower()
-    for who in ("tiktok guru", "signal discord", "chart-lines guy",
-                "comment-section", "macro doom guy"):
-        assert who in text, who
+def test_swearing_is_earned_not_budgeted(settings):
+    """3 Nov 2026: "Swear only if it is necessary, the situation is so absurd
+    that it merits a swear"."""
+    text = _bible(settings)
+    para = text[text.lower().index("· swearing"):]
+    assert "absurd enough to earn it" in para
+    assert "Use the budget" not in text and "no budget" in para
 
 
 def test_no_style_reference_is_in_the_bible(settings):

@@ -39,12 +39,12 @@ from pipeline.tagging import parse_hold, tokenize_tags
 log = logging.getLogger(__name__)
 
 
-# The spoken length a SHORT is written to: 140–160 words, which is 45–55
-# seconds at the short voice's pace. It was 180–210 for a 60–75 second short.
-# The warning band sits ten words either side, so a script a few words off
-# target is not nagged about.
-SHORT_WORDS_MIN = 130
-SHORT_WORDS_MAX = 170
+# The spoken length a SHORT is written to: 160–190 words, which is 55–65
+# seconds at the short voice's pace (his call, 3 Nov 2026). The warning band
+# sits ten words either side, so a script a few words off target is not
+# nagged about.
+SHORT_WORDS_MIN = 150
+SHORT_WORDS_MAX = 200
 
 # Rows a short's numbers sheet draws. Every short template steps through
 # four (`repeat.max` on the numbers sequence, `numbers.title.$n-1`); a fifth
@@ -544,8 +544,8 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
     warnings.extend(_tag_warnings(script, settings))
     if not SHORT_WORDS_MIN <= script.word_count <= SHORT_WORDS_MAX:
         warnings.append(
-            f"audio_script is {script.word_count} words (target ~140–160 for "
-            f"45–55s) — pacing may be off"
+            f"audio_script is {script.word_count} words (target ~160–190 for "
+            f"55–65s) — pacing may be off"
         )
     # A row carries two to six cells, matched to `years` when it is given, so
     # what matters here is how many carry a FIGURE. An empty cell means NO
