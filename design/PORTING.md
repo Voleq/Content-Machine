@@ -58,6 +58,14 @@ dollars and percentages use percentage points. Inputs marked
 positive spending. The rare `modelScale` is explicit (for example percentage
 points to a fraction). These conversions are metadata, not writer-supplied formulas.
 
+Before any geometry is constructed, money and share inputs are checked at the
+plate's display precision. A non-zero amount that would become zero fails with
+the input name and an instruction to add `m` or `bn` for a filing table in
+millions or billions. This applies to `draw()`, `labels()` and `prepare()`,
+including signed inputs, nested series and explicit but still invisible amounts.
+Real zero inputs and zero arithmetic results are preserved. The restatement
+plate's EPS inputs use dollars, independently of its revenue/profit totals in millions.
+
 Unit-bearing slots have `unitLabel: true`, no editable default, and no writer
 input. A separate `input-period` carries the reporting label without units;
 the label renderer adds the appropriate unit summary. Other axes and unit

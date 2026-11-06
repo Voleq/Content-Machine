@@ -499,7 +499,7 @@
           }
         },
         "rows.2.original": {
-          "unit": "money_m",
+          "unit": "money",
           "source": {
             "kind": "filing",
             "location": "amended annual report, original and restated results for the identical fiscal year: rows 3 original",
@@ -507,7 +507,7 @@
           }
         },
         "rows.2.restated": {
-          "unit": "money_m",
+          "unit": "money",
           "source": {
             "kind": "filing",
             "location": "amended annual report, original and restated results for the identical fiscal year: rows 3 restated",

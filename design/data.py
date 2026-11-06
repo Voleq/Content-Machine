@@ -119,12 +119,41 @@ def recipe(item,aspect,scene):
     return {'item':deepcopy(item),'aspect':aspect,'nativeBox':native_box(scene),'bindings':bindings(item,scene),
             'unitLabels':{s['name']:s['example'] for s in scene.slots if s.get('unitLabel')}}
 
+WHOLE_MONEY_CHARTS={
+    'revenue-pareto','revenue-treemap','profit-area-mekko','profit-funnel',
+    'cash-flow-sankey','investment-payback-path','profit-cash-accumulation',
+    'valuation-football-field','dcf-value-duration','maturity-staircase',
+    'transaction-network','collection-lag-matrix',
+}
+
+def display_places(item,binding):
+    """Precision used for monetary/share figures by this plate's drawing."""
+    unit=binding['unit'];drawer=item['drawer']
+    if unit=='shares':return 0
+    if drawer=='stock':
+        return min((m.get('places',2) for m in item['definition']['metrics'] if m['unit']==unit),default=2)
+    if drawer=='finance':return 2
+    if drawer=='investigations':return 2 if unit=='money' and item['legacyId']=='restatement' else 1
+    return 0 if item['key'].split('/')[1] in WHOLE_MONEY_CHARTS and unit in ('money','money_m') else 1
+
+def source_number(item,key,binding,raw):
+    value=number(raw,binding['unit'])
+    if binding['unit'] in ('money','money_m','money_b','shares','shares_m'):
+        # Inspect the validated input as well: scaling a non-zero float can
+        # underflow to zero before the display-rounding check.
+        nonzero=raw!=0 if type(raw) in (int,float) else any(c in '123456789' for c in raw)
+        if nonzero and float(f'{value:.{display_places(item,binding)}f}')==0:
+            unit=sources.UNIT_LABELS[binding['unit']]
+            raise ValueError(f'{key}: {raw!r} is non-zero but would display as zero in {unit}. '
+                             'Add m or bn if copied from a filing table in millions or billions (for example 100m).')
+    return value
+
 def _scene(region,values,inks):
     spec=region['recipe'];expected=spec['bindings']
     if set(values)!=set(expected):raise ValueError('Missing or unknown workbook input slots')
     fields=deepcopy(spec['item']['example'])
     for key,binding in expected.items():
-        value=number(values[key],binding['unit']) if binding['kind']=='number' else values[key]
+        value=source_number(spec['item'],key,binding,values[key]) if binding['kind']=='number' else values[key]
         if binding['kind']=='number':
             value*=binding.get('modelScale',1)
             if binding.get('sign')=='outflow-magnitude':value=abs(value)

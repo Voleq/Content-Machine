@@ -89,6 +89,11 @@ means $120, so a figure copied from a filing table in millions needs `120m`.
 multiples and counts have their own declared units. Unit labels are calculated
 outputs, absent from the writer menu; the reporting-label input cannot override
 them. Cash outflows used as spending magnitudes are normalized explicitly.
+Non-zero money/share inputs that would round to zero at the plate's precision
+are rejected before drawing. The error identifies the input and asks for `m`
+or `bn` when transcribing a filing table in millions or billions. An explicit
+suffix does not bypass the precision check. Actual zero inputs remain valid
+where the model permits them, as do zero results such as profit minus equal cash.
 
 All current concepts are usable for any company and publish `sectors: []`.
 Type slots share semantic kit roles, including `caption`, `value`, `label`,

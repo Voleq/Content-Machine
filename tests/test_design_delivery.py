@@ -21,6 +21,7 @@ ITEMS=json.loads((ROOT/'design/catalog.json').read_text())['plates']
 TOKENS=json.loads((ROOT/'kit/design-tokens.json').read_text())
 INK=TOKENS['hours']['night']['plateInk']['paper']
 DATA_ITEMS=[i for i in ITEMS if core.needs_data(i)]
+SCALED_MONEY_ITEMS=[i for i in DATA_ITEMS if any(m['unit'] in ('money_m','money_b','shares_m') for m in i['inputMetadata'].values())]
 
 @pytest.fixture(scope='module')
 def compiled():
@@ -130,6 +131,69 @@ def test_script_number_units(value,unit,expected):assert data.number(value,unit)
 @pytest.mark.parametrize('value,unit',[(True,'raw'),('NaN','raw'),(float('inf'),'raw'),('1,,200','raw'),('$1$','money'),('40m','raw'),('12%','money_m'),('14x','percent'),('1 2','raw'),('€40m','money_m'),('$12','percent')])
 def test_bad_or_ambiguous_figures_are_rejected(value,unit):
     with pytest.raises(ValueError):data.number(value,unit)
+
+@pytest.mark.parametrize('item',SCALED_MONEY_ITEMS,ids=lambda i:i['key'])
+def test_each_money_and_share_input_rejects_a_missing_magnitude_before_drawing(item,compiled):
+    assert len(SCALED_MONEY_ITEMS)==86
+    for aspect in ('16x9','9x16'):
+        _,entry,_=compiled[item['key']+'-'+aspect];region=entry['slots']['data-area']
+        fill=contracts.example_fill(entry);values={k:fill[k] for k in region['inputSlots']}
+        for name,binding in region['recipe']['bindings'].items():
+            if binding['unit'] not in ('money_m','money_b','shares_m'):continue
+            for raw in ('100','-100','(100)',100):
+                bad={**values,name:raw}
+                # The unit guidance must precede a model-bound, division or
+                # reconciliation error, and no geometry may be constructed.
+                with patch.object(core,'assemble',side_effect=AssertionError('drew an invisible input')):
+                    for render in (data.draw,data.labels):
+                        with pytest.raises(ValueError,match='non-zero but would display as zero') as error:render(region,bad,INK)
+                        assert name in str(error.value) and 'Add m or bn' in str(error.value)
+                    if isinstance(raw,str):
+                        with pytest.raises(ValueError,match='Add m or bn'):contracts.prepare(entry,{**fill,name:raw},INK)
+
+@pytest.mark.parametrize('key,path,bad,good,display',[
+    ('stock/filing-reserve-release',['inputs','release'],'0.004m','0.006m','$0.01m'),
+    ('finance/equity-to-ev',['debt'],'0.004m','0.006m','$0.01m'),
+    ('investigations/profit-vs-cash',['operating_cash'],'0.04m','0.06m','$0.1m'),
+    ('charts/transaction-network',['data','amounts',0],'0.4m','0.6m','$1m'),
+    ('stock/risk-volume-context',['inputs','daily_volume'],'0.004m','0.006m','0.01m'),
+    ('finance/revenue-engine',['net_revenue_per_order'],'$0.004','$0.006','$0.01'),
+])
+def test_zero_guard_matches_the_plate_precision_even_with_an_explicit_unit(key,path,bad,good,display,compiled):
+    for aspect in ('16x9','9x16'):
+        _,entry,_=compiled[key+'-'+aspect];region=entry['slots']['data-area'];fill=contracts.example_fill(entry)
+        name=next(n for n,b in region['recipe']['bindings'].items() if b['path']==path)
+        with pytest.raises(ValueError,match='Add m or bn'):contracts.prepare(entry,{**fill,name:bad},INK)
+        result=contracts.prepare(entry,{**fill,name:good},INK)
+        assert display in result['values'].values()
+
+def test_tiny_per_share_money_and_scaling_underflow_are_also_rejected(compiled):
+    for _,entry,_ in compiled.values():
+        if entry['aspect']!='16x9' or 'data-area' not in entry['slots']:continue
+        region=entry['slots']['data-area'];values={k:entry['example'][k] for k in region['inputSlots']}
+        for name,b in region['recipe']['bindings'].items():
+            if b['unit']!='money':continue
+            with pytest.raises(ValueError,match='Add m or bn'):data.draw(region,{**values,name:'0.00001'},INK)
+    _,entry,_=compiled['investigations/profit-vs-cash-16x9'];r=entry['slots']['data-area'];v={k:entry['example'][k] for k in r['inputSlots']}
+    assert data.number(5e-324,'money_m')==0  # underflow cannot masquerade as a genuine zero
+    with pytest.raises(ValueError,match='Add m or bn'):data.draw(r,{**v,'input-operating-cash':5e-324},INK)
+
+@pytest.mark.parametrize('zero',['0','-0','0m','-$0m','(0)','0.000',0,0.0,-0.0])
+def test_true_zero_inputs_and_calculated_zeroes_remain_valid(zero,compiled):
+    _,entry,_=compiled['investigations/profit-vs-cash-16x9'];r=entry['slots']['data-area'];v={k:entry['example'][k] for k in r['inputSlots']}
+    v['input-operating-cash']=zero
+    assert data.draw(r,v,INK)
+    assert next(l['text'] for l in data.labels(r,v,INK) if l['slot']=='metric-1')=='$0m'
+    v['input-operating-cash']=v['input-net-income']
+    assert next(l['text'] for l in data.labels(r,v,INK) if l['slot']=='summary-0')=='$0m'
+
+def test_restatement_eps_uses_dollars_and_not_millions(compiled):
+    _,entry,_=compiled['investigations/restatement-16x9'];r=entry['slots']['data-area'];fill=contracts.example_fill(entry)
+    original=next(n for n,b in r['recipe']['bindings'].items() if b['path']==['rows',2,'original'])
+    restated=next(n for n,b in r['recipe']['bindings'].items() if b['path']==['rows',2,'restated'])
+    assert entry['slots'][original]['sourceUnit']==entry['slots'][restated]['sourceUnit']=='money'
+    result=contracts.prepare(entry,{**fill,original:'1.6',restated:'0.6'},INK)
+    assert result['values']['value-2-0']=='$1.6' and result['values']['value-2-1']=='$0.6'
 
 def test_sources_match_the_actual_workbook_and_financial_units(compiled):
     tables=workbook.schema(ROOT/'templates/dennis_data_template.xlsx')
