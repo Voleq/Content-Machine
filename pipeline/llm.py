@@ -55,6 +55,9 @@ PURPOSES: dict[str, str] = {
     "viewer-questions": "picks the real questions out of the top comments "
                         "under the public videos, for the long's closing "
                         "section (local model only, off by default)",
+    "implosion-pitch": "pitches one famous financial blow-up from the weekly "
+                       "implosion screener as a detour, a lesson and a joke; "
+                       "an idea for the video, never a fact (local model only)",
     "skeptic": "reads a script as a hostile investor and names its weakest "
                "claims (advisory, never blocks)",
     "broll query": "turns a visual cue in a script into a stock-footage "

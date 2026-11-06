@@ -1,0 +1,56 @@
+{
+ "_note": "Fixture data for tests and mock mode. Extracts are short paraphrases; every link sits under a /fixture/ path on purpose: none is a real document.",
+ "Knight_Capital_Group": {
+  "title": "Knight Capital Group",
+  "extract": "Knight Capital Group was an American global financial services firm engaged in market making. On August 1, 2012, a faulty software deployment sent millions of unintended orders to the market in 45 minutes, and the firm lost about $440 million. In 2013 it agreed to pay $12 million to settle charges brought by the SEC.",
+  "links": [
+   "https://www.sec.gov/fixture/knight-capital-order.pdf",
+   "https://www.sec.gov/fixture/knight-capital-press-release",
+   "https://www.example-news.com/fixture/knight-capital"
+  ]
+ },
+ "Enron_scandal": {
+  "title": "Enron scandal",
+  "extract": "The Enron scandal was an accounting scandal at the American energy company Enron. Enron filed for bankruptcy in December 2001, and several of its executives were later convicted.",
+  "links": [
+   "https://www.sec.gov/fixture/enron-spotlight",
+   "https://www.example-news.com/fixture/enron"
+  ]
+ },
+ "Barings_Bank": {
+  "title": "Barings Bank",
+  "extract": "Barings Bank was a British merchant bank founded in 1762. It collapsed on 26 February 1995 after losses from unauthorised trading in Singapore.",
+  "links": [
+   "https://www.example-news.com/fixture/barings"
+  ]
+ },
+ "Archegos_Capital_Management": {
+  "title": "Archegos Capital Management",
+  "extract": "Archegos Capital Management was an American family office. It collapsed in March 2021 after margin calls on total return swaps, and the banks that lent to it lost more than $10 billion.",
+  "links": [
+   "https://www.sec.gov/fixture/archegos-complaint",
+   "https://www.justice.gov/fixture/archegos-release",
+   "https://www.courtlistener.com/fixture/archegos-docket"
+  ]
+ },
+ "Situational_Awareness_LP": {
+  "title": "Situational Awareness LP",
+  "extract": "Situational Awareness LP is an American hedge fund.",
+  "links": []
+ },
+ "Black_Monday_(1987)": {
+  "title": "Black Monday (1987)",
+  "extract": "Black Monday was the global stock market crash of Monday, October 19, 1987, when the Dow Jones Industrial Average lost 22.6% in one day.",
+  "links": [
+   "https://www.sec.gov/fixture/october-1987-market-break-report.pdf",
+   "https://www.govinfo.gov/fixture/brady-report"
+  ]
+ },
+ "Example_Lending_Corp": {
+  "title": "Example Lending Corp",
+  "extract": "Example Lending Corp is a made-up lender used in the screener's tests. It collapsed in 2019.",
+  "links": [
+   "https://www.sec.gov/fixture/example-lending-complaint"
+  ]
+ }
+}

@@ -845,6 +845,7 @@ The paid voice goes to the chat the moment it lands, and the render has already 
 | `/ideas screen [trending\|value\|all]` | Ranked candidates. Trending → SHORT, value → LONG, plus the update lane (covered names whose thesis has moved). Each candidate is a button that opens it in its lane. |
 | `/ideas watch [TICKER \| drop TICKER \| list]` | Intraday watch, in `SCREEN_TIMEZONE` rather than the machine clock. Published names join automatically. |
 | `/ideas movers [refresh]` | The day's gainers and losers, before the open and after the close, from **stockanalysis.com**, kept to the screener's price and size floors, and who reports today with how many report on the days after. The page's Home and Calendar show what this last read; a live `/screen` reads it too and adds the names Yahoo's screens missed. `refresh` reads it again. |
+| `/ideas implosions [refresh \| skip N \| done N \| back ID]` | Stories for the implosion long, found by the bot once a week so nobody searches: Wikipedia's lists of trading losses, collapses and crashes as a map, the article's links to regulators, prosecutors and courts as the documents, page views for fame, and the week's DOJ and SEC releases for a story that just closed. Ranked closed first, then documents, fame, size and a round anniversary; the local model pitches the best (a detour, what you learn, a joke). `refresh` reads now, `skip N` hides one, `done N` marks it made, `back ID` brings one back. Also on the page's Ideas. |
 | `/ideas earnings TICKER YYYY-MM-DD [bmo\|amc]` | Records a print date so the bot flags it both sides. |
 | `/ideas thesis [TICKER]` | What we said about a name, re-checked against today's numbers. No ticker lists every thesis on file with its status. |
 
@@ -914,6 +915,7 @@ Every name the bot answered before the families still works, as a hidden alias o
 | `/headline` | `/new headline` |
 | `/hooks` | `/stats hooks` |
 | `/idea` | `/ideas add` |
+| `/implosions` | `/ideas implosions` |
 | `/kind` | `/new kind` |
 | `/kit` | `/admin kit` |
 | `/lessons` | `/stats lessons` |

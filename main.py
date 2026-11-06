@@ -19,7 +19,8 @@ from pipeline.render_common import set_render_politeness
 from bot.commands import NotifyPrefs, menu_commands, schedule_inbox
 from bot.feed import Feed
 from bot.handlers import (BotCore, build_application, schedule_batch,
-                          schedule_retention_notes, schedule_viewer_questions)
+                          schedule_implosions, schedule_retention_notes,
+                          schedule_viewer_questions)
 
 log = logging.getLogger("dennis")
 
@@ -229,6 +230,9 @@ def main() -> None:
         # Weekly, and only while VIEWER_QUESTIONS is on: the long's closing
         # section of viewer questions.
         schedule_viewer_questions(application, core)
+        # Weekly: the famous blow-ups for the implosion long, found and
+        # ranked so nobody has to search for them.
+        schedule_implosions(application, core)
 
     async def _post_shutdown(application) -> None:
         """Let go of anything still reading a filing (P1).

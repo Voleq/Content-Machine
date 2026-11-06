@@ -610,6 +610,10 @@ def c_earnings(c: Call):
     return c.core.earnings_command(c.args)
 
 
+def c_implosions(c: Call):
+    return c.core.implosions_command(c.args)
+
+
 def c_thesis(c: Call):
     return c.core.thesis_text(c.args)
 
@@ -1113,6 +1117,21 @@ COMMANDS: tuple[Command, ...] = (
                 "report on the days after. The page's Home and Calendar show "
                 "what this last read; a live `/screen` reads it too and adds "
                 "the names Yahoo's screens missed. `refresh` reads it again.")),
+    Command("ideas", "implosions", "[refresh | skip N | done N | back ID]",
+            "famous blow-ups for the implosion long, found and ranked",
+            c_implosions, aliases=("implosions",),
+            ack="⏳ on it (a fresh read takes a few minutes)…",
+            doc=(
+                "Stories for the implosion long, found by the bot once a week "
+                "so nobody searches: Wikipedia's lists of trading losses, "
+                "collapses and crashes as a map, the article's links to "
+                "regulators, prosecutors and courts as the documents, page "
+                "views for fame, and the week's DOJ and SEC releases for a "
+                "story that just closed. Ranked closed first, then documents, "
+                "fame, size and a round anniversary; the local model pitches "
+                "the best (a detour, what you learn, a joke). `refresh` reads "
+                "now, `skip N` hides one, `done N` marks it made, `back ID` "
+                "brings one back. Also on the page's Ideas.")),
     Command("ideas", "earnings", "TICKER YYYY-MM-DD [bmo|amc]",
             "so the bot flags the print both sides", c_earnings,
             aliases=("earnings",),

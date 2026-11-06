@@ -1,0 +1,16 @@
+{
+ "_note": "Fixture data for tests and mock mode. Extracts are short paraphrases; every link sits under a /fixture/ path on purpose: none is a real document.",
+ "Knight_Capital_Group": 180000,
+ "Enron_scandal": 900000,
+ "Barings_Bank": 400000,
+ "Archegos_Capital_Management": 300000,
+ "Situational_Awareness_LP": 50000,
+ "JPMorgan_Chase": 2500000,
+ "Black_Monday_(1987)": 600000,
+ "Tulip_mania": 1200000,
+ "Dot-com_bubble": 1500000,
+ "Bankruptcy_of_FTX": 700000,
+ "Bankruptcy_of_Lehman_Brothers": 800000,
+ "Wirecard": 400000,
+ "Example_Lending_Corp": 20000
+}

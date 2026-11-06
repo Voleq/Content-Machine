@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture data for tests and mock mode: the company is made up, the link is not a real document. -->
+<rss version="2.0"><channel><title>SEC press releases (fixture)</title>
+<item><title>SEC Obtains Final Judgment Against Sample Trading Co. Ordering $300 Million in Disgorgement</title>
+<link>https://www.sec.gov/fixture/sample-trading-judgment</link>
+<description>&lt;p&gt;The court ordered Sample Trading Co. to pay $300 million.&lt;/p&gt;</description>
+<pubDate>Wed, 04 Nov 2026 14:00:00 -0500</pubDate></item>
+<item><title>SEC Announces Agenda for Advisory Committee Meeting</title>
+<link>https://www.sec.gov/fixture/agenda</link><description>No money here.</description>
+<pubDate>Wed, 04 Nov 2026 10:00:00 -0500</pubDate></item>
+</channel></rss>

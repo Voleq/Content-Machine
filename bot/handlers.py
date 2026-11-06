@@ -788,6 +788,48 @@ class BotCore:
         lines.append("/short TICKER opens one.")
         return Reply("\n".join(lines))
 
+    def implosions_command(self, args: list[str]) -> Reply:
+        """`/ideas implosions [refresh | skip N | back N]`: the stories for
+        the implosion long, found and ranked by the bot (his word 11-06: he
+        does not search for them)."""
+        from pipeline import implosions as im
+
+        words = [a.strip().lower() for a in args if a.strip()]
+        if words and words[0] in ("refresh", "again", "read"):
+            try:
+                got = im.refresh(self.settings)
+            except Exception as e:  # noqa: BLE001 - say it, keep the last list
+                log.warning("implosions refresh failed (%s)", e)
+                return Reply(f"💥 The read failed ({e}); the last list stands.")
+            if not got.get("lists"):
+                return Reply("💥 No list could be read this time (" + (
+                    ", ".join(got.get("failed") or []) or "no answer")
+                    + "). The last list stands; the bot tries again by itself.")
+            return Reply(im.reply_text(self.settings))
+        if words and words[0] in ("skip", "back", "done"):
+            rows = im.shown(self.settings, limit=im.KEEP)
+            data = im.load(self.settings)
+            pool = rows if words[0] != "back" else [
+                s for s in data.get("stories") or [] if isinstance(s, dict)]
+            pick = words[1] if len(words) > 1 else ""
+            story = None
+            if pick.isdigit() and 1 <= int(pick) <= len(rows) and words[0] != "back":
+                story = rows[int(pick) - 1]
+            else:
+                story = next((s for s in pool if s.get("id") == pick), None)
+            if story is None:
+                return Reply(f"💥 Which one? /ideas implosions {words[0]} N, "
+                             "N from the list" + (" (or the story's id)" if words[0] == "back" else "") + ".")
+            how = {"skip": "skipped", "done": "done", "back": "back"}[words[0]]
+            im.mark(self.settings, story["id"], how)
+            said = {"skipped": "won't come up again (/ideas implosions back "
+                               f"{story['id']} brings it back)",
+                    "done": "is marked made (/ideas implosions back "
+                            f"{story['id']} undoes it)",
+                    "back": "is back on the list"}[how]
+            return Reply(f"💥 {story['name']} {said}.\n\n" + im.reply_text(self.settings))
+        return Reply(im.reply_text(self.settings))
+
     def kind_command(self, chat_id: int, args: list[str]) -> Reply:
         """`/kind [TICKER] earnings|news|move`: set what kind of day it is.
 
@@ -5103,6 +5145,34 @@ def schedule_viewer_questions(application, core: BotCore) -> None:
     application.job_queue.run_repeating(
         questions_job, interval=6 * 3600, first=15 * 60,
         name="viewer_questions")
+
+
+def schedule_implosions(application, core: BotCore) -> None:
+    """Find the implosion stories once a week (his word 11-06: the bot
+    searches, he doesn't).
+
+    Checked every six hours against the stored list's own date, like the
+    viewer questions, so a box that restarts every few days still runs it.
+    Off (`IMPLOSIONS_ENABLED=false`) or mocked, each check returns at once."""
+    settings = core.settings
+
+    async def implosions_job(ctx) -> None:
+        import asyncio
+
+        from pipeline import implosions
+
+        if not implosions.due(settings):
+            return
+        try:
+            got = await asyncio.to_thread(implosions.refresh, settings)
+        except Exception as e:  # noqa: BLE001 - a pass that dies waits for the next
+            log.warning("implosion screener failed (%s)", e)
+            return
+        log.info("implosion screener: %d stories from %d lists",
+                 len(got.get("stories") or []), len(got.get("lists") or []))
+
+    application.job_queue.run_repeating(
+        implosions_job, interval=6 * 3600, first=25 * 60, name="implosions")
 
 
 # The cloud Bot API's limit on what a bot may DOWNLOAD (getFile).

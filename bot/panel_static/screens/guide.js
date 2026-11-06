@@ -46,6 +46,7 @@ const GUIDE = {
       "Run the screener for this morning's candidates: names moving today for SHORTs, beaten-down value names for LONGs. It takes a minute or two.",
       "The watch list is the names whose intraday moves the bot tells you about; ones you have published join it by themselves. Earnings dates are flagged on both sides of the print.",
       "Start on any row opens that name as a new video, ready for its workbook.",
+      "Implosions are famous blow-ups for the implosion long, found by the bot every week: closed stories with documents and a known name first. Skip hides one; the pitch under each is the local model's idea, never a fact.",
     ],
   },
   calendar: {

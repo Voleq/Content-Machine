@@ -88,6 +88,11 @@ def seed_pages(settings: Settings) -> None:
             log.record(VideoRecord(ticker=t, video_id=f"demo{i:07d}", title=f"{t} demo {fmt}",
                                    privacy=privacy, publish_at=at(d, 15), uploaded_at=at(min(d, 0), 9),
                                    workdate=(today + timedelta(days=min(d, -1))).isoformat(), fmt=fmt))
+        # The implosion screener on its fixtures (MOCK_MODE: no network,
+        # and the card says FIXTURE DATA).
+        from pipeline import implosions
+
+        implosions.refresh(settings, pitches=False)
 
 
 def main() -> None:

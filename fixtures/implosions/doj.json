@@ -1,0 +1,84 @@
+{
+ "_note": "Fixture data for tests and mock mode. Extracts are short paraphrases; every link sits under a /fixture/ path on purpose: none is a real document. The companies are made up.",
+ "results": [
+  {
+   "title": "Former Chief Executive of Example Lending Corp Sentenced to 12 Years for $1.2 Billion Fraud",
+   "url": "https://www.justice.gov/opa/pr/fixture-example-lending-sentenced",
+   "date": "1793707200",
+   "topic": [
+    {
+     "uuid": "x",
+     "name": "Securities, Commodities, & Investment Fraud"
+    }
+   ],
+   "teaser": "<p>The former chief executive of Example Lending Corp was sentenced today for a $1.2 billion fraud that brought the lender down in 2019.</p>"
+  },
+  {
+   "title": "Exampleton Fund Manager Charged in $400 Million Investment Scheme",
+   "url": "https://www.justice.gov/opa/pr/fixture-exampleton-charged",
+   "date": "1793620800",
+   "topic": [
+    {
+     "uuid": "x",
+     "name": "Securities, Commodities, & Investment Fraud"
+    }
+   ],
+   "teaser": "<p>A fund manager at Exampleton Partners was charged today.</p>"
+  },
+  {
+   "title": "Sampleville Man Sentenced for $2 Million Wire Fraud",
+   "url": "https://www.justice.gov/opa/pr/fixture-small-case",
+   "date": "1793793600",
+   "topic": [
+    {
+     "uuid": "x",
+     "name": "Securities, Commodities, & Investment Fraud"
+    }
+   ],
+   "teaser": "<p>A small case.</p>"
+  },
+  {
+   "title": "Regional Office: Sample Bank Officer Pleads Guilty in $900 Million Scheme",
+   "url": "https://www.justice.gov/usao-xx/pr/fixture-regional",
+   "date": "1793793600",
+   "topic": [
+    {
+     "uuid": "x",
+     "name": "Securities, Commodities, & Investment Fraud"
+    }
+   ],
+   "teaser": "<p>A regional release.</p>"
+  },
+  {
+   "title": "Drug Ring Leader Sentenced; $500 Million in Assets Seized",
+   "url": "https://www.justice.gov/opa/pr/fixture-not-finance",
+   "date": "1793793600",
+   "topic": [
+    {
+     "uuid": "y",
+     "name": "Drug Trafficking"
+    }
+   ],
+   "teaser": "<p>Not a finance story.</p>"
+  },
+  {
+   "title": "Old Example Holdings Executive Sentenced for $3 Billion Fraud",
+   "url": "https://www.justice.gov/opa/pr/fixture-too-old",
+   "date": "1788264000",
+   "topic": [
+    {
+     "uuid": "x",
+     "name": "Securities, Commodities, & Investment Fraud"
+    }
+   ],
+   "teaser": "<p>Too old for this week.</p>"
+  },
+  {
+   "title": "Justice Department Announces Grants of $300 Million to Example Cities",
+   "url": "https://www.justice.gov/opa/pr/fixture-grants",
+   "date": "1793707200",
+   "topic": "",
+   "teaser": "<p>Not a story: no topic, no finance words.</p>"
+  }
+ ]
+}

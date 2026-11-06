@@ -1,0 +1,113 @@
+{
+ "items": [
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2025110100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 3818
+  },
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2025120100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 3289
+  },
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2026010100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 18968
+  },
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2026020100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 5723
+  },
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2026030100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 4299
+  },
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2026040100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 3635
+  },
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2026050100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 11259
+  },
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2026060100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 5976
+  },
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2026070100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 4129
+  },
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2026080100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 6885
+  },
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2026090100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 4808
+  },
+  {
+   "project": "en.wikipedia",
+   "article": "Knight_Capital_Group",
+   "granularity": "monthly",
+   "timestamp": "2026100100",
+   "access": "all-access",
+   "agent": "user",
+   "views": 5233
+  }
+ ],
+ "_note": "Wikimedia pageviews for Knight Capital Group, Nov 2025 to Oct 2026, as served 2026-11-06."
+}

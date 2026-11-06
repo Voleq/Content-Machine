@@ -453,6 +453,14 @@ class Settings(BaseSettings):
     # writer answers one or two in a short closing section. OFF until the
     # channel has viewers — off, the prompt carries no trace of it.
     viewer_questions: bool = Field(default=False, alias="VIEWER_QUESTIONS")
+    # The implosion screener (`pipeline/implosions.py`): once a week it reads
+    # where famous blow-ups are listed, ranks the stories (closed first, with
+    # documents, famous, big) and has the local model pitch the best. Free.
+    # IMPLOSION_LISTS adds Wikipedia list pages, "|"-separated; blank keeps
+    # the three it ships with (trading losses; corporate collapses and
+    # scandals; stock market crashes).
+    implosions_enabled: bool = Field(default=True, alias="IMPLOSIONS_ENABLED")
+    implosion_lists: str = Field(default="", alias="IMPLOSION_LISTS")
 
     # ------------------------------------------------ free sources (P3.4)
     # 8-K/EX-99.1 and Form 4 reuse the EDGAR client above (SEC_USER_AGENT and

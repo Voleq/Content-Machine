@@ -88,8 +88,43 @@ SCREEN_LOAD.ideas = async () => {
   eForm.addEventListener("submit", (e) => { e.preventDefault(); const f = e.target; pageRun(`/ideas earnings ${f.t.value.trim().toUpperCase()} ${f.d.value} ${f.w.value}`.trim(), e.submitter).then(reload("ideas")); });
   const earnCard = card("Earnings dates", "the bot flags both sides of a print", sectionError(d.earnings),
     earn.length ? table(["Date", "Ticker", "When"], earn.map((r) => el("tr", {}, el("td", { text: r.date }), el("td", {}, el("b", { text: r.ticker })), el("td", { class: "meta", text: r.when || "" })))) : null, eForm);
+  // Implosions: famous blow-ups for the implosion long, found by the bot
+  const im = d.implosions && !d.implosions.error ? d.implosions : { rows: [], hidden: [] };
+  const views = (n) => (!n ? "" : n >= 1e6 ? `${(n / 1e6).toFixed(1)}m views a year` : `${Math.round(n / 1e3)}k views a year`);
+  const docs = (list) => {
+    if (!list.length) return el("span", { class: "meta", text: "no documents yet" });
+    const seen = {};
+    return el("span", {}, list.map((x, i) => {
+      seen[x.host] = (seen[x.host] || 0) + 1;
+      const label = seen[x.host] > 1 ? `${x.host} (${seen[x.host]})` : x.host;
+      return [i ? " · " : "", el("a", { href: x.url, target: "_blank", rel: "noopener", text: label, title: `${x.kind}: ${x.url}` })];
+    }).flat());
+  };
+  const pitch = (p) => ([["detour", "Detour"], ["lesson", "You learn"], ["joke", "Joke"]]
+    .filter(([k]) => p && p[k]).map(([k, t]) => el("div", { class: "meta" }, el("b", { text: `${t}: ` }), p[k])));
+  const imCard = card("Implosions", im.ts ? `read ${ago(im.ts)}${im.mock ? " · FIXTURE DATA (mock mode)" : ""}` : "not read yet", sectionError(d.implosions),
+    el("div", { class: "row" }, el("button", { type: "button", class: "sm", text: "Read now", title: "Reads the lists, the documents and this week's DOJ and SEC releases. Takes a few minutes",
+      onclick: (e) => pageRun("/ideas implosions refresh", e.currentTarget, "Implosions").then(reload("ideas")) }),
+      el("span", { class: "meta", text: "Found and ranked weekly. The pitch is the local model's idea, not a fact; the video's facts come from the documents." })),
+    im.rows.length ? table(["#", "Story", "Where it stands", "Documents", "Ideas"], im.rows.map((r, i) => el("tr", {},
+      el("td", { class: "num", text: String(i + 1) }),
+      el("td", {}, el("b", { text: r.name }), r.year && !String(r.name).includes(String(r.year)) ? el("span", { class: "meta", text: ` ${r.year}` }) : null,
+        r.loss ? el("div", { class: "meta", text: r.loss }) : null,
+        el("div", { class: "meta", text: [views(r.views), r.anniversary].filter(Boolean).join(" · ") }),
+        el("div", { class: "row" }, el("button", { type: "button", class: "ghost sm", text: "Skip", title: "It won't come up again (you can bring it back below)",
+          onclick: (e) => pageRun(`/ideas implosions skip ${i + 1}`, e.currentTarget).then(reload("ideas")) }))),
+      el("td", { class: r.status === "open" ? "down" : "" }, r.status_text,
+        r.fresh ? el("div", { class: "meta" }, `in the news ${r.fresh.date || "this week"}: `, el("a", { href: r.fresh.url, target: "_blank", rel: "noopener", text: r.fresh.source })) : null),
+      el("td", {}, docs(r.documents || [])),
+      el("td", {}, pitch(r.pitch)))))
+      : empty("No stories yet", "The weekly read finds them by itself; Read now does it at once.", "", "·"),
+    im.hidden && im.hidden.length ? el("details", { class: "report" }, el("summary", { text: `Skipped or made (${im.hidden.length})` }),
+      el("div", { class: "chips" }, im.hidden.map((h) => el("span", { class: "chip" }, h.name,
+        el("button", { type: "button", class: "ghost sm", text: "↺", "aria-label": `Bring back ${h.name}`, title: "Back on the list",
+          onclick: (e) => pageRun(`/ideas implosions back ${h.id}`, e.currentTarget).then(reload("ideas")) }))))) : null);
   setKids(box, el("div", { class: "page-head" }, el("h2", { text: "Ideas" })),
-    el("div", { class: "grid" }, el("div", { class: "span2" }, backlogCard), el("div", { class: "span2" }, screenCard), watchCard, earnCard));
+    el("div", { class: "grid" }, el("div", { class: "span2" }, backlogCard), el("div", { class: "span2" }, screenCard),
+      el("div", { class: "span2" }, imCard), watchCard, earnCard));
 };
 
 // --------------------------------------------------------------- Calendar

@@ -72,13 +72,36 @@ def _earnings(settings) -> list[dict]:
     return sorted(rows, key=lambda r: r["date"])
 
 
+def _implosions(settings) -> dict:
+    """The implosion screener's last read, as the Ideas page shows it."""
+    from pipeline import implosions as im
+
+    data = im.load(settings)
+    rows = [{"id": st.get("id"), "name": st.get("name"), "year": st.get("year"),
+             "loss": st.get("loss_text") or "", "status": st.get("status"),
+             "status_text": im.status_words(st),
+             "documents": [{"url": d.get("url"), "host": d.get("host"), "kind": d.get("kind")}
+                           for d in st.get("documents") or []][:6],
+             "views": st.get("views"), "anniversary": st.get("anniversary") or "",
+             "pitch": st.get("pitch") or {}, "fresh": st.get("fresh") or None,
+             "score": st.get("score")}
+            for st in im.shown(settings)]
+    names = {st.get("id"): st.get("name") for st in data.get("stories") or []
+             if isinstance(st, dict)}
+    hidden = [{"id": i, "name": names.get(i, i)}
+              for i in (data.get("skipped") or []) + (data.get("done") or [])]
+    return {"ts": data.get("written_at"), "mock": bool(data.get("mock")),
+            "rows": rows, "hidden": hidden[:20], "failed": data.get("failed") or []}
+
+
 def ideas_view(panel) -> dict:
     from pipeline.alerts import Watchlist
 
     s = panel.settings
     return {"backlog": _guard(_backlog, s), "screen": _guard(_last_screen, s),
             "watch": _guard(lambda: Watchlist(s).all()),
-            "earnings": _guard(_earnings, s)}
+            "earnings": _guard(_earnings, s),
+            "implosions": _guard(_implosions, s)}
 
 
 # --------------------------------------------------------------------------
