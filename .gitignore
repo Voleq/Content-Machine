@@ -52,3 +52,31 @@ node_modules/
 # room3d/build.py renders through here; only room3d/renders/ is committed.
 room3d/.scratch/
 room3d/renders/contact.jpg
+
+# Standalone design delivery: commit source, never generated review media.
+/design/_build/
+/design/**/*.png
+/design/**/*.svg
+/design/**/*.gif
+/design/**/*.mp4
+/design/**/*.pdf
+/design/**/*.html
+/design/**/*.ttf
+/design/**/*.zip
+
+# Pre-port review packs remain available locally and in the external archive.
+# The source-only delivery uses design/catalog.json and design/drawings/.
+/design/fraud-plates/
+/design/finance-plates/
+/design/stock-library/
+/design/chart-library/
+/design/chapter-plates/
+/design/chapter-plates-vol2/
+/design/investigation-motion/
+/design/animation-library/
+/design/animation-library-vol2/
+/design/kit-animations/
+/design/paper-kit-animations/
+/design/beige-editions/
+/design/build_gallery.py
+/design/build_preview.py
