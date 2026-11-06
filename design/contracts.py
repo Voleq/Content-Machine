@@ -45,7 +45,9 @@ def prepare(entry,values,inks):
         computed=data.labels(region,inputs,inks)
         # Chart labels derive from the workbook inputs. The writer retains
         # control of prose and the chapter display label for this video.
-        result={**{label['slot']:label['text'] for label in computed},**result}
+        chapter=result.get('label-chapter')
+        result.update({label['slot']:label['text'] for label in computed})
+        if chapter is not None:result['label-chapter']=chapter
         boxes={label['slot']:label['box'] for label in computed}
     visible={k:v for k,v in result.items() if not entry['slots'][k].get('region')}
     for name,value in visible.items():

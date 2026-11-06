@@ -5,6 +5,7 @@ from copy import deepcopy
 import math
 import re
 from pipeline import series as native_series
+from . import sources
 
 INK_NAMES=('ground','band','rule','axis','quiet','structure','subject','subject2','attention','subject3','subject4','subject5','contour','down')
 INKS={'paper':{name:name for name in INK_NAMES}}
@@ -161,6 +162,7 @@ def assemble(item,aspect,fields=None,*,inks=None):
     else:
         source=finance if drawer=='finance' else investigations
         analysis=source.DRAW[item['legacyId']](scene,values)
+    if needs_data(item):sources.apply_labels(item,values,scene)
     scene.footer(values);finite(analysis)
     return scene,analysis
 

@@ -1,5 +1,6 @@
 """The unwired delivery is source-only, text-free and driven by workbook slots."""
 from __future__ import annotations
+import ast
 from copy import deepcopy
 import hashlib
 import importlib.util
@@ -12,7 +13,8 @@ from unittest.mock import patch
 
 import pytest
 from PIL import Image,ImageDraw,ImageFont
-from design import build_all,contracts,core,data
+from design import build_all,contracts,core,data,motion,sources,workbook
+from pipeline.models import MILLIONS_FIELDS,RATE_FIELDS
 
 ROOT=Path(__file__).resolve().parents[1]
 ITEMS=json.loads((ROOT/'design/catalog.json').read_text())['plates']
@@ -35,14 +37,18 @@ def test_unique_concepts_and_published_kit_motion(compiled):
     assert set(compiled).isdisjoint(published)
     kit=json.loads((ROOT/'design/kit-motion.json').read_text())['plates']
     assert len(kit)==104
-    moves={m['id'] for m in json.loads((ROOT/'kit/emit/motion.json').read_text())['moves']}
+    anchors=json.loads((ROOT/'kit/emit/motion.json').read_text())['anchors']['plates']
+    native_counts={'line-draw':0,'highlight':0}
     for key,recipe in kit.items():
         assert key in published
-        assert recipe['steps']
+        motion.validate(recipe,published[key]['slots'],anchors[key],published[key]['typeRoles'])
+        assert len(recipe['optionalMoves'])==1
         for step in recipe['steps']:
             assert step['slot'] in published[key]['slots']
-            assert step['cueSlot'] in published[key]['slots']
-            if 'move' in step:assert step['move'] in moves
+            if 'move' in step:native_counts[step['move']]+=1
+        for move in native_counts:
+            assert bool(anchors[key].get(move))==any(step.get('move')==move for step in recipe['steps'])
+    assert native_counts=={'line-draw':16,'highlight':13}
 
 def test_common_manifest_and_text_free_artwork(compiled):
     chapter_types=set(json.loads((ROOT/'kit/roles.json').read_text())['chapterTypes'])
@@ -53,7 +59,7 @@ def test_common_manifest_and_text_free_artwork(compiled):
         assert entry['exportScale']==2 and entry['delivered']==[v*2 for v in entry['canvas']]
         assert entry['playback']=='static' and entry['fps']==0 and entry['frameCount']==1
         assert isinstance(entry['slots'],dict) and entry['purpose'] and entry['caution']
-        assert set(entry['chapterTypes'])<=chapter_types and set(entry['sectors'])<=set(build_all.SECTORS)
+        assert set(entry['chapterTypes'])<=chapter_types and entry['sectors']==[]
         assert not {'brand','file'}&entry['slots'].keys()
         for name,slot in entry['slots'].items():
             assert re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*',name)
@@ -73,7 +79,9 @@ def test_common_manifest_and_text_free_artwork(compiled):
             assert len(nodes)==2  # paper canvas and footer rule, no sample chart
             region=entry['slots']['data-area']
             for name in region['inputSlots']:
-                assert name in entry['slots'] and entry['slots'][name]['note'].startswith('Workbook:')
+                assert name in entry['slots']
+                note=entry['slots'][name]['note']
+                assert re.match(r'(History|Quarters|Snapshot)![a-z0-9_]+, |From the filing: ',note)
                 assert isinstance(entry['example'][name],str)
 
 def test_motion_is_slot_data_without_baked_timing(compiled):
@@ -87,9 +95,16 @@ def test_motion_is_slot_data_without_baked_timing(compiled):
     for _,entry,_ in compiled.values():
         if 'motion' not in entry:continue
         inspect(entry['motion'])
+        motion.validate(entry['motion'],entry['slots'])
+        assert 3<=len(entry['motion']['steps'])<=6
         for step in entry['motion']['steps']:
-            assert step['slot'] in entry['slots'] and step['cueSlot'] in entry['slots']
+            assert step['slot'] in entry['slots']
+            if 'cueSlot' in step:assert step['cueSlot'] in entry['slots']
             assert step.get('action') in ('appear','clip-in','draw-on','grow') or step.get('move')
+        if 'data-area' in entry['slots']:
+            reveal=next(s for s in entry['motion']['steps'] if s['slot']=='data-area')
+            furniture={n for n,s in entry['slots'].items() if s['role'] in ('tick','axis','legend','unit','period')}
+            assert furniture<=set(motion.members(reveal))
     inspect(json.loads((ROOT/'design/kit-motion.json').read_text()))
 
 @pytest.mark.parametrize('item',DATA_ITEMS,ids=lambda i:i['key'])
@@ -109,12 +124,128 @@ def test_every_data_drawing_is_pure_and_paintable(item,compiled):
         assert all(l['slot'] in entry['slots'] for l in labels)
         assert all(isinstance(l['text'],str) and len(l['box'])==4 for l in labels)
 
-@pytest.mark.parametrize('value,unit,expected',[('$1.2bn','money_m',1200),('−12.5%','percent',-12.5),('($40m)','money_m',-40),('14x','multiple',14),('1,250.5','raw',1250.5)])
+@pytest.mark.parametrize('value,unit,expected',[('$1.2bn','money_m',1200),(1200000000,'money_m',1200),('1,200,000,000','money_m',1200),('$120','money_m',.00012),('50m','shares_m',50),(50000000,'shares_m',50),('50,000,000','shares_m',50),('−12.5%','percent',-12.5),('($40m)','money_m',-40),('14x','multiple',14),('1,250.5','raw',1250.5)])
 def test_script_number_units(value,unit,expected):assert data.number(value,unit)==expected
 
 @pytest.mark.parametrize('value,unit',[(True,'raw'),('NaN','raw'),(float('inf'),'raw'),('1,,200','raw'),('$1$','money'),('40m','raw'),('12%','money_m'),('14x','percent'),('1 2','raw'),('€40m','money_m'),('$12','percent')])
 def test_bad_or_ambiguous_figures_are_rejected(value,unit):
     with pytest.raises(ValueError):data.number(value,unit)
+
+def test_sources_match_the_actual_workbook_and_financial_units(compiled):
+    tables=workbook.schema(ROOT/'templates/dennis_data_template.xlsx')
+    references=set();filings=0
+    share_keys={'shares_out','shares_dill_out','diluted_shares','avg_volume_3m'}
+    for _,entry,_ in compiled.values():
+        if 'data-area' not in entry['slots']:continue
+        for name,binding in entry['slots']['data-area']['recipe']['bindings'].items():
+            src=binding['source'];unit=binding['unit'];slot=entry['slots'][name]
+            workbook.validate_source(src,tables)
+            assert unit in sources.UNIT_LABELS and slot['sourceUnit']==unit
+            assert slot['source']==src and not slot.get('default')
+            if src['kind']=='filing':
+                filings+=1
+                assert slot['note'].startswith('From the filing: '+src['location'])
+                assert 'Not confirmed by a workbook row.' in slot['note']
+                continue
+            references.add((src['sheet'],src['field']))
+            assert slot['note'].startswith(f'{src["sheet"]}!{src["field"]}, {src["period"]}.')
+            field=src['field']
+            if field in share_keys:assert unit=='shares_m'
+            elif field in MILLIONS_FIELDS:assert unit in ('money','money_m','money_b')
+            elif field in RATE_FIELDS:assert unit=='percent'
+            elif field in ('price','eps','eps_street','eps_consensus'):assert unit=='money'
+            if src['sheet']=='Snapshot':assert src['period']=='as-of'
+    assert len(references)>=30 and filings>1000
+    with pytest.raises(ValueError,match='Unknown workbook row'):
+        workbook.validate_source({'kind':'workbook','sheet':'History','field':'auditor_fee','period':'FY-0'},tables)
+    with pytest.raises(ValueError,match='Unsupported workbook period'):
+        workbook.validate_source({'kind':'workbook','sheet':'History','field':'capex','period':'FY-7'},tables)
+    item=deepcopy(DATA_ITEMS[0]);item['inputMetadata']={}
+    with pytest.raises(ValueError,match='Missing authored source metadata'):data.bindings(item,core.assemble(item,'16x9')[0])
+
+def test_whole_workbook_amounts_and_written_magnitudes_produce_the_same_labels(compiled):
+    checked=0
+    for _,entry,_ in compiled.values():
+        if entry['aspect']!='16x9' or 'data-area' not in entry['slots']:continue
+        region=entry['slots']['data-area'];written={k:entry['example'][k] for k in region['inputSlots']};whole=deepcopy(written)
+        for name,binding in region['recipe']['bindings'].items():
+            unit=binding['unit']
+            if binding['kind']=='number':assert entry['slots'][name].get('inputOnly')
+            if binding['kind']=='number' and unit in ('money','money_m','money_b','shares_m'):
+                whole[name]=str(data.number(written[name],unit)*sources.SCALED_UNITS.get(unit,1));checked+=1
+        assert data.labels(region,written,INK)==data.labels(region,whole,INK)
+        fill=contracts.example_fill(entry)
+        assert contracts.prepare(entry,{**fill,**written},INK)==contracts.prepare(entry,{**fill,**whole},INK)
+        before=data.draw(region,written,INK);after=data.draw(region,whole,INK)
+        assert len(before)==len(after)
+        for a,b in zip(before,after):
+            assert a['tag']==b['tag'] and a['attrs']==pytest.approx(b['attrs'])
+    assert checked>300
+
+def test_units_are_computed_and_the_reporting_label_cannot_change_them(compiled):
+    for _,entry,_ in compiled.values():
+        menu=contracts.writer_slots(entry)
+        for name,slot in entry['slots'].items():
+            if slot.get('unitLabel'):assert name not in menu and 'default' not in slot
+    _,entry,_=compiled['charts/capex-depreciation-vintages-16x9']
+    values=contracts.example_fill(entry);values['input-period']='FY21-FY25'
+    controls=entry['slots']['data-area']['recipe']['bindings']
+    capex=next(k for k,b in controls.items() if b['path']==['data','capex',0])
+    first=contracts.prepare(entry,{**values,capex:'($1.2bn)'},INK)
+    second=contracts.prepare(entry,{**values,capex:'-1200000000'},INK)
+    assert first==second and first['values']['period']=='FY21-FY25 / $m'
+    assert first['values']['chart-units'].endswith('$m')
+    for label in ('FY25 / $m','FY25 / bn','FY25 / million','FY25 / shares'):
+        with pytest.raises(ValueError,match='unit label'):contracts.prepare(entry,{**values,'input-period':label},INK)
+    with pytest.raises(ValueError,match='Unknown or computed'):contracts.prepare(entry,{**values,'period':'FY25 / $bn'},INK)
+
+def test_sensitive_definitions_are_not_mapped_to_different_workbook_metrics(compiled):
+    for key,paths in {
+        'stock/debt-covenant-room':[['inputs','debt'],['inputs','ebitda']],
+        'stock/debt-usable-net-debt':[['inputs','cash']],
+        'investigations/cash-availability':[['total']],
+        'finance/cash-runway':[['cash']],
+        'stock/earnings-second-half-hurdle':[['inputs','first_half'],['inputs','prior_second_half']],
+    }.items():
+        _,entry,_=compiled[key+'-16x9'];bindings=entry['slots']['data-area']['recipe']['bindings']
+        for path in paths:assert next(b for b in bindings.values() if b['path']==path)['source']['kind']=='filing'
+    _,entry,_=compiled['investigations/repeated-addbacks-16x9'];bindings=entry['slots']['data-area']['recipe']['bindings']
+    assert [next(b for b in bindings.values() if b['path']==['charge_'+s])['source']['period'] for s in ('a','b','c')]==['FY-2','FY-1','FY-0']
+
+def test_semantic_type_roles_are_shared_and_keep_slot_inks(compiled):
+    allowed={'headline','caption','source','period','kicker','unit','legend','tick','axis','statement','body','detail','huge','figure','value','label','ref'}
+    for _,entry,_ in compiled.values():
+        assert set(entry['typeRoles'])<=allowed
+        for name,slot in entry['slots'].items():
+            if slot.get('region'):continue
+            assert slot['colour'] in core.INK_NAMES
+            assert entry['typeRoles'][slot['role']]['maxChars']<=slot['maxChars']
+        for measured in entry['typeAudit']:
+            slot=entry['slots'][measured['slot']]
+            assert measured['role']==slot['role']
+            assert measured['size']==entry['typeRoles'][slot['role']]['size']
+    _,entry,_=compiled['charts/capex-depreciation-vintages-16x9']
+    ticks=[s for s in entry['slots'].values() if s['role']=='tick']
+    assert len(ticks)>=8 and len(entry['typeRoles'])<len(entry['slots'])/2
+
+def test_motion_rejects_unspoken_cues_and_unpublished_moves(compiled):
+    _,entry,_=compiled['charts/capex-depreciation-vintages-16x9'];recipe=deepcopy(entry['motion'])
+    reveal=next(s for s in recipe['steps'] if s['slot']=='data-area')
+    reveal['cueSlot']=next(n for n in reveal['includeSlots'] if entry['slots'][n]['role']=='tick')
+    with pytest.raises(ValueError,match='Chart furniture'):motion.validate(recipe,entry['slots'])
+    recipes=json.loads((ROOT/'design/kit-motion.json').read_text())['plates']
+    key='cards/definition-16x9';recipe=deepcopy(recipes[key])
+    plate=json.loads((ROOT/'kit/cards/manifest.json').read_text())['plates'][key]
+    anchors=json.loads((ROOT/'kit/emit/motion.json').read_text())['anchors']['plates'][key]
+    step=next(s for s in recipe['steps'] if s.get('move')=='highlight');step['move']='line-draw'
+    with pytest.raises(ValueError,match='published anchor'):motion.validate(recipe,plate['slots'],anchors,plate['typeRoles'])
+    recipe=deepcopy(recipes[key]);recipe['optionalMoves'][0]['enabled']=True
+    with pytest.raises(ValueError,match='reserved for Valentin'):motion.validate(recipe,plate['slots'],anchors,plate['typeRoles'])
+
+def test_source_files_parse_on_the_render_box_python_311():
+    files=[p for p in (ROOT/'design').glob('*.py') if p.name not in ('build_gallery.py','build_preview.py')]
+    files+=list((ROOT/'design/drawings').glob('*.py'))
+    for file in files:ast.parse(file.read_text(),filename=str(file),feature_version=(3,11))
 
 def test_changed_workbook_values_change_both_marks_and_printed_numbers(compiled):
     _,entry,_=compiled['investigations/profit-vs-cash-16x9'];r=entry['slots']['data-area'];v={k:entry['example'][k] for k in r['inputSlots']}

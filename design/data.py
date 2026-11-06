@@ -9,7 +9,7 @@ from copy import deepcopy
 from decimal import Decimal
 import math
 import re
-from . import core
+from . import core,sources
 
 NUMBER=re.compile(r'^(?P<sign>[-+]?)(?P<n>(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)(?P<suffix>bn|mm|[kmbt%]|x|pp|pt|days?|months?)?$',re.I)
 
@@ -17,7 +17,7 @@ def number(value,unit='raw'):
     """Read script notation in the declared source units; reject unit guesses."""
     if type(value) in (int,float):
         if not math.isfinite(value):raise ValueError('Source figures must be finite')
-        return float(value)
+        return float(value)/sources.SCALED_UNITS.get(unit,1)
     if not isinstance(value,str):raise ValueError('A source number must be a written figure')
     text=value.strip().replace('−','-');negative=text.startswith('(') and text.endswith(')')
     if negative:text=text[1:-1]
@@ -34,15 +34,16 @@ def number(value,unit='raw'):
         if match['sign']:raise ValueError('Use either parentheses or a sign')
         result=-result
     if suffix in ('k','m','mm','b','bn','t'):
-        if unit not in ('money','money_m','money_b','shares_m'):raise ValueError('Magnitude suffix needs an explicit source unit')
+        if unit not in ('money','money_m','money_b','shares','shares_m','quantity_m','count'):raise ValueError('Magnitude suffix needs an explicit source unit')
         multiplier={'k':1e3,'m':1e6,'mm':1e6,'b':1e9,'bn':1e9,'t':1e12}[suffix]
-        basis=1e6 if unit in ('money_m','shares_m') else 1e9 if unit=='money_b' else 1
+        basis=sources.SCALED_UNITS.get(unit,1)
         result*=multiplier/basis
     elif suffix in ('%','pp','pt') and unit not in ('percent','pp'):
         raise ValueError('A percentage suffix does not match the source unit')
     elif suffix=='x' and unit!='multiple':raise ValueError('A multiple suffix does not match the source unit')
     elif suffix.startswith('day') and unit!='days':raise ValueError('A days suffix does not match the source unit')
     elif suffix.startswith('month') and unit!='months':raise ValueError('A months suffix does not match the source unit')
+    if not suffix:result/=sources.SCALED_UNITS.get(unit,1)
     if not math.isfinite(result):raise ValueError('Source figures must be finite')
     return result
 
@@ -53,6 +54,8 @@ def written(value,unit):
     if unit in ('money_m','money'):
         sign='-' if s.startswith('-') else '';s=s.lstrip('-')
         return sign+'$'+s+('m' if unit=='money_m' else '')
+    if unit in ('shares_m','quantity_m'):return s+'m'
+    if unit=='money_b':return ('-' if s.startswith('-') else '')+'$'+s.lstrip('-')+'bn'
     if unit=='year':return str(int(value))
     if unit in ('percent','pp'):return s+('%' if unit=='percent' else 'pp')
     if unit=='multiple':return s+'x'
@@ -65,50 +68,36 @@ def leaves(value,path=()):
         for key,item in enumerate(value):yield from leaves(item,(*path,key))
     elif value is not None:yield path,value
 
-FIXED={'unit','delta_unit','x_unit','window','annual_sessions','domain','x_domain','y_domain','axis_max','event_index','model','field','edges'}
+FIXED={'unit','units','delta_unit','delta_label','x_unit','window','annual_sessions','domain','x_domain','y_domain','axis_max','event_index','model','field','edges','colour_limit','baseline_day','event_day'}
 
 def unit_for(item,path,value):
-    if not isinstance(value,(int,float)):return 'text'
-    name=str(path[-1]);definition=item['definition'];fields=item['example']
-    if any(p in ('years','year') for p in path) and 1900<=value<=9999:return 'year'
-    if name.endswith(('_pct','_percent')) or name in ('margin_pct','borrow_pct'):return 'percent'
-    if item['drawer']=='stock':
-        for metric in definition.get('metrics',[]):
-            if metric.get('expr')==name:return metric['unit']
-    if name.endswith('_m'):return 'money_m'
-    if name.endswith(('_days','_day')):return 'days'
-    if name.endswith('_months'):return 'months'
-    if item['drawer'] in ('finance','investigations','research'):
-        if item['drawer']=='research':
-            hint=definition.get('fields',{}).get(name,{})
-            label=hint.get('label','')+' '+hint.get('instruction','')
-            if '$m' in label or '$m' in str(fields.get('period','')):return 'money_m'
-        elif '$m' in str(fields.get('period','')) and not any(t in name for t in ('share','growth','margin','rate','index','price','days','month','percent','pct')):return 'money_m'
-    data=fields.get('data',{})
-    if isinstance(data,dict):
-        unit=data.get('unit')
-        if unit=='$m':return 'money_m'
-        if unit=='$':return 'money'
-        if unit=='%':return 'percent'
-    return 'raw'
+    return sources.metadata(item,path)['unit']
 
 def bindings(item,scene):
     """Every variable source observation becomes a script slot, never a default."""
     result={};visible={s['name']:s for s in scene.slots}
     for path,value in leaves(item['example']):
         if path[0] in ('title','takeaway','source') or any(p in FIXED for p in path):continue
-        unit=unit_for(item,path,value)
+        meta=sources.metadata(item,path)
+        if meta.get('fixed'):continue
+        unit=meta['unit'];scale=meta.get('modelScale',1)
         candidate=core.slug(path[-1]) if isinstance(path[-1],str) else ''
-        if candidate in visible:
-            try:matches=visible[candidate]['example']==value if isinstance(value,str) else math.isclose(number(visible[candidate]['example'],unit),value,rel_tol=1e-9,abs_tol=1e-9)
-            except ValueError:matches=False
-        else:matches=False
+        # Numeric source strings can be whole-unit amounts or written
+        # magnitudes. Keep them out of the typeset box: its formatter owns
+        # the visible value and unit, regardless of the writer's notation.
+        matches=isinstance(value,str) and candidate in visible and visible[candidate]['example']==value
+        if path==('period',) or meta.get('sign'):matches=False
         key=candidate if matches else 'input-'+'-'.join(core.slug(p+1 if isinstance(p,int) else p) for p in path)
         if key in result:raise ValueError('Ambiguous source slot '+key)
-        path_words=' / '.join(str(p+1 if isinstance(p,int) else p).replace('_',' ') for p in path)
-        note=f'Workbook: {path_words}; use the period identified by this plate. Source unit: {unit}; write a figure such as {written(value,unit)}.'
+        note,source=sources.source_note(meta,path,item['example'])
+        input_value=value/scale if type(value) in (int,float) else value
+        if meta.get('sign')=='outflow-magnitude':input_value=-abs(input_value)
+        example=written(input_value,unit)
+        note+=' Declared unit: '+unit+'; example '+example+'.'
         result[key]={'path':list(path),'unit':unit,'kind':'number' if type(value) in (int,float) else 'text',
-                     'note':note,'example':written(value,unit),'inputOnly':not matches}
+                     'note':note,'source':source,'example':example,'inputOnly':not matches}
+        if scale!=1:result[key]['modelScale']=scale
+        if meta.get('sign'):result[key]['sign']=meta['sign']
     return result
 
 def native_box(scene):
@@ -127,7 +116,8 @@ def native_box(scene):
     return [x,y,max(b[0]+b[2] for b in boxes)-x,max(b[1]+b[3] for b in boxes)-y]
 
 def recipe(item,aspect,scene):
-    return {'item':deepcopy(item),'aspect':aspect,'nativeBox':native_box(scene),'bindings':bindings(item,scene)}
+    return {'item':deepcopy(item),'aspect':aspect,'nativeBox':native_box(scene),'bindings':bindings(item,scene),
+            'unitLabels':{s['name']:s['example'] for s in scene.slots if s.get('unitLabel')}}
 
 def _scene(region,values,inks):
     spec=region['recipe'];expected=spec['bindings']
@@ -135,8 +125,12 @@ def _scene(region,values,inks):
     fields=deepcopy(spec['item']['example'])
     for key,binding in expected.items():
         value=number(values[key],binding['unit']) if binding['kind']=='number' else values[key]
+        if binding['kind']=='number':
+            value*=binding.get('modelScale',1)
+            if binding.get('sign')=='outflow-magnitude':value=abs(value)
         if binding['kind']=='number' and value.is_integer():value=int(value)
         if binding['kind']=='text' and (not isinstance(value,str) or not value.strip() or any(ord(c)<32 for c in value)):raise ValueError('Use a short source label')
+        if binding['path']==['period']:sources.reporting_label(value)
         target=fields
         for part in binding['path'][:-1]:target=target[part]
         target[binding['path'][-1]]=value

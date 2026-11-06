@@ -18,7 +18,7 @@ slot dictionaries, ink-role type tables and curation notes. Root JSON files
 summarize the delivery and include the role fragment and existing-kit motions.
 Night and dusk reuse the same paper drawing.
 
-Pillow is already in `requirements.lock.txt`. There are **no new dependencies**:
+Pillow and openpyxl are already in `requirements.lock.txt`. There are **no new dependencies**:
 no Node, resvg, FFmpeg, FontTools, jsonschema or vendored font copies are needed
 for this build. Type fit is measured with the actual files under `assets/fonts/`,
 including Archivo Narrow's declared variable weight.
@@ -57,6 +57,9 @@ python design/build_all.py --out /tmp/chapter-review --only chapters --review
   periods, values and positions. Both are pure Python and perform no I/O.
   Existing `line_path`, `column_bars` and `spread_fill` are reused where their
   geometry fits; `data-area.uses` names them.
+- [sources.py](sources.py) resolves each catalogue input's authored unit and
+  workbook row/period or filing location. [workbook.py](workbook.py) checks
+  those references against `templates/dennis_data_template.xlsx` at build time.
 - [contracts.py](contracts.py) builds a writer menu and a flat `[PLATE: ...]`
   example **from the emitted manifest alone**. `prepare()` validates the written
   slot values and returns shapes, visible strings and dynamic label boxes.
@@ -67,17 +70,38 @@ python design/build_all.py --out /tmp/chapter-review --only chapters --review
 Every word is a slot, including fixed labels, units, dates, years, legends and
 chapter display labels. Fixed words may have editable defaults. The brand line
 and template counter are removed. Numeric inputs are script strings such as
-`$125m` and `12.5%`, with a per-slot workbook/period note, source unit and length
+`$125m` and `12.5%`, with a per-slot source/period note, source unit and length
 limit. Source controls are data inputs and are never typeset into their 0×0
 boxes. Calculated labels come from those same inputs; the writer supplies no
 geometry, formulas, normalized positions or timing.
 
-**120 standalone concepts** have ordered motion steps. Together with the
-52 existing-kit proposals, these are recipes over slots and regions, not video
-assets. Steps appear, draw or clip into view, with compatible native move IDs
-where applicable. There are no seconds, frame counts, FPS, fades or partial
-opacity in motion recipes. The future player can align them to spoken words
-and to the actual beat length.
+Input notes start with a real reference such as `History!capex, FY-4` or
+`Snapshot!price, as-of`. A figure outside that workbook starts with
+`From the filing:` and names the relevant note/table and period; it explicitly
+cannot be confirmed by a workbook row. Assumptions and supplied market-data
+exhibits are identified as such. Annual series use distinct fiscal years;
+they do not silently append an overlapping LTM observation.
+
+The renderer accepts the bot reader's whole-unit amounts. For `money_m`,
+`1200000000`, `1,200,000,000` and `$1.2bn` all mean `$1,200m`. A bare `120`
+means $120, so a figure copied from a filing table in millions needs `120m`.
+`shares_m` likewise accepts whole shares or `50m`. Per-share money, percentages,
+multiples and counts have their own declared units. Unit labels are calculated
+outputs, absent from the writer menu; the reporting-label input cannot override
+them. Cash outflows used as spending magnitudes are normalized explicitly.
+
+All current concepts are usable for any company and publish `sectors: []`.
+Type slots share semantic kit roles, including `caption`, `value`, `label`,
+`tick`, `legend`, `unit` and `period`, with per-slot ink overrides and text budgets.
+
+**120 standalone concepts** have 4–6 ordered motion steps. The 52 existing-kit
+proposals use 2–6: compact quotes and closing cards need fewer ideas. Chart
+furniture appears with its data area, and related labels/figures share a step
+through `includeSlots`. Only `cueSlot` names words intended to be spoken;
+an uncued context reveal follows the preceding idea. All 16 published native
+`line-draw` anchors and all 13 `highlight` anchors are used. `count-up` is listed
+as an optional, disabled proposal for Valentin, requiring a numeric fill.
+These recipes have no seconds, frame counts, FPS, fades or partial opacity.
 
 ## Integration boundary
 
