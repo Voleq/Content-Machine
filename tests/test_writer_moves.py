@@ -371,7 +371,9 @@ def test_the_long_menu_marks_where_each_move_lands(settings):
     # 2026: ◆ promised both on 53 plates that only count up).
     assert slots_line(long, "big-number-l1-16x9").endswith("↑value  ✕source")
     assert slots_line(long, "filing-page-16x9").endswith("◆kicker  ▭passage")
-    assert slots_line(long, "unit-economics-16x9").endswith("↑margin")
+    # In its own box since 6 Nov (it ran 1,160 wide over the table), the
+    # margin is a small enough part of the plate to ring as well.
+    assert slots_line(long, "unit-economics-16x9").endswith("◆margin")
     assert slots_line(long, "qoq-yoy-16x9").endswith("↑figure")
     assert "▭" not in slots_line(long, "big-number-l1-16x9")
 

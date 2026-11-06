@@ -36,9 +36,8 @@ class Switch:
 
 
 SWITCHES: dict[str, Switch] = {s.name: s for s in (
-    Switch("short_meme", "SHORT_MEME", "Memes in SHORTs",
-           "Lays a library meme over the last second and a half of a SHORT's "
-           "verdict. Off since 10 October: nothing the voice says points at it."),
+    # No "Memes in SHORTs" switch: he dropped them from shorts for good
+    # (2 Nov 2026). SHORT_MEME stays a setting for the tests that pin it.
     Switch("viewer_questions", "VIEWER_QUESTIONS", "Viewer questions",
            "Reads the top comments once a week and lets the LONG's writer answer "
            "one or two in a closing section. Leave it off until the channel has "

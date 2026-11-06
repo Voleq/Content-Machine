@@ -1237,11 +1237,11 @@ COMMANDS: tuple[Command, ...] = (
             doc=("Keeps only finished, failed and needs-you pushes (no "
                  "\"started\", no progress). On its own it toggles.")),
     Command("admin", "switch", "[NAME on|off]",
-            "memes in SHORTs, viewer questions, the voice's room and de-esser",
+            "viewer questions, the voice's room and de-esser, stockanalysis.com",
             c_switch, example="voice_room on", doc=(
-                "The four settings that wait on your call, also on the page's "
-                "Settings: `short_meme`, `viewer_questions`, `voice_room`, "
-                "`voice_deess`. A flip takes effect at once and is kept "
+                "The settings that wait on your call, also on the page's "
+                "Settings: `viewer_questions`, `voice_room`, `voice_deess`, "
+                "`stockanalysis_enabled`. A flip takes effect at once and is kept "
                 "across restarts, over what `.env` says. On its own it lists "
                 "them.")),
     Command("admin", "panel", "", "the web panel's link", c_panel, doc=(

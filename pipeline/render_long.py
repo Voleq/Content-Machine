@@ -7,7 +7,7 @@ Structure:
     evidence he cuts away to
   * each beat encodes on its own (segmented, cached, in parallel) and the
     beats are concatenated; the overlays that span beats (opening title,
-    chapter bumpers, corner bug, top strip, disclaimer, marks) go
+    chapter bumpers, top strip, marks) go
     over that base in one pass, with VO + room tone + SFX in a single amix
   * draft mode reuses the same cached audio and graph at low res /
     ultrafast (never re-calls TTS)
@@ -58,6 +58,7 @@ the video ends on whatever deadpan line the script wrote.
 from __future__ import annotations
 
 import bisect
+import hashlib
 import json
 import logging
 import math
@@ -284,9 +285,6 @@ LOWER_THIRD_AT = (24, 20)
 # A window of him shorter than this gets no lower third: on and off inside a
 # second reads as a flicker, not a strip.
 LOWER_THIRD_MIN_S = 1.5
-# The dark rim the disclaimer wears over the room (RGBA): the room's night
-# blue, not black, so it reads as the line's shadow rather than an outline.
-DISCLAIMER_RIM = (12, 16, 30, 190)
 
 
 def _on_him(segments, covers: list[tuple[float, float]], *,
@@ -447,7 +445,8 @@ def _recorded_cold_opens(settings, workspace: Path) -> tuple[list[str], str]:
 
 
 def cold_open_segment(segments, duration: float,
-                      until: float | None = None) -> int | None:
+                      until: float | None = None,
+                      title_s: float = INTRO_CARD_S) -> int | None:
     """Index of the cold open's first shot of Dennis, or None.
 
     The first host beat still on screen once the opening title lifts — the
@@ -456,7 +455,7 @@ def cold_open_segment(segments, duration: float,
     room. Only inside the cold open (before `until`, the next chapter's
     start); None when he does not appear there at all.
     """
-    title_end = min(INTRO_CARD_S, duration * 0.5)
+    title_end = min(title_s, duration * 0.5)
     for i, seg in enumerate(segments):
         if until is not None and seg.start >= until:
             return None
@@ -768,6 +767,130 @@ def _set_windows(rooms_shown: dict, segments) -> list[tuple[float, float, set[st
     return out
 
 
+def _pictures_found(cues: list, script, content, company_data,
+                    overrides: dict) -> list:
+    """The cues, less every [IMG] the picture chain found nothing for, or
+    found a picture this video already showed, and every [CLIP] that found
+    no footage or is one too many (`CLIP_MAX_PER_LONG`, `CLIP_MIN_GAP_S`).
+
+    RDDT's long (proof, 2 Nov 2026) cut away four times to a cream card
+    reading "( imagery unavailable )": the chain's filler, put up full screen
+    where Commons refused. A picture that is not there is not a beat, so the
+    frame stays on him. And with the company's own site the only source,
+    every [IMG] would find its one og:image, so it goes up once.
+    Resolved here, before the plan, through the same cache the beat's own
+    encode reads, so nothing is fetched twice."""
+    from pipeline.broll import override_choice, swap_slots
+
+    website = (str(company_data.get("website") or "")
+               if company_data is not None else "")
+    slots = swap_slots(script.events)
+    shown: set[str] = set()
+    out = []
+    settings = getattr(content, "settings", None)
+    clip_max = int(getattr(settings, "clip_max_per_long", 0) or 0)
+    clip_gap = float(getattr(settings, "clip_min_gap_s", 0.0) or 0.0)
+    clips: list[float] = []
+    for c in cues:
+        if c.kind is CueKind.CLIP:
+            # STOCK FOOTAGE ONLY WHERE IT EARNS THE CUT (2 Nov 2026: "the gifs
+            # are too fucking random"; "use less of pexels ... only when it
+            # really appeals to the situation"). RDDT's long cut to Pexels
+            # thirty-nine times: a guinea pig, chips, a dripping tap. At most
+            # `CLIP_MAX_PER_LONG`, none within `CLIP_MIN_GAP_S` of the last;
+            # the rest of the beats stay on him and the plates.
+            value = str(c.payload.get("value") or "")
+            if clip_max and len(clips) >= clip_max:
+                log.info("[CLIP: %s] over CLIP_MAX_PER_LONG=%d — the beat "
+                         "stays on him", value, clip_max)
+                continue
+            if clips and clip_gap and float(c.t) - clips[-1] < clip_gap:
+                log.info("[CLIP: %s] %.0fs after the last clip — the beat "
+                         "stays on him", value, float(c.t) - clips[-1])
+                continue
+            try:
+                v = content.resolve_clip(
+                    value, override_choice(overrides,
+                                           slots.get(c.payload.get("order")),
+                                           value))
+            except Exception as e:                       # noqa: BLE001
+                log.warning("[CLIP: %s] failed (%s) — the beat stays on him",
+                            value, e)
+                continue
+            if v is None or v.source == "filler" or not v.path:
+                log.warning("[CLIP: %s] found no footage — the beat stays on "
+                            "him", value)
+                continue
+            clips.append(float(c.t))
+        elif c.kind is CueKind.IMG:
+            value = str(c.payload.get("value") or "")
+            try:
+                v = content.resolve_image(
+                    value, kind="img", website=website,
+                    choice=override_choice(overrides,
+                                           slots.get(c.payload.get("order")),
+                                           value))
+            except Exception as e:                       # noqa: BLE001
+                log.warning("[IMG: %s] failed (%s) — the beat stays on him",
+                            value, e)
+                continue
+            if v is None or v.source == "filler" or not v.path:
+                log.warning("[IMG: %s] found no photograph — the beat stays "
+                            "on him", value)
+                continue
+            try:
+                ident = hashlib.sha256(Path(v.path).read_bytes()).hexdigest()
+            except OSError:
+                ident = str(v.path)
+            if ident in shown:
+                log.warning("[IMG: %s] found the same picture as an earlier "
+                            "[IMG] — the beat stays on him", value)
+                continue
+            shown.add(ident)
+        out.append(c)
+    return out
+
+
+# What waits for the cold open's first seconds of him: everything that puts
+# a picture up, and what acts on the picture up.
+_OPEN_WAITS = frozenset({CueKind.PLATE, CueKind.CLIP, CueKind.IMG,
+                         CueKind.CHART, CueKind.FILING, CueKind.SCREENGRAB,
+                         CueKind.MEME, CueKind.SCRIBBLE, CueKind.MOVE,
+                         CueKind.SOURCE})
+_OPEN_PICTURES = frozenset({CueKind.PLATE, CueKind.CLIP, CueKind.IMG,
+                            CueKind.CHART, CueKind.FILING,
+                            CueKind.SCREENGRAB, CueKind.MEME})
+
+
+def _opens_on_him(cues: list, host_s: float) -> list:
+    """The cues, with nothing on screen over him before `host_s`.
+
+    THE LONG OPENS ON DENNIS (2 Nov 2026, the RDDT long: "Need to find another
+    way to open the longs ... now I wouldn't watch the video if it starts
+    like that"). It opened on a paper title card, then ten seconds of a
+    headline card, then a stock clip, and he was first seen at 17.6 s. The
+    title card is gone (`LONG_TITLE_CARD`), and a picture the writer put in
+    the first `COLD_OPEN_HOST_S` goes up when they end, so the hook is his:
+    the last such picture, if there were several, and what acts on it.
+    """
+    if host_s <= 0:
+        return cues
+    early = [c for c in cues if c.kind in _OPEN_PICTURES and float(c.t) < host_s]
+    keep = early[-1] if early else None
+    out = []
+    for c in cues:
+        if c.kind in _OPEN_WAITS and float(c.t) < host_s:
+            if c.kind in _OPEN_PICTURES and c is not keep:
+                log.info("cold open: [%s: %s] at %.1fs is under his first "
+                         "%.0fs — left out", c.kind.value,
+                         c.payload.get("value"), float(c.t), host_s)
+                continue
+            c = c.model_copy(update={"t": host_s})
+        out.append(c)
+    out.sort(key=lambda c: float(c.t))
+    return out
+
+
 def render_long(
     script: LongScript,
     tts: TTSResult,
@@ -848,6 +971,9 @@ def _render_long(
         log.warning("tag: [%s] at char %d draws nothing — %s",
                     e.type.value, e.char_offset, reason or "unmapped tag type")
     cues = build_long_timeline(script, tts.words, duration)
+    cues = _pictures_found(cues, script, content, company_data,
+                           broll_overrides or {})
+    cues = _opens_on_him(cues, float(settings.cold_open_host_s or 0.0))
     scribble_cues = [c for c in cues if c.kind is CueKind.SCRIBBLE]
     chapter_warnings: list[str] = []
     chapters = _chapter_plan(script, duration, chapter_warnings.append,
@@ -952,14 +1078,16 @@ def _render_long(
     # (or the room opener on chapter one), and the wipes on the cold open and
     # the end. Worked out before the beats are drawn, so a beat that opens
     # under one holds its moves until it lifts.
-    intro_dur = min(INTRO_CARD_S, duration * 0.5)
+    intro_dur = (min(INTRO_CARD_S, duration * 0.5)
+                 if settings.long_title_card else 0.0)
     chapter_cuts = _chapter_cuts(chapters, [s.start for s in segments],
                                  intro_dur=intro_dur, duration=duration, fps=fps)
     end_cut = max((s.start for s in segments if s.start > intro_dur + 2.0),
                   default=None)
     _bumper = reg.get(reg.aspect_key("structure/chapter-bumper", aspect) or "")
     _wipe_on, _wipe_off = 3 / 12, 4 / 12      # design's cut is under frame 4 of 8
-    covers: list[tuple[float, float]] = [(0.0, intro_dur + _wipe_off)]
+    covers: list[tuple[float, float]] = ([(0.0, intro_dur + _wipe_off)]
+                                         if intro_dur else [])
     # THE END GOES BY THE CLOCK on a video of CLOCK_MIN_VIDEO_S or more
     # (transitions, 18 Oct 2026): the cut into its last beat is the wall
     # clock close, its hands running on half an hour, where a shorter video
@@ -1063,7 +1191,8 @@ def _render_long(
     # manifest, agree on it.
     cold_i = cold_open_segment(
         segments, duration,
-        until=chapters[1][0] if len(chapters) > 1 else None)
+        until=chapters[1][0] if len(chapters) > 1 else None,
+        title_s=intro_dur)
     cold_room = None
     if cold_i is not None:
         _recent_opens, _kept_open = _recorded_cold_opens(settings, workspace)
@@ -1145,7 +1274,8 @@ def _render_long(
     def _dressing():
         if not room_dressing:
             from pipeline.prices import get_price_history, long_history_days
-            from pipeline.room_dressing import Dressing, board_question, episode_number
+            from pipeline.room_dressing import (Dressing, board_question,
+                                                episode_number, span_label)
             from pipeline.room_writing import props
 
             days = long_history_days(settings)
@@ -1159,7 +1289,7 @@ def _render_long(
                 episode=episode,
                 ticker=script.ticker.upper(), question=board_question(script),
                 chapters=tuple(t for _, t, _ in chapters), closes=closes,
-                span=f"{max(round(days / 365), 1)}Y",
+                span=span_label(days, () if series.degraded else series.dates),
                 props=props(script, ticker=script.ticker, workdate=workspace.name,
                             episode=episode, settings=settings, workspace=workspace),
                 pile=pile if pile_drawer else 0),
@@ -2356,6 +2486,15 @@ def _render_long(
             if pick is None or pick.chapter in screen_intro_done:
                 return None
             delay = max(_cleared(seg.start, covers) - seg.start, 0.0)
+            if not settings.screen_draw_in:
+                # ALREADY ON THE SCREEN (his note, 2 Nov 2026: "can t it be
+                # already on the screen when the chapter changes, the
+                # animation is weird"). The room is written with the
+                # chapter's picture up, so this shot simply shows it; it
+                # counts as seen, which is what the push-in waits for.
+                screen_intro_done.add(pick.chapter)
+                screen_intro_end[i] = delay
+                return None
             reveal_s = REVEAL_FRAMES / REVEAL_FPS
             if delay + reveal_s > seg_len - 0.2:
                 return None
@@ -2861,7 +3000,7 @@ def _render_long(
     # for correctness comparison.
     #
     # Either way the result is one base video that the global overlays — the
-    # corner bug, disclaimer, chapter bumpers, marks — composite
+    # chapter bumpers, marks — composite
     # over. Those span segment boundaries, so they cannot be baked in per
     # segment.
     profile = encode_profile(settings, "long", draft=draft, preview=preview,
@@ -2921,7 +3060,9 @@ def _render_long(
 
     intro_path = rdir / "intro_card.png"
     intro_plate = reg.get(reg.aspect_key("paper/headline-band-t3", aspect) or "")
-    if intro_plate is not None:
+    if not intro_dur:
+        pass                    # LONG_TITLE_CARD off: the video opens on him
+    elif intro_plate is not None:
         _render_still(intro_plate, {
             "kicker": script.ticker.upper(),
             "headline": (script.chapter_list[0].title if script.chapter_list
@@ -2930,9 +3071,11 @@ def _render_long(
         }, settings, reg).convert("RGB").resize((W, H), Image.LANCZOS).save(intro_path)
     else:
         Image.new("RGB", (W, H), role(settings, "ground")).save(intro_path)
-    layers.append(OverlayLayer(
-        path=intro_path, x=0, y=0, t_start=0.0, t_end=intro_dur, name="intro_card",
-    ))
+    if intro_dur:
+        layers.append(OverlayLayer(
+            path=intro_path, x=0, y=0, t_start=0.0, t_end=intro_dur,
+            name="intro_card",
+        ))
 
     # Chapter openers — the room with the title in its slot, landing on the
     # first real cut at or after each chapter's own time.
@@ -2970,7 +3113,7 @@ def _render_long(
     # THE COLD OPEN AND THE END ARE SWEPT (item 23): the cut off the opening
     # title, and the cut into the video's last beat where the clock is not.
     # The page wipe is gone (18 Oct 2026, his call: it read as poorly done).
-    if intro_dur < duration - 1.0:
+    if intro_dur and intro_dur < duration - 1.0:
         _wipe_at(intro_dur, "wipe-sweep", "cold open")
     if _clock is None and end_cut is not None and end_cut < duration - 1.0:
         _wipe_at(end_cut, "wipe-sweep", "end")
@@ -3048,8 +3191,8 @@ def _render_long(
     pull_meta: list[dict] = []
     for k, ((target, title, ctype), t) in enumerate(zip(chapters, chapter_cuts), start=1):
         if t is None:
-            if k == 1 and _on_the_title(target, intro_dur):
-                continue      # the opening title is its opener
+            if k == 1 and (_on_the_title(target, intro_dur) or target < 0.6):
+                continue      # the opening title is its opener, or he is
             log.warning("chapters: %r at %.0fs has no cut to land on — skipped",
                         title, target)
             continue
@@ -3366,38 +3509,14 @@ def _render_long(
             is_video=True, hold=True, name=f"scribble_{k}",
         ))
 
-    # THE TWO LINES THAT RUN THE WHOLE VIDEO, the corner bug and the
-    # disclaimer, are set for the paper most of it is: the kit's ink with a
-    # halo of the kit's paper, which vanishes on a plate and holds the line
-    # off a photograph. They took the episode hour's inks, and the hour is
-    # night, whose `structure` is the pale ink of the night wall: on every
-    # paper plate the "as of" date was 1.3:1. On his beats, in the room, the
-    # same line goes over them in the night ink with a dark rim.
-    from pipeline.rasters import caption_colours
-
-    paper_ink, paper = caption_colours(settings)
-    rim = px(3)
-
-    def standing(text: str, size: int, name: str, at) -> None:
-        on_paper = simple_text(settings, text, font_size=size,
-                               fill=(*paper_ink, 235), stroke_width=rim,
-                               stroke_fill=(*paper, 200))
-        in_room = simple_text(settings, text, font_size=size,
-                              fill=(*role(settings, "structure"), 255),
-                              stroke_width=rim, stroke_fill=DISCLAIMER_RIM)
-        x, y = at(on_paper)
-        on_paper.save(rdir / f"{name}.png")
-        in_room.save(rdir / f"{name}_rim.png")
-        layers.append(OverlayLayer(path=rdir / f"{name}.png", x=x, y=y,
-                                   t_start=0.0, t_end=duration, name=name))
-        for a, b in _on_him(segments, covers, min_s=0.0):
-            layers.append(OverlayLayer(path=rdir / f"{name}_rim.png", x=x, y=y,
-                                       t_start=a, t_end=b, name=f"{name}_rim"))
-
-    # corner bug: ticker + as-of date (top-right; the as-of stays visible)
-    bug_text = script.ticker + (f" · as of {as_of}" if as_of else "")
-    standing(bug_text, px(34), "corner_bug",
-             lambda img: (W - img.width - px(36) + rim, px(30) - rim))
+    # NO CORNER LINES. The ticker-and-date bug (top right) and the
+    # "Opinion / entertainment. Not financial advice." line (bottom left)
+    # ran the whole video; his call, 2 Nov 2026: "get rid of that rddt as
+    # of date and opinion not financial advice from the corners, a
+    # description disclaimer should be enough together with his room
+    # panel". The description carries `disclaimer_text` (`publish`) and the
+    # stitched sign in his room says NOT FINANCIAL ADVICE every video
+    # (`room_writing`).
 
     # THE LOWER THIRD: design's strip, the ticker and the channel's line in
     # its slots, TOP-left where the plain-type strip used to run. It is a
@@ -3445,12 +3564,6 @@ def _render_long(
             path=lt_path, x=px(36), y=px(30),
             t_start=0.0, t_end=duration, name="lower_third",
         ))
-
-    # Over the room the disclaimer runs across the lit window frame and the
-    # radiator, and light grey on a light strip lost its "Not": "Opinion /
-    # entertainment. financial advice." Hence the rim on his beats.
-    standing(settings.disclaimer_text, px(26), "disclaimer",
-             lambda img: (px(36) - rim, H - px(44) - rim))
 
     # ---------------------------------------------------------- captions
     # NONE ARE BURNED IN. A long viewer has the sound on, and the bot already

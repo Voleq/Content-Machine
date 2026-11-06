@@ -92,6 +92,9 @@ class StubResolver:
             # A scale, and a range and a mark placed on it.
             shaped = {"band": "2.0%,6.0%", "axis-low": "0%",
                       "axis-high": "10%", "marker": "4.0%"}
+            # The implied card's demand is a bar from zero (11-02 note 17).
+            if src == "data.implied.marker":
+                return "0%,4.0%,structure"
             if leaf in shaped:
                 return shaped[leaf]
             return "Q1 25" if leaf.startswith("head-") else "3.4%"

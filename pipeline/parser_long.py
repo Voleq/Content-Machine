@@ -1183,19 +1183,28 @@ def validate_long_script(
     warnings: list[str] = []
     blocking: list[str] = []
 
-    # THE MEME IS CAPPED AND THE CLIP IS NOT, and that is a decision rather
-    # than an omission. A meme is a joke and jokes are rationed. A `[CLIP]` is
-    # ILLUSTRATION — the visual that proves the claim — which is
-    # information-first, which is the thing §8 of the bible actively wants:
-    # the boredom is aimed at the hype, never at the work. Capping it would
-    # fight the reason it exists, and the pacing and hold-ceiling checks
-    # already stop a video becoming a slideshow.
+    # THE MEME IS CAPPED AT THE SCRIPT, THE CLIP AT THE RENDER. A meme is a
+    # joke and jokes are rationed. A `[CLIP]` was left uncapped as
+    # illustration until RDDT's long cut to stock footage thirty-nine times
+    # and read as random (2 Nov 2026): the render now plays at most
+    # `CLIP_MAX_PER_LONG`, `CLIP_MIN_GAP_S` apart (`render_long._pictures_found`).
+    # Here it is a warning, so the writer chooses which ones play.
+    clip_count = sum(1 for e in script.events
+                     if e.type in (TagType.CLIP, TagType.BROLL))
+    clip_max = int(getattr(settings, "clip_max_per_long", 0) or 0)
     meme_count = script.meme_count()
     if meme_count > settings.meme_max_per_long:
         blocking.append(
             f"{meme_count} [MEME] tags — the cap is {settings.meme_max_per_long} "
             f"per LONG (information-first, not meme-spam). Cut some."
         )
+
+    if clip_max and clip_count > clip_max:
+        warnings.append(
+            f"{clip_count} [CLIP] tags — the render plays at most {clip_max} "
+            f"stock clips, {float(settings.clip_min_gap_s or 0):.0f}s or more "
+            f"apart, and the rest of those beats stay on Dennis. Keep the ones "
+            f"that prove a line.")
 
     custom_dir = settings.custom_assets_dir
     reg = load_plates(settings.assets_dir)

@@ -687,9 +687,12 @@ def render_price_plate(reg: Registry, series, out: Path, settings: Settings, *,
         span = hi - lo or 1.0
         n = max(len(closes) - 1, 1)
         px = [area.point(i / n, (v - lo) / span) for i, v in enumerate(closes)]
-        # The subject's own series is `structure`. A price line is not a
-        # direction — the move is the direction, and it is stated in type.
-        _polyline(ImageDraw.Draw(img), px, reg.colour("structure"), 6)
+        # The subject's own series, in the plate's own ink for its ground. A
+        # price line is not a direction — the move is the direction, and it
+        # is stated in type. It took the hour's palette `structure`, which
+        # at night is the pale ink drawn for a dark wall: on the paper plate
+        # the line was a faint grey-blue he could hardly see (2 Nov 2026).
+        _polyline(ImageDraw.Draw(img), px, _line_ink(reg, plate), 6)
         if last:
             _mark_at_end(img, plate, last, px, settings, reg)
     elif last and plate.slot("mark-last") is not None:
@@ -701,6 +704,20 @@ def render_price_plate(reg: Registry, series, out: Path, settings: Settings, *,
     box = ((area.x, area.y, area.x + area.w, area.y + area.h) if area
            else (0, 0, img.width, img.height))
     return out, {"size": img.size, "plot_box": box, "plate": plate.key}
+
+
+def _line_ink(reg: Registry, plate: Plate) -> tuple[int, int, int]:
+    """The price line's ink: the plate's `subject`, or its `structure` (the
+    ink its own type is set in) when the subject would not stand off the
+    ground at 3:1."""
+    from pipeline.rasters import contrast
+
+    ground = reg.ink(plate, "ground")
+    for name in ("subject", "structure"):
+        ink = reg.ink(plate, name)
+        if contrast(ink, ground) >= 3.0:
+            return ink
+    return reg.ink(plate, "structure")
 
 
 def _mark_at_end(img, plate: Plate, text: str, pts: list[tuple[float, float]],
@@ -741,7 +758,8 @@ def _mark_at_end(img, plate: Plate, text: str, pts: list[tuple[float, float]],
     import bisect
     import math
 
-    width, margin = 200, 16
+    # a label in the value role is about 21 units a character
+    width, margin = max(200, 21 * len(text)), 16
     path = [(x / scale, y / scale) for x, y in _along(pts, 4 * scale)]
     end_x, end_y = path[-1] if path else (slot.x + slot.w, slot.y + slot.h / 2)
     edge = slot.x + slot.w
@@ -825,6 +843,27 @@ def price_labels(series, *, head=month_day) -> dict[str, str]:
         if dates:
             j = min(int(i * (len(dates) - 1) / 3), len(dates) - 1)
             out[f"head-{i + 1}"] = head(dates[j])
+    return out
+
+
+def long_price_labels(series, ticker: str) -> dict[str, str]:
+    """`price_labels` for the long's chart, said in words.
+
+    His note, 2 Nov 2026, on RDDT's chart: "once again i do not understand
+    what is trying to show, especially the chart". Three bare closes (270.71,
+    91.73, 39.17) on a line with no title. So the plate's `unit` line says
+    what the line is and over what span, and each mark says which close it
+    is: the highest, the lowest, and where it is now."""
+    out = price_labels(series, head=month_year)
+    if not out:
+        return out
+    dates = list(getattr(series, "dates", []) or [])
+    span = (f", {month_year(dates[0])} to {month_year(dates[-1])}"
+            if len(dates) >= 2 else "")
+    out["unit"] = f"{ticker.upper()} share price, daily close{span}"
+    for slot, word in (("mark-high", "high"), ("mark-low", "low"),
+                       ("mark-last", "now")):
+        out[slot] = f"{word} {out[slot]}"
     return out
 
 

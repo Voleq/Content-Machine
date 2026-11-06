@@ -1059,6 +1059,49 @@ REDRAW_NEW_SHARE = 0.5
 REDRAW_REPEAT_CHARS = 12
 REDRAW_FURNITURE = frozenset({"kicker", "attribution", "source", "date",
                               "date-label", "unit"})
+# AND IT MAY NOT RESTATE PART 1'S FIGURE IN OTHER DIGITS. The INTC short
+# (2 Nov 2026) cut from the session chart's "−28.4%" (close against prior
+# close, off the tape) to the move card's "-28.6%" (the writer's figure): two
+# cards of one move back to back, disagreeing in the last digit, and the
+# text check above saw two different strings. Percentages this close are one
+# figure; money this close in the same unit is one figure.
+REDRAW_SAME_PTS = 1.0
+REDRAW_SAME_SHARE = 0.03
+_FIGURE_TOKEN = re.compile(
+    r"(?P<sign>[+\-−–]?)\s?(?P<cur>[$€£]?)(?P<num>\d[\d,]*(?:\.\d+)?)"
+    r"\s?(?P<unit>%|bn|tn|[bmkt](?![a-z]))?", re.IGNORECASE)
+
+
+def figure_tokens(text: str) -> list[tuple[str, float]]:
+    """The percentages and amounts of money in `text`, as (unit, value).
+
+    `"−28.4%"` is `("%", -28.4)`, `"$16.5B"` is `("$b", 16.5)`. A bare
+    number (a year, a count) is not a figure for this purpose and is left out.
+    """
+    out = []
+    for m in _FIGURE_TOKEN.finditer(str(text or "")):
+        unit = (m.group("unit") or "").lower()
+        cur = m.group("cur")
+        if unit != "%" and not cur:
+            continue
+        try:
+            v = float(m.group("num").replace(",", ""))
+        except ValueError:
+            continue
+        if m.group("sign") in ("-", "−", "–"):
+            v = -v
+        out.append(("%" if unit == "%" else f"{cur}{unit[:1]}", v))
+    return out
+
+
+def same_figure(a: tuple[str, float], b: tuple[str, float]) -> bool:
+    """Whether two figure tokens say one figure (`REDRAW_SAME_PTS`/`_SHARE`)."""
+    if a[0] != b[0]:
+        return False
+    if a[0] == "%":
+        return abs(a[1] - b[1]) <= REDRAW_SAME_PTS
+    big = max(abs(a[1]), abs(b[1]))
+    return big > 0 and abs(a[1] - b[1]) <= REDRAW_SAME_SHARE * big
 
 
 def second_drawing(reg: Registry, shot: Shot, resolver: Resolver, *,
@@ -1078,7 +1121,8 @@ def second_drawing(reg: Registry, shot: Shot, resolver: Resolver, *,
     * this script can fill, in this kit, the way the rotation asks it;
     * SHOWS WORDS PART 1 DOES NOT, for at least half of what it shows
       (`REDRAW_NEW_SHARE`), and sets none of part 1's lines or figures again
-      (`REDRAW_REPEAT_CHARS`). Three layouts of one conclusion are three ways
+      (`REDRAW_REPEAT_CHARS`), nor its headline figure in other digits
+      (`same_figure`). Three layouts of one conclusion are three ways
       to draw it once; cutting between two of them mid-sentence reads as the
       card glitching, not as a new picture. Such a drawing is refused, and
       the beat holds.
@@ -1103,6 +1147,8 @@ def second_drawing(reg: Registry, shot: Shot, resolver: Resolver, *,
     if shown is None:
         return None
     joined = " ".join(shown.values())
+    said = [f for n, t in shown.items() if n not in REDRAW_FURNITURE
+            for f in figure_tokens(t)]
     try:
         drawn = resolve_plate(reg, first.plate, aspect)
     except TemplateError:
@@ -1127,6 +1173,11 @@ def second_drawing(reg: Registry, shot: Shot, resolver: Resolver, *,
         if any(n not in REDRAW_FURNITURE
                and (len(t) >= REDRAW_REPEAT_CHARS or is_one_figure(t))
                for n, t in again):
+            continue
+        if any(same_figure(f, g)
+               for n, t in theirs.items() if n not in REDRAW_FURNITURE
+               and is_one_figure(t)
+               for f in figure_tokens(t) for g in said):
             continue
         fresh = sum(len(t) for t in theirs.values() if t not in joined)
         if fresh >= REDRAW_NEW_SHARE * sum(len(t) for t in theirs.values()):

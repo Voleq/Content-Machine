@@ -390,17 +390,13 @@ def test_the_lower_third_is_design_s_and_rides_his_beats(rendered):
     assert any(k.startswith("overlays/lower-third") for k in rendered["plates_used"])
 
 
-def test_the_disclaimer_wears_its_rim_over_the_room_and_only_there(rendered):
-    """10 Oct 2026: over the lit window frame the grey line lost its "Not"."""
-    rims = [l for l in rendered["layers"] if l["name"] == "disclaimer_rim"]
-    assert rims
-    host = [(s["start"], s["end"]) for s in rendered["segments"]
-            if s["kind"] == "host"]
-    for l in rims:
-        assert any(a - 1e-3 <= l["t_start"] and l["t_end"] <= b + 1e-3
-                   for a, b in _runs(host)), l
-    # never over the opening title, which is paper
-    assert all(l["t_start"] >= 2.6 - 1e-3 for l in rims), rims
+def test_no_corner_lines_run_over_the_long(rendered):
+    """2 Nov 2026, his call: no "RDDT · as of" bug and no "Not financial
+    advice" line in the corners; the description and the room's sign carry
+    the disclaimer."""
+    names = {l["name"] for l in rendered["layers"]}
+    assert not names & {"corner_bug", "corner_bug_rim", "disclaimer",
+                        "disclaimer_rim"}, names
 
 
 def _runs(spans):

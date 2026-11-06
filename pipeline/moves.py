@@ -1035,6 +1035,11 @@ def _source_tag(reg, fmt, plate, shot_id: str, text: str, lane: "_Lane | None",
     tag = reg.get(key) if key else None
     if tag is None:
         return None
+    # THE TAG DRAWN FOR THE PAPER UNDER IT (2 Nov 2026, the INTC short: "I
+    # don't get this source, why does it look like that"). The night's tag is
+    # a dark hatched tape with pale type; over a paper card it read as a
+    # scribbled-out black bar with the source greyed into it.
+    tag = wipe_for_ground(reg, tag, plate)
     x, y, w, h = tag_rect(tag, plate, fmt.frame, reg)
     figs = [m for m in (lane.moves if lane is not None else ())
             if m.move in ("count-up", "line-draw", "bars-grow")]
@@ -1066,7 +1071,8 @@ def wipe_plate(reg, name: str, aspect: str):
 
 
 def wipe_for_ground(reg, wipe, plate):
-    """The wipe drawn at the hour whose ground is nearest `plate`'s.
+    """The wipe (or any overlay drawn per hour: the source tag) drawn at the
+    hour whose ground is nearest `plate`'s.
 
     A wipe is drawn per HOUR, a navy sweep at night and a cream one at dusk,
     and the plates are drawn per GROUND, every one of them on paper since 10
@@ -1965,6 +1971,7 @@ def source_tag_clip(reg, settings, out: Path, *, text: str, plate, aspect: str,
     tag = reg.get(key) if key else None
     if tag is None:
         return None
+    tag = wipe_for_ground(reg, tag, plate)       # the paper's tag, as above
     px, py, pw, ph = panel
     x, y, w, h = tag_rect(tag, plate, (pw, ph), reg)
     img = render_frame(tag, 0, {"label": "SOURCE", "source": str(text).strip()},

@@ -176,6 +176,29 @@ class Dressing:
                        screen_label=label)
 
 
+def span_label(days: int, dates=()) -> str:
+    """What the price's run on the board and the monitor covers.
+
+    The span asked for (`5Y`, `6M`), unless the series starts later because
+    the stock has not traded that long: then the month it starts. RDDT
+    listed in March 2024 and his board said "RDDT · 5Y" over two and a half
+    years of line (his note, 2 Nov 2026)."""
+    from datetime import date
+
+    days = int(days or 0)
+    asked = (f"{max(round(days / 365), 1)}Y" if days >= 365
+             else f"{max(round(days / 30), 1)}M")
+    try:
+        first = date.fromisoformat(str(dates[0])[:10])
+        last = date.fromisoformat(str(dates[-1])[:10])
+    except (IndexError, TypeError, ValueError):
+        return asked
+    # a week of slack for a holiday at either end
+    if days <= 0 or (last - first).days >= days * 0.9 - 7:
+        return asked
+    return f"SINCE {first.strftime('%b').upper()} '{first:%y}"
+
+
 EPISODES_FILE = "episodes.json"
 
 

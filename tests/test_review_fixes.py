@@ -36,7 +36,9 @@ def core(settings):
 # --------------------------------------------------------------------- H1
 
 
-class _Took(Exception):
+class _Took(BaseException):
+    # Not an Exception: the render keeps going past a clip the chain fails
+    # on (the beat stays on him), and this has to stop it at the first ask.
     def __init__(self, key: str, choice: int):
         super().__init__(key)
         self.key, self.choice = key, choice

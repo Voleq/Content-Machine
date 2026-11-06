@@ -329,8 +329,9 @@ draws and where the drawing reads it from.
   frame's one attention. A line can only accent its latest point: `accent=last`.
 
 ### everything else
-[IMG: query]            a real PHOTOGRAPH of operations / facilities / people, found on Wikimedia Commons (literal query like "{{ticker}} distribution warehouse")
-[PRODUCT: query]        a real photograph of the product itself
+[IMG: query]            a real PHOTOGRAPH of the company, from its own website. At most one in the video: the site has one
+                        picture to give, and a beat with no picture stays on Dennis
+[PRODUCT: query]        the same, of the product itself
                         Photographs only: a website, an app screen, a feed, a post or a page of search results is never
                         there. For a screen, write [WEB: address] when you know the page, [CLIP: someone scrolling the
                         feed on a phone] when any screen will do, or [SCREENGRAB: slug] for what only the operator can
@@ -347,10 +348,12 @@ draws and where the drawing reads it from.
 [MEME: key]             from the meme catalog above. Optional and rare: most videos carry none, never more
                         than 2, and only where one fits the line exactly. A meme is STILL — the freeze is
                         the joke's timing.
-[CLIP: key or subject]  the visual that PROVES the line. A key from the b-roll palette above, or any specific subject
-                        ("lebron shooting a three") — the palette is searched first, then the gif providers, so a real
-                        moment is reachable. A clip MOVES. Uncapped: illustration is information, and it is the one
-                        thing on this list that makes a claim land by showing it. ([BROLL: key] also accepted)
+[CLIP: key or subject]  stock footage that PROVES the line. A key from the b-roll palette above, or one specific
+                        subject ("lebron shooting a three"). A clip MOVES. AT MOST SIX IN THE WHOLE VIDEO, at least a
+                        minute apart, and only where the footage shows the claim better than a plate of the figure
+                        would: a clip that illustrates a joke's comparison (a guinea pig, a chip shop, a dripping tap)
+                        reads as random. The bot plays the first six that keep the gap and drops the rest, and a
+                        dropped clip's beat stays on Dennis. ([BROLL: key] also accepted)
                         Both take an optional hold: [CLIP: lebron three pointer | hold=2.5] · [MEME: bagholder | hold=2.0]
                         Seconds on screen, 0.8–5.0. Write one when you know whether this is a glance or a beat to sit
                         in; leave it off and the format's default applies.

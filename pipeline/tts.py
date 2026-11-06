@@ -32,7 +32,7 @@ from pipeline.cost import BudgetExceededError, SpendLedger, estimate_tts_usd
 from pipeline.direction import (V3_MODELS, emission, performs_audio_tags,
                                 request_settings, setting_overrides)
 from pipeline.models import TTSResult, WordTimestamp
-from pipeline.render_common import concat_audio, ffprobe_duration, run_ffmpeg
+from pipeline.render_common import ffprobe_duration, join_audio, run_ffmpeg
 
 log = logging.getLogger(__name__)
 
@@ -483,6 +483,11 @@ class TTSEngine:
             keyed["_delivery"] = fingerprint
         if tier != "paid":
             keyed["_tier"] = tier
+        if tier == "local":
+            # A free voice joined before 6 Nov 2026 ran its effects ahead of
+            # the picture (`render_common.join_audio`): its own key, so the
+            # next render says it again, joined right, at no cost.
+            keyed["_join"] = "pcm"
         if take:
             # A second take of the same words (A7): its own entry, or the
             # cache would hand the first take back.
@@ -679,12 +684,16 @@ class TTSEngine:
                 # billed is already in the ledger, chunk by chunk.
                 self.ledger.release_reservation(reservation)
 
+        # The join first: it measures each chunk as it lands in the voice
+        # (decoded, padding and all), and those lengths are the offsets.
+        lengths = join_audio(chunk_files, audio_path, self.settings)
+
         # stitch chunks: offset each chunk's word times by the exact summed
         # durations of prior chunks, and char offsets by prior chunk lengths
         words: list[WordTimestamp] = []
         t_offset = 0.0
         c_offset = 0
-        for chunk_text_, cfile, cwords in zip(chunks, chunk_files, chunk_words):
+        for chunk_text_, length, cwords in zip(chunks, lengths, chunk_words):
             for w in cwords:
                 words.append(
                     WordTimestamp(
@@ -695,10 +704,8 @@ class TTSEngine:
                         char_end=w.char_end + c_offset,
                     )
                 )
-            t_offset += ffprobe_duration(cfile)
+            t_offset += length
             c_offset += len(chunk_text_)
-
-        concat_audio(chunk_files, audio_path, self.settings)
 
         # Alignment offsets mirror the REQUEST, which carries break tags the
         # clean script does not. The timeline resolves every visual cue
@@ -763,8 +770,9 @@ class TTSEngine:
         from pipeline.local_tts import synthesize_local
 
         speech = synthesize_local(text, cdir, self.settings)
-        joined = cdir / "local_joined.m4a"
-        concat_audio(speech.chunk_files, joined, self.settings)
+        # PCM, so the one encode is the voice file's own (`join_audio`).
+        joined = cdir / "local_joined.wav"
+        join_audio(speech.chunk_files, joined, self.settings)
         for f in speech.chunk_files:
             f.unlink(missing_ok=True)
         return [joined], [speech.words]

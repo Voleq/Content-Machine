@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shutil
 import subprocess
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -793,18 +794,57 @@ def composite_video(
     return out_path
 
 
-def concat_audio(chunks: list[Path], out_path: Path, settings: Settings) -> Path:
-    """Losslessly-ordered concat of same-codec audio chunks, one AAC encode."""
+# The voice's one rate and layout, every chunk decoded to it before the join.
+JOIN_RATE = 44100
+
+
+def join_audio(chunks: list[Path], out_path: Path,
+               settings: Settings) -> list[float]:
+    """The chunks, one after another, in one file: each chunk's length in it.
+
+    EVERY CHUNK IS DECODED TO PCM FIRST and the PCM is what is joined. The
+    concat demuxer used to join the compressed chunks, and an AAC or MP3
+    chunk decodes to more samples than its container says it lasts (the
+    encoder's padding frame): the next chunk's timestamps started where the
+    container said, on top of the last chunk's padding. The overlap went
+    into the voice file as squeezed timestamps, and a player keeping the
+    picture on those timestamps heard every effect early, by more each
+    sentence (RDDT long, 2 Nov 2026: the chapter sound 1.5 s ahead of the
+    board at 16:26 and the meme sound at 17:33, 1.84 s by the end, on the
+    free voice's one-chunk-a-sentence join).
+
+    The lengths returned are the decoded ones, which are what the joined
+    file holds, so word times offset by them stay on the voice. `out_path`
+    ending in `.wav` is written as PCM, anything else as AAC.
+    """
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    if len(chunks) == 1:
-        run_ffmpeg(["-i", str(chunks[0]), "-c:a", "aac", "-b:a", settings.audio_bitrate, str(out_path)])
-        return out_path
-    list_file = out_path.with_suffix(".concat.txt")
-    list_file.write_text("".join(concat_line(c.as_posix()) for c in chunks),
-                         encoding="utf-8")
-    run_ffmpeg([
-        "-f", "concat", "-safe", "0", "-i", str(list_file),
-        "-c:a", "aac", "-b:a", settings.audio_bitrate, str(out_path),
-    ])
-    list_file.unlink(missing_ok=True)
+    tmp = out_path.with_name(out_path.stem + ".join")
+    tmp.mkdir(parents=True, exist_ok=True)
+    try:
+        pcm: list[Path] = []
+        lengths: list[float] = []
+        for i, c in enumerate(chunks):
+            w = tmp / f"{i:04d}.wav"
+            run_ffmpeg(["-i", str(c), "-vn", "-ac", "1", "-ar", str(JOIN_RATE),
+                        "-c:a", "pcm_s16le", str(w)])
+            pcm.append(w)
+            lengths.append(ffprobe_duration(w))
+        codec = (["-c:a", "pcm_s16le"] if out_path.suffix.lower() == ".wav"
+                 else ["-c:a", "aac", "-b:a", settings.audio_bitrate])
+        if len(pcm) == 1:
+            run_ffmpeg(["-i", str(pcm[0]), *codec, str(out_path)])
+        else:
+            listing = tmp / "join.ffconcat"
+            listing.write_text("ffconcat version 1.0\n" + "".join(
+                concat_line(p.as_posix()) for p in pcm), encoding="utf-8")
+            run_ffmpeg(["-f", "concat", "-safe", "0", "-i", str(listing),
+                        *codec, str(out_path)])
+        return lengths
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def concat_audio(chunks: list[Path], out_path: Path, settings: Settings) -> Path:
+    """The chunks joined end to end, sample-exact (`join_audio`)."""
+    join_audio(chunks, out_path, settings)
     return out_path

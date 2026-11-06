@@ -884,7 +884,7 @@ Both read what the bot has already saved: every script, filing brief, check repo
 | `/admin keys` | Asks each service once, with a call that costs nothing, whether its key works: ElevenLabs (and how many characters are left, and whether both voice ids are on the account), Pexels, Giphy, Tenor, FRED, Telegram, OpenAI, GitHub Models, the SEC (with SEC_USER_AGENT), YouTube and Google Drive. Keys are never shown. Also the page's Settings, "Test the keys". |
 | `/admin usage` | Requests a day to the SEC, Pexels and stockanalysis.com (today, yesterday and the busiest day this week), so a coming block shows before the filings, the b-roll or the calls go quiet. Then what each folder of the cache holds, and a button that prunes the 3D Dennis shots and segment clips nobody has written in a week, after asking. The voice cache is paid for and never pruned. |
 | `/admin quiet [on\|off]` | Keeps only finished, failed and needs-you pushes (no "started", no progress). On its own it toggles. |
-| `/admin switch [NAME on\|off]` | The four settings that wait on your call, also on the page's Settings: `short_meme`, `viewer_questions`, `voice_room`, `voice_deess`. A flip takes effect at once and is kept across restarts, over what `.env` says. On its own it lists them. |
+| `/admin switch [NAME on\|off]` | The settings that wait on your call, also on the page's Settings: `viewer_questions`, `voice_room`, `voice_deess`, `stockanalysis_enabled`. A flip takes effect at once and is kept across restarts, over what `.env` says. On its own it lists them. |
 | `/admin panel` | The link to the web control panel, when it is running, and the phone link too when PANEL_REMOTE_URL is set. |
 
 ### /help — Help

@@ -138,7 +138,8 @@ def test_walled_sites_are_recorded_not_tried_and_a_refusal_is_not_retried(settin
         def __exit__(self, *a):
             return False
 
-    import playwright.sync_api as sync_api
+    # The filings extra: bootstrap installs it, CI's lock file does not.
+    sync_api = pytest.importorskip("playwright.sync_api")
 
     monkeypatch.setattr(sync_api, "sync_playwright", lambda: _PW())
     monkeypatch.setattr(W, "unsafe_reason", lambda url, resolve=False: "")

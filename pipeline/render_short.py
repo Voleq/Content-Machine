@@ -1707,7 +1707,7 @@ def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
     """
     from dataclasses import replace
 
-    from pipeline.room_dressing import Dressing, written_room
+    from pipeline.room_dressing import Dressing, span_label, written_room
 
     written: dict[str, object] = {}
     d = None
@@ -1730,8 +1730,7 @@ def dress_rooms(result: BuildResult, reg, *, ticker: str, prices, workdir: Path,
 
             d = Dressing(episode=0, ticker=str(ticker).upper(),
                          closes=tuple(prices.closes) if ok else (),
-                         span=(f"{max(round(days / 365), 1)}Y" if days >= 365
-                               else f"{max(round(days / 30), 1)}M"),
+                         span=span_label(days, getattr(prices, "dates", ()) if ok else ()),
                          props=props(script, ticker=ticker,
                                      workdate=Path(workspace or workdir).name,
                                      episode=0, settings=settings, workspace=workspace),

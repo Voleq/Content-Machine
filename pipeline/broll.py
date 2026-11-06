@@ -10,9 +10,10 @@ render — every failure path degrades to a deterministic filler.
                             filler clip. IT MOVES: an animated source
                             normalises to a short looping mp4, never a
                             freeze-frame
-    [IMG: q] / [PRODUCT: q] real imagery: cache -> Wikimedia Commons
-                            (free, attribution stored) -> the company's
-                            own site (og:image, real mode) -> filler card
+    [IMG: q] / [PRODUCT: q] real imagery: cache -> the company's own site
+                            (og:image, real mode) -> filler card, which
+                            the long drops (the beat stays on him);
+                            Wikimedia Commons first only with WIKIMEDIA
     [MEME: key]             owned meme library -> providers (pipeline.memes)
     [CHART: metric]         auto-generated channel-style chart (pipeline.chart)
 
@@ -355,8 +356,8 @@ class MockPexelsClient:
 
 # ---------------------------------------------------------------------------
 # Image clients — the [IMG]/[PRODUCT] chain (real imagery of operations,
-# products, facilities). Wikimedia Commons first (free, attribution kept),
-# then the company's own site.
+# products, facilities). The company's own site; Wikimedia Commons before it
+# only when WIKIMEDIA is on (off since 2 Nov 2026).
 # ---------------------------------------------------------------------------
 
 
@@ -505,6 +506,17 @@ class WikimediaImageClient:
                 for chunk in r.iter_bytes(1 << 16):
                     f.write(chunk)
         return dest
+
+
+class NoImageClient:
+    """The image search when Wikimedia Commons is off: it finds nothing, so
+    `resolve_image` goes on to the company's site."""
+
+    def search(self, query: str, limit: int = 5) -> list[dict]:
+        return []
+
+    def download(self, url: str, dest: Path) -> Path:      # pragma: no cover
+        raise OSError("no image search is configured")
 
 
 class CompanySiteImageClient:
@@ -741,8 +753,12 @@ class ContentManager:
             self.image_client = image_client
         elif settings.mock_mode:
             self.image_client = MockImageClient(settings)
-        else:
+        elif settings.wikimedia_enabled:
             self.image_client = WikimediaImageClient(settings)
+        else:
+            # Wikimedia is off (WIKIMEDIA): the chain goes straight to the
+            # company's own site.
+            self.image_client = NoImageClient()
         self.site_client = site_client if site_client is not None else (
             None if settings.mock_mode else CompanySiteImageClient(settings)
         )
@@ -1090,8 +1106,9 @@ class ContentManager:
     # ------------------------------------------------------------ images
     def resolve_image(self, query: str, *, kind: str = "img",
                       website: str = "", choice: int = 0) -> Visual:
-        """[IMG]/[PRODUCT]: cache -> Wikimedia Commons -> company site ->
-        filler card. Attribution stored beside the cache entry."""
+        """[IMG]/[PRODUCT]: cache -> Wikimedia Commons (only with WIKIMEDIA)
+        -> company site -> filler card. Attribution stored beside the cache
+        entry."""
         try:
             # "img-photo": picked by `photos_only` (31 Oct 2026). Under the old
             # key a cached logo would have kept coming back.
@@ -1111,7 +1128,7 @@ class ContentManager:
                               master=master if master.exists() else None)
 
             results = photos_only(self.image_client.search(query))
-            source = "wikimedia" if not self.settings.mock_mode else "mock"
+            source = ("mock" if self.settings.mock_mode else "wikimedia")
             if not results and self.site_client is not None and website:
                 results = self.site_client.search(query, website=website)
                 source = "company_site"
@@ -1194,8 +1211,7 @@ class ContentManager:
         hash (style included)."""
         try:
             if metric == "price":
-                from pipeline.chart import (month_year, price_labels,
-                                            render_price_plate)
+                from pipeline.chart import long_price_labels, render_price_plate
                 from pipeline.plates import load_plates
                 from pipeline.prices import get_price_history, long_history_days
 
@@ -1211,7 +1227,7 @@ class ContentManager:
                 # where the line ends), so a chart cached before it is stale.
                 h = hashlib.sha256(
                     f"price|{ticker}|{series.dates[0]}|{series.dates[-1]}|"
-                    f"{series.closes[-1]}|{len(series.closes)}|last-at-end".encode()
+                    f"{series.closes[-1]}|{len(series.closes)}|last-at-end|titled".encode()
                 ).hexdigest()[:20]
                 out = self.settings.cache_dir / "charts" / f"{h}.png"
                 if not out.exists():
@@ -1222,8 +1238,8 @@ class ContentManager:
                     render_price_plate(reg, series, tmp, self.settings,
                                        aspect="9x16" if H > W else "16x9",
                                        seed=f"price|{ticker}",
-                                       slot_values=price_labels(
-                                           series, head=month_year))
+                                       slot_values=long_price_labels(
+                                           series, ticker))
                     from PIL import Image
 
                     Image.open(tmp).convert("RGB").resize((W, H)).save(out)

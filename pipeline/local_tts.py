@@ -239,13 +239,15 @@ def synthesize_local(text: str, out_dir: Path, settings: Settings, *,
     for i, sentence in enumerate(sentences):
         wav = out_dir / f"local_{i:03d}.wav"
         voice.say(sentence, wav)
-        m4a = out_dir / f"chunk_{i:03d}.m4a"
-        # Normalised to the same container the paid tier produces, so nothing
-        # downstream has to know which tier made it.
+        part = out_dir / f"chunk_{i:03d}.wav"
+        # PCM at the voice's rate, NOT a compressed file per sentence: an AAC
+        # sentence decodes longer than it says it lasts, and a long's hundred
+        # and fifty of them put its effects 1.8 s ahead of the picture by the
+        # end (`render_common.join_audio`). PCM is exactly as long as it says.
         run_ffmpeg(["-i", str(wav), "-ac", "1", "-ar", "44100",
-                    "-c:a", "aac", "-b:a", "128k", str(m4a)])
+                    "-c:a", "pcm_s16le", str(part)])
         wav.unlink(missing_ok=True)
-        duration = ffprobe_duration(m4a)
+        duration = ffprobe_duration(part)
 
         # Character offsets must point into the ORIGINAL text: the timeline
         # resolves every visual cue through them, and a sentence-local offset
@@ -256,7 +258,7 @@ def synthesize_local(text: str, out_dir: Path, settings: Settings, *,
         search_from = idx + len(sentence)
 
         words += distribute_words(sentence, t, duration, char_offset=idx)
-        files.append(m4a)
+        files.append(part)
         t += duration
 
     log.info("local TTS: %d sentence(s), %.1fs total", len(sentences), t)

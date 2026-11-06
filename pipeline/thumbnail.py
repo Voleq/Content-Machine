@@ -567,7 +567,7 @@ def _cover_dressing(script, settings: Settings, is_short: bool, ws_path: Path | 
     were (`pipeline.room_writing`, the model's notes kept in the workspace).
     None when the feed cannot be asked."""
     from pipeline.prices import get_price_history, long_history_days
-    from pipeline.room_dressing import Dressing, episode_number
+    from pipeline.room_dressing import Dressing, episode_number, span_label
     from pipeline.room_writing import props
 
     try:
@@ -585,6 +585,7 @@ def _cover_dressing(script, settings: Settings, is_short: bool, ws_path: Path | 
             lettered = ()
         return Dressing(episode=0, ticker=ticker,
                         closes=() if series.degraded else tuple(series.closes),
+                        span=span_label(days, () if series.degraded else series.dates),
                         props=lettered)
     except Exception as exc:  # noqa: BLE001 — a cover is never fatal
         log.debug("thumbnail: nothing for the monitor (%s)", exc)

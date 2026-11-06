@@ -184,6 +184,44 @@ def _set_at_path_end(name: str, raw: dict) -> bool:
     return name == "mark-last" and "path end" in str(raw.get("note", ""))
 
 
+# SLOT BOXES THE KIT AUTHORED WRONG, set right here (design work is closed,
+# 10 Oct 2026, so the fix is the bot's). By plate key, slot name, and the
+# canvas-unit fields to replace.
+#
+# `figures/unit-economics-16x9` `margin`: the big figure's box started at
+# x 664, on the amounts column, and ran 1,160 wide, so RDDT's "91.5%" was set
+# across the per-user table instead of in the GROSS MARGIN box drawn for it
+# (his screenshot at 2:33, 2 Nov 2026). It goes in the box, under its label.
+#
+# `structure/implied-*`: "don't get this plate" (INTC short, 2 Nov 2026). The
+# demand was a thin red tick 120 units above the axis and the history a box
+# below it, over the axis's own end labels, which it hid: no scale, no zero,
+# nothing tied to the two figures printed at the top. Now both are BARS FROM
+# ZERO on the one axis, the demand above the line in the demand's own ink and
+# the record below it in the record's, and the end labels clear of both.
+_IMPLIED_DEMAND_BAR = {
+    "role": "band", "renderer": "series.historyBand",
+    "note": ("what the price needs: a bar from 0% to the growth the price "
+             "assumes, `0%,14%,structure`, on the same axis as the record."),
+}
+_IMPLIED_RECORD_BAR = {
+    "note": ("what the company did: a bar from 0% to its own growth a year "
+             "(free cash flow, or revenue where there is no FCF figure), "
+             "`-9.6%,0%` for a fall, `0%,6%` for a rise."),
+}
+SLOT_GEOMETRY_FIXES: dict[str, dict[str, dict]] = {
+    "figures/unit-economics-16x9": {"margin": {"x": 1054, "w": 686}},
+    "structure/implied-9x16": {
+        "marker": {**_IMPLIED_DEMAND_BAR, "y": 912, "h": 56},
+        "band": {**_IMPLIED_RECORD_BAR, "y": 984, "h": 56},
+        "axis-low": {"y": 1056},
+        "axis-high": {"y": 1056},
+    },
+    "structure/implied-16x9": {"marker": dict(_IMPLIED_DEMAND_BAR),
+                               "band": dict(_IMPLIED_RECORD_BAR)},
+}
+
+
 @dataclass(frozen=True)
 class Slot:
     """A declared box on a plate, in CANVAS units.
@@ -1057,8 +1095,15 @@ class Registry:
         # The typeRoles table goes in with the slots: whether a slot takes type
         # is the kit's answer, and the kit gives it here.
         type_roles = e.get("typeRoles") or {}
+        raw_slots = {n: dict(s) if isinstance(s, dict) else s
+                     for n, s in (e.get("slots") or {}).items()}
+        fixes = (SLOT_GEOMETRY_FIXES.get(key)
+                 or SLOT_GEOMETRY_FIXES.get(str(e.get("atBaseHour") or "")) or {})
+        for n, fix in fixes.items():
+            if isinstance(raw_slots.get(n), dict):
+                raw_slots[n].update(fix)
         slots = {n: Slot.from_registry(n, s, scale, type_roles)
-                 for n, s in (e.get("slots") or {}).items()}
+                 for n, s in raw_slots.items()}
 
         # The purpose is looked up by key first and then by the aspect-free
         # stem, because a purpose is a property of the PLATE, not of which way

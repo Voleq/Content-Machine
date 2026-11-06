@@ -1387,7 +1387,7 @@ def test_the_strip_leaves_out_a_beat_it_would_sit_on_him_in():
     assert _on_him(segs, []) == [(0.0, 8.0)]
     assert _on_him(segs, [], skip={1}) == [(0.0, 4.0)]
     assert _on_him(segs, [(0.0, 1.0)], skip={0}) == [(4.0, 8.0)]
-    # the disclaimer's rim takes every stretch of him, however short
+    # min_s=0 takes every stretch of him, however short
     assert _on_him(segs, [], min_s=0.0) == [(0.0, 8.0), (10.0, 11.0)]
 
 

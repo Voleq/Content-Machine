@@ -610,7 +610,8 @@ def implied(data, script=None) -> dict[str, str] | None:
     step = 0.05
     axis_hi = math.ceil(top / step + 1e-9) * step or step
     axis_lo = math.floor(bottom / step - 1e-9) * step if bottom < 0 else 0.0
-    said = _pct(fcf) if fcf is not None else _pct(rev)
+    did = fcf if fcf is not None else rev
+    said = _pct(did)
     what = "free cash flow" if fcf is not None else "revenue"
     # WORDED TO FIT ITS OWN BOXES (1 Nov 2026). "The price asks for only
     # 5.7% a year. The last four years of free cash flow did 24%." is 83
@@ -628,16 +629,23 @@ def implied(data, script=None) -> dict[str, str] | None:
         "history-label": "what the last four years did, a year",
         "axis-low": _pct(axis_lo),
         "axis-high": _pct(axis_hi),
-        "marker": _pct(ig),
-        "band": f"{_pct(lo)},{_pct(hi)}",
+        # TWO BARS FROM ZERO on one axis (`plates.SLOT_GEOMETRY_FIXES`): what
+        # the price needs, in the demand's ink, and what the figure the
+        # statement names did. "Needs 14%" against "did -9.6%" is the card.
+        "marker": f"{_pct(min(0.0, ig))},{_pct(max(0.0, ig))},structure",
+        "band": f"{_pct(min(0.0, did))},{_pct(max(0.0, did))}",
     }
     if fcf is not None and rev is not None:
         a, b = sorted([(fcf, "FCF"), (rev, "revenue")])
         out["history-low"] = f"{b_or(a)}"
         out["history-high"] = f"{b_or(b)}"
     else:
-        out["history-low"] = _pct(lo)
-        out["history-high"] = _pct(hi)
+        # ONE FIGURE, NAMED, AND NOTHING BESIDE IT. The band runs from zero to
+        # it so it has a length, but zero is not something the company did:
+        # INTC's card printed "-9.6%" and "0%" side by side as the two things
+        # four years delivered (2 Nov 2026: "don't get this plate").
+        out["history-low"] = b_or((fcf if fcf is not None else rev,
+                                   "FCF" if fcf is not None else "revenue"))
     return out
 
 
@@ -842,6 +850,16 @@ SESSION_POINTS = 7
 # stale tape or a wrong script, and either way the drawing would contradict
 # the voice.
 SESSION_AGREE_PTS = 3.0
+# A GAP DAY HAS NO SESSION CHART. When the session moved less than this share
+# of the day's move, the price got there overnight and sat: the line drawn is
+# flat, a third of the way below the prior-close rule, and says nothing (INTC,
+# 30 Oct 2026, −28.4% on the open: "I do not know what this graph wants to
+# show"). The move card says that day better; the six-point box under its
+# figure still draws the session.
+SESSION_GAP_SHARE = 0.4
+# What only `charts/intraday` reads off the session card.
+SESSION_CHART_SLOTS = ("kicker", "unit", "figure", "plot-area", "event-label",
+                       "caption", "head-1", "head-3", "head-5", "head-7")
 
 
 def _minutes(hhmm: str) -> int:
@@ -888,7 +906,8 @@ def session_card(session, script=None) -> dict[str, str] | None:
     """`charts/intraday`: today's session against the prior close.
 
     None when there is no session, or when the session's move does not
-    agree with the move the writer is narrating.
+    agree with the move the writer is narrating. On a gap day
+    (`gap_day`) only the move plates' six-point box is filled.
     """
     if session is None or not session.prior_close:
         return None
@@ -931,6 +950,11 @@ def session_card(session, script=None) -> dict[str, str] | None:
     }
     for i in (1, 3, 5, 7):
         out[f"head-{i}"] = pts[i - 1][0]
+    if gap_day(session):
+        log.info("the session moved under %.0f%% of the day's move: a gap "
+                 "day, no session chart", SESSION_GAP_SHARE * 100)
+        for k in SESSION_CHART_SLOTS:
+            out.pop(k, None)
     # THE SAME SESSION IN SIX POINTS, for the move plates
     # (`figures/move-on-the-day*`), which reserve a box under the figure for
     # the session and draw six. It sat empty on every short that cut to them,
@@ -940,6 +964,16 @@ def session_card(session, script=None) -> dict[str, str] | None:
         out["path-6"] = ",".join(f"{(p / session.prior_close - 1) * 100:.2f}"
                                  for _t, p in six)
     return out
+
+
+def gap_day(session) -> bool:
+    """Whether the day's move happened before the session (`SESSION_GAP_SHARE`)."""
+    prices = [float(p) for p in getattr(session, "prices", ()) or ()]
+    prior = float(getattr(session, "prior_close", 0) or 0)
+    if len(prices) < 2 or not prior:
+        return False
+    moved = abs(prices[-1] - prior)
+    return moved > 0 and (max(prices) - min(prices)) < SESSION_GAP_SHARE * moved
 
 
 def claimed_move(script) -> float | None:

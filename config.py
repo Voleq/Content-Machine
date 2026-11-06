@@ -288,8 +288,12 @@ class Settings(BaseSettings):
     broll_max_clip_s: float = 8.0          # normalize clips to at most this long
 
     # -------------------------------------------- content engine (multi-source)
-    # [IMG]/[PRODUCT] real-imagery chain: Wikimedia Commons first (free,
-    # attribution stored), then the company's own site (og:image best effort).
+    # [IMG]/[PRODUCT] real-imagery chain: the company's own site (og:image,
+    # best effort). WIKIMEDIA COMMONS IS OFF (his call, 2 Nov 2026: "let s
+    # drop the idea of wikimedia altogether"): INTC's short opened on a
+    # Commons photo of an old RAID card, and RDDT's long showed "imagery
+    # unavailable" where Commons refused. `WIKIMEDIA=true` puts it back first.
+    wikimedia_enabled: bool = Field(default=False, alias="WIKIMEDIA")
     wikimedia_base_url: str = "https://commons.wikimedia.org"
     image_min_interval_s: float = 1.0
     # [MEME] fallback providers, tried only on an owned-library miss and only
@@ -308,6 +312,20 @@ class Settings(BaseSettings):
     # counter, no report line and no ceiling, while memes from the OWNED
     # library were capped at one or two. Same shape as the meme cap.
     gif_max_per_video: int = Field(default=2, alias="GIF_MAX_PER_VIDEO")
+    # STOCK FOOTAGE IN A LONG (2 Nov 2026, Valentin: "use less of pexels ...
+    # only when it really appeals to the situation"; RDDT's long cut to
+    # Pexels 39 times in 19 minutes). At most this many [CLIP]s play, none
+    # within the gap of the last one; the beats past it stay on him and the
+    # plates. 0 turns either limit off.
+    clip_max_per_long: int = Field(default=6, alias="CLIP_MAX_PER_LONG")
+    # THE LONG OPENS ON HIM (2 Nov 2026: "Need to find another way to open
+    # the longs"). The paper title card over the first 2.6 s is off unless
+    # this is on, and no picture goes up over the first COLD_OPEN_HOST_S of
+    # him: the hook is said to camera. 0 lets the writer's first picture in
+    # wherever it falls, as before.
+    long_title_card: bool = Field(default=False, alias="LONG_TITLE_CARD")
+    cold_open_host_s: float = Field(default=5.0, alias="COLD_OPEN_HOST_S")
+    clip_min_gap_s: float = Field(default=60.0, alias="CLIP_MIN_GAP_S")
     # Rewrite an OFF-PALETTE clip subject into stock-searchable terms before
     # the Pexels call (H4). The 53-entry palette is hand-curated and
     # pre-tested and bypasses this entirely — never rewrite a query someone
@@ -700,6 +718,10 @@ class Settings(BaseSettings):
     # diegetic keys fire just ahead of it (`pipeline.sound.cue_lead_s`).
     # `keyboard_clack`, `paper_rustle` and `ding` remain the quieter options.
     chapter_cue_sfx: str = Field(default="impact", alias="CHAPTER_CUE_SFX")
+    # The chapter's picture drawing itself onto his monitor on the chapter's
+    # first shot of the room (item 54). Off since 2 Nov 2026, his call: the
+    # picture is already up when the chapter changes.
+    screen_draw_in: bool = Field(default=False, alias="SCREEN_DRAW_IN")
 
     # The loop under a SHORT: one of the owned score's `bed-*.m4a`, dipped
     # under the voice whenever he speaks (`pipeline/sound.py`). Nothing plays

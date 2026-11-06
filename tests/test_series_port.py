@@ -31,10 +31,18 @@ import pytest
 from config import Settings
 from pipeline import series as S
 from pipeline.plate_tags import build_fill
-from pipeline.plates import load_plates
+from pipeline.plates import SLOT_GEOMETRY_FIXES, load_plates
 
 ROOT = Path(__file__).resolve().parents[1]
 KIT = ROOT / "kit"
+
+# Plates whose data layer the bot draws another way on purpose: a slot the fix
+# gives another renderer or role. The implied card (his note 17, 2 Nov 2026,
+# "don't get this plate") draws what the price needs and what the company did
+# as two bars from zero, where the kit put a tick on a band; its own tests are
+# in test_render_faults_11_02.
+REDRAWN = frozenset(k for k, fix in SLOT_GEOMETRY_FIXES.items()
+                    if any("renderer" in f or "role" in f for f in fix.values()))
 
 # Every plate's sample copy and data at night, and the nodes the kit's own
 # dataLayer draws from that data.
@@ -148,6 +156,8 @@ def test_the_port_draws_every_sample_as_the_kit_does(reg, samples):
     for row in samples:
         plate = reg.get(row["key"])
         assert plate is not None, f"{row['key']} has sample data and is not installed"
+        if row["key"] in REDRAWN:
+            continue
         # In the plate's own inks and style (rebuild-41): paper or screen.
         why = _differs(S.data_layer(S.boxes(plate), row["data"], reg.inks(plate),
                                     **_style(reg, plate)), row["nodes"])
@@ -461,7 +471,7 @@ def test_design_sample_copy_round_trips_to_the_kit_data(reg, samples):
     wrong = []
     by_key = {row["key"]: row for row in samples}
     for row in samples:
-        if not row["nodes"]:
+        if not row["nodes"] or row["key"] in REDRAWN:
             continue                      # the kit's sample draws nothing either
         plate = reg.get(row["key"])
         want = row["data"]
