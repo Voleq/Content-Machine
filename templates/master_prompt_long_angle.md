@@ -72,10 +72,11 @@ Counter: <the strongest argument against>
 Scope: <~N min, K chapters> — <the optional chapters this angle needs, and why>
 Confidence: <high/medium> — <one clause why>; if weak, "I'd skip it — <why>".
 The bit: <the running gag this angle hands you — one target in the data, and where its three hits land>
+Two numbers: <the two figures this angle turns on, both in the data above, ideally one against the other — the ones a viewer should remember a week later>
 
-▸ Angle 2 — "<title>"   (repeat the seven fields)
+▸ Angle 2 — "<title>"   (repeat the eight fields)
 
-▸ Angle 3 — "<title>"   (optional; repeat the seven fields)
+▸ Angle 3 — "<title>"   (optional; repeat the eight fields)
 
 Mark ONE angle with ★recommended in its title line.
 

@@ -11,9 +11,10 @@ viewer's trust faster than one without:
 * **Swearing.** Bible v3 §10: a few, where they land. YouTube still limits
   ads for frequent strong swearing and for any in a title or thumbnail, so
   the count and the metadata are checked, never the taste.
-* **Copy (S2).** A sentence that repeats a bible example or a style
-  reference almost word for word. The examples teach a move; the move is
-  meant to be reused, the sentence never.
+* **Copy (S2).** A sentence that repeats a bible example, a style
+  reference or one of Benjamin's own sentences (B9, his transcripts) almost
+  word for word. The examples teach a move; the move is meant to be reused,
+  the sentence never.
 * **Chapter order (S9).** A long whose chapters run in the order one of the
   last three did.
 * **Jokes (v4 §7).** The writer declares every joke; a short under three, a
@@ -435,6 +436,11 @@ PROMPT_WORDS: tuple[tuple[str, str], ...] = (
     ("the one framework", r"\bone framework\b"
                           r"|\bframework (?:of|for|in|that decides) this video\b"),
     ("epistemic", r"\bepistemic\b"),
+    # The bible's teaching moves (§11) by name, 7 Nov 2026.
+    ("explainer ladder", r"\bexplainer ladder\b"),
+    ("caveman recap", r"\bcaveman recap\b"),
+    ("the heckler", r"\bthe heckler\b"),
+    ("jargon translator", r"\bjargon translator\b"),
 )
 _PROMPT_RES = [(name, re.compile(rx, re.IGNORECASE)) for name, rx in PROMPT_WORDS]
 # On a plate only: a step number in a kicker ("STEP 1: TRAILING MULTIPLES").
@@ -560,6 +566,49 @@ def reference_lines(settings: Settings) -> list[tuple[str, str]]:
         out += [("style reference", s) for s in _SENTENCE_RE.split(ref)
                 if s.strip()]
     out += [("prompt example", s) for s in example_lines(settings)]
+    out += transcript_lines(settings)
+    return out
+
+
+# B9 (7 Nov 2026): what Benjamin really said, from the transcripts of the
+# videos the study watched. It replaced the paraphrases the style references
+# held, so "too close to Benjamin" is checked against his own sentences. The
+# writer never sees the file.
+TRANSCRIPTS_FILE = "benjamin_transcripts.txt"
+_TRANSCRIPTS: dict[Path, tuple[float, list[tuple[str, str]]]] = {}
+
+
+def transcript_lines(settings: Settings) -> list[tuple[str, str]]:
+    """(his video, the sentence) for every line of the transcripts file:
+    `YYYYMMDD<TAB>sentence`, `#` comments skipped. Read once per change of
+    the file, since the copy check runs on every paste-back."""
+    path = settings.assets_dir / "writing" / TRANSCRIPTS_FILE
+    try:
+        stamp = path.stat().st_mtime
+    except OSError:
+        return []
+    cached = _TRANSCRIPTS.get(path)
+    if cached and cached[0] == stamp:
+        return cached[1]
+    out: list[tuple[str, str]] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as e:
+        log.warning("Benjamin's transcripts unreadable (%s)", e)
+        return []
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        day, tab, sentence = line.partition("\t")
+        if not tab:
+            day, sentence = "", line
+        day = day.strip()
+        when = (f"{day[:4]}-{day[4:6]}-{day[6:8]}"
+                if len(day) == 8 and day.isdigit() else "")
+        src = f"Benjamin (his {when} video)" if when else "Benjamin"
+        if sentence.strip():
+            out.append((src, sentence.strip()))
+    _TRANSCRIPTS[path] = (stamp, out)
     return out
 
 
@@ -578,6 +627,39 @@ def _lifted(sm: difflib.SequenceMatcher, a: int, b: int) -> bool:
     return matched / shorter >= LIFT_RATIO
 
 
+# Words too common to tell two sentences apart. A sentence that shares none
+# of a reference's other words matches at most the common ones, so when
+# those are under 60% of the reference it cannot reach COPY_RATIO and is
+# skipped; a reference that is mostly common words is always compared.
+_COMMON = frozenset("""a an and are as at be been but by do does did for from
+had has have he her his i if in is it its it's me my no not of on or our
+she so that that's the their them then there they this to too up us was we
+were what when which who will with would you your""".split())
+
+
+def _ref_index(refs: list[tuple[str, list[str], set[str]]]):
+    """word -> the references that hold it, and the ones always compared.
+    Four thousand transcript sentences against every sentence and pair of a
+    long is millions of comparisons without it."""
+    by_word: dict[str, list[int]] = {}
+    always: list[int] = []
+    for i, (_src, ref, ref_set) in enumerate(refs):
+        rare = ref_set - _COMMON
+        if sum(1 for w in ref if w not in _COMMON) <= 0.4 * len(ref):
+            always.append(i)
+        for word in rare:
+            by_word.setdefault(word, []).append(i)
+    return by_word, always
+
+
+def _candidates(index, have: set[str]) -> list[int]:
+    by_word, always = index
+    seen = set(always)
+    for word in have - _COMMON:
+        seen.update(by_word.get(word, ()))
+    return sorted(seen)
+
+
 def copy_check(narration: str, settings: Settings) -> list[Finding]:
     """A spoken sentence that is a reference sentence said again.
 
@@ -586,9 +668,10 @@ def copy_check(narration: str, settings: Settings) -> list[Finding]:
     each sentence and with each pair of neighbouring sentences.
     """
     refs = [(src, _words(s)) for src, s in reference_lines(settings)]
-    refs = [(src, w) for src, w in refs if len(w) >= COPY_MIN_WORDS]
+    refs = [(src, w, set(w)) for src, w in refs if len(w) >= COPY_MIN_WORDS]
     if not refs:
         return []
+    index = _ref_index(refs)
     findings: list[Finding] = []
     for lineno, line in enumerate(narration.splitlines(), 1):
         said = [s for s in _SENTENCE_RE.split(_TAG_RE.sub(" ", line)) if s.strip()]
@@ -599,8 +682,9 @@ def copy_check(narration: str, settings: Settings) -> list[Finding]:
             if len(words) < COPY_MIN_WORDS:
                 continue
             have = set(words)
-            for src, ref in refs:
-                shared = len(have & set(ref)) / max(1, len(set(ref)))
+            for i in _candidates(index, have):
+                src, ref, ref_set = refs[i]
+                shared = len(have & ref_set) / max(1, len(ref_set))
                 if shared < _COPY_PREFILTER:
                     continue
                 sm = difflib.SequenceMatcher(None, words, ref, autojunk=False)
@@ -617,6 +701,95 @@ def copy_check(narration: str, settings: Settings) -> list[Finding]:
                          f"move is his to reuse, the sentence never: "
                          f"“{hit[1][:90]}”"),
                 excerpt=_excerpt(line)))
+    return findings
+
+
+# --------------------------------------------------------------------------
+# B7 — Dennis's own words: the few lines he may say in every video.
+# --------------------------------------------------------------------------
+
+# The bible's §12. They are read from his copy of the bible, so a phrase he
+# strikes or adds on the page is the list at once.
+_LEXICON_HEAD_RE = re.compile(r"^##\s*12\b.*$|^##.*own words.*$",
+                              re.IGNORECASE | re.MULTILINE)
+_LEXICON_ROW_RE = re.compile(r"^\s*[-*]\s*\*\*[\"“]([^\"”]+)[\"”]\*\*",
+                             re.MULTILINE)
+# At most once each, at most this many different ones a video.
+LEXICON_PER_VIDEO = {"long": 2, "short": 1}
+
+
+def lexicon_phrases(settings: Settings) -> list[str]:
+    """The lines of the bible's "Dennis's own words", as written there."""
+    from pipeline.writing_files import read_file
+
+    text = read_file(settings, "voice_bible")
+    m = _LEXICON_HEAD_RE.search(text)
+    if not m:
+        return []
+    body = text[m.end():]
+    nxt = re.search(r"^## ", body, re.MULTILINE)
+    body = body[:nxt.start()] if nxt else body
+    return [p.strip() for p in _LEXICON_ROW_RE.findall(body) if p.strip()]
+
+
+def _lexicon_pattern(phrase: str) -> "re.Pattern[str] | None":
+    words = _words(phrase)
+    if not words:
+        return None
+    sep = r"[\s,;:.!?…—–-]+"
+    parts = [re.escape(w).replace("'", "['’]?") for w in words]
+    return re.compile(r"(?<![\w'’])" + sep.join(parts) + r"(?![\w'’])[.!?…]*",
+                      re.IGNORECASE)
+
+
+def lexicon_patterns(settings: Settings) -> list[tuple[str, "re.Pattern[str]"]]:
+    out = []
+    for phrase in lexicon_phrases(settings):
+        pat = _lexicon_pattern(phrase)
+        if pat is not None:
+            out.append((phrase, pat))
+    return out
+
+
+def strip_lexicon(text: str, settings: Settings | None = None, *,
+                  patterns: list | None = None) -> str:
+    """The text with Dennis's own words taken out: they are allowed back in
+    every video, so the used-jokes book neither keeps nor finds them."""
+    if patterns is None:
+        patterns = lexicon_patterns(settings) if settings is not None else []
+    for _phrase, pat in patterns:
+        text = pat.sub(" ", text)
+    return " ".join(text.split())
+
+
+def lexicon_lint(narration: str, settings: Settings, lane: str) -> list[Finding]:
+    """§12's limits: each of his own lines at most once in a video, and at
+    most two different ones in a long, one in a short."""
+    said = _TAG_RE.sub(" ", narration)
+    found: list[tuple[str, int]] = []
+    findings: list[Finding] = []
+    for phrase, pat in lexicon_patterns(settings):
+        hits = list(pat.finditer(said))
+        if not hits:
+            continue
+        found.append((phrase, len(hits)))
+        if len(hits) > 1:
+            line = said.count("\n", 0, hits[1].start()) + 1
+            findings.append(Finding(
+                gate="own-words", severity="warn", line=line,
+                message=(f"“{phrase}” is said {len(hits)} times; Dennis's own "
+                         f"words land once a video"),
+                excerpt=_excerpt(said.splitlines()[line - 1])))
+    cap = LEXICON_PER_VIDEO.get(lane, 2)
+    if len(found) > cap:
+        findings.append(Finding(
+            gate="own-words", severity="warn",
+            message=(f"{len(found)} of Dennis's own lines in one "
+                     f"{'short' if lane == 'short' else 'video'} ("
+                     + ", ".join(f"“{p}”" for p, _ in found)
+                     + f"); keep {cap} at most, on the moments they were made "
+                     f"for"),
+            excerpt=""))
     return findings
 
 

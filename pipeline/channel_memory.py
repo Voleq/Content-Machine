@@ -335,12 +335,30 @@ def extract_jokes(script, settings: Settings) -> list[str]:
         return []
     declared = declared_jokes_said(script)
     if declared:
-        return declared
+        return _without_own_words(declared, settings)
     got = _model_lines(f"Script:\n\n{narration[:14000]}", settings,
                        system=_JOKES_SYSTEM, purpose="jokes")
     if got is None:
-        return fallback_jokes(script)
-    return [g for g in got if len(g.split()) >= 3][:MAX_PER_VIDEO]
+        return _without_own_words(fallback_jokes(script), settings)
+    got = [g for g in got if len(g.split()) >= 3]
+    return _without_own_words(got, settings)[:MAX_PER_VIDEO]
+
+
+def _without_own_words(lines: list[str], settings: Settings) -> list[str]:
+    """The jokes with Dennis's own words (bible §12) taken out. They are
+    meant to come back, so the book that says "never again" never holds
+    them; a joke that was only one of them is not kept at all."""
+    from pipeline.writing_checks import lexicon_patterns, strip_lexicon
+
+    own = lexicon_patterns(settings)
+    if not own:
+        return lines
+    out: list[str] = []
+    for line in lines:
+        kept = strip_lexicon(line, patterns=own).strip(" ,;:—–-")
+        if len(kept.split()) >= 3 and kept not in out:
+            out.append(kept)
+    return out
 
 
 def fallback_facts(narration: str) -> list[str]:
@@ -463,9 +481,14 @@ def joke_reuse_lint(narration: str, settings: Settings, *,
     except Exception as e:                         # noqa: BLE001
         log.debug("used jokes unreadable (%s)", e)
         return []
+    from pipeline.writing_checks import lexicon_patterns, strip_lexicon
+
+    # Dennis's own words (bible §12) come back on purpose.
+    own = lexicon_patterns(settings)
     findings: list[Finding] = []
     for lineno, line in enumerate(narration.splitlines(), 1):
         for said in _sentences(line):
+            said = strip_lexicon(said, patterns=own)
             prior = book.repeats(said, skip=skip, index=index)
             if prior:
                 p = prior[-1]

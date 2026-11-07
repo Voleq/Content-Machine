@@ -124,10 +124,36 @@ def test_bible_line_reused_warns(settings):
 
 
 def test_style_reference_reworded_slightly_warns(settings):
+    from pipeline import writing_files
+
+    writing_files.write_file(
+        settings, "style_references",
+        "# another creator\nIf you draw enough horizontal lines on a chart, the "
+        "stock will eventually bounce off one of them.\n")
     text = ("If you draw enough horizontal lines on a chart, the stock is "
             "eventually going to bounce off one of them.")
     found = wc.copy_check(text, settings)
     assert found and "style reference" in found[0].message
+
+
+def test_benjamin_s_own_sentence_said_again_warns(settings):
+    """B9, 7 Nov 2026: the check reads what he really said, from the
+    transcripts, and names the video it is from."""
+    text = ("Revenue grew.\nArbitrage is a Bumble profile, and stat arb is the "
+            "creature who meets you.")
+    found = wc.copy_check(text, settings)
+    assert found and found[0].line == 2
+    assert "Benjamin (his 2024-05-21 video)" in found[0].message
+
+
+def test_the_transcripts_are_read_once_per_change(settings, tmp_path):
+    corpus = settings.assets_dir / "writing" / wc.TRANSCRIPTS_FILE
+    lines = wc.transcript_lines(settings)
+    assert len(lines) > 3000
+    assert all(src.startswith("Benjamin") for src, _ in lines)
+    assert wc.transcript_lines(settings) is lines
+    assert not any(s.startswith("#") for _, s in lines)
+    assert corpus.exists()
 
 
 def test_same_topic_different_words_passes(settings):
@@ -193,3 +219,47 @@ def test_block_lists_the_orders(settings):
     _shipped_long(settings, "ABC", "2026-07-01", ORDER)
     assert "ABC 2026-07-01: cold-open → the-business" in \
         wc.chapter_orders_block(settings)
+
+
+# --------------------------------------------------------------- B7 own words
+def test_dennis_s_own_words_have_limits(settings):
+    one = "Revenue fell.\nThat's a 3am number."
+    assert wc.lexicon_lint(one, settings, "long") == []
+    twice = "That's a 3am number.\nThe margin? That’s a 3am number."
+    found = wc.lexicon_lint(twice, settings, "long")
+    assert len(found) == 1 and found[0].line == 2 and "2 times" in found[0].message
+    three = ("That's a 3am number. Adjusted for vibes.\n"
+             "Ask the cash flow statement.")
+    assert any("keep 2 at most" in f.message
+               for f in wc.lexicon_lint(three, settings, "long"))
+    two = "That's a 3am number. Adjusted for vibes."
+    assert wc.lexicon_lint(two, settings, "long") == []
+    assert any("keep 1 at most" in f.message
+               for f in wc.lexicon_lint(two, settings, "short"))
+
+
+def test_his_strike_on_the_page_is_the_list(settings):
+    from pipeline import writing_files
+
+    bible = writing_files.read_file(settings, "voice_bible")
+    writing_files.write_file(settings, "voice_bible", bible.replace(
+        '- **"Adjusted for vibes."**', '- **"Adjusted for feelings."**'))
+    phrases = wc.lexicon_phrases(settings)
+    assert "Adjusted for feelings." in phrases
+    assert "Adjusted for vibes." not in phrases
+
+
+def test_own_words_never_reach_the_used_jokes_book(settings):
+    from pipeline.channel_memory import JokeBook, _without_own_words, joke_reuse_lint
+
+    kept = _without_own_words(
+        ["That's a 3am number.",
+         "Forty percent of revenue from one client. That's somebody's bonus.",
+         "Adjusted for vibes, and the vibes were a write-down."], settings)
+    assert kept == ["Forty percent of revenue from one client.",
+                    "and the vibes were a write-down."]
+    book = JokeBook(settings)
+    book.add("OTHR/2026-11-01/long",
+             ["That's a 3am number, read off the cash flow statement at night."],
+             ticker="OTHR", workdate="2026-11-01", fmt="long")
+    assert joke_reuse_lint("That's a 3am number.", settings) == []

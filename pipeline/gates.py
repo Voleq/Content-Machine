@@ -3462,6 +3462,12 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     from pipeline.writing_checks import copy_check
 
     report.findings += report.record("copy", copy_check(narration, settings))
+    # Dennis's own words (bible §12): the one thing allowed back every video,
+    # within limits.
+    from pipeline.writing_checks import lexicon_lint
+
+    report.findings += report.record("own-words",
+                                     lexicon_lint(narration, settings, lane))
     from pipeline.channel_memory import joke_reuse_lint
 
     # THIS VIDEO'S OWN ROWS. Shipping writes its jokes and confession to the

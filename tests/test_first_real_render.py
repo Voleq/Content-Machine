@@ -297,16 +297,24 @@ def test_the_new_tags_are_in_the_writer_s_vocabulary(settings):
         assert f"[{tag.value}]" in vocab, f"[{tag.value}] is not offered"
 
 
-def test_benjamin_s_lines_go_to_every_writing_prompt(settings):
+def test_benjamin_s_register_goes_to_every_writing_prompt(settings):
+    """B9, 7 Nov 2026: the writer gets his moves (the bible's bits), never
+    his sentences; those are the copy check's."""
     from bot.prompts import benjamin_lines, payload_tokens
+    from pipeline.writing_checks import transcript_lines
 
-    for fmt in ("short", "long_write", "update", "headline"):
+    writing = ("short", "long_write", "update", "headline", "implosion_write")
+    for fmt in writing:
         assert "{{benjamin_lines}}" in payload_tokens(fmt)
-    for name in ("short", "long_write", "update", "headline"):
+    for name in writing:
         text = (ROOT / "templates" / f"master_prompt_{name}.md").read_text(encoding="utf-8")
         assert "{{benjamin_lines}}" in text, name
+        assert "in his own lines" not in text, name
     block = benjamin_lines(settings)
-    assert "never a line" in block
+    assert "never a line" in block and "Benjamin's bits" in block
+    assert "Bumble" not in block and "unless you really want" not in block
+    said = [s for _, s in transcript_lines(settings) if len(s.split()) >= 6]
+    assert not any(s in block for s in said)
 
 
 # ------------------------------------------------------------- the local model

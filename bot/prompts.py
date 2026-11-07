@@ -43,33 +43,36 @@ def voice_bible(settings: Settings) -> str:
 
 
 def benjamin_lines(settings: Settings) -> str:
-    """Benjamin's own lines, for the writer to hear the register in.
+    """Benjamin's register, in moves, never in his lines (B9, 7 Nov 2026).
 
-    They were kept from the writer on purpose (S2: the copy check only), so a
-    style he learned from could never become a line he lifted. Valentin, 31
-    Oct 2026: "i just want him to be similar to that benjamin guy, you do have
-    his jokes ... why can't you do that". So the writer reads them now, as
-    the sound to match, with the rule that none is said; the copy check
-    still warns on a sentence that comes out almost word for word."""
-    from pipeline.writing_files import list_lines
-
-    lines = list_lines(settings, "style_references")
-    if not lines:
-        return "(no reference lines saved: the page's Writing library, Style references)"
-    body = "\n".join(f"- {ln}" for ln in lines)
+    The history, because it went both ways. His lines were kept from the
+    writer at first (S2: the copy check only), so a style learned from could
+    never become a line lifted. Valentin, 31 Oct 2026: "i just want him to
+    be similar to that benjamin guy, you do have his jokes ... why can't you
+    do that", so the writer read them as the sound to match. Those lines
+    were paraphrases, not his words, and a writer handed sentences copies
+    their skeleton with the nouns swapped. The study of thirty-five of his
+    videos turned them into shapes: the bible's "Benjamin's bits", each a
+    move and how Dennis uses it, and §11, how he teaches. This block names
+    the register and sends the writer there; his real sentences, from the
+    transcripts, are only the copy check's."""
+    del settings  # the moves live in the bible, which every prompt carries
     return (
-        "This is the voice. Read all of it before you write a word, and write "
-        "Dennis so that someone who knows Benjamin's channel would think it "
-        "was his: the same flat delivery of an absurd line, the self-own "
-        "stated as a credential, the comparison nobody expected (arbitrage is "
-        "a Bumble profile, stat arb is the creature that meets you), the "
-        "rule with a rug-pull ending (\"unless you really want to\"), the "
-        "crowd roasted by name, the swear on the plain restatement, and back "
-        "on the number in the same breath.\n"
-        "Every joke is NEW and about THIS company's numbers. Take the moves, "
-        "never a line: a sentence that comes out close to one of these is "
-        "flagged on paste-back, and so is a joke with the same skeleton and "
-        "the nouns swapped.\n\n" + body)
+        "This is the voice. Write Dennis so that someone who knows Benjamin's "
+        "channel would think it was his: the flat delivery of an absurd line; "
+        "the self-own stated as a credential; the comparison nobody expected, "
+        "between two things from different worlds; the rule with a rug-pull "
+        "ending; the crowd roasted as a crowd; the swear on the plain "
+        "restatement; and back on the number in the same breath. The teaching "
+        "carries the jokes (bible §11): a viewer who mutes the comedy still "
+        "leaves knowing the mechanism.\n"
+        "His moves are the bible's \"Benjamin's bits\", at the top of it: each "
+        "is a shape from his videos, then how Dennis uses it. Every joke is NEW "
+        "and about THIS company's numbers. Take the moves, never a line: his "
+        "own sentences, from the transcripts of his videos, are checked on "
+        "paste-back, and a sentence that comes out close to one of them is "
+        "flagged, and so is a joke with the same skeleton and the nouns "
+        "swapped.")
 
 
 def confession_ledger(settings: Settings) -> str:

@@ -113,8 +113,12 @@ CHECKS: dict[str, str] = {
                   "really said",
     "prompt-words": "the prompt's own words said aloud or printed on a "
                     "plate (\"the four-step valuation walk\", \"STEP 1\")",
-    "copy": "a sentence repeating a voice bible example or a style "
-            "reference word for word",
+    "copy": "a sentence repeating a voice bible example, a style "
+            "reference or one of Benjamin's own sentences (his transcripts) "
+            "word for word",
+    "own-words": "Dennis's own lines (voice bible §12): each at most once a "
+                 "video, at most two different ones in a LONG, one in a "
+                 "SHORT",
     "jokes": "a joke, analogy or callback already used on the channel, "
              "even reworded",
     "bits": "a recurring bit (Kev's tip, Dennis's old trade) back too soon, "

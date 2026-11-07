@@ -136,11 +136,55 @@ def test_swearing_is_earned_not_budgeted(settings):
 
 
 def test_no_style_reference_is_in_the_bible(settings):
-    """Benjamin's lines are a style reference, never an example to copy."""
-    sentences = [s for s in re.split(r"(?<=[.!?])\s+", _bible(settings))
+    """Benjamin's lines are a style reference, never an example to copy.
+    B9, 7 Nov 2026: checked against what he really said, too."""
+    from pipeline.writing_checks import _words, transcript_lines
+
+    sentences = [_words(s) for s in re.split(r"(?<=[.!?])\s+", _bible(settings))
                  if len(s.split()) >= 6]
-    for ref in writing_files.list_lines(settings, "style_references"):
-        a = ref.lower().split()
+    refs = writing_files.list_lines(settings, "style_references")
+    refs += [line for _, line in transcript_lines(settings)]
+    assert len(refs) > 3000
+    for ref in refs:
+        a = _words(ref)
+        if len(a) < 6:
+            continue
+        have = set(a)
         for s in sentences:
-            ratio = difflib.SequenceMatcher(None, a, s.lower().split()).ratio()
-            assert ratio < 0.75, (ref, s)
+            if len(have & set(s)) < 0.4 * len(have):
+                continue
+            ratio = difflib.SequenceMatcher(None, a, s, autojunk=False).ratio()
+            assert ratio < 0.75, (ref, " ".join(s))
+
+
+def test_the_teaching_moves_are_in_the_bible(settings):
+    """B1-B6, 7 Nov 2026: the teaching carries the jokes."""
+    text = _bible(settings)
+    eleven = text[text.index("## 11 ·"):text.index("## 12 ·")]
+    for move in ("The explainer ladder", "The heckler", "One unit for every choice",
+                 "The two numbers that matter", "The jargon translator",
+                 "The caveman recap"):
+        assert f"**{move}.**" in eleven, move
+    assert "But Dennis" in eleven
+    assert "One ladder a long" in eleven
+
+
+def test_dennis_has_his_own_words_and_their_limits(settings):
+    """B7, 7 Nov 2026: a few lines of his own he may say again."""
+    from pipeline.writing_checks import lexicon_phrases
+
+    text = _bible(settings)
+    twelve = text[text.index("## 12 ·"):]
+    assert "at most two in a video" in twelve and "at most one in a short" in twelve
+    phrases = lexicon_phrases(settings)
+    assert "That's a 3am number." in phrases
+    assert len(phrases) == 6
+
+
+def test_the_act_is_banned_the_dark_is_not(settings):
+    """B10, 7 Nov 2026: no jokes about sexual acts. The dark stays, his
+    own despair included: "suicide and self harm stays in the bible"."""
+    text = _bible(settings)
+    two = text[text.index("## 2"):text.index("## 3")]
+    assert "any joke about a sex act" in two and "the act is not" in two
+    assert "Dark is allowed, including his own despair" in two

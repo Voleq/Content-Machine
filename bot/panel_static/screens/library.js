@@ -44,10 +44,10 @@ function libWriting(d) {
   area.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); if (!save.disabled) save.click(); } });
   dirty();
   const help = {
-    voice_bible: "The tone every writing prompt carries. Lines starting with > are examples the copy check keeps Dennis from repeating.",
+    voice_bible: "The tone every writing prompt carries. Lines starting with > are examples the copy check keeps Dennis from repeating. Strike or add Dennis's own words in §12.",
     dennis_story: "Who Dennis is: family, Kev, the flat, his old trades. The writer reads it for every script.",
     ai_phrases: "Phrases that sound machine-written. The check flags them; one per line, re: for a pattern.",
-    style_references: "Lines from the writers he is modelled on. The copy check flags a line copied from them.",
+    style_references: "Lines from other creators Dennis must never say. The copy check flags a line copied from them, and from Benjamin's own transcripts, which ship with the bot. The writer never sees either.",
     pronunciations: "How a word is said to ElevenLabs, as WORD => said. Captions keep the real spelling.",
   }[f.name] || "";
   return el("div", { class: "lib-writing" },

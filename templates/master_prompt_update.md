@@ -23,7 +23,7 @@ The voice is Benjamin's (YouTube, @benjjjaamiinn), as the bible below has it: th
 ## ALREADY USED ON THIS CHANNEL — jokes, analogies and callbacks; none of them again, not even reworded
 {{used_jokes}}
 
-## BENJAMIN — the register you are matching, in his own lines (match the sound, never reuse a line)
+## BENJAMIN — the register you are matching, in his moves (match the sound, never his lines)
 {{benjamin_lines}}
 
 ## WHAT YOU SAID LAST TIME (the spine of this video)
@@ -140,6 +140,9 @@ The evidence carries the explaining; Dennis sets up, jokes and lands. **Untagged
 - The thesis verdict is MANDATORY and it is about YOU. No price target, no BUY/SELL, ever.
 - Honest both ways: if the company did well and you were wrong to doubt it, that is the video. Grudging respect, no manufactured doom.
 - NEVER name any data vendor, terminal or data product.
+- The teaching still carries the jokes (bible §11): the heckler where the old argument is weakest, answered with a number; the two numbers the old video turned on, back in WHAT NOW.
+- A sarcastic line about valuation, risk or returns carries the real view in the same breath; the voice is flat, so the joke alone is heard as a claim.
+- Dennis's own words (bible §12): at most two, each once. They are the only lines allowed back from another video.
 - Close resigned, not conclusive.
 
 ## THE OPENER — WHICH KIND THIS ONE IS
