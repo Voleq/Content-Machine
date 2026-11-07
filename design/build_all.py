@@ -298,7 +298,7 @@ def build(output,*,ground='paper',scale=2,only=(),check=False,with_review=False)
     write_json(output/'kit-motion.json',kit_motion)
     write_json(output/'manifest.json',{'pack':'dennis-source-proposals-1','integrated':False,'concepts':len(items),'layouts':len(rows),
                                      'families':list(families),'dataConcepts':sum(core.needs_data(i) or i['drawer']=='longs' and i['model']!='question' for i in items),
-                                     'motionConcepts':sum('motion' in i for i in items),'kitMotionLayouts':len(kit_motion['plates']),
+                                     'motionConcepts':len({item['key'] for item,e,_ in rows if e.get('motion')}),'kitMotionLayouts':len(kit_motion['plates']),
                                      'sourceSha256':{str(p.relative_to(ROOT)):sha(p) for p in [*HERE.glob('*.py'),*HERE.glob('*.json'),*sorted((HERE/'drawings').glob('*.py')),ROOT/'templates/dennis_data_template.xlsx',ROOT/'kit/emit/motion.json'] if p.name not in ('build_gallery.py','build_preview.py')}})
     if with_review:
         preview_pages(output/'review',preview)

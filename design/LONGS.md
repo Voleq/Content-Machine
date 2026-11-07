@@ -106,3 +106,19 @@ horizontally centered, limited to three lines in 16:9 and five in 9:16.
 The optional hidden `stress-words` control must be an actual substring; otherwise
 the first content word is selected. The second of two motion ideas publishes
 that character range for the existing highlight move and spoken alignment.
+
+## Watching the motion
+
+After a delivery build, run `python design/build_motion_preview.py --delivery
+/tmp/long-proposals` and open its `motion/index.html`. The separate, portable
+review player reads the delivered recipes, shapes and slots; it does not change
+the production manifests or install a bot player. Its clock hands and running
+total move together, and pause/seek land only at checkpoint totals. All other
+published moves are playable, including highlights on exact question words.
+The examples and preview durations are illustrative. Voice timing and the
+production `clock-run` implementation remain bot-side work.
+
+With Playwright and Chromium installed, `python design/check_motion_preview.py
+--delivery /tmp/long-proposals --chromium /usr/bin/chromium` checks every preview
+in the browser, including intermediate geometry, replay, mobile layout and
+offline playback.

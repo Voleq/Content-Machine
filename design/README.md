@@ -38,6 +38,18 @@ and full-size downloads use the files beside each page. Review output stays
 under `--out`, outside Git. The earlier galleries, PDFs and clips are retained
 in the separate review archive supplied with this task.
 
+For playable previews of the delivered motion recipes:
+
+```sh
+python design/build_motion_preview.py --delivery /tmp/dennis-review
+```
+
+Open `/tmp/dennis-review/motion/index.html`. These pages embed the artwork,
+fonts and player. They support play/pause, restart, speed, seeking and individual
+ideas; JavaScript is required for playback. Pacing is illustrative, with no
+narration timing or bot integration. Pausing or seeking within a loss-clock run
+lands on its documented endpoint rather than resting on an intermediate total.
+
 Validate without generating files, or build a single concept/family:
 
 ```sh

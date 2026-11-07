@@ -1,0 +1,25 @@
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 24px; background: #f4f2ea; color: #0b0e16; font: 17px/1.45 Arial, sans-serif; }
+main { max-width: 1440px; margin: auto; }
+h1 { font-size: 36px; margin-bottom: 12px; }
+h2 { font-size: 23px; overflow-wrap: anywhere; }
+nav, .controls, .ideas { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+nav { gap: 22px; }
+a { color: inherit; }
+article { margin: 48px 0 72px; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .38fr); gap: 24px; align-items: start; }
+.screen { overflow: hidden; border: 1px solid #d4cfbd; background: #f4f2ea; }
+.screen svg { display: block; width: 100%; height: auto; }
+.controls { margin-top: 12px; }
+button, select { font: inherit; color: inherit; background: #f4f2ea; border: 1px solid #a39e91; border-radius: 3px; padding: 6px 10px; cursor: pointer; }
+button:hover, button[aria-pressed="true"] { background: #ded9cb; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid #b31b27; outline-offset: 2px; }
+.timeline { width: 100%; accent-color: #0b0e16; margin: 14px 0 10px; }
+.ideas button { font-size: 14px; padding: 3px 8px; }
+.status { min-height: 2.9em; margin-top: 10px; font-size: 14px; overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  body { margin: 16px; }
+  .pair { grid-template-columns: 1fr; gap: 28px; }
+  .short { width: min(100%, 360px); margin: auto; }
+}
