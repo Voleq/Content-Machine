@@ -948,6 +948,71 @@ def mark(settings: Settings, story_id: str, how: str) -> bool:
 
 
 # --------------------------------------------------------------------------
+# Making one: the story's code and finding it again
+# --------------------------------------------------------------------------
+
+# An implosion's workspace is filed under a story code where a stock's is
+# filed under its ticker: `IMP-KNIGHT12`. The prefix is what every
+# ticker-shaped step (prices, the filings read, the site, the workbook)
+# checks to stand aside, and no exchange lists a symbol that starts with it.
+STORY_PREFIX = "IMP-"
+_GENERIC = {"the", "long", "term", "first", "new", "national", "american",
+            "united", "general", "global", "capital", "bank", "trust", "fund",
+            "financial", "securities", "investment", "investments", "group"}
+
+
+def is_story_code(ticker: str) -> bool:
+    return str(ticker or "").strip().upper().startswith(STORY_PREFIX)
+
+
+def code_word(code: str) -> str:
+    """The telling word back out of a story code: `IMP-KNIGHT12B` is
+    KNIGHT. What the room's papers say where a ticker would go."""
+    m = re.match(rf"^{STORY_PREFIX}(.+?)\d{{2}}[A-Z0-9]?$", str(code or "").upper())
+    return m.group(1) if m else str(code or "").upper().removeprefix(STORY_PREFIX)
+
+
+def story_code(story: dict) -> str:
+    """`IMP-` + the name's telling word (or its initials) + the year's two
+    digits: Knight Capital Group 2012 is `IMP-KNIGHT12`, Long-Term Capital
+    Management 1998 is `IMP-LTCM98`."""
+    words = [w for w in re.split(r"[^A-Za-z0-9]+", _core_name(story.get("name") or ""))
+             if w]
+    pick = next((w for w in words if w.lower() not in _GENERIC and len(w) > 2
+                 and not w.isdigit()), "")
+    if not pick:
+        pick = "".join(w[0] for w in re.split(r"[^A-Za-z0-9]+", story.get("name") or "")
+                       if w) or "STORY"
+    year = str(story.get("year") or "")[-2:]
+    # At most fourteen characters: a letter for a second story with the same
+    # code still fits the fifteen a ticker may have (`bot/handlers._TICKER_RE`).
+    return f"{STORY_PREFIX}{pick.upper()[:8]}{year}"
+
+
+def find(settings: Settings, arg: str) -> dict | None:
+    """The story `/new implosion` names: its number in the list he was shown,
+    its id, or a piece of its name. Stories he made or skipped are found by
+    id or name too, so one can be made again on purpose."""
+    arg = (arg or "").strip()
+    if not arg:
+        return None
+    rows = shown(settings)
+    if arg.isdigit():
+        n = int(arg)
+        return rows[n - 1] if 1 <= n <= len(rows) else None
+    everything = [s for s in load(settings).get("stories") or [] if isinstance(s, dict)]
+    for s in everything:
+        if s.get("id") == arg:
+            return s
+    low = arg.lower()
+    for pool in (rows, everything):
+        for s in pool:
+            if low in (s.get("name") or "").lower():
+                return s
+    return None
+
+
+# --------------------------------------------------------------------------
 # What he reads
 # --------------------------------------------------------------------------
 

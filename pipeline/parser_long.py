@@ -414,7 +414,7 @@ def parse_chapters(text: str) -> tuple[list[Chapter], list[str]]:
         if not m:
             warnings.append(
                 f"chapter line {line!r} is not `type | Title` — skipped. The "
-                f"sixteen types are {', '.join(CHAPTER_TYPES)}")
+                f"types are {', '.join(CHAPTER_TYPES)}")
             continue
         start = 0.0
         if m.group("ts"):

@@ -560,6 +560,126 @@ class BotCore:
             files=[template] if template.exists() else [],
         )
 
+    # ------------------------------------------- /new implosion (11-07)
+    # One famous blow-up, told from its documents. A LONG in every mechanical
+    # sense (`Workspace.is_implosion`), filed under a story code where a
+    # stock's video is filed under its ticker, with no workbook: the story is
+    # the screener's, and the facts are the documents' own sentences.
+    def start_implosion(self, chat_id: int, args: list[str]) -> Reply:
+        from pipeline import implosions, story_docs
+
+        arg = " ".join(args or []).strip()
+        story = implosions.find(self.settings, arg)
+        if story is None:
+            head = ("Usage: /new implosion N — its number in /ideas implosions, "
+                    "its id, or a piece of its name." if not arg
+                    else f"No story matches {arg!r}.")
+            return Reply(f"{head}\n\n{implosions.reply_text(self.settings)}")
+        ws = self._implosion_workspace(implosions.story_code(story), story)
+        ws.create()
+        ws.set_lane("long", implosion=True)
+        story_docs.save_story(ws.path, story)
+        self.context.set(chat_id, ws.ticker, ws.workdate)
+        # Re-running it keeps an angle already chosen (G2's rule, as /long).
+        if ws.load_long() is None and not ws.chosen_angle():
+            ws.set_awaiting_angle()
+        story_docs.gather(story, ws.path, self.settings)
+        # Off the list he picks from; `/ideas implosions back ID` returns it.
+        implosions.mark(self.settings, str(story.get("id") or ""), "done")
+        journal.note(self.settings, "video",
+                     f"started an IMPLOSION: {story.get('name', '')[:160]}",
+                     ticker=ws.ticker, workdate=ws.workdate, lane="long",
+                     implosion=True)
+        head = (f"📁 {ws.ticker} / {ws.workdate} — IMPLOSION (16:9): "
+                f"{story.get('name', '')}")
+        return self._implosion_prompt_reply(ws, head)
+
+    def _implosion_workspace(self, code: str, story: dict) -> Workspace:
+        """Today's folder for this story's code; a different story that
+        happens to share the code gets a letter after it."""
+        from pipeline import story_docs
+
+        for letter in ("", "B", "C", "D", "E", "F"):
+            ticker = f"{code}{letter}"
+            other = False
+            for d in Workspace.dates_for(self.settings, ticker):
+                got = story_docs.load_story(Workspace(self.settings, ticker, d).path)
+                if got and got.get("id") != story.get("id"):
+                    other = True
+                    break
+            if not other:
+                return Workspace(self.settings, ticker, today_str())
+        return Workspace(self.settings, f"{code}{uuid.uuid4().hex[:1].upper()}",
+                         today_str())
+
+    def _story_name(self, ws: Workspace) -> str:
+        from pipeline import story_docs
+
+        return story_docs.load_story(ws.path).get("name") or ws.ticker
+
+    def _documents_lines(self, ws: Workspace) -> list[str]:
+        from pipeline import story_docs
+
+        docs = story_docs.documents(ws.path)
+        read = [d for d in docs if d.get("status") == "read"]
+        if not docs:
+            return ["📄 No documents yet: the story came with no links to a "
+                    "regulator, a prosecutor or a court."]
+        n = sum(len(d.get("sentences") or []) for d in read)
+        lines = [f"📄 Documents: {len(read)} of {len(docs)} read, "
+                 f"{n:,} sentences."]
+        for d in docs:
+            where = d.get("host") or "your upload"
+            title = (d.get("title") or "").strip()[:70]
+            if d.get("status") == "read":
+                pages = f", {d['pages']} pages" if d.get("pages") else ""
+                lines.append(f"  {d['id']} {where}{pages}: {title or 'untitled'}")
+            else:
+                lines.append(f"  {d['id']} {where}: not read ({d.get('why') or 'no text'})")
+        return lines
+
+    def _implosion_prompt_reply(self, ws: Workspace, header: str) -> Reply:
+        """The prompt this implosion is at: Step 1 (the angle) until one is
+        chosen, then Step 2 (the script). Made again each time, so a
+        document dropped since is in it."""
+        angle = ws.chosen_angle()
+        fmt = "implosion_write" if angle else "implosion_angle"
+        text = fill_prompt(fmt, ws.ticker, None, ws.path, self.settings,
+                           chosen_angle=angle)
+        f = ws.path / f"prompt_{fmt}.md"
+        f.write_text(text, encoding="utf-8")
+        lines = [header] if header else [f"📋 {self._story_name(ws)}"]
+        lines += self._documents_lines(ws)
+        keyboard = None
+        if fmt == "implosion_angle":
+            lines.append("• Step 1: run prompt_implosion_angle.md — it returns "
+                         "ranked angles. Reply here with a number (or a tweak) "
+                         "and I'll hand you Step 2, the writing prompt.")
+            if ws.awaiting_angle():
+                keyboard = angle_keyboard(ws.ticker, ws.workdate)
+        else:
+            lines.append("• Step 2: run prompt_implosion_write.md in the SAME "
+                         "chat, pick a hook, then send the tagged script back "
+                         "here as a .txt file.")
+        lines.append("Drop any PDF here (the regulator's order, the "
+                     "prosecutor's release, the court's judgment) and I read "
+                     "it and make the prompt again.")
+        return Reply("\n".join(lines), files=[f], keyboard=keyboard)
+
+    def _implosion_document(self, ws: Workspace, name: str, data: bytes) -> Reply:
+        from pipeline import story_docs
+
+        entry = story_docs.add_upload(ws.path, name, data)
+        if entry.get("status") == "read":
+            pages = f", {entry['pages']} pages" if entry.get("pages") else ""
+            head = (f"📄 Read {name} as {entry['id']}{pages}: "
+                    f"{len(entry['sentences']):,} sentences.")
+        else:
+            head = f"⚠️ {name} could not be read: {entry.get('why') or 'no text'}."
+        if ws.load_long() is not None:
+            head += " Send the script again to check it against this one too."
+        return self._implosion_prompt_reply(ws, head)
+
     def _lane_warning(self, ticker: str, lane: str) -> str:
         """Flag an apparent wrong-lane pick. Advisory, never a refusal.
 
@@ -868,6 +988,8 @@ class BotCore:
         ws = self._active_ws(chat_id)
         if ws is None:
             return Reply("No active workspace — start with /short TICKER or /long TICKER.")
+        if ws.is_implosion():
+            return self._implosion_prompt_reply(ws, "")
         try:
             data = load_company_data(ws.path)
         except CompanyDataError as e:
@@ -1092,7 +1214,13 @@ class BotCore:
         name = Path(filename).name
         suffix = Path(name).suffix.lower()
 
+        if ws.is_implosion() and suffix in (".pdf", ".html", ".htm"):
+            return self._implosion_document(ws, name, data)
         if suffix in (".xlsx", ".csv"):
+            if ws.is_implosion():
+                return Reply("An implosion has no workbook: it is told from its "
+                             "documents. Drop the PDFs (the regulator's order, the "
+                             "prosecutor's release, the court's judgment) here instead.")
             return self._ingest_export(chat_id, ws, suffix, data, progress)
 
         stem = Path(name).stem.lower().replace(" ", "-").replace("_", "-")
@@ -1602,6 +1730,11 @@ class BotCore:
         """The operator picked a LONG angle — store it, run the thesis-aware
         10-K auto-screenshot pull, and hand back the Step-2 writing prompt
         (pre-filled with the angle + the auto-pulled filing quotes)."""
+        if ws.is_implosion():
+            # No workbook and no filing pull: the documents are the story's.
+            ws.set_chosen_angle(text)
+            return self._implosion_prompt_reply(
+                ws, f"✅ Angle locked for {self._story_name(ws)}.")
         data = self._company_data(ws)
         if data is None:
             return Reply("⛔ No data export on file — upload dennis_data.xlsx first.")
@@ -1996,17 +2129,22 @@ class BotCore:
 
         take_shots(raw, self.settings)
         script, warnings = parse_long_script(raw, ws.ticker, self.settings)
-        data = self._company_data(ws)
-        data_metrics = data.available_chart_metrics() if data is not None else None
+        implosion = ws.is_implosion()
+        data = None if implosion else self._company_data(ws)
+        data_metrics = (data.available_chart_metrics() if data is not None
+                        else () if implosion else None)
         v_warnings, v_blocking = validate_long_script(
             script, palette_keys(), ws.path, self.settings, data_metrics=data_metrics
         )
+        if implosion:
+            v_blocking += _implosion_tag_problems(script)
         # The automated gates run here — before approval, before any spend —
         # and only speak up on failure. A fabricated figure is the one error
         # nobody downstream can catch.
         gates = run_gates(script, self.settings, data=data,
                           as_of=str((data.get("as_of_date") if data else "") or ""),
-                          workspace=ws.path)
+                          workspace=ws.path,
+                          format_name="implosion" if implosion else "")
         v_notes: list[str] = []
         for f in gates.findings:
             {"block": v_blocking, "note": v_notes}.get(f.severity, v_warnings).append(f.render())
@@ -2148,7 +2286,9 @@ class BotCore:
                     blocked += list(v_blocking)
                     gates = run_gates(script, self.settings, data=data,
                                       as_of=as_of, workspace=ws.path,
-                                      skeptic=False)
+                                      skeptic=False,
+                                      format_name=("implosion" if ws.is_implosion()
+                                                   else ""))
                     text, events = script.narration, script.events
             blocked += [f.render() for f in gates.findings
                         if f.severity == "block"]
@@ -2640,6 +2780,7 @@ class BotCore:
                 why=ws.why, duration_s=tts.duration_s,
                 credit=site_pack.credit(ws.path),
                 fmt=fmt, chosen_title=chosen_title(ws.path, fmt),
+                story=self._story_name(ws) if ws.is_implosion() else "",
                 **self._cover_facts(ws, fmt, script))
             pkg_path = path("package")
             pkg_path.write_text(pkg.render_text(), encoding="utf-8")
@@ -2954,6 +3095,11 @@ class BotCore:
             from pipeline.standing import ThesisBook
 
             ws = Workspace(self.settings, job.ticker, job.workdate)
+            if ws.is_implosion():
+                # No thesis to grade later: a story, not a call. Its
+                # confession (or its silence) still counts toward "one in three".
+                self._note_confession(job, ws.load_long(), "long")
+                return
             data = self._company_data(ws)
             if data is None:
                 return
@@ -3565,6 +3711,7 @@ class BotCore:
             timestamps=timestamps, why=ws.why, duration_s=duration,
             with_chapters=fmt != "clip", credit=site_pack.credit(ws.path),
             fmt=fmt, chosen_title=chosen_title(ws.path, fmt),
+            story=self._story_name(ws) if ws.is_implosion() else "",
             **self._cover_facts(ws, fmt, script))
 
     def _cover_facts(self, ws: Workspace, fmt: str, script) -> dict:
@@ -3586,6 +3733,9 @@ class BotCore:
             figure = str(getattr(script, "move_summary", "") or "") or figure
         from pipeline.thumbnail import bot_cover
 
+        if ws.is_implosion():
+            # A story, not a company: its name is what the cover is about.
+            company = company or self._story_name(ws)
         cover = bot_cover(ws, "short" if fmt != "long" else "long")
         return {"company": company, "cover_figure": figure,
                 "cover_name": (f"the bot's cover ({cover.name})"
@@ -5304,6 +5454,25 @@ async def _send(update, reply: Reply | str):
         reply, msg.reply_text,
         lambda f: msg.reply_photo(f),
         lambda f, filename=None: msg.reply_document(f, filename=filename))
+
+
+def _implosion_tag_problems(script) -> list[str]:
+    """Tags an implosion cannot draw, refused before approval: there is no
+    workbook to chart, no share price, and no company website to take a
+    photograph from (the story's firm is often long gone)."""
+    out: list[str] = []
+    for e in script.events_of(TagType.CHART):
+        out.append(f"[CHART: {e.payload}] — an implosion has no workbook and no "
+                   f"share price: put the figure on a [PLATE], from a document")
+    for e in script.events_of(TagType.IMG, TagType.PRODUCT):
+        out.append(f"[{e.type.value}: {e.payload}] — an implosion has no company "
+                   f"site to take a photograph from: show the document with "
+                   f"[WEB: address] or the figure on a [PLATE]")
+    for e in script.events_of(TagType.SCREEN):
+        if str(e.payload).strip().lower() == "price":
+            out.append("[SCREEN: price] — there is no share price in an "
+                       "implosion: name a plate this chapter shows")
+    return out
 
 
 def angle_words(angle: str) -> str:

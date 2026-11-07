@@ -87,12 +87,56 @@ INK_ALIASES = {
 # A type may appear TWICE in one video under different titles — "the numbers"
 # early and again after guidance — so nothing keyed off a type may assume
 # uniqueness, and no plate carries a baked ordinal.
-CHAPTER_TYPES = (
+STOCK_CHAPTER_TYPES = (
     "cold-open", "how-we-got-here", "how-the-money-is-made", "the-numbers",
     "one-framework", "moat", "sector-comps", "management",
     "capital-allocation", "guidance-estimates", "short-interest", "valuation",
     "risk", "filing-walk", "bull-vs-bear", "resigned-close",
 )
+
+# THE IMPLOSION LONG'S OWN TYPES (his picks A3 and A9-A13, 6 Nov 2026). One
+# famous blow-up, told so the viewer laughs and comes out knowing how a market
+# works. Their purposes and plates live here rather than in the kit's
+# roles.json, so they work without a fresh ingest; a later registry that
+# carries its own entry for one of them adds to these, never replaces them.
+IMPLOSION_ONLY_TYPES = (
+    "the-cast", "the-trick", "the-unravel", "the-bill", "the-aftermath",
+    "red-flag-check",
+)
+IMPLOSION_CHAPTER_TYPES = (
+    "cold-open", "how-we-got-here", "how-the-money-is-made", "the-cast",
+    "the-trick", "the-unravel", "the-numbers", "the-bill", "red-flag-check",
+    "filing-walk", "one-framework", "the-aftermath", "resigned-close",
+)
+IMPLOSION_TYPE_PURPOSES = {
+    "the-cast": "who was in the room, by role and the record's own words",
+    "the-trick": "the mechanism, taught straight first so it looks smart, "
+                 "with a toy version the viewer can follow",
+    "the-unravel": "the hours or months it came apart, in order, with the "
+                   "losses ticking",
+    "the-bill": "what it cost and who paid, on the documents: fines, "
+                "settlements, sentences, losses",
+    "the-aftermath": "what changed after: the rule, the firm, the market",
+    "red-flag-check": "the warning signs that were there, checked one by one",
+}
+IMPLOSION_TYPE_PLATES = {
+    "the-cast": ("cards/", "paper/press-release", "paper/headline-stack-",
+                 "paper/filing-page", "structure/flow"),
+    "the-trick": ("structure/flow", "structure/before-after", "structure/both-true",
+                  "cards/definition", "figures/big-number-", "figures/compare-side",
+                  "figures/compare-stacked", "tables/numbers-sheet-", "paper/filing-page"),
+    "the-unravel": ("structure/event-calendar", "paper/wire-strip-", "paper/headline-stack-",
+                    "paper/headline-band-", "figures/big-number-", "structure/before-after",
+                    "paper/filing-page", "tables/numbers-sheet-"),
+    "the-bill": ("paper/receipt-", "paper/filing-page", "paper/press-release",
+                 "figures/big-number-", "figures/big-fraction", "tables/numbers-sheet-",
+                 "cards/quote-pull"),
+    "the-aftermath": ("paper/filing-page", "paper/press-release", "paper/headline-stack-",
+                      "structure/before-after", "cards/quote-pull", "cards/definition"),
+    "red-flag-check": ("cards/criteria", "paper/footnote-pull", "paper/footnote-spotlight",
+                       "paper/filing-page", "paper/risk-factor-diff", "tables/numbers-sheet-"),
+}
+CHAPTER_TYPES = STOCK_CHAPTER_TYPES + IMPLOSION_ONLY_TYPES
 
 
 # The eleven GICS sectors, in the kit's spelling. A sector plate names the ONE
@@ -1448,8 +1492,10 @@ class Registry:
     # ------------------------------------------------------------- chapters
 
     def chapter_types_available(self) -> tuple[str, ...]:
-        """The types this kit carries curation for, in the fixed canonical order."""
-        return tuple(c for c in CHAPTER_TYPES if c in self._chapter_types)
+        """The types this kit carries curation for, in the fixed canonical
+        order (the implosion types are curated in code, so always)."""
+        return tuple(c for c in CHAPTER_TYPES
+                     if c in self._chapter_types or c in IMPLOSION_TYPE_PLATES)
 
     def universal_plates(self) -> tuple[str, ...]:
         """Every plate available to EVERY chapter type.
@@ -1467,7 +1513,8 @@ class Registry:
         return tuple(sorted(out))
 
     def chapter_purpose(self, ctype: str) -> str:
-        return (self._chapter_types.get(ctype) or {}).get("purpose", "")
+        return ((self._chapter_types.get(ctype) or {}).get("purpose", "")
+                or IMPLOSION_TYPE_PURPOSES.get(ctype, ""))
 
     def plates_for_chapter(self, ctype: str) -> tuple[str, ...]:
         """Every plate key this chapter TYPE may use.
@@ -1478,10 +1525,11 @@ class Registry:
         """
         if ctype not in CHAPTER_TYPES:
             raise PlateError(
-                f"unknown chapter type {ctype!r} — the sixteen are "
+                f"unknown chapter type {ctype!r} — the types are "
                 f"{', '.join(CHAPTER_TYPES)}")
         allowed = list(self._universal)
         allowed += list((self._chapter_types.get(ctype) or {}).get("plates", ()))
+        allowed += list(IMPLOSION_TYPE_PLATES.get(ctype, ()))
         out: set[str] = set()
         for key in self.assets:
             for pre in allowed:

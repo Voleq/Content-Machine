@@ -62,8 +62,10 @@ def seed(core: BotCore) -> None:
         shutil.copyfile(proof, done)
     # A second video with nothing in it yet, and a LONG waiting on its angle.
     core.start_lane(CHAT, "long", "DEMO")
-    core.start_lane(CHAT, "short", "EXMPL")
     seed_pages(core.settings)
+    # An implosion waiting on its angle, its two fixture documents read.
+    core.start_implosion(CHAT, ["Knight"])
+    core.start_lane(CHAT, "short", "EXMPL")
 
 
 def seed_pages(settings: Settings) -> None:

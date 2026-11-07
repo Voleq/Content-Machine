@@ -146,9 +146,11 @@ class Workspace:
     def _lane_file(self) -> Path:
         return self.path / "lane.json"
 
-    def set_lane(self, lane: str, *, update: bool = False) -> None:
+    def set_lane(self, lane: str, *, update: bool = False,
+                 implosion: bool = False) -> None:
         _write(self._lane_file(),
-               json.dumps({"lane": lane, "update": bool(update)}))
+               json.dumps({"lane": lane, "update": bool(update),
+                           "implosion": bool(implosion)}))
 
     def _lane_data(self) -> dict:
         try:
@@ -170,6 +172,17 @@ class Workspace:
         it actually is: one prompt swapped, nothing else.
         """
         return bool(self._lane_data().get("update"))
+
+    def is_implosion(self) -> bool:
+        """Whether this LONG is an implosion: one famous blow-up, told from
+        its documents (`pipeline/story_docs.py`) with no workbook.
+
+        A flag on the long lane for the same reason `update` is one: the
+        parser, the renderer and the validation are the long's. What differs
+        is the prompts, the source of the facts, and every ticker-shaped step
+        (prices, filings, the site) standing aside for a story code.
+        """
+        return bool(self._lane_data().get("implosion"))
 
     def current_format(self) -> str | None:
         """Which format this workspace is working in: the declared lane.

@@ -195,7 +195,8 @@ def status_text(core, _terms=()) -> str:
     if states:
         lines.append(f"Videos worked on in the last 14 days ({len(states)}):")
         for st in states[:12]:
-            fmt = "UPDATE" if st.update else (st.lane or st.fmt or "?").upper()
+            fmt = ("UPDATE" if st.update else "IMPLOSION" if st.implosion
+                   else (st.lane or st.fmt or "?").upper())
             lines.append(f"- {st.ticker} {fmt} {st.workdate}: waiting on the "
                          f"{titles.get(current_step(st), '?')} step")
     else:

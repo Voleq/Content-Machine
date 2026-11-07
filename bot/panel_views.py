@@ -43,8 +43,10 @@ STEPS: tuple[tuple[str, str], ...] = (
 
 # The prompt each format's writer step hands over.
 WRITE_PROMPTS = {"short": "prompt_short.md", "long": "prompt_long_write.md",
-                 "update": "prompt_update.md"}
+                 "update": "prompt_update.md",
+                 "implosion": "prompt_implosion_write.md"}
 ANGLE_PROMPT = "prompt_long_angle.md"
+IMPLOSION_ANGLE_PROMPT = "prompt_implosion_angle.md"
 
 # The figures the data step shows from the workbook, as (label, field, kind).
 FIGURES: tuple[tuple[str, str, str], ...] = (
@@ -125,10 +127,39 @@ def _figure(kind: str, v) -> str:
 _CHECKS: dict[tuple[str, float], dict] = {}
 
 
+def _step_implosion_data(v: _Video) -> dict:
+    """An implosion's data is its story and its documents: what the
+    screener knew (a map), then each document with how much of it was read
+    and why one was not."""
+    from pipeline import story_docs
+    from pipeline.implosions import status_words
+
+    story = story_docs.load_story(v.ws.path)
+    docs = []
+    for d in story_docs.documents(v.ws.path):
+        p = v.ws.path / d["file"] if d.get("file") else None
+        docs.append({
+            "id": d.get("id", ""), "title": d.get("title") or d.get("url") or "",
+            "kind": d.get("kind", ""), "host": d.get("host", ""),
+            "url": d.get("url", ""), "status": d.get("status", ""),
+            "why": d.get("why", ""), "pages": d.get("pages", 0),
+            "sentences": len(d.get("sentences") or []),
+            "file": v.link(p) if p is not None and p.exists() else ""})
+    return {"implosion": True,
+            "story": {"name": story.get("name", ""),
+                      "when": story.get("when") or str(story.get("year") or ""),
+                      "size": story.get("loss_text", ""),
+                      "status": status_words(story) if story else "",
+                      "article": story.get("article", "")},
+            "documents": docs, **story_docs.summary(v.ws.path)}
+
+
 def _step_data(v: _Video) -> dict:
     from pipeline.company_data import (CompanyDataError, check_export,
                                        find_export, load_company_data)
 
+    if v.st.implosion:
+        return _step_implosion_data(v)
     out: dict = {"file": v.st.data_file, "as_of": v.st.data_as_of,
                  "problems": [], "figures": [], "freshness": []}
     export = find_export(v.ws.path)
@@ -237,13 +268,15 @@ def _prompt(v: _Video, name: str) -> dict:
 
 
 def _step_angle(v: _Video) -> dict:
-    return {"prompt": _prompt(v, ANGLE_PROMPT), "chosen": v.st.angle,
+    name = IMPLOSION_ANGLE_PROMPT if v.st.implosion else ANGLE_PROMPT
+    return {"prompt": _prompt(v, name), "chosen": v.st.angle,
             "awaiting": v.st.awaiting_angle,
             "pick": keyboard_rows(kb.angle_keyboard(v.ws.ticker, v.ws.workdate))}
 
 
 def _step_write(v: _Video) -> dict:
-    which = "update" if v.st.update else v.fmt
+    which = ("update" if v.st.update else "implosion" if v.st.implosion
+             else v.fmt)
     return {"prompt": _prompt(v, WRITE_PROMPTS.get(which, "")),
             "script": v.st.script, "chars": v.st.script_chars,
             "revisions": v.st.revisions}
@@ -694,7 +727,7 @@ _BUILDERS = {"data": _step_data, "angle": _step_angle, "write": _step_write,
 
 def current_step(st: VideoState) -> str:
     """The step the video waits on: the card's next step, as a step."""
-    if not st.lane or not st.data_file:
+    if not st.lane or (not st.data_file and not st.implosion):
         return "data"
     if st.awaiting_angle and not st.script:
         return "angle"
@@ -748,6 +781,9 @@ def _summary(step: str, st: VideoState, data: dict | None,
         return "could not be read"
     data = data or {}
     if step == "data":
+        if st.implosion:
+            return (f"{st.documents} document{'s' if st.documents != 1 else ''}"
+                    if st.documents else "none yet")
         return (f"{st.data_file} · as of {st.data_as_of}" if st.data_file
                 else "no workbook yet")
     if step == "angle":
@@ -792,7 +828,9 @@ def _summary(step: str, st: VideoState, data: dict | None,
     return ""
 
 
-_TICKER_RE = re.compile(r"^[A-Z0-9][A-Z0-9.\-]{0,11}$")
+# Fifteen characters, as the bot's own check (`bot/handlers._TICKER_RE`):
+# an implosion's story code (`IMP-ARCHEGOS21`) is longer than any ticker.
+_TICKER_RE = re.compile(r"^[A-Z0-9][A-Z0-9.\-]{0,14}$")
 _WORKDATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 

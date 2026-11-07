@@ -826,7 +826,7 @@ class Chapter(BaseModel):
         t = fold_chapter_type(v)
         if t not in CHAPTER_TYPES:
             raise ValueError(
-                f"{v!r} is not one of the sixteen chapter types: "
+                f"{v!r} is not one of the chapter types: "
                 + ", ".join(CHAPTER_TYPES))
         return t
 

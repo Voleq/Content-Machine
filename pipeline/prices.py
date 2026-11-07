@@ -213,6 +213,16 @@ def get_price_history(ticker: str, settings: Settings,
     `long_history_days` for the long. Each length is cached on its own."""
     ticker = ticker.upper()
     days = int(days or settings.price_history_days)
+    # AN IMPLOSION'S STORY CODE IS NOT A SYMBOL (`IMP-KNIGHT12`). Asking the
+    # feed for it is a wasted call that comes back as the synthetic floor
+    # anyway; answered here, degraded, so the board and the monitor draw no
+    # price line and nothing is cached under the code.
+    from pipeline.implosions import is_story_code
+
+    if is_story_code(ticker):
+        series = synthetic_series(ticker, days)
+        series.degraded = True
+        return series
     mocking = settings.mocking_prices
     cfile = price_cache_file(ticker, days, settings)
     cdir = cfile.parent

@@ -111,7 +111,15 @@ SCREEN_LOAD.ideas = async () => {
       el("td", {}, el("b", { text: r.name }), r.year && !String(r.name).includes(String(r.year)) ? el("span", { class: "meta", text: ` ${r.year}` }) : null,
         r.loss ? el("div", { class: "meta", text: r.loss }) : null,
         el("div", { class: "meta", text: [views(r.views), r.anniversary].filter(Boolean).join(" · ") }),
-        el("div", { class: "row" }, el("button", { type: "button", class: "ghost sm", text: "Skip", title: "It won't come up again (you can bring it back below)",
+        el("div", { class: "row" },
+          el("button", { type: "button", class: "sm", text: "Make it", title: "Starts the implosion long: reads its documents and writes the angle prompt",
+            onclick: (e) => pageRun(`/new implosion ${r.id}`, e.currentTarget, `Implosion · ${r.name}`).then(async (ok) => {
+              if (!ok) return;
+              await refreshNow(true);
+              const a = STATE?.active;
+              if (a) openVideo(a.ticker, a.workdate, "data");
+            }) }),
+          el("button", { type: "button", class: "ghost sm", text: "Skip", title: "It won't come up again (you can bring it back below)",
           onclick: (e) => pageRun(`/ideas implosions skip ${i + 1}`, e.currentTarget).then(reload("ideas")) }))),
       el("td", { class: r.status === "open" ? "down" : "" }, r.status_text,
         r.fresh ? el("div", { class: "meta" }, `in the news ${r.fresh.date || "this week"}: `, el("a", { href: r.fresh.url, target: "_blank", rel: "noopener", text: r.fresh.source })) : null),

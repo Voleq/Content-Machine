@@ -215,6 +215,8 @@ def test_the_quarters_block_reaches_every_writing_prompt(workspace, settings,
     for fmt in PROMPT_FORMATS:
         text = fill_prompt(fmt, "EXMPL", data, tmp_path, settings)
         assert "{{quarters}}" not in text, f"{fmt} left the token unfilled"
+        if fmt.startswith("implosion"):
+            continue        # one blow-up, told from its documents: no workbook
         assert "[quarters · 8 quarters" in text, f"{fmt} has no quarters"
         assert "YoY same quarter" in text, f"{fmt} shows one comparison only"
 

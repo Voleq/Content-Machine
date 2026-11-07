@@ -49,6 +49,9 @@ s3 = [
 filings = [
     "playwright==1.61.0",
     "beautifulsoup4==4.15.0",
+    # The implosion long's documents (pipeline/story_docs.py): a regulator's
+    # order or a court's judgment is a PDF. Pure Python, no system libraries.
+    "pypdf==6.21.4",
 ]
 # The free local voice (Piper) — what makes /draft and /proof both free AND
 # listenable. Optional so the base install and CI stay lean: without it

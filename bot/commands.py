@@ -370,6 +370,10 @@ def c_new_site(c: Call):
     return c.core.site_command(c.chat_id, c.args)
 
 
+def c_new_implosion(c: Call):
+    return c.core.start_implosion(c.chat_id, c.args)
+
+
 # ---- /script
 def c_script(c: Call):
     return c.core.script_listing(c.chat_id)
@@ -752,7 +756,7 @@ FAMILIES: tuple[Family, ...] = (
            "where a video is, with the next step on a button"),
     Family("inbox", "Inbox", "everything waiting on you"),
     Family("new", "Starting a video", "start a video: short, long, update, "
-           "headline"),
+           "headline, implosion"),
     Family("script", "Reviewing and editing the script",
            "read, edit, approve the script",
            notes=(
@@ -855,6 +859,18 @@ COMMANDS: tuple[Command, ...] = (
                 "pick. Gets the same filing brief, additionally **graded "
                 "against what the last video claimed**. Refuses (and points "
                 "at `/new long`) when no thesis is on file.")),
+    Command("new", "implosion", "N | ID | NAME",
+            "a LONG about one famous blow-up, told from its documents",
+            c_new_implosion, aliases=("implosion",), example="1",
+            ack="⏳ reading the story's documents…", doc=(
+                "A LONG (16:9) about one famous blow-up from `/ideas "
+                "implosions`: its number there, its id, or a piece of its "
+                "name. No workbook: the bot reads the story's documents (the "
+                "regulator's order, the prosecutor's release, the court's "
+                "judgment) and numbers every sentence, so each figure in the "
+                "video points at one. Drop a PDF on the video to add a "
+                "document. Two steps like `/new long`: Step 1 returns ranked "
+                "angles, Step 2 is the writing prompt.")),
     Command("new", "headline", "TICKER <text or URL>",
             "a SHORT about one specific headline", c_new_headline,
             aliases=("headline",), example="{T} beats on margins", doc=(

@@ -116,6 +116,16 @@ def filings(ticker: str, day: _dt.date) -> dict[str, str]:
     out["spine25"] = f"CALLS {yy(day.year)}"
     out["boxlabel"] = f"10-Ks {k - 15}-{k - 6}\nDO NOT THROW OUT"
     t = (ticker or "").upper().strip()
+    from pipeline.implosions import code_word, is_story_code
+
+    if is_story_code(t):
+        # AN IMPLOSION HAS NO TICKER and no 10-Q: the papers on his desk are
+        # the case's, under the story's word (`IMP-KNIGHT12` is KNIGHT).
+        word = code_word(t)
+        out["deskstack-top"] = f"EXHIBITS\n{word}"
+        out["boxstack-top"] = f"THE RECORD\n{word}"
+        out["filing"] = f"IN THE MATTER OF\n{word}"
+        return out
     q, y = quarters[-1]
     out["deskstack-top"] = f"FORM 10-Q\n{t}\nQ{q} {y}".replace("\n\n", "\n")
     out["boxstack-top"] = f"DEF 14A\n{t}\n{proxy}".replace("\n\n", "\n")

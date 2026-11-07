@@ -1,0 +1,5 @@
+{
+ "_note": "Fixture documents for mock mode: the URL a story links to, and the file read in its place. Made up; none is a real document.",
+ "https://www.sec.gov/fixture/knight-capital-order.pdf": "knight-order.pdf",
+ "https://www.sec.gov/fixture/knight-capital-press-release": "knight-release.html"
+}

@@ -44,9 +44,17 @@ def figma_make_prompt(*, fmt: str, ticker: str, title: str,
     w, h = SIZES["short" if tall else "long"]
     ink = paper_ink()
     ticker = (ticker or "").upper()
-    who = f"{company} ({ticker})" if company and company.upper() != ticker else ticker
-    kind = ("a short (under a minute) on why " + who + " moved today"
-            if tall else "a dry, funny deep dive on " + who)
+    from pipeline.implosions import code_word, is_story_code
+
+    if is_story_code(ticker):
+        # An implosion: a famous blow-up, under its story's name. Its code
+        # (`IMP-KNIGHT12`) is the bot's filing label, never cover material.
+        who = company or code_word(ticker).title()
+        kind = "a dry, funny story of how " + who + " blew up"
+    else:
+        who = f"{company} ({ticker})" if company and company.upper() != ticker else ticker
+        kind = ("a short (under a minute) on why " + who + " moved today"
+                if tall else "a dry, funny deep dive on " + who)
     words = thumbnail_text.strip()
     cover = cover_name or ("the bot's tall cover" if tall else "the bot's cover")
     lines = [
@@ -119,7 +127,9 @@ def figma_make_prompt(*, fmt: str, ticker: str, title: str,
         "\"BREAKING\" banners.",
         "- No company logo unless I attach one, and never an invented logo.",
         "- No other people's faces.",
-        f"- Don't make the ticker{f' ({ticker})' if ticker else ''} the big words.",
+        ("- No real person's face or likeness: the story's people are named, "
+         "never drawn." if is_story_code(ticker) else
+         f"- Don't make the ticker{f' ({ticker})' if ticker else ''} the big words."),
         "",
         f"Export a PNG, {w} x {h}, under 2 MB.",
     ]

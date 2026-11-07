@@ -43,6 +43,9 @@ class VideoState:
     workdate: str
     lane: str = ""                 # short | long | ""
     update: bool = False           # a LONG grading an earlier call
+    implosion: bool = False        # a LONG about one famous blow-up
+    story: str = ""                # an implosion's story name
+    documents: int = 0             # an implosion's documents read
     fmt: str = ""                  # the format the lane renders
     data_file: str = ""            # dennis_data.xlsx / .csv, if uploaded
     data_as_of: str = ""
@@ -92,11 +95,14 @@ class VideoState:
         paste, an upload, or waiting."""
         if not self.lane:
             return ("declare the lane: /new short or /new long", "")
-        if not self.data_file:
+        # An implosion has no workbook: its documents are read when it
+        # starts, and an angle can be picked before any of them arrive.
+        if not self.data_file and not self.implosion:
             return ("upload the refreshed workbook (dennis_data.xlsx)", "")
         if self.awaiting_angle and not self.script:
-            return ("run prompt_long_angle.md in Claude and pick an angle",
-                    "angle")
+            name = ("prompt_implosion_angle.md" if self.implosion
+                    else "prompt_long_angle.md")
+            return (f"run {name} in Claude and pick an angle", "angle")
         if not self.script:
             return ("run the prompt in Claude and paste the script back",
                     "prompt")
@@ -212,11 +218,20 @@ def video_state(settings: Settings, ws: Workspace, jobs: list | None = None,
         return st
     st.lane = ws.lane()
     st.update = ws.is_update()
+    st.implosion = ws.is_implosion()
     st.fmt = ws.current_format() or st.lane or ""
-    export = find_export(ws.path)
-    if export is not None:
-        st.data_file = export.name
-        st.data_as_of = _as_of(ws.path, export)
+    if st.implosion:
+        from pipeline import story_docs
+
+        st.story = str(story_docs.load_story(ws.path).get("name") or "")[:160]
+        st.documents = story_docs.summary(ws.path)["read"]
+        if st.documents:
+            st.data_file = f"{st.documents} document(s)"
+    else:
+        export = find_export(ws.path)
+        if export is not None:
+            st.data_file = export.name
+            st.data_as_of = _as_of(ws.path, export)
     st.awaiting_angle = ws.awaiting_angle()
     st.angle = ws.chosen_angle()[:200]
     st.why = ws.why[:300]
@@ -344,9 +359,15 @@ def all_states(settings: Settings, days: int = 14,
 
 def card_text(st: VideoState) -> str:
     """The video card as text: one line per stage, the next step last."""
-    lane = ("UPDATE" if st.update else (st.lane or "no lane").upper())
+    lane = ("UPDATE" if st.update else "IMPLOSION" if st.implosion
+            else (st.lane or "no lane").upper())
     lines = [f"📁 {st.ticker} · {lane} · {st.workdate}"]
-    if st.data_file:
+    if st.implosion:
+        if st.story:
+            lines.append(f"story     {st.story[:70]}")
+        lines.append(f"documents ✅ {st.documents} read" if st.documents else
+                     "documents ⏳ none read yet: drop the story's PDF")
+    elif st.data_file:
         lines.append(f"data      ✅ {st.data_file}"
                      + (f" · as of {st.data_as_of}" if st.data_as_of else ""))
     else:

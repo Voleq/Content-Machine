@@ -764,6 +764,7 @@ and checks every name the bot registers against them in both directions.
 | `/new short TICKER` | Opens a SHORT (9:16, 55–65s), pulls a live quote for the move context, and asks for the refreshed workbook. `prompt_short.md` follows the upload. |
 | `/new long TICKER` | Opens a LONG (16:9 deep dive) **and starts reading the filings immediately** — the latest 10-K, the prior year's and the quarterly pair, in parallel with you refreshing the workbook. Two steps: Step 1 returns ranked angles (pick one with its button, or reply with a tweak), Step 2 is the writing prompt. |
 | `/new update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Gets the same filing brief, additionally **graded against what the last video claimed**. Refuses (and points at `/new long`) when no thesis is on file. |
+| `/new implosion N \| ID \| NAME` | A LONG (16:9) about one famous blow-up from `/ideas implosions`: its number there, its id, or a piece of its name. No workbook: the bot reads the story's documents (the regulator's order, the prosecutor's release, the court's judgment) and numbers every sentence, so each figure in the video points at one. Drop a PDF on the video to add a document. Two steps like `/new long`: Step 1 returns ranked angles, Step 2 is the writing prompt. |
 | `/new headline TICKER <text or URL>` | A SHORT about one specific headline. `/new headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `[company]`, `[earnings]` or `[macro]` (or `[a]`/`[b]`/`[c]`). The mode sets the lane and picks the shot template. |
 | `/new kind [TICKER] earnings\|news\|move` | A SHORT reads its day when the prompt is made: an **earnings reaction** when the SEC has an 8-K under item 2.02 (results) from the last four days or a headline says so, **company news** when other headlines are dated then, otherwise a **move** nothing public explains. An earnings day is cut as the earnings short (the print against the street, the quarter against the same quarter a year before, the guide). This sets it by hand and makes the prompt again; with no kind it says what the day was read as. |
 | `/new site [TICKER] [refresh]` | What the video took from **stockanalysis.com** when its prompt was made: the news and press releases around the move, the earnings date, twenty quarters of statements, the company's KPIs, the analysts' target changes, the profile, and the latest earnings call with the passages picked from it (a long also gets the call a year earlier). Each part with the time it was read, then where the workbook's last five quarters disagree with the site and which blank cells the site filled. `refresh` reads it all again. `STOCKANALYSIS=false` switches the source off. |
@@ -918,6 +919,7 @@ Every name the bot answered before the families still works, as a hidden alias o
 | `/headline` | `/new headline` |
 | `/hooks` | `/stats hooks` |
 | `/idea` | `/ideas add` |
+| `/implosion` | `/new implosion` |
 | `/implosions` | `/ideas implosions` |
 | `/kind` | `/new kind` |
 | `/kit` | `/admin kit` |

@@ -87,7 +87,7 @@ function renderNextUp() {
   setKids(box,
     el("div", { class: "what" }, el("span", { class: "k", text: "Next up" }),
       el("b", { text: `${v.ticker} · ${v.next_step}` }),
-      el("span", { class: "meta", text: `${v.update ? "update" : v.lane} · ${v.workdate}${more > 0 ? ` · ${more} more waiting` : ""}` })),
+      el("span", { class: "meta", text: `${v.update ? "update" : v.implosion ? "implosion" : v.lane} · ${v.workdate}${more > 0 ? ` · ${more} more waiting` : ""}` })),
     el("button", { type: "button", class: "primary big", text: "Open it →", "data-cb": `next:${v.key}`, title: "Opens the video at this step",
       onclick: () => openVideo(v.ticker, v.workdate, step) }));
 }
@@ -141,7 +141,7 @@ function paletteItems(q) {
   q = q.trim().toLowerCase().replace(/^\//, "");
   const out = [];
   SCREENS.forEach(([id, name]) => out.push({ kind: "screen", label: name, sub: "screen", go: () => showTab(id, true) }));
-  (STATE?.videos || []).forEach((v) => out.push({ kind: "video", label: `${v.ticker} · ${v.update ? "update" : v.lane || "?"} · ${v.workdate}`, sub: v.next_step,
+  (STATE?.videos || []).forEach((v) => out.push({ kind: "video", label: `${v.ticker} · ${v.update ? "update" : v.implosion ? "implosion" : v.lane || "?"} · ${v.workdate}`, sub: v.next_step,
     go: () => openVideo(v.ticker, v.workdate) }));
   (REGISTRY?.commands || []).forEach((c) => out.push({ kind: "command", label: `/${c.name}${c.usage ? " " + c.usage : ""}`, sub: c.help, cmd: c,
     go: () => {

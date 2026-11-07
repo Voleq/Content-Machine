@@ -514,6 +514,92 @@ def gen_alignment_fixture(path: Path) -> None:
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
+# --- The implosion long's documents (mock mode) -----------------------------
+# A regulator's order is a PDF and a press release is a page. Both are made
+# up for the tests and say so in their first sentence: no real document is
+# quoted. Mock mode reads them in place of the network
+# (`pipeline/story_docs._fixture`, by `fixtures/implosions/docs/index.json`).
+
+def tiny_pdf(pages: list[list[str]], title: str = "") -> bytes:
+    """A small, valid PDF with a text layer: one line per string, Helvetica,
+    one page per list. Enough for pypdf to read back word for word."""
+    def esc(t: str) -> str:
+        return t.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+    objs: list[bytes] = []
+    n_pages = len(pages)
+    font_id = 3 + 2 * n_pages
+    kids = " ".join(f"{3 + 2 * i} 0 R" for i in range(n_pages))
+    objs.append(b"<< /Type /Catalog /Pages 2 0 R >>")
+    objs.append(f"<< /Type /Pages /Kids [{kids}] /Count {n_pages} >>".encode())
+    for i, lines in enumerate(pages):
+        content = "BT /F1 11 Tf 14 TL 72 740 Td " + " ".join(
+            f"({esc(line)}) Tj T*" for line in lines) + " ET"
+        stream = content.encode("latin-1")
+        objs.append((f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+                     f"/Resources << /Font << /F1 {font_id} 0 R >> >> "
+                     f"/Contents {4 + 2 * i} 0 R >>").encode())
+        objs.append(b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n"
+                    + stream + b"\nendstream")
+    objs.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+    info_id = len(objs) + 1
+    objs.append(f"<< /Title ({esc(title)}) >>".encode("latin-1"))
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for i, body in enumerate(objs, start=1):
+        offsets.append(len(out))
+        out += f"{i} 0 obj\n".encode() + body + b"\nendobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objs) + 1}\n0000000000 65535 f \n".encode()
+    for off in offsets:
+        out += f"{off:010d} 00000 n \n".encode()
+    out += (f"trailer\n<< /Size {len(objs) + 1} /Root 1 0 R /Info {info_id} 0 R >>\n"
+            f"startxref\n{xref}\n%%EOF\n").encode()
+    return bytes(out)
+
+
+IMPLOSION_ORDER_PAGES = [
+    ["FIXTURE DOCUMENT FOR TESTS: this is not a real order and quotes no real filing.",
+     "The Respondent is Knight Capital Americas LLC, a broker-dealer that made markets",
+     "in thousands of stocks.",
+     "On August 1, 2012, the Respondent sent more than 4 million orders into the market",
+     "in 45 minutes while trying to fill 212 customer orders.",
+     "The Respondent did not have a written procedure to check that new code reached",
+     "every one of its eight servers."],
+    ["The Respondent lost more than $460 million from the positions it did not mean to take.",
+     "The Respondent agreed to pay a civil money penalty of $12 million.",
+     "The Respondent consented to this Order without admitting or denying the findings.",
+     "No individual is charged in this Order."],
+]
+
+IMPLOSION_RELEASE_HTML = """<!doctype html>
+<html><head><title>FIXTURE: SEC charges Knight Capital with violations of the market access rule</title></head>
+<body><nav>Home | Newsroom | Search</nav>
+<main>
+<h1>SEC Charges Knight Capital With Violations of Market Access Rule</h1>
+<p>FIXTURE DOCUMENT FOR TESTS: this is not a real press release.</p>
+<p>Washington D.C., Oct. 16, 2013. The Commission today charged Knight Capital Americas LLC with violating the market access rule.</p>
+<p>Knight agreed to pay $12 million to settle the charges.</p>
+<p>The firm neither admitted nor denied the findings.</p>
+</main>
+<footer>Page last reviewed or updated: fixture</footer>
+</body></html>
+"""
+
+
+def gen_implosion_docs(ddir: Path) -> None:
+    ddir.mkdir(parents=True, exist_ok=True)
+    (ddir / "knight-order.pdf").write_bytes(
+        tiny_pdf(IMPLOSION_ORDER_PAGES, "FIXTURE: In the Matter of Knight Capital Americas LLC"))
+    (ddir / "knight-release.html").write_text(IMPLOSION_RELEASE_HTML, encoding="utf-8")
+    index = {
+        "_note": "Fixture documents for mock mode: the URL a story links to, and the file read in its place. Made up; none is a real document.",
+        "https://www.sec.gov/fixture/knight-capital-order.pdf": "knight-order.pdf",
+        "https://www.sec.gov/fixture/knight-capital-press-release": "knight-release.html",
+    }
+    (ddir / "index.json").write_text(json.dumps(index, indent=1) + "\n", encoding="utf-8")
+
+
 def main() -> None:
     cdir = ROOT / "fixtures" / "company_data"
     adir = ROOT / "fixtures" / "tts"
@@ -529,6 +615,7 @@ def main() -> None:
     (cdir / "dennis_data.csv").write_text("\n".join(csv_lines) + "\n", encoding="utf-8")
 
     gen_alignment_fixture(adir / "alignment_sample.json")
+    gen_implosion_docs(ROOT / "fixtures" / "implosions" / "docs")
 
     # The short's months end on the long's five years' last close. The walk
     # dates itself back from today, and the install runs this on every box,

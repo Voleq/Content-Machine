@@ -16,6 +16,13 @@ const STEP_HELP = {
   upload: "Everything YouTube asks for, one copy button each, and the upload itself.",
   live: "How viewers watched it once it is out.",
 };
+// An implosion has no workbook: its first two steps read differently.
+const IMPLOSION_HELP = {
+  data: "The story and the documents the bot read, every sentence numbered. Drop a PDF to add one.",
+  angle: "The bot's prompt asks your Claude chat for ranked angles from the documents. Paste the answer, then pick one.",
+};
+const stepHelp = (id) => (VID.data?.state?.implosion && IMPLOSION_HELP[id]) || STEP_HELP[id];
+const guideKey = (id) => (VID.data?.state?.implosion && GUIDE[`${id}-implosion`] ? `${id}-implosion` : id);
 const withKey = (url) => (url ? `${url}${url.includes("?") ? "&" : "?"}k=${encodeURIComponent(KEY)}` : "");
 const fmtTime = (s) => { s = Math.max(0, Math.floor(s || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
 const dur = (s) => (s == null ? "" : s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min` : s >= 60 ? `${Math.round(s / 60)} min` : `${Math.round(s)} s`);
@@ -187,7 +194,7 @@ function renderHead() {
   setKids($("#ws-head"),
     el("button", { type: "button", class: "ghost sm", text: "← Videos", title: "Back to every video", onclick: () => showTab("videos") }),
     el("h2", {}, el("span", { class: "tk", text: v.ticker }), " ",
-      el("span", { class: "lane", text: st.update ? "update" : (st.lane || "no lane") }), " ",
+      el("span", { class: "lane", text: st.update ? "update" : st.implosion ? "implosion" : (st.lane || "no lane") }), " ",
       el("span", { class: "meta", text: v.workdate })),
     el("p", { class: "next-line" }, "Next: ", el("b", { text: st.next_step })),
     isActive ? el("span", { class: "active-badge", title: "Pastes and uploads from Home land here", text: "Active" })
@@ -202,7 +209,7 @@ function renderRail(current) {
   setKids(rail, v.steps.map((s, i) => el("a", {
     href: `#/video/${encodeURIComponent(v.ticker)}/${encodeURIComponent(v.workdate)}/${s.id}`,
     class: `step ${s.status}${s.id === current ? " on" : ""}`, "data-step": s.id,
-    "aria-current": s.id === current ? "step" : null, title: STEP_HELP[s.id],
+    "aria-current": s.id === current ? "step" : null, title: stepHelp(s.id),
   },
     el("span", { class: "n", "aria-hidden": "true", text: s.status === "done" ? "✓" : s.status === "skip" ? "–" : String(i + 1) }),
     el("span", { class: "t" }, el("b", { text: s.title }),
@@ -228,9 +235,9 @@ function renderPanel(step) {
   }
   setKids($("#ws-panel"),
     el("div", { class: "ws-panel-head" },
-      el("div", {}, el("h3", { text: meta.title }), el("p", { class: "meta", text: STEP_HELP[step] || "" })),
+      el("div", {}, el("h3", { text: meta.title }), el("p", { class: "meta", text: stepHelp(step) || "" })),
       el("div", { class: "ws-main" }, built.main)),
-    howTo(step), built.body);
+    howTo(guideKey(step)), built.body);
 }
 
 // ------------------------------------------------------- a render under way
@@ -347,7 +354,32 @@ function findingList(items) {
     el("b", { text: f.kind || f.gate || (f.severity === "block" ? "blocking" : "note") }), " ", f.message)));
 }
 
+// An implosion has no workbook: its data is the story (the screener's map)
+// and the documents the bot read, each sentence numbered for the receipts.
+// A PDF dropped here is read the same way and joins the list.
+function implosionData(d) {
+  const zone = dropZone("Drop a document", ".pdf,.html,.htm", uploadFile, "the regulator's order, the prosecutor's release, the court's judgment (PDF)");
+  const s = d.story || {};
+  const story = el("div", { class: "story" },
+    el("p", {}, el("b", { text: s.name || "?" }), el("span", { class: "meta", text: [s.when, s.size, s.status].filter(Boolean).map((x) => ` · ${x}`).join("") })),
+    el("p", { class: "meta", text: "What the screener knows is a map, not a receipt: nothing from it goes in the video unless a document says it too." }));
+  const docs = d.documents || [];
+  const list = docs.length
+    ? el("ul", { class: "findings" }, docs.map((x) => el("li", { class: x.status === "read" ? "" : "warn" },
+      el("b", { text: x.id }), " ",
+      x.url ? el("a", { href: x.url, target: "_blank", rel: "noopener", text: x.title || x.url }) : (x.title || "uploaded"),
+      el("span", { class: "meta", text: [x.kind, x.host].filter(Boolean).map((y) => ` · ${y}`).join("") }),
+      x.status === "read"
+        ? el("span", { class: "meta", text: ` · ${x.sentences} sentences${x.pages ? `, ${x.pages} pages` : ""}` })
+        : el("span", { text: ` · not read: ${x.why || x.status}` }),
+      x.file ? [" ", el("a", { href: withKey(x.file), class: "button sm", target: "_blank", rel: "noopener", text: "Open" })] : null)))
+    : el("p", { class: "warn-line", text: "No documents yet. An angle can still be picked, but the writer needs them: drop the PDF here." });
+  const total = el("p", { class: "meta", text: `${d.read || 0} of ${d.count || 0} read · ${(d.sentences || 0).toLocaleString()} sentences numbered${d.read_at ? ` · read ${when(d.read_at)}` : ""}` });
+  return { main: mainButton("Add a document", () => zone.pick()), body: [story, total, list, zone] };
+}
+
 STEPS_UI.data = (d) => {
+  if (d.implosion) return implosionData(d);
   const zone = dropZone("Drop the workbook", ".xlsx,.csv", uploadFile, "dennis_data.xlsx from your Capital IQ terminal");
   const body = [];
   if (d.file) {

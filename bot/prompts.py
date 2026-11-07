@@ -304,6 +304,27 @@ def template_plates(settings: Settings, name: str) -> frozenset[str] | None:
     return frozenset(v.plate for sh in fmt.shots for v in sh.variants) or None
 
 
+def implosion_plates(settings: Settings) -> frozenset[str] | None:
+    """Every plate an implosion's thirteen chapter types can reach. The
+    stock long's menu is hundreds of plates drawn for one kind of issuer (an
+    ARR bridge, a reserve life) that a blow-up has no figures for; offered
+    whole, it buries the dozen the story uses."""
+    from pipeline.plates import IMPLOSION_CHAPTER_TYPES, PlateError, load_plates
+
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError:
+        return None
+    out: set[str] = set()
+    for ctype in IMPLOSION_CHAPTER_TYPES:
+        try:
+            out |= set(reg.plates_for_chapter(ctype))
+        except PlateError:
+            continue
+    # A sector plate presumes a kind of issuer and its workbook rows.
+    return frozenset(k for k in out if not reg.assets[k].sectors) or None
+
+
 def _for_company(plate, sector: str) -> bool:
     """Whether a plate belongs on this company's menu.
 
@@ -511,9 +532,12 @@ def _move_marks(plate) -> str:
 
 def chapter_type_catalogue(settings: Settings, *, fmt: str = "long",
                            sector: str = "") -> str:
-    """The sixteen types, what each is for, and the plates it may use."""
-    from pipeline.plates import (CHAPTER_TYPES, PlateError, fold_sector,
-                                 load_plates)
+    """The chapter types this format writes, what each is for, and the
+    plates it may use. A stock long lists its sixteen; an implosion long its
+    own thirteen (`IMPLOSION_CHAPTER_TYPES`), so neither writer is shown a
+    type that is not his video's."""
+    from pipeline.plates import (IMPLOSION_CHAPTER_TYPES, STOCK_CHAPTER_TYPES,
+                                 PlateError, fold_sector, load_plates)
 
     try:
         reg = load_plates(settings.assets_dir)
@@ -524,7 +548,9 @@ def chapter_type_catalogue(settings: Settings, *, fmt: str = "long",
     gics = fold_sector(sector)
     held = _held_stems(reg)
     lines: list[str] = []
-    for ctype in CHAPTER_TYPES:
+    types = (IMPLOSION_CHAPTER_TYPES if fmt.startswith("implosion")
+             else STOCK_CHAPTER_TYPES)
+    for ctype in types:
         purpose = reg.chapter_purpose(ctype)
         lines.append(f"  {ctype}" + (f" — {purpose}" if purpose else ""))
         # The universal plates are in every type; naming them sixteen times
@@ -1028,9 +1054,13 @@ def _titles(name: str) -> str:
     return getattr(titles, name)()
 
 
-_WRITING = ("short", "long_write", "update", "headline")
-_LONG_FORM = ("long_write", "update")
-_ALL = ("short", "long_angle", "long_write", "update", "headline")
+_WRITING = ("short", "long_write", "update", "headline", "implosion_write")
+_LONG_FORM = ("long_write", "update", "implosion_write")
+# The stock prompts, which all have a ticker and (but for a macro headline) a
+# workbook. The implosion's two have neither: a story and its documents.
+_STOCK = ("short", "long_angle", "long_write", "update", "headline")
+_IMPLOSION = ("implosion_angle", "implosion_write")
+_ALL = _STOCK + _IMPLOSION
 
 
 @dataclass(frozen=True)
@@ -1444,7 +1474,7 @@ def _memory(name: str, settings: Settings) -> str:
 
 PAYLOAD: tuple[PayloadBlock, ...] = (
     # --- subject
-    PayloadBlock("{{ticker}}", _ALL, lambda c: c.ticker.upper()),
+    PayloadBlock("{{ticker}}", _STOCK, lambda c: c.ticker.upper()),
     PayloadBlock("{{as_of_date}}", _ALL, lambda c: str(
         (c.data.get("as_of_date") if c.data is not None else None)
         or date.today().isoformat())),
@@ -1466,15 +1496,15 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                  "(no article summary — work from the headline itself)"),
 
     # --- the numbers
-    PayloadBlock("{{company_data}}", _ALL, lambda c: (
+    PayloadBlock("{{company_data}}", _STOCK, lambda c: (
         c.data.as_prompt_block() if c.data is not None else
         f"(macro mode — no single-company financials; anchor on "
         f"{c.ticker.upper()} as the index/sector proxy and the macro figures "
         f"in the headline)")),
-    PayloadBlock("{{quarters}}", _ALL, lambda c: (
+    PayloadBlock("{{quarters}}", _STOCK, lambda c: (
         quarters_block(c.data) if c.data is not None else
         "(macro mode — no company quarters)")),
-    PayloadBlock("{{chart_metrics}}", _ALL, lambda c: (
+    PayloadBlock("{{chart_metrics}}", _STOCK, lambda c: (
         chart_metrics_line(c.data) if c.data is not None else
         f"(index-based — the chart is the {c.ticker.upper()} proxy; the "
         f"numbers beat is optional and, if used, carries index levels or the "
@@ -1484,7 +1514,7 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{valuation_data}}",
                  ("short", "long_angle", "long_write", "update"),
                  lambda c: valuation_data_block(c.data)),
-    PayloadBlock("{{peer_percentiles}}", _ALL, lambda c: (
+    PayloadBlock("{{peer_percentiles}}", _STOCK, lambda c: (
         "(n/a in macro mode)" if _macro(c)
         else peer_percentiles_block(c.data))),
 
@@ -1494,8 +1524,16 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                      "(no thesis on file for this ticker — nothing was "
                      "recorded from a previous video. Write this as a "
                      "first-time take instead: /long TICKER.)")),
-    PayloadBlock("{{chosen_angle}}", ("long_write",),
+    PayloadBlock("{{chosen_angle}}", ("long_write", "implosion_write"),
                  lambda c: _angle_block(c.chosen_angle)),
+
+    # --- the implosion's story and its documents, word for word: the
+    # screener's card as a map, and every document's receipt sentences with
+    # their ids (`pipeline/story_docs.py`). The angle step gets fewer.
+    PayloadBlock("{{story}}", _IMPLOSION,
+                 lambda c: _story_card(c)),
+    PayloadBlock("{{story_documents}}", _IMPLOSION,
+                 lambda c: _story_documents(c)),
 
     # --- source material
     #
@@ -1510,7 +1548,7 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{filing_sentences}}", ("long_write",),
                  lambda c: filing_sentences_block(c.workspace)),
     PayloadBlock("{{available_screenshots}}",
-                 ("long_angle", "long_write", "update"),
+                 ("long_angle", "long_write", "update", "implosion_write"),
                  lambda c: screenshots_line(c.workspace)),
 
     # --- what stockanalysis.com gave this video (the 30 Oct picks): the
@@ -1535,9 +1573,9 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     # channel has already used (S8, S3). Remembered at ship time. His story
     # goes to the long lanes only: a short says nothing about his own life
     # (3 Nov 2026).
-    PayloadBlock("{{dennis_story}}", ("long_write", "update"),
+    PayloadBlock("{{dennis_story}}", ("long_write", "update", "implosion_write"),
                  lambda c: _memory("dennis_story_block", c.settings)),
-    PayloadBlock("{{dennis_facts}}", ("long_write", "update"),
+    PayloadBlock("{{dennis_facts}}", ("long_write", "update", "implosion_write"),
                  lambda c: _memory("dennis_facts_block", c.settings)),
     PayloadBlock("{{used_jokes}}", _WRITING,
                  lambda c: _memory("used_jokes_block", c.settings)),
@@ -1565,12 +1603,15 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
     PayloadBlock("{{meme_catalog}}", _LONG_FORM,
                  lambda c: meme_catalog(c.settings, c.workspace)),
     PayloadBlock("{{broll_palette}}", _LONG_FORM, lambda c: broll_catalog()),
-    PayloadBlock("{{plate_catalogue}}", ("short", "long_write", "update"),
+    PayloadBlock("{{plate_catalogue}}", ("short", "long_write", "update",
+                                          "implosion_write"),
                  lambda c: plate_catalogue(
                      c.settings, fmt="short" if c.fmt == "short" else "long",
                      sector=_sector(c),
                      only=(template_plates(c.settings, _shot_format(c))
-                           if c.fmt == "short" else None))),
+                           if c.fmt == "short" else
+                           implosion_plates(c.settings)
+                           if c.fmt == "implosion_write" else None))),
     # The writer's menu of rooms and poses for [SCENE]: the long is the
     # writer's to direct, so the prompt lists every angle and pose the kit
     # draws, and design's limits on each, off the registry itself.
@@ -1613,6 +1654,20 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
 )
 
 PROMPT_FORMATS = _ALL
+
+
+def _story_card(ctx: "_Ctx") -> str:
+    from pipeline import story_docs
+
+    return story_docs.story_block(story_docs.load_story(ctx.workspace))
+
+
+def _story_documents(ctx: "_Ctx") -> str:
+    from pipeline import story_docs
+
+    if ctx.fmt == "implosion_angle":
+        return story_docs.brief_block(ctx.workspace)
+    return story_docs.prompt_block(ctx.workspace)
 
 
 def _site(ctx: "_Ctx", name: str, *args) -> str:

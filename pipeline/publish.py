@@ -341,7 +341,7 @@ def build_package(script, settings, *, ticker: str = "",
                   credit: str = "", fmt: str = "",
                   chosen_title: str = "", company: str = "",
                   cover_figure: str = "",
-                  cover_name: str = "") -> UploadPackage:
+                  cover_name: str = "", story: str = "") -> UploadPackage:
     """Title options, description with chapters, tags and a pinned comment.
 
     Deliberately mechanical: it assembles what the script already decided
@@ -369,11 +369,21 @@ def build_package(script, settings, *, ticker: str = "",
     hook = hook or first_line
 
     from pipeline.figma_prompt import figma_make_prompt
+    from pipeline.implosions import code_word, is_story_code
     from pipeline.titles import pick_titles, unsaid_figures, said_text
 
+    # AN IMPLOSION IS A STORY, NOT A TICKER: its code (`IMP-KNIGHT12`) is
+    # never a title, a tag or a cashtag, and its figures are the documents'.
+    implosion = is_story_code(ticker)
+    if implosion:
+        story = story or code_word(ticker).title()
     pick = pick_titles(script, ticker=ticker, hook=hook,
                        runtime_min=runtime_min, chosen=chosen_title)
     titles = pick.titles
+    payoffs = list(pick.payoffs)
+    if implosion and not pick.from_writer:
+        titles = _implosion_titles(story, hook, runtime_min)
+        payoffs = [""] * len(titles)
     lane = fmt or ("short" if getattr(script, "audio_script", None) else "long")
     # The cover's figure only if the video gives it: it is drawn on the cover
     # the title sells.
@@ -382,7 +392,8 @@ def build_package(script, settings, *, ticker: str = "",
         figure = ""
     prompt = figma_make_prompt(
         fmt=lane, ticker=ticker, title=titles[0] if titles else ticker,
-        thumbnail_text=pick.thumbnail_text, company=company, figure=figure,
+        thumbnail_text=pick.thumbnail_text,
+        company=(company or story) if implosion else company, figure=figure,
         cover_name=cover_name)
 
     body = [hook, ""]
@@ -402,15 +413,47 @@ def build_package(script, settings, *, ticker: str = "",
     body += [
         settings.disclaimer_text,
         "",
-        "The figures are from the company's filings and market data; "
-        "footage and images are credited where they appear. No sponsor, "
-        "no position unless stated, no price targets.",
+        ("Every figure is from the documents shown on screen: the regulators', "
+         "the prosecutors' and the courts' own records. Scenes marked as "
+         "dramatised are dramatised. Footage and images are credited where "
+         "they appear. No sponsor, no position, no advice." if implosion else
+         "The figures are from the company's filings and market data; "
+         "footage and images are credited where they appear. No sponsor, "
+         "no position unless stated, no price targets."),
     ]
     if credit:
         # A research source the video read (stockanalysis.com's terms ask
         # for the credit), said here rather than on screen.
         body.append(credit)
 
+    body = _with_transcript(body, transcript)
+    if implosion:
+        word = re.sub(r"[^a-z0-9 ]+", "", story.lower()).strip()
+        tags = [t for t in (word, "finance history", "market history",
+                            "financial scandal", "trading", "investing", "stocks")
+                if t]
+        pinned = ("Every number here is from the documents on screen. If I got "
+                  "one wrong, say so and I'll pin the correction.")
+    else:
+        tags = [ticker, f"${ticker}", "stocks", "investing", "earnings",
+                "value investing", "stock analysis", "10-K"]
+        pinned = (f"Numbers are from {ticker}'s own filings. If I got one wrong, "
+                  f"say so and I'll pin the correction.")
+    return UploadPackage(
+        ticker=ticker,
+        titles=titles,
+        description="\n".join(body).strip(),
+        tags=tags,
+        pinned_comment=pinned,
+        title_payoffs=payoffs,
+        title_notes=list(pick.notes),
+        titles_from_writer=pick.from_writer,
+        thumbnail_text=pick.thumbnail_text,
+        thumbnail_prompt=prompt,
+    )
+
+
+def _with_transcript(body: list[str], transcript: str) -> list[str]:
     # The transcript last, and only if the whole description still fits.
     # A truncated transcript is worse than none: it reads as a video that
     # stops mid-sentence.
@@ -422,20 +465,14 @@ def build_package(script, settings, *, ticker: str = "",
         candidate = body + ["", TRANSCRIPT_HEAD, transcript]
         sent = "\n".join(candidate).strip().replace("<", "\u2039").replace(">", "\u203a")
         if len(sent.encode("utf-8")) <= DESCRIPTION_MAX:
-            body = candidate
+            return candidate
+    return body
 
-    return UploadPackage(
-        ticker=ticker,
-        titles=titles,
-        description="\n".join(body).strip(),
-        tags=[ticker, f"${ticker}", "stocks", "investing", "earnings",
-              "value investing", "stock analysis", "10-K"],
-        pinned_comment=(
-            f"Numbers are from {ticker}'s own filings. If I got one wrong, "
-            f"say so and I'll pin the correction."),
-        title_payoffs=list(pick.payoffs),
-        title_notes=list(pick.notes),
-        titles_from_writer=pick.from_writer,
-        thumbnail_text=pick.thumbnail_text,
-        thumbnail_prompt=prompt,
-    )
+
+def _implosion_titles(story: str, hook: str, runtime_min: float) -> list[str]:
+    """The bot's own titles for an implosion whose writer wrote none the
+    check lets through: the story's name, never its code."""
+    minutes = f", in {runtime_min:.0f} minutes" if runtime_min else ""
+    out = [f"{story} — {hook[:70].rstrip('.')}" if hook else story,
+           f"How {story} blew up{minutes}"]
+    return [t for t in out if t.strip()]

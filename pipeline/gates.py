@@ -2772,6 +2772,12 @@ def _reaches_a_price_chart(script, format_name: str = "") -> bool:
     `[CHART: price]` used to count, so a mocked price line went out on the
     monitor of a final with nothing said.
     """
+    from pipeline.implosions import is_story_code
+
+    # An implosion has no share price to draw: its monitor shows its plates
+    # and the price line is never offered (`IMP-…` is a story, not a symbol).
+    if is_story_code(getattr(script, "ticker", "")):
+        return False
     fmt = (getattr(script, "format", "") or "").lower()
     if fmt == "short" or type(script).__name__ == "ShortScript":
         if not format_name:
@@ -3497,6 +3503,10 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     # globally, which is how that hid.
     if format_name == "macro" and data is None:
         report.skipped("freshness", "a macro short has no workbook")
+    elif format_name == "implosion":
+        # An implosion is told from its documents, which do not go stale
+        # the way a workbook's quarters do (their dates are the story's).
+        report.skipped("freshness", "an implosion has no workbook")
     else:
         report.findings += report.record(
             "freshness", check_freshness(as_of, settings, workspace=workspace))

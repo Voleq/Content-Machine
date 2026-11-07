@@ -46,7 +46,7 @@ const GUIDE = {
       "Run the screener for this morning's candidates: names moving today for SHORTs, beaten-down value names for LONGs. It takes a minute or two.",
       "The watch list is the names whose intraday moves the bot tells you about; ones you have published join it by themselves. Earnings dates are flagged on both sides of the print.",
       "Start on any row opens that name as a new video, ready for its workbook.",
-      "Implosions are famous blow-ups for the implosion long, found by the bot every week: closed stories with documents and a known name first. Skip hides one; the pitch under each is the local model's idea, never a fact.",
+      "Implosions are famous blow-ups for the implosion long, found by the bot every week: closed stories with documents and a known name first. Skip hides one; the pitch under each is the local model's idea, never a fact. Make it starts the implosion long: the bot reads the story's documents (the regulator's order, the prosecutor's release, the court's judgment), numbers every sentence, and writes the angle prompt. There is no workbook; drop a PDF on the video's Data step to add a document.",
     ],
   },
   calendar: {
@@ -103,6 +103,23 @@ const GUIDE = {
       "From stockanalysis.com: when the prompt is made, the bot also reads the news and press releases around the move (outlet and minute), the earnings date, twenty quarters of statements, the company's own KPIs, the analysts' target changes, who runs it, and the latest earnings call, with the passages the writer is shown (the local AI picks them; the words stay the call's). A LONG also gets the call a year earlier, for said against did. Each part says when it was read; Fetch again reads it all again, and the next prompt uses it.",
       "The quarter check: where the workbook's last five quarters and the site's disagree, it is listed here and on the Check step, so you can fix the workbook before a wrong figure goes on screen. A quarter the workbook left blank is filled from the site, and named here.",
       "Next: the bot writes the prompt for your Claude chat. A LONG goes to Angle first; a SHORT or an UPDATE goes straight to Write.",
+    ],
+  },
+  // An implosion's own first two steps: no workbook, its documents instead.
+  "data-implosion": {
+    how: [
+      "What: an implosion has no workbook. Its data is the story the screener found (a map, never a receipt) and the documents the bot read: the regulator's order, the prosecutor's release, the court's judgment.",
+      "Why: every figure, date and status word in the video has to come from one of those documents. Each sentence is numbered (D2.14 is document 2, sentence 14) so the script can point at it and the checks can find it.",
+      "How: the bot reads the story's own links when it starts. A document it could not read says why (a scan, a refusal); drop the PDF here and it is read the same way and joins the list. Dropping the same file again replaces it under the same number.",
+      "Next: the angle prompt carries the numbered sentences. A document dropped after that makes the prompt again.",
+    ],
+  },
+  "angle-implosion": {
+    how: [
+      "What: the first of two prompts. Your Claude chat checks the documents are this story, then proposes two or three angles: the question the video asks, the piece of how markets work it teaches, the cold open, the twist.",
+      "Why: an implosion is funny and teaches one mechanism. Picking the angle (and seeing the scope it costs) before anything is written keeps the script on it.",
+      "How: Copy the angle prompt, paste it into a new Claude chat, copy its whole answer, paste it here and press Send the angles. Then pick one with its button, or send a tweak in your own words.",
+      "Next: the bot writes the writing prompt for that angle, on the Write step.",
     ],
   },
   angle: {
