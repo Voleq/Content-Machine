@@ -1,7 +1,10 @@
 # Standalone paper plates, ready for an adapter review
 
-**188 concepts / 376 layouts**, all on the bot's warm paper ground. The delivery
-contains **63 text-only concepts** and **125 numeric concepts**. Each concept has
+**203 concepts / 415 layouts**, all on the bot's warm paper ground. The original
+188 concepts / 376 layouts contain 63 text-only and 125 numeric concepts.
+Round 3 adds 15 concepts / 39 layouts and extends the existing tripwires plate.
+The implosion group comes first, then the stock-long group and question card.
+See [LONGS.md](LONGS.md) for the new source, drawer and motion contracts. Each concept has
 one canonical key and one source record, with motion attached where available.
 Nothing is registered with the bot or installed into `assets/plates/`.
 
@@ -29,7 +32,7 @@ For optional, portable review pages and filled research examples:
 python design/build_all.py --out /tmp/dennis-review --ground paper --scale 2 --review
 ```
 
-Open `/tmp/dennis-review/review/index.html`. The sixteen small pages embed their
+Open `/tmp/dennis-review/review/index.html`. The small paginated pages embed their
 images and need no JavaScript, fonts or adjacent image files. Page navigation
 and full-size downloads use the files beside each page. Review output stays
 under `--out`, outside Git. The earlier galleries, PDFs and clips are retained
@@ -46,9 +49,12 @@ python design/build_all.py --out /tmp/chapter-review --only chapters --review
 
 ## Sources and contracts
 
-- [catalog.json](catalog.json) owns all 188 concepts, source examples, workbook
+- [catalog.json](catalog.json) owns the original 188 concepts, source examples, workbook
   input models, curation and motion selections. Families are `investigations`,
   `finance`, `stock`, `charts` and `chapters`; no volume or library IDs survive.
+- [longs.json](longs.json) owns the 15 Round 3 concepts, including the six
+  mechanism variants and missing 16:9 press release. `--only part-1`,
+  `--only part-2`, `--only part-3` and `--only round3` build focused deliveries.
 - [core.py](core.py) and [drawings/](drawings/) declare geometry and text slots.
   They never load fonts, write files or invoke a subprocess.
 - [data.py](data.py) draws each numeric recipe from declared workbook slots.
@@ -95,11 +101,13 @@ or `bn` when transcribing a filing table in millions or billions. An explicit
 suffix does not bypass the precision check. Actual zero inputs remain valid
 where the model permits them, as do zero results such as profit minus equal cash.
 
-All current concepts are usable for any company and publish `sectors: []`.
+All concepts publish `sectors: []`; their source/caution notes determine fit.
 Type slots share semantic kit roles, including `caption`, `value`, `label`,
 `tick`, `legend`, `unit` and `period`, with per-slot ink overrides and text budgets.
 
-**120 standalone concepts** have 4–6 ordered motion steps. The 52 existing-kit
+**121 original standalone concepts** have 4–6 ordered motion steps. Round 3
+uses 3–6 ideas, with the requested two-idea exception for the question card.
+The 52 existing-kit
 proposals use 2–6: compact quotes and closing cards need fewer ideas. Chart
 furniture appears with its data area, and related labels/figures share a step
 through `includeSlots`. Only `cueSlot` names words intended to be spoken;

@@ -206,8 +206,12 @@ def review(entry,nodes,inks,path):
         if s.get('region') or name not in values:continue
         role=entry['typeRoles'][s['role']];role={**role,'colour':colours.get(name,s.get('colour',role['colour']))};box=positions.get(name,[s[k] for k in ('x','y','w','h')])
         minimum=(30 if entry['aspect']=='9x16' else 24) if 'longRecipe'in entry else (34 if entry['aspect']=='9x16' else 26)
-        raw={'name':name,'box':box,'example':values[name],'font':role['font'],'size':role['size'],'weight':role['weight'],'minimum':minimum}
+        raw={'name':name,'box':box,'example':values[name],'font':role['font'],'size':role['size'],'weight':role['weight'],'minimum':minimum,
+             'maxLines':s.get('maxLinesByAspect',{}).get(entry['aspect'],s.get('maxLines',role.get('maxLines',1000)))}
         size,lines,top=fit(raw);font=face(role['font'],size*scale,role['weight']);x,y,w,h=box
+        if role.get('valign')=='middle':
+            small=face(role['font'],size,role['weight']);bottom=max(small.getbbox(line or ' ',anchor='ls')[3] for line in lines)
+            y+=(h-((len(lines)-1)*size*1.18+bottom-top))/2
         for i,line in enumerate(lines):
             advance=font.getlength(line);tx=x*scale if s['align']=='left' else (x+w)*scale-advance if s['align']=='right' else (x+w/2)*scale-advance/2
             draw.text((tx,(y-top+1+i*size*1.18)*scale),line,font=font,fill=inks[role['colour']],anchor='ls')

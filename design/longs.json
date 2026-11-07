@@ -476,7 +476,7 @@
           "role": "label",
           "maxChars": 200000,
           "unit": "text",
-          "note": "feed price: date,price rows separated by semicolons. Prices are whole per-share dollars; no synthetic history. Leave empty for a plain time axis.",
+          "note": "feed price: date,price rows separated by semicolons. Prices are whole per-share dollars; no synthetic history. Leave empty for a plain time axis. Supplied by the bot feed resolver, not invented or typed by the writer.",
           "factCheck": true,
           "inputOnly": true,
           "table": true,
@@ -497,7 +497,8 @@
             "period": "the stated observation window"
           },
           "optional": true,
-          "default": ""
+          "default": "",
+          "sourceManaged": true
         },
         "event-1": {
           "role": "label",
@@ -1431,33 +1432,45 @@
           "role": "colHead",
           "maxChars": 12,
           "unit": "text",
-          "note": "Writer wording; no independently asserted figure.",
+          "note": "Recorded-stage heading. Allowed values: ALLEGED.",
           "factCheck": false,
-          "default": "ALLEGED"
+          "default": "ALLEGED",
+          "enum": [
+            "ALLEGED"
+          ]
         },
         "ladder-2": {
           "role": "colHead",
           "maxChars": 12,
           "unit": "text",
-          "note": "Writer wording; no independently asserted figure.",
+          "note": "Recorded-stage heading. Allowed values: CHARGED.",
           "factCheck": false,
-          "default": "CHARGED"
+          "default": "CHARGED",
+          "enum": [
+            "CHARGED"
+          ]
         },
         "ladder-3": {
           "role": "colHead",
           "maxChars": 12,
           "unit": "text",
-          "note": "Writer wording; no independently asserted figure.",
+          "note": "Recorded-stage heading. Allowed values: TRIED.",
           "factCheck": false,
-          "default": "TRIED"
+          "default": "TRIED",
+          "enum": [
+            "TRIED"
+          ]
         },
         "ladder-4": {
           "role": "colHead",
           "maxChars": 12,
           "unit": "text",
-          "note": "Writer wording; no independently asserted figure.",
+          "note": "Recorded-stage heading. Allowed values: OUTCOME.",
           "factCheck": false,
-          "default": "OUTCOME"
+          "default": "OUTCOME",
+          "enum": [
+            "OUTCOME"
+          ]
         },
         "name-1": {
           "role": "label",
@@ -3685,7 +3698,7 @@
           "role": "label",
           "maxChars": 200000,
           "unit": "text",
-          "note": "feed price: date,price rows, semicolon separated. Use actual observed prices over the available five-year history, not synthetic observations.",
+          "note": "feed price: date,price rows, semicolon separated. Use actual observed prices over the available five-year history, not synthetic observations. Supplied by the bot feed resolver, not invented or typed by the writer.",
           "factCheck": true,
           "inputOnly": true,
           "table": true,
@@ -3704,13 +3717,14 @@
             "feed": "price",
             "what": "five years of dated share prices",
             "period": "the stated observation window"
-          }
+          },
+          "sourceManaged": true
         },
         "trade-data": {
           "role": "label",
           "maxChars": 200000,
           "unit": "text",
-          "note": "feed form4: date,code,value,person,planned,tax rows. Value is whole dollars or an explicit suffix. Codes P and S only are plotted/counted; planned/tax flags YES/NO; other codes are ignored.",
+          "note": "feed form4: date,code,value,person,planned,tax rows. Value is whole dollars or an explicit suffix. Codes P and S only are plotted/counted; planned/tax flags YES/NO; other codes are ignored. Supplied by the bot feed resolver, not invented or typed by the writer.",
           "factCheck": true,
           "inputOnly": true,
           "table": true,
@@ -3747,7 +3761,8 @@
             "period": "the stated observation window"
           },
           "optional": true,
-          "default": ""
+          "default": "",
+          "sourceManaged": true
         },
         "bought-12m": {
           "role": "big",
@@ -3880,7 +3895,7 @@
           "role": "label",
           "maxChars": 200000,
           "unit": "text",
-          "note": "feed price: date,price rows; prices are per-share dollars.",
+          "note": "feed price: date,price rows; prices are per-share dollars. Supplied by the bot feed resolver, not invented or typed by the writer.",
           "factCheck": true,
           "inputOnly": true,
           "table": true,
@@ -3899,13 +3914,14 @@
             "feed": "price",
             "what": "dated stock prices",
             "period": "the stated observation window"
-          }
+          },
+          "sourceManaged": true
         },
         "driver-data": {
           "role": "label",
           "maxChars": 200000,
           "unit": "text",
-          "note": "feed fred: date,value rows. Keep original units; the renderer indexes both series only on dates observed in both feeds.",
+          "note": "feed fred: date,value rows. Keep original units; the renderer indexes both series only on dates observed in both feeds. Supplied by the bot feed resolver, not invented or typed by the writer.",
           "factCheck": true,
           "inputOnly": true,
           "table": true,
@@ -3924,7 +3940,8 @@
             "feed": "fred",
             "what": "the dated outside economic series",
             "period": "the stated observation window"
-          }
+          },
+          "sourceManaged": true
         },
         "driver-unit": {
           "role": "label",
@@ -4250,7 +4267,7 @@
           "role": "label",
           "maxChars": 200000,
           "unit": "text",
-          "note": "feed price: past date,price rows. Include an observed event-day close; never extend this path after its final observation.",
+          "note": "feed price: past date,price rows. Include an observed event-day close; never extend this path after its final observation. Supplied by the bot feed resolver, not invented or typed by the writer.",
           "factCheck": true,
           "inputOnly": true,
           "table": true,
@@ -4269,13 +4286,14 @@
             "feed": "price",
             "what": "the past company's actual historical observations",
             "period": "the stated observation window"
-          }
+          },
+          "sourceManaged": true
         },
         "now-data": {
           "role": "label",
           "maxChars": 200000,
           "unit": "text",
-          "note": "feed price: current date,price rows. Include an observed event-day close.",
+          "note": "feed price: current date,price rows. Include an observed event-day close. Supplied by the bot feed resolver, not invented or typed by the writer.",
           "factCheck": true,
           "inputOnly": true,
           "table": true,
@@ -4294,7 +4312,8 @@
             "feed": "price",
             "what": "this company's actual observations so far",
             "period": "the stated observation window"
-          }
+          },
+          "sourceManaged": true
         },
         "then-name": {
           "role": "legend",
@@ -4407,6 +4426,88 @@
       },
       "round": 3,
       "part": 2
+    },
+    {
+      "key": "cards/question-card",
+      "drawer": "longs",
+      "model": "question",
+      "definition": {},
+      "purpose": "Bring back the video's one question at a chapter opener, in large type and with no answer. Use only two or three times in a long.",
+      "caution": "One question only, never a claim, answer or figure. This is the recurring video question, not a new question for every chapter.",
+      "chapterTypes": [
+        "bull-vs-bear",
+        "capital-allocation",
+        "cold-open",
+        "filing-walk",
+        "ground-truth",
+        "guidance-estimates",
+        "how-the-money-is-made",
+        "how-we-got-here",
+        "insider-trades",
+        "management",
+        "moat",
+        "one-framework",
+        "promises-kept",
+        "red-flag-check",
+        "resigned-close",
+        "risk",
+        "sector-comps",
+        "short-interest",
+        "the-aftermath",
+        "the-bill",
+        "the-cast",
+        "the-driver",
+        "the-numbers",
+        "the-precedent",
+        "the-trick",
+        "the-unravel",
+        "the-watchlist",
+        "valuation"
+      ],
+      "allChapterTypes": true,
+      "sectors": [],
+      "round": 3,
+      "part": 3,
+      "motion": {
+        "kind": "question"
+      },
+      "fields": {
+        "question": {
+          "role": "big",
+          "maxChars": 64,
+          "unit": "text",
+          "note": "The video's one recurring question. End with ?. No answer, amount, percentage or other figure.",
+          "maxLinesByAspect": {
+            "16x9": 3,
+            "9x16": 5
+          },
+          "factCheck": false
+        },
+        "kicker": {
+          "role": "kicker",
+          "maxChars": 18,
+          "unit": "text",
+          "note": "Optional reminder phrase, for example STILL THE QUESTION.",
+          "optional": true,
+          "default": "",
+          "factCheck": false
+        },
+        "stress-words": {
+          "role": "label",
+          "maxChars": 64,
+          "unit": "text",
+          "note": "Optional exact words inside the question that the narration stresses. A content word is selected when omitted.",
+          "optional": true,
+          "default": "",
+          "inputOnly": true,
+          "factCheck": false
+        }
+      },
+      "example": {
+        "question": "What does the cable actually do?",
+        "kicker": "STILL THE QUESTION",
+        "stress-words": "cable"
+      }
     }
   ]
 }

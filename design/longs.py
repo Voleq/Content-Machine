@@ -131,7 +131,8 @@ class Canvas(core.Scene):
         spec=self.specs.get(name,{'role':role or 'label','unit':unit,'maxChars':max(16,len(str(value or ''))),'computed':True,
                                   'note':note or 'Computed label from the declared data; not an independent writer input.','factCheck':False})
         role=role or spec['role'];family,size,weight=STYLE[role]
-        if self.portrait and role=='big':size=104
+        if self.item['model']=='question' and role=='big':family,size,weight='Archivo Narrow',160 if self.portrait else 200,700
+        if self.portrait and role=='big' and self.item['model']!='question':size=104
         if self.portrait:size=max(size,32)
         self.text(name,self.values.get(name,'') if value is None else value,x,y,w,h,size=size,kind='sans' if family=='Archivo Narrow' else 'mono-bold' if weight==700 else 'mono',weight=weight,colour=colour,align=align,minimum=30 if self.portrait else 24)
         self.slots[-1].update(role=role,spec=deepcopy(spec))
@@ -252,7 +253,7 @@ def render_collapse(p):
     for i,name in enumerate(('top','bottom','drop')):
         x=96+i*(p.w-192)/3;y=1590 if p.portrait else 900
         p.field(name+'-label',x,y,(p.w-192)/3-20,44,value=name.upper(),role='label')
-        p.field(name,x,y+55,(p.w-192)/3-20,150 if name=='drop' else 110)
+        p.field(name,x,y+55,(p.w-192)/3-20,150 if name=='drop' and p.portrait else 110)
 
 def mechanism_boxes(p):
     n=p.variant['steps'];boxes=[]
@@ -525,9 +526,28 @@ def render_precedent(p):
     p.field('then-after',96,1370 if p.portrait else 865,420 if p.portrait else 760,120)
     p.field('now-after',564 if p.portrait else 1060,1370 if p.portrait else 865,420 if p.portrait else 764,120,colour='subject')
     p.field('months-after',96,1530 if p.portrait else 985,p.w-192,70)
-    p.field('month-unit',96,1650 if p.portrait else 1030,p.w-192,54,value='MONTHS FROM THE EVENT / INDEX AT DAY 0 = 100',role='unit')
+    p.field('month-unit',96,1650 if p.portrait else 1030,p.w-192,44,value='MONTHS FROM THE EVENT / INDEX AT DAY 0 = 100',role='unit')
 
 RENDER.update(promises=render_promises,insiders=render_insiders,driver=render_driver,checked=render_checked,precedent=render_precedent)
+
+def question_stress(p):
+    q=p.raw['question'];selected=p.raw.get('stress-words','')
+    if not selected:
+        ordinary={'what','where','when','why','who','how','does','do','is','are','was','were','the','a','an','to','of','it','actually','can','should','would','could','will','which','this','that','these','those','about','on','for','with'}
+        words=re.findall(r"[A-Za-z]+(?:'[A-Za-z]+)?",q)
+        selected=next((w for w in words if w.lower()not in ordinary),words[-1] if words else '')
+    start=q.casefold().find(selected.casefold());check(selected and start>=0,'Stress words must occur in the question')
+    return {'start':start,'end':start+len(selected),'text':q[start:start+len(selected)]}
+
+def render_question(p):
+    q=p.require('question')
+    check(q.endswith('?') and q.count('?')==1,'Write one question ending in ?, with no answer')
+    check(not re.search(r'\d|[$€£%]|\b(hundred|thousand|million|billion|trillion|percent|dollars)\b',q,re.I),'The question card must not contain a figure')
+    question_stress(p)
+    p.field('kicker',96,370 if p.portrait else 180,p.w-192,70,align='center',colour='quiet')
+    p.field('question',96 if p.portrait else 160,570 if p.portrait else 300,888 if p.portrait else 1600,780 if p.portrait else 480,align='center')
+
+RENDER['question']=render_question
 
 def motion_for(p):
     model=p.item['model'];steps=[]
@@ -589,6 +609,7 @@ def motion_for(p):
         if p.raw.get('found-figure'):steps.append(group('found-figure',move='count-up',cue='found-figure'))
         steps.append(group('verdict',move='highlight',cue='verdict'))
     elif model=='precedent':steps=[group('then-line',move='line-draw',cue='then-name'),group('event-zero','event-label',cue='event-label'),group('now-line','now-after',move='line-draw',cue='now-name'),group('then-after','months-after',move='count-up',cue='then-after')]
+    elif model=='question':steps=[group('question','kicker',cue='question'),group('question',move='highlight',cue='question',textRange=question_stress(p))]
     if len(steps)<3 and model!='question':
         last=next((s['name'] for s in reversed(p.slots) if s['example'] and s['role'] in ('caption','label','value','callout')),None)
         while len(steps)<3:steps.append(group(last,move='highlight',cue=last))
@@ -719,4 +740,5 @@ def compile_plate(item,aspect,inks,scale,variant=None):
         'motion':motion,'motionAnchors':anchors_for(p),'longRecipe':{'item':deepcopy(item),'aspect':aspect,'variant':variant}}
     if item.get('synthetic'):entry['factCheck']={'skipWhen':{'slot':'tag','values':['EXAMPLE','TOY NUMBERS']},'synthetic':True}
     if item.get('existingCounterpart'):entry['existingCounterpart']=item['existingCounterpart']
+    if item['model']=='question':entry['typeRoles']['big'].update(valign='middle',maxLines=5 if aspect=='9x16' else 3)
     return entry,core.clean_nodes([n for n in p.nodes if n['_scope']=='frame'])

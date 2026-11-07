@@ -15,6 +15,7 @@ def writer_slots(entry):
 def writer_menu(entry):
     lines=[entry['key'],entry['purpose'],'Caution: '+entry['caution']]
     for name,slot in writer_slots(entry).items():
+        if slot.get('sourceManaged'):continue
         default=' Default: '+slot['default'] if 'default' in slot else ''
         lines.append(f'{name} (max {slot["maxChars"]}): {slot["note"]}{default}')
     return '\n'.join(lines)
@@ -24,6 +25,7 @@ def example_fill(entry):
 
 def script_example(entry):
     values=example_fill(entry)
+    values={n:v for n,v in values.items() if not entry['slots'][n].get('sourceManaged')}
     if any('|' in v or ']' in v for v in values.values()):raise ValueError('A script value contains a tag delimiter')
     return '[PLATE: '+entry['key']+' | '+' | '.join(name+'='+value for name,value in values.items())+']'
 

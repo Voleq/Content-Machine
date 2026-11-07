@@ -24,6 +24,11 @@ The helpers recognize `longRecipe` entries without production registration.
 Writer values remain flat strings. Hidden feed tables use semicolon-separated
 CSV rows; the field's `columns` declares each column's real unit. Runtime callers
 may also supply table rows as lists. No drawer fetches anything from a network.
+Feed tables are `sourceManaged`: they are omitted from the writer's menu and
+PLATE-tag example. The bot's feed resolver supplies them alongside the writer
+values before `prepare` or `draw`. `example_fill` includes illustrative feed
+tables solely to make the complete review fixture reproducible; runtime code
+never substitutes those examples when a feed is missing.
 Raw money inputs can use whole amounts or explicit `m`/`bn`; a non-zero amount
 that rounds to zero is rejected before drawing. The formatted output has its
 own character budget, separate from the longer source representation.
@@ -91,3 +96,13 @@ only words and optional figures; the screenshot remains a separate WEB shot.
 Tripwire limits and the new 16-character review dates are explicitly unchecked
 writer assumptions. All three current tripwire figures retain workbook sources,
 including the declared same-period cash-conversion/revenue-growth calculations.
+
+## The recurring question
+
+Part 3 is `cards/question-card`, available to all 28 current chapter types. It
+has only the question and optional kicker on paper: no answer, figure, source
+line or other furniture. Its large shared `big` type is vertically and
+horizontally centered, limited to three lines in 16:9 and five in 9:16.
+The optional hidden `stress-words` control must be an actual substring; otherwise
+the first content word is selected. The second of two motion ideas publishes
+that character range for the existing highlight move and spoken alignment.

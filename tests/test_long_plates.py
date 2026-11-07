@@ -50,11 +50,26 @@ def test_shared_delivery_rules_and_source_contract(compiled):
             if s.get('source'):workbook.validate_source(s['source'],schema)
             if s.get('enum'):assert all(v in s['note'] for v in s['enum'])
         longs.validate_motion(e['motion'],e['slots'])
-        assert 3<=len(e['motion']['steps'])<=6
+        assert len(e['motion']['steps'])==2 if item['model']=='question' else 3<=len(e['motion']['steps'])<=6
         menu=contracts.writer_menu(e);assert e['purpose']in menu
         assert contracts.script_example(e).startswith('[PLATE: '+e['key'])
         prepared=contracts.prepare(e,contracts.example_fill(e),INK)
         assert not any(e['slots'][n].get('region') for n in prepared['values'])
+
+def test_complete_catalogue_is_unique_and_new_keys_do_not_replace_kit_plates(compiled):
+    items=build_all.catalog_items()
+    assert len(items)==203 and len({i['key'] for i in items})==203
+    assert len(compiled)==39 and len(ITEMS)==15
+    assert sum(len(i.get('aspects',['16x9','9x16']))*len(i.get('variants',[None])) for i in items)==415
+    published=set()
+    for f in (ROOT/'kit').glob('*/manifest.json'):
+        m=json.loads(f.read_text());table=m.get('plates',m.get('assets',{}))
+        if isinstance(table,dict):published.update(table)
+    assert set(compiled).isdisjoint(published)
+    for _,e,_ in compiled.values():
+        w,h=e['canvas']
+        for n,s in e['slots'].items():
+            assert s['x']>=0 and s['y']>=0 and s['x']+s['w']<=w and s['y']+s['h']<=h,n
 
 def sources_units():
     from design.sources import UNIT_LABELS
@@ -174,6 +189,9 @@ def test_form4_only_counts_open_market_codes_and_quiets_routine_sales(compiled):
     assert empty['motion']['steps'][-1].get('move')is None
     small=contracts.prepare(e,{**v,'trade-data':'2026-03-03,P,$100,Director A,NO,NO','focus-trade':'1'},INK)
     assert small['values']['bought-12m']=='$100'  # never show a real small feed total as zero million
+    assert 'price-data='not in contracts.script_example(e) and 'trade-data='not in contracts.script_example(e)
+    assert 'price-data (max'not in contracts.writer_menu(e)
+    assert e['slots']['price-data']['sourceManaged']is True
 
 def test_shared_index_uses_observed_common_dates_and_one_axis(compiled):
     e=entry(compiled,'charts/stock-vs-driver');v=contracts.example_fill(e);p=contracts.prepare(e,v,INK)
@@ -224,6 +242,19 @@ def test_existing_tripwires_has_three_dates_and_unchecked_writer_limits():
             assert e['slots'][current]['source']['kind']=='workbook'
             assert e['slots'][limit]['factCheck']is False and 'fact-check does not check'in e['slots'][limit]['note']
         assert contracts.prepare(e,contracts.example_fill(e),INK)['values']['by-when-1']=='Q1 FY27 print'
+
+def test_question_is_universal_large_centered_and_only_two_ideas(compiled):
+    for aspect,maximum in [('16x9',3),('9x16',5)]:
+        e=entry(compiled,'cards/question-card',aspect);v=contracts.example_fill(e);p=contracts.prepare(e,v,INK)
+        assert set(e['chapterTypes'])==build_all.chapter_types()
+        assert set(p['values'])=={'question','kicker'} and not p['nodes']
+        assert e['slots']['question']['maxChars']==64
+        assert e['typeRoles']['big']['maxLines']==maximum and e['typeRoles']['big']['valign']=='middle'
+        assert len(p['motion']['steps'])==2 and p['motion']['steps'][1]['textRange']['text']=='cable'
+        assert contracts.prepare(e,{'question':'What does the cable actually do?'},INK)['values']['kicker']==''
+        for question in ('This is an answer.','What happened? The answer is cash.','Why 20%?','Why a million dollars?'):
+            with pytest.raises(ValueError):contracts.prepare(e,{**v,'question':question},INK)
+        with pytest.raises(ValueError,match='occur'):contracts.prepare(e,{**v,'stress-words':'missing word'},INK)
 
 def test_red_flags_publish_both_sources_and_never_draw_a_finding(compiled):
     e=entry(compiled,'chapters/red-flag-checklist');v=contracts.example_fill(e)
