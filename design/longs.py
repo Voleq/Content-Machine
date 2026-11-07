@@ -4,8 +4,10 @@ from copy import deepcopy
 import csv
 from datetime import date,datetime,time,timezone
 from io import StringIO
+from decimal import Decimal
 import math
 import re
+import calendar
 from . import core,data,sources
 from .drawings import long_series
 
@@ -19,12 +21,26 @@ STYLE={
     'date':('Courier Prime',30,400),'body':('Courier Prime',36,400),
 }
 MOVES={'appear','clip-in','count-up','line-draw','bars-grow','highlight','pen-circle','zoom-to-slot','clock-run'}
+MONEY_FIELDS={'revenue','gross_profit','operating_income','ebitda','net_income','operating_cf','capex','fcf','sbc','dividends_paid','buybacks','cash','total_debt','net_debt','total_equity','total_assets','invested_capital','accounts_receivable','revenue_consensus'}
+RATE_FIELDS={'gross_margin','operating_margin','net_margin','fcf_margin','sbc_pct_rev','roic','roe','shares_yoy'}
+
+def workbook_unit(field):
+    if field in MONEY_FIELDS:return 'money_m'
+    if field=='diluted_shares':return 'shares_m'
+    if field in RATE_FIELDS:return 'percent'
+    if field in ('eps','eps_street','eps_consensus','fcf_ps','bvps'):return 'money'
+    if field=='net_debt_ebitda':return 'multiple'
+    if field=='period_end':return 'date'
+    if field in ('fiscal_year','fiscal_quarter'):return 'count'
+    raise ValueError('Unknown workbook result field '+field)
 
 def check(ok,message):
     if not ok:raise ValueError(message)
 
 def field_specs(item,aspect,variant=None):
     fields={n:deepcopy(s) for n,s in item['fields'].items() if aspect not in s.get('omitAspects',[])}
+    for spec in fields.values():
+        if aspect in spec.get('defaultsByAspect',{}):spec['default']=spec['defaultsByAspect'][aspect]
     if item['model']=='mechanism' and variant:
         for name in list(fields):
             match=re.fullmatch(r'(step|detail|arrow)-(\d)',name)
@@ -32,7 +48,9 @@ def field_specs(item,aspect,variant=None):
             elif name=='loop-label' and not variant['loop']:fields.pop(name)
     return fields
 
-def unit_for(spec,raw):return raw.get(spec['unitFrom'],spec['unit']) if spec.get('unitFrom') else spec['unit']
+def unit_for(spec,raw):
+    if spec.get('unitFromField') and raw.get(spec['unitFromField']):return workbook_unit(raw[spec['unitFromField']])
+    return raw.get(spec['unitFrom'],spec['unit']) if spec.get('unitFrom') else spec['unit']
 
 def number(item,name,spec,value,raw):
     unit=unit_for(spec,raw)
@@ -78,6 +96,7 @@ def normalize(item,aspect,values,variant=None):
         spec=specs[name]
         if spec.get('table') and isinstance(value,list):continue
         unit=unit_for(spec,raw)
+        if value and spec.get('unitFromField'):check(bool(raw.get(spec['unitFromField'])),name+' needs its actual workbook field_key')
         if type(value) in (int,float) and unit in ('money','money_m','money_b','shares_m','shares','percent','multiple','count','index'):
             numbers[name]=number(item,name,spec,value,raw);visible[name]=fmt(numbers[name],unit,spec.get('places',2));continue
         check(isinstance(value,str),name+' must be written as a script string')
@@ -116,6 +135,8 @@ class Canvas(core.Scene):
         if self.portrait:size=max(size,32)
         self.text(name,self.values.get(name,'') if value is None else value,x,y,w,h,size=size,kind='sans' if family=='Archivo Narrow' else 'mono-bold' if weight==700 else 'mono',weight=weight,colour=colour,align=align,minimum=30 if self.portrait else 24)
         self.slots[-1].update(role=role,spec=deepcopy(spec))
+        maximum=spec.get('maxLinesByAspect',{}).get(self.aspect,spec.get('maxLines'))
+        if maximum:self.slots[-1]['maxLines']=maximum
 
     def title(self):self.field('title',96,100 if self.portrait else 72,self.w-192,170 if self.portrait else 145)
 
@@ -126,7 +147,7 @@ class Canvas(core.Scene):
         for n in nodes:self.emit(deepcopy(n))
 
     def require(self,name):
-        check(bool(self.raw.get(name)),name+' is required for the active row');return self.values[name]
+        check(name in self.raw and self.raw[name] is not None and self.raw[name]!='',name+' is required for the active row');return self.values[name]
 
     def num(self,name):
         self.require(name);return self.numbers[name]
@@ -134,23 +155,25 @@ class Canvas(core.Scene):
     def count(self,name,low,high):
         n=int(self.num(name));check(low<=n<=high,f'{name} must be between {low} and {high}');return n
 
-def price_series(p,name):
+def price_series(p,name,value_unit='money',nonnegative=True):
     result=[]
     for i,row in enumerate(rows(p.raw.get(name,''))):
         if isinstance(row,dict):row=[row.get('date'),row.get('price',row.get('close'))]
         check(len(row)==2,name+' needs date,price rows separated by semicolons')
-        stamp=moment(row[0]);v=number(p.item,f'{name} row {i+1}',{'unit':'money'},str(row[1]),p.raw)
-        check(v>0,'Prices must be positive');result.append((stamp,v))
+        stamp=moment(row[0]);v=number(p.item,f'{name} row {i+1}',{'unit':value_unit},str(row[1]),p.raw)
+        if nonnegative:check(v>=0,'Prices must not be negative')
+        result.append((stamp,v))
     check(not result or len(result)>=2,'A price line needs at least two observations')
     check(all(a[0]<b[0] for a,b in zip(result,result[1:])),name+' dates must be strictly increasing')
     return result
 
-def plot(p,name,box,series,*,xdomain=None,ydomain=None,xunit='date',yunit='money'):
+def plot(p,name,box,series,*,xdomain=None,ydomain=None,xunit='date',yunit='money',parts=None,gap=False):
     xs=[x for _,points in series for x,_ in points];ys=[y for _,points in series for _,y in points]
     x0,x1=xdomain or (min(xs),max(xs));y0,y1=ydomain or (min(ys),max(ys))
     if y0==y1:y0=max(0,y0-1);y1+=1
     check(x1>x0 and y1>y0,'Plot needs a nonempty axis')
-    x,y,w,h=box;p.region(name,box,('line_path',))
+    x,y,w,h=box;p.region(name,box,('line_path','spread_fill') if gap else ('line_path',),[name+'-furniture',*parts,*([name+'-gap'] if gap else [])] if parts else [])
+    if parts:p.region(name+'-furniture',box,())
     p.line([(x,y),(x,y+h),(x+w,y+h)],'axis',2)
     for i in range(3):
         v=y0+(y1-y0)*i/2;py=y+h-h*i/2
@@ -158,9 +181,18 @@ def plot(p,name,box,series,*,xdomain=None,ydomain=None,xunit='date',yunit='money
         p.field(name+'-axis-'+str(i),max(8,x-138),py-20,126,42,value=fmt(v,yunit,2 if yunit=='money' else 1),role='label',unit=yunit,align='right')
     for i in range(3):
         v=x0+(x1-x0)*i/2
-        label=datetime.fromtimestamp(v,timezone.utc).strftime('%H:%M' if xunit=='time' else '%Y-%m') if xunit!='count' else fmt(v,'count',0)
+        label=datetime.fromtimestamp(v,timezone.utc).strftime('%H:%M' if xunit=='time' else '%Y-%m') if xunit!='count' else f'{v:.1f}'.rstrip('0').rstrip('.')
         p.field(name+'-date-'+str(i),x+w*i/2-70,y+h+15,140,44,value=label,role='label',unit='date' if xunit!='count' else 'count',align='center')
-    for colour,points in series:
+    if gap:
+        check(len(series)==2 and [q[0] for q in series[0][1]]==[q[0] for q in series[1][1]],'A gap needs two aligned series')
+        p.region(name+'-gap',box,('spread_fill',))
+        columns=[{'anchorX':x+(vx-x0)/(x1-x0)*w} for vx,_ in series[0][1]]
+        # spread_fill includes zero in its native extent. Translate both
+        # series to a zero-based domain so it uses the lines' exact scale.
+        result=core.native_series.spread_fill(dict(zip(('x','y','w','h'),box)),[v-y0 for _,v in series[0][1]],[v-y0 for _,v in series[1][1]],p.ink,columns=columns,min=0,max=y1-y0)
+        p.series_nodes('spread_fill',result['nodes'])
+    for i,(colour,points) in enumerate(series):
+        if parts:p.region(parts[i],box,('line_path',))
         columns=[{'anchorX':x+(vx-x0)/(x1-x0)*w} for vx,_ in points]
         result=core.native_series.line_path(dict(zip(('x','y','w','h'),box)),[v for _,v in points],p.ink,columns=columns,min=y0,max=y1,zero=False,tone=colour,weight=6)
         p.series_nodes('line_path',result['nodes'])
@@ -325,14 +357,14 @@ def render_toy(p):
         p.field('head-amount',1010,282,320,50,align='right');p.field('head-total',1390,282,434,50,align='right')
     else:
         p.field('head-amount',96,405,380,50);p.field('head-total',550,405,434,50,align='right')
-    previous=0;rowh=220 if p.portrait else 102
+    previous=Decimal('0');rowh=220 if p.portrait else 102
     p.region('ledger-area',[96,480 if p.portrait else 350,p.w-192,rowh*n],())
     for i in range(1,6):
         y=(480 if p.portrait else 350)+(i-1)*rowh
         if i<=n:
             p.require(f'step-{i}');amount=p.num(f'amount-{i}');total=p.num(f'total-{i}')
-            check(math.isclose(previous+amount,total,rel_tol=1e-12,abs_tol=1e-9),f'total-{i} does not add up: previous total plus amount-{i} must equal total-{i}')
-            previous=total;p.line([(96,y-12),(p.w-96,y-12)],'rule',2)
+            check(previous+Decimal(str(amount))==Decimal(str(total)),f'total-{i} does not add up: previous total plus amount-{i} must equal total-{i}')
+            previous=Decimal(str(total));p.line([(96,y-12),(p.w-96,y-12)],'rule',2)
         for name,x,w,dy,align in ((f'step-{i}',96,888 if p.portrait else 840,12,'left'),(f'amount-{i}',96 if p.portrait else 1000,380 if p.portrait else 330,112 if p.portrait else 8,'left' if p.portrait else 'right'),(f'total-{i}',550 if p.portrait else 1380,434,112 if p.portrait else 8,'right')):
             p.field(name,x,y+dy,w,90,value=p.values.get(name,'') if i<=n else '',align=align,colour='subject' if name.startswith('total') else 'structure')
     p.field('outcome',96,1720 if p.portrait else 940,p.w-192,120)
@@ -355,7 +387,8 @@ def marked_lines(body,selected,width,size):
 def render_press(p):
     p.field('source',128,90,1050,64,colour='quiet');p.field('date',1240,90,552,64,align='right',colour='quiet')
     p.field('headline',128,220,1664,220);p.field('body',128,510,1664,350,colour='quiet')
-    selected=p.require('marked-sentence');body=p.require('body');spans=marked_lines(body,selected,1664,STYLE['body'][1])
+    body=p.require('body');selected=p.raw.get('marked-sentence') or re.split(r'(?<=[.!?])\s+',body,maxsplit=1)[0]
+    spans=marked_lines(body,selected,1664,STYLE['body'][1])
     p.region('mark-area',[128,510,1664,350],())
     for x,y,w,h in spans:p.rect(128+x,510+y,w,h,'subject4','structure',1)
     p.field('caption',128,960,1664,70)
@@ -375,6 +408,126 @@ def render_flags(p):
         p.field(f'note-{i}',96,y+195 if p.portrait else y+82,888 if p.portrait else 1250,52,colour='quiet')
 
 RENDER.update(cast=render_cast,collapse=render_collapse,mechanism=render_mechanism,bill=render_bill,ended=render_ended,clock=render_clock,toy=render_toy,press=render_press,flags=render_flags)
+
+def render_promises(p):
+    p.title();maximum=3 if p.portrait else 4;n=p.count('row-count',1,maximum)
+    p.region('promise-area',[96,330 if p.portrait else 275,p.w-192,maximum*(430 if p.portrait else 174)],())
+    for i in range(1,maximum+1):
+        y=(330 if p.portrait else 275)+(i-1)*(430 if p.portrait else 174);active=i<=n
+        if active:
+            quote=p.require(f'promise-{i}');p.require(f'said-{i}');mark=p.require(f'mark-{i}')
+            has_number=bool(re.search(r'\d|\b(one|two|three|four|five|six|seven|eight|nine|ten|hundred|thousand|million|billion)\b',quote,re.I))
+            has_date=bool(p.raw.get(f'target-period-{i}')) or bool(re.search(r'\b(next year|this year|next quarter|by year.end|FY\d|Q[1-4])\b',quote,re.I))
+            if not has_number and not has_date:check(mark=='DROPPED','A promise with no number and no date can only be DROPPED')
+            if mark=='DROPPED':check(p.raw[f'no-longer-mentioned-{i}']=='YES','DROPPED needs a record that they stopped mentioning the promise')
+            else:p.require(f'result-{i}')
+            if p.raw.get(f'result-{i}'):
+                sheet=p.raw[f'result-sheet-{i}'];field=p.raw[f'result-field-{i}'];period=p.raw[f'result-period-{i}']
+                check(field in p.item['workbookFields'].get(sheet,[]),'Result must name an actual workbook field_key on its sheet')
+                check(re.fullmatch(r'Q-[0-7]' if sheet=='Quarters' else r'FY-[0-4]|LTM',period),'Result period does not belong to its workbook sheet')
+            p.line([(96,y-10),(p.w-96,y-10)],'rule',2)
+        boxes=[(f'promise-{i}',96,y+8,888 if p.portrait else 1030,145 if p.portrait else 120),
+               (f'said-{i}',96,y+165 if p.portrait else y+126,888 if p.portrait else 1030,60 if p.portrait else 42),
+               (f'result-{i}',96 if p.portrait else 1170,y+260 if p.portrait else y+38,460 if p.portrait else 300,100),
+               (f'mark-{i}',590 if p.portrait else 1530,y+280 if p.portrait else y+54,394 if p.portrait else 294,70)]
+        for name,x,yy,w,h in boxes:p.field(name,x,yy,w,h,value=p.values.get(name,'') if active else '',colour='attention' if name.startswith('mark') and p.raw.get(name)=='MISSED' else 'subject5' if name.startswith('mark') and p.raw.get(name)=='KEPT' else 'structure')
+
+def twelve_months_before(stamp):
+    d=datetime.fromtimestamp(stamp,timezone.utc);y=d.year-1
+    return moment(d.replace(year=y,day=min(d.day,calendar.monthrange(y,d.month)[1])).isoformat())
+
+def render_insiders(p):
+    p.title();prices=price_series(p,'price-data');check(prices,'A trade chart needs the fetched price history')
+    box=[232,390,706,590] if p.portrait else [224,280,1560,420]
+    xy=plot(p,'price-area',box,[('subject',prices)]);lookup=dict(prices);trades=[]
+    for i,row in enumerate(rows(p.raw['trade-data'])):
+        if isinstance(row,dict):row=[row.get('date'),row.get('code'),row.get('value'),row.get('person'),row.get('planned','NO'),row.get('tax','NO')]
+        check(len(row)==6,'Form 4 rows need date,code,value,person,planned,tax')
+        stamp=moment(row[0]);code=str(row[1]).strip().upper()
+        if code not in ('P','S') or not prices[0][0]<=stamp<=prices[-1][0]:continue
+        check(stamp in lookup,'An open-market trade needs a fetched price observation on its actual day')
+        amount=number(p.item,'trade-data row '+str(i+1),{'unit':'money'},str(row[2]),p.raw);check(amount>=0,'Trade value must be nonnegative')
+        flags=[('YES' if v else 'NO') if type(v)is bool else str(v).strip().upper() for v in row[4:]];check(all(v in ('YES','NO') for v in flags),'Trade planned/tax flags must be YES or NO')
+        person=str(row[3]).strip();check(person,'A Form 4 trade needs its reporting person')
+        trades.append({'date':stamp,'code':code,'value':amount,'person':person,'planned':flags[0]=='YES','tax':flags[1]=='YES','point':xy(stamp,lookup[stamp])})
+    p.region('trade-marks',box,('trade_marks',));p.add_nodes(long_series.trade_marks(dict(zip(('x','y','w','h'),box)),trades,p.ink))
+    threshold=twelve_months_before(prices[-1][0]);recent=[t for t in trades if threshold<t['date']<=prices[-1][0]]
+    for code,name,people in [('P','bought-12m','buyers'),('S','sold-12m','sellers')]:
+        total=sum(t['value'] for t in recent if t['code']==code)
+        # Computed feed totals retain dollars for small real trades, rather
+        # than falsely printing zero million. Source parsing is still strict.
+        p.values[name]=fmt(total/1e6,'money_m') if total>=1e6 else fmt(total,'money')
+        p.values[people]=str(len({t['person'] for t in recent if t['code']==code}))
+    for i,name in enumerate(('bought-12m','sold-12m')):
+        x=96+i*(p.w-192)/2;y=1190 if p.portrait else 800
+        p.field('bought-label' if i==0 else 'sold-label',x,y,(p.w-192)/2-28,54)
+        p.field(name,x,y+66,(p.w-192)/2-28 if p.portrait else 590,160 if p.portrait else 140,colour='subject5' if i==0 else 'attention')
+        people='buyers' if i==0 else 'sellers';px=x if p.portrait else x+650;py=y+246 if p.portrait else y+66
+        p.field(people,px,py,150,85)
+        p.field(people+'-label',x+170 if p.portrait else px,py+10 if p.portrait else py+90,(p.w-192)/2-200 if p.portrait else 200,60,value=people.upper(),role='label')
+    selected=p.count('focus-trade',0,len(trades));focus=trades[selected-1]['point'] if selected else (box[0],box[1])
+    p.region('trade-focus',[focus[0]-34,focus[1]-34,68,68],())
+    if selected:p.line([(focus[0]+31*math.cos(k*math.pi/16),focus[1]+31*math.sin(k*math.pi/16)) for k in range(33)],'attention',4)
+    p.field('callout',96,1660 if p.portrait else 1010,p.w-192,140 if p.portrait else 65)
+
+def render_driver(p):
+    p.title();stock=price_series(p,'stock-data');driver=price_series(p,'driver-data',p.raw['driver-unit'],False)
+    common=sorted(set(dict(stock))&set(dict(driver)));check(len(common)>=2,'Index both series only on dates observed in both feeds')
+    a=dict(stock);b=dict(driver);check(a[common[0]]>0 and b[common[0]]>0,'Both indexed series need a positive value on the shared start date')
+    stock_line=[(d,a[d]/a[common[0]]*100) for d in common];driver_line=[(d,b[d]/b[common[0]]*100) for d in common]
+    box=[232,470,706,680] if p.portrait else [224,320,1560,420]
+    plot(p,'pair-area',box,[('subject',stock_line),('subject2',driver_line)],yunit='index',parts=['stock-line','driver-line'],gap=p.raw['show-gap']=='YES')
+    if p.raw['show-gap']!='YES':p.region('pair-area-gap',box,('spread_fill',))
+    p.field('stock-label',96,330 if p.portrait else 230,360 if p.portrait else 600,70,colour='subject')
+    p.field('driver-label',500 if p.portrait else 900,330 if p.portrait else 230,484 if p.portrait else 924,70)
+    p.values['stock-change']=fmt((a[common[-1]]/a[common[0]]-1)*100,'percent',1);p.values['driver-change']=fmt((b[common[-1]]/b[common[0]]-1)*100,'percent',1)
+    p.values['start-label']=datetime.fromtimestamp(common[0],timezone.utc).date().isoformat();p.values['end-label']=datetime.fromtimestamp(common[-1],timezone.utc).date().isoformat()
+    for i,name in enumerate(('stock-change','driver-change')):p.field(name,96+i*(p.w-192)/2,1370 if p.portrait else 850,(p.w-192)/2-30,140)
+    p.field('start-label',96,1610 if p.portrait else 990,480,60);p.field('end-label',p.w-576,1610 if p.portrait else 990,480,60,align='right')
+    p.field('index-unit',96,1220 if p.portrait else 780,p.w-192,60,value='INDEX / SAME START = 100 / ONE SCALE',role='unit')
+
+def render_checked(p):
+    p.title();source=p.require('found-source');stamp=re.search(r'\d{4}-\d{2}-\d{2}',source)
+    check(stamp and len(re.sub(r'[^A-Za-z]','',source))>=3,'Name the checked page and its ISO date in found-source')
+    date.fromisoformat(stamp[0]);p.require('claim');p.require('claim-source');p.require('found');p.require('verdict')
+    p.region('comparison-area',[96,320,p.w-192,1280 if p.portrait else 520],())
+    for i,(name,cite,figure) in enumerate((('claim','claim-source','claim-figure'),('found','found-source','found-figure'))):
+        x=96 if p.portrait else 96+i*888;y=350+i*660 if p.portrait else 310;w=888 if p.portrait else 840
+        p.card(x,y,w,580 if p.portrait else 520)
+        p.field(name,x+26,y+28,w-52,260)
+        p.field(cite,x+26,y+320,w-52,100 if p.portrait else 86,colour='quiet')
+        p.field(figure,x+26,y+440,w-52,112)
+    p.field('verdict',96,1710 if p.portrait else 940,p.w-192,90,colour='attention' if p.raw['verdict']=="DOESN'T" else 'structure')
+
+def add_months(stamp,n):
+    d=datetime.fromtimestamp(stamp,timezone.utc);y,m=divmod(d.year*12+d.month-1+n,12);m+=1
+    return moment(d.replace(year=y,month=m,day=min(d.day,calendar.monthrange(y,m)[1])).isoformat())
+
+def render_precedent(p):
+    p.title();past=price_series(p,'then-data');now=price_series(p,'now-data');check(past and now,'Both actual price paths are required')
+    then_event=moment(p.require('then-event'));now_event=moment(p.require('now-event'));a=dict(past);b=dict(now)
+    check(then_event in a and now_event in b,'Day zero must have an observed close for each company')
+    check(a[then_event]>0 and b[now_event]>0,'Day-zero closes must be positive for indexing')
+    points=[[( (d-then_event)/(86400*365.25/12),v/a[then_event]*100) for d,v in past],[( (d-now_event)/(86400*365.25/12),v/b[now_event]*100) for d,v in now]]
+    box=[232,470,706,680] if p.portrait else [224,320,1560,420]
+    x0=min(v[0] for s in points for v in s);x1=max(v[0] for s in points for v in s)
+    xy=plot(p,'paths-area',box,[('subject2',points[0]),('subject',points[1])],xdomain=(x0,x1),xunit='count',yunit='index',parts=['then-line','now-line'])
+    check(x0<=0<=x1,'The price paths must include their event day')
+    p.region('event-zero',box,('axis_mark',));p.series_nodes('axis_mark',core.native_series.axis_mark(dict(zip(('x','y','w','h'),box)),(0-x0)/(x1-x0),p.ink,tone='attention',weight=4)['nodes'])
+    parent=next(r for r in p.regions if r['name']=='paths-area');parent['children'].append('event-zero')
+    horizon=p.count('months-horizon',1,120);target=add_months(then_event,horizon)
+    check(target<=past[-1][0],'The past data ends before the requested result; never extrapolate it')
+    last=max((q for q in past if then_event<=q[0]<=target),default=None);check(last,'No past observation within the requested horizon')
+    p.values['then-after']=fmt((last[1]/a[then_event]-1)*100,'percent',1);p.values['now-after']=fmt((now[-1][1]/b[now_event]-1)*100,'percent',1);p.values['months-after']=str(horizon)+' months on'
+    p.field('then-name',96,330 if p.portrait else 230,400 if p.portrait else 780,70)
+    p.field('now-name',530 if p.portrait else 1000,330 if p.portrait else 230,454 if p.portrait else 824,70,colour='subject')
+    p.field('event-label',96,1220 if p.portrait else 780,p.w-192,75,colour='attention')
+    p.field('then-after',96,1370 if p.portrait else 865,420 if p.portrait else 760,120)
+    p.field('now-after',564 if p.portrait else 1060,1370 if p.portrait else 865,420 if p.portrait else 764,120,colour='subject')
+    p.field('months-after',96,1530 if p.portrait else 985,p.w-192,70)
+    p.field('month-unit',96,1650 if p.portrait else 1030,p.w-192,54,value='MONTHS FROM THE EVENT / INDEX AT DAY 0 = 100',role='unit')
+
+RENDER.update(promises=render_promises,insiders=render_insiders,driver=render_driver,checked=render_checked,precedent=render_precedent)
 
 def motion_for(p):
     model=p.item['model'];steps=[]
@@ -404,9 +557,9 @@ def motion_for(p):
         if p.raw.get('what-changed'):steps.append(group('what-changed',cue='what-changed'))
     elif model=='clock':
         active=[i for i in range(1,5) if p.raw.get(f'total-{i}')]
-        steps=[group('clock-start','clock-end','clock-area','live-total','kicker','total-label','caption',cue='clock-start')]
+        steps=[group('clock-start','clock-end','kicker','total-label','caption',cue='clock-start')]
         for i in active:
-            steps.append(group('clock-area',f'at-{i}',f'total-{i}',move='clock-run',cue=f'total-{i}',fromTimeSlot='clock-start' if i==1 else f'at-{i-1}',toTimeSlot=f'at-{i}',fromValueSlot=None if i==1 else f'total-{i-1}',toValueSlot=f'total-{i}',totalSlot='live-total',initialValue=0,continuousBetweenCheckpoints=True,restOnlyAtDocumentedCheckpoints=True))
+            steps.append(group('clock-area',f'at-{i}',f'total-{i}','live-total',move='clock-run',cue=f'total-{i}',cueAt='checkpoint-end',fromTimeSlot='clock-start' if i==1 else f'at-{i-1}',toTimeSlot=f'at-{i}',fromValueSlot=None if i==1 else f'total-{i-1}',toValueSlot=f'total-{i}',totalSlot='live-total',initialValue=0,continuousBetweenCheckpoints=True,restOnlyAtDocumentedCheckpoints=True))
         steps.append(group('live-total',move='highlight',cue=f'total-{active[-1]}'))
     elif model=='toy':
         steps=[group('title','tag',cue='title')];n=p.count('row-count',1,5)
@@ -419,6 +572,23 @@ def motion_for(p):
             steps.append(group(names[0],*names[1:],cue=names[0]))
         flagged=[i for i in range(1,6) if p.raw[f'mark-{i}']=='LOOK CLOSER']
         if flagged:steps.append(group(f'mark-{flagged[0]}',move='highlight',cue=f'mark-{flagged[0]}',effects=[effect('highlight',f'mark-{i}',f'mark-{i}') for i in flagged[1:]]))
+    elif model=='promises':
+        steps=[group('title',cue='title')]
+        for i in range(1,p.count('row-count',1,3 if p.portrait else 4)+1):
+            effects=[effect('highlight',f'mark-{i}',f'mark-{i}')]
+            if p.raw.get(f'result-{i}'):effects.insert(0,effect('count-up',f'result-{i}',f'result-{i}'))
+            steps.append(group(f'promise-{i}',f'said-{i}',f'result-{i}',f'mark-{i}',action='clip-in',cue=f'promise-{i}',direction='left',effects=effects))
+    elif model=='insiders':steps=[group('price-area',move='line-draw',cue='title'),group('trade-marks',cue='callout'),group('bought-12m','sold-12m','buyers','sellers',move='count-up',cue='bought-label',effects=[effect('count-up','sold-12m','sold-label')]),group('trade-focus','callout',move='pen-circle' if p.num('focus-trade') else None,cue='callout')]
+    elif model=='driver':
+        steps=[group('stock-line',move='line-draw',cue='title'),group('driver-line',move='line-draw',cue='driver-label'),group('stock-change','driver-change',move='count-up',cue='stock-change',effects=[effect('count-up','driver-change','driver-change')])]
+        if p.raw['show-gap']=='YES':steps.append(group('pair-area-gap',move='highlight'))
+    elif model=='checked':
+        steps=[group('claim','claim-source',action='clip-in',cue='claim',direction='left')]
+        if p.raw.get('claim-figure'):steps.append(group('claim-figure',move='count-up',cue='claim-figure'))
+        steps.append(group('found','found-source',action='clip-in',cue='found',direction='left'))
+        if p.raw.get('found-figure'):steps.append(group('found-figure',move='count-up',cue='found-figure'))
+        steps.append(group('verdict',move='highlight',cue='verdict'))
+    elif model=='precedent':steps=[group('then-line',move='line-draw',cue='then-name'),group('event-zero','event-label',cue='event-label'),group('now-line','now-after',move='line-draw',cue='now-name'),group('then-after','months-after',move='count-up',cue='then-after')]
     if len(steps)<3 and model!='question':
         last=next((s['name'] for s in reversed(p.slots) if s['example'] and s['role'] in ('caption','label','value','callout')),None)
         while len(steps)<3:steps.append(group(last,move='highlight',cue=last))
@@ -444,7 +614,36 @@ def prepare(entry,values,inks):
     return {'nodes':core.clean_nodes([n for n in p.nodes if n.get('_scope')=='body']),
             'values':visible,'boxes':boxes,'colours':{s['name']:s['colour'] for s in p.slots},
             'units':{s['name']:unit_for(s['spec'],p.raw) for s in p.slots},
-            'motion':motion_for(p),'motionAnchors':anchors_for(p)}
+            'motion':motion_for(p),'motionAnchors':anchors_for(p),'sources':resolved_sources(p)}
+
+def resolved_sources(p):
+    result={}
+    for name,spec in p.specs.items():
+        if not spec.get('source'):continue
+        source=deepcopy(spec['source'])
+        if spec.get('sourceFrom') and p.raw.get(spec['sourceFrom']):
+            selected=p.raw[spec['sourceFrom']]
+            if re.fullmatch(r'D\d+\.\d+(?:\s*,\s*D\d+\.\d+)*',selected):
+                refs=[r.strip() for r in selected.split(',')]
+                source={'kind':'document','what':spec['note'],'sentence':refs[0],'sentences':refs,'period':'the cited document periods'}
+                if spec['source'].get('calculation') and unit_for(spec,p.raw)==spec['unit']:source['calculation']=spec['source']['calculation']
+            elif selected.startswith('feed '):
+                feed=selected[5:].strip();check(feed in ('edgar','price','fred','form4','web_shots'),'Unknown figure feed')
+                source={'kind':'feed','feed':feed,'what':spec['note'],'period':'the stated observation window'}
+            else:
+                match=re.fullmatch(r'(History|Quarters|Snapshot)!([a-z][a-z0-9_]*),\s*(.+)',selected)
+                check(match,'Figure source must name Sheet!field_key, period; a feed; or document sentences such as D2.14')
+                sheet,field,period=match.groups();check(field in p.item['workbookFields'].get(sheet,[]),'Unknown workbook figure source')
+                source={'kind':'workbook','sheet':sheet,'field':field,'period':period}
+                if field=='accounts_receivable':source['pending']=True
+        if p.item['model']=='collapse' and p.raw.get('price-data') and name in ('top','bottom','drop'):
+            source={'kind':'feed','feed':'price','what':name+' from the observed collapse price series','period':'the requested dated interval'}
+        for key,selector in (('field','fieldSlot'),('sheet','sheetSlot'),('period','periodSlot'),('location','locationSlot')):
+            if source.get(selector):source[key]=p.raw.get(source[selector],source.get(key))
+        if name in ('body','headline') and p.raw.get(name+'-ref'):source['sentence']=p.raw[name+'-ref']
+        if source.get('pageDateSlot'):source['pageAndDate']=p.raw[source['pageDateSlot']]
+        result[name]=source
+    return result
 
 def draw(region,numbers,inks):
     recipe=region['recipe'];p=render(recipe['item'],recipe['aspect'],numbers,inks,recipe.get('variant'))
@@ -476,7 +675,7 @@ def validate_motion(recipe,slots):
         check(step.get('move',step.get('action')) in MOVES,'Unknown motion move')
         for n in (step['slot'],*step.get('includeSlots',[])):check(n in slots,'Motion uses unpublished slot '+n)
         for cue in ([step['cueSlot']] if step.get('cueSlot') else []):
-            check(cue in slots and not slots[cue].get('region') and slots[cue]['role'] not in ('unit','legend','colHead','source','date'),'A cue needs spoken words')
+            check(cue in slots and not slots[cue].get('region') and (slots[cue]['role'] not in ('unit','legend','colHead','source','date') or slots[cue].get('spoken')),'A cue needs spoken words')
         for fx in step.get('effects',[]):
             check(fx['move'] in MOVES and fx['slot'] in slots,'Effect uses an unpublished move/slot')
             if fx.get('cueSlot'):check(fx['cueSlot'] in slots and not slots[fx['cueSlot']].get('region'),'Effect cue must be visible words')
@@ -490,7 +689,7 @@ def anchors_for(p):
 
 def compile_plate(item,aspect,inks,scale,variant=None):
     from .build_all import fit
-    fields=field_specs(item,aspect,variant);fill={n:item['example'].get(n,s.get('default','')) for n,s in fields.items() if not s.get('computed')}
+    fields=field_specs(item,aspect,variant);example={**item['example'],**item.get('exampleByAspect',{}).get(aspect,{})};fill={n:example.get(n,s.get('default','')) for n,s in fields.items() if not s.get('computed')}
     p=render(item,aspect,fill,variant=variant);slots={};roles={};examples=deepcopy(fill);audit=[]
     fitted={}
     for raw in p.slots:

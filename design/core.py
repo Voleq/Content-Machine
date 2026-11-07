@@ -122,12 +122,12 @@ class Scene:
 
     def label(self,key,value,x,y,w,h=44,**kwargs):self.text(key,value,x,y,w,h,kind='mono',editable=False,**kwargs)
 
-    def footer(self,values):
+    def footer(self,values,*,include_source=True):
         self.scope='frame';y=1312 if self.portrait else 915
         self.line([(96,y-24),(self.w-96,y-24)],'structure',3)
         self.text('takeaway',values['takeaway'],96,y,self.w-192,84 if self.portrait else 60,size=46 if self.portrait else 43,weight=700)
-        self.text('source',values['source'],96,1402 if self.portrait else 994,self.w-192,76 if self.portrait else 32,
-                  size=34 if self.portrait else 26,kind='mono',colour='quiet')
+        if include_source:self.text('source',values['source'],96,1402 if self.portrait else 994,self.w-192,76 if self.portrait else 32,
+                                    size=34 if self.portrait else 26,kind='mono',colour='quiet')
 
     @contextmanager
     def stage(self,number):
@@ -163,7 +163,7 @@ def assemble(item,aspect,fields=None,*,inks=None):
         source=finance if drawer=='finance' else investigations
         analysis=source.DRAW[item['legacyId']](scene,values)
     if needs_data(item):sources.apply_labels(item,values,scene)
-    scene.footer(values);finite(analysis)
+    scene.footer(values,include_source=not item.get('noSourceLine'));finite(analysis)
     return scene,analysis
 
 def clean_nodes(nodes,scope=None):

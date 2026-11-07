@@ -35,9 +35,12 @@ def period_for(spec,path,fields):
     return period.replace('{n}',str(index))
 
 def source_note(spec,path,fields):
+    if spec.get('assumption'):
+        return spec.get('instruction','Writer-defined limit; the fact-check does not check this assumption.'),None
     source=deepcopy(spec['source']);period=period_for(spec,path,fields);source['period']=period
     if source['kind']=='workbook':
         note=f'{source["sheet"]}!{source["field"]}, {period}.'
+        if source.get('calculation'):note+=' Compute '+source['calculation']+'.'
     elif source['kind']=='filing':
         note=f'From the filing: {source["location"]}; {period}. Not confirmed by a workbook row.'
     else:raise ValueError('Unknown source kind')

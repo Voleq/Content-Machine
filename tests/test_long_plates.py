@@ -117,6 +117,8 @@ def test_clock_rest_points_are_only_the_documented_checkpoints(compiled):
     runs=[s for s in p['motion']['steps'] if s.get('move')=='clock-run']
     assert len(runs)==1 and runs[0]['toValueSlot']=='total-1'
     assert runs[0]['continuousBetweenCheckpoints'] and runs[0]['restOnlyAtDocumentedCheckpoints']
+    assert runs[0]['cueAt']=='checkpoint-end'
+    assert 'live-total'not in p['motion']['steps'][0]['includeSlots']
     with pytest.raises(ValueError,match='over 45 minutes'):contracts.prepare(e,{**v,'caption':'By 09:45 it had lost $10m'},INK)
     v.update({'at-1':'09:45','total-1':'20m','at-2':'10:15','total-2':'100m'})
     assert len([s for s in contracts.prepare(e,v,INK)['motion']['steps'] if s.get('move')=='clock-run'])==2
@@ -129,6 +131,7 @@ def test_toy_trade_requires_its_tag_and_reconciles_every_row(compiled):
     with pytest.raises(ValueError,match='Missing required'):contracts.prepare(e,{n:x for n,x in v.items() if n!='tag'},INK)
     with pytest.raises(ValueError,match='must be one of'):contracts.prepare(e,{**v,'tag':'REAL FIGURES'},INK)
     with pytest.raises(ValueError,match='does not add up'):contracts.prepare(e,{**v,'total-2':'$10'},INK)
+    with pytest.raises(ValueError,match='does not add up'):contracts.prepare(e,{**v,'total-2':'$1.0000000001'},INK)
     assert e['factCheck']['skipWhen']['values']==['EXAMPLE','TOY NUMBERS']
 
 def test_press_release_highlight_is_a_verbatim_sentence(compiled):
@@ -137,12 +140,98 @@ def test_press_release_highlight_is_a_verbatim_sentence(compiled):
     with pytest.raises(ValueError,match='D2.14'):contracts.prepare(e,{**v,'body-ref':'page 4'},INK)
     native=json.loads((ROOT/'kit/paper/manifest.json').read_text())['plates']['paper/press-release-9x16']
     assert set(native['slots'])<=e['slots'].keys()
+    assert contracts.prepare(e,{n:v[n] for n in native['slots'] if n!='mark-area'},INK)['values']['body']==v['body']
+
+def test_promise_ledger_resolves_real_fields_units_and_row_limits(compiled):
+    wide=entry(compiled,'chapters/promise-ledger');phone=entry(compiled,'chapters/promise-ledger','9x16')
+    assert 'promise-4'in wide['slots'] and 'promise-4'not in phone['slots']
+    assert wide['slots']['promise-1']['maxLines']==2
+    fill=contracts.example_fill(wide);p=contracts.prepare(wide,fill,INK)
+    assert p['units']['result-1']=='money_m' and p['units']['result-4']=='money'
+    assert p['sources']['result-4']['field']=='eps'
+    with pytest.raises(ValueError,match='actual workbook|Unknown workbook'):contracts.prepare(wide,{**fill,'result-field-1':'invented_revenue'},INK)
+    with pytest.raises(ValueError,match='period'):contracts.prepare(wide,{**fill,'result-sheet-1':'History'},INK)
+    with pytest.raises(ValueError,match='Add m or bn'):contracts.prepare(wide,{**fill,'result-1':'100'},INK)
+    only={n:v for n,v in fill.items() if not n.endswith(('-2','-3','-4'))};only['row-count']='1'
+    assert contracts.prepare(wide,only,INK)['values']['promise-1']==fill['promise-1']
+
+def test_a_vague_promise_is_only_dropped_after_it_disappears(compiled):
+    e=entry(compiled,'chapters/promise-ledger');v=contracts.example_fill(e)
+    v.update({'promise-1':'We will be the trusted partner.','target-period-1':''})
+    with pytest.raises(ValueError,match='only be DROPPED'):contracts.prepare(e,v,INK)
+    v['mark-1']='DROPPED'
+    with pytest.raises(ValueError,match='stopped mentioning'):contracts.prepare(e,v,INK)
+    assert contracts.prepare(e,{**v,'no-longer-mentioned-1':'YES','result-1':''},INK)['values']['mark-1']=='DROPPED'
+
+def test_form4_only_counts_open_market_codes_and_quiets_routine_sales(compiled):
+    e=entry(compiled,'charts/insider-trades');v=contracts.example_fill(e);p=contracts.prepare(e,v,INK)
+    assert {n:p['values'][n] for n in ('bought-12m','sold-12m','buyers','sellers')}=={'bought-12m':'$1m','sold-12m':'$2.5m','buyers':'1','sellers':'2'}
+    marks=longs.draw(e['slots']['trade-marks'],v,INK)
+    assert len(marks)==4 and sum(n['attrs']['fill']==INK['quiet'] for n in marks)==2
+    assert p['boxes']['trade-focus'][0]>e['slots']['price-area']['x']
+    empty=contracts.prepare(e,{**v,'trade-data':'','focus-trade':'0'},INK)
+    assert empty['values']['bought-12m']=='$0' and empty['values']['buyers']=='0'
+    assert empty['motion']['steps'][-1].get('move')is None
+    small=contracts.prepare(e,{**v,'trade-data':'2026-03-03,P,$100,Director A,NO,NO','focus-trade':'1'},INK)
+    assert small['values']['bought-12m']=='$100'  # never show a real small feed total as zero million
+
+def test_shared_index_uses_observed_common_dates_and_one_axis(compiled):
+    e=entry(compiled,'charts/stock-vs-driver');v=contracts.example_fill(e);p=contracts.prepare(e,v,INK)
+    assert p['values']['stock-change']=='60%' and p['values']['driver-change']=='50%'
+    assert p['values']['start-label']=='2023-01-01' and p['values']['end-label']=='2026-01-01'
+    assert len([n for n in p['values'] if n.startswith('pair-area-axis-')])==3
+    changed=contracts.prepare(e,{**v,'driver-data':'2024-01-01,72;2025-01-01,66;2026-01-01,90'},INK)
+    assert changed['values']['start-label']=='2024-01-01'
+    assert changed['values']['stock-change']=='20%' and changed['values']['driver-change']=='25%'
+    with pytest.raises(ValueError,match='observed in both'):contracts.prepare(e,{**v,'driver-data':'2010-01-01,10;2011-01-01,11'},INK)
+    assert 'spread_fill'in e['slots']['pair-area-gap']['uses']
+    gap=longs.draw(e['slots']['pair-area-gap'],v,INK)[0]
+    line=next(n for n in longs.draw(e['slots']['stock-line'],v,INK) if n['tag']=='path')
+    import re
+    first=lambda n:tuple(map(float,re.match(r'M\s*([\d.-]+)[, ]\s*([\d.-]+)',n['attrs']['d']).groups()))
+    assert first(gap)==pytest.approx(first(line))
+    assert len(contracts.prepare(e,{**v,'show-gap':'NO'},INK)['motion']['steps'])==3
+
+def test_public_check_names_its_page_and_date_without_a_screenshot(compiled):
+    e=entry(compiled,'chapters/claim-vs-checked');v=contracts.example_fill(e)
+    with pytest.raises(ValueError,match='page and its ISO date'):contracts.prepare(e,{**v,'found-source':'careers page'},INK)
+    p=contracts.prepare(e,v,INK)
+    assert p['sources']['found']['kind']=='feed' and p['sources']['found']['feed']=='web_shots'
+    assert p['sources']['found']['pageAndDate']=='Careers page / 2026-11-06'
+    assert all(n['tag']in('rect','circle','path') for n in p['nodes'])
+    assert len(contracts.prepare(e,{**v,'claim-figure':'','found-figure':''},INK)['motion']['steps'])==3
+
+def test_precedent_stops_at_its_real_end_without_forecasting(compiled):
+    e=entry(compiled,'charts/then-and-now');v=contracts.example_fill(e);p=contracts.prepare(e,v,INK)
+    assert p['values']['then-after']=='-80%' and p['values']['now-after']=='-30%'
+    assert p['values']['months-after']=='12 months on'
+    past=longs.draw(e['slots']['then-line'],v,INK);current=longs.draw(e['slots']['now-line'],v,INK)
+    past_end=max(n['attrs']['cx'] for n in past if n['tag']=='circle');now_end=max(n['attrs']['cx'] for n in current if n['tag']=='circle')
+    assert now_end<past_end
+    with pytest.raises(ValueError,match='never extrapolate'):contracts.prepare(e,{**v,'months-horizon':'24'},INK)
+    with pytest.raises(ValueError,match='observed close'):contracts.prepare(e,{**v,'now-event':'2026-01-02'},INK)
+
+def test_existing_tripwires_has_three_dates_and_unchecked_writer_limits():
+    item=next(i for i in build_all.catalog_items() if i['key']=='finance/thesis-tripwires')
+    assert item['chapterTypes'][0]=='the-watchlist'
+    for aspect in ('16x9','9x16'):
+        e,_=build_all.compile_plate(item,aspect,INK,2)
+        assert 'source'not in e['slots'] and len(e['motion']['steps'])==4
+        for i in range(3):
+            assert e['slots'][f'by-when-{i+1}']['maxChars']==16
+            current=f'current-{i}' if aspect=='16x9' else f'value-{i}-0'
+            limit=f'limit-{i}' if aspect=='16x9' else f'value-{i}-1'
+            assert e['slots'][current]['source']['kind']=='workbook'
+            assert e['slots'][limit]['factCheck']is False and 'fact-check does not check'in e['slots'][limit]['note']
+        assert contracts.prepare(e,contracts.example_fill(e),INK)['values']['by-when-1']=='Q1 FY27 print'
 
 def test_red_flags_publish_both_sources_and_never_draw_a_finding(compiled):
     e=entry(compiled,'chapters/red-flag-checklist');v=contracts.example_fill(e)
     assert 'document sentence'in e['slots']['figure-1']['note']
     assert 'History!accounts_receivable'in e['slots']['figure-2']['note']
     assert e['slots']['figure-2']['source']['pending']is True
+    supplied=contracts.prepare(e,{**v,'figure-source-1':'D2.14, D2.16'},INK)
+    assert supplied['sources']['figure-1']['kind']=='document' and supplied['sources']['figure-1']['sentences']==['D2.14','D2.16']
     for word in ('FRAUD','fake','cooked'):
         with pytest.raises(ValueError,match='never a fraud finding'):contracts.prepare(e,{**v,'title':word+' CHECK'},INK)
 

@@ -1516,8 +1516,9 @@
       "key": "finance/thesis-tripwires",
       "name": "Thesis tripwires",
       "purpose": "Measured conditions that can invalidate the case.",
-      "caution": "Use supplied workbook figures with consistent dates, units and reporting basis.",
+      "caution": "Current figures come from the workbook on their declared periods. Limits and review dates are the writer's line in the sand; the fact-check does not check them.",
       "chapterTypes": [
+        "the-watchlist",
         "the-numbers",
         "filing-walk"
       ],
@@ -1531,28 +1532,31 @@
       },
       "example": {
         "title": "WHAT WOULD BREAK THE THESIS?",
-        "period": "LTM",
+        "period": "AS OF REVIEW",
         "rules": [
           {
             "metric": "Net debt / EBITDA",
             "current": 2.2,
             "limit": 3,
             "operator": "<=",
-            "unit": "x"
+            "unit": "x",
+            "by_when": "Q1 FY27 print"
           },
           {
             "metric": "Cash conversion",
             "current": 72,
             "limit": 80,
             "operator": ">=",
-            "unit": "%"
+            "unit": "%",
+            "by_when": "Q1 FY27 print"
           },
           {
             "metric": "Revenue growth",
             "current": 6,
             "limit": 0,
             "operator": ">=",
-            "unit": "%"
+            "unit": "%",
+            "by_when": "Q1 FY27 print"
           }
         ],
         "takeaway": "A thesis needs a failure condition, not just a target.",
@@ -1563,18 +1567,16 @@
           "unit": "text",
           "source": {
             "kind": "workbook",
-            "sheet": "History",
-            "field": "fiscal_year",
-            "period": "LTM"
+            "sheet": "Snapshot",
+            "field": "as_of_date",
+            "period": "as-of"
           }
         },
         "rules.0.metric": {
           "unit": "text",
-          "source": {
-            "kind": "filing",
-            "location": "operating-metrics, capital-allocation or valuation/risk exhibit: rules 1 metric; identify any model assumption",
-            "period": "the stated reporting period"
-          }
+          "source": null,
+          "assumption": true,
+          "instruction": "Writer-defined metric wording or threshold direction; the fact-check does not check this parameter."
         },
         "rules.0.current": {
           "unit": "multiple",
@@ -1587,86 +1589,104 @@
         },
         "rules.0.limit": {
           "unit": "multiple",
-          "source": {
-            "kind": "filing",
-            "location": "operating-metrics, capital-allocation or valuation/risk exhibit: rules 1 limit; identify any model assumption",
-            "period": "the stated reporting period"
-          }
+          "source": null,
+          "assumption": true,
+          "instruction": "Writer-defined line in the sand; the fact-check does not check this limit."
         },
         "rules.0.operator": {
           "unit": "text",
-          "source": {
-            "kind": "filing",
-            "location": "operating-metrics, capital-allocation or valuation/risk exhibit: rules 1 operator; identify any model assumption",
-            "period": "the stated reporting period"
-          }
+          "source": null,
+          "assumption": true,
+          "instruction": "Writer-defined metric wording or threshold direction; the fact-check does not check this parameter."
         },
         "rules.1.metric": {
           "unit": "text",
-          "source": {
-            "kind": "filing",
-            "location": "operating-metrics, capital-allocation or valuation/risk exhibit: rules 2 metric; identify any model assumption",
-            "period": "the stated reporting period"
-          }
+          "source": null,
+          "assumption": true,
+          "instruction": "Writer-defined metric wording or threshold direction; the fact-check does not check this parameter."
         },
         "rules.1.current": {
           "unit": "percent",
           "source": {
-            "kind": "filing",
-            "location": "operating-metrics, capital-allocation or valuation/risk exhibit: rules 2 current; identify any model assumption",
-            "period": "the stated reporting period"
+            "kind": "workbook",
+            "sheet": "History",
+            "field": "operating_cf",
+            "period": "LTM",
+            "relatedFields": [
+              "net_income"
+            ],
+            "calculation": "operating_cf / net_income * 100, same LTM period"
           }
         },
         "rules.1.limit": {
           "unit": "percent",
-          "source": {
-            "kind": "filing",
-            "location": "operating-metrics, capital-allocation or valuation/risk exhibit: rules 2 limit; identify any model assumption",
-            "period": "the stated reporting period"
-          }
+          "source": null,
+          "assumption": true,
+          "instruction": "Writer-defined line in the sand; the fact-check does not check this limit."
         },
         "rules.1.operator": {
           "unit": "text",
-          "source": {
-            "kind": "filing",
-            "location": "operating-metrics, capital-allocation or valuation/risk exhibit: rules 2 operator; identify any model assumption",
-            "period": "the stated reporting period"
-          }
+          "source": null,
+          "assumption": true,
+          "instruction": "Writer-defined metric wording or threshold direction; the fact-check does not check this parameter."
         },
         "rules.2.metric": {
           "unit": "text",
-          "source": {
-            "kind": "filing",
-            "location": "operating-metrics, capital-allocation or valuation/risk exhibit: rules 3 metric; identify any model assumption",
-            "period": "the stated reporting period"
-          }
+          "source": null,
+          "assumption": true,
+          "instruction": "Writer-defined metric wording or threshold direction; the fact-check does not check this parameter."
         },
         "rules.2.current": {
           "unit": "percent",
           "source": {
-            "kind": "filing",
-            "location": "operating-metrics, capital-allocation or valuation/risk exhibit: rules 3 current; identify any model assumption",
-            "period": "the stated reporting period"
+            "kind": "workbook",
+            "sheet": "History",
+            "field": "revenue",
+            "period": "FY-1 to FY-0",
+            "calculation": "(revenue FY-0 / revenue FY-1 - 1) * 100"
           }
         },
         "rules.2.limit": {
           "unit": "percent",
-          "source": {
-            "kind": "filing",
-            "location": "operating-metrics, capital-allocation or valuation/risk exhibit: rules 3 limit; identify any model assumption",
-            "period": "the stated reporting period"
-          }
+          "source": null,
+          "assumption": true,
+          "instruction": "Writer-defined line in the sand; the fact-check does not check this limit."
         },
         "rules.2.operator": {
           "unit": "text",
-          "source": {
-            "kind": "filing",
-            "location": "operating-metrics, capital-allocation or valuation/risk exhibit: rules 3 operator; identify any model assumption",
-            "period": "the stated reporting period"
-          }
+          "source": null,
+          "assumption": true,
+          "instruction": "Writer-defined metric wording or threshold direction; the fact-check does not check this parameter."
+        },
+        "rules.0.by_when": {
+          "unit": "text",
+          "source": null,
+          "assumption": true,
+          "maxChars": 16,
+          "instruction": "Writer-defined review date, at most 16 characters. The fact-check does not check this deadline."
+        },
+        "rules.1.by_when": {
+          "unit": "text",
+          "source": null,
+          "assumption": true,
+          "maxChars": 16,
+          "instruction": "Writer-defined review date, at most 16 characters. The fact-check does not check this deadline."
+        },
+        "rules.2.by_when": {
+          "unit": "text",
+          "source": null,
+          "assumption": true,
+          "maxChars": 16,
+          "instruction": "Writer-defined review date, at most 16 characters. The fact-check does not check this deadline."
         }
       },
-      "unitLabels": {}
+      "unitLabels": {},
+      "round": 3,
+      "part": 2,
+      "noSourceLine": true,
+      "motion": {
+        "kind": "watchlist"
+      }
     },
     {
       "key": "stock/earnings-beat-and-cut",

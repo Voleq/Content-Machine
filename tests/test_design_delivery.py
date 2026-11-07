@@ -30,7 +30,7 @@ def compiled():
 def test_unique_concepts_and_published_kit_motion(compiled):
     assert len(ITEMS)==188 and len(compiled)==376 and len(DATA_ITEMS)==125
     assert len({i['key'] for i in ITEMS})==188
-    assert sum('motion' in i for i in ITEMS)==120
+    assert sum('motion' in i for i in ITEMS)==121
     published={}
     for f in (ROOT/'kit').glob('*/manifest.json'):
         m=json.loads(f.read_text());table=m.get('plates',m.get('assets',{}))
@@ -82,6 +82,8 @@ def test_common_manifest_and_text_free_artwork(compiled):
             for name in region['inputSlots']:
                 assert name in entry['slots']
                 note=entry['slots'][name]['note']
+                if entry['slots'][name].get('assumption'):
+                    assert 'fact-check does not check'in note;continue
                 assert re.match(r'(History|Quarters|Snapshot)![a-z0-9_]+, |From the filing: ',note)
                 assert isinstance(entry['example'][name],str)
 
@@ -203,6 +205,8 @@ def test_sources_match_the_actual_workbook_and_financial_units(compiled):
         if 'data-area' not in entry['slots']:continue
         for name,binding in entry['slots']['data-area']['recipe']['bindings'].items():
             src=binding['source'];unit=binding['unit'];slot=entry['slots'][name]
+            if binding.get('assumption'):
+                assert src is None and slot['factCheck']is False and 'fact-check does not check'in slot['note'];continue
             workbook.validate_source(src,tables)
             assert unit in sources.UNIT_LABELS and slot['sourceUnit']==unit
             assert slot['source']==src and not slot.get('default')
@@ -214,6 +218,7 @@ def test_sources_match_the_actual_workbook_and_financial_units(compiled):
             references.add((src['sheet'],src['field']))
             assert slot['note'].startswith(f'{src["sheet"]}!{src["field"]}, {src["period"]}.')
             field=src['field']
+            if src.get('calculation'):continue
             if field in share_keys:assert unit=='shares_m'
             elif field in MILLIONS_FIELDS:assert unit in ('money','money_m','money_b')
             elif field in RATE_FIELDS:assert unit=='percent'

@@ -98,6 +98,8 @@ def bindings(item,scene):
                      'note':note,'source':source,'example':example,'inputOnly':not matches}
         if scale!=1:result[key]['modelScale']=scale
         if meta.get('sign'):result[key]['sign']=meta['sign']
+        if meta.get('assumption'):result[key].update(assumption=True,factCheck=False)
+        if meta.get('maxChars'):result[key]['maxChars']=meta['maxChars']
     return result
 
 def native_box(scene):

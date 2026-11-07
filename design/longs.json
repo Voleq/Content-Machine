@@ -659,7 +659,7 @@
           "role": "value",
           "maxChars": 9,
           "unit": "money",
-          "note": "From a document sentence: top value on the same currency basis, money",
+          "note": "From a document sentence: top value on the same currency basis, money Unit resolves from value-unit.",
           "factCheck": true,
           "unitFrom": "value-unit",
           "source": {
@@ -681,7 +681,7 @@
           "role": "value",
           "maxChars": 9,
           "unit": "money",
-          "note": "From a document sentence: bottom value on the same currency basis, money",
+          "note": "From a document sentence: bottom value on the same currency basis, money Unit resolves from value-unit.",
           "factCheck": true,
           "unitFrom": "value-unit",
           "source": {
@@ -1932,7 +1932,7 @@
           "role": "value",
           "maxChars": 9,
           "unit": "money_m",
-          "note": "From a document sentence: documented running total at checkpoint 1, money_m",
+          "note": "From a document sentence: documented running total at checkpoint 1, money_m Unit resolves from total-unit.",
           "factCheck": true,
           "unitFrom": "total-unit",
           "source": {
@@ -1959,7 +1959,7 @@
           "role": "value",
           "maxChars": 9,
           "unit": "money_m",
-          "note": "From a document sentence: documented running total at checkpoint 2, money_m",
+          "note": "From a document sentence: documented running total at checkpoint 2, money_m Unit resolves from total-unit.",
           "factCheck": true,
           "unitFrom": "total-unit",
           "source": {
@@ -1986,7 +1986,7 @@
           "role": "value",
           "maxChars": 9,
           "unit": "money_m",
-          "note": "From a document sentence: documented running total at checkpoint 3, money_m",
+          "note": "From a document sentence: documented running total at checkpoint 3, money_m Unit resolves from total-unit.",
           "factCheck": true,
           "unitFrom": "total-unit",
           "source": {
@@ -2013,7 +2013,7 @@
           "role": "value",
           "maxChars": 9,
           "unit": "money_m",
-          "note": "From a document sentence: documented running total at checkpoint 4, money_m",
+          "note": "From a document sentence: documented running total at checkpoint 4, money_m Unit resolves from total-unit.",
           "factCheck": true,
           "unitFrom": "total-unit",
           "source": {
@@ -2041,7 +2041,7 @@
           "role": "big",
           "maxChars": 9,
           "unit": "money_m",
-          "note": "From a document sentence: final checkpoint total, repeated by the running counter, money_m",
+          "note": "From a document sentence: final checkpoint total, repeated by the running counter, money_m Unit resolves from total-unit.",
           "factCheck": true,
           "unitFrom": "total-unit",
           "source": {
@@ -2164,7 +2164,7 @@
           "role": "value",
           "maxChars": 9,
           "unit": "money",
-          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example.",
+          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example. Unit resolves from amount-unit.",
           "factCheck": false,
           "unitFrom": "amount-unit",
           "optional": true
@@ -2173,7 +2173,7 @@
           "role": "value",
           "maxChars": 10,
           "unit": "money",
-          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount.",
+          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount. Unit resolves from amount-unit.",
           "factCheck": false,
           "unitFrom": "amount-unit",
           "optional": true
@@ -2190,7 +2190,7 @@
           "role": "value",
           "maxChars": 9,
           "unit": "money",
-          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example.",
+          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example. Unit resolves from amount-unit.",
           "factCheck": false,
           "unitFrom": "amount-unit",
           "optional": true
@@ -2199,7 +2199,7 @@
           "role": "value",
           "maxChars": 10,
           "unit": "money",
-          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount.",
+          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount. Unit resolves from amount-unit.",
           "factCheck": false,
           "unitFrom": "amount-unit",
           "optional": true
@@ -2216,7 +2216,7 @@
           "role": "value",
           "maxChars": 9,
           "unit": "money",
-          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example.",
+          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example. Unit resolves from amount-unit.",
           "factCheck": false,
           "unitFrom": "amount-unit",
           "optional": true
@@ -2225,7 +2225,7 @@
           "role": "value",
           "maxChars": 10,
           "unit": "money",
-          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount.",
+          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount. Unit resolves from amount-unit.",
           "factCheck": false,
           "unitFrom": "amount-unit",
           "optional": true
@@ -2242,7 +2242,7 @@
           "role": "value",
           "maxChars": 9,
           "unit": "money",
-          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example.",
+          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example. Unit resolves from amount-unit.",
           "factCheck": false,
           "unitFrom": "amount-unit",
           "optional": true
@@ -2251,7 +2251,7 @@
           "role": "value",
           "maxChars": 10,
           "unit": "money",
-          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount.",
+          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount. Unit resolves from amount-unit.",
           "factCheck": false,
           "unitFrom": "amount-unit",
           "optional": true
@@ -2268,7 +2268,7 @@
           "role": "value",
           "maxChars": 9,
           "unit": "money",
-          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example.",
+          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example. Unit resolves from amount-unit.",
           "factCheck": false,
           "unitFrom": "amount-unit",
           "optional": true
@@ -2277,7 +2277,7 @@
           "role": "value",
           "maxChars": 10,
           "unit": "money",
-          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount.",
+          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount. Unit resolves from amount-unit.",
           "factCheck": false,
           "unitFrom": "amount-unit",
           "optional": true
@@ -2396,7 +2396,9 @@
             "kind": "document",
             "what": "the exact sentence being read, also present in body",
             "period": "the dated story record"
-          }
+          },
+          "optional": true,
+          "default": ""
         },
         "headline-ref": {
           "role": "label",
@@ -2410,7 +2412,9 @@
             "kind": "document",
             "what": "the numbered source sentence for headline",
             "period": "the dated story record"
-          }
+          },
+          "optional": true,
+          "default": ""
         },
         "body-ref": {
           "role": "label",
@@ -2424,7 +2428,9 @@
             "kind": "document",
             "what": "the numbered source sentence for body",
             "period": "the dated story record"
-          }
+          },
+          "optional": true,
+          "default": ""
         },
         "caption": {
           "role": "caption",
@@ -2487,7 +2493,7 @@
           "role": "value",
           "maxChars": 16,
           "unit": "multiple",
-          "note": "History!net_income against History!operating_cf, FY-2 to FY-0 summed, or a document sentence in an implosion. When swapping this row, name its actual field/period or document sentence in figure-source-1.",
+          "note": "History!net_income against History!operating_cf, FY-2 to FY-0 summed, or a document sentence in an implosion. When swapping this row, name its actual field/period or document sentence in figure-source-1. Unit resolves from figure-unit-1.",
           "factCheck": true,
           "unitFrom": "figure-unit-1",
           "source": {
@@ -2506,7 +2512,8 @@
                 "period": "the dated story record"
               }
             ]
-          }
+          },
+          "sourceFrom": "figure-source-1"
         },
         "mark-1": {
           "role": "label",
@@ -2566,7 +2573,7 @@
           "role": "value",
           "maxChars": 16,
           "unit": "percent",
-          "note": "History!accounts_receivable against History!revenue, FY-1 to FY-0 growth, or document sentences in an implosion. The bot adds accounts_receivable; the current template has no such row. When swapping this row, name its actual field/period or document sentence in figure-source-2.",
+          "note": "History!accounts_receivable against History!revenue, FY-1 to FY-0 growth, or document sentences in an implosion. The bot adds accounts_receivable; the current template has no such row. When swapping this row, name its actual field/period or document sentence in figure-source-2. Unit resolves from figure-unit-2.",
           "factCheck": true,
           "unitFrom": "figure-unit-2",
           "source": {
@@ -2585,7 +2592,8 @@
                 "period": "the dated story record"
               }
             ]
-          }
+          },
+          "sourceFrom": "figure-source-2"
         },
         "mark-2": {
           "role": "label",
@@ -2645,7 +2653,7 @@
           "role": "value",
           "maxChars": 16,
           "unit": "count",
-          "note": "feed edgar: any item 4.01 in three years, or a document sentence in an implosion. When swapping this row, name its actual field/period or document sentence in figure-source-3.",
+          "note": "feed edgar: any item 4.01 in three years, or a document sentence in an implosion. When swapping this row, name its actual field/period or document sentence in figure-source-3. Unit resolves from figure-unit-3.",
           "factCheck": true,
           "unitFrom": "figure-unit-3",
           "source": {
@@ -2660,7 +2668,8 @@
                 "period": "the dated story record"
               }
             ]
-          }
+          },
+          "sourceFrom": "figure-source-3"
         },
         "mark-3": {
           "role": "label",
@@ -2720,7 +2729,7 @@
           "role": "value",
           "maxChars": 16,
           "unit": "count",
-          "note": "feed edgar: any item 4.02 or 10-K/A in three years, or a document sentence in an implosion. When swapping this row, name its actual field/period or document sentence in figure-source-4.",
+          "note": "feed edgar: any item 4.02 or 10-K/A in three years, or a document sentence in an implosion. When swapping this row, name its actual field/period or document sentence in figure-source-4. Unit resolves from figure-unit-4.",
           "factCheck": true,
           "unitFrom": "figure-unit-4",
           "source": {
@@ -2735,7 +2744,8 @@
                 "period": "the dated story record"
               }
             ]
-          }
+          },
+          "sourceFrom": "figure-source-4"
         },
         "mark-4": {
           "role": "label",
@@ -2795,7 +2805,7 @@
           "role": "value",
           "maxChars": 16,
           "unit": "multiple",
-          "note": "Adjusted EPS from the filing against History!eps, LTM, or History!sbc_pct_rev; or document sentences in an implosion. State the same earnings basis and period. When swapping this row, name its actual field/period or document sentence in figure-source-5.",
+          "note": "Adjusted EPS from the filing against History!eps, LTM, or History!sbc_pct_rev; or document sentences in an implosion. State the same earnings basis and period. When swapping this row, name its actual field/period or document sentence in figure-source-5. Unit resolves from figure-unit-5.",
           "factCheck": true,
           "unitFrom": "figure-unit-5",
           "source": {
@@ -2811,7 +2821,8 @@
                 "period": "the dated story record"
               }
             ]
-          }
+          },
+          "sourceFrom": "figure-source-5"
         },
         "mark-5": {
           "role": "label",
@@ -2897,7 +2908,1505 @@
         "kind": "flags"
       },
       "round": 3,
-      "part": 1
+      "part": 1,
+      "workbookFields": {
+        "History": [
+          "accounts_receivable",
+          "buybacks",
+          "bvps",
+          "capex",
+          "cash",
+          "diluted_shares",
+          "dividends_paid",
+          "ebitda",
+          "eps",
+          "fcf",
+          "fcf_margin",
+          "fcf_ps",
+          "fiscal_year",
+          "gross_margin",
+          "gross_profit",
+          "invested_capital",
+          "net_debt",
+          "net_debt_ebitda",
+          "net_income",
+          "net_margin",
+          "operating_cf",
+          "operating_income",
+          "operating_margin",
+          "period_end",
+          "revenue",
+          "roe",
+          "roic",
+          "sbc",
+          "sbc_pct_rev",
+          "shares_yoy",
+          "total_assets",
+          "total_debt",
+          "total_equity"
+        ],
+        "Quarters": [
+          "capex",
+          "cash",
+          "diluted_shares",
+          "ebitda",
+          "eps",
+          "eps_consensus",
+          "eps_street",
+          "fcf",
+          "fcf_margin",
+          "fiscal_quarter",
+          "fiscal_year",
+          "gross_margin",
+          "gross_profit",
+          "net_debt",
+          "net_income",
+          "net_margin",
+          "operating_cf",
+          "operating_income",
+          "operating_margin",
+          "period_end",
+          "revenue",
+          "revenue_consensus",
+          "sbc",
+          "total_debt",
+          "total_equity"
+        ],
+        "Snapshot": [
+          "as_of_date",
+          "avg_volume_3m",
+          "beta",
+          "buyback_yield",
+          "cash_st",
+          "company_name",
+          "country",
+          "currency",
+          "current_ratio",
+          "debt_to_equity",
+          "dividend_yield",
+          "earnings_yield",
+          "enterprise_value",
+          "ev_ebitda",
+          "ev_fcf",
+          "ev_sales",
+          "exchange",
+          "fcf_yield",
+          "forward_pe",
+          "goodwill_intang",
+          "industry",
+          "insider_own",
+          "institutional_own",
+          "interest_coverage",
+          "market_cap",
+          "net_debt_ebitda_now",
+          "net_debt_now",
+          "p_fcf",
+          "pb",
+          "pct_from_52w_high",
+          "pe_ttm",
+          "peg",
+          "price",
+          "ps_ttm",
+          "quick_ratio",
+          "sector",
+          "shareholder_yield",
+          "shares_dill_out",
+          "shares_out",
+          "short_interest",
+          "tangible_bv",
+          "ticker",
+          "total_debt_now",
+          "week52_high",
+          "week52_low"
+        ]
+      }
+    },
+    {
+      "key": "chapters/promise-ledger",
+      "drawer": "longs",
+      "model": "promises",
+      "definition": {},
+      "purpose": "Compare the year-ago call's exact promise with the current workbook result and a KEPT, MISSED or DROPPED mark.",
+      "caution": "Quote promises verbatim and identify speaker, call, field_key and result period. A promise without a number or date can only be DROPPED, with a record that it stopped being mentioned.",
+      "chapterTypes": [
+        "promises-kept",
+        "management",
+        "guidance-estimates"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "row-count": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "count",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "inputOnly": true,
+          "defaultsByAspect": {
+            "9x16": "3"
+          },
+          "default": "4"
+        },
+        "promise-1": {
+          "role": "callout",
+          "maxChars": 80,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "source": {
+            "kind": "filing",
+            "location": "year-ago earnings-call transcript: the promise word for word",
+            "period": "the cited reporting period"
+          },
+          "optional": true,
+          "maxLines": 2
+        },
+        "said-1": {
+          "role": "caption",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "source": {
+            "kind": "filing",
+            "location": "the speaker's public role and dated year-ago call",
+            "period": "the cited reporting period"
+          },
+          "optional": true
+        },
+        "result-1": {
+          "role": "value",
+          "maxChars": 12,
+          "unit": "money_m",
+          "note": "Quarters!<field_key>, Q-0, or History!<field_key>, LTM. Name the actual key in result-field-1; its unit is resolved from that field, not guessed.",
+          "factCheck": true,
+          "unitFromField": "result-field-1",
+          "source": {
+            "kind": "workbook",
+            "sheet": "Quarters",
+            "field": "revenue",
+            "period": "Q-0",
+            "fieldSlot": "result-field-1",
+            "sheetSlot": "result-sheet-1",
+            "periodSlot": "result-period-1"
+          },
+          "optional": true
+        },
+        "mark-1": {
+          "role": "label",
+          "maxChars": 7,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: KEPT, MISSED, DROPPED.",
+          "factCheck": false,
+          "optional": true,
+          "enum": [
+            "KEPT",
+            "MISSED",
+            "DROPPED"
+          ]
+        },
+        "result-field-1": {
+          "role": "label",
+          "maxChars": 32,
+          "unit": "text",
+          "note": "Required actual workbook field_key for this result, for example revenue, operating_cf or eps. Do not invent a row.",
+          "factCheck": false,
+          "inputOnly": true,
+          "optional": true
+        },
+        "result-sheet-1": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: Quarters, History.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "Quarters",
+          "enum": [
+            "Quarters",
+            "History"
+          ]
+        },
+        "result-period-1": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Use Q-0 to Q-7 for Quarters, or LTM / FY-0 to FY-4 for History.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "Q-0"
+        },
+        "target-period-1": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "filing",
+            "location": "the promised deadline, if any",
+            "period": "the cited reporting period"
+          },
+          "optional": true
+        },
+        "no-longer-mentioned-1": {
+          "role": "label",
+          "maxChars": 3,
+          "unit": "text",
+          "note": "Mark YES only after checking later calls for the disappearance of this promise; required for DROPPED. Allowed values: YES, NO.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "NO",
+          "enum": [
+            "YES",
+            "NO"
+          ]
+        },
+        "promise-2": {
+          "role": "callout",
+          "maxChars": 80,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "source": {
+            "kind": "filing",
+            "location": "year-ago earnings-call transcript: the promise word for word",
+            "period": "the cited reporting period"
+          },
+          "optional": true,
+          "maxLines": 2
+        },
+        "said-2": {
+          "role": "caption",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "source": {
+            "kind": "filing",
+            "location": "the speaker's public role and dated year-ago call",
+            "period": "the cited reporting period"
+          },
+          "optional": true
+        },
+        "result-2": {
+          "role": "value",
+          "maxChars": 12,
+          "unit": "money_m",
+          "note": "Quarters!<field_key>, Q-0, or History!<field_key>, LTM. Name the actual key in result-field-2; its unit is resolved from that field, not guessed.",
+          "factCheck": true,
+          "unitFromField": "result-field-2",
+          "source": {
+            "kind": "workbook",
+            "sheet": "Quarters",
+            "field": "revenue",
+            "period": "Q-0",
+            "fieldSlot": "result-field-2",
+            "sheetSlot": "result-sheet-2",
+            "periodSlot": "result-period-2"
+          },
+          "optional": true
+        },
+        "mark-2": {
+          "role": "label",
+          "maxChars": 7,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: KEPT, MISSED, DROPPED.",
+          "factCheck": false,
+          "optional": true,
+          "enum": [
+            "KEPT",
+            "MISSED",
+            "DROPPED"
+          ]
+        },
+        "result-field-2": {
+          "role": "label",
+          "maxChars": 32,
+          "unit": "text",
+          "note": "Required actual workbook field_key for this result, for example revenue, operating_cf or eps. Do not invent a row.",
+          "factCheck": false,
+          "inputOnly": true,
+          "optional": true
+        },
+        "result-sheet-2": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: Quarters, History.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "Quarters",
+          "enum": [
+            "Quarters",
+            "History"
+          ]
+        },
+        "result-period-2": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Use Q-0 to Q-7 for Quarters, or LTM / FY-0 to FY-4 for History.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "Q-0"
+        },
+        "target-period-2": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "filing",
+            "location": "the promised deadline, if any",
+            "period": "the cited reporting period"
+          },
+          "optional": true
+        },
+        "no-longer-mentioned-2": {
+          "role": "label",
+          "maxChars": 3,
+          "unit": "text",
+          "note": "Mark YES only after checking later calls for the disappearance of this promise; required for DROPPED. Allowed values: YES, NO.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "NO",
+          "enum": [
+            "YES",
+            "NO"
+          ]
+        },
+        "promise-3": {
+          "role": "callout",
+          "maxChars": 80,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "source": {
+            "kind": "filing",
+            "location": "year-ago earnings-call transcript: the promise word for word",
+            "period": "the cited reporting period"
+          },
+          "optional": true,
+          "maxLines": 2
+        },
+        "said-3": {
+          "role": "caption",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "source": {
+            "kind": "filing",
+            "location": "the speaker's public role and dated year-ago call",
+            "period": "the cited reporting period"
+          },
+          "optional": true
+        },
+        "result-3": {
+          "role": "value",
+          "maxChars": 12,
+          "unit": "money_m",
+          "note": "Quarters!<field_key>, Q-0, or History!<field_key>, LTM. Name the actual key in result-field-3; its unit is resolved from that field, not guessed.",
+          "factCheck": true,
+          "unitFromField": "result-field-3",
+          "source": {
+            "kind": "workbook",
+            "sheet": "Quarters",
+            "field": "revenue",
+            "period": "Q-0",
+            "fieldSlot": "result-field-3",
+            "sheetSlot": "result-sheet-3",
+            "periodSlot": "result-period-3"
+          },
+          "optional": true
+        },
+        "mark-3": {
+          "role": "label",
+          "maxChars": 7,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: KEPT, MISSED, DROPPED.",
+          "factCheck": false,
+          "optional": true,
+          "enum": [
+            "KEPT",
+            "MISSED",
+            "DROPPED"
+          ]
+        },
+        "result-field-3": {
+          "role": "label",
+          "maxChars": 32,
+          "unit": "text",
+          "note": "Required actual workbook field_key for this result, for example revenue, operating_cf or eps. Do not invent a row.",
+          "factCheck": false,
+          "inputOnly": true,
+          "optional": true
+        },
+        "result-sheet-3": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: Quarters, History.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "Quarters",
+          "enum": [
+            "Quarters",
+            "History"
+          ]
+        },
+        "result-period-3": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Use Q-0 to Q-7 for Quarters, or LTM / FY-0 to FY-4 for History.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "Q-0"
+        },
+        "target-period-3": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "filing",
+            "location": "the promised deadline, if any",
+            "period": "the cited reporting period"
+          },
+          "optional": true
+        },
+        "no-longer-mentioned-3": {
+          "role": "label",
+          "maxChars": 3,
+          "unit": "text",
+          "note": "Mark YES only after checking later calls for the disappearance of this promise; required for DROPPED. Allowed values: YES, NO.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "YES",
+          "enum": [
+            "YES",
+            "NO"
+          ]
+        },
+        "promise-4": {
+          "role": "callout",
+          "maxChars": 80,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "omitAspects": [
+            "9x16"
+          ],
+          "source": {
+            "kind": "filing",
+            "location": "year-ago earnings-call transcript: the promise word for word",
+            "period": "the cited reporting period"
+          },
+          "optional": true,
+          "maxLines": 2
+        },
+        "said-4": {
+          "role": "caption",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "omitAspects": [
+            "9x16"
+          ],
+          "source": {
+            "kind": "filing",
+            "location": "the speaker's public role and dated year-ago call",
+            "period": "the cited reporting period"
+          },
+          "optional": true
+        },
+        "result-4": {
+          "role": "value",
+          "maxChars": 12,
+          "unit": "money_m",
+          "note": "Quarters!<field_key>, Q-0, or History!<field_key>, LTM. Name the actual key in result-field-4; its unit is resolved from that field, not guessed.",
+          "factCheck": true,
+          "unitFromField": "result-field-4",
+          "omitAspects": [
+            "9x16"
+          ],
+          "source": {
+            "kind": "workbook",
+            "sheet": "Quarters",
+            "field": "revenue",
+            "period": "Q-0",
+            "fieldSlot": "result-field-4",
+            "sheetSlot": "result-sheet-4",
+            "periodSlot": "result-period-4"
+          },
+          "optional": true
+        },
+        "mark-4": {
+          "role": "label",
+          "maxChars": 7,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: KEPT, MISSED, DROPPED.",
+          "factCheck": false,
+          "omitAspects": [
+            "9x16"
+          ],
+          "optional": true,
+          "enum": [
+            "KEPT",
+            "MISSED",
+            "DROPPED"
+          ]
+        },
+        "result-field-4": {
+          "role": "label",
+          "maxChars": 32,
+          "unit": "text",
+          "note": "Required actual workbook field_key for this result, for example revenue, operating_cf or eps. Do not invent a row.",
+          "factCheck": false,
+          "inputOnly": true,
+          "omitAspects": [
+            "9x16"
+          ],
+          "optional": true
+        },
+        "result-sheet-4": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: Quarters, History.",
+          "factCheck": false,
+          "inputOnly": true,
+          "omitAspects": [
+            "9x16"
+          ],
+          "default": "Quarters",
+          "enum": [
+            "Quarters",
+            "History"
+          ]
+        },
+        "result-period-4": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Use Q-0 to Q-7 for Quarters, or LTM / FY-0 to FY-4 for History.",
+          "factCheck": false,
+          "inputOnly": true,
+          "omitAspects": [
+            "9x16"
+          ],
+          "default": "Q-0"
+        },
+        "target-period-4": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "inputOnly": true,
+          "omitAspects": [
+            "9x16"
+          ],
+          "source": {
+            "kind": "filing",
+            "location": "the promised deadline, if any",
+            "period": "the cited reporting period"
+          },
+          "optional": true
+        },
+        "no-longer-mentioned-4": {
+          "role": "label",
+          "maxChars": 3,
+          "unit": "text",
+          "note": "Mark YES only after checking later calls for the disappearance of this promise; required for DROPPED. Allowed values: YES, NO.",
+          "factCheck": false,
+          "inputOnly": true,
+          "omitAspects": [
+            "9x16"
+          ],
+          "default": "NO",
+          "enum": [
+            "YES",
+            "NO"
+          ]
+        }
+      },
+      "example": {
+        "title": "WHAT HAPPENED TO THE PROMISES?",
+        "row-count": "4",
+        "promise-1": "Revenue will reach $120m by FY26.",
+        "said-1": "CFO / Q3 FY25 call",
+        "result-1": "120m",
+        "mark-1": "KEPT",
+        "result-field-1": "revenue",
+        "result-sheet-1": "Quarters",
+        "result-period-1": "Q-0",
+        "target-period-1": "FY26",
+        "no-longer-mentioned-1": "NO",
+        "promise-2": "Operating cash will reach $80m.",
+        "said-2": "CEO / Q3 FY25 call",
+        "result-2": "60m",
+        "mark-2": "MISSED",
+        "result-field-2": "operating_cf",
+        "result-sheet-2": "Quarters",
+        "result-period-2": "Q-0",
+        "target-period-2": "FY26",
+        "no-longer-mentioned-2": "NO",
+        "promise-3": "We will be the trusted partner.",
+        "said-3": "CEO / Q3 FY25 call",
+        "result-3": "",
+        "mark-3": "DROPPED",
+        "result-field-3": "revenue",
+        "result-sheet-3": "Quarters",
+        "result-period-3": "Q-0",
+        "target-period-3": "",
+        "no-longer-mentioned-3": "YES",
+        "promise-4": "We target $1.20 EPS by FY26.",
+        "said-4": "CFO / Q3 FY25 call",
+        "result-4": "$1.25",
+        "mark-4": "KEPT",
+        "result-field-4": "eps",
+        "result-sheet-4": "Quarters",
+        "result-period-4": "Q-0",
+        "target-period-4": "FY26",
+        "no-longer-mentioned-4": "NO"
+      },
+      "motion": {
+        "kind": "promises"
+      },
+      "round": 3,
+      "part": 2,
+      "exampleByAspect": {
+        "9x16": {
+          "row-count": "3"
+        }
+      },
+      "workbookFields": {
+        "History": [
+          "buybacks",
+          "bvps",
+          "capex",
+          "cash",
+          "diluted_shares",
+          "dividends_paid",
+          "ebitda",
+          "eps",
+          "fcf",
+          "fcf_margin",
+          "fcf_ps",
+          "fiscal_year",
+          "gross_margin",
+          "gross_profit",
+          "invested_capital",
+          "net_debt",
+          "net_debt_ebitda",
+          "net_income",
+          "net_margin",
+          "operating_cf",
+          "operating_income",
+          "operating_margin",
+          "period_end",
+          "revenue",
+          "roe",
+          "roic",
+          "sbc",
+          "sbc_pct_rev",
+          "shares_yoy",
+          "total_assets",
+          "total_debt",
+          "total_equity"
+        ],
+        "Quarters": [
+          "capex",
+          "cash",
+          "diluted_shares",
+          "ebitda",
+          "eps",
+          "eps_consensus",
+          "eps_street",
+          "fcf",
+          "fcf_margin",
+          "fiscal_quarter",
+          "fiscal_year",
+          "gross_margin",
+          "gross_profit",
+          "net_debt",
+          "net_income",
+          "net_margin",
+          "operating_cf",
+          "operating_income",
+          "operating_margin",
+          "period_end",
+          "revenue",
+          "revenue_consensus",
+          "sbc",
+          "total_debt",
+          "total_equity"
+        ]
+      }
+    },
+    {
+      "key": "charts/insider-trades",
+      "drawer": "longs",
+      "model": "insiders",
+      "definition": {},
+      "purpose": "Five years of observed prices and open-market insider trades, with computed trailing twelve-month dollar totals and distinct people.",
+      "caution": "Use Form 4 P/S only. Planned and tax sales are routine and quiet. One sale is not a signal. If a callout names a person, name their public role.",
+      "chapterTypes": [
+        "insider-trades",
+        "management",
+        "capital-allocation"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "price-data": {
+          "role": "label",
+          "maxChars": 200000,
+          "unit": "text",
+          "note": "feed price: date,price rows, semicolon separated. Use actual observed prices over the available five-year history, not synthetic observations.",
+          "factCheck": true,
+          "inputOnly": true,
+          "table": true,
+          "columns": [
+            {
+              "name": "date",
+              "unit": "date"
+            },
+            {
+              "name": "price",
+              "unit": "money"
+            }
+          ],
+          "source": {
+            "kind": "feed",
+            "feed": "price",
+            "what": "five years of dated share prices",
+            "period": "the stated observation window"
+          }
+        },
+        "trade-data": {
+          "role": "label",
+          "maxChars": 200000,
+          "unit": "text",
+          "note": "feed form4: date,code,value,person,planned,tax rows. Value is whole dollars or an explicit suffix. Codes P and S only are plotted/counted; planned/tax flags YES/NO; other codes are ignored.",
+          "factCheck": true,
+          "inputOnly": true,
+          "table": true,
+          "columns": [
+            {
+              "name": "date",
+              "unit": "date"
+            },
+            {
+              "name": "code",
+              "unit": "text"
+            },
+            {
+              "name": "value",
+              "unit": "money"
+            },
+            {
+              "name": "person",
+              "unit": "text"
+            },
+            {
+              "name": "planned",
+              "unit": "text"
+            },
+            {
+              "name": "tax",
+              "unit": "text"
+            }
+          ],
+          "source": {
+            "kind": "feed",
+            "feed": "form4",
+            "what": "open-market transaction date, code, value, reporting person and routine-sale flags",
+            "period": "the stated observation window"
+          },
+          "optional": true,
+          "default": ""
+        },
+        "bought-12m": {
+          "role": "big",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "feed form4: sum of code P open-market values over twelve months to the last observed price date, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "form4",
+            "what": "sum of code P open-market values over twelve months to the last observed price date",
+            "period": "the stated observation window"
+          },
+          "computed": true
+        },
+        "sold-12m": {
+          "role": "big",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "feed form4: sum of code S open-market values over the same twelve months, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "form4",
+            "what": "sum of code S open-market values over the same twelve months",
+            "period": "the stated observation window"
+          },
+          "computed": true
+        },
+        "buyers": {
+          "role": "value",
+          "maxChars": 3,
+          "unit": "count",
+          "note": "feed form4: distinct reporting people with code P in the same twelve months, count",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "form4",
+            "what": "distinct reporting people with code P in the same twelve months",
+            "period": "the stated observation window"
+          },
+          "computed": true
+        },
+        "sellers": {
+          "role": "value",
+          "maxChars": 3,
+          "unit": "count",
+          "note": "feed form4: distinct reporting people with code S in the same twelve months, count",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "form4",
+            "what": "distinct reporting people with code S in the same twelve months",
+            "period": "the stated observation window"
+          },
+          "computed": true
+        },
+        "bought-label": {
+          "role": "label",
+          "maxChars": 14,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "spoken": true,
+          "default": "BOUGHT, 12 MO"
+        },
+        "sold-label": {
+          "role": "label",
+          "maxChars": 14,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "spoken": true,
+          "default": "SOLD, 12 MO"
+        },
+        "callout": {
+          "role": "callout",
+          "maxChars": 48,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "focus-trade": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "count",
+          "note": "Select the plotted P/S trade in the callout, in feed order after filtering; zero means no circle.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "0"
+        }
+      },
+      "example": {
+        "title": "WHAT INSIDERS ACTUALLY TRADED",
+        "price-data": "2021-11-06,$20;2024-11-06,$30;2025-11-06,$40;2026-03-03,$44;2026-06-01,$42;2026-11-06,$48",
+        "trade-data": "2024-11-06,P,$5000000,Former executive,NO,NO;2026-03-03,P,$1000000,Director A,NO,NO;2026-06-01,S,$2000000,Executive B,YES,NO;2026-11-06,S,$500000,Executive C,NO,YES;2026-11-06,A,$80000000,Executive D,NO,NO;2026-11-06,F,$30000,Executive C,NO,YES",
+        "bought-label": "BOUGHT, 12 MO",
+        "sold-label": "SOLD, 12 MO",
+        "callout": "THE DIRECTOR'S OPEN-MARKET BUY IN MARCH",
+        "focus-trade": "2"
+      },
+      "motion": {
+        "kind": "insiders"
+      },
+      "round": 3,
+      "part": 2
+    },
+    {
+      "key": "charts/stock-vs-driver",
+      "drawer": "longs",
+      "model": "driver",
+      "definition": {},
+      "purpose": "Compare the stock with one outside series, both indexed to 100 on their first shared observation and one y-axis.",
+      "caution": "Co-movement is not causation. Explain the mechanism. Never use separate y-axes, forward-fill a missing observation or invent a shared starting value.",
+      "chapterTypes": [
+        "the-driver",
+        "sector-comps",
+        "how-the-money-is-made"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "stock-data": {
+          "role": "label",
+          "maxChars": 200000,
+          "unit": "text",
+          "note": "feed price: date,price rows; prices are per-share dollars.",
+          "factCheck": true,
+          "inputOnly": true,
+          "table": true,
+          "columns": [
+            {
+              "name": "date",
+              "unit": "date"
+            },
+            {
+              "name": "price",
+              "unit": "money"
+            }
+          ],
+          "source": {
+            "kind": "feed",
+            "feed": "price",
+            "what": "dated stock prices",
+            "period": "the stated observation window"
+          }
+        },
+        "driver-data": {
+          "role": "label",
+          "maxChars": 200000,
+          "unit": "text",
+          "note": "feed fred: date,value rows. Keep original units; the renderer indexes both series only on dates observed in both feeds.",
+          "factCheck": true,
+          "inputOnly": true,
+          "table": true,
+          "columns": [
+            {
+              "name": "date",
+              "unit": "date"
+            },
+            {
+              "name": "value",
+              "unitFrom": "driver-unit"
+            }
+          ],
+          "source": {
+            "kind": "feed",
+            "feed": "fred",
+            "what": "the dated outside economic series",
+            "period": "the stated observation window"
+          }
+        },
+        "driver-unit": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: money, percent, index, count.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "index",
+          "enum": [
+            "money",
+            "percent",
+            "index",
+            "count"
+          ]
+        },
+        "show-gap": {
+          "role": "label",
+          "maxChars": 3,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: YES, NO.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "YES",
+          "enum": [
+            "YES",
+            "NO"
+          ]
+        },
+        "stock-label": {
+          "role": "legend",
+          "maxChars": 10,
+          "unit": "text",
+          "note": "feed price: the stock ticker, text",
+          "factCheck": true,
+          "spoken": true,
+          "source": {
+            "kind": "feed",
+            "feed": "price",
+            "what": "the stock ticker",
+            "period": "the stated observation window"
+          },
+          "default": "STOCK"
+        },
+        "driver-label": {
+          "role": "legend",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "feed fred: the economic series name, text",
+          "factCheck": true,
+          "spoken": true,
+          "source": {
+            "kind": "feed",
+            "feed": "fred",
+            "what": "the economic series name",
+            "period": "the stated observation window"
+          }
+        },
+        "stock-change": {
+          "role": "value",
+          "maxChars": 7,
+          "unit": "percent",
+          "note": "feed price: start-to-end change over the identical shared dates, percent",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "price",
+            "what": "start-to-end change over the identical shared dates",
+            "period": "the stated observation window"
+          },
+          "computed": true
+        },
+        "driver-change": {
+          "role": "value",
+          "maxChars": 7,
+          "unit": "percent",
+          "note": "feed fred: start-to-end change over the identical shared dates, percent",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "fred",
+            "what": "start-to-end change over the identical shared dates",
+            "period": "the stated observation window"
+          },
+          "computed": true
+        },
+        "start-label": {
+          "role": "caption",
+          "maxChars": 12,
+          "unit": "date",
+          "note": "feed price: the actual first common observation, date",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "price",
+            "what": "the actual first common observation",
+            "period": "the stated observation window"
+          },
+          "computed": true
+        },
+        "end-label": {
+          "role": "caption",
+          "maxChars": 12,
+          "unit": "date",
+          "note": "feed price: the actual last common observation, date",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "price",
+            "what": "the actual last common observation",
+            "period": "the stated observation window"
+          },
+          "computed": true
+        }
+      },
+      "example": {
+        "title": "THE STOCK AND ITS OUTSIDE DRIVER",
+        "stock-data": "2023-01-01,$30;2024-01-01,$40;2025-01-01,$36;2026-01-01,$48",
+        "driver-data": "2023-01-01,60;2024-01-01,72;2025-01-01,66;2026-01-01,90",
+        "driver-unit": "index",
+        "show-gap": "YES",
+        "stock-label": "STOCK",
+        "driver-label": "OUTSIDE SERIES"
+      },
+      "motion": {
+        "kind": "driver"
+      },
+      "round": 3,
+      "part": 2
+    },
+    {
+      "key": "chapters/claim-vs-checked",
+      "drawer": "longs",
+      "model": "checked",
+      "definition": {},
+      "purpose": "A verbatim company claim beside a dated public check, with MATCHES, DOESN'T or CAN'T TELL.",
+      "caution": "Name the page and date every check. A website is not audited data: describe what the dated snapshot showed, never infer that hiring or trading stopped. The screenshot remains a separate WEB shot.",
+      "chapterTypes": [
+        "ground-truth",
+        "filing-walk"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "claim": {
+          "role": "callout",
+          "maxChars": 90,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "source": {
+            "kind": "filing",
+            "location": "the filing or call: the company claim word for word",
+            "period": "the cited reporting period",
+            "locationSlot": "claim-source"
+          }
+        },
+        "claim-source": {
+          "role": "caption",
+          "maxChars": 40,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "source": {
+            "kind": "filing",
+            "location": "the filing page or dated call location",
+            "period": "the cited reporting period"
+          }
+        },
+        "claim-figure": {
+          "role": "value",
+          "maxChars": 10,
+          "unit": "count",
+          "note": "Writer wording; no independently asserted figure. Unit resolves from claim-unit.",
+          "factCheck": true,
+          "unitFrom": "claim-unit",
+          "source": {
+            "kind": "filing",
+            "location": "the optional figure actually asserted by the claim",
+            "period": "the cited reporting period",
+            "locationSlot": "claim-source"
+          },
+          "optional": true
+        },
+        "found": {
+          "role": "callout",
+          "maxChars": 90,
+          "unit": "text",
+          "note": "feed web_shots: what the named page visibly showed on the checked date, text",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "web_shots",
+            "what": "what the named page visibly showed on the checked date",
+            "period": "the stated observation window",
+            "pageDateSlot": "found-source"
+          }
+        },
+        "found-source": {
+          "role": "caption",
+          "maxChars": 40,
+          "unit": "text",
+          "note": "feed web_shots: page name and ISO date of the screenshot, text",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "web_shots",
+            "what": "page name and ISO date of the screenshot",
+            "period": "the stated observation window"
+          }
+        },
+        "found-figure": {
+          "role": "value",
+          "maxChars": 10,
+          "unit": "count",
+          "note": "feed web_shots: the optional figure visible in the dated screenshot, count Unit resolves from found-unit.",
+          "factCheck": true,
+          "unitFrom": "found-unit",
+          "source": {
+            "kind": "feed",
+            "feed": "web_shots",
+            "what": "the optional figure visible in the dated screenshot",
+            "period": "the stated observation window",
+            "pageDateSlot": "found-source"
+          },
+          "optional": true
+        },
+        "verdict": {
+          "role": "label",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: MATCHES, DOESN'T, CAN'T TELL.",
+          "factCheck": false,
+          "enum": [
+            "MATCHES",
+            "DOESN'T",
+            "CAN'T TELL"
+          ]
+        },
+        "claim-unit": {
+          "role": "label",
+          "maxChars": 10,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: money, money_m, shares_m, percent, multiple, count, text.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "count",
+          "enum": [
+            "money",
+            "money_m",
+            "shares_m",
+            "percent",
+            "multiple",
+            "count",
+            "text"
+          ]
+        },
+        "found-unit": {
+          "role": "label",
+          "maxChars": 10,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: money, money_m, shares_m, percent, multiple, count, text.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "count",
+          "enum": [
+            "money",
+            "money_m",
+            "shares_m",
+            "percent",
+            "multiple",
+            "count",
+            "text"
+          ]
+        }
+      },
+      "example": {
+        "title": "THE CLAIM AND THE DATED CHECK",
+        "claim": "The website lists 40 open roles.",
+        "claim-source": "Q3 FY26 call / 6 Nov",
+        "claim-figure": "40",
+        "found": "On that date, the careers page listed 35 roles.",
+        "found-source": "Careers page / 2026-11-06",
+        "found-figure": "35",
+        "verdict": "DOESN'T",
+        "claim-unit": "count",
+        "found-unit": "count"
+      },
+      "motion": {
+        "kind": "checked"
+      },
+      "round": 3,
+      "part": 2
+    },
+    {
+      "key": "charts/then-and-now",
+      "drawer": "longs",
+      "model": "precedent",
+      "definition": {},
+      "purpose": "Two observed price paths indexed to 100 on their own event day, aligned on one months axis.",
+      "caution": "One precedent is a story, not a forecast. Name the differences. The past path stops at its last real observation and is never extended.",
+      "chapterTypes": [
+        "the-precedent",
+        "how-we-got-here",
+        "one-framework"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "then-data": {
+          "role": "label",
+          "maxChars": 200000,
+          "unit": "text",
+          "note": "feed price: past date,price rows. Include an observed event-day close; never extend this path after its final observation.",
+          "factCheck": true,
+          "inputOnly": true,
+          "table": true,
+          "columns": [
+            {
+              "name": "date",
+              "unit": "date"
+            },
+            {
+              "name": "price",
+              "unit": "money"
+            }
+          ],
+          "source": {
+            "kind": "feed",
+            "feed": "price",
+            "what": "the past company's actual historical observations",
+            "period": "the stated observation window"
+          }
+        },
+        "now-data": {
+          "role": "label",
+          "maxChars": 200000,
+          "unit": "text",
+          "note": "feed price: current date,price rows. Include an observed event-day close.",
+          "factCheck": true,
+          "inputOnly": true,
+          "table": true,
+          "columns": [
+            {
+              "name": "date",
+              "unit": "date"
+            },
+            {
+              "name": "price",
+              "unit": "money"
+            }
+          ],
+          "source": {
+            "kind": "feed",
+            "feed": "price",
+            "what": "this company's actual observations so far",
+            "period": "the stated observation window"
+          }
+        },
+        "then-name": {
+          "role": "legend",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "spoken": true
+        },
+        "now-name": {
+          "role": "legend",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "spoken": true
+        },
+        "event-label": {
+          "role": "caption",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "then-event": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "date",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "filing",
+            "location": "the past company's dated event announcement",
+            "period": "the cited reporting period"
+          }
+        },
+        "now-event": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "date",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "filing",
+            "location": "the current company's dated event announcement",
+            "period": "the cited reporting period"
+          }
+        },
+        "months-horizon": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "count",
+          "note": "The chosen result horizon in calendar months. The renderer refuses a horizon beyond actual past coverage.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "12"
+        },
+        "then-after": {
+          "role": "value",
+          "maxChars": 7,
+          "unit": "percent",
+          "note": "feed price: past return at the chosen months-on horizon, from real observations, percent",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "price",
+            "what": "past return at the chosen months-on horizon, from real observations",
+            "period": "the stated observation window"
+          },
+          "computed": true
+        },
+        "months-after": {
+          "role": "caption",
+          "maxChars": 14,
+          "unit": "text",
+          "note": "Computed caption for the chosen horizon.",
+          "factCheck": false,
+          "computed": true
+        },
+        "now-after": {
+          "role": "value",
+          "maxChars": 7,
+          "unit": "percent",
+          "note": "feed price: current return to the last actual observation so far, percent",
+          "factCheck": true,
+          "source": {
+            "kind": "feed",
+            "feed": "price",
+            "what": "current return to the last actual observation so far",
+            "period": "the stated observation window"
+          },
+          "computed": true
+        }
+      },
+      "example": {
+        "title": "ONE PRECEDENT, NOT A FORECAST",
+        "then-data": "2018-10-01,$80;2019-01-01,$100;2019-07-01,$60;2020-01-01,$20",
+        "now-data": "2025-10-01,$90;2026-01-01,$100;2026-04-01,$70",
+        "then-name": "THE PAST COMPANY",
+        "now-name": "THIS COMPANY",
+        "event-label": "THE DOCUMENTED DIVIDEND CUT",
+        "then-event": "2019-01-01",
+        "now-event": "2026-01-01",
+        "months-horizon": "12"
+      },
+      "motion": {
+        "kind": "precedent"
+      },
+      "round": 3,
+      "part": 2
     }
   ]
 }

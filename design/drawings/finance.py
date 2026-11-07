@@ -336,7 +336,8 @@ def thesis_tripwires(p,d):
         if p.portrait:
             y=510+i*246
             p.card(96,y,888,218,fill='ground')
-            p.text(f'metric-{i}',r['metric'],124,y+22,832,54,size=47,weight=700)
+            p.text(f'metric-{i}',r['metric'],124,y+22,490 if 'by_when'in r else 832,54,size=47,weight=700)
+            if 'by_when'in r:p.text(f'by-when-{i+1}',r['by_when'],640,y+26,316,50,size=40,weight=700,colour='quiet',align='right')
             for j,(name,value) in enumerate([('CURRENT',current),('LIMIT',limit)]):
                 x=124+j*316
                 p.label(f'label-{i}-{j}',name,x,y+92,280,40,size=34,colour='quiet')
@@ -354,6 +355,7 @@ def thesis_tripwires(p,d):
             p.text(f'limit-{i}',limit,1080,y+26,330,80,size=53,kind='mono-bold')
             p.text(f'state-{i}',state,1460,y+36,364,61,size=36,kind='mono-bold',
                    colour='structure' if holds else 'attention')
+            if 'by_when'in r:p.text(f'by-when-{i+1}',r['by_when'],96,y+78,570,44,size=40,weight=700,colour='quiet')
         results.append({'metric':r['metric'],'holds':holds})
     return {'rules':results}
 

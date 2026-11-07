@@ -55,8 +55,39 @@ furniture have no spoken cues. All moves are existing kit moves except
 `clock-run` names its start/end time slots and documented target total. Its
 counter is continuous between checkpoints and rests only on documented values.
 One final checkpoint requires an `over N minutes` caption. No intermediate
-losses are invented. The pure `clock_face` drawer accepts the exact time.
+losses are invented. `cueAt: checkpoint-end` aligns the documented arrival with
+the words that reach that figure; the live counter is hidden before the run.
+The pure `clock_face` drawer accepts the exact time.
 
 The toy table requires EXAMPLE or TOY NUMBERS and verifies every running total.
 Its manifest tells the future fact-check adapter to skip only on that required
 tag. Legal statuses are enumerated, and an untried settlement leaves TRIED hollow.
+
+## Stock-long additions
+
+Part 2 adds the promise ledger, insider trades, stock versus driver, public
+claim versus dated check, and historical precedent paths. It extends the existing
+`finance/thesis-tripwires` instead of adding a duplicate concept.
+
+The promise ledger has four rows in 16:9 and three in 9:16. Its field_key,
+sheet and period controls resolve the result's real unit and workbook source;
+`prepare.sources` returns the resolved provenance. A vague undated promise is
+only DROPPED after a later-call disappearance check. Promises are verbatim quotes.
+
+Insider data retains only P/S transactions. Planned and tax-related open-market
+sales are quiet; grants and withholding codes are not counted. Totals cover the
+calendar twelve months ending on the last fetched price date, with distinct
+people counts. A small real feed total remains dollars rather than printing
+zero million. Trade-focus circles use an actual plotted trade, never a fabricated
+date or an inferred price through a hole in the feed.
+
+Stock versus driver uses dates present in both feeds, a shared base of 100 and
+one y-axis. Its native `spread_fill` is translated to the exact line scale.
+The precedent aligns each company's actual event-day close and stops at each
+path's own final observation. A requested result beyond past coverage is refused.
+
+Public checks require both a page name and a valid ISO date. The plate carries
+only words and optional figures; the screenshot remains a separate WEB shot.
+Tripwire limits and the new 16-character review dates are explicitly unchecked
+writer assumptions. All three current tripwire figures retain workbook sources,
+including the declared same-period cash-conversion/revenue-growth calculations.

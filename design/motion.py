@@ -36,6 +36,17 @@ def validate(recipe,slots,anchors=None,type_roles=None):
 def standalone(item,slots):
     if 'motion' not in item:return None
     visible={n:s for n,s in slots.items() if not s.get('inputOnly')}
+    if item['motion'].get('kind')=='watchlist':
+        steps=[{'slot':'title','action':'appear','cueSlot':'title'}]
+        for i in range(3):
+            current=f'current-{i}' if f'current-{i}'in slots else f'value-{i}-0'
+            limit=f'limit-{i}' if f'limit-{i}'in slots else f'value-{i}-1'
+            names=[f'metric-{i}',current,limit,f'state-{i}',f'by-when-{i+1}']
+            if i==2:names.append('takeaway')
+            steps.append({'slot':'data-area' if i==0 else names[0],'includeSlots':names if i==0 else names[1:],'action':'clip-in' if i==0 else 'appear','cueSlot':f'metric-{i}',
+                          'effects':[{'move':'highlight','slot':limit,'cueSlot':limit}]})
+        used={n for s in steps for n in members(s)};steps[1]['includeSlots'].extend(n for n in visible if n not in used)
+        result={'steps':steps};validate(result,visible);return result
     ideas=deepcopy(item['motion']['ideas'])
     if 'data-area' in visible:
         furniture={'tick','axis','legend','unit','period'}

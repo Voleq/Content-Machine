@@ -30,7 +30,7 @@ def catalog_items():
     return items
 
 def chapter_types():
-    known=set(json.loads((ROOT/'kit/roles.json').read_text())['chapterTypes'])
+    known={k for k in json.loads((ROOT/'kit/roles.json').read_text())['chapterTypes'] if not k.startswith('_')}
     if (HERE/'longs.json').exists():known.update(json.loads((HERE/'longs.json').read_text())['chapterTypes'])
     return known
 
@@ -54,12 +54,16 @@ def fit(slot):
     for size in range(int(slot['size']),int(slot['minimum'])-1,-1):
         font=face(slot['font'],size,slot['weight']);lines=wrap(slot['example'],font,w-4)
         boxes=[font.getbbox(line or ' ',anchor='ls') for line in lines];top=min(b[1] for b in boxes);bottom=max(b[3] for b in boxes)
-        if max(font.getlength(line) for line in lines)<=w-4 and (len(lines)-1)*size*1.18+bottom-top<=h-2:
+        if len(lines)<=slot.get('maxLines',1000) and max(font.getlength(line) for line in lines)<=w-4 and (len(lines)-1)*size*1.18+bottom-top<=h-2:
             return size,lines,top
     raise ValueError(f'{slot["name"]}: example does not fit the repository font in its published box')
 
 def note_for(item,slot):
     rules=item['definition'].get('fields',{});name=slot['name']
+    if item.get('legacyId')=='thesis-tripwires':
+        if name.startswith('by-when-'):return 'Writer-defined review date, at most 16 characters. The fact-check does not check this deadline.'
+        if name.startswith('limit-') or re.fullmatch(r'value-\d-1',name):return 'Writer-defined line in the sand. The fact-check does not check this limit.'
+        if name.startswith('state-'):return 'Computed comparison against the writer limit. Allowed values: HOLDS, BREACHED.'
     for key,rule in rules.items():
         if core.slug(key)==name:return rule.get('instruction','Use supplied research for '+name+'.')
     if name=='title':return 'A concise headline supported by the cited workbook or filing; keep company-specific figures faithful.'
@@ -77,6 +81,7 @@ def role_for(slot):
     name=slot['name'];mono=slot['font']=='Courier Prime'
     if name=='title':return 'headline'
     if name=='takeaway':return 'caption'
+    if name.startswith('by-when-'):return 'caption'
     if name=='source':return 'source'
     if name=='period' or name.startswith('period-') and mono and slot['weight']==400:return 'period'
     if name=='label-chapter':return 'kicker'
@@ -118,6 +123,7 @@ def compile_plate(item,aspect,inks,scale,variant=None):
         rules=item['definition'].get('fields',{})
         for old,rule in rules.items():
             if core.slug(old)==name:cap=max(len(raw['example']),int(rule.get('max_chars',cap)))
+        if name.startswith('by-when-'):cap=16
         colour=raw['colour']
         if core.contrast(inks[colour],inks[raw['background']])<4.5:
             colour=max(('structure','ground'),key=lambda c:core.contrast(inks[c],inks[raw['background']]))
@@ -138,14 +144,23 @@ def compile_plate(item,aspect,inks,scale,variant=None):
                             'note':'Pure Python data drawing from these workbook slots. Its label renderer supplies ticks, dates, units and calculated label positions.','recipe':spec}
         for name,b in spec['bindings'].items():
             if name not in slots:
-                slots[name]={'x':x,'y':y,'w':0,'h':0,'role':'control','align':'left','maxChars':max(64,len(b['example'])),
+                slots[name]={'x':x,'y':y,'w':0,'h':0,'role':'control','align':'left','maxChars':b.get('maxChars',max(64,len(b['example']))),
                              'authoredLines':1,'fit':'none','region':True,'inputOnly':True,'renderer':'source_value','note':b['note']}
             else:slots[name]['note']=b['note']
             slots[name]['sourceUnit']=b['unit'];slots[name]['source']=b['source'];examples[name]=b['example']
             if b.get('modelScale',1)!=1:slots[name]['modelScale']=b['modelScale']
             if b.get('sign'):slots[name]['sourceSign']=b['sign']
+            if b.get('assumption'):slots[name].update(assumption=True,factCheck=False)
         body={s['name'] for s in scene.slots if s['scope']=='body'}
         for name in body:slots[name]['dataLabel']=True
+        if item.get('legacyId')=='thesis-tripwires' and item.get('part')==2:
+            for i in range(3):
+                current=f'current-{i}' if f'current-{i}'in slots else f'value-{i}-0'
+                limit=f'limit-{i}' if f'limit-{i}'in slots else f'value-{i}-1'
+                source=spec['bindings'][f'input-rules-{i+1}-current']
+                slots[current].update(sourceUnit=source['unit'],source=source['source'],note=source['note'])
+                slots[limit].update(sourceUnit=spec['bindings'][f'input-rules-{i+1}-limit']['unit'],source=None,factCheck=False,assumption=True)
+                slots[f'by-when-{i+1}'].update(sourceUnit='text',source=None,factCheck=False,assumption=True)
     key=item['key']+'-'+aspect;name=key.split('/',1)[1]
     entry={'key':key,'dir':item['key'].split('/',1)[0],'aspect':aspect,'canvas':[scene.w,scene.h],'exportScale':scale,
            'delivered':[scene.w*scale,scene.h*scale],'ground':'paper','bakedText':False,'playback':'static','fps':0,'frameCount':1,
@@ -154,6 +169,8 @@ def compile_plate(item,aspect,inks,scale,variant=None):
            'chapterTypes':item['chapterTypes'],'sectors':sectors_for(item),'example':examples,'typeAudit':audit}
     motion=motion_for(item,slots)
     if motion:entry['motion']=motion
+    if item.get('motion',{}).get('kind')=='watchlist':
+        entry['motionAnchors']=[{'move':fx['move'],'slot':fx['slot'],'box':{k:slots[fx['slot']][k] for k in ('x','y','w','h')}} for step in motion['steps'] for fx in step.get('effects',[])]
     nodes=core.clean_nodes(scene.nodes,'frame' if core.needs_data(item) else None)
     return entry,nodes
 
@@ -238,7 +255,8 @@ def build(output,*,ground='paper',scale=2,only=(),check=False,with_review=False)
                 row=compile_plate(item,aspect,inks,scale,variant)
                 region=row[0]['slots'].get('data-area')
                 if region:
-                    for binding in region['recipe']['bindings'].values():workbook.validate_source(binding['source'],tables)
+                    for binding in region['recipe']['bindings'].values():
+                        if not binding.get('assumption'):workbook.validate_source(binding['source'],tables)
                 if item['drawer']=='longs':
                     for field in item['fields'].values():
                         if field.get('source'):workbook.validate_source(field['source'],tables)
