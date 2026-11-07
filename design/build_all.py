@@ -19,10 +19,20 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from PIL import Image,ImageDraw,ImageFont
 from pipeline.series import paint
-from design import core,data,workbook,motion as motions
+from design import core,data,workbook,motion as motions,longs
 
 HERE=ROOT/'design'
 sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+
+def catalog_items():
+    items=json.loads((HERE/'catalog.json').read_text())['plates']
+    if (HERE/'longs.json').exists():items+=json.loads((HERE/'longs.json').read_text())['plates']
+    return items
+
+def chapter_types():
+    known=set(json.loads((ROOT/'kit/roles.json').read_text())['chapterTypes'])
+    if (HERE/'longs.json').exists():known.update(json.loads((HERE/'longs.json').read_text())['chapterTypes'])
+    return known
 
 @lru_cache(maxsize=512)
 def face(family,size,weight):
@@ -98,7 +108,8 @@ def share_roles(scene,slots,roles,audit):
 def motion_for(item,slots):
     return motions.standalone(item,slots)
 
-def compile_plate(item,aspect,inks,scale):
+def compile_plate(item,aspect,inks,scale,variant=None):
+    if item['drawer']=='longs':return longs.compile_plate(item,aspect,inks,scale,variant)
     scene,analysis=core.assemble(item,aspect);slots={};roles={};examples={};audit=[]
     for raw in scene.slots:
         size,lines,_=fit(raw);name=raw['name'];x,y,w,h=raw['box'];font=face(raw['font'],size,raw['weight'])
@@ -164,15 +175,21 @@ def review(entry,nodes,inks,path):
     """Examples stay under --out/review and never enter the source branch."""
     scale=entry['exportScale'];image=Image.new('RGBA',tuple(entry['delivered']),inks['ground']);paint(image,resolve(nodes,inks),scale)
     values=deepcopy(entry['example']);positions={}
-    if 'data-area' in entry['slots']:
+    colours={}
+    if 'longRecipe' in entry:
+        from design import contracts
+        prepared=longs.prepare(entry,contracts.example_fill(entry),inks);paint(image,prepared['nodes'],scale)
+        values.update(prepared['values']);positions.update(prepared['boxes']);colours=prepared['colours']
+    elif 'data-area' in entry['slots']:
         region=entry['slots']['data-area'];source={k:values[k] for k in region['inputSlots']}
         paint(image,data.draw(region,source,inks),scale)
         for label in data.labels(region,source,inks):values[label['slot']]=label['text'];positions[label['slot']]=label['box']
     draw=ImageDraw.Draw(image)
     for name,s in entry['slots'].items():
         if s.get('region') or name not in values:continue
-        role=entry['typeRoles'][s['role']];role={**role,'colour':s.get('colour',role['colour'])};box=positions.get(name,[s[k] for k in ('x','y','w','h')])
-        raw={'name':name,'box':box,'example':values[name],'font':role['font'],'size':role['size'],'weight':role['weight'],'minimum':34 if entry['aspect']=='9x16' else 26}
+        role=entry['typeRoles'][s['role']];role={**role,'colour':colours.get(name,s.get('colour',role['colour']))};box=positions.get(name,[s[k] for k in ('x','y','w','h')])
+        minimum=(30 if entry['aspect']=='9x16' else 24) if 'longRecipe'in entry else (34 if entry['aspect']=='9x16' else 26)
+        raw={'name':name,'box':box,'example':values[name],'font':role['font'],'size':role['size'],'weight':role['weight'],'minimum':minimum}
         size,lines,top=fit(raw);font=face(role['font'],size*scale,role['weight']);x,y,w,h=box
         for i,line in enumerate(lines):
             advance=font.getlength(line);tx=x*scale if s['align']=='left' else (x+w)*scale-advance if s['align']=='right' else (x+w/2)*scale-advance/2
@@ -204,23 +221,28 @@ def preview_pages(folder,previews):
 
 def build(output,*,ground='paper',scale=2,only=(),check=False,with_review=False):
     if ground!='paper':raise ValueError('This delivery targets the bot paper ground')
-    catalog=json.loads((HERE/'catalog.json').read_text());items=catalog['plates']
+    items=catalog_items()
     if only:
-        chosen=[i for i in items if i['key'] in only or i['key'].split('/')[0] in only]
-        if not chosen or any(k not in {i['key'] for i in items}|{i['key'].split('/')[0] for i in items} for k in only):raise ValueError('Unknown --only plate/family')
+        matches=lambda i,k:k in (i['key'],i['key'].split('/')[0]) or k=='round3' and i.get('round')==3 or k==f'part-{i.get("part")}'
+        chosen=[i for i in items if any(matches(i,k) for k in only)]
+        if not chosen or any(not any(matches(i,k) for i in items) for k in only):raise ValueError('Unknown --only plate/family/part')
         items=chosen
     tokens=json.loads((ROOT/'kit/design-tokens.json').read_text());inks=tokens['hours']['night']['plateInk'][ground]
-    vocabulary=json.loads((ROOT/'kit/roles.json').read_text())['chapterTypes']
+    vocabulary=chapter_types()
     tables=workbook.schema(ROOT/'templates/dennis_data_template.xlsx')
     rows=[]
     for item in items:
         if any(c not in vocabulary for c in item['chapterTypes']):raise ValueError('Unknown chapter type')
-        for aspect in ('16x9','9x16'):
-            row=compile_plate(item,aspect,inks,scale)
-            region=row[0]['slots'].get('data-area')
-            if region:
-                for binding in region['recipe']['bindings'].values():workbook.validate_source(binding['source'],tables)
-            rows.append((item,*row))
+        for aspect in item.get('aspects',('16x9','9x16')):
+            for variant in item.get('variants',[None]):
+                row=compile_plate(item,aspect,inks,scale,variant)
+                region=row[0]['slots'].get('data-area')
+                if region:
+                    for binding in region['recipe']['bindings'].values():workbook.validate_source(binding['source'],tables)
+                if item['drawer']=='longs':
+                    for field in item['fields'].values():
+                        if field.get('source'):workbook.validate_source(field['source'],tables)
+                rows.append((item,*row))
     kit_motion=json.loads((HERE/'kit-motion.json').read_text());published={}
     anchors=json.loads((ROOT/'kit/emit/motion.json').read_text())['anchors']['plates']
     for file in (ROOT/'kit').glob('*/manifest.json'):
@@ -253,7 +275,7 @@ def build(output,*,ground='paper',scale=2,only=(),check=False,with_review=False)
     write_json(output/'roles.fragment.json',{'_note':'Unwired proposals; not installed or merged into kit/roles.fragment.json.',**notes})
     write_json(output/'kit-motion.json',kit_motion)
     write_json(output/'manifest.json',{'pack':'dennis-source-proposals-1','integrated':False,'concepts':len(items),'layouts':len(rows),
-                                     'families':list(families),'dataConcepts':sum(core.needs_data(i) for i in items),
+                                     'families':list(families),'dataConcepts':sum(core.needs_data(i) or i['drawer']=='longs' and i['model']!='question' for i in items),
                                      'motionConcepts':sum('motion' in i for i in items),'kitMotionLayouts':len(kit_motion['plates']),
                                      'sourceSha256':{str(p.relative_to(ROOT)):sha(p) for p in [*HERE.glob('*.py'),*HERE.glob('*.json'),*sorted((HERE/'drawings').glob('*.py')),ROOT/'templates/dennis_data_template.xlsx',ROOT/'kit/emit/motion.json'] if p.name not in ('build_gallery.py','build_preview.py')}})
     if with_review:

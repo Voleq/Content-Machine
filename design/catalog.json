@@ -9,6 +9,7 @@
       "purpose": "Reported profit and operating cash flow from the same period.",
       "caution": "An accounting signal or allegation is not a finding of fraud. Attribute claims and use aligned periods.",
       "chapterTypes": [
+        "red-flag-check",
         "the-numbers",
         "filing-walk"
       ],
@@ -78,6 +79,7 @@
       "purpose": "Growth in sales against growth in customer receivables.",
       "caution": "An accounting signal or allegation is not a finding of fraud. Attribute claims and use aligned periods.",
       "chapterTypes": [
+        "red-flag-check",
         "the-numbers",
         "filing-walk"
       ],
@@ -165,6 +167,7 @@
       "purpose": "Reported earnings reconciled to the adjusted headline.",
       "caution": "An accounting signal or allegation is not a finding of fraud. Attribute claims and use aligned periods.",
       "chapterTypes": [
+        "red-flag-check",
         "the-numbers",
         "filing-walk"
       ],
@@ -590,6 +593,7 @@
       "purpose": "A public allegation, the issuer response and a checkable filing fact.",
       "caution": "An accounting signal or allegation is not a finding of fraud. Attribute claims and use aligned periods.",
       "chapterTypes": [
+        "the-unravel",
         "the-numbers",
         "filing-walk"
       ],
@@ -761,6 +765,7 @@
       "purpose": "Split-adjusted closes around a public announcement.",
       "caution": "An accounting signal or allegation is not a finding of fraud. Attribute claims and use aligned periods.",
       "chapterTypes": [
+        "the-unravel",
         "the-numbers",
         "filing-walk"
       ],
@@ -17279,6 +17284,7 @@
       "purpose": "Named entities, a control link and cash transfers form a public-disclosure relationship map.",
       "caution": "Use supplied workbook figures with consistent dates, units and reporting basis.",
       "chapterTypes": [
+        "the-trick",
         "filing-walk"
       ],
       "sectors": [],
@@ -17709,6 +17715,7 @@
       "purpose": "Stock/benchmark returns and their arithmetic difference align around event day zero.",
       "caution": "Use supplied workbook figures with consistent dates, units and reporting basis.",
       "chapterTypes": [
+        "the-unravel",
         "filing-walk"
       ],
       "sectors": [],
@@ -22087,6 +22094,7 @@
       "purpose": "Separate the auditor change from the disclosed disagreement or unresolved question.",
       "caution": "An accounting signal or allegation is not a finding of fraud. Attribute claims and use aligned periods.",
       "chapterTypes": [
+        "red-flag-check",
         "filing-walk",
         "risk"
       ],
@@ -22160,6 +22168,7 @@
       "purpose": "Name exactly which reports can no longer be relied on and what publication is still pending.",
       "caution": "An accounting signal or allegation is not a finding of fraud. Attribute claims and use aligned periods.",
       "chapterTypes": [
+        "red-flag-check",
         "filing-walk",
         "risk"
       ],
@@ -22379,6 +22388,7 @@
       "purpose": "Attach a regulatory or court document to its actual procedural status and the claim it contains.",
       "caution": "An accounting signal or allegation is not a finding of fraud. Attribute claims and use aligned periods.",
       "chapterTypes": [
+        "the-aftermath",
         "filing-walk",
         "risk"
       ],
@@ -22452,6 +22462,7 @@
       "purpose": "Keep the settlement terms separate from what was admitted or left unresolved.",
       "caution": "An accounting signal or allegation is not a finding of fraud. Attribute claims and use aligned periods.",
       "chapterTypes": [
+        "the-aftermath",
         "filing-walk",
         "risk"
       ],
@@ -22744,6 +22755,7 @@
       "purpose": "Keep a disclosed economic interest separate from the claim and the independent evidence needed to test it.",
       "caution": "An accounting signal or allegation is not a finding of fraud. Attribute claims and use aligned periods.",
       "chapterTypes": [
+        "the-cast",
         "short-interest",
         "filing-walk"
       ],
@@ -22890,6 +22902,7 @@
       "purpose": "Trace repeated reporting back to one origin and distinguish repetition from independent corroboration.",
       "caution": "An accounting signal or allegation is not a finding of fraud. Attribute claims and use aligned periods.",
       "chapterTypes": [
+        "the-cast",
         "filing-walk",
         "risk"
       ],

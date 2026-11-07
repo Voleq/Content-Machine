@@ -5,6 +5,9 @@ from . import data
 
 def writer_slots(entry):
     """The writer menu includes source controls, not computed chart labels."""
+    if 'longRecipe' in entry:
+        from . import longs
+        return longs.writer_fields(entry)
     inputs=set(entry['slots'].get('data-area',{}).get('inputSlots',()))
     return {name:slot for name,slot in entry['slots'].items()
             if name in inputs or (not slot.get('region') and (not slot.get('dataLabel') or name=='label-chapter'))}
@@ -30,6 +33,9 @@ def prepare(entry,values,inks):
     A future adapter can send nodes to series.paint() and values/boxes to the
     bot's normal type renderer. Source controls are never typeset at 0×0.
     """
+    if 'longRecipe' in entry:
+        from . import longs
+        return longs.prepare(entry,values,inks)
     menu=writer_slots(entry)
     if set(values)-set(menu):raise ValueError('Unknown or computed writer slot')
     result={name:slot['default'] for name,slot in menu.items() if 'default' in slot}

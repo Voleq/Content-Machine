@@ -128,6 +128,7 @@ WHOLE_MONEY_CHARTS={
 
 def display_places(item,binding):
     """Precision used for monetary/share figures by this plate's drawing."""
+    if 'displayPlaces' in binding:return binding['displayPlaces']
     unit=binding['unit'];drawer=item['drawer']
     if unit=='shares':return 0
     if drawer=='stock':

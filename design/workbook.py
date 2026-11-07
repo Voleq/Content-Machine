@@ -21,12 +21,20 @@ def schema(path):
     return result
 
 def validate_source(source,tables):
+    for alternate in source.get('alternatives',[]):validate_source(alternate,tables)
+    if source['kind']=='document':
+        if not source.get('what'):raise ValueError('Missing document-sentence description')
+        return
+    if source['kind']=='feed':
+        if source.get('feed') not in ('price','fred','edgar','form4','web_shots') or not source.get('what'):raise ValueError('Unknown feed or missing feed figure description')
+        return
     if source['kind']=='filing':
         if not source.get('location') or not source.get('period'):raise ValueError('Missing filing location/period')
         return
     if source['kind']!='workbook':raise ValueError('Unknown figure source')
     table=tables.get(source['sheet'])
-    if table is None or source['field'] not in table['fields']:raise ValueError('Unknown workbook row: '+source['sheet']+'!'+source['field'])
+    pending=source.get('pending') and (source['sheet'],source['field'])==('History','accounts_receivable')
+    if table is None or source['field'] not in table['fields'] and not pending:raise ValueError('Unknown workbook row: '+source['sheet']+'!'+source['field'])
     for period in re.findall(r'FY-\d+|Q-\d+|LTM',source['period']):
         if source['sheet']!='Snapshot' and period not in table['periods']:raise ValueError('Unsupported workbook period '+period)
     if not source.get('period'):raise ValueError('Workbook reference needs its reporting period')

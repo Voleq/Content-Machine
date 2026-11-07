@@ -52,7 +52,7 @@ def test_unique_concepts_and_published_kit_motion(compiled):
     assert native_counts=={'line-draw':16,'highlight':13}
 
 def test_common_manifest_and_text_free_artwork(compiled):
-    chapter_types=set(json.loads((ROOT/'kit/roles.json').read_text())['chapterTypes'])
+    chapter_types=build_all.chapter_types()
     for key,(item,entry,nodes) in compiled.items():
         assert re.fullmatch(r'[a-z0-9-]+/[a-z0-9-]+-(16x9|9x16)',key)
         assert not any(p in key for p in ('vol2','library'))

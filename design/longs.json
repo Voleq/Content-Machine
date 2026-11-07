@@ -1,0 +1,2903 @@
+{
+  "pack": "dennis-long-proposals-3",
+  "_note": "Unwired source proposals. All filled examples are illustrative fixtures, not claims about a real company or person.",
+  "chapterTypes": [
+    "the-cast",
+    "the-trick",
+    "the-unravel",
+    "the-bill",
+    "the-aftermath",
+    "red-flag-check",
+    "promises-kept",
+    "insider-trades",
+    "the-driver",
+    "ground-truth",
+    "the-precedent",
+    "the-watchlist"
+  ],
+  "pendingWorkbookFields": {
+    "History": [
+      "accounts_receivable"
+    ]
+  },
+  "plates": [
+    {
+      "key": "investigations/cast-board",
+      "drawer": "longs",
+      "model": "cast",
+      "definition": {},
+      "purpose": "Up to six named players, their public roles and their documented legal status.",
+      "caution": "Use the documents' exact names and recorded status. People have public-role labels only; no portraits or claims inferred from status.",
+      "chapterTypes": [
+        "the-cast",
+        "management"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "player-count": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "count",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "6"
+        },
+        "name-1": {
+          "role": "headline",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "From a document sentence: player 1 exactly named in the story record, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 1 exactly named in the story record",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "role-1": {
+          "role": "caption",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "From a document sentence: player 1 public role and relevant period, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 1 public role and relevant period",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "status-1": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "From a document sentence: player 1 recorded status, without inferring guilt or innocence, text Allowed values: NOT CHARGED, ALLEGED, CHARGED, SETTLED, PLEADED GUILTY, CONVICTED, ACQUITTED, CONVICTION VACATED, FINED, BANKRUPT, NO STATUS.",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 1 recorded status, without inferring guilt or innocence",
+            "period": "the dated story record"
+          },
+          "optional": true,
+          "enum": [
+            "NOT CHARGED",
+            "ALLEGED",
+            "CHARGED",
+            "SETTLED",
+            "PLEADED GUILTY",
+            "CONVICTED",
+            "ACQUITTED",
+            "CONVICTION VACATED",
+            "FINED",
+            "BANKRUPT",
+            "NO STATUS"
+          ]
+        },
+        "name-2": {
+          "role": "headline",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "From a document sentence: player 2 exactly named in the story record, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 2 exactly named in the story record",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "role-2": {
+          "role": "caption",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "From a document sentence: player 2 public role and relevant period, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 2 public role and relevant period",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "status-2": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "From a document sentence: player 2 recorded status, without inferring guilt or innocence, text Allowed values: NOT CHARGED, ALLEGED, CHARGED, SETTLED, PLEADED GUILTY, CONVICTED, ACQUITTED, CONVICTION VACATED, FINED, BANKRUPT, NO STATUS.",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 2 recorded status, without inferring guilt or innocence",
+            "period": "the dated story record"
+          },
+          "optional": true,
+          "enum": [
+            "NOT CHARGED",
+            "ALLEGED",
+            "CHARGED",
+            "SETTLED",
+            "PLEADED GUILTY",
+            "CONVICTED",
+            "ACQUITTED",
+            "CONVICTION VACATED",
+            "FINED",
+            "BANKRUPT",
+            "NO STATUS"
+          ]
+        },
+        "name-3": {
+          "role": "headline",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "From a document sentence: player 3 exactly named in the story record, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 3 exactly named in the story record",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "role-3": {
+          "role": "caption",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "From a document sentence: player 3 public role and relevant period, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 3 public role and relevant period",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "status-3": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "From a document sentence: player 3 recorded status, without inferring guilt or innocence, text Allowed values: NOT CHARGED, ALLEGED, CHARGED, SETTLED, PLEADED GUILTY, CONVICTED, ACQUITTED, CONVICTION VACATED, FINED, BANKRUPT, NO STATUS.",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 3 recorded status, without inferring guilt or innocence",
+            "period": "the dated story record"
+          },
+          "optional": true,
+          "enum": [
+            "NOT CHARGED",
+            "ALLEGED",
+            "CHARGED",
+            "SETTLED",
+            "PLEADED GUILTY",
+            "CONVICTED",
+            "ACQUITTED",
+            "CONVICTION VACATED",
+            "FINED",
+            "BANKRUPT",
+            "NO STATUS"
+          ]
+        },
+        "name-4": {
+          "role": "headline",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "From a document sentence: player 4 exactly named in the story record, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 4 exactly named in the story record",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "role-4": {
+          "role": "caption",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "From a document sentence: player 4 public role and relevant period, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 4 public role and relevant period",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "status-4": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "From a document sentence: player 4 recorded status, without inferring guilt or innocence, text Allowed values: NOT CHARGED, ALLEGED, CHARGED, SETTLED, PLEADED GUILTY, CONVICTED, ACQUITTED, CONVICTION VACATED, FINED, BANKRUPT, NO STATUS.",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 4 recorded status, without inferring guilt or innocence",
+            "period": "the dated story record"
+          },
+          "optional": true,
+          "enum": [
+            "NOT CHARGED",
+            "ALLEGED",
+            "CHARGED",
+            "SETTLED",
+            "PLEADED GUILTY",
+            "CONVICTED",
+            "ACQUITTED",
+            "CONVICTION VACATED",
+            "FINED",
+            "BANKRUPT",
+            "NO STATUS"
+          ]
+        },
+        "name-5": {
+          "role": "headline",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "From a document sentence: player 5 exactly named in the story record, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 5 exactly named in the story record",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "role-5": {
+          "role": "caption",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "From a document sentence: player 5 public role and relevant period, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 5 public role and relevant period",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "status-5": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "From a document sentence: player 5 recorded status, without inferring guilt or innocence, text Allowed values: NOT CHARGED, ALLEGED, CHARGED, SETTLED, PLEADED GUILTY, CONVICTED, ACQUITTED, CONVICTION VACATED, FINED, BANKRUPT, NO STATUS.",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 5 recorded status, without inferring guilt or innocence",
+            "period": "the dated story record"
+          },
+          "optional": true,
+          "enum": [
+            "NOT CHARGED",
+            "ALLEGED",
+            "CHARGED",
+            "SETTLED",
+            "PLEADED GUILTY",
+            "CONVICTED",
+            "ACQUITTED",
+            "CONVICTION VACATED",
+            "FINED",
+            "BANKRUPT",
+            "NO STATUS"
+          ]
+        },
+        "name-6": {
+          "role": "headline",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "From a document sentence: player 6 exactly named in the story record, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 6 exactly named in the story record",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "role-6": {
+          "role": "caption",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "From a document sentence: player 6 public role and relevant period, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 6 public role and relevant period",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "status-6": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "From a document sentence: player 6 recorded status, without inferring guilt or innocence, text Allowed values: NOT CHARGED, ALLEGED, CHARGED, SETTLED, PLEADED GUILTY, CONVICTED, ACQUITTED, CONVICTION VACATED, FINED, BANKRUPT, NO STATUS.",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "player 6 recorded status, without inferring guilt or innocence",
+            "period": "the dated story record"
+          },
+          "optional": true,
+          "enum": [
+            "NOT CHARGED",
+            "ALLEGED",
+            "CHARGED",
+            "SETTLED",
+            "PLEADED GUILTY",
+            "CONVICTED",
+            "ACQUITTED",
+            "CONVICTION VACATED",
+            "FINED",
+            "BANKRUPT",
+            "NO STATUS"
+          ]
+        }
+      },
+      "example": {
+        "title": "THE PLAYERS IN THE RECORD",
+        "player-count": "6",
+        "name-1": "THE TRADING FIRM",
+        "role-1": "the market-maker",
+        "status-1": "NO STATUS",
+        "name-2": "THE OPERATIONS LEAD",
+        "role-2": "the deployment owner",
+        "status-2": "NO STATUS",
+        "name-3": "THE EXECUTIVE",
+        "role-3": "the public decision-maker",
+        "status-3": "NO STATUS",
+        "name-4": "THE CLEARING HOUSE",
+        "role-4": "the clearing counterparty",
+        "status-4": "NO STATUS",
+        "name-5": "THE REGULATOR",
+        "role-5": "the enforcement agency",
+        "status-5": "NO STATUS",
+        "name-6": "THE CUSTOMER",
+        "role-6": "the affected counterparty",
+        "status-6": "NO STATUS"
+      },
+      "motion": {
+        "kind": "cast"
+      },
+      "round": 3,
+      "part": 1
+    },
+    {
+      "key": "charts/collapse-timeline",
+      "drawer": "longs",
+      "model": "collapse",
+      "definition": {},
+      "purpose": "The fall from the top to the bottom, with up to six dated event pins and an optional observed price line.",
+      "caution": "An event needs a date and document. Sequence does not prove causation. With no observed price data use a plain time axis, including minute-by-minute stories.",
+      "chapterTypes": [
+        "the-unravel",
+        "how-we-got-here"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "event-count": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "count",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "6"
+        },
+        "value-unit": {
+          "role": "label",
+          "maxChars": 10,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: money, money_m.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "money",
+          "enum": [
+            "money",
+            "money_m"
+          ]
+        },
+        "clock-unit": {
+          "role": "unit",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: DAYS, MONTHS, MINUTES.",
+          "factCheck": false,
+          "default": "MINUTES",
+          "enum": [
+            "DAYS",
+            "MONTHS",
+            "MINUTES"
+          ]
+        },
+        "axis-start": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "date",
+          "note": "From a document sentence: start of the documented collapse interval, date",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "start of the documented collapse interval",
+            "period": "the dated story record"
+          }
+        },
+        "axis-end": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "date",
+          "note": "From a document sentence: end of the documented collapse interval, date",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "end of the documented collapse interval",
+            "period": "the dated story record"
+          }
+        },
+        "price-data": {
+          "role": "label",
+          "maxChars": 200000,
+          "unit": "text",
+          "note": "feed price: date,price rows separated by semicolons. Prices are whole per-share dollars; no synthetic history. Leave empty for a plain time axis.",
+          "factCheck": true,
+          "inputOnly": true,
+          "table": true,
+          "columns": [
+            {
+              "name": "date",
+              "unit": "date"
+            },
+            {
+              "name": "price",
+              "unit": "money"
+            }
+          ],
+          "source": {
+            "kind": "feed",
+            "feed": "price",
+            "what": "dated observed closes during the collapse",
+            "period": "the stated observation window"
+          },
+          "optional": true,
+          "default": ""
+        },
+        "event-1": {
+          "role": "label",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "From a document sentence: short label for dated event 1, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "short label for dated event 1",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "when-1": {
+          "role": "caption",
+          "maxChars": 12,
+          "unit": "date",
+          "note": "From a document sentence: exact date or time of event 1, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "exact date or time of event 1",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "event-2": {
+          "role": "label",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "From a document sentence: short label for dated event 2, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "short label for dated event 2",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "when-2": {
+          "role": "caption",
+          "maxChars": 12,
+          "unit": "date",
+          "note": "From a document sentence: exact date or time of event 2, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "exact date or time of event 2",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "event-3": {
+          "role": "label",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "From a document sentence: short label for dated event 3, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "short label for dated event 3",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "when-3": {
+          "role": "caption",
+          "maxChars": 12,
+          "unit": "date",
+          "note": "From a document sentence: exact date or time of event 3, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "exact date or time of event 3",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "event-4": {
+          "role": "label",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "From a document sentence: short label for dated event 4, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "short label for dated event 4",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "when-4": {
+          "role": "caption",
+          "maxChars": 12,
+          "unit": "date",
+          "note": "From a document sentence: exact date or time of event 4, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "exact date or time of event 4",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "event-5": {
+          "role": "label",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "From a document sentence: short label for dated event 5, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "short label for dated event 5",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "when-5": {
+          "role": "caption",
+          "maxChars": 12,
+          "unit": "date",
+          "note": "From a document sentence: exact date or time of event 5, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "exact date or time of event 5",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "event-6": {
+          "role": "label",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "From a document sentence: short label for dated event 6, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "short label for dated event 6",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "when-6": {
+          "role": "caption",
+          "maxChars": 12,
+          "unit": "date",
+          "note": "From a document sentence: exact date or time of event 6, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "exact date or time of event 6",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "top": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money",
+          "note": "From a document sentence: top value on the same currency basis, money",
+          "factCheck": true,
+          "unitFrom": "value-unit",
+          "source": {
+            "kind": "document",
+            "what": "top value on the same currency basis",
+            "period": "the dated story record",
+            "alternatives": [
+              {
+                "kind": "feed",
+                "feed": "price",
+                "what": "top observed close",
+                "period": "the stated observation window"
+              }
+            ]
+          },
+          "optional": true
+        },
+        "bottom": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money",
+          "note": "From a document sentence: bottom value on the same currency basis, money",
+          "factCheck": true,
+          "unitFrom": "value-unit",
+          "source": {
+            "kind": "document",
+            "what": "bottom value on the same currency basis",
+            "period": "the dated story record",
+            "alternatives": [
+              {
+                "kind": "feed",
+                "feed": "price",
+                "what": "bottom observed close",
+                "period": "the stated observation window"
+              }
+            ]
+          },
+          "optional": true
+        },
+        "drop": {
+          "role": "big",
+          "maxChars": 7,
+          "unit": "percent",
+          "note": "From a document sentence: drop computed as bottom / top minus one, percent",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "drop computed as bottom / top minus one",
+            "period": "the dated story record"
+          },
+          "computed": true
+        }
+      },
+      "example": {
+        "title": "FROM THE TOP TO THE BOTTOM",
+        "event-count": "6",
+        "value-unit": "money",
+        "clock-unit": "MINUTES",
+        "axis-start": "09:30",
+        "axis-end": "10:15",
+        "price-data": "",
+        "event-1": "DOCUMENTED EVENT 1",
+        "when-1": "09:31",
+        "event-2": "DOCUMENTED EVENT 2",
+        "when-2": "09:35",
+        "event-3": "DOCUMENTED EVENT 3",
+        "when-3": "09:42",
+        "event-4": "DOCUMENTED EVENT 4",
+        "when-4": "09:50",
+        "event-5": "DOCUMENTED EVENT 5",
+        "when-5": "10:02",
+        "event-6": "DOCUMENTED EVENT 6",
+        "when-6": "10:15",
+        "top": "$100",
+        "bottom": "$4"
+      },
+      "motion": {
+        "kind": "collapse"
+      },
+      "round": 3,
+      "part": 1
+    },
+    {
+      "key": "investigations/mechanism-steps",
+      "drawer": "longs",
+      "model": "mechanism",
+      "definition": {},
+      "purpose": "Explain what happened or broke in three to five documented steps, with an optional loop and a stop marker.",
+      "caution": "Each step must come from a named document. Describe past events, never actionable instructions to repeat misconduct.",
+      "chapterTypes": [
+        "the-trick",
+        "how-the-money-is-made",
+        "one-framework"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "stop-at": {
+          "role": "label",
+          "maxChars": 1,
+          "unit": "count",
+          "note": "Writer selects the documented step where a control should have stopped the process; not an asserted amount. Allowed values: 1, 2, 3, 4, 5.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "3",
+          "enum": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5"
+          ]
+        },
+        "step-1": {
+          "role": "label",
+          "maxChars": 28,
+          "unit": "text",
+          "note": "From a document sentence: what happened at step 1, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "what happened at step 1",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "detail-1": {
+          "role": "caption",
+          "maxChars": 50,
+          "unit": "text",
+          "note": "From a document sentence: detail of step 1, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "detail of step 1",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "arrow-1": {
+          "role": "caption",
+          "maxChars": 16,
+          "unit": "money_m",
+          "note": "From a document sentence: optional amount transferred between steps, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "optional amount transferred between steps",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "step-2": {
+          "role": "label",
+          "maxChars": 28,
+          "unit": "text",
+          "note": "From a document sentence: what happened at step 2, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "what happened at step 2",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "detail-2": {
+          "role": "caption",
+          "maxChars": 50,
+          "unit": "text",
+          "note": "From a document sentence: detail of step 2, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "detail of step 2",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "arrow-2": {
+          "role": "caption",
+          "maxChars": 16,
+          "unit": "money_m",
+          "note": "From a document sentence: optional amount transferred between steps, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "optional amount transferred between steps",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "step-3": {
+          "role": "label",
+          "maxChars": 28,
+          "unit": "text",
+          "note": "From a document sentence: what happened at step 3, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "what happened at step 3",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "detail-3": {
+          "role": "caption",
+          "maxChars": 50,
+          "unit": "text",
+          "note": "From a document sentence: detail of step 3, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "detail of step 3",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "arrow-3": {
+          "role": "caption",
+          "maxChars": 16,
+          "unit": "money_m",
+          "note": "From a document sentence: optional amount transferred between steps, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "optional amount transferred between steps",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "step-4": {
+          "role": "label",
+          "maxChars": 28,
+          "unit": "text",
+          "note": "From a document sentence: what happened at step 4, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "what happened at step 4",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "detail-4": {
+          "role": "caption",
+          "maxChars": 50,
+          "unit": "text",
+          "note": "From a document sentence: detail of step 4, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "detail of step 4",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "arrow-4": {
+          "role": "caption",
+          "maxChars": 16,
+          "unit": "money_m",
+          "note": "From a document sentence: optional amount transferred between steps, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "optional amount transferred between steps",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "step-5": {
+          "role": "label",
+          "maxChars": 28,
+          "unit": "text",
+          "note": "From a document sentence: what happened at step 5, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "what happened at step 5",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "detail-5": {
+          "role": "caption",
+          "maxChars": 50,
+          "unit": "text",
+          "note": "From a document sentence: detail of step 5, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "detail of step 5",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "loop-label": {
+          "role": "caption",
+          "maxChars": 20,
+          "unit": "text",
+          "note": "From a document sentence: the documented feedback relationship, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the documented feedback relationship",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "stop-label": {
+          "role": "callout",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "SHOULD HAVE STOPPED HERE"
+        }
+      },
+      "example": {
+        "title": "HOW THE MECHANISM BROKE",
+        "stop-at": "3",
+        "step-1": "THE INSTRUCTION",
+        "detail-1": "Explain the documented event in plain language.",
+        "arrow-1": "",
+        "step-2": "THE HAND-OFF",
+        "detail-2": "Explain the documented event in plain language.",
+        "arrow-2": "",
+        "step-3": "THE CONTROL",
+        "detail-3": "Explain the documented event in plain language.",
+        "arrow-3": "",
+        "step-4": "THE ESCALATION",
+        "detail-4": "Explain the documented event in plain language.",
+        "arrow-4": "",
+        "step-5": "THE FINAL ACTION",
+        "detail-5": "Explain the documented event in plain language.",
+        "loop-label": "THE FEEDBACK LOOP",
+        "stop-label": "SHOULD HAVE STOPPED HERE"
+      },
+      "motion": {
+        "kind": "mechanism"
+      },
+      "round": 3,
+      "part": 1,
+      "variants": [
+        {
+          "id": "3-step",
+          "steps": 3,
+          "loop": false
+        },
+        {
+          "id": "3-step-loop",
+          "steps": 3,
+          "loop": true
+        },
+        {
+          "id": "4-step",
+          "steps": 4,
+          "loop": false
+        },
+        {
+          "id": "4-step-loop",
+          "steps": 4,
+          "loop": true
+        },
+        {
+          "id": "5-step",
+          "steps": 5,
+          "loop": false
+        },
+        {
+          "id": "5-step-loop",
+          "steps": 5,
+          "loop": true
+        }
+      ]
+    },
+    {
+      "key": "charts/who-paid",
+      "drawer": "longs",
+      "model": "bill",
+      "definition": {},
+      "purpose": "Rank the documented losses by party and compare the fine on exactly the same scale.",
+      "caution": "Use one currency. Label market-value losses as paper losses. Do not add overlapping losses or imply that a fine is the total loss.",
+      "chapterTypes": [
+        "the-bill",
+        "the-numbers"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "party-count": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "count",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "6"
+        },
+        "party-1": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "amount-1": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: party 1 loss on the stated currency basis, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "party 1 loss on the stated currency basis",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "note-1": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "kind-1": {
+          "role": "label",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Classify the documented amount. PAPER LOSS requires that wording in the visible note. Allowed values: CASH, PAPER LOSS, OTHER.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "OTHER",
+          "enum": [
+            "CASH",
+            "PAPER LOSS",
+            "OTHER"
+          ]
+        },
+        "party-2": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "amount-2": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: party 2 loss on the stated currency basis, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "party 2 loss on the stated currency basis",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "note-2": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "kind-2": {
+          "role": "label",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Classify the documented amount. PAPER LOSS requires that wording in the visible note. Allowed values: CASH, PAPER LOSS, OTHER.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "OTHER",
+          "enum": [
+            "CASH",
+            "PAPER LOSS",
+            "OTHER"
+          ]
+        },
+        "party-3": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "amount-3": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: party 3 loss on the stated currency basis, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "party 3 loss on the stated currency basis",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "note-3": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "kind-3": {
+          "role": "label",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Classify the documented amount. PAPER LOSS requires that wording in the visible note. Allowed values: CASH, PAPER LOSS, OTHER.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "OTHER",
+          "enum": [
+            "CASH",
+            "PAPER LOSS",
+            "OTHER"
+          ]
+        },
+        "party-4": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "amount-4": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: party 4 loss on the stated currency basis, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "party 4 loss on the stated currency basis",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "note-4": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "kind-4": {
+          "role": "label",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Classify the documented amount. PAPER LOSS requires that wording in the visible note. Allowed values: CASH, PAPER LOSS, OTHER.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "OTHER",
+          "enum": [
+            "CASH",
+            "PAPER LOSS",
+            "OTHER"
+          ]
+        },
+        "party-5": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "amount-5": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: party 5 loss on the stated currency basis, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "party 5 loss on the stated currency basis",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "note-5": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "kind-5": {
+          "role": "label",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Classify the documented amount. PAPER LOSS requires that wording in the visible note. Allowed values: CASH, PAPER LOSS, OTHER.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "OTHER",
+          "enum": [
+            "CASH",
+            "PAPER LOSS",
+            "OTHER"
+          ]
+        },
+        "party-6": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "amount-6": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: party 6 loss on the stated currency basis, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "party 6 loss on the stated currency basis",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "note-6": {
+          "role": "caption",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "kind-6": {
+          "role": "label",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Classify the documented amount. PAPER LOSS requires that wording in the visible note. Allowed values: CASH, PAPER LOSS, OTHER.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "OTHER",
+          "enum": [
+            "CASH",
+            "PAPER LOSS",
+            "OTHER"
+          ]
+        },
+        "fine-label": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "THE FINE"
+        },
+        "fine-amount": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: the documented fine, independently of the loss estimates, money_m",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the documented fine, independently of the loss estimates",
+            "period": "the dated story record"
+          }
+        },
+        "ratio": {
+          "role": "big",
+          "maxChars": 10,
+          "unit": "multiple",
+          "note": "From a document sentence: largest documented loss divided by the fine; N/A when the fine is zero, multiple",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "largest documented loss divided by the fine; N/A when the fine is zero",
+            "period": "the dated story record"
+          },
+          "computed": true
+        }
+      },
+      "example": {
+        "title": "WHO PAID FOR THE FAILURE?",
+        "party-count": "6",
+        "party-1": "PARTY 1",
+        "amount-1": "100m",
+        "note-1": "",
+        "kind-1": "OTHER",
+        "party-2": "PARTY 2",
+        "amount-2": "70m",
+        "note-2": "",
+        "kind-2": "OTHER",
+        "party-3": "PARTY 3",
+        "amount-3": "40m",
+        "note-3": "",
+        "kind-3": "OTHER",
+        "party-4": "PARTY 4",
+        "amount-4": "20m",
+        "note-4": "",
+        "kind-4": "OTHER",
+        "party-5": "PARTY 5",
+        "amount-5": "10m",
+        "note-5": "",
+        "kind-5": "OTHER",
+        "party-6": "PARTY 6",
+        "amount-6": "5m",
+        "note-6": "",
+        "kind-6": "OTHER",
+        "fine-label": "THE FINE",
+        "fine-amount": "2.5m"
+      },
+      "motion": {
+        "kind": "bill"
+      },
+      "round": 3,
+      "part": 1
+    },
+    {
+      "key": "investigations/where-it-ended",
+      "drawer": "longs",
+      "model": "ended",
+      "definition": {},
+      "purpose": "One row per person or firm: the recorded stage reached and the documented outcome.",
+      "caution": "A settlement without admission is not guilt; not charged is not innocence. An outcome reached without a trial must not fill the TRIED dot.",
+      "chapterTypes": [
+        "the-aftermath",
+        "filing-walk"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "row-count": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "count",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "5"
+        },
+        "ladder-1": {
+          "role": "colHead",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "ALLEGED"
+        },
+        "ladder-2": {
+          "role": "colHead",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "CHARGED"
+        },
+        "ladder-3": {
+          "role": "colHead",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "TRIED"
+        },
+        "ladder-4": {
+          "role": "colHead",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "OUTCOME"
+        },
+        "name-1": {
+          "role": "label",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "From a document sentence: the person or firm named in outcome 1, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the person or firm named in outcome 1",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "role-1": {
+          "role": "caption",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "From a document sentence: the public role of party 1, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the public role of party 1",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "outcome-1": {
+          "role": "caption",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "From a document sentence: the recorded outcome, without a guilt inference, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the recorded outcome, without a guilt inference",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "stage-1": {
+          "role": "label",
+          "maxChars": 1,
+          "unit": "count",
+          "note": "From a document sentence: furthest recorded stage: 0 none, 1 alleged, 2 charged, 3 tried, 4 outcome, count",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "furthest recorded stage: 0 none, 1 alleged, 2 charged, 3 tried, 4 outcome",
+            "period": "the dated story record"
+          }
+        },
+        "tried-1": {
+          "role": "label",
+          "maxChars": 3,
+          "unit": "text",
+          "note": "From a document sentence: whether this party actually reached a trial, text Allowed values: YES, NO.",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "whether this party actually reached a trial",
+            "period": "the dated story record"
+          },
+          "enum": [
+            "YES",
+            "NO"
+          ]
+        },
+        "name-2": {
+          "role": "label",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "From a document sentence: the person or firm named in outcome 2, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the person or firm named in outcome 2",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "role-2": {
+          "role": "caption",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "From a document sentence: the public role of party 2, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the public role of party 2",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "outcome-2": {
+          "role": "caption",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "From a document sentence: the recorded outcome, without a guilt inference, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the recorded outcome, without a guilt inference",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "stage-2": {
+          "role": "label",
+          "maxChars": 1,
+          "unit": "count",
+          "note": "From a document sentence: furthest recorded stage: 0 none, 1 alleged, 2 charged, 3 tried, 4 outcome, count",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "furthest recorded stage: 0 none, 1 alleged, 2 charged, 3 tried, 4 outcome",
+            "period": "the dated story record"
+          }
+        },
+        "tried-2": {
+          "role": "label",
+          "maxChars": 3,
+          "unit": "text",
+          "note": "From a document sentence: whether this party actually reached a trial, text Allowed values: YES, NO.",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "whether this party actually reached a trial",
+            "period": "the dated story record"
+          },
+          "enum": [
+            "YES",
+            "NO"
+          ]
+        },
+        "name-3": {
+          "role": "label",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "From a document sentence: the person or firm named in outcome 3, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the person or firm named in outcome 3",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "role-3": {
+          "role": "caption",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "From a document sentence: the public role of party 3, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the public role of party 3",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "outcome-3": {
+          "role": "caption",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "From a document sentence: the recorded outcome, without a guilt inference, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the recorded outcome, without a guilt inference",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "stage-3": {
+          "role": "label",
+          "maxChars": 1,
+          "unit": "count",
+          "note": "From a document sentence: furthest recorded stage: 0 none, 1 alleged, 2 charged, 3 tried, 4 outcome, count",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "furthest recorded stage: 0 none, 1 alleged, 2 charged, 3 tried, 4 outcome",
+            "period": "the dated story record"
+          }
+        },
+        "tried-3": {
+          "role": "label",
+          "maxChars": 3,
+          "unit": "text",
+          "note": "From a document sentence: whether this party actually reached a trial, text Allowed values: YES, NO.",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "whether this party actually reached a trial",
+            "period": "the dated story record"
+          },
+          "enum": [
+            "YES",
+            "NO"
+          ]
+        },
+        "name-4": {
+          "role": "label",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "From a document sentence: the person or firm named in outcome 4, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the person or firm named in outcome 4",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "role-4": {
+          "role": "caption",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "From a document sentence: the public role of party 4, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the public role of party 4",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "outcome-4": {
+          "role": "caption",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "From a document sentence: the recorded outcome, without a guilt inference, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the recorded outcome, without a guilt inference",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "stage-4": {
+          "role": "label",
+          "maxChars": 1,
+          "unit": "count",
+          "note": "From a document sentence: furthest recorded stage: 0 none, 1 alleged, 2 charged, 3 tried, 4 outcome, count",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "furthest recorded stage: 0 none, 1 alleged, 2 charged, 3 tried, 4 outcome",
+            "period": "the dated story record"
+          }
+        },
+        "tried-4": {
+          "role": "label",
+          "maxChars": 3,
+          "unit": "text",
+          "note": "From a document sentence: whether this party actually reached a trial, text Allowed values: YES, NO.",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "whether this party actually reached a trial",
+            "period": "the dated story record"
+          },
+          "enum": [
+            "YES",
+            "NO"
+          ]
+        },
+        "name-5": {
+          "role": "label",
+          "maxChars": 24,
+          "unit": "text",
+          "note": "From a document sentence: the person or firm named in outcome 5, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the person or firm named in outcome 5",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "role-5": {
+          "role": "caption",
+          "maxChars": 26,
+          "unit": "text",
+          "note": "From a document sentence: the public role of party 5, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the public role of party 5",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "outcome-5": {
+          "role": "caption",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "From a document sentence: the recorded outcome, without a guilt inference, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the recorded outcome, without a guilt inference",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "stage-5": {
+          "role": "label",
+          "maxChars": 1,
+          "unit": "count",
+          "note": "From a document sentence: furthest recorded stage: 0 none, 1 alleged, 2 charged, 3 tried, 4 outcome, count",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "furthest recorded stage: 0 none, 1 alleged, 2 charged, 3 tried, 4 outcome",
+            "period": "the dated story record"
+          }
+        },
+        "tried-5": {
+          "role": "label",
+          "maxChars": 3,
+          "unit": "text",
+          "note": "From a document sentence: whether this party actually reached a trial, text Allowed values: YES, NO.",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "whether this party actually reached a trial",
+            "period": "the dated story record"
+          },
+          "enum": [
+            "YES",
+            "NO"
+          ]
+        },
+        "what-changed": {
+          "role": "callout",
+          "maxChars": 60,
+          "unit": "text",
+          "note": "From a document sentence: the subsequent rule or law change, if any, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the subsequent rule or law change, if any",
+            "period": "the dated story record"
+          },
+          "optional": true
+        }
+      },
+      "example": {
+        "title": "WHERE THE RECORD ENDED",
+        "row-count": "5",
+        "ladder-1": "ALLEGED",
+        "ladder-2": "CHARGED",
+        "ladder-3": "TRIED",
+        "ladder-4": "OUTCOME",
+        "name-1": "RECORDED PARTY 1",
+        "role-1": "public role in the story",
+        "outcome-1": "Settled without admission",
+        "stage-1": "4",
+        "tried-1": "NO",
+        "name-2": "RECORDED PARTY 2",
+        "role-2": "public role in the story",
+        "outcome-2": "Settled without admission",
+        "stage-2": "4",
+        "tried-2": "NO",
+        "name-3": "RECORDED PARTY 3",
+        "role-3": "public role in the story",
+        "outcome-3": "Settled without admission",
+        "stage-3": "4",
+        "tried-3": "NO",
+        "name-4": "RECORDED PARTY 4",
+        "role-4": "public role in the story",
+        "outcome-4": "Settled without admission",
+        "stage-4": "4",
+        "tried-4": "NO",
+        "name-5": "RECORDED PARTY 5",
+        "role-5": "public role in the story",
+        "outcome-5": "Settled without admission",
+        "stage-5": "4",
+        "tried-5": "NO",
+        "what-changed": "THE RECORDED RULE CHANGE"
+      },
+      "motion": {
+        "kind": "ended"
+      },
+      "round": 3,
+      "part": 1
+    },
+    {
+      "key": "figures/loss-clock",
+      "drawer": "longs",
+      "model": "clock",
+      "definition": {},
+      "purpose": "A document-timed clock and running total, resting only on documented checkpoints.",
+      "caution": "Every time and checkpoint total needs a document sentence. Between checkpoints the count never rests on an invented amount. A final-only record says over the elapsed minutes and makes no intermediate loss claim.",
+      "chapterTypes": [
+        "the-unravel",
+        "cold-open"
+      ],
+      "sectors": [],
+      "fields": {
+        "kicker": {
+          "role": "kicker",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "clock-start": {
+          "role": "value",
+          "maxChars": 8,
+          "unit": "date",
+          "note": "From a document sentence: start time of the documented interval, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "start time of the documented interval",
+            "period": "the dated story record"
+          }
+        },
+        "clock-end": {
+          "role": "value",
+          "maxChars": 8,
+          "unit": "date",
+          "note": "From a document sentence: end time of the documented interval, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "end time of the documented interval",
+            "period": "the dated story record"
+          }
+        },
+        "total-unit": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Use money_m for a documented loss or count for documented orders. One unit for all checkpoints. Allowed values: money_m, count.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "money_m",
+          "enum": [
+            "money_m",
+            "count"
+          ]
+        },
+        "at-1": {
+          "role": "caption",
+          "maxChars": 8,
+          "unit": "date",
+          "note": "From a document sentence: documented checkpoint 1 time, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "documented checkpoint 1 time",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "total-1": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: documented running total at checkpoint 1, money_m",
+          "factCheck": true,
+          "unitFrom": "total-unit",
+          "source": {
+            "kind": "document",
+            "what": "documented running total at checkpoint 1",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "at-2": {
+          "role": "caption",
+          "maxChars": 8,
+          "unit": "date",
+          "note": "From a document sentence: documented checkpoint 2 time, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "documented checkpoint 2 time",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "total-2": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: documented running total at checkpoint 2, money_m",
+          "factCheck": true,
+          "unitFrom": "total-unit",
+          "source": {
+            "kind": "document",
+            "what": "documented running total at checkpoint 2",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "at-3": {
+          "role": "caption",
+          "maxChars": 8,
+          "unit": "date",
+          "note": "From a document sentence: documented checkpoint 3 time, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "documented checkpoint 3 time",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "total-3": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: documented running total at checkpoint 3, money_m",
+          "factCheck": true,
+          "unitFrom": "total-unit",
+          "source": {
+            "kind": "document",
+            "what": "documented running total at checkpoint 3",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "at-4": {
+          "role": "caption",
+          "maxChars": 8,
+          "unit": "date",
+          "note": "From a document sentence: documented checkpoint 4 time, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "documented checkpoint 4 time",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "total-4": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: documented running total at checkpoint 4, money_m",
+          "factCheck": true,
+          "unitFrom": "total-unit",
+          "source": {
+            "kind": "document",
+            "what": "documented running total at checkpoint 4",
+            "period": "the dated story record"
+          },
+          "optional": true
+        },
+        "total-label": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "caption": {
+          "role": "caption",
+          "maxChars": 40,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "live-total": {
+          "role": "big",
+          "maxChars": 9,
+          "unit": "money_m",
+          "note": "From a document sentence: final checkpoint total, repeated by the running counter, money_m",
+          "factCheck": true,
+          "unitFrom": "total-unit",
+          "source": {
+            "kind": "document",
+            "what": "final checkpoint total, repeated by the running counter",
+            "period": "the dated story record"
+          },
+          "computed": true
+        }
+      },
+      "example": {
+        "kicker": "ILLUSTRATIVE CLOCK",
+        "clock-start": "09:30",
+        "clock-end": "10:15",
+        "total-unit": "money_m",
+        "at-1": "10:15",
+        "total-1": "100m",
+        "at-2": "",
+        "total-2": "",
+        "at-3": "",
+        "total-3": "",
+        "at-4": "",
+        "total-4": "",
+        "total-label": "LOST",
+        "caption": "over 45 minutes"
+      },
+      "motion": {
+        "kind": "clock"
+      },
+      "round": 3,
+      "part": 1
+    },
+    {
+      "key": "tables/toy-trade",
+      "drawer": "longs",
+      "model": "toy",
+      "definition": {},
+      "purpose": "Teach a trade or mechanism with explicitly fictional small numbers and reconciled running totals.",
+      "caution": "Every number is made up. The mandatory EXAMPLE or TOY NUMBERS tag prevents these amounts being presented or fact-checked as real figures. Each total must equal the previous total plus the amount.",
+      "chapterTypes": [
+        "the-trick",
+        "how-the-money-is-made",
+        "one-framework"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "tag": {
+          "role": "label",
+          "maxChars": 12,
+          "unit": "text",
+          "note": "Required fictional-example tag. Every amount on this plate is made up; the bot skips factual checking only when this tag is present. Allowed values: EXAMPLE, TOY NUMBERS.",
+          "factCheck": false,
+          "enum": [
+            "EXAMPLE",
+            "TOY NUMBERS"
+          ]
+        },
+        "row-count": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "count",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "3"
+        },
+        "amount-unit": {
+          "role": "label",
+          "maxChars": 8,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: money, money_m.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "money",
+          "enum": [
+            "money",
+            "money_m"
+          ]
+        },
+        "head-step": {
+          "role": "colHead",
+          "maxChars": 14,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "WHAT HAPPENS"
+        },
+        "head-amount": {
+          "role": "colHead",
+          "maxChars": 14,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "AMOUNT"
+        },
+        "head-total": {
+          "role": "colHead",
+          "maxChars": 14,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "RUNNING TOTAL"
+        },
+        "step-1": {
+          "role": "label",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "amount-1": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money",
+          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example.",
+          "factCheck": false,
+          "unitFrom": "amount-unit",
+          "optional": true
+        },
+        "total-1": {
+          "role": "value",
+          "maxChars": 10,
+          "unit": "money",
+          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount.",
+          "factCheck": false,
+          "unitFrom": "amount-unit",
+          "optional": true
+        },
+        "step-2": {
+          "role": "label",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "amount-2": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money",
+          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example.",
+          "factCheck": false,
+          "unitFrom": "amount-unit",
+          "optional": true
+        },
+        "total-2": {
+          "role": "value",
+          "maxChars": 10,
+          "unit": "money",
+          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount.",
+          "factCheck": false,
+          "unitFrom": "amount-unit",
+          "optional": true
+        },
+        "step-3": {
+          "role": "label",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "amount-3": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money",
+          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example.",
+          "factCheck": false,
+          "unitFrom": "amount-unit",
+          "optional": true
+        },
+        "total-3": {
+          "role": "value",
+          "maxChars": 10,
+          "unit": "money",
+          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount.",
+          "factCheck": false,
+          "unitFrom": "amount-unit",
+          "optional": true
+        },
+        "step-4": {
+          "role": "label",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "amount-4": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money",
+          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example.",
+          "factCheck": false,
+          "unitFrom": "amount-unit",
+          "optional": true
+        },
+        "total-4": {
+          "role": "value",
+          "maxChars": 10,
+          "unit": "money",
+          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount.",
+          "factCheck": false,
+          "unitFrom": "amount-unit",
+          "optional": true
+        },
+        "step-5": {
+          "role": "label",
+          "maxChars": 30,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "amount-5": {
+          "role": "value",
+          "maxChars": 9,
+          "unit": "money",
+          "note": "Writer-supplied fictional amount with its currency/magnitude. Not a historical figure; fact-check skips the tagged example.",
+          "factCheck": false,
+          "unitFrom": "amount-unit",
+          "optional": true
+        },
+        "total-5": {
+          "role": "value",
+          "maxChars": 10,
+          "unit": "money",
+          "note": "Writer-supplied fictional running total. Must equal the previous total plus this row amount.",
+          "factCheck": false,
+          "unitFrom": "amount-unit",
+          "optional": true
+        },
+        "outcome": {
+          "role": "callout",
+          "maxChars": 48,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        }
+      },
+      "example": {
+        "title": "WHY IT LOOKED SO CLEVER",
+        "tag": "EXAMPLE",
+        "row-count": "3",
+        "amount-unit": "money",
+        "head-step": "WHAT HAPPENS",
+        "head-amount": "AMOUNT",
+        "head-total": "RUNNING TOTAL",
+        "step-1": "BUY ONE UNIT",
+        "amount-1": "-$10",
+        "total-1": "-$10",
+        "step-2": "SELL THAT UNIT",
+        "amount-2": "$11",
+        "total-2": "$1",
+        "step-3": "REPEAT THE EXAMPLE",
+        "amount-3": "$999,999",
+        "total-3": "$1,000,000",
+        "step-4": "",
+        "amount-4": "",
+        "total-4": "",
+        "step-5": "",
+        "amount-5": "",
+        "total-5": "",
+        "outcome": "THE EXAMPLE NEEDS EVERY ASSUMPTION TO HOLD."
+      },
+      "motion": {
+        "kind": "toy"
+      },
+      "round": 3,
+      "part": 1,
+      "synthetic": true
+    },
+    {
+      "key": "paper/press-release",
+      "drawer": "longs",
+      "model": "press",
+      "definition": {},
+      "purpose": "The regulator or prosecutor's own release, with the sentence being read highlighted.",
+      "caution": "Copy headline and body verbatim from the release. Name their document sentences. The agency name is page content, not a source footer.",
+      "chapterTypes": [
+        "filing-walk",
+        "the-unravel",
+        "the-aftermath"
+      ],
+      "sectors": [],
+      "fields": {
+        "source": {
+          "role": "source",
+          "maxChars": 23,
+          "unit": "text",
+          "note": "From a document sentence: the release agency exactly as named, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the release agency exactly as named",
+            "period": "the dated story record"
+          }
+        },
+        "date": {
+          "role": "date",
+          "maxChars": 18,
+          "unit": "date",
+          "note": "From a document sentence: the release publication date, date",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the release publication date",
+            "period": "the dated story record"
+          }
+        },
+        "headline": {
+          "role": "headline",
+          "maxChars": 106,
+          "unit": "text",
+          "note": "From a document sentence: the release headline verbatim, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the release headline verbatim",
+            "period": "the dated story record"
+          }
+        },
+        "body": {
+          "role": "body",
+          "maxChars": 438,
+          "unit": "text",
+          "note": "From a document sentence: the release excerpt verbatim, text",
+          "factCheck": true,
+          "source": {
+            "kind": "document",
+            "what": "the release excerpt verbatim",
+            "period": "the dated story record"
+          }
+        },
+        "marked-sentence": {
+          "role": "caption",
+          "maxChars": 438,
+          "unit": "text",
+          "note": "From a document sentence: the exact sentence being read, also present in body, text",
+          "factCheck": true,
+          "inputOnly": true,
+          "source": {
+            "kind": "document",
+            "what": "the exact sentence being read, also present in body",
+            "period": "the dated story record"
+          }
+        },
+        "headline-ref": {
+          "role": "label",
+          "maxChars": 16,
+          "unit": "text",
+          "note": "From a document sentence: the numbered source sentence for headline, text",
+          "factCheck": true,
+          "inputOnly": true,
+          "pattern": "D\\d+\\.\\d+",
+          "source": {
+            "kind": "document",
+            "what": "the numbered source sentence for headline",
+            "period": "the dated story record"
+          }
+        },
+        "body-ref": {
+          "role": "label",
+          "maxChars": 16,
+          "unit": "text",
+          "note": "From a document sentence: the numbered source sentence for body, text",
+          "factCheck": true,
+          "inputOnly": true,
+          "pattern": "D\\d+\\.\\d+",
+          "source": {
+            "kind": "document",
+            "what": "the numbered source sentence for body",
+            "period": "the dated story record"
+          }
+        },
+        "caption": {
+          "role": "caption",
+          "maxChars": 47,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        }
+      },
+      "example": {
+        "source": "EXAMPLE REGULATOR",
+        "date": "2026-11-06",
+        "headline": "ILLUSTRATIVE RELEASE HEADLINE: REPLACE WITH THE DOCUMENT'S OWN WORDS",
+        "body": "This is an illustrative document excerpt. The production fill must copy the release word for word and name its document sentence. No allegation or outcome is supplied by this example.",
+        "marked-sentence": "The production fill must copy the release word for word and name its document sentence.",
+        "headline-ref": "D1.1",
+        "body-ref": "D1.2",
+        "caption": "READ THE RELEASE'S OWN WORDS."
+      },
+      "motion": {
+        "kind": "press"
+      },
+      "round": 3,
+      "part": 1,
+      "aspects": [
+        "16x9"
+      ],
+      "existingCounterpart": "paper/press-release-9x16"
+    },
+    {
+      "key": "chapters/red-flag-checklist",
+      "drawer": "longs",
+      "model": "flags",
+      "definition": {},
+      "purpose": "Five forensic checks and CLEAR or LOOK CLOSER marks, using matching periods and either stock workbooks or implosion documents.",
+      "caution": "A flag is a reason to read further, never a finding. The visible words fraud, fake and cooked are forbidden. Keep both sides of each comparison on the same period.",
+      "chapterTypes": [
+        "red-flag-check",
+        "filing-walk",
+        "the-numbers"
+      ],
+      "sectors": [],
+      "fields": {
+        "title": {
+          "role": "headline",
+          "maxChars": 34,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false
+        },
+        "check-1": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "PROFIT AGAINST CASH"
+        },
+        "figure-1": {
+          "role": "value",
+          "maxChars": 16,
+          "unit": "multiple",
+          "note": "History!net_income against History!operating_cf, FY-2 to FY-0 summed, or a document sentence in an implosion. When swapping this row, name its actual field/period or document sentence in figure-source-1.",
+          "factCheck": true,
+          "unitFrom": "figure-unit-1",
+          "source": {
+            "kind": "workbook",
+            "sheet": "History",
+            "field": "net_income",
+            "period": "FY-2 to FY-0 summed",
+            "relatedFields": [
+              "operating_cf"
+            ],
+            "calculation": "sum(net_income) / sum(operating_cf)",
+            "alternatives": [
+              {
+                "kind": "document",
+                "what": "the underlying figures for check 1 on the same period",
+                "period": "the dated story record"
+              }
+            ]
+          }
+        },
+        "mark-1": {
+          "role": "label",
+          "maxChars": 11,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: CLEAR, LOOK CLOSER.",
+          "factCheck": false,
+          "enum": [
+            "CLEAR",
+            "LOOK CLOSER"
+          ]
+        },
+        "note-1": {
+          "role": "caption",
+          "maxChars": 40,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "figure-unit-1": {
+          "role": "label",
+          "maxChars": 10,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: money, money_m, shares_m, percent, multiple, count, text.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "multiple",
+          "enum": [
+            "money",
+            "money_m",
+            "shares_m",
+            "percent",
+            "multiple",
+            "count",
+            "text"
+          ]
+        },
+        "figure-source-1": {
+          "role": "caption",
+          "maxChars": 120,
+          "unit": "text",
+          "note": "If replacing the default check, identify its real workbook field_key and period, feed, or document sentence such as D2.14. Never invent a workbook row.",
+          "factCheck": false,
+          "inputOnly": true,
+          "optional": true
+        },
+        "check-2": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "RECEIVABLES VS SALES"
+        },
+        "figure-2": {
+          "role": "value",
+          "maxChars": 16,
+          "unit": "percent",
+          "note": "History!accounts_receivable against History!revenue, FY-1 to FY-0 growth, or document sentences in an implosion. The bot adds accounts_receivable; the current template has no such row. When swapping this row, name its actual field/period or document sentence in figure-source-2.",
+          "factCheck": true,
+          "unitFrom": "figure-unit-2",
+          "source": {
+            "kind": "workbook",
+            "sheet": "History",
+            "field": "accounts_receivable",
+            "period": "FY-1 to FY-0 growth",
+            "relatedFields": [
+              "revenue"
+            ],
+            "pending": true,
+            "alternatives": [
+              {
+                "kind": "document",
+                "what": "the underlying figures for check 2 on the same period",
+                "period": "the dated story record"
+              }
+            ]
+          }
+        },
+        "mark-2": {
+          "role": "label",
+          "maxChars": 11,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: CLEAR, LOOK CLOSER.",
+          "factCheck": false,
+          "enum": [
+            "CLEAR",
+            "LOOK CLOSER"
+          ]
+        },
+        "note-2": {
+          "role": "caption",
+          "maxChars": 40,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "figure-unit-2": {
+          "role": "label",
+          "maxChars": 10,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: money, money_m, shares_m, percent, multiple, count, text.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "percent",
+          "enum": [
+            "money",
+            "money_m",
+            "shares_m",
+            "percent",
+            "multiple",
+            "count",
+            "text"
+          ]
+        },
+        "figure-source-2": {
+          "role": "caption",
+          "maxChars": 120,
+          "unit": "text",
+          "note": "If replacing the default check, identify its real workbook field_key and period, feed, or document sentence such as D2.14. Never invent a workbook row.",
+          "factCheck": false,
+          "inputOnly": true,
+          "optional": true
+        },
+        "check-3": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "AUDITOR CHANGE"
+        },
+        "figure-3": {
+          "role": "value",
+          "maxChars": 16,
+          "unit": "count",
+          "note": "feed edgar: any item 4.01 in three years, or a document sentence in an implosion. When swapping this row, name its actual field/period or document sentence in figure-source-3.",
+          "factCheck": true,
+          "unitFrom": "figure-unit-3",
+          "source": {
+            "kind": "feed",
+            "feed": "edgar",
+            "what": "count of 8-K item 4.01 in three years",
+            "period": "last three years",
+            "alternatives": [
+              {
+                "kind": "document",
+                "what": "the underlying figures for check 3 on the same period",
+                "period": "the dated story record"
+              }
+            ]
+          }
+        },
+        "mark-3": {
+          "role": "label",
+          "maxChars": 11,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: CLEAR, LOOK CLOSER.",
+          "factCheck": false,
+          "enum": [
+            "CLEAR",
+            "LOOK CLOSER"
+          ]
+        },
+        "note-3": {
+          "role": "caption",
+          "maxChars": 40,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "figure-unit-3": {
+          "role": "label",
+          "maxChars": 10,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: money, money_m, shares_m, percent, multiple, count, text.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "count",
+          "enum": [
+            "money",
+            "money_m",
+            "shares_m",
+            "percent",
+            "multiple",
+            "count",
+            "text"
+          ]
+        },
+        "figure-source-3": {
+          "role": "caption",
+          "maxChars": 120,
+          "unit": "text",
+          "note": "If replacing the default check, identify its real workbook field_key and period, feed, or document sentence such as D2.14. Never invent a workbook row.",
+          "factCheck": false,
+          "inputOnly": true,
+          "optional": true
+        },
+        "check-4": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "RESTATEMENT"
+        },
+        "figure-4": {
+          "role": "value",
+          "maxChars": 16,
+          "unit": "count",
+          "note": "feed edgar: any item 4.02 or 10-K/A in three years, or a document sentence in an implosion. When swapping this row, name its actual field/period or document sentence in figure-source-4.",
+          "factCheck": true,
+          "unitFrom": "figure-unit-4",
+          "source": {
+            "kind": "feed",
+            "feed": "edgar",
+            "what": "count of 8-K item 4.02 or 10-K/A in three years",
+            "period": "last three years",
+            "alternatives": [
+              {
+                "kind": "document",
+                "what": "the underlying figures for check 4 on the same period",
+                "period": "the dated story record"
+              }
+            ]
+          }
+        },
+        "mark-4": {
+          "role": "label",
+          "maxChars": 11,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: CLEAR, LOOK CLOSER.",
+          "factCheck": false,
+          "enum": [
+            "CLEAR",
+            "LOOK CLOSER"
+          ]
+        },
+        "note-4": {
+          "role": "caption",
+          "maxChars": 40,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "figure-unit-4": {
+          "role": "label",
+          "maxChars": 10,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: money, money_m, shares_m, percent, multiple, count, text.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "count",
+          "enum": [
+            "money",
+            "money_m",
+            "shares_m",
+            "percent",
+            "multiple",
+            "count",
+            "text"
+          ]
+        },
+        "figure-source-4": {
+          "role": "caption",
+          "maxChars": 120,
+          "unit": "text",
+          "note": "If replacing the default check, identify its real workbook field_key and period, feed, or document sentence such as D2.14. Never invent a workbook row.",
+          "factCheck": false,
+          "inputOnly": true,
+          "optional": true
+        },
+        "check-5": {
+          "role": "label",
+          "maxChars": 22,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "default": "ADJUSTED VS REPORTED"
+        },
+        "figure-5": {
+          "role": "value",
+          "maxChars": 16,
+          "unit": "multiple",
+          "note": "Adjusted EPS from the filing against History!eps, LTM, or History!sbc_pct_rev; or document sentences in an implosion. State the same earnings basis and period. When swapping this row, name its actual field/period or document sentence in figure-source-5.",
+          "factCheck": true,
+          "unitFrom": "figure-unit-5",
+          "source": {
+            "kind": "workbook",
+            "sheet": "History",
+            "field": "eps",
+            "period": "LTM",
+            "calculation": "adjusted EPS from the filing / reported EPS on identical basis",
+            "alternatives": [
+              {
+                "kind": "document",
+                "what": "the underlying figures for check 5 on the same period",
+                "period": "the dated story record"
+              }
+            ]
+          }
+        },
+        "mark-5": {
+          "role": "label",
+          "maxChars": 11,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: CLEAR, LOOK CLOSER.",
+          "factCheck": false,
+          "enum": [
+            "CLEAR",
+            "LOOK CLOSER"
+          ]
+        },
+        "note-5": {
+          "role": "caption",
+          "maxChars": 40,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure.",
+          "factCheck": false,
+          "optional": true
+        },
+        "figure-unit-5": {
+          "role": "label",
+          "maxChars": 10,
+          "unit": "text",
+          "note": "Writer wording; no independently asserted figure. Allowed values: money, money_m, shares_m, percent, multiple, count, text.",
+          "factCheck": false,
+          "inputOnly": true,
+          "default": "multiple",
+          "enum": [
+            "money",
+            "money_m",
+            "shares_m",
+            "percent",
+            "multiple",
+            "count",
+            "text"
+          ]
+        },
+        "figure-source-5": {
+          "role": "caption",
+          "maxChars": 120,
+          "unit": "text",
+          "note": "If replacing the default check, identify its real workbook field_key and period, feed, or document sentence such as D2.14. Never invent a workbook row.",
+          "factCheck": false,
+          "inputOnly": true,
+          "optional": true
+        }
+      },
+      "example": {
+        "title": "FIVE REASONS TO READ FURTHER",
+        "check-1": "PROFIT AGAINST CASH",
+        "figure-1": "1.4x",
+        "mark-1": "LOOK CLOSER",
+        "note-1": "",
+        "figure-unit-1": "multiple",
+        "figure-source-1": "",
+        "check-2": "RECEIVABLES VS SALES",
+        "figure-2": "22%",
+        "mark-2": "LOOK CLOSER",
+        "note-2": "Sales grew 8% in the same period.",
+        "figure-unit-2": "percent",
+        "figure-source-2": "",
+        "check-3": "AUDITOR CHANGE",
+        "figure-3": "1",
+        "mark-3": "LOOK CLOSER",
+        "note-3": "",
+        "figure-unit-3": "count",
+        "figure-source-3": "",
+        "check-4": "RESTATEMENT",
+        "figure-4": "0",
+        "mark-4": "CLEAR",
+        "note-4": "",
+        "figure-unit-4": "count",
+        "figure-source-4": "",
+        "check-5": "ADJUSTED VS REPORTED",
+        "figure-5": "1.3x",
+        "mark-5": "LOOK CLOSER",
+        "note-5": "",
+        "figure-unit-5": "multiple",
+        "figure-source-5": ""
+      },
+      "motion": {
+        "kind": "flags"
+      },
+      "round": 3,
+      "part": 1
+    }
+  ]
+}
