@@ -382,6 +382,25 @@ def test_the_upload_package_names_the_story_and_its_documents(core):
     assert "$IMP" not in text and "company's filings" not in text
     assert "documents shown on screen" in pkg.description
     assert "00:00 a computer with an idea" in pkg.description
+    assert "IMP-" not in pkg.thumbnail_prompt
+    assert "Knight Capital Group" in pkg.thumbnail_prompt
     # Without a name (the title check reads it off the script alone).
     bare = build_package(script, core.settings)
     assert bare.titles[0].startswith("Knight — ")
+
+
+def test_the_writers_titles_name_the_story(core):
+    from pipeline.parser_long import parse_long_script
+    from pipeline.publish import build_package
+
+    with_titles = IMPLOSION_SCRIPT.replace("=== CONFESSION ===", (
+        "=== TITLES ===\n"
+        "The computer that lost $460 million before lunch | By lunch the idea "
+        "had cost more than four hundred and sixty million dollars.\n"
+        "Thumbnail: before lunch\n\n=== CONFESSION ==="))
+    script, _ = parse_long_script(with_titles, "IMP-KNIGHT12", core.settings)
+    pkg = build_package(script, core.settings, ticker="IMP-KNIGHT12",
+                        story="Knight Capital Group", fmt="long")
+    assert pkg.titles_from_writer, pkg.title_notes
+    assert pkg.titles[0] == "The computer that lost $460 million before lunch"
+    assert "IMP-" not in pkg.thumbnail_prompt
