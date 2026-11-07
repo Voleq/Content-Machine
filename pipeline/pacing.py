@@ -457,12 +457,17 @@ def check_title_package(script, settings: Settings) -> list[Finding]:
     titles = package.titles
     # Swearing in the words AROUND the video (bible v3 §10): YouTube limits
     # ads for it in a title or the description, wherever the narration is.
+    # The writer's own titles are checked one by one (T3, `pipeline.titles`):
+    # a title that swears is not offered at all, so only the bot's fallback
+    # titles are read for it here.
+    from pipeline.titles import title_findings
     from pipeline.writing_checks import package_swears
 
-    around = {f"title {n}": t for n, t in enumerate(titles, 1)}
+    around = ({} if package.titles_from_writer else
+              {f"title {n}": t for n, t in enumerate(titles, 1)})
     around["description"] = package.description
     around["pinned comment"] = package.pinned_comment
-    found = package_swears(around)
+    found = title_findings(script) + package_swears(around)
     if not titles or not hook:
         return found
     # The first title is the one the uploader defaults to.

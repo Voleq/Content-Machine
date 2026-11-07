@@ -162,6 +162,8 @@ The operator ratifies or regenerates, so make your reasoning legible. Emit these
 
 THEN the strict JSON object below — keys exactly as shown, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
 
+{{titles_rules}}
+
 ### HOW TO HAND IT BACK — AS A FILE, NOT A PASTE
 
 Write the deliverable to a **downloadable `.txt` file** and give the operator
@@ -190,6 +192,14 @@ Put the five prose sections in the chat and the JSON object in the `.txt` file.
   "cheap_or_trap": "<the value-trap beat: name the multiple, then what would have to be true for it to be cheap; <= 260 chars>",
   "conclusion": "<noise-or-signal, free text>",
   "jokes": ["<joke 1, word for word from audio_script>", "<joke 2>", "<joke 3>"],
+  "titles": [
+    {"title": "<the story or the verdict first, one figure the audio says, under 60 chars>", "pays_off": "<the audio_script sentence that answers it, word for word>"},
+    {"title": "<title 2>", "pays_off": "<its sentence>"},
+    {"title": "<title 3>", "pays_off": "<its sentence>"},
+    {"title": "<title 4>", "pays_off": "<its sentence>"},
+    {"title": "<title 5>", "pays_off": "<its sentence>"}
+  ],
+  "thumbnail_text": "<2 to 4 words that add to the title>",
 {{kind_skeleton}}  "sources": {"numbers": "<the filing the rows are from, <= 40 chars>"}
 }
 
@@ -223,5 +233,13 @@ Note how every beat carries a joke or sets one up, each hung on what is on scree
     "you are paying first class for the bus",
     "a man who read the headline off a screenshot of a screenshot, on his lunch break, and set a price alert called retirement"
   ],
+  "titles": [
+    {"title": "Up 29% on a deal with no number in it", "pays_off": "The news, if you squint, is a partnership with no dollar figure in it, which in practice is a handshake with a logo."},
+    {"title": "the handshake that added 29% in a day", "pays_off": "Noise. A handshake and a squeeze, stapled to five years of drift."},
+    {"title": "Losses got wider every year. The stock went up 29%", "pays_off": "Losses got wider every year."},
+    {"title": "Noise or signal: a squeeze stapled to a loss", "pays_off": "Noise. A handshake and a squeeze, stapled to five years of drift."},
+    {"title": "A partnership, graded against five years of drift", "pays_off": "Cheap needs the losses to stop."}
+  ],
+  "thumbnail_text": "first class, bus seat",
   "sources": {"numbers": "10-K and 10-Q filings, FY21–LTM"}
 }

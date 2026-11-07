@@ -774,7 +774,17 @@ STEPS_UI.upload = (d, v) => {
   if (d.uploaded) body.push(el("p", { class: "ok-line" }, "Uploaded: ", el("a", { href: d.uploaded.url, target: "_blank", rel: "noopener", text: d.uploaded.url }), ` (${d.uploaded.privacy})`));
   const cols = el("div", { class: "upload-grid" });
   const left = el("div", {});
-  (d.titles || []).forEach((t, i) => left.append(field(`Title ${i + 1}`, t)));
+  // The writer's titles, the pick on top: each with the line that pays it
+  // off, its length, and a button that makes it the one the upload sends.
+  (d.titles || []).forEach((t, i) => {
+    const f = field(i === 0 && d.titles_from_writer ? "Title 1 (the pick)" : `Title ${i + 1}`, t);
+    const pays = (d.title_payoffs || [])[i];
+    const meta = `${t.length} characters${t.length > 60 ? ", long for a phone" : ""}${pays ? ` · pays off: “${pays}”` : ""}`;
+    f.append(el("p", { class: "meta", text: meta }));
+    if (i > 0 && d.title_hint) f.append(el("button", { type: "button", class: "ghost sm", text: "Use this one", onclick: (e) => vRun(`${d.title_hint}${i + 1}`, e.currentTarget, `Title · ${v.ticker}`).then(() => loadVideo(true)) }));
+    left.append(f);
+  });
+  if ((d.title_notes || []).length) left.append(el("ul", { class: "meta" }, d.title_notes.map((n) => el("li", { text: n }))));
   left.append(field("Description", d.description, 10), field("Tags", (d.tags || []).join(", "), 2), field("Pinned comment", d.pinned, 3));
   if ((d.chapters || []).length) left.append(field("Chapters", d.chapters.map((c) => `${c.stamp} ${c.title}`).join("\n"), Math.min(d.chapters.length, 8)));
   const right = el("div", {});
@@ -800,6 +810,8 @@ STEPS_UI.upload = (d, v) => {
     th.his ? el("button", { type: "button", class: "ghost sm", text: "Back to the bot's", onclick: async (e) => {
       if (await askConfirm("Use the bot's cover again?", "Your picture is removed from this video.", "Yes")) sendFile(new Blob([]), `/api/thumbnail?t=${encodeURIComponent(v.ticker)}&d=${encodeURIComponent(v.workdate)}&fmt=${th.fmt}`, `Cover · bot's → ${v.ticker}`);
     } }) : null));
+  if (th.words) right.append(field("Thumbnail words", th.words));
+  if (th.prompt) right.append(field("Figma Make prompt (attach the bot's cover)", th.prompt, 8));
   right.append(el("h4", { text: "Downloads" }), el("ul", { class: "downloads" }, (d.downloads || []).map((f) => el("li", {}, el("a", { href: withKey(f.url), download: f.name, text: f.name })))));
   const link = el("input", { type: "url", placeholder: "https://youtu.be/…", class: "grow" });
   const priv = el("select", {}, ["unlisted", "private", "public"].map((p) => el("option", { value: p, text: p })));

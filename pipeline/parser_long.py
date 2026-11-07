@@ -221,8 +221,15 @@ _CONFESSION_TRAILER_RE = re.compile(r"^\s*=+\s*CONFESSION\s*=+\s*$",
 # reliably findable in prose and a floor nobody can count is not a floor.
 _JOKES_TRAILER_RE = re.compile(r"^\s*[*_#]*\s*=+\s*JOKES\s*=+\s*[*_]*\s*$",
                                re.IGNORECASE | re.MULTILINE)
+# The `=== TITLES ===` trailer (T1, T4 of the Benjamin study): the writer's
+# title options, `title | the narration line that pays it off`, and one
+# `Thumbnail:` line. Never spoken; it may sit anywhere among the trailers.
+_TITLES_TRAILER_RE = re.compile(r"^\s*[*_#]*\s*=+\s*TITLES\s*=+\s*[*_]*\s*$",
+                                re.IGNORECASE | re.MULTILINE)
+_THUMB_LINE_RE = re.compile(r"^\s*[-*•]?\s*[*_]*\s*thumbnail(?:\s+(?:text|line|words))?"
+                            r"\s*[*_]*\s*[:=\-–—]\s*(.*)$", re.IGNORECASE)
 # Any trailer marker, so a block cut from the middle ends at the next one.
-_ANY_TRAILER_RE = re.compile(r"^\s*[*_#]*\s*=+\s*(?:CHAPTERS|CONFESSION|JOKES)"
+_ANY_TRAILER_RE = re.compile(r"^\s*[*_#]*\s*=+\s*(?:CHAPTERS|CONFESSION|JOKES|TITLES)"
                              r"\s*=+\s*[*_]*\s*$", re.IGNORECASE | re.MULTILINE)
 # The Step-2 prompt asks for a `=== BIT PLAN ===` in the chat, before the
 # script. A chat that puts it in the file put it above the narration, where
@@ -241,6 +248,44 @@ def _split_jokes_trailer(raw: str) -> tuple[str, str]:
     nxt = _ANY_TRAILER_RE.search(raw, m.end())
     end = nxt.start() if nxt else len(raw)
     return raw[: m.start()] + raw[end:], raw[m.end():end].strip()
+
+
+def _split_titles_trailer(raw: str) -> tuple[str, str]:
+    """Cut the `=== TITLES ===` block out, wherever it sits among the
+    trailers: it runs to the next trailer's marker or to the end."""
+    m = _TITLES_TRAILER_RE.search(raw)
+    if not m:
+        return raw, ""
+    nxt = _ANY_TRAILER_RE.search(raw, m.end())
+    end = nxt.start() if nxt else len(raw)
+    return raw[: m.start()] + raw[end:], raw[m.end():end].strip()
+
+
+def parse_titles(text: str) -> tuple[list, str, list[str]]:
+    """The TITLES block -> (ScriptTitles, thumbnail words, warnings).
+
+    `title | the line that pays it off` per line, plus one `Thumbnail:`
+    line. Bookkeeping like the jokes: a line it cannot read is skipped and
+    never fails the parse. Whether a title is good enough to offer is
+    `pipeline.titles`' call, made where the operator can read it.
+    """
+    from pipeline.models import ScriptTitle, normalise_thumbnail_text, normalise_titles
+
+    lines, thumb = [], ""
+    for raw_line in (text or "").splitlines():
+        m = _THUMB_LINE_RE.match(raw_line)
+        if m:
+            thumb = thumb or normalise_thumbnail_text(m.group(1))
+            continue
+        if raw_line.strip() and not raw_line.strip().startswith("#"):
+            lines.append(raw_line)
+    titles = [ScriptTitle(**t) for t in normalise_titles(lines)]
+    warnings = []
+    if text and text.strip() and not titles:
+        warnings.append("the `=== TITLES ===` block has no title in it — the "
+                        "upload falls back to the bot's own two. The shape is "
+                        "`title | the narration line that pays it off`.")
+    return titles, thumb, warnings
 
 
 def _strip_bit_plan(raw: str) -> str:
@@ -415,6 +460,7 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
     # The jokes block first: it may sit before, between or after the other
     # two trailers, and it ends at whichever marker follows it.
     raw, jokes_text = _split_jokes_trailer(raw)
+    raw, titles_text = _split_titles_trailer(raw)
     raw, chapters = _split_chapters_trailer(raw)
     # The confession block may sit before or after the chapter trailer, so it
     # is cut from both halves rather than from a position.
@@ -625,9 +671,13 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
     jokes, joke_warnings = parse_jokes(jokes_text)
     warnings.extend(joke_warnings)
 
+    titles, thumbnail_text, title_warnings = parse_titles(titles_text)
+    warnings.extend(title_warnings)
+
     script = LongScript(ticker=ticker, narration=narration, events=events,
                         chapter_list=chapter_list, chapters=chapters,
-                        confession=confession, jokes=jokes)
+                        confession=confession, jokes=jokes,
+                        titles=titles, thumbnail_text=thumbnail_text)
 
     if script.word_count < 800:
         warnings.append(

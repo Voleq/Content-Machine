@@ -524,7 +524,7 @@ long deliverable arrives as fragments, and the bot now REFUSES a paste that
 looks cut off rather than saving half a script over a whole one. A file
 arrives in one piece.
 
-Put the HOOK OPTIONS menu and the BIT PLAN in the chat and the narration, the `=== CHAPTERS ===` trailer, the `=== JOKES ===` trailer and any `=== CONFESSION ===` trailer in the `.txt` file.
+Put the HOOK OPTIONS menu and the BIT PLAN in the chat and the narration, the `=== CHAPTERS ===` trailer, the `=== JOKES ===` trailer, the `=== TITLES ===` trailer and any `=== CONFESSION ===` trailer in the `.txt` file.
 First the `=== HOOK OPTIONS ===` block, then the narration as plain text with inline tags — no JSON, no section headers, no stage directions other than the bracket tags. Begin the script at the chosen hook.
 
 After the narration, append a `=== CHAPTERS ===` trailer — one line per chapter,
@@ -565,6 +565,8 @@ any stretch of two minutes with none.
 === JOKES ===
 self-own | <the punchline, copied word for word from the narration>
 wrong last item | <the punchline, copied word for word from the narration>
+
+{{titles_block}}
 
 Then, ONLY if this video carries one, a `=== CONFESSION ===` trailer: one line,
 `kind | the admission`, using one of the six kinds above. Leave the block out

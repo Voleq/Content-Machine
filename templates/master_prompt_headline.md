@@ -157,6 +157,8 @@ Emit these five sections as plain prose FIRST (no JSON, no braces), then the str
 
 THEN, as the final block, the strict JSON object below — keys exactly as shown, leaving out the rule-12 fields your mode does not use, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
 
+{{titles_rules}}
+
 {
   "ticker": "{{ticker}}",
   "format": "short",
@@ -174,6 +176,14 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
   "cheap_or_trap": "<the value-trap beat: name the multiple, then what would have to be true for it to be cheap; <= 260 chars>",
   "conclusion": "<the verdict, free text>",
   "jokes": ["<joke 1, word for word from audio_script>", "<joke 2>", "<joke 3>"],
+  "titles": [
+    {"title": "<the story or the verdict first, one figure the audio says, under 60 chars>", "pays_off": "<the audio_script sentence that answers it, word for word>"},
+    {"title": "<title 2>", "pays_off": "<its sentence>"},
+    {"title": "<title 3>", "pays_off": "<its sentence>"},
+    {"title": "<title 4>", "pays_off": "<its sentence>"},
+    {"title": "<title 5>", "pays_off": "<its sentence>"}
+  ],
+  "thumbnail_text": "<2 to 4 words that add to the title>",
   "sources": {"numbers": "<the filing, release or agency the rows are from, <= 40 chars>"},
   "reported": "<earnings/macro: the print, <= 6 chars>",
   "expected": "<earnings/macro: consensus, <= 6 chars>",
@@ -205,5 +215,13 @@ A company-news example: each beat opens on its marker, in the company short's as
     "Losses got wider every one of those years, which at least shows commitment.",
     "a man reading the release on a cracked phone in a drive-through queue, who has already told his wife the word synergy"
   ],
+  "titles": [
+    {"title": "Up 11% on a release with no numbers in it", "pays_off": "Up eleven percent by lunch, on a release with no numbers."},
+    {"title": "What exploring opportunities actually means", "pays_off": "Exploring opportunities is what a company says when the lawyers have taken out every number."},
+    {"title": "the AI partnership nobody read to the end", "pays_off": "EXMPL announced an AI partnership this morning, and the stock went up before anyone reached the second sentence."},
+    {"title": "An AI partnership vs five flat years", "pays_off": "Five flat years with a growing hole in them, and a press release does not fill a hole."},
+    {"title": "A press release, graded against the 10-K", "pays_off": "Priced in, and then some."}
+  ],
+  "thumbnail_text": "read sentence two",
   "sources": {"numbers": "10-K and 10-Q filings, FY21–LTM"}
 }

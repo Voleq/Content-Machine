@@ -87,8 +87,9 @@ def fixup_prompt(findings: list[dict], fmt: str) -> str:
         shape = ("the whole JSON again, every field, in the same shape")
     else:
         shape = ("the WHOLE script again in the same format: the narration "
-                 "with its tags, then the === CHAPTERS === and === JOKES === "
-                 "trailers (and === CONFESSION === if it had one)")
+                 "with its tags, then the === CHAPTERS ===, === JOKES === "
+                 "and === TITLES === trailers (and === CONFESSION === if it "
+                 "had one)")
     out = [
         "The bot checked the script you wrote and found the problems below. "
         f"Fix each one and send back {shape}. Change only what a line below "

@@ -531,6 +531,10 @@ def c_mark(c: Call):
     return c.core.mark_upload(c.args)
 
 
+def c_title(c: Call):
+    return c.core.title_command(c.args)
+
+
 # ---- /jobs
 def c_status(c: Call):
     if c.core.queue is None:
@@ -1060,6 +1064,14 @@ COMMANDS: tuple[Command, ...] = (
                 "is recorded here. A video already on record has its privacy "
                 "changed in place. The long's sign-off names only public "
                 "videos, and only ones that follow on.")),
+    Command("publish", "title", "TICKER [short|long] N",
+            "pick which of the writer's titles the upload uses", c_title,
+            ticker="dated", example="{T} long 2", doc=(
+                "The writer writes five titles; the upload step lists the ones "
+                "the title check lets through, the pick on top. This puts "
+                "title N on top: it is the one `/publish` sends and the "
+                "page's \"Copy title 1\". The page's \"Use this one\" "
+                "button sends it.")),
     Command("publish", "correct", "[TICKER <what was wrong>]",
             "pin a correction on a shipped video", c_correct,
             aliases=("correct",), ticker="optional", doc=(

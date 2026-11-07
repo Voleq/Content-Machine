@@ -125,8 +125,10 @@ def test_a_short_without_jokes_keeps_its_hash(settings):
     exclude: dict = {name: True for name in ("beat_marks", "sources")
                      if not getattr(script, name)}
     exclude["jokes"] = True
-    # Nor by the call quote, which came after it and is empty here too.
+    # Nor by the call quote, which came after it and is empty here too,
+    # nor by the titles, which never change the video.
     exclude["call_quote"] = True
+    exclude.update(titles=True, thumbnail_text=True)
     if not any(e.beside for e in script.inline_events):
         exclude["inline_events"] = {"__all__": {"beside"}}
     old = hashlib.sha256(script.model_dump_json(exclude=exclude).encode(
@@ -220,7 +222,8 @@ def test_a_long_dry_stretch_names_its_line():
 def test_a_long_without_jokes_keeps_its_hash():
     script = LongScript(ticker="EXMPL", narration="Words.")
     old = hashlib.sha256(script.model_dump_json(
-        exclude={"events": {"__all__": {"beside"}}, "jokes": True}
+        exclude={"events": {"__all__": {"beside"}}, "jokes": True,
+                 "titles": True, "thumbnail_text": True}
     ).encode("utf-8")).hexdigest()[:16]
     assert script.content_sha() == old
 

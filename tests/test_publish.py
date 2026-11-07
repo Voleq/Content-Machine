@@ -111,7 +111,10 @@ def test_package_carries_chapters_and_never_invents_claims(settings,
     pkg = build_package(script, settings, runtime_min=14)
 
     assert pkg.ticker == "EXMPL"
-    assert len(pkg.titles) == 3 and all(pkg.titles)
+    # No titles from the writer: the bot's own two, and never the retired
+    # "numbers nobody screenshots" (T1, 7 Nov 2026).
+    assert len(pkg.titles) == 2 and all(pkg.titles)
+    assert not any("nobody screenshots" in t for t in pkg.titles)
     assert "02:00 The numbers" in pkg.description
     assert settings.disclaimer_text in pkg.description
     assert "EXMPL" in pkg.tags

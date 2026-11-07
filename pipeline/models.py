@@ -28,6 +28,58 @@ from pipeline.plates import PERIOD_COUNT
 SOURCE_MAX_CHARS = 40
 # One declared joke: the punchline sentence or clause, never a paragraph.
 JOKE_MAX_CHARS = 400
+# THE WRITER'S TITLES (T1 of the Benjamin study, 7 Nov 2026). Kept wider than
+# YouTube's hundred so a long one still parses and the title check can say
+# why it is not offered, instead of the whole script failing over a title.
+TITLE_KEEP_CHARS = 300
+TITLE_OPTIONS_KEPT = 8
+# The thumbnail's words (T4): two to four, kept to a line.
+THUMBNAIL_TEXT_KEEP_CHARS = 80
+
+_TITLE_BULLET_RE = re.compile(r"^\s*(?:[-*•]|\d+[.):]|#+)\s*")
+_TITLE_KEYS = ("title", "text", "name")
+_PAYOFF_KEYS = ("pays_off", "payoff", "pays", "line", "answer")
+
+
+def _title_text(text) -> str:
+    text = " ".join(str(text or "").split())
+    text = _TITLE_BULLET_RE.sub("", text).strip()
+    return text.strip("\"“”'*_ ").strip()
+
+
+def normalise_titles(v) -> list[dict]:
+    """The writer's title options, from whatever shape a chat sent them in.
+
+    A list of strings (`"title | the line that pays it off"`), a list of
+    `{"title", "pays_off"}` objects, or one string of lines. Bookkeeping
+    like the jokes: it never refuses a script, it keeps the first eight.
+    """
+    if v is None:
+        return []
+    if isinstance(v, str):
+        v = v.splitlines()
+    if isinstance(v, dict):
+        v = [v]
+    out: list[dict] = []
+    for item in v if isinstance(v, (list, tuple)) else [v]:
+        if isinstance(item, dict):
+            title = next((item[k] for k in _TITLE_KEYS if item.get(k)), "")
+            pays = next((item[k] for k in _PAYOFF_KEYS if item.get(k)), "")
+        elif hasattr(item, "text"):          # a ScriptTitle already
+            title, pays = item.text, getattr(item, "pays_off", "")
+        else:
+            title, _, pays = str(item).partition("|")
+        title, pays = _title_text(title), _title_text(pays)
+        if title:
+            out.append({"text": title[:TITLE_KEEP_CHARS],
+                        "pays_off": pays[:JOKE_MAX_CHARS]})
+    return out[:TITLE_OPTIONS_KEPT]
+
+
+def normalise_thumbnail_text(v) -> str:
+    if isinstance(v, (list, tuple)):
+        v = " ".join(str(x) for x in v)
+    return _title_text(v)[:THUMBNAIL_TEXT_KEEP_CHARS]
 
 # The data vendors whose names never reach the screen or the voice (§3):
 # on screen everything is "from the 10-K". One list, so the short's block,
@@ -506,6 +558,20 @@ class CallQuote(BaseModel):
     speaker: str = ""
 
 
+class ScriptTitle(BaseModel):
+    """One title option the writer wrote, and the line that pays it off.
+
+    The line is the writer's copy of the sentence in the script that answers
+    the title, so a title can be read back against the video instead of
+    promising something the video never says (T3).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    text: str = Field(min_length=1, max_length=TITLE_KEEP_CHARS)
+    pays_off: str = Field(default="", max_length=JOKE_MAX_CHARS)
+
+
 class ShortScript(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -563,6 +629,20 @@ class ShortScript(BaseModel):
     # long or not in the call is a warning and an undrawn card, never a
     # refused script.
     call_quote: CallQuote | None = None
+    # THE WRITER'S TITLES AND THE THUMBNAIL'S WORDS (T1, T4). Bookkeeping for
+    # the upload: never drawn, never spoken, and never part of the hash.
+    titles: list[ScriptTitle] = Field(default_factory=list)
+    thumbnail_text: str = ""
+
+    @field_validator("titles", mode="before")
+    @classmethod
+    def _norm_titles(cls, v) -> list[dict]:
+        return normalise_titles(v)
+
+    @field_validator("thumbnail_text", mode="before")
+    @classmethod
+    def _norm_thumbnail_text(cls, v) -> str:
+        return normalise_thumbnail_text(v)
 
     @field_validator("call_quote", mode="before")
     @classmethod
@@ -703,6 +783,9 @@ class ShortScript(BaseModel):
         exclude: dict = {name: True for name in ("beat_marks", "sources",
                                                  "jokes", "call_quote")
                          if not getattr(self, name)}
+        # THE TITLES NEVER CHANGE THE VIDEO, so a title rewritten after the
+        # approval keeps it, and the render's seeds stay where they were.
+        exclude.update(titles=True, thumbnail_text=True)
         # The tag's `beside` (a long-lane field) is empty on every short.
         if not any(e.beside for e in self.inline_events):
             exclude["inline_events"] = {"__all__": {"beside"}}
@@ -818,11 +901,26 @@ class LongScript(BaseModel):
     chapter_list: list[Chapter] = Field(default_factory=list)
     # the raw trailer text, kept for the YouTube description
     chapters: str = ""
+    # The `=== TITLES ===` trailer (T1, T4): the writer's title options with
+    # the line that pays each off, and the thumbnail's words. Never spoken,
+    # never part of the hash.
+    titles: list[ScriptTitle] = Field(default_factory=list)
+    thumbnail_text: str = ""
 
     @field_validator("ticker")
     @classmethod
     def _norm_ticker(cls, v: str) -> str:
         return v.strip().upper()
+
+    @field_validator("titles", mode="before")
+    @classmethod
+    def _norm_titles(cls, v) -> list[dict]:
+        return normalise_titles(v)
+
+    @field_validator("thumbnail_text", mode="before")
+    @classmethod
+    def _norm_thumbnail_text(cls, v) -> str:
+        return normalise_thumbnail_text(v)
 
     @property
     def word_count(self) -> int:
@@ -865,7 +963,8 @@ class LongScript(BaseModel):
         # Nor does one written before the jokes trailer existed.
         if not self.jokes:
             exclude["jokes"] = True
-        exclude = exclude or None
+        # The titles never change the video (see ShortScript.content_sha).
+        exclude.update(titles=True, thumbnail_text=True)
         return hashlib.sha256(
             self.model_dump_json(exclude=exclude).encode("utf-8")
         ).hexdigest()[:16]

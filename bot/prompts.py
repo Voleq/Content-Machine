@@ -1022,6 +1022,12 @@ def prior_coverage(settings: Settings, ticker: str) -> str:
 # TEST FAILURE rather than a silent no-op: see
 # `tests/test_prompt_payload.py`.
 
+def _titles(name: str) -> str:
+    from pipeline import titles
+
+    return getattr(titles, name)()
+
+
 _WRITING = ("short", "long_write", "update", "headline")
 _LONG_FORM = ("long_write", "update")
 _ALL = ("short", "long_angle", "long_write", "update", "headline")
@@ -1574,6 +1580,13 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                  lambda c: scribble_styles(c.settings)),
     PayloadBlock("{{chapter_title_max}}", _LONG_FORM,
                  lambda c: chapter_title_max(c.settings)),
+    # THE WRITER WRITES THE TITLES (T1-T4 of the Benjamin study, 7 Nov
+    # 2026): five options with the line that pays each off, and the
+    # thumbnail's words. One text for every lane (`pipeline.titles`).
+    PayloadBlock("{{titles_block}}", _LONG_FORM,
+                 lambda c: _titles("long_titles_block")),
+    PayloadBlock("{{titles_rules}}", ("short", "headline"),
+                 lambda c: _titles("short_titles_block")),
     # The chapter orders of the last three longs, so this one differs (S9).
     PayloadBlock("{{recent_chapter_orders}}", _LONG_FORM,
                  lambda c: _orders(c)),

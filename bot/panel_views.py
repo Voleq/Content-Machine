@@ -560,7 +560,7 @@ STUDIO_CHECKLIST = (
     "Altered or synthetic content: Yes (the voice is AI).",
     "Check where YouTube puts the AI label on the watch page.",
     "Paste each field from here: title, description, tags, then the pinned comment.",
-    "Add your Figma thumbnail.",
+    "Make the thumbnail in Figma Make with the prompt under Cover, then add it here.",
     "Paste the link here when it is up, so the bot knows it is out.",
 )
 
@@ -595,6 +595,8 @@ def _step_upload(v: _Video) -> dict:
                  "uploading": ({"pct": round((share or 0.0) * 100)} if going else None),
                  "checklist": list(STUDIO_CHECKLIST), "downloads": [],
                  "titles": [], "description": "", "tags": [], "pinned": "",
+                 "title_payoffs": [], "title_notes": [], "title_hint": "",
+                 "titles_from_writer": False,
                  "chapters": [], "buttons": [], "thumbnail": {}}
     if not final:
         return out
@@ -613,7 +615,11 @@ def _step_upload(v: _Video) -> dict:
     pkg = v.core._upload_package(v.ws, v.fmt)
     if pkg is not None:
         out.update(titles=list(pkg.titles), description=pkg.description,
-                   tags=list(pkg.tags), pinned=pkg.pinned_comment)
+                   tags=list(pkg.tags), pinned=pkg.pinned_comment,
+                   title_payoffs=list(pkg.title_payoffs),
+                   title_notes=list(pkg.title_notes),
+                   titles_from_writer=pkg.titles_from_writer,
+                   title_hint=f"/publish title {v.ws.ticker}@{v.ws.workdate} {v.fmt} ")
     out["chapters"] = [{"stamp": s, "title": t}
                        for s, t, *_ in v.core._chapter_pairs(v.ws, v.fmt)]
     out["buttons"] = keyboard_rows(kb.delivered_keyboard(
@@ -622,7 +628,9 @@ def _step_upload(v: _Video) -> dict:
     out["thumbnail"] = {"current": v.link(cover) if cover.exists() else "",
                         "bot": v.link(bot_cover(v.ws, v.fmt)),
                         "his": his_cover(v.ws, v.fmt) is not None,
-                        "fmt": v.fmt}
+                        "fmt": v.fmt,
+                        "words": pkg.thumbnail_text if pkg is not None else "",
+                        "prompt": pkg.thumbnail_prompt if pkg is not None else ""}
     # The folder's date rides along: without it the link was recorded
     # against the ticker's newest folder, so an older video stayed under
     # "Rendered, not uploaded" (scan, 24 Oct 2026).

@@ -247,17 +247,38 @@ class UploadPackage:
     description: str = ""
     tags: list[str] = field(default_factory=list)
     pinned_comment: str = ""
+    # THE WRITER'S TITLES (T1-T4, 7 Nov 2026): the line of the script that
+    # pays each title off, beside it; why any title was not offered; the
+    # thumbnail's words; and the prompt for Figma Make built from them.
+    title_payoffs: list[str] = field(default_factory=list)
+    title_notes: list[str] = field(default_factory=list)
+    titles_from_writer: bool = False
+    thumbnail_text: str = ""
+    thumbnail_prompt: str = ""
 
     def render_text(self) -> str:
         # POSTED BY HAND, THE DISCLOSURE IS HIS TO TICK. The API path sets it
         # on every upload; the package said nothing, so a video put up in
         # Studio from it went out undeclared (scan, 24 Oct 2026).
+        head = ("TITLE OPTIONS (the writer's; 1 is the pick)"
+                if self.titles_from_writer else "TITLE OPTIONS")
         lines = [f"=== {self.ticker} — upload package ===", "",
-                 SYNTHETIC_REMINDER, "", "TITLE OPTIONS"]
-        lines += [f"  {i}. {t}" for i, t in enumerate(self.titles, 1)]
+                 SYNTHETIC_REMINDER, "", head]
+        for i, t in enumerate(self.titles, 1):
+            lines.append(f"  {i}. {t}")
+            pays = (self.title_payoffs[i - 1]
+                    if i - 1 < len(self.title_payoffs) else "")
+            if pays:
+                lines.append(f"     pays off: {pays}")
+        lines += [f"  ! {n}" for n in self.title_notes]
         lines += ["", "DESCRIPTION", self.description, "",
                   "TAGS", ", ".join(self.tags), "",
                   "PINNED COMMENT", self.pinned_comment, ""]
+        if self.thumbnail_text:
+            lines += ["THUMBNAIL WORDS", self.thumbnail_text, ""]
+        if self.thumbnail_prompt:
+            lines += ["FIGMA MAKE PROMPT (paste it in, attach the bot's cover)",
+                      self.thumbnail_prompt, ""]
         return "\n".join(lines)
 
 
@@ -317,7 +338,10 @@ def build_package(script, settings, *, ticker: str = "",
                   timestamps: "Sequence[tuple[str, str]]" = (),
                   why: str = "", duration_s: float = 0.0,
                   with_chapters: bool = True,
-                  credit: str = "") -> UploadPackage:
+                  credit: str = "", fmt: str = "",
+                  chosen_title: str = "", company: str = "",
+                  cover_figure: str = "",
+                  cover_name: str = "") -> UploadPackage:
     """Title options, description with chapters, tags and a pinned comment.
 
     Deliberately mechanical: it assembles what the script already decided
@@ -329,6 +353,12 @@ def build_package(script, settings, *, ticker: str = "",
     chapter list from, and a list with one entry out of range renders as no
     list at all. `with_chapters=False` is for a clip cut from the LONG: the
     LONG's chapter trailer describes twenty minutes the clip does not have.
+
+    THE TITLES ARE THE WRITER'S (T1, 7 Nov 2026), in the writer's order with
+    `chosen_title` (his pick on the page) on top, and only those the title
+    check lets through (`pipeline.titles`). The bot's own two are the
+    fallback for a script with none. `company`, `cover_figure` and
+    `cover_name` go into the Figma Make prompt for the thumbnail.
     """
     ticker = (ticker or getattr(script, "ticker", "")).upper()
     chapters = (normalise_chapters(getattr(script, "chapters", ""), duration_s)
@@ -338,12 +368,22 @@ def build_package(script, settings, *, ticker: str = "",
                        if s.strip()), "")
     hook = hook or first_line
 
-    titles = [
-        f"{ticker} — {hook[:70].rstrip('.')}",
-        f"What ${ticker} actually is, {'{:.0f}'.format(runtime_min)} minutes"
-        if runtime_min else f"What ${ticker} actually is",
-        f"${ticker}: the numbers nobody screenshots",
-    ]
+    from pipeline.figma_prompt import figma_make_prompt
+    from pipeline.titles import pick_titles, unsaid_figures, said_text
+
+    pick = pick_titles(script, ticker=ticker, hook=hook,
+                       runtime_min=runtime_min, chosen=chosen_title)
+    titles = pick.titles
+    lane = fmt or ("short" if getattr(script, "audio_script", None) else "long")
+    # The cover's figure only if the video gives it: it is drawn on the cover
+    # the title sells.
+    figure = cover_figure.strip()
+    if figure and unsaid_figures(figure, said_text(script))[0]:
+        figure = ""
+    prompt = figma_make_prompt(
+        fmt=lane, ticker=ticker, title=titles[0] if titles else ticker,
+        thumbnail_text=pick.thumbnail_text, company=company, figure=figure,
+        cover_name=cover_name)
 
     body = [hook, ""]
     if chapters:
@@ -393,4 +433,9 @@ def build_package(script, settings, *, ticker: str = "",
         pinned_comment=(
             f"Numbers are from {ticker}'s own filings. If I got one wrong, "
             f"say so and I'll pin the correction."),
+        title_payoffs=list(pick.payoffs),
+        title_notes=list(pick.notes),
+        titles_from_writer=pick.from_writer,
+        thumbnail_text=pick.thumbnail_text,
+        thumbnail_prompt=prompt,
     )

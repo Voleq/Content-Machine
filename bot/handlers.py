@@ -2629,6 +2629,8 @@ class BotCore:
             extra.append(write_transcript(tts.words, path("transcript")))
             from pipeline import site_pack
 
+            from pipeline.titles import chosen_title
+
             pkg = build_package(
                 self._retimed(script, fmt, Path(manifest)), self.settings,
                 ticker=job.ticker,
@@ -2636,7 +2638,9 @@ class BotCore:
                 transcript=transcript_text(tts.words),
                 timestamps=timestamps_from_cues(group_cues(tts.words)),
                 why=ws.why, duration_s=tts.duration_s,
-                credit=site_pack.credit(ws.path))
+                credit=site_pack.credit(ws.path),
+                fmt=fmt, chosen_title=chosen_title(ws.path, fmt),
+                **self._cover_facts(ws, fmt, script))
             pkg_path = path("package")
             pkg_path.write_text(pkg.render_text(), encoding="utf-8")
             extra.append(pkg_path)
@@ -3553,12 +3557,39 @@ class BotCore:
                 transcript = transcript_text(words)
                 timestamps = timestamps_from_cues(group_cues(words))
         from pipeline import site_pack
+        from pipeline.titles import chosen_title
 
         return build_package(
             script, self.settings, ticker=ws.ticker,
             runtime_min=duration / 60.0, transcript=transcript,
             timestamps=timestamps, why=ws.why, duration_s=duration,
-            with_chapters=fmt != "clip", credit=site_pack.credit(ws.path))
+            with_chapters=fmt != "clip", credit=site_pack.credit(ws.path),
+            fmt=fmt, chosen_title=chosen_title(ws.path, fmt),
+            **self._cover_facts(ws, fmt, script))
+
+    def _cover_facts(self, ws: Workspace, fmt: str, script) -> dict:
+        """What the Figma Make prompt says about the company and the cover:
+        its name off the workbook, the figure the bot's own cover leads on,
+        and the cover he attaches. Best-effort: a short with no workbook
+        has the ticker and its move."""
+        company, figure = "", ""
+        try:
+            from pipeline.company_data import load_company_data
+            from pipeline.thumbnail import shock_metric
+
+            data = load_company_data(ws.path)
+            company = str(data.get("company_name") or "")
+            figure = shock_metric(data)
+        except Exception:  # noqa: BLE001 — a prompt without them still serves
+            pass
+        if fmt != "long":
+            figure = str(getattr(script, "move_summary", "") or "") or figure
+        from pipeline.thumbnail import bot_cover
+
+        cover = bot_cover(ws, "short" if fmt != "long" else "long")
+        return {"company": company, "cover_figure": figure,
+                "cover_name": (f"the bot's cover ({cover.name})"
+                               if cover is not None else "")}
 
     @staticmethod
     def _retimed(script, fmt: str, manifest: Path | None):
@@ -4311,6 +4342,41 @@ class BotCore:
         from pipeline.scoreboard import scoreboard_text
 
         return scoreboard_text(self.settings, args[0] if args else "")
+
+    def title_command(self, args: list[str]) -> str:
+        """`/publish title TICKER [short|long] N` — the title the upload uses.
+
+        N counts the titles as the upload step lists them now. The pick is
+        kept in the video's folder and goes to the top of the package, which
+        is the title `/publish` sends and the page's "Copy title 1"."""
+        from pipeline.titles import set_chosen_title
+
+        usage = "usage: /publish title TICKER [short|long] N"
+        if not args:
+            return usage
+        fmt, n = "", 0
+        for a in args[1:]:
+            low = a.lower()
+            if low in ("short", "long", "clip"):
+                fmt = low
+            elif low.isdigit():
+                n = int(low)
+        if n < 1:
+            return usage
+        ws = self._ws_or_error(args[0])
+        if ws is None:
+            return f"⛔ no video folder for {args[0].upper()} — check the ticker."
+        fmt = fmt or ws.current_format() or "long"
+        package = self._upload_package(ws, fmt)
+        if package is None:
+            return f"⛔ {ws.ticker} has no {fmt} script on file."
+        if n > len(package.titles):
+            return (f"⛔ {ws.ticker} {fmt} has {len(package.titles)} titles; "
+                    f"pick 1 to {len(package.titles)}.")
+        title = package.titles[n - 1]
+        set_chosen_title(ws.path, fmt, title)
+        return (f"✅ {ws.ticker} {fmt.upper()}{self._from_date(ws)} goes up as "
+                f"“{title}”.")
 
     def mark_upload(self, args: list[str]) -> str:
         """`/publish mark TICKER [short|long] <link> [public|unlisted|private]`

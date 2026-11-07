@@ -163,7 +163,7 @@ long deliverable arrives as fragments, and the bot now REFUSES a paste that
 looks cut off rather than saving half a script over a whole one. A file
 arrives in one piece.
 
-Put the `Brief check:` and the HOOK OPTIONS menu in the chat and the narration and its trailers (chapters, jokes, any confession) in the `.txt` file.
+Put the `Brief check:` and the HOOK OPTIONS menu in the chat and the narration and its trailers (chapters, jokes, titles, any confession) in the `.txt` file.
 The narration as plain text with inline tags — no JSON, no section headers, no stage directions other than the bracket tags. Begin on the claim.
 
 Then append a `=== CHAPTERS ===` trailer, one `mm:ss type | Title` per line, first line `00:00`. The TYPE is one of the sixteen and decides which plates that chapter may use; the TITLE goes ON SCREEN as the chapter opener.
@@ -181,6 +181,8 @@ Then a `=== JOKES ===` trailer: every joke, one a line, in the order said, as `m
 
 === JOKES ===
 self-own | <the punchline, copied word for word from the narration>
+
+{{titles_block}}
 
 Then, ONLY if this video carries one, a `=== CONFESSION ===` trailer: one line, `kind | the admission`, using one of the six kinds. Leave the block out when there is nothing to admit.
 

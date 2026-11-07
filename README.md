@@ -112,7 +112,7 @@ vendor or stale data went straight to the Approve button.
 | **sameness** | this script against the last ten shipped, with the figures, tickers and names masked out so what is compared is the SCAFFOLDING. The voice linter refuses a construction used twice in one script; nothing compared one script to another, and repetition across a channel is the axis YouTube's inauthentic-content policy is written on | **blocks** past 60% shared phrasing — the same video with a different ticker |
 | **pacing** | words per second, sentence lengths, how long before the first figure lands, and the longest stretch carrying none. Computable from the script alone, before any spend, and none of it is something a writer can feel by reading their own draft | warns |
 | **loops** | whether a question is posed in the opening twenty seconds and whether the script ever comes back to it. An open loop that stays open is a promise the video breaks | warns |
-| **title** | whether the first thing anyone hears delivers what the title promised. A mismatch is the textbook thirty-second drop | warns |
+| **title** | whether the first thing anyone hears delivers what the title promised (a mismatch is the textbook thirty-second drop), and each of the writer's five titles and the thumbnail's words (`pipeline/titles.py`): a title past 100 characters, with a figure the script never gives, a swear, a buy/sell/target/crash call, angle brackets or a data vendor's name is not offered at all; past 60 characters, opening on the ticker, a hype word, or a payoff line the script does not say warns. A script with no titles gets the bot's own two | warns |
 
 ---
 
@@ -231,6 +231,8 @@ pipeline/
   workspace.py           per-ticker/date dirs, approvals, chat context
   script_edit.py         in-chat revision: line/range edits, find-replace, undo
   publish.py             subtitles and the upload metadata package
+  titles.py              the writer's titles + thumbnail words, checked
+  figma_prompt.py        the Figma Make prompt for the thumbnail
   youtube.py             upload (private/scheduled, never public) + retention
   retention_notes.py     the weekly note to the writer: which sentences lost
                          viewers, what they share, into the next prompt
@@ -824,6 +826,7 @@ The paid voice goes to the chat the moment it lands, and the render has already 
 | `/publish scheduled` | What is queued to publish, and when. |
 | `/publish calendar [weeks]` | The next week (or N weeks) of scheduled publishes, day by day in `PUBLISH_TIMEZONE`, with the empty days marked — something for `/jobs batch` to plan against. |
 | `/publish mark TICKER [short\|long] <link> [public\|unlisted\|private]` | The bot uploads private or scheduled, never public, so a video you make public in the Studio — or upload yourself — is recorded here. A video already on record has its privacy changed in place. The long's sign-off names only public videos, and only ones that follow on. |
+| `/publish title TICKER [short\|long] N` | The writer writes five titles; the upload step lists the ones the title check lets through, the pick on top. This puts title N on top: it is the one `/publish` sends and the page's "Copy title 1". The page's "Use this one" button sends it. |
 | `/publish correct [TICKER <what was wrong>]` | Pins a correction on a video that has already shipped, amends its description and records it. No arguments lists every correction ever issued. |
 
 ### /jobs — The render queue
